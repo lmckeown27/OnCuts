@@ -1,0 +1,178 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Test Smart Contracts
+  test-contracts:
+    name: Test Move Smart Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Aptos CLI
+        run: |
+          curl -fsSL https://aptos.dev/scripts/install_cli.py | python3
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Compile contracts
+        working-directory: ./contracts
+        run: aptos move compile --skip-fetch-latest-git-deps
+      
+      - name: Run tests
+        working-directory: ./contracts
+        run: aptos move test --skip-fetch-latest-git-deps
+
+  # Test Backend
+  test-backend:
+    name: Test Backend API
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgis/postgis:14-3.3
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: campuscuts_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Lint
+        working-directory: ./backend
+        run: npm run lint
+      
+      - name: Run tests
+        working-directory: ./backend
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/campuscuts_test
+          JWT_SECRET: test_secret
+          NODE_ENV: test
+
+  # Build Backend
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: [test-backend]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Build
+        working-directory: ./backend
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist
+
+  # Build iOS App
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: Install CocoaPods
+        run: |
+          cd ios-app
+          pod install
+      
+      - name: Build
+        run: |
+          cd ios-app
+          xcodebuild build \
+            -workspace CampusCuts.xcworkspace \
+            -scheme CampusCuts \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest'
+
+  # Docker Build
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [test-backend]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: campuscuts/api:${{ github.sha }},campuscuts/api:latest
+          cache-from: type=registry,ref=campuscuts/api:latest
+          cache-to: type=inline
+
+  # Deploy to Production (on main branch only)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test-contracts, test-backend, build-backend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://api.campuscuts.com
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-dist
+          path: backend/dist
+      
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production..."
+          # Add your deployment commands here
+          # Example: aws eb deploy or heroku deploy
+

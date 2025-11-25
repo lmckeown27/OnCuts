@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:14-3.3
+    container_name: campuscuts-db
+    environment:
+      POSTGRES_DB: campuscuts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campuscuts-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:your_password@postgres:5432/campuscuts
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: campuscuts
+      DB_USER: postgres
+      DB_PASSWORD: your_password
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+    restart: unless-stopped
+
+  # Redis (for caching and sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: campuscuts-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
