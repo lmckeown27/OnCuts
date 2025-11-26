@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import mockDb from '../services/mock.database.service';
-import AptosService from '../services/aptos.service';
+import aptosService from '../services/aptos.service';
 
 const router = Router();
 
@@ -110,7 +110,6 @@ router.post('/bookings', async (req: Request, res: Response) => {
 // Test Aptos blockchain connection
 router.get('/aptos/status', async (req: Request, res: Response) => {
   try {
-    const aptosService = AptosService.getInstance();
     const platformAddress = process.env.APTOS_PLATFORM_ADDRESS;
     
     if (!platformAddress) {
@@ -145,8 +144,6 @@ router.get('/aptos/status', async (req: Request, res: Response) => {
 // Test contract interaction
 router.post('/aptos/test-transaction', async (req: Request, res: Response) => {
   try {
-    const aptosService = AptosService.getInstance();
-    
     res.json({
       success: true,
       message: 'Contract deployment verified',
