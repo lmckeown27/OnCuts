@@ -238,6 +238,114 @@ CREATE TRIGGER update_booking_metadata_updated_at BEFORE UPDATE ON booking_metad
 CREATE TRIGGER update_payment_transactions_updated_at BEFORE UPDATE ON payment_transactions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Conversations table (for real-time chat)
+CREATE TABLE conversations (
+    id SERIAL PRIMARY KEY,
+    user1_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user2_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    booking_id BIGINT, -- Optional: conversation tied to a specific booking
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_message_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user1_id, user2_id, booking_id)
+);
+
+CREATE INDEX idx_conversations_user1 ON conversations(user1_id);
+CREATE INDEX idx_conversations_user2 ON conversations(user2_id);
+CREATE INDEX idx_conversations_booking ON conversations(booking_id);
+CREATE INDEX idx_conversations_last_message ON conversations(last_message_at DESC);
+
+-- Messages table
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    message_type VARCHAR(20) DEFAULT 'text', -- 'text', 'image', 'system'
+    media_url TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    is_deleted BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_created ON messages(created_at DESC);
+CREATE INDEX idx_messages_unread ON messages(is_read) WHERE is_read = false;
+
+-- Mobile devices (for push notifications)
+CREATE TABLE mobile_devices (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_token TEXT NOT NULL,
+    platform VARCHAR(20) NOT NULL CHECK (platform IN ('ios', 'android')),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(device_token)
+);
+
+CREATE INDEX idx_mobile_devices_user ON mobile_devices(user_id);
+CREATE INDEX idx_mobile_devices_active ON mobile_devices(is_active) WHERE is_active = true;
+
+-- Notification logs (for analytics and debugging)
+CREATE TABLE notification_logs (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    body TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL, -- 'booking_confirmation', 'message', 'reminder', etc.
+    results JSONB, -- Store delivery results
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_notification_logs_user ON notification_logs(user_id);
+CREATE INDEX idx_notification_logs_type ON notification_logs(type);
+CREATE INDEX idx_notification_logs_created ON notification_logs(created_at DESC);
+
+-- Bookings table (for booking-centric messaging reference)
+CREATE TABLE IF NOT EXISTS bookings (
+    id SERIAL PRIMARY KEY,
+    student_id UUID NOT NULL REFERENCES users(id),
+    barber_id UUID NOT NULL REFERENCES users(id),
+    service_name VARCHAR(255) NOT NULL,
+    scheduled_time TIMESTAMP NOT NULL,
+    location TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'confirmed', 'completed', 'cancelled'
+    price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_bookings_student ON bookings(student_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_barber ON bookings(barber_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_scheduled ON bookings(scheduled_time);
+
+-- Update notification_preferences column in users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_preferences JSONB DEFAULT '{
+  "bookings": true,
+  "messages": true,
+  "payments": true,
+  "reviews": true,
+  "reminders": true,
+  "system": true,
+  "marketing": false,
+  "quietHours": {
+    "enabled": false,
+    "start": "22:00",
+    "end": "08:00"
+  }
+}'::jsonb;
+
+-- Add username column to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50) UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type VARCHAR(20) CHECK (user_type IN ('student', 'barber'));
+
+-- Update existing schema to use user_type
+UPDATE users SET user_type = role WHERE user_type IS NULL;
+
 -- Seed initial campus data
 INSERT INTO campuses (name, domain, city, state) VALUES
 ('Harvard University', 'harvard.edu', 'Cambridge', 'MA'),
@@ -249,5 +357,6 @@ INSERT INTO campuses (name, domain, city, state) VALUES
 ('Columbia University', 'columbia.edu', 'New York', 'NY'),
 ('University of Pennsylvania', 'upenn.edu', 'Philadelphia', 'PA'),
 ('Duke University', 'duke.edu', 'Durham', 'NC'),
-('Northwestern University', 'northwestern.edu', 'Evanston', 'IL');
+('Northwestern University', 'northwestern.edu', 'Evanston', 'IL')
+ON CONFLICT (domain) DO NOTHING;
 

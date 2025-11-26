@@ -3,9 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import compression from 'compression';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { pool } from './database/connection';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { connectRedis } from './config/redis';
 import rateLimit from 'express-rate-limit';
 
 // Import routes
@@ -15,6 +19,9 @@ import bookingRoutes from './routes/booking.routes';
 import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
 import campusRoutes from './routes/campus.routes';
+import messageRoutes from './routes/message.routes';
+import notificationRoutes from './routes/notification.routes';
+import uploadRoutes from './routes/upload.routes';
 
 // Load environment variables
 dotenv.config();
@@ -22,15 +29,93 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
+// Create HTTP server for Socket.IO
+const httpServer = createServer(app);
+
+// Allowed origins for CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://campuscuts.app',
+  'https://www.campuscuts.app',
+  'https://api.campuscuts.app',
+];
+
+// Socket.IO setup for real-time messaging
+const io = new Server(httpServer, {
+  path: '/socket.io/',
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.warn('🚫 Socket.IO CORS: Blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  transports: ['polling', 'websocket'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('✅ Socket.IO: User connected:', socket.id);
+
+  // Join user to their personal room for direct messages
+  socket.on('join-personal', (userId: number) => {
+    socket.join(`user-${userId}`);
+    console.log(`📬 Socket.IO: User ${socket.id} joined personal room: user-${userId}`);
+    socket.emit('joined-personal', { userId, socketId: socket.id });
+  });
+
+  // Join user to their campus room for campus-wide updates
+  socket.on('join-campus', (campusId: number) => {
+    socket.join(`campus-${campusId}`);
+    console.log(`🏫 Socket.IO: User ${socket.id} joined campus room: campus-${campusId}`);
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('❌ Socket.IO: User disconnected:', socket.id, 'Reason:', reason);
+  });
+
+  socket.on('error', (error) => {
+    console.error('🔴 Socket.IO: Socket error:', error);
+  });
+});
+
+console.log('✅ Socket.IO server initialized');
+
+// Make Socket.IO available to routes
+app.set('io', io);
+
+// Connect to Redis
+connectRedis();
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+app.use(compression());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -65,6 +150,9 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/campus', campusRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -77,21 +165,28 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
+// Static files for uploads
+app.use('/uploads', express.static('uploads'));
+
 // Start server
-const server = app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔗 Aptos Network: ${process.env.APTOS_NETWORK || 'devnet'}`);
+  logger.info(`💬 Socket.IO ready for real-time messaging`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
+  logger.info('SIGTERM signal received: closing servers');
+  httpServer.close(() => {
     logger.info('HTTP server closed');
-    pool.end(() => {
-      logger.info('Database pool closed');
-      process.exit(0);
+    io.close(() => {
+      logger.info('Socket.IO server closed');
+      pool.end(() => {
+        logger.info('Database pool closed');
+        process.exit(0);
+      });
     });
   });
 });

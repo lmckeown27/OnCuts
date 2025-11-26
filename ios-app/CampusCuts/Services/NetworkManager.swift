@@ -32,10 +32,7 @@ class NetworkManager: ObservableObject {
     
     private let baseURL = Constants.API.baseURL
     @Published var isLoading = false
-    
-    private var authToken: String? {
-        UserDefaults.standard.string(forKey: Constants.StorageKeys.authToken)
-    }
+    private let keychainManager = KeychainManager.shared
     
     // MARK: - Generic Request Methods
     
@@ -53,8 +50,12 @@ class NetworkManager: ObservableObject {
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        if authenticated, let token = authToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if authenticated {
+            if let token = await keychainManager.getAccessToken() {
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } else {
+                throw NetworkError.unauthorized
+            }
         }
         
         if let body = body {
@@ -103,7 +104,7 @@ class NetworkManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        if let token = authToken {
+        if let token = await keychainManager.getAccessToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
