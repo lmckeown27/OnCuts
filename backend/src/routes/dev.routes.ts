@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from 'express';
 import mockDb from '../services/mock.database.service';
-import { AptosService } from '../services/aptos.service';
+import AptosService from '../services/aptos.service';
 
 const router = Router();
 
