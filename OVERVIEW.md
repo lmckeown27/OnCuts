@@ -17,30 +17,36 @@
 ### Hybrid Decentralized Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         iOS App (SwiftUI)                        │
-│  Student Booking • Barber Dashboard • Chat • Payments • Reviews │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                ┌────────────┴────────────┐
-                │                         │
-        ┌───────▼────────┐       ┌───────▼────────┐
-        │  Node.js API   │       │ Aptos Blockchain│
-        │   (Hybrid)     │       │   (Move Lang)   │
-        ├────────────────┤       ├─────────────────┤
-        │ • Auth         │       │ • Bookings      │
-        │ • Chat         │       │ • Payments      │
-        │ • Images       │       │ • Reviews       │
-        │ • Push Notifs  │       │ • Barber Data   │
-        │ • Stripe       │       │ • Campus Links  │
-        └────────┬───────┘       └─────────────────┘
-                 │
-        ┌────────▼────────┐
-        │   PostgreSQL    │
-        │   • Users       │
-        │   • Messages    │
-        │   • Media URLs  │
-        └─────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          Frontend (Multi-Platform)                        │
+│  ┌─────────────────────────┐     ┌─────────────────────────────────────┐│
+│  │  iOS App (SwiftUI)       │     │  Web App (React + PWA)              ││
+│  │  • Native iOS            │     │  • Progressive Web App              ││
+│  │  • Push Notifications    │     │  • Responsive Design                ││
+│  │  • Keychain Security     │     │  • Offline Support                  ││
+│  └─────────────────────────┘     │  • IPFS Deployable                  ││
+│                                   └─────────────────────────────────────┘│
+└────────────────────────────────┬─────────────────────────────────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+            ┌───────▼────────┐       ┌───────▼────────┐
+            │  Node.js API   │       │ Aptos Blockchain│
+            │   (Hybrid)     │       │   (Move Lang)   │
+            ├────────────────┤       ├─────────────────┤
+            │ • Auth         │       │ • Bookings      │
+            │ • Chat         │       │ • Payments      │
+            │ • Images       │       │ • Reviews       │
+            │ • Push Notifs  │       │ • Barber Data   │
+            │ • Stripe       │       │ • Campus Links  │
+            └────────┬───────┘       └─────────────────┘
+                     │
+            ┌────────▼────────┐
+            │   PostgreSQL    │
+            │   • Users       │
+            │   • Messages    │
+            │   • Media URLs  │
+            └─────────────────┘
 ```
 
 ### Data Distribution
@@ -64,11 +70,25 @@
 ## 💻 Technology Stack
 
 ### Frontend
-- **iOS:** SwiftUI, Swift 5.9+
+
+**iOS App:**
+- **Framework:** SwiftUI, Swift 5.9+
 - **Authentication:** Keychain (secure token storage)
 - **Networking:** URLSession with async/await
 - **Real-time:** Socket.IO client
 - **Notifications:** UserNotifications framework (APN)
+
+**Web App (Decentralized):**
+- **Framework:** React 19 + TypeScript
+- **Build Tool:** Vite 7.2+
+- **Styling:** Tailwind CSS 4.1+
+- **State Management:** Zustand
+- **Routing:** React Router v6
+- **HTTP Client:** Axios with interceptors
+- **Real-time:** Socket.IO client
+- **Payments:** Stripe React
+- **PWA:** Service Worker + Web Manifest
+- **Deployment:** IPFS (decentralized) or traditional hosting
 
 ### Backend
 - **Framework:** Node.js 18+, Express.js, TypeScript
@@ -197,6 +217,44 @@ CampusCuts/
 │   │       ├── Constants.swift
 │   │       └── Extensions.swift
 │   └── Podfile
+│
+├── web-app/                    # React Web Application (PWA)
+│   ├── public/
+│   │   ├── manifest.json             # PWA manifest
+│   │   ├── sw.js                     # Service worker
+│   │   └── icons/                    # App icons
+│   ├── src/
+│   │   ├── components/               # Reusable UI components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Loading.tsx
+│   │   │   └── Navbar.tsx
+│   │   ├── pages/                    # Route pages
+│   │   │   ├── auth/                 # Authentication pages
+│   │   │   ├── student/              # Student views
+│   │   │   └── barber/               # Barber views
+│   │   ├── services/                 # API services
+│   │   │   ├── api.service.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── barber.service.ts
+│   │   │   ├── booking.service.ts
+│   │   │   ├── message.service.ts
+│   │   │   └── socket.service.ts
+│   │   ├── store/                    # Zustand state management
+│   │   │   ├── useAuthStore.ts
+│   │   │   └── useMessageStore.ts
+│   │   ├── types/                    # TypeScript types
+│   │   ├── config/                   # Configuration
+│   │   │   └── constants.ts
+│   │   ├── App.tsx                   # Main app component
+│   │   ├── main.tsx                  # Entry point
+│   │   └── index.css                 # Global styles
+│   ├── Dockerfile                    # Docker configuration
+│   ├── nginx.conf                    # Nginx configuration
+│   ├── deploy-ipfs.sh                # IPFS deployment script
+│   ├── package.json
+│   └── README.md
 │
 ├── scripts/                    # Automation scripts
 │   ├── setup.sh                      # Project setup
@@ -852,6 +910,33 @@ aptos move publish --profile campuscuts
 # Note the deployed module address for .env
 ```
 
+### Web App Deployment
+
+**Traditional Hosting (Vercel, Netlify, AWS):**
+```bash
+cd web-app
+npm run build
+# Deploy dist/ folder to hosting provider
+```
+
+**Docker Deployment:**
+```bash
+cd web-app
+docker build -t campuscuts-web .
+docker run -p 8080:80 campuscuts-web
+```
+
+**IPFS Deployment (Decentralized):**
+```bash
+cd web-app
+./deploy-ipfs.sh
+```
+
+The IPFS deployment creates a fully decentralized web app accessible via:
+- Public IPFS gateways
+- Cloudflare IPFS
+- Local IPFS node
+
 ### iOS App Deployment
 
 1. Update `Info.plist` with production API URL
@@ -988,16 +1073,25 @@ aptos move publish --profile campuscuts
 - 15+ Database tables
 - 4 Smart contracts
 
-**iOS:**
+**iOS App:**
 - 15+ Views
 - 3 ViewModels
 - 5+ Models
 - 3 Core services
 
+**Web App:**
+- 15+ Pages/Views
+- 5 Shared Components
+- 7 API Services
+- 2 State Stores
+- PWA enabled
+- IPFS deployable
+
 **Total:**
-- 116 files
-- 20,000+ lines of code
+- 200+ files
+- 30,000+ lines of code
 - Production-ready infrastructure
+- Multi-platform (iOS + Web)
 
 ---
 
