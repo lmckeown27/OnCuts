@@ -5,7 +5,7 @@
 
 import express from 'express';
 import messageService from '../services/message.service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -13,7 +13,7 @@ const router = express.Router();
  * GET /api/messages/conversations
  * Get user's conversations with pagination
  */
-router.get('/conversations', authenticateToken, async (req, res, next) => {
+router.get('/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const page = parseInt(req.query.page as string) || 1;
@@ -30,7 +30,7 @@ router.get('/conversations', authenticateToken, async (req, res, next) => {
  * POST /api/messages/conversations
  * Start a new conversation
  */
-router.post('/conversations', authenticateToken, async (req, res, next) => {
+router.post('/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const { otherUserId, bookingId } = req.body;
@@ -46,7 +46,7 @@ router.post('/conversations', authenticateToken, async (req, res, next) => {
  * GET /api/messages/conversations/:conversationId/messages
  * Get messages in a conversation
  */
-router.get('/conversations/:conversationId/messages', authenticateToken, async (req, res, next) => {
+router.get('/conversations/:conversationId/messages', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const conversationId = parseInt(req.params.conversationId);
@@ -64,7 +64,7 @@ router.get('/conversations/:conversationId/messages', authenticateToken, async (
  * POST /api/messages/conversations/:conversationId/messages
  * Send a message in a conversation
  */
-router.post('/conversations/:conversationId/messages', authenticateToken, async (req, res, next) => {
+router.post('/conversations/:conversationId/messages', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const conversationId = parseInt(req.params.conversationId);
@@ -101,7 +101,7 @@ router.post('/conversations/:conversationId/messages', authenticateToken, async 
  * PUT /api/messages/conversations/:conversationId/read
  * Mark conversation as read
  */
-router.put('/conversations/:conversationId/read', authenticateToken, async (req, res, next) => {
+router.put('/conversations/:conversationId/read', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const conversationId = parseInt(req.params.conversationId);
@@ -117,7 +117,7 @@ router.put('/conversations/:conversationId/read', authenticateToken, async (req,
  * DELETE /api/messages/conversations/:conversationId
  * Delete a conversation
  */
-router.delete('/conversations/:conversationId', authenticateToken, async (req, res, next) => {
+router.delete('/conversations/:conversationId', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const conversationId = parseInt(req.params.conversationId);
@@ -133,7 +133,7 @@ router.delete('/conversations/:conversationId', authenticateToken, async (req, r
  * GET /api/messages/unread-count
  * Get unread message count for badge
  */
-router.get('/unread-count', authenticateToken, async (req, res, next) => {
+router.get('/unread-count', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const count = await messageService.getUnreadMessageCount(userId);
@@ -151,7 +151,7 @@ router.get('/unread-count', authenticateToken, async (req, res, next) => {
  * GET /api/messages/stats
  * Get message statistics
  */
-router.get('/stats', authenticateToken, async (req, res, next) => {
+router.get('/stats', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const result = await messageService.getMessageStats(userId);

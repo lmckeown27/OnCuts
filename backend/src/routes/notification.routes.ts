@@ -6,7 +6,7 @@
 import express from 'express';
 import { pool } from '../database/connection';
 import pushNotificationService from '../services/pushNotification.service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
  * POST /api/notifications/register-device
  * Register a device token for push notifications
  */
-router.post('/register-device', authenticateToken, async (req, res, next) => {
+router.post('/register-device', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const { deviceToken, platform } = req.body;
@@ -68,7 +68,7 @@ router.post('/register-device', authenticateToken, async (req, res, next) => {
  * DELETE /api/notifications/unregister-device
  * Unregister a device token
  */
-router.delete('/unregister-device', authenticateToken, async (req, res, next) => {
+router.delete('/unregister-device', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const { deviceToken } = req.body;
@@ -91,7 +91,7 @@ router.delete('/unregister-device', authenticateToken, async (req, res, next) =>
  * GET /api/notifications/preferences
  * Get user's notification preferences
  */
-router.get('/preferences', authenticateToken, async (req, res, next) => {
+router.get('/preferences', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const preferences = await pushNotificationService.getNotificationPreferences(userId);
@@ -109,7 +109,7 @@ router.get('/preferences', authenticateToken, async (req, res, next) => {
  * PUT /api/notifications/preferences
  * Update user's notification preferences
  */
-router.put('/preferences', authenticateToken, async (req, res, next) => {
+router.put('/preferences', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     const { preferences } = req.body;
@@ -126,7 +126,7 @@ router.put('/preferences', authenticateToken, async (req, res, next) => {
  * Send a test notification (development only)
  */
 if (process.env.NODE_ENV === 'development') {
-  router.post('/test', authenticateToken, async (req, res, next) => {
+  router.post('/test', authenticate, async (req, res, next) => {
     try {
       const userId = (req as any).user.id;
 

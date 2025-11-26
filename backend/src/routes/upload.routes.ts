@@ -5,7 +5,7 @@
 
 import express from 'express';
 import imageService from '../services/image.service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ const router = express.Router();
  */
 router.post(
   '/portfolio',
-  authenticateToken,
+  authenticate,
   imageService.uploadMultipleImages,
   async (req, res, next) => {
     try {
@@ -57,7 +57,7 @@ router.post(
  */
 router.post(
   '/profile-picture',
-  authenticateToken,
+  authenticate,
   imageService.uploadSingleImage,
   async (req, res, next) => {
     try {
@@ -94,7 +94,7 @@ router.post(
  */
 router.post(
   '/chat-image',
-  authenticateToken,
+  authenticate,
   imageService.uploadSingleImage,
   async (req, res, next) => {
     try {
