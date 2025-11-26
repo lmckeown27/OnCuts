@@ -1,4 +1,4 @@
-import { AptosClient, AptosAccount, HexString, Types } from 'aptos';
+import { AptosClient, AptosAccount, FaucetClient, HexString, Types } from 'aptos';
 import dotenv from 'dotenv';
 import { logger } from '../utils/logger';
 
@@ -6,12 +6,17 @@ dotenv.config();
 
 class AptosService {
   private client: AptosClient;
+  private faucetClient: FaucetClient | null;
   private platformAccount: AptosAccount;
   private moduleAddress: string;
 
   constructor() {
     const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
     this.client = new AptosClient(nodeUrl);
+
+    // Initialize faucet client for devnet/testnet
+    const faucetUrl = process.env.APTOS_FAUCET_URL || 'https://faucet.devnet.aptoslabs.com';
+    this.faucetClient = process.env.APTOS_NETWORK !== 'mainnet' ? new FaucetClient(nodeUrl, faucetUrl) : null;
 
     // Initialize platform account from private key
     const privateKeyHex = process.env.APTOS_PLATFORM_PRIVATE_KEY;
@@ -340,8 +345,12 @@ class AptosService {
    * Fund account (devnet/testnet only)
    */
   async fundAccount(address: string, amount: number = 100000000): Promise<void> {
+    if (!this.faucetClient) {
+      throw new Error('Faucet client not available (mainnet or not configured)');
+    }
+    
     try {
-      await this.client.faucetFundAccount(address, amount);
+      await this.faucetClient.fundAccount(address, amount);
       logger.info(`💰 Funded account ${address} with ${amount / 100000000} APT`);
     } catch (error) {
       logger.error(`Failed to fund account ${address}:`, error);
