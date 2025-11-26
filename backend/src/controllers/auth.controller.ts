@@ -282,13 +282,13 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
  */
 const generateToken = (payload: JwtPayload): string => {
   const secret = process.env.JWT_SECRET;
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  const expiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
 
   if (!secret) {
     throw new Error('JWT_SECRET not configured');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 };
 
 /**
@@ -296,12 +296,12 @@ const generateToken = (payload: JwtPayload): string => {
  */
 const generateRefreshToken = (payload: JwtPayload): string => {
   const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+  const expiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
   if (!secret) {
     throw new Error('JWT_REFRESH_SECRET not configured');
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
 };
 
