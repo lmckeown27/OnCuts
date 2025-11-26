@@ -25,7 +25,9 @@ CampusCuts connects student barbers with clients on campus through a mobile-firs
 - **Database**: PostgreSQL
 - **Payments**: Stripe Connect
 - **Storage**: AWS S3 for media
-- **Notifications**: Firebase Cloud Messaging
+- **Caching**: Redis
+- **Notifications**: APN (iOS) + FCM (Android)
+- **Real-time**: Socket.IO
 
 ## 📁 Project Structure
 
@@ -122,8 +124,16 @@ MIT License - See LICENSE file for details
 
 ## 🤝 Contributing
 
-Contributions welcome! Please read CONTRIBUTING.md for guidelines.
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
 
 ## 📞 Contact
 
-For questions or support, reach out to [contact info]
+**Developer:** Liam McKeown  
+**Email:** liam.mckeown38415@gmail.com  
+**GitHub:** https://github.com/lmckeown27/CampusCuts
+
+For detailed documentation, see **OVERVIEW.md**
