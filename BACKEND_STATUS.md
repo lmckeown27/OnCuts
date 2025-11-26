@@ -147,10 +147,11 @@ Status: Fully Operational ✅
 **Mock Database (NEW):**
 - ✅ **In-memory database service created**
 - ✅ **Pre-seeded with test data:**
-  - 3 campuses (Berkeley, Stanford, MIT)
-  - 3 users (student, barber, admin)
-  - 1 barber profile with services
-  - Sample bookings and reviews
+  - 2 campuses (Cal Poly SLO, UC Santa Barbara)
+  - 5 users (2 students, 2 barbers, 1 admin)
+  - 2 barber profiles (Carlos @ Cal Poly, Marcus @ UCSB)
+  - 2 sample bookings with campus-specific locations
+  - 2 reviews with authentic student comments
 - ✅ **Full CRUD operations for all entities**
 - ✅ **Backend runs without PostgreSQL dependency**
 - ✅ **Perfect for development and testing**
