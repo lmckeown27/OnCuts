@@ -1,5 +1,5 @@
 import api from './api.service';
-import { Barber, PaginatedResponse, Review, PortfolioImage } from '../types';
+import type { Barber, PaginatedResponse, Review, PortfolioImage } from '../types';
 
 interface BarberFilters {
   campus_id?: string;

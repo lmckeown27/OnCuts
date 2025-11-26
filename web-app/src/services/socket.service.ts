@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { WS_URL, STORAGE_KEYS } from '../config/constants';
-import { Message, Booking } from '../types';
+import type { Message, Booking } from '../types';
 
 type SocketEventHandler = (...args: any[]) => void;
 

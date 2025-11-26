@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from '../types';
+import type { User } from '../types';
 import authService from '../services/auth.service';
 import socketService from '../services/socket.service';
 

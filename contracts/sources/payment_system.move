@@ -4,8 +4,6 @@ module campus_cuts::payment_system {
     use aptos_framework::timestamp;
     use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::account;
-    use aptos_framework::coin;
-    use aptos_framework::aptos_coin::AptosCoin;
 
     /// Error codes
     const E_NOT_AUTHORIZED: u64 = 1;
@@ -13,6 +11,7 @@ module campus_cuts::payment_system {
     const E_INSUFFICIENT_BALANCE: u64 = 3;
     const E_PAYMENT_ALREADY_RELEASED: u64 = 4;
     const E_INVALID_AMOUNT: u64 = 5;
+    const E_BARBER_NOT_FOUND: u64 = 6;
 
     /// Payment status
     const STATUS_ESCROWED: u8 = 0;

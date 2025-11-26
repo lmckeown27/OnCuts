@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, MapPin, Clock, DollarSign } from 'lucide-react';
-import { Barber } from '../../types';
+import type { Barber } from '../../types';
 import barberService from '../../services/barber.service';
 import Loading from '../../components/Loading';
 import Button from '../../components/Button';

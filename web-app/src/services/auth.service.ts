@@ -1,5 +1,5 @@
 import api from './api.service';
-import { User } from '../types';
+import type { User } from '../types';
 import { STORAGE_KEYS } from '../config/constants';
 
 interface LoginCredentials {

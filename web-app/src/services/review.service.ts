@@ -1,5 +1,5 @@
 import api from './api.service';
-import { Review, PaginatedResponse } from '../types';
+import type { Review, PaginatedResponse } from '../types';
 
 interface CreateReviewData {
   booking_id: string;

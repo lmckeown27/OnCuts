@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { Barber } from '../../types';
+import type { Barber } from '../../types';
 import barberService from '../../services/barber.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import Loading from '../../components/Loading';

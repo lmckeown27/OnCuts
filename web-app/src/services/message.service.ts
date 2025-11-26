@@ -1,5 +1,5 @@
 import api from './api.service';
-import { Conversation, Message, PaginatedResponse } from '../types';
+import type { Conversation, Message, PaginatedResponse } from '../types';
 
 interface CreateConversationData {
   other_user_id: string;

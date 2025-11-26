@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Conversation, Message } from '../types';
+import type { Conversation, Message } from '../types';
 import messageService from '../services/message.service';
 import socketService from '../services/socket.service';
 

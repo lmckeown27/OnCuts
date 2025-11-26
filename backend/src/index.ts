@@ -22,6 +22,7 @@ import campusRoutes from './routes/campus.routes';
 import messageRoutes from './routes/message.routes';
 import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
+import devRoutes from './routes/dev.routes';
 
 // Load environment variables
 dotenv.config();
@@ -153,6 +154,12 @@ app.use('/api/campus', campusRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
+
+// Development routes (mock database testing)
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/dev', devRoutes);
+  logger.info('🧪 Development routes enabled at /api/dev');
+}
 
 // 404 handler
 app.use((req: Request, res: Response) => {

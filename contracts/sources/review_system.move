@@ -1,6 +1,5 @@
 module campus_cuts::review_system {
     use std::signer;
-    use std::string::String;
     use std::vector;
     use aptos_framework::timestamp;
     use aptos_framework::event::{Self, EventHandle};

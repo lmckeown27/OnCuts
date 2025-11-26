@@ -1,5 +1,5 @@
 import api from './api.service';
-import { Booking, PaginatedResponse } from '../types';
+import type { Booking, PaginatedResponse } from '../types';
 
 interface CreateBookingData {
   barber_id: string;

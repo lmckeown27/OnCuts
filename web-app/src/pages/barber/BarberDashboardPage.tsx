@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar, DollarSign, Star, TrendingUp } from 'lucide-react';
-import { Booking } from '../../types';
+import type { Booking } from '../../types';
 import bookingService from '../../services/booking.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import Loading from '../../components/Loading';

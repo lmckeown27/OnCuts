@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = ["CampusCuts Team"]
 
 [addresses]
-campus_cuts = "_"
+campus_cuts = "0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa"
 
 [dev-addresses]
 

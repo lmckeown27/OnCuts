@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { MapPin, Search } from 'lucide-react';
-import { Campus } from '../../types';
+import type { Campus } from '../../types';
 import { useAuthStore } from '../../store/useAuthStore';
 import campusService from '../../services/campus.service';
 import { ROUTES } from '../../config/constants';

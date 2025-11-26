@@ -1,5 +1,5 @@
 import api from './api.service';
-import { Campus, PaginatedResponse, Barber } from '../types';
+import type { Campus, PaginatedResponse, Barber } from '../types';
 
 class CampusService {
   async getCampuses(search?: string): Promise<Campus[]> {
