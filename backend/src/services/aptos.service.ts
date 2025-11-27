@@ -357,6 +357,103 @@ class AptosService {
       throw error;
     }
   }
+
+  /**
+   * Submit batched withdrawals (gas efficient)
+   * Sends to multiple recipients in a single transaction
+   */
+  async submitBatchWithdrawal(
+    recipients: (string | undefined)[],
+    amounts: number[]
+  ): Promise<string> {
+    try {
+      // Filter out undefined recipients
+      const validRecipients = recipients.filter((r): r is string => r !== undefined);
+      
+      if (validRecipients.length === 0) {
+        throw new Error('No valid recipients for batch withdrawal');
+      }
+
+      if (validRecipients.length !== amounts.length) {
+        throw new Error('Recipients and amounts length mismatch');
+      }
+
+      // Note: This requires a Move contract function like:
+      // public entry fun batch_transfer(
+      //   sender: &signer,
+      //   recipients: vector<address>,
+      //   amounts: vector<u64>
+      // )
+      
+      // For now, use a generic transaction submission
+      // In production, replace with actual Move function call
+      const payload: Types.TransactionPayload = {
+        type: 'entry_function_payload',
+        function: `${this.moduleAddress}::payment_system::batch_transfer`,
+        type_arguments: [],
+        arguments: [validRecipients, amounts],
+      };
+
+      const rawTxn = await this.client.generateTransaction(
+        this.platformAccount.address(),
+        payload
+      );
+
+      const signedTxn = await this.client.signTransaction(this.platformAccount, rawTxn);
+      const txResponse = await this.client.submitTransaction(signedTxn);
+      await this.client.waitForTransaction(txResponse.hash);
+
+      logger.info('Batch withdrawal submitted', {
+        recipient_count: validRecipients.length,
+        total_amount_dollars: amounts.reduce((sum, a) => sum + a, 0) / 100,
+        tx_hash: txResponse.hash,
+      });
+
+      return txResponse.hash;
+    } catch (error) {
+      logger.error('Batch withdrawal submission failed', {
+        recipient_count: recipients.length,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Submit generic transaction (for hash anchoring)
+   */
+  async submitTransaction(
+    functionName: string,
+    args: any[],
+    description?: string
+  ): Promise<string> {
+    try {
+      const payload: Types.TransactionPayload = {
+        type: 'entry_function_payload',
+        function: `${this.moduleAddress}::${functionName}`,
+        type_arguments: [],
+        arguments: args,
+      };
+
+      const rawTxn = await this.client.generateTransaction(
+        this.platformAccount.address(),
+        payload
+      );
+
+      const signedTxn = await this.client.signTransaction(this.platformAccount, rawTxn);
+      const txResponse = await this.client.submitTransaction(signedTxn);
+      await this.client.waitForTransaction(txResponse.hash);
+
+      logger.info(`Transaction submitted: ${description || functionName}`, {
+        tx_hash: txResponse.hash,
+      });
+
+      return txResponse.hash;
+    } catch (error) {
+      logger.error(`Transaction submission failed: ${functionName}`, error);
+      throw error;
+    }
+  }
 }
 
 export default new AptosService();
