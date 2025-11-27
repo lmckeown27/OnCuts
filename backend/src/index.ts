@@ -25,6 +25,11 @@ import uploadRoutes from './routes/upload.routes';
 import walletRoutes from './routes/wallet.routes';
 import devRoutes from './routes/dev.routes';
 
+// V2 Routes (Production custodial wallet system)
+import bookingV2Routes from './routes/booking-v2.routes';
+import walletV2Routes from './routes/wallet-v2.routes';
+import adminRoutes from './routes/admin.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -145,17 +150,27 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// API Routes
+// API Routes (V1 - kept for backward compatibility)
 app.use('/api/auth', authRoutes);
 app.use('/api/barbers', barberRoutes);
-app.use('/api/bookings', bookingRoutes);
+app.use('/api/bookings', bookingRoutes);  // V1
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/campus', campusRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/wallet', walletRoutes);
+app.use('/api/wallet', walletRoutes);  // V1
+
+// V2 Routes (Production custodial wallet system)
+app.use('/api/v2/bookings', bookingV2Routes);
+app.use('/api/v2/wallet', walletV2Routes);
+app.use('/api/admin', adminRoutes);
+
+logger.info('✅ V2 routes enabled:');
+logger.info('   - /api/v2/bookings (escrow-based)');
+logger.info('   - /api/v2/wallet (production wallet)');
+logger.info('   - /api/admin (platform management)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
