@@ -22,6 +22,7 @@ import campusRoutes from './routes/campus.routes';
 import messageRoutes from './routes/message.routes';
 import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
+import walletRoutes from './routes/wallet.routes';
 import devRoutes from './routes/dev.routes';
 
 // Load environment variables
@@ -154,6 +155,7 @@ app.use('/api/campus', campusRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/wallet', walletRoutes);
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {

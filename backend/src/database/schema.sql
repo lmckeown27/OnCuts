@@ -16,8 +16,13 @@ CREATE TABLE users (
     campus_id INTEGER NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'barber')),
     aptos_address VARCHAR(66) UNIQUE,
+    stripe_account_id VARCHAR(255) UNIQUE, -- Stripe Connect account ID for barbers
     email_verified BOOLEAN DEFAULT FALSE,
     student_id_verified BOOLEAN DEFAULT FALSE,
+    -- Custodial Wallet Balances (in USD cents to avoid floating point issues)
+    balance_available INTEGER DEFAULT 0 CHECK (balance_available >= 0), -- Funds available for use/withdrawal
+    balance_pending INTEGER DEFAULT 0 CHECK (balance_pending >= 0), -- Funds held pending service completion
+    balance_locked INTEGER DEFAULT 0 CHECK (balance_locked >= 0), -- Funds locked for disputes/holds
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,
@@ -159,6 +164,58 @@ CREATE TABLE payment_transactions (
 CREATE INDEX idx_payment_blockchain_id ON payment_transactions(blockchain_payment_id);
 CREATE INDEX idx_payment_stripe_intent ON payment_transactions(stripe_payment_intent_id);
 CREATE INDEX idx_payment_barber_id ON payment_transactions(barber_id);
+
+-- Ledger Entries (Custodial Wallet Internal Ledger)
+-- This is the core of the custodial wallet system - tracks ALL balance changes
+CREATE TABLE ledger_entries (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL, -- In USD cents (can be positive or negative)
+    type VARCHAR(50) NOT NULL CHECK (type IN (
+        'DEPOSIT',              -- User adds funds via Stripe/card
+        'WITHDRAWAL',           -- User withdraws to bank
+        'BOOKING_PAYMENT',      -- Customer pays for booking
+        'BOOKING_REFUND',       -- Booking cancelled, refund issued
+        'SERVICE_COMPLETION',   -- Funds released from pending to available
+        'TIP',                  -- Tip given/received
+        'PLATFORM_FEE',         -- Platform commission deducted
+        'PROMOTIONAL_CREDIT',   -- Platform issues credit/promo
+        'DISPUTE_HOLD',         -- Funds locked due to dispute
+        'DISPUTE_RELEASE',      -- Dispute resolved, funds released
+        'ADJUSTMENT'            -- Manual adjustment by platform
+    )),
+    balance_type VARCHAR(20) NOT NULL CHECK (balance_type IN ('available', 'pending', 'locked')),
+    balance_after INTEGER NOT NULL, -- Snapshot of balance after this transaction
+    reference_type VARCHAR(50), -- 'booking', 'payout', 'stripe_charge', etc.
+    reference_id VARCHAR(255), -- ID of related entity (booking_id, payout_id, etc.)
+    metadata JSONB, -- Additional data (stripe details, booking info, etc.)
+    description TEXT, -- Human-readable description
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID REFERENCES users(id) -- For admin-initiated transactions
+);
+
+CREATE INDEX idx_ledger_user_id ON ledger_entries(user_id);
+CREATE INDEX idx_ledger_type ON ledger_entries(type);
+CREATE INDEX idx_ledger_created_at ON ledger_entries(created_at DESC);
+CREATE INDEX idx_ledger_reference ON ledger_entries(reference_type, reference_id);
+
+-- Withdrawal Requests (for barber payouts)
+CREATE TABLE withdrawal_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount INTEGER NOT NULL CHECK (amount > 0), -- In USD cents
+    status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+    stripe_payout_id VARCHAR(255) UNIQUE, -- Stripe Connect payout ID
+    stripe_destination_id VARCHAR(255), -- Connected account ID
+    failure_reason TEXT,
+    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processed_at TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX idx_withdrawal_user_id ON withdrawal_requests(user_id);
+CREATE INDEX idx_withdrawal_status ON withdrawal_requests(status);
+CREATE INDEX idx_withdrawal_requested_at ON withdrawal_requests(requested_at DESC);
 
 -- Review metadata (full text stored off-chain)
 CREATE TABLE review_metadata (

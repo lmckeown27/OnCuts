@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Star, DollarSign, Award, Filter } from 'lucide-react';
+import { ArrowLeft, Search, Star, DollarSign, Award, Filter, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
