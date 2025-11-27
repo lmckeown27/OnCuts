@@ -18,7 +18,7 @@ import {
 } from '../types/wallet.types';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2023-10-16',
 });
 
 class PaymentService {
@@ -35,12 +35,16 @@ class PaymentService {
     const { userId, amountCents, paymentMethodId, description } = params;
 
     try {
-      // 1. Create Stripe charge
-      const charge = await stripe.charges.create({
+      // 1. Create and confirm Stripe payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
         payment_method: paymentMethodId,
         confirm: true,
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never',
+        },
         description: description || 'CampusCuts wallet deposit',
         metadata: {
           user_id: userId,
@@ -48,7 +52,7 @@ class PaymentService {
         },
       });
 
-      if (charge.status !== 'succeeded') {
+      if (paymentIntent.status !== 'succeeded') {
         throw new ApiError(400, 'Payment failed');
       }
 
@@ -58,26 +62,26 @@ class PaymentService {
         amount: amountCents,
         type: TransactionType.DEPOSIT,
         balance_type: BalanceType.AVAILABLE,
-        reference_type: 'stripe_charge',
-        reference_id: charge.id,
-        description: `Deposit via ${charge.payment_method_details?.type || 'card'}`,
+        reference_type: 'stripe_payment_intent',
+        reference_id: paymentIntent.id,
+        description: `Deposit via payment method ${paymentMethodId.substring(0, 10)}...`,
         metadata: {
-          stripe_charge_id: charge.id,
-          payment_method: charge.payment_method_details?.type,
+          stripe_payment_intent_id: paymentIntent.id,
+          payment_method_id: paymentMethodId,
         },
       });
 
       logger.info('Deposit processed successfully', {
         user_id: userId,
         amount: centsToDollars(amountCents),
-        charge_id: charge.id,
+        payment_intent_id: paymentIntent.id,
         ledger_entry_id: ledgerEntry.id,
       });
 
       return {
         success: true,
         ledgerEntryId: ledgerEntry.id,
-        stripeChargeId: charge.id,
+        stripeChargeId: paymentIntent.id,
       };
     } catch (error: any) {
       logger.error('Deposit processing failed', {
