@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, Search, Star, DollarSign, Award, Filter } from 'lucide-react';
+import { ArrowLeft, Search, Star, DollarSign, Award, Filter } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
+import { CampusCutsLogo } from '@assets';
 
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
@@ -143,8 +144,8 @@ export default function ConsumerPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-primary-600" />
+          <div className="flex items-center gap-4">
+            <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-900">Find a Barber</h1>
           </div>
           <Button onClick={() => navigate('/')} variant="secondary" size="sm">

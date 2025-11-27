@@ -8,6 +8,7 @@ import type { Barber, Campus, Booking } from '../types';
 import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { CampusCutsLogo } from '@assets';
 
 interface ModerationItem {
   id: string;
@@ -118,11 +119,9 @@ export default function AdminPage() {
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-white bg-opacity-20 p-3 rounded-lg">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <div>
+            <div className="flex items-center gap-4">
+              <img src={CampusCutsLogo} alt="CampusCuts" className="h-12 w-auto" />
+              <div className="border-l-2 border-white border-opacity-30 pl-4">
                 <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
                 <p className="text-primary-100">Platform Management & Moderation</p>
               </div>

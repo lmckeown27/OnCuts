@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Scissors, UserCircle, Shield, Users } from 'lucide-react';
-import Button from '../components/Button';
+import { UserCircle, Shield, Users } from 'lucide-react';
+import { CampusCutsLogo } from '@assets';
 
 export default function RoleSelectionPage() {
   const navigate = useNavigate();
@@ -9,10 +9,9 @@ export default function RoleSelectionPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-12">
-          <div className="flex justify-center mb-4">
-            <Scissors className="w-16 h-16 text-primary-600" />
+          <div className="flex justify-center mb-6">
+            <img src={CampusCutsLogo} alt="CampusCuts" className="h-24 w-auto" />
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-3">CampusCuts</h1>
           <p className="text-xl text-gray-600">Select Your Role</p>
         </div>
 

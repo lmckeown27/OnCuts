@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Scissors, User, MessageCircle, Calendar, LogOut, Home } from 'lucide-react';
+import { User, MessageCircle, Calendar, LogOut, Home } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import { ROUTES } from '../config/constants';
+import { CampusCutsLogo } from '@assets';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
@@ -23,9 +24,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to={isBarber ? ROUTES.BARBER_DASHBOARD : ROUTES.STUDENT_DISCOVERY} className="flex items-center gap-2">
-            <Scissors className="w-8 h-8 text-primary-600" />
-            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
+          <Link to={isBarber ? ROUTES.BARBER_DASHBOARD : ROUTES.STUDENT_DISCOVERY} className="flex items-center gap-3">
+            <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
           </Link>
 
           {/* Navigation Links */}

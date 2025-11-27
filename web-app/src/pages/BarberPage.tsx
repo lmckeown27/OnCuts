@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, ArrowLeft, Calendar, DollarSign, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, TrendingUp } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { CampusCutsLogo } from '@assets';
 
 export default function BarberPage() {
   const navigate = useNavigate();
@@ -10,8 +11,8 @@ export default function BarberPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <UserCircle className="w-8 h-8 text-primary-600" />
+          <div className="flex items-center gap-4">
+            <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
           </div>
           <Button onClick={() => navigate('/')} variant="secondary" size="sm">

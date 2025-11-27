@@ -6,7 +6,12 @@
  */
 
 // ============ LOGOS ============
-export { default as CampusCutsLogo } from './logos/campus-cuts-logo.svg';
+export { default as Logo1 } from './logos/Logo1.png';
+export { default as Logo2 } from './logos/Logo2.png';
+export { default as Logo3 } from './logos/Logo3.png';
+
+// Primary logo (default to Logo1)
+export { default as CampusCutsLogo } from './logos/Logo1.png';
 
 // ============ ICONS ============
 export { default as ScissorsIcon } from './icons/scissors.svg';
