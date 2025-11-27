@@ -5,52 +5,62 @@ import { AuthRequest } from '../middleware/auth';
 import aptosService from '../services/aptos.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
+import mockDatabase from '../services/mock.database.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId, minRating, maxPrice, specialty, instantBook } = req.query;
 
-    let query = `
-      SELECT b.*, u.first_name, u.last_name, u.aptos_address,
-        COALESCE(json_agg(
-          json_build_object('url', pi.image_url, 'caption', pi.caption)
-          ORDER BY pi.order_index
-        ) FILTER (WHERE pi.id IS NOT NULL), '[]') as portfolio
-      FROM barbers b
-      JOIN users u ON b.user_id = u.id
-      LEFT JOIN portfolio_images pi ON b.id = pi.barber_id
-      WHERE u.is_active = TRUE
-    `;
-
-    const params: any[] = [];
-    let paramCount = 1;
+    // Use mock database (PostgreSQL not required for MVP)
+    const filter: any = {
+      is_active: true,
+    };
 
     if (campusId) {
-      query += ` AND u.campus_id = $${paramCount}`;
-      params.push(campusId);
-      paramCount++;
+      filter.campus_id = campusId;
     }
 
+    const barbers = await mockDatabase.findBarbersByFilter(filter);
+    
+    // Apply additional filters in-memory
+    let filteredBarbers = barbers;
+
     if (minRating) {
-      query += ` AND b.average_rating >= $${paramCount}`;
-      params.push(minRating);
-      paramCount++;
+      filteredBarbers = filteredBarbers.filter(b => b.average_rating >= Number(minRating));
+    }
+
+    if (maxPrice) {
+      filteredBarbers = filteredBarbers.filter(b => {
+        const minPrice = Math.min(...(b.pricing || []).map(p => p.price));
+        return minPrice <= Number(maxPrice);
+      });
     }
 
     if (instantBook === 'true') {
-      query += ` AND b.instant_book = TRUE`;
+      filteredBarbers = filteredBarbers.filter(b => b.instant_book_enabled === true);
     }
 
-    query += ` GROUP BY b.id, u.first_name, u.last_name, u.aptos_address ORDER BY b.average_rating DESC`;
+    if (specialty) {
+      filteredBarbers = filteredBarbers.filter(b => 
+        b.specialties.some(s => s.toLowerCase().includes(String(specialty).toLowerCase()))
+      );
+    }
 
-    const result = await pool.query(query, params);
+    // Sort by rating
+    filteredBarbers.sort((a, b) => b.average_rating - a.average_rating);
 
     res.json({
       success: true,
-      data: result.rows,
-      count: result.rows.length,
+      data: filteredBarbers,
+      pagination: {
+        page: 1,
+        limit: filteredBarbers.length,
+        total: filteredBarbers.length,
+        total_pages: 1,
+      },
     });
   } catch (error) {
+    logger.error('Error in getAllBarbers:', error);
     next(error);
   }
 };
@@ -59,35 +69,35 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
   try {
     const { id } = req.params;
 
-    const result = await pool.query(
-      `SELECT b.*, u.first_name, u.last_name, u.email, u.phone, u.aptos_address, u.campus_id,
-        COALESCE(json_agg(
-          json_build_object('id', pi.id, 'url', pi.image_url, 'caption', pi.caption)
-          ORDER BY pi.order_index
-        ) FILTER (WHERE pi.id IS NOT NULL), '[]') as portfolio
-      FROM barbers b
-      JOIN users u ON b.user_id = u.id
-      LEFT JOIN portfolio_images pi ON b.id = pi.barber_id
-      WHERE b.id = $1
-      GROUP BY b.id, u.first_name, u.last_name, u.email, u.phone, u.aptos_address, u.campus_id`,
-      [id]
-    );
+    // Use mock database
+    const barber = await mockDatabase.findBarberById(id);
 
-    if (result.rows.length === 0) {
+    if (!barber) {
       throw new ApiError(404, 'Barber not found');
     }
 
-    // Get on-chain rating
-    const aptosRating = await aptosService.getBarberRating(result.rows[0].aptos_address);
+    // Get reviews for this barber
+    const reviews = await mockDatabase.findReviewsByBarber(id);
+
+    // Optionally get on-chain rating (if Aptos address exists)
+    let aptosRating = null;
+    if (barber.aptos_address) {
+      try {
+        aptosRating = await aptosService.getBarberRating(barber.aptos_address);
+      } catch (error) {
+        logger.warn('Failed to fetch Aptos rating:', error);
+      }
+    }
 
     res.json({
       success: true,
       data: {
-        ...result.rows[0],
+        ...barber,
         blockchain_rating: aptosRating,
       },
     });
   } catch (error) {
+    logger.error('Error in getBarberById:', error);
     next(error);
   }
 };
