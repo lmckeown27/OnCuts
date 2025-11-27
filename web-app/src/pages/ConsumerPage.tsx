@@ -1,20 +1,147 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, Search, Star } from 'lucide-react';
+import { Users, ArrowLeft, Search, Star, DollarSign, Award, Filter, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import Loading from '../components/Loading';
+import barberService from '../services/barber.service';
+import type { Barber } from '../types';
+import toast from 'react-hot-toast';
+
+// Algorithmic ranking function (capitalistic-but-fair)
+function rankBarbers(barbers: Barber[]): Barber[] {
+  return barbers
+    .map((barber) => {
+      // Base score: rating weighted heavily
+      let score = barber.average_rating * 100;
+      
+      // Bonus for experience and bookings
+      score += Math.log(barber.total_bookings + 1) * 10;
+      score += barber.years_of_experience * 5;
+      
+      // Newcomer adjustment: if low bookings but high rating, boost slightly
+      if (barber.total_bookings < 20 && barber.average_rating >= 4.5) {
+        score += 20; // Give new high-rated barbers a chance
+      }
+      
+      // Instant book bonus (convenience factor)
+      if (barber.instant_book_enabled) {
+        score += 15;
+      }
+      
+      return { barber, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ barber }) => barber);
+}
 
 export default function ConsumerPage() {
   const navigate = useNavigate();
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    minRating: 0,
+    maxPrice: 1000,
+    instantBookOnly: false,
+    specialties: [] as string[],
+  });
 
-  const mockBarbers = [
-    { id: 1, name: 'John Smith', rating: 4.8, bookings: 234, specialty: 'Fades & Tapers' },
-    { id: 2, name: 'Mike Johnson', rating: 4.9, bookings: 189, specialty: 'Classic Cuts' },
-    { id: 3, name: 'David Lee', rating: 4.7, bookings: 156, specialty: 'Beard Styling' },
-  ];
+  useEffect(() => {
+    loadBarbers();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [barbers, searchQuery, filters]);
+
+  const loadBarbers = async () => {
+    try {
+      setLoading(true);
+      const response = await barberService.getBarbers();
+      const rankedBarbers = rankBarbers(response.data);
+      setBarbers(rankedBarbers);
+    } catch (error) {
+      console.error('Failed to load barbers:', error);
+      toast.error('Failed to load barbers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyFilters = () => {
+    let result = [...barbers];
+
+    // Search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((b) => 
+        b.user?.first_name?.toLowerCase().includes(query) ||
+        b.user?.last_name?.toLowerCase().includes(query) ||
+        b.bio?.toLowerCase().includes(query) ||
+        b.specialties.some(s => s.toLowerCase().includes(query))
+      );
+    }
+
+    // Rating filter
+    if (filters.minRating > 0) {
+      result = result.filter((b) => b.average_rating >= filters.minRating);
+    }
+
+    // Price filter
+    if (filters.maxPrice < 1000) {
+      result = result.filter((b) => {
+        const minPrice = Math.min(...b.pricing.map(p => p.price));
+        return minPrice <= filters.maxPrice;
+      });
+    }
+
+    // Instant book filter
+    if (filters.instantBookOnly) {
+      result = result.filter((b) => b.instant_book_enabled);
+    }
+
+    // Specialties filter
+    if (filters.specialties.length > 0) {
+      result = result.filter((b) =>
+        filters.specialties.some(spec => b.specialties.includes(spec))
+      );
+    }
+
+    setFilteredBarbers(result);
+  };
+
+  const getLowestPrice = (barber: Barber) => {
+    if (!barber.pricing || barber.pricing.length === 0) return null;
+    return Math.min(...barber.pricing.map(p => p.price));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      minRating: 0,
+      maxPrice: 1000,
+      instantBookOnly: false,
+      specialties: [],
+    });
+    setSearchQuery('');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-primary-600" />
@@ -27,37 +154,195 @@ export default function ConsumerPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <div className="relative">
+      {/* Search & Filters */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-3 mb-4">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search barbers, styles, specialties..."
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
             />
           </div>
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant={showFilters ? 'primary' : 'secondary'}
+          >
+            <Filter className="w-5 h-5 mr-2" />
+            Filters
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockBarbers.map((barber) => (
-            <Card key={barber.id} hoverable>
-              <div className="flex flex-col gap-3">
-                <div className="w-full h-48 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center text-white text-4xl font-bold">
-                  {barber.name.split(' ').map(n => n[0]).join('')}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">{barber.name}</h3>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                  <span className="font-semibold text-gray-900">{barber.rating}</span>
-                  <span className="text-sm text-gray-600">({barber.bookings} bookings)</span>
-                </div>
-                <p className="text-sm text-gray-600">{barber.specialty}</p>
-                <Button className="w-full mt-2">Book Appointment</Button>
+        {/* Filter Panel */}
+        {showFilters && (
+          <Card className="mb-6 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+              <button onClick={clearFilters} className="text-sm text-primary-600 hover:text-primary-700">
+                Clear All
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Rating Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum Rating
+                </label>
+                <select
+                  value={filters.minRating}
+                  onChange={(e) => setFilters({ ...filters, minRating: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                >
+                  <option value="0">Any Rating</option>
+                  <option value="3">3+ Stars</option>
+                  <option value="4">4+ Stars</option>
+                  <option value="4.5">4.5+ Stars</option>
+                </select>
               </div>
-            </Card>
-          ))}
+
+              {/* Price Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Max Price: ${filters.maxPrice}
+                </label>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Instant Book Filter */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="instant-book"
+                  checked={filters.instantBookOnly}
+                  onChange={(e) => setFilters({ ...filters, instantBookOnly: e.target.checked })}
+                  className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="instant-book" className="ml-2 text-sm font-medium text-gray-700">
+                  Instant Book Only
+                </label>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Results Count */}
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">
+            Showing {filteredBarbers.length} {filteredBarbers.length === 1 ? 'barber' : 'barbers'}
+          </p>
         </div>
+
+        {/* Barber Grid (Pinterest-style) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredBarbers.map((barber) => {
+            const lowestPrice = getLowestPrice(barber);
+            const fullName = `${barber.user?.first_name || ''} ${barber.user?.last_name || ''}`.trim();
+            const initials = fullName.split(' ').map(n => n[0]).join('');
+
+            return (
+              <Card
+                key={barber.id}
+                hoverable
+                className="overflow-hidden cursor-pointer transition-transform hover:scale-105"
+                onClick={() => navigate(`/student/barbers/${barber.id}`)}
+              >
+                {/* Portfolio Image or Placeholder */}
+                <div className="relative w-full h-56 bg-gradient-to-br from-primary-400 to-primary-600">
+                  {barber.portfolio_images && barber.portfolio_images.length > 0 ? (
+                    <img
+                      src={barber.portfolio_images[0].image_url}
+                      alt={fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white text-5xl font-bold">
+                      {initials}
+                    </div>
+                  )}
+                  
+                  {/* Instant Book Badge */}
+                  {barber.instant_book_enabled && (
+                    <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                      Instant Book
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  {/* Name & Rating */}
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{fullName}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                    <span className="font-semibold text-gray-900">{barber.average_rating.toFixed(1)}</span>
+                    <span className="text-sm text-gray-600">({barber.total_bookings} bookings)</span>
+                  </div>
+
+                  {/* Specialties */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {barber.specialties.slice(0, 2).map((specialty, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                    {barber.specialties.length > 2 && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        +{barber.specialties.length - 2}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Price & Experience */}
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    {lowestPrice && (
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        <span>From ${lowestPrice}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <Award className="w-4 h-4" />
+                      <span>{barber.years_of_experience} yrs</span>
+                    </div>
+                  </div>
+
+                  {/* Book Button */}
+                  <Button className="w-full mt-4" onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/student/barbers/${barber.id}`);
+                  }}>
+                    View Profile
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Empty State */}
+        {filteredBarbers.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No barbers found</h3>
+            <p className="text-gray-600 mb-4">Try adjusting your filters or search query</p>
+            <Button onClick={clearFilters} variant="secondary">
+              Clear Filters
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
