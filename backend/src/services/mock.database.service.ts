@@ -15,6 +15,8 @@ class MockDatabaseService {
   private availabilityTemplates: Map<string, any> = new Map();
   private messages: Map<string, any> = new Map();
   private paymentTransactions: Map<string, any> = new Map();
+  private ledgerEntries: Map<string, any> = new Map();
+  private withdrawalRequests: Map<string, any> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -229,7 +231,19 @@ class MockDatabaseService {
       },
     ];
 
-    users.forEach(user => this.users.set(user.id, user));
+    users.forEach(user => {
+      // Add wallet balances to all users (in cents)
+      const isBarber = user.user_type === 'barber';
+      const isStudent = user.user_type === 'student';
+      
+      this.users.set(user.id, {
+        ...user,
+        // Students have some available balance, barbers have earnings in available + some pending
+        balance_available: isBarber ? 12500 : (isStudent ? 10000 : 0), // $125 for barbers, $100 for students
+        balance_pending: isBarber ? 5000 : 0, // $50 pending for barbers
+        balance_locked: 0, // No locked funds in mock data
+      });
+    });
 
     // Seed barbers with comprehensive data
     const barbers = [
@@ -653,6 +667,142 @@ class MockDatabaseService {
 
     reviews.forEach(review => this.reviews.set(review.id, review));
 
+    // Seed ledger entries (transaction history)
+    const ledgerEntries = [
+      // Student deposits
+      {
+        id: 'ledger_1',
+        user_id: '1', // Alex
+        amount: 10000, // $100
+        type: 'DEPOSIT',
+        balance_type: 'available',
+        balance_after: 10000,
+        reference_type: 'stripe_charge',
+        reference_id: 'ch_mock_1',
+        description: 'Initial wallet deposit',
+        metadata: { stripe_charge_id: 'ch_mock_1' },
+        created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'ledger_2',
+        user_id: '2', // Emma
+        amount: 10000,
+        type: 'DEPOSIT',
+        balance_type: 'available',
+        balance_after: 10000,
+        reference_type: 'stripe_charge',
+        reference_id: 'ch_mock_2',
+        description: 'Wallet deposit',
+        created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      // Barber earnings from bookings
+      {
+        id: 'ledger_3',
+        user_id: '7', // Carlos (barber)
+        amount: 2850, // $28.50 (after 5% fee from $30 booking)
+        type: 'BOOKING_PAYMENT',
+        balance_type: 'pending',
+        balance_after: 2850,
+        reference_type: 'booking',
+        reference_id: 'booking_1',
+        description: 'Booking payment booking_1 (pending completion)',
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'ledger_4',
+        user_id: '7', // Carlos
+        amount: 7600, // $76 from previous bookings
+        type: 'SERVICE_COMPLETION',
+        balance_type: 'available',
+        balance_after: 7600,
+        reference_type: 'booking',
+        reference_id: 'booking_old_1',
+        description: 'Funds released for completed service',
+        created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      // Tip transaction
+      {
+        id: 'ledger_5',
+        user_id: '8', // David (barber)
+        amount: 500, // $5 tip
+        type: 'TIP',
+        balance_type: 'available',
+        balance_after: 500,
+        reference_type: 'booking',
+        reference_id: 'booking_2',
+        description: 'Tip for booking booking_2',
+        created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      // Platform fees
+      {
+        id: 'ledger_6',
+        user_id: '7', // Carlos
+        amount: -150, // $1.50 platform fee (5% of $30)
+        type: 'PLATFORM_FEE',
+        balance_type: 'available',
+        balance_after: 7450,
+        reference_type: 'booking',
+        reference_id: 'booking_1',
+        description: 'Platform fee for booking booking_1',
+        metadata: { platform_fee: 150 },
+        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      // Withdrawal
+      {
+        id: 'ledger_7',
+        user_id: '8', // David
+        amount: -5000, // $50 withdrawal
+        type: 'WITHDRAWAL',
+        balance_type: 'available',
+        balance_after: 7500,
+        reference_type: 'withdrawal',
+        reference_id: 'withdrawal_1',
+        description: 'Withdrawal request withdrawal_1',
+        metadata: { stripe_destination_id: 'acct_mock_david' },
+        created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      // Promotional credit
+      {
+        id: 'ledger_8',
+        user_id: '4', // Sarah
+        amount: 10000, // $100 promo credit
+        type: 'PROMOTIONAL_CREDIT',
+        balance_type: 'available',
+        balance_after: 10000,
+        description: 'Welcome bonus - New user promotion',
+        metadata: { promo_type: 'welcome_bonus' },
+        created_by: '14', // Admin
+        created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+
+    ledgerEntries.forEach(entry => this.ledgerEntries.set(entry.id, entry));
+
+    // Seed withdrawal requests
+    const withdrawalRequests = [
+      {
+        id: 'withdrawal_1',
+        user_id: '8', // David
+        amount: 5000, // $50
+        status: 'completed',
+        stripe_payout_id: 'po_mock_1',
+        stripe_destination_id: 'acct_mock_david',
+        requested_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        processed_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        completed_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: 'withdrawal_2',
+        user_id: '9', // James
+        amount: 7500, // $75
+        status: 'pending',
+        stripe_destination_id: 'acct_mock_james',
+        requested_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ];
+
+    withdrawalRequests.forEach(withdrawal => this.withdrawalRequests.set(withdrawal.id, withdrawal));
+
     console.log('✅ Mock database seeded with initial data');
   }
 
@@ -866,6 +1016,46 @@ class MockDatabaseService {
     this.seedInitialData();
   }
 
+  // Ledger Entries methods
+  findLedgerEntriesByUser(userId: string) {
+    return Array.from(this.ledgerEntries.values())
+      .filter(entry => entry.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  createLedgerEntry(entry: any) {
+    const id = `ledger_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newEntry = { id, ...entry, created_at: new Date().toISOString() };
+    this.ledgerEntries.set(id, newEntry);
+    return newEntry;
+  }
+
+  // Withdrawal Requests methods
+  findWithdrawalRequestsByUser(userId: string) {
+    return Array.from(this.withdrawalRequests.values())
+      .filter(request => request.user_id === userId)
+      .sort((a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime());
+  }
+
+  findWithdrawalRequestById(id: string) {
+    return this.withdrawalRequests.get(id);
+  }
+
+  createWithdrawalRequest(request: any) {
+    const id = `withdrawal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newRequest = { id, ...request, requested_at: new Date().toISOString() };
+    this.withdrawalRequests.set(id, newRequest);
+    return newRequest;
+  }
+
+  updateWithdrawalRequest(id: string, updates: any) {
+    const request = this.withdrawalRequests.get(id);
+    if (!request) return null;
+    const updated = { ...request, ...updates };
+    this.withdrawalRequests.set(id, updated);
+    return updated;
+  }
+
   getStats() {
     return {
       users: this.users.size,
@@ -874,6 +1064,8 @@ class MockDatabaseService {
       bookings: this.bookings.size,
       reviews: this.reviews.size,
       payments: this.paymentTransactions.size,
+      ledger_entries: this.ledgerEntries.size,
+      withdrawal_requests: this.withdrawalRequests.size,
     };
   }
 }

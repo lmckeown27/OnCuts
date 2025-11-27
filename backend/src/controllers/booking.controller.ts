@@ -4,19 +4,22 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import aptosService from '../services/aptos.service';
 import stripeService from '../services/stripe.service';
+import paymentService from '../services/payment.service';
+import ledgerService from '../services/ledger.service';
 import { logger } from '../utils/logger';
+import { dollarsToCents } from '../types/wallet.types';
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { barberId, serviceType, scheduledTime, durationMinutes, locationDetails, specialRequests } = req.body;
+    const { barberId, serviceType, scheduledTime, durationMinutes, locationDetails, specialRequests, tipAmount } = req.body;
     const clientId = req.user!.userId;
 
     // Get barber and client info
     const barberResult = await pool.query(
-      `SELECT b.id, b.pricing, u.aptos_address as barber_address, u.campus_id
+      `SELECT b.id, b.user_id, b.pricing, u.aptos_address as barber_address, u.campus_id
        FROM barbers b
        JOIN users u ON b.user_id = u.id
-       WHERE b.id = $1`,
+       WHERE b.id = $1 AND b.is_active = true`,
       [barberId]
     );
 
@@ -26,10 +29,21 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 
     const barber = barberResult.rows[0];
     const pricing = barber.pricing as any;
-    const price = pricing[serviceType];
+    const priceDollars = pricing[serviceType];
 
-    if (!price) {
+    if (!priceDollars) {
       throw new ApiError(400, 'Service type not found in barber pricing');
+    }
+
+    // Convert to cents
+    const priceCents = dollarsToCents(priceDollars);
+    const tipCents = tipAmount ? dollarsToCents(tipAmount) : 0;
+    const totalCents = priceCents + tipCents;
+
+    // Check customer has sufficient balance
+    const customerBalance = await ledgerService.getUserBalance(clientId);
+    if (customerBalance.balance_available < totalCents) {
+      throw new ApiError(400, 'Insufficient balance. Please add funds to your wallet.');
     }
 
     const clientResult = await pool.query('SELECT aptos_address FROM users WHERE id = $1', [clientId]);
@@ -44,7 +58,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       clientAddress,
       barberAddress: barber.barber_address,
       serviceType,
-      price: price * 100, // Convert to cents
+      price: priceCents,
       scheduledTime: scheduledTimestamp,
       campusId: barber.campus_id,
       durationMinutes,
@@ -63,15 +77,38 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       [blockchainBookingId, barberId, clientId, locationDetails, specialRequests]
     );
 
-    logger.info(`Booking created: ${blockchainBookingId} (tx: ${txHash})`);
+    const bookingId = metadataResult.rows[0].id;
+
+    // Process payment through custodial wallet
+    await paymentService.processBookingPayment({
+      bookingId,
+      customerId: clientId,
+      barberId: barber.user_id,
+      totalAmountCents: priceCents,
+      tipAmountCents: tipCents,
+    });
+
+    logger.info(`Booking created with custodial wallet payment`, {
+      booking_id: bookingId,
+      customer_id: clientId,
+      barber_id: barber.user_id,
+      amount_cents: priceCents,
+      tip_cents: tipCents,
+      tx_hash: txHash,
+    });
 
     res.status(201).json({
       success: true,
       data: {
         booking: metadataResult.rows[0],
         transactionHash: txHash,
+        payment: {
+          amount_dollars: priceDollars,
+          tip_dollars: tipAmount || 0,
+          total_dollars: (priceDollars + (tipAmount || 0)),
+        },
       },
-      message: 'Booking created successfully',
+      message: 'Booking created successfully. Payment processed from your wallet.',
     });
   } catch (error) {
     next(error);
@@ -212,9 +249,9 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    // Verify barber owns this booking
+    // Verify barber owns this booking and get booking details
     const booking = await pool.query(
-      `SELECT bm.blockchain_booking_id, b.user_id
+      `SELECT bm.id, bm.blockchain_booking_id, b.id as barber_id, b.user_id, b.pricing
        FROM booking_metadata bm
        JOIN barbers b ON bm.barber_id = b.id
        WHERE bm.blockchain_booking_id = $1`,
@@ -225,21 +262,40 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
       throw new ApiError(404, 'Booking not found');
     }
 
-    if (booking.rows[0].user_id !== userId) {
+    const bookingData = booking.rows[0];
+
+    if (bookingData.user_id !== userId) {
       throw new ApiError(403, 'Not authorized');
     }
 
     // Complete on blockchain
     const txHash = await aptosService.completeBooking(parseInt(id));
 
-    // Trigger payment capture and payout
-    // (Implementation would capture Stripe payment and transfer to barber)
+    // Get booking payment details from ledger
+    const ledgerHistory = await ledgerService.getLedgerHistory(bookingData.user_id, 100, 0);
+    const bookingPayment = ledgerHistory.entries.find(
+      (entry: any) => entry.reference_id === bookingData.id && entry.type === 'BOOKING_PAYMENT' && entry.balance_type === 'pending'
+    );
 
-    logger.info(`Booking completed: ${id} (tx: ${txHash})`);
+    if (bookingPayment) {
+      // Release funds from pending to available
+      await paymentService.releaseBookingFunds({
+        bookingId: bookingData.id,
+        barberId: bookingData.user_id,
+        amountCents: bookingPayment.amount,
+      });
+
+      logger.info(`Booking completed - funds released from pending to available`, {
+        booking_id: id,
+        barber_id: bookingData.user_id,
+        amount_cents: bookingPayment.amount,
+        tx_hash: txHash,
+      });
+    }
 
     res.json({
       success: true,
-      message: 'Booking completed, payment released',
+      message: 'Booking completed successfully. Funds have been released to your available balance.',
       transactionHash: txHash,
     });
   } catch (error) {
@@ -253,9 +309,9 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
     const { reason } = req.body;
     const userId = req.user!.userId;
 
-    // Verify user is involved in booking
+    // Verify user is involved in booking and get details
     const booking = await pool.query(
-      `SELECT bm.blockchain_booking_id, bm.client_id, b.user_id as barber_user_id
+      `SELECT bm.id, bm.blockchain_booking_id, bm.client_id, b.id as barber_id, b.user_id as barber_user_id, b.pricing
        FROM booking_metadata bm
        JOIN barbers b ON bm.barber_id = b.id
        WHERE bm.blockchain_booking_id = $1`,
@@ -266,8 +322,9 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Booking not found');
     }
 
-    const isClient = booking.rows[0].client_id === userId;
-    const isBarber = booking.rows[0].barber_user_id === userId;
+    const bookingData = booking.rows[0];
+    const isClient = bookingData.client_id === userId;
+    const isBarber = bookingData.barber_user_id === userId;
 
     if (!isClient && !isBarber) {
       throw new ApiError(403, 'Not authorized');
@@ -276,14 +333,37 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
     // Cancel on blockchain
     const txHash = await aptosService.cancelBooking(parseInt(id));
 
-    // Trigger refund if payment was made
-    // (Implementation would refund Stripe payment)
+    // Get booking payment details from ledger
+    const barberLedgerHistory = await ledgerService.getLedgerHistory(bookingData.barber_user_id, 100, 0);
+    const bookingPayment = barberLedgerHistory.entries.find(
+      (entry: any) => entry.reference_id === bookingData.id && entry.type === 'BOOKING_PAYMENT' && entry.balance_type === 'pending'
+    );
 
-    logger.info(`Booking cancelled: ${id} by ${isBarber ? 'barber' : 'client'} (tx: ${txHash})`);
+    if (bookingPayment) {
+      // Refund the payment (from barber's pending back to customer's available)
+      await paymentService.refundBookingPayment({
+        bookingId: bookingData.id,
+        customerId: bookingData.client_id,
+        barberId: bookingData.barber_user_id,
+        totalAmountCents: bookingPayment.amount,
+      });
+
+      logger.info(`Booking cancelled - refund issued`, {
+        booking_id: id,
+        customer_id: bookingData.client_id,
+        barber_id: bookingData.barber_user_id,
+        refund_amount_cents: bookingPayment.amount,
+        cancelled_by: isBarber ? 'barber' : 'client',
+        reason,
+        tx_hash: txHash,
+      });
+    }
 
     res.json({
       success: true,
-      message: 'Booking cancelled',
+      message: bookingPayment 
+        ? 'Booking cancelled successfully. Refund has been issued to your wallet.' 
+        : 'Booking cancelled successfully.',
       transactionHash: txHash,
     });
   } catch (error) {
