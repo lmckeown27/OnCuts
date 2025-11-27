@@ -64,8 +64,15 @@ class ApiService {
   }
 
   async get<T = any>(url: string, params?: any): Promise<T> {
-    const response = await this.client.get<ApiResponse<T>>(url, { params });
-    return response.data.data as T;
+    const response = await this.client.get(url, { params });
+    
+    // If response has both 'data' and 'pagination', return the whole response
+    // Otherwise, extract just the data field
+    if (response.data.pagination) {
+      return response.data as T;
+    }
+    
+    return response.data.data !== undefined ? response.data.data as T : response.data as T;
   }
 
   async post<T = any>(url: string, data?: any): Promise<T> {
