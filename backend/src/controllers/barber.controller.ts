@@ -31,7 +31,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     if (maxPrice) {
       filteredBarbers = filteredBarbers.filter(b => {
-        const minPrice = Math.min(...(b.pricing || []).map(p => p.price));
+        const minPrice = Math.min(...(b.pricing || []).map((p: any) => p.price));
         return minPrice <= Number(maxPrice);
       });
     }
@@ -42,7 +42,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     if (specialty) {
       filteredBarbers = filteredBarbers.filter(b => 
-        b.specialties.some(s => s.toLowerCase().includes(String(specialty).toLowerCase()))
+        b.specialties.some((s: string) => s.toLowerCase().includes(String(specialty).toLowerCase()))
       );
     }
 
