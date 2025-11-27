@@ -6,6 +6,7 @@ import RoleSelectionPage from './pages/RoleSelectionPage';
 import AdminPage from './pages/AdminPage';
 import ConsumerPage from './pages/ConsumerPage';
 import BarberPage from './pages/BarberPage';
+import WalletPage from './pages/WalletPage';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/consumer" element={<ConsumerPage />} />
           <Route path="/barber" element={<BarberPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
         </Routes>
       </div>
     </BrowserRouter>
