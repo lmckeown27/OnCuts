@@ -144,17 +144,29 @@ Status: Fully Operational ✅
 | `referrals` | Referral program data | ✅ Schema complete |
 | `admin_actions` | Admin audit log | ✅ Schema complete |
 
-**Mock Database (NEW):**
+**Mock Database (COMPREHENSIVE - UPDATED):**
 - ✅ **In-memory database service created**
-- ✅ **Pre-seeded with test data:**
-  - 2 campuses (Cal Poly SLO, UC Santa Barbara)
-  - 5 users (2 students, 2 barbers, 1 admin)
-  - 2 barber profiles (Carlos @ Cal Poly, Marcus @ UCSB)
-  - 2 sample bookings with campus-specific locations
-  - 2 reviews with authentic student comments
+- ✅ **Pre-seeded with realistic production-like data:**
+  - **2 campuses:** Cal Poly SLO, UC Santa Barbara
+  - **15 users** (6 students, 6 barbers, 1 admin):
+    - 3 students per campus with profile pictures, varied signup dates
+    - 3 barbers per campus with realistic personas
+  - **6 detailed barber profiles:**
+    - Carlos Rodriguez (Cal Poly, 5yr exp, 4.8★, 234 bookings) - Fade specialist
+    - David Kim (Cal Poly, 3yr exp, 4.9★, 167 bookings) - Korean hair expert
+    - James Brown (Cal Poly, 8yr exp, 4.7★, 289 bookings) - Afro-textured specialist
+    - Marcus Williams (UCSB, 7yr exp, 4.9★, 312 bookings) - Premier all-styles
+    - Tyler Jackson (UCSB, 2yr exp, 4.6★, 143 bookings) - Athletic cuts
+    - Antonio Lopez (UCSB, 6yr exp, 4.8★, 267 bookings) - Traditional barbershop
+  - **20 service offerings:** Full pricing structure (\$15-\$85, 20-120 min durations)
+  - **10 portfolio images:** Real Unsplash barber/haircut URLs with thumbnails
+  - **8 bookings:** 3 confirmed upcoming, 2 pending requests, 3 completed (for reviews)
+  - **15 comprehensive reviews:** Mix of 4-5 star ratings with detailed authentic text
 - ✅ **Full CRUD operations for all entities**
+- ✅ **Data enrichment:** Nested user/barber/student info in queries
+- ✅ **Realistic time distribution:** Data spanning weeks to months
 - ✅ **Backend runs without PostgreSQL dependency**
-- ✅ **Perfect for development and testing**
+- ✅ **Perfect for development, testing, and demos**
 
 **What Needs Work (PostgreSQL):**
 - ⚠️ **PostgreSQL Optional:** Can develop without it using mock DB
