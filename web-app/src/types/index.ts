@@ -28,27 +28,33 @@ export interface Barber {
   user?: User;
   bio: string;
   specialties: string[];
-  years_of_experience: number;
+  years_experience: number;
+  years_of_experience?: number; // Alias for backwards compatibility
   pricing: Service[];
   average_rating: number;
   total_bookings: number;
   instant_book_enabled: boolean;
   is_active: boolean;
-  portfolio_images?: PortfolioImage[];
+  profile_photo_url?: string;
+  portfolio?: PortfolioImage[];
+  portfolio_images?: PortfolioImage[]; // Alias for backwards compatibility
   availability?: AvailabilityTemplate[];
+  aptos_address?: string;
+  campus_id?: string;
 }
 
 export interface PortfolioImage {
   id: string;
   barber_id: string;
-  image_url: string;
-  thumbnail_url: string;
-  order_index: number;
-  created_at: string;
+  url: string;
+  image_url?: string; // Alias for backwards compatibility
+  thumbnail_url?: string;
+  order_index?: number;
+  created_at?: string;
 }
 
 export interface Service {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
   price: number;
