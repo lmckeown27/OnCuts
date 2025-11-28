@@ -54,14 +54,14 @@ The Gas Wallet Management System automatically monitors the platform's Aptos gas
 │     ↓                                                         │
 │     If needed > threshold → Create top-up request            │
 │                                                               │
-│  2. ADMIN APPROVAL (Web UI)                                  │
+│  2. ADMIN APPROVAL (Manual Transfer)                         │
 │     ↓                                                         │
-│     Admin connects Aptos wallet (Petra/Pontem)               │
+│     Admin views transfer instructions (Petra/CLI)            │
 │     ↓                                                         │
-│     Admin signs transfer transaction                         │
+│     Admin completes transfer in wallet or CLI                │
 │     (admin_wallet → platform_gas_wallet)                     │
 │     ↓                                                         │
-│     Frontend submits tx_hash to backend                      │
+│     Admin submits tx_hash + from_address to backend          │
 │                                                               │
 │  3. VERIFICATION (Backend Watcher)                           │
 │     ↓                                                         │
@@ -139,11 +139,7 @@ npm install
 ```
 
 Packages added:
-- `@aptos-labs/wallet-adapter-react` - Wallet connection
-- `@aptos-labs/wallet-adapter-petra` - Petra wallet support
-- `@aptos-labs/wallet-adapter-pontem` - Pontem wallet support
-- `@aptos-labs/ts-sdk` - Aptos TypeScript SDK
-- `decimal.js` - Precise conversions
+- `decimal.js` - Precise APT/octas conversions
 
 ### 4. Configuration Parameters
 
@@ -405,26 +401,43 @@ http://localhost:3000/admin
 - View estimated coverage (days)
 - Review pending top-up requests
 
-**3. Connect Wallet**
-- Click "Connect Wallet"
-- Choose Petra or Pontem
-- Approve connection in wallet extension
-
-**4. Create or Approve Request**
+**3. Create or Review Request**
 - If auto-created, you'll see pending request
 - OR click "Create Top-Up Request" to create manually
 - Enter custom amount or leave empty for auto-calculation
 
-**5. Sign Transaction**
-- Click "Approve & Sign" on pending request
-- Review transaction details in wallet popup:
-  - **To:** Platform gas wallet address
-  - **Amount:** Requested APT
-  - **Function:** `0x1::aptos_account::transfer`
-- Sign transaction (you pay gas for this transfer)
+**4. Get Transfer Instructions**
+- Click "Transfer APT" on pending request
+- Review transfer details:
+  - **Amount:** Exact APT to transfer
+  - **Destination:** Platform gas wallet address
+  - **Amount in octas:** For CLI usage
 
-**6. Verification**
-- Frontend submits tx hash to backend
+**5. Complete Transfer (Choose Method)**
+
+**Option A: Petra Wallet (Recommended)**
+- Open Petra wallet extension
+- Click "Send"
+- Paste destination address (provided in UI)
+- Enter exact amount shown
+- Confirm transaction
+- Copy transaction hash from Petra
+
+**Option B: Aptos CLI**
+- Copy the provided CLI command
+- Run in terminal:
+  ```bash
+  aptos account transfer \
+    --account YOUR_WALLET \
+    --receiver-account 0x50c7bf... \
+    --amount 50000000
+  ```
+- Copy transaction hash from output
+
+**6. Submit for Verification**
+- Paste transaction hash in form
+- Enter your wallet address (sender)
+- Click "Submit for Verification"
 - Backend watcher polls Aptos blockchain
 - Wait ~10-60 seconds for confirmation
 - Request status updates to "completed"
