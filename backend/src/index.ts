@@ -38,6 +38,9 @@ import barberConnectRoutes from './routes/barber-connect.routes';
 // Live Transaction Feed Routes
 import liveFeedRoutes from './routes/live-feed.routes';
 
+// Gas Wallet Management Routes
+import gasWalletRoutes from './routes/gas-wallet.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -190,12 +193,14 @@ app.use('/api/v2/bookings', bookingV2Routes);
 app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
+app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
 
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
+logger.info('   - /api/gas (gas wallet & top-up management)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
@@ -232,6 +237,12 @@ httpServer.listen(PORT, async () => {
   } else {
     logger.warn('⚠️  Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
   }
+
+  // Start gas monitor cron job (checks every 30 minutes)
+  const gasMonitorCronService = (await import('./services/gas-monitor-cron.service')).default;
+  const cronSchedule = process.env.GAS_MONITOR_CRON_SCHEDULE || '*/30 * * * *'; // Every 30 min
+  gasMonitorCronService.start(cronSchedule);
+  logger.info(`⏰ Gas monitor cron job started (schedule: ${cronSchedule})`);
 });
 
 // Graceful shutdown
