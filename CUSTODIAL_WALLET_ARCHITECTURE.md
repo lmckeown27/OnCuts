@@ -9,13 +9,14 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Core Concepts](#core-concepts)
-3. [System Architecture](#system-architecture)
-4. [Database Schema](#database-schema)
-5. [Service Layer](#service-layer)
-6. [Payment Flows](#payment-flows)
-7. [Security & Compliance](#security--compliance)
-8. [Cost Analysis](#cost-analysis)
+2. [Platform Master Wallet](#platform-master-wallet)
+3. [Core Concepts](#core-concepts)
+4. [System Architecture](#system-architecture)
+5. [Database Schema](#database-schema)
+6. [Service Layer](#service-layer)
+7. [Payment Flows](#payment-flows)
+8. [Security & Compliance](#security--compliance)
+9. [Cost Analysis](#cost-analysis)
 
 ---
 
@@ -47,6 +48,94 @@ This provides:
 | Audit Trail | Basic logging | Complete `audit_logs` table |
 | Reconciliation | None | Automated daily checks |
 | Cost (1000 bookings/day) | $182,536/year | $37/year |
+
+---
+
+## Platform Master Wallet
+
+### Aptos Address
+
+The custodial wallet system uses a **single platform master account** on the Aptos blockchain:
+
+```
+Network: Devnet (for testing)
+Address: 0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa
+
+Explorer: https://explorer.aptoslabs.com/account/0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa?network=devnet
+```
+
+### How It Works
+
+**All users share this single platform wallet:**
+
+```
+┌─────────────────────────────────────┐
+│  Users (Internal Balances Only)    │
+├─────────────────────────────────────┤
+│  student-1: $125.50 (database)      │
+│  barber-1:  $450.75 (database)      │
+│  student-2: $50.00  (database)      │
+└─────────────────────────────────────┘
+              ↓
+    ┌──────────────────────┐
+    │  Platform Database   │
+    │  (balances table)    │
+    └──────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│   Platform Master Wallet (Aptos)    │
+│   0x50c7bf0be7f5a56f8...2af82a21aa  │
+│   Balance: ~145 APT                 │
+└─────────────────────────────────────┘
+              ↓
+    ┌──────────────────────┐
+    │  Aptos Blockchain    │
+    │  (devnet/mainnet)    │
+    └──────────────────────┘
+```
+
+### When to Use This Address
+
+**✅ For Deposits:**
+- Users can send APT directly to this address
+- Backend detects on-chain deposit
+- User's internal balance is credited
+
+**✅ For Monitoring:**
+- Check on-chain balance via Aptos Explorer
+- Verify withdrawal transactions
+- Track gas consumption
+
+**✅ For Funding (Admin Only):**
+- Fund this address to cover gas fees
+- Ensure sufficient balance for batch withdrawals
+- Maintain liquidity for user withdrawals
+
+### Security
+
+**Private Key:**
+- Stored in: `backend/.env` → `APTOS_PLATFORM_PRIVATE_KEY`
+- Never expose publicly
+- Should use KMS/HSM in production
+
+**Access Control:**
+- Only backend services can sign transactions
+- Users never see or need the private key
+- Multisig recommended for mainnet
+
+### Monitoring in Admin Dashboard
+
+Admins can view the platform wallet in:
+```
+Admin Dashboard → Custodial Wallet → Overview
+```
+
+Shows:
+- Full Aptos address (copyable)
+- On-chain balance (APT and USD)
+- Total deposits/withdrawals
+- Last on-chain activity
+- Link to Aptos Explorer
 
 ---
 
