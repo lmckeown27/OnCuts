@@ -13,6 +13,9 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
+
+// Development mode check
+const isDevelopment = process.env.NODE_ENV === 'development';
 import paymentServiceV2 from '../services/payment-v2.service';
 import reconciliationService from '../services/reconciliation.service';
 import withdrawalBatchService from '../services/withdrawal-batch.service';
@@ -116,6 +119,19 @@ export const getPlatformFees = async (req: AuthRequest, res: Response, next: Nex
       throw new ApiError(403, 'Admin access required');
     }
 
+    // Development mode: Return mock data
+    if (isDevelopment) {
+      return res.json({
+        success: true,
+        data: {
+          available_fees_dollars: 87.50,
+          withdrawn_fees_dollars: 312.75,
+          available_count: 35,
+          withdrawn_count: 125,
+        },
+      });
+    }
+
     const result = await pool.query(`
       SELECT
         COALESCE(SUM(amount) FILTER (WHERE NOT withdrawn), 0) as available_fees_cents,
@@ -178,6 +194,29 @@ export const getReconciliationReports = async (req: AuthRequest, res: Response, 
       throw new ApiError(403, 'Admin access required');
     }
 
+    // Development mode: Return mock data
+    if (isDevelopment) {
+      return res.json({
+        success: true,
+        data: [
+          {
+            id: 1,
+            date: new Date(Date.now() - 86400000).toISOString(),
+            status: 'completed',
+            total_discrepancy_dollars: 0,
+            discrepancy_count: 0,
+          },
+          {
+            id: 2,
+            date: new Date(Date.now() - 172800000).toISOString(),
+            status: 'discrepancies',
+            total_discrepancy_dollars: 5.25,
+            discrepancy_count: 2,
+          },
+        ],
+      });
+    }
+
     const limit = parseInt(req.query.limit as string) || 30;
     const reports = await reconciliationService.getRecentReports(limit);
 
@@ -198,6 +237,19 @@ export const getWithdrawalBatches = async (req: AuthRequest, res: Response, next
   try {
     if (req.user!.role !== 'admin') {
       throw new ApiError(403, 'Admin access required');
+    }
+
+    // Development mode: Return mock data
+    if (isDevelopment) {
+      return res.json({
+        success: true,
+        data: {
+          queued_count: 12,
+          queued_total_dollars: 456.75,
+          processing_count: 1,
+          completed_today: 5,
+        },
+      });
     }
 
     const stats = await withdrawalBatchService.getStats();
@@ -328,6 +380,36 @@ export const getAuditLogs = async (req: AuthRequest, res: Response, next: NextFu
       throw new ApiError(403, 'Admin access required');
     }
 
+    // Development mode: Return mock data
+    if (isDevelopment) {
+      return res.json({
+        success: true,
+        data: {
+          logs: [
+            {
+              id: 1,
+              action: 'escrow_released',
+              actor_user_id: 'user-123',
+              object_type: 'booking',
+              object_id: 'booking-456',
+              created_at: new Date().toISOString(),
+              details: { amount: 3000, barber_id: 'barber-789' },
+            },
+            {
+              id: 2,
+              action: 'withdrawal_queued',
+              actor_user_id: 'user-456',
+              object_type: 'withdrawal',
+              object_id: 'withdrawal-789',
+              created_at: new Date(Date.now() - 300000).toISOString(),
+              details: { amount: 5000, type: 'onchain' },
+            },
+          ],
+          total: 2,
+        },
+      });
+    }
+
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -350,6 +432,18 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
   try {
     if (req.user!.role !== 'admin') {
       throw new ApiError(403, 'Admin access required');
+    }
+
+    // Development mode: Return mock data
+    if (isDevelopment) {
+      return res.json({
+        success: true,
+        data: {
+          total_user_balances_dollars: 1250.00,
+          total_escrow_dollars: 450.00,
+          total_fees_dollars: 87.50,
+        },
+      });
     }
 
     const result = await pool.query(`
