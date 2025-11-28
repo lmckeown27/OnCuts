@@ -41,6 +41,12 @@ import liveFeedRoutes from './routes/live-feed.routes';
 // Gas Wallet Management Routes
 import gasWalletRoutes from './routes/gas-wallet.routes';
 
+// Dynamic Pricing Routes
+import pricingRoutes from './routes/pricing.routes';
+
+// User Management Routes
+import userRoutes from './routes/user.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -195,12 +201,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
 app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
 
+// Dynamic Pricing Routes
+app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
+
+// User Management Routes
+app.use('/api/users', userRoutes);  // User profile management
+
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
 logger.info('   - /api/gas (gas wallet & top-up management)');
+logger.info('   - /api/pricing (dynamic pricing engine)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
@@ -243,6 +256,11 @@ httpServer.listen(PORT, async () => {
   const cronSchedule = process.env.GAS_MONITOR_CRON_SCHEDULE || '*/30 * * * *'; // Every 30 min
   gasMonitorCronService.start(cronSchedule);
   logger.info(`⏰ Gas monitor cron job started (schedule: ${cronSchedule})`);
+
+  // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
+  const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
+  pricingCronService.start();
+  logger.info(`⏰ Pricing cron jobs started (see logs for details)`);
 });
 
 // Graceful shutdown
