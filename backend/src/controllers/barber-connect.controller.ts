@@ -7,7 +7,6 @@
 
 import { Response, NextFunction } from 'express';
 import stripeService from '../services/stripe.service';
-import auditService from '../services/audit.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -88,14 +87,10 @@ export const createConnectAccount = async (
     );
 
     // 5. Audit log
-    await auditService.createLog({
+    logger.info('Stripe Connect account created', {
       user_id: userId,
       action: 'STRIPE_CONNECT_ACCOUNT_CREATED',
-      entity_type: 'stripe_account',
-      entity_id: accountId,
-      metadata: {
-        account_id: accountId,
-      },
+      account_id: accountId,
     });
 
     logger.info('✅ Stripe Connect account created', {
@@ -250,12 +245,11 @@ export const handleOnboardingReturn = async (
     const status = await stripeService.getAccountStatus(stripeAccountId);
 
     // Audit log
-    await auditService.createLog({
+    logger.info('Stripe Connect onboarding completed', {
       user_id: userId,
       action: 'STRIPE_CONNECT_ONBOARDING_COMPLETED',
-      entity_type: 'stripe_account',
-      entity_id: stripeAccountId,
-      metadata: status,
+      account_id: stripeAccountId,
+      status,
     });
 
     res.status(200).json({

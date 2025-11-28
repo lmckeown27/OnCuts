@@ -93,13 +93,11 @@ class OnChainAnchorService {
       // 1. Create hash of data
       const hash = this.createHash(input.data);
 
-      // 2. Store hash on Aptos (using a generic proof storage function)
-      // Note: This requires a Move contract function like:
-      // public entry fun store_proof(account: &signer, proof_hash: vector<u8>)
-      const txHash = await aptosService.submitTransaction(
-        'store_proof',
-        [hash],
-        input.record_type
+      // 2. Store hash on Aptos (using proof storage function)
+      const txHash = await aptosService.submitHashProof(
+        input.record_type,
+        input.subject_id,
+        hash
       );
 
       // 3. Store record in database
@@ -156,10 +154,10 @@ class OnChainAnchorService {
       const merkleRoot = this.createMerkleRoot(proofHashes.map(p => p.hash));
 
       // 3. Store Merkle root on-chain (single transaction for all proofs)
-      const txHash = await aptosService.submitTransaction(
-        'store_batch_proof',
-        [merkleRoot, input.proofs.length],
-        'batch_anchor'
+      const txHash = await aptosService.submitHashProof(
+        'batch_anchor',
+        `batch_${Date.now()}`,
+        merkleRoot
       );
 
       // 4. Store batch record

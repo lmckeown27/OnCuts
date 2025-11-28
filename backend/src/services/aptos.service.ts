@@ -35,20 +35,20 @@ class AptosService {
   }
 
   /**
-   * Private helper for submitting transactions to specific modules
+   * Helper to submit transactions to module functions
    */
-  private async submitModuleTransaction(
-    module: string,
-    functionName: string,
-    typeArgs: string[],
-    args: any[]
+  private async executeModuleFunction(
+    moduleName: string,
+    funcName: string,
+    typeArguments: string[],
+    functionArgs: any[]
   ): Promise<string> {
     try {
       const payload: Types.TransactionPayload = {
         type: 'entry_function_payload',
-        function: `${this.moduleAddress}::${module}::${functionName}`,
-        type_arguments: typeArgs,
-        arguments: args,
+        function: `${this.moduleAddress}::${moduleName}::${funcName}`,
+        type_arguments: typeArguments,
+        arguments: functionArgs,
       };
 
       const txnRequest = await this.client.generateTransaction(
@@ -67,7 +67,7 @@ class AptosService {
       logger.info(`✅ Transaction submitted: ${transactionRes.hash}`);
       return transactionRes.hash;
     } catch (error) {
-      logger.error(`Transaction failed (${module}::${functionName}):`, error);
+      logger.error(`Transaction failed (${moduleName}::${funcName}):`, error);
       throw error;
     }
   }
@@ -77,10 +77,10 @@ class AptosService {
    */
   async initializeModules(): Promise<void> {
     try {
-      await this.submitModuleTransaction('booking_system', 'initialize', [], []);
-      await this.submitModuleTransaction('review_system', 'initialize', [], []);
-      await this.submitModuleTransaction('barber_registry', 'initialize', [], []);
-      await this.submitModuleTransaction('payment_system', 'initialize', [], []);
+      await this.executeModuleFunction('booking_system', 'initialize', [], []);
+      await this.executeModuleFunction('review_system', 'initialize', [], []);
+      await this.executeModuleFunction('barber_registry', 'initialize', [], []);
+      await this.executeModuleFunction('payment_system', 'initialize', [], []);
       logger.info('✅ All Aptos modules initialized');
     } catch (error) {
       logger.error('Failed to initialize modules:', error);
@@ -103,7 +103,7 @@ class AptosService {
   }): Promise<string> {
     const { clientAddress, barberAddress, serviceType, price, scheduledTime, campusId, durationMinutes, locationHash } = params;
 
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'booking_system',
       'create_booking',
       [],
@@ -118,52 +118,42 @@ class AptosService {
         Array.from(Buffer.from(locationHash, 'utf-8')),
       ]
     );
-
-    return payload;
   }
 
   /**
    * Confirm a booking
    */
   async confirmBooking(barberAddress: string, bookingId: number): Promise<string> {
-    // Note: In production, you'd need to sign with the barber's account
-    // For MVP with custodial wallets, platform signs on behalf
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'booking_system',
       'confirm_booking',
       [],
       [this.moduleAddress, bookingId]
     );
-
-    return payload;
   }
 
   /**
    * Complete a booking
    */
   async completeBooking(bookingId: number): Promise<string> {
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'booking_system',
       'complete_booking',
       [],
       [this.moduleAddress, bookingId]
     );
-
-    return payload;
   }
 
   /**
    * Cancel a booking
    */
   async cancelBooking(bookingId: number): Promise<string> {
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'booking_system',
       'cancel_booking',
       [],
       [this.moduleAddress, bookingId]
     );
-
-    return payload;
   }
 
   /**
@@ -179,7 +169,7 @@ class AptosService {
   }): Promise<string> {
     const { barberAddress, campusId, specialties, instantBookEnabled, bioHash, pricingHash } = params;
 
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'barber_registry',
       'register_barber',
       [],
@@ -192,8 +182,6 @@ class AptosService {
         Array.from(Buffer.from(pricingHash, 'utf-8')),
       ]
     );
-
-    return payload;
   }
 
   /**
@@ -209,7 +197,7 @@ class AptosService {
   }): Promise<string> {
     const { clientAddress, bookingId, barberAddress, rating, reviewTextHash, campusId } = params;
 
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'review_system',
       'submit_review',
       [],
@@ -222,8 +210,6 @@ class AptosService {
         campusId,
       ]
     );
-
-    return payload;
   }
 
   /**
@@ -238,7 +224,7 @@ class AptosService {
   }): Promise<string> {
     const { bookingId, barberAddress, clientAddress, amount, stripePaymentIdHash } = params;
 
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'payment_system',
       'create_payment',
       [],
@@ -250,22 +236,18 @@ class AptosService {
         Array.from(Buffer.from(stripePaymentIdHash, 'utf-8')),
       ]
     );
-
-    return payload;
   }
 
   /**
    * Release payment to barber
    */
   async releasePayment(paymentId: number): Promise<string> {
-    const payload = await this.submitModuleTransaction(
+    return await this.executeModuleFunction(
       'payment_system',
       'release_payment',
       [],
       [paymentId]
     );
-
-    return payload;
   }
 
   /**
@@ -310,7 +292,7 @@ class AptosService {
   }
 
   /**
-   * Get account balance
+   * Get account balance in APT
    */
   async getAccountBalance(address: string): Promise<number> {
     try {
@@ -332,7 +314,14 @@ class AptosService {
   }
 
   /**
-   * Generate new Aptos account (for user wallet creation)
+   * Get platform address
+   */
+  getPlatformAddress(): string {
+    return this.platformAccount.address().hex();
+  }
+
+  /**
+   * Generate new Aptos account
    */
   generateAccount(): { address: string; privateKey: string } {
     const account = new AptosAccount();
@@ -360,17 +349,13 @@ class AptosService {
   }
 
   /**
-   * Submit batched withdrawals (gas efficient)
-   * Sends to multiple recipients in a single transaction
-   * 
-   * Enhanced with gas validation from typescript_cash_bot
+   * Submit batched withdrawals with gas validation
    */
   async submitBatchWithdrawal(
     recipients: (string | undefined)[],
     amounts: number[]
   ): Promise<string> {
     try {
-      // Filter out undefined recipients
       const validRecipients = recipients.filter((r): r is string => r !== undefined);
       
       if (validRecipients.length === 0) {
@@ -381,7 +366,6 @@ class AptosService {
         throw new Error('Recipients and amounts length mismatch');
       }
 
-      // ✅ NEW: Validate gas availability
       const platformBalance = await this.getAccountBalance(this.platformAccount.address().hex());
       const gasEstimate = gasCalculatorService.calculateBatchWithdrawalGas(validRecipients.length);
       
@@ -393,7 +377,6 @@ class AptosService {
         totalAmountAPT: (amounts.reduce((sum, a) => sum + a, 0) / 100_000_000).toFixed(8),
       });
 
-      // ✅ NEW: Validate sufficient balance for gas
       const totalWithdrawalAPT = amounts.reduce((sum, a) => sum + a, 0) / 100_000_000;
       const totalRequired = totalWithdrawalAPT + gasEstimate.totalWithBufferAPT;
       
@@ -411,15 +394,6 @@ class AptosService {
 
       logger.info('✅ Gas validation passed - proceeding with batch withdrawal');
 
-      // Note: This requires a Move contract function like:
-      // public entry fun batch_transfer(
-      //   sender: &signer,
-      //   recipients: vector<address>,
-      //   amounts: vector<u64>
-      // )
-      
-      // For now, use a generic transaction submission
-      // In production, replace with actual Move function call
       const payload: Types.TransactionPayload = {
         type: 'entry_function_payload',
         function: `${this.moduleAddress}::payment_system::batch_transfer`,
@@ -436,7 +410,6 @@ class AptosService {
       const txResponse = await this.client.submitTransaction(signedTxn);
       await this.client.waitForTransaction(txResponse.hash);
 
-      // ✅ NEW: Enhanced logging with gas details
       logger.info('✅ Batch withdrawal completed successfully!', {
         recipient_count: validRecipients.length,
         total_amount_apt: totalWithdrawalAPT.toFixed(8),
@@ -457,19 +430,19 @@ class AptosService {
   }
 
   /**
-   * Submit generic transaction (for hash anchoring)
+   * Submit hash proof to blockchain for anchoring
    */
-  async submitTransaction(
-    functionName: string,
-    args: any[],
-    description?: string
+  async submitHashProof(
+    recordType: string,
+    subjectId: string,
+    dataHash: string
   ): Promise<string> {
     try {
       const payload: Types.TransactionPayload = {
         type: 'entry_function_payload',
-        function: `${this.moduleAddress}::${functionName}`,
+        function: `${this.moduleAddress}::hash_registry::store_hash`,
         type_arguments: [],
-        arguments: args,
+        arguments: [dataHash, recordType, subjectId],
       };
 
       const rawTxn = await this.client.generateTransaction(
@@ -481,13 +454,14 @@ class AptosService {
       const txResponse = await this.client.submitTransaction(signedTxn);
       await this.client.waitForTransaction(txResponse.hash);
 
-      logger.info(`Transaction submitted: ${description || functionName}`, {
-        tx_hash: txResponse.hash,
+      logger.info(`Hash proof submitted: ${txResponse.hash}`, {
+        record_type: recordType,
+        subject_id: subjectId,
       });
 
       return txResponse.hash;
     } catch (error) {
-      logger.error(`Transaction submission failed: ${functionName}`, error);
+      logger.error(`Failed to submit hash proof:`, error);
       throw error;
     }
   }
