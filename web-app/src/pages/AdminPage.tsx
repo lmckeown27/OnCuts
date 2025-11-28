@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -14,7 +15,8 @@ import {
   Clock,
   RefreshCw,
   Download,
-  Gift
+  Gift,
+  ArrowLeft
 } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -32,6 +34,7 @@ import type {
 import { CampusCutsLogo } from '@assets';
 
 const AdminPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'treasury' | 'fees' | 'reconciliation' | 'batches' | 'wallet' | 'users' | 'audit'>('treasury');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -312,10 +315,16 @@ const AdminPage: React.FC = () => {
               <p className="text-gray-600 mt-1">Platform management & monitoring</p>
             </div>
           </div>
-          <Button onClick={loadInitialData} variant="secondary">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Button onClick={() => navigate('/')} variant="secondary">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Roles
+            </Button>
+            <Button onClick={loadInitialData} variant="secondary">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
