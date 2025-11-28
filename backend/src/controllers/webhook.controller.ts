@@ -9,6 +9,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import stripeService from '../services/stripe.service';
+import stripeMonitorService from '../services/stripe-monitor.service';
 import { handlePaymentSuccess, handlePaymentFailed } from './booking-payment.controller';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -50,6 +51,9 @@ export const handleStripeWebhook = async (
       event_type: event.type,
       event_id: event.id,
     });
+
+    // Step 7.1.5: Process event for live monitoring (store + broadcast to admin)
+    await stripeMonitorService.processEvent(event);
 
     // Step 7.2: Handle different event types
     switch (event.type) {

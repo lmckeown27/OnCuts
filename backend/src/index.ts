@@ -35,6 +35,9 @@ import webhookRoutes from './routes/webhook.routes';
 import bookingPaymentRoutes from './routes/booking-payment.routes';
 import barberConnectRoutes from './routes/barber-connect.routes';
 
+// Live Transaction Feed Routes
+import liveFeedRoutes from './routes/live-feed.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -89,6 +92,14 @@ io.on('connection', (socket) => {
   socket.on('join-campus', (campusId: number) => {
     socket.join(`campus-${campusId}`);
     console.log(`🏫 Socket.IO: User ${socket.id} joined campus room: campus-${campusId}`);
+  });
+
+  // Join admin to live transaction feed room (admin dashboard)
+  socket.on('join-admin-live-feed', (userId: number) => {
+    // TODO: Verify user is admin before allowing join
+    socket.join('admin-live-feed');
+    console.log(`👑 Socket.IO: Admin ${socket.id} joined live feed room`);
+    socket.emit('joined-admin-live-feed', { userId, socketId: socket.id });
   });
 
   socket.on('disconnect', (reason) => {
@@ -178,11 +189,13 @@ app.use('/api/wallet', walletRoutes);  // V1
 app.use('/api/v2/bookings', bookingV2Routes);
 app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
 
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
+logger.info('   - /api/admin/live-feed (real-time monitoring)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
@@ -205,11 +218,20 @@ app.use(errorHandler);
 app.use('/uploads', express.static('uploads'));
 
 // Start server
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔗 Aptos Network: ${process.env.APTOS_NETWORK || 'devnet'}`);
   logger.info(`💬 Socket.IO ready for real-time messaging`);
+
+  // Start Aptos blockchain monitor for live transaction feed
+  if (process.env.APTOS_PLATFORM_ADDRESS) {
+    const aptosMonitorService = (await import('./services/aptos-monitor.service')).default;
+    await aptosMonitorService.start();
+    logger.info(`🔍 Aptos blockchain monitor started`);
+  } else {
+    logger.warn('⚠️  Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
+  }
 });
 
 // Graceful shutdown
@@ -226,6 +248,9 @@ process.on('SIGTERM', () => {
     });
   });
 });
+
+// Export Socket.IO instance for use in services
+export { io };
 
 export default app;
 

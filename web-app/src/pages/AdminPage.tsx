@@ -19,6 +19,7 @@ import {
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
+import LiveTransactionFeed from '../components/LiveTransactionFeed';
 import adminService from '../services/admin.service';
 import toast from 'react-hot-toast';
 import type { 
@@ -860,7 +861,7 @@ const AuditSection: React.FC<{ logs: AuditLog[] }> = ({ logs }) => {
 
 // Custodial Wallet Section
 const CustodialWalletSection: React.FC<{ data: any; onRefresh: () => void }> = ({ data, onRefresh }) => {
-  const [selectedSubTab, setSelectedSubTab] = useState<'overview' | 'balances' | 'transactions' | 'escrows' | 'withdrawals'>('overview');
+  const [selectedSubTab, setSelectedSubTab] = useState<'overview' | 'balances' | 'transactions' | 'escrows' | 'withdrawals' | 'live-feed'>('overview');
 
   if (!data) return <Loading />;
 
@@ -870,6 +871,7 @@ const CustodialWalletSection: React.FC<{ data: any; onRefresh: () => void }> = (
     { key: 'transactions', label: 'Transactions' },
     { key: 'escrows', label: 'Escrow Holds' },
     { key: 'withdrawals', label: 'Withdrawal Queue' },
+    { key: 'live-feed', label: '🔴 Live Feed' },
   ];
 
   return (
@@ -1242,6 +1244,11 @@ const CustodialWalletSection: React.FC<{ data: any; onRefresh: () => void }> = (
             ))}
           </div>
         </Card>
+      )}
+
+      {/* Live Feed */}
+      {selectedSubTab === 'live-feed' && (
+        <LiveTransactionFeed />
       )}
     </div>
   );
