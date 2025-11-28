@@ -10,10 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aptos-labs/wallet-adapter-react": "^3.0.0",
-    "@aptos-labs/wallet-adapter-petra": "^2.0.0",
-    "@aptos-labs/wallet-adapter-pontem": "^1.0.0",
-    "@aptos-labs/ts-sdk": "^1.24.0",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.5.3",
     "axios": "^1.13.2",
