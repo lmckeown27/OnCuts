@@ -8,6 +8,8 @@ export interface User {
   campus_id?: string;
   is_verified: boolean;
   profile_picture_url?: string;
+  bio?: string;
+  phone?: string;
   created_at: string;
 }
 

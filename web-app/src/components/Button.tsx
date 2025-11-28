@@ -7,6 +7,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   fullWidth?: boolean;
+  as?: 'button' | 'span';
 }
 
 export default function Button({
@@ -17,6 +18,7 @@ export default function Button({
   fullWidth = false,
   disabled,
   className = '',
+  as = 'button',
   ...props
 }: ButtonProps) {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
@@ -35,10 +37,20 @@ export default function Button({
   };
   
   const widthClass = fullWidth ? 'w-full' : '';
+  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`;
+  
+  if (as === 'span') {
+    return (
+      <span className={classes}>
+        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        {children}
+      </span>
+    );
+  }
   
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`}
+      className={classes}
       disabled={disabled || isLoading}
       {...props}
     >
