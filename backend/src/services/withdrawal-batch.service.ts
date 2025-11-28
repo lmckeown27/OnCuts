@@ -21,6 +21,7 @@ import { ApiError } from '../middleware/errorHandler';
 import transactionService, { TransactionType, TransactionStatus } from './transaction.service';
 import aptosService from './aptos.service';
 import auditService from './audit.service';
+import gasCalculatorService from './gas-calculator.service';
 
 export enum WithdrawalStatus {
   QUEUED = 'queued',

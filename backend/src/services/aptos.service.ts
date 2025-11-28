@@ -1,6 +1,7 @@
 import { AptosClient, AptosAccount, FaucetClient, HexString, Types } from 'aptos';
 import dotenv from 'dotenv';
 import { logger } from '../utils/logger';
+import gasCalculatorService from './gas-calculator.service';
 
 dotenv.config();
 
@@ -361,6 +362,8 @@ class AptosService {
   /**
    * Submit batched withdrawals (gas efficient)
    * Sends to multiple recipients in a single transaction
+   * 
+   * Enhanced with gas validation from typescript_cash_bot
    */
   async submitBatchWithdrawal(
     recipients: (string | undefined)[],
@@ -377,6 +380,36 @@ class AptosService {
       if (validRecipients.length !== amounts.length) {
         throw new Error('Recipients and amounts length mismatch');
       }
+
+      // ✅ NEW: Validate gas availability
+      const platformBalance = await this.getAccountBalance(this.platformAccount.address().hex());
+      const gasEstimate = gasCalculatorService.calculateBatchWithdrawalGas(validRecipients.length);
+      
+      logger.info('🔍 Batch withdrawal gas validation:', {
+        platformBalance: platformBalance.toFixed(8),
+        gasRequired: gasEstimate.totalWithBufferAPT.toFixed(8),
+        gasUnits: gasEstimate.gasUnits,
+        recipientCount: validRecipients.length,
+        totalAmountAPT: (amounts.reduce((sum, a) => sum + a, 0) / 100_000_000).toFixed(8),
+      });
+
+      // ✅ NEW: Validate sufficient balance for gas
+      const totalWithdrawalAPT = amounts.reduce((sum, a) => sum + a, 0) / 100_000_000;
+      const totalRequired = totalWithdrawalAPT + gasEstimate.totalWithBufferAPT;
+      
+      if (platformBalance < totalRequired) {
+        const shortfall = totalRequired - platformBalance;
+        logger.error('⚠️ Insufficient platform balance for batch withdrawal:', {
+          platformBalance: platformBalance.toFixed(8),
+          withdrawalAmount: totalWithdrawalAPT.toFixed(8),
+          gasRequired: gasEstimate.totalWithBufferAPT.toFixed(8),
+          totalRequired: totalRequired.toFixed(8),
+          shortfall: shortfall.toFixed(8),
+        });
+        throw new Error(`Insufficient platform balance. Need ${shortfall.toFixed(8)} more APT`);
+      }
+
+      logger.info('✅ Gas validation passed - proceeding with batch withdrawal');
 
       // Note: This requires a Move contract function like:
       // public entry fun batch_transfer(
@@ -403,17 +436,21 @@ class AptosService {
       const txResponse = await this.client.submitTransaction(signedTxn);
       await this.client.waitForTransaction(txResponse.hash);
 
-      logger.info('Batch withdrawal submitted', {
+      // ✅ NEW: Enhanced logging with gas details
+      logger.info('✅ Batch withdrawal completed successfully!', {
         recipient_count: validRecipients.length,
-        total_amount_dollars: amounts.reduce((sum, a) => sum + a, 0) / 100,
+        total_amount_apt: totalWithdrawalAPT.toFixed(8),
+        total_amount_dollars: (amounts.reduce((sum, a) => sum + a, 0) / 100).toFixed(2),
+        gas_estimate: gasEstimate.totalWithBufferAPT.toFixed(8),
         tx_hash: txResponse.hash,
+        explorer_url: `https://explorer.aptoslabs.com/txn/${txResponse.hash}?network=devnet`,
       });
 
       return txResponse.hash;
     } catch (error) {
-      logger.error('Batch withdrawal submission failed', {
+      logger.error('❌ Batch withdrawal submission failed:', {
         recipient_count: recipients.length,
-        error,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
