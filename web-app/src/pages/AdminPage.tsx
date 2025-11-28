@@ -31,7 +31,7 @@ import type {
 import { CampusCutsLogo } from '@assets';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'treasury' | 'fees' | 'reconciliation' | 'batches' | 'users' | 'audit'>('treasury');
+  const [activeTab, setActiveTab] = useState<'treasury' | 'fees' | 'reconciliation' | 'batches' | 'wallet' | 'users' | 'audit'>('treasury');
   const [isLoading, setIsLoading] = useState(true);
 
   // Data states
@@ -40,6 +40,7 @@ const AdminPage: React.FC = () => {
   const [reconciliationReports, setReconciliationReports] = useState<ReconciliationReport[]>([]);
   const [batchStats, setBatchStats] = useState<WithdrawalBatchStats | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [walletData, setWalletData] = useState<any>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -127,11 +128,153 @@ const AdminPage: React.FC = () => {
         },
       ];
 
+      // Custodial Wallet Mock Data
+      const mockWallet = {
+        overview: {
+          total_users: 156,
+          total_available_balance: 12500.50,
+          total_pending_balance: 2340.75,
+          total_locked_balance: 450.00,
+          total_escrow: 3450.00,
+          active_escrows: 23,
+          platform_balance: 8750.25,
+        },
+        userBalances: [
+          {
+            user_id: 'student-1',
+            email: 'john@calpoly.edu',
+            role: 'student',
+            available: 125.50,
+            pending: 0,
+            locked: 0,
+            last_transaction: new Date(Date.now() - 3600000).toISOString(),
+          },
+          {
+            user_id: 'barber-1',
+            email: 'marcus@calpoly.edu',
+            role: 'barber',
+            available: 450.75,
+            pending: 150.00,
+            locked: 0,
+            last_transaction: new Date(Date.now() - 7200000).toISOString(),
+          },
+          {
+            user_id: 'student-2',
+            email: 'sarah@ucsb.edu',
+            role: 'student',
+            available: 50.00,
+            pending: 35.00,
+            locked: 0,
+            last_transaction: new Date(Date.now() - 10800000).toISOString(),
+          },
+          {
+            user_id: 'barber-2',
+            email: 'jasmine@calpoly.edu',
+            role: 'barber',
+            available: 680.00,
+            pending: 90.00,
+            locked: 0,
+            last_transaction: new Date(Date.now() - 14400000).toISOString(),
+          },
+        ],
+        recentTransactions: [
+          {
+            id: 'tx-1',
+            user_id: 'student-1',
+            type: 'deposit',
+            amount: 100.00,
+            status: 'completed',
+            description: 'Stripe deposit',
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+          },
+          {
+            id: 'tx-2',
+            user_id: 'barber-1',
+            type: 'payout',
+            amount: 150.00,
+            status: 'completed',
+            description: 'Booking payout - Service completed',
+            created_at: new Date(Date.now() - 7200000).toISOString(),
+          },
+          {
+            id: 'tx-3',
+            user_id: 'student-2',
+            type: 'hold',
+            amount: 35.00,
+            status: 'pending',
+            description: 'Escrow hold for booking #123',
+            created_at: new Date(Date.now() - 10800000).toISOString(),
+          },
+          {
+            id: 'tx-4',
+            user_id: 'barber-2',
+            type: 'withdrawal',
+            amount: 250.00,
+            status: 'processing',
+            description: 'Bank withdrawal requested',
+            created_at: new Date(Date.now() - 14400000).toISOString(),
+          },
+        ],
+        activeEscrows: [
+          {
+            id: 'escrow-1',
+            booking_id: 'booking-123',
+            student: 'john@calpoly.edu',
+            barber: 'marcus@calpoly.edu',
+            amount: 35.00,
+            status: 'held',
+            created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+            expires_at: new Date(Date.now() + 3600000 * 48).toISOString(),
+          },
+          {
+            id: 'escrow-2',
+            booking_id: 'booking-456',
+            student: 'sarah@ucsb.edu',
+            barber: 'jasmine@calpoly.edu',
+            amount: 50.00,
+            status: 'held',
+            created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
+            expires_at: new Date(Date.now() + 3600000 * 43).toISOString(),
+          },
+          {
+            id: 'escrow-3',
+            booking_id: 'booking-789',
+            student: 'mike@calpoly.edu',
+            barber: 'david@ucsb.edu',
+            amount: 28.00,
+            status: 'held',
+            created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
+            expires_at: new Date(Date.now() + 3600000 * 36).toISOString(),
+          },
+        ],
+        withdrawalQueue: [
+          {
+            id: 'withdraw-1',
+            user_id: 'barber-1',
+            email: 'marcus@calpoly.edu',
+            amount: 250.00,
+            destination: 'bank',
+            status: 'queued',
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+          },
+          {
+            id: 'withdraw-2',
+            user_id: 'barber-2',
+            email: 'jasmine@calpoly.edu',
+            amount: 180.00,
+            destination: 'onchain',
+            status: 'processing',
+            created_at: new Date(Date.now() - 7200000).toISOString(),
+          },
+        ],
+      };
+
       setTreasuryStats(mockTreasury);
       setPlatformFees(mockFees);
       setReconciliationReports(mockReports);
       setBatchStats(mockBatches);
       setAuditLogs(mockLogs);
+      setWalletData(mockWallet);
     } catch (error) {
       toast.error('Failed to load admin data');
     } finally {
@@ -173,6 +316,7 @@ const AdminPage: React.FC = () => {
               { key: 'fees', label: 'Platform Fees', icon: DollarSign },
               { key: 'reconciliation', label: 'Reconciliation', icon: CheckCircle },
               { key: 'batches', label: 'Withdrawals', icon: Clock },
+              { key: 'wallet', label: 'Custodial Wallet', icon: DollarSign },
               { key: 'users', label: 'Users', icon: Users },
               { key: 'audit', label: 'Audit Logs', icon: AlertCircle },
             ].map((tab) => {
@@ -202,6 +346,7 @@ const AdminPage: React.FC = () => {
         {activeTab === 'fees' && <FeesSection fees={platformFees} onRefresh={loadInitialData} />}
         {activeTab === 'reconciliation' && <ReconciliationSection reports={reconciliationReports} onRefresh={loadInitialData} />}
         {activeTab === 'batches' && <BatchesSection stats={batchStats} onRefresh={loadInitialData} />}
+        {activeTab === 'wallet' && <CustodialWalletSection data={walletData} onRefresh={loadInitialData} />}
         {activeTab === 'users' && <UsersSection />}
         {activeTab === 'audit' && <AuditSection logs={auditLogs} />}
       </div>
@@ -701,6 +846,324 @@ const AuditSection: React.FC<{ logs: AuditLog[] }> = ({ logs }) => {
         ))}
       </div>
     </Card>
+  );
+};
+
+// Custodial Wallet Section
+const CustodialWalletSection: React.FC<{ data: any; onRefresh: () => void }> = ({ data, onRefresh }) => {
+  const [selectedSubTab, setSelectedSubTab] = useState<'overview' | 'balances' | 'transactions' | 'escrows' | 'withdrawals'>('overview');
+
+  if (!data) return <Loading />;
+
+  const subTabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'balances', label: 'User Balances' },
+    { key: 'transactions', label: 'Transactions' },
+    { key: 'escrows', label: 'Escrow Holds' },
+    { key: 'withdrawals', label: 'Withdrawal Queue' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Sub-tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {subTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setSelectedSubTab(tab.key as any)}
+              className={`
+                py-2 px-1 border-b-2 font-medium text-sm
+                ${selectedSubTab === tab.key
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Overview */}
+      {selectedSubTab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <p className="text-sm text-gray-600">Total Users</p>
+            <p className="text-3xl font-bold text-gray-900 mt-2">{data.overview.total_users}</p>
+            <p className="text-xs text-gray-500 mt-2">Active wallet users</p>
+          </Card>
+
+          <Card>
+            <p className="text-sm text-gray-600">Available Balance</p>
+            <p className="text-3xl font-bold text-green-600 mt-2">
+              ${data.overview.total_available_balance.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Ready to spend</p>
+          </Card>
+
+          <Card>
+            <p className="text-sm text-gray-600">Pending Balance</p>
+            <p className="text-3xl font-bold text-yellow-600 mt-2">
+              ${data.overview.total_pending_balance.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">In processing</p>
+          </Card>
+
+          <Card>
+            <p className="text-sm text-gray-600">Locked Balance</p>
+            <p className="text-3xl font-bold text-red-600 mt-2">
+              ${data.overview.total_locked_balance.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Temporarily locked</p>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <p className="text-sm text-gray-600">Total Escrow</p>
+            <p className="text-3xl font-bold text-blue-600 mt-2">
+              ${data.overview.total_escrow.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              {data.overview.active_escrows} active escrow holds
+            </p>
+          </Card>
+
+          <Card className="md:col-span-2">
+            <p className="text-sm text-gray-600">Platform Balance</p>
+            <p className="text-3xl font-bold text-indigo-600 mt-2">
+              ${data.overview.platform_balance.toFixed(2)}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Platform's own funds</p>
+          </Card>
+
+          <Card className="md:col-span-4">
+            <h3 className="text-lg font-semibold mb-4">Wallet Health</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Total Assets</p>
+                <p className="text-2xl font-bold text-indigo-600">
+                  ${(data.overview.total_available_balance + data.overview.total_pending_balance + data.overview.total_escrow).toFixed(2)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Utilization Rate</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {((data.overview.total_escrow / (data.overview.total_available_balance + data.overview.total_escrow)) * 100).toFixed(1)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Liquidity Available</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ${data.overview.total_available_balance.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* User Balances */}
+      {selectedSubTab === 'balances' && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">User Balances</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Available
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pending
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Locked
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Last Activity
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.userBalances.map((user: any) => (
+                  <tr key={user.user_id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.role === 'barber' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
+                      ${user.available.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-yellow-600">
+                      ${user.pending.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">
+                      ${user.locked.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(user.last_transaction).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Transactions */}
+      {selectedSubTab === 'transactions' && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
+          <div className="space-y-3">
+            {data.recentTransactions.map((tx: any) => (
+              <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      tx.type === 'deposit' ? 'bg-green-100 text-green-800' :
+                      tx.type === 'payout' ? 'bg-blue-100 text-blue-800' :
+                      tx.type === 'hold' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {tx.type}
+                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      tx.status === 'completed' ? 'bg-green-100 text-green-800' :
+                      tx.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {tx.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium mt-2">{tx.description}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {tx.user_id} • {new Date(tx.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-lg font-bold ${
+                    tx.type === 'deposit' ? 'text-green-600' : 'text-gray-900'
+                  }`}>
+                    {tx.type === 'deposit' ? '+' : '-'}${tx.amount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">{tx.id}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Escrow Holds */}
+      {selectedSubTab === 'escrows' && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Active Escrow Holds</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Booking ID
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Student
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Barber
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Expires
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {data.activeEscrows.map((escrow: any) => (
+                  <tr key={escrow.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {escrow.booking_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {escrow.student}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {escrow.barber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-blue-600">
+                      ${escrow.amount.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        {escrow.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(escrow.expires_at).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {/* Withdrawal Queue */}
+      {selectedSubTab === 'withdrawals' && (
+        <Card>
+          <h3 className="text-lg font-semibold mb-4">Withdrawal Queue</h3>
+          <div className="space-y-3">
+            {data.withdrawalQueue.map((withdrawal: any) => (
+              <div key={withdrawal.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{withdrawal.email}</p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      withdrawal.destination === 'bank' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {withdrawal.destination}
+                    </span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      withdrawal.status === 'queued' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {withdrawal.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Requested: {new Date(withdrawal.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-900">
+                    ${withdrawal.amount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">{withdrawal.id}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
   );
 };
 
