@@ -34,14 +34,52 @@ class AptosService {
   }
 
   /**
+   * Private helper for submitting transactions to specific modules
+   */
+  private async submitModuleTransaction(
+    module: string,
+    functionName: string,
+    typeArgs: string[],
+    args: any[]
+  ): Promise<string> {
+    try {
+      const payload: Types.TransactionPayload = {
+        type: 'entry_function_payload',
+        function: `${this.moduleAddress}::${module}::${functionName}`,
+        type_arguments: typeArgs,
+        arguments: args,
+      };
+
+      const txnRequest = await this.client.generateTransaction(
+        this.platformAccount.address(),
+        payload
+      );
+
+      const signedTxn = await this.client.signTransaction(
+        this.platformAccount,
+        txnRequest
+      );
+
+      const transactionRes = await this.client.submitTransaction(signedTxn);
+      await this.client.waitForTransaction(transactionRes.hash);
+
+      logger.info(`✅ Transaction submitted: ${transactionRes.hash}`);
+      return transactionRes.hash;
+    } catch (error) {
+      logger.error(`Transaction failed (${module}::${functionName}):`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize all smart contract modules
    */
   async initializeModules(): Promise<void> {
     try {
-      await this.submitTransaction('booking_system', 'initialize', [], []);
-      await this.submitTransaction('review_system', 'initialize', [], []);
-      await this.submitTransaction('barber_registry', 'initialize', [], []);
-      await this.submitTransaction('payment_system', 'initialize', [], []);
+      await this.submitModuleTransaction('booking_system', 'initialize', [], []);
+      await this.submitModuleTransaction('review_system', 'initialize', [], []);
+      await this.submitModuleTransaction('barber_registry', 'initialize', [], []);
+      await this.submitModuleTransaction('payment_system', 'initialize', [], []);
       logger.info('✅ All Aptos modules initialized');
     } catch (error) {
       logger.error('Failed to initialize modules:', error);
@@ -64,7 +102,7 @@ class AptosService {
   }): Promise<string> {
     const { clientAddress, barberAddress, serviceType, price, scheduledTime, campusId, durationMinutes, locationHash } = params;
 
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'booking_system',
       'create_booking',
       [],
@@ -89,7 +127,7 @@ class AptosService {
   async confirmBooking(barberAddress: string, bookingId: number): Promise<string> {
     // Note: In production, you'd need to sign with the barber's account
     // For MVP with custodial wallets, platform signs on behalf
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'booking_system',
       'confirm_booking',
       [],
@@ -103,7 +141,7 @@ class AptosService {
    * Complete a booking
    */
   async completeBooking(bookingId: number): Promise<string> {
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'booking_system',
       'complete_booking',
       [],
@@ -117,7 +155,7 @@ class AptosService {
    * Cancel a booking
    */
   async cancelBooking(bookingId: number): Promise<string> {
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'booking_system',
       'cancel_booking',
       [],
@@ -140,7 +178,7 @@ class AptosService {
   }): Promise<string> {
     const { barberAddress, campusId, specialties, instantBookEnabled, bioHash, pricingHash } = params;
 
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'barber_registry',
       'register_barber',
       [],
@@ -170,7 +208,7 @@ class AptosService {
   }): Promise<string> {
     const { clientAddress, bookingId, barberAddress, rating, reviewTextHash, campusId } = params;
 
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'review_system',
       'submit_review',
       [],
@@ -199,7 +237,7 @@ class AptosService {
   }): Promise<string> {
     const { bookingId, barberAddress, clientAddress, amount, stripePaymentIdHash } = params;
 
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'payment_system',
       'create_payment',
       [],
@@ -219,7 +257,7 @@ class AptosService {
    * Release payment to barber
    */
   async releasePayment(paymentId: number): Promise<string> {
-    const payload = await this.submitTransaction(
+    const payload = await this.submitModuleTransaction(
       'payment_system',
       'release_payment',
       [],
