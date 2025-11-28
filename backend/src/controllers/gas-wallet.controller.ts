@@ -8,7 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import gasEstimatorService from '../services/gas-estimator.service';
 import gasTopUpVerifierService from '../services/gas-topup-verifier.service';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import Decimal from 'decimal.js';
 

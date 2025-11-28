@@ -6,7 +6,7 @@
  */
 
 import { pool } from '../database/connection';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import axios from 'axios';
 import Decimal from 'decimal.js';
 

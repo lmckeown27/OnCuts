@@ -7,7 +7,7 @@
  */
 
 import axios from 'axios';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 import { io } from '../index'; // Socket.IO instance
 

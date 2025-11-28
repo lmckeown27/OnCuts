@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 import aptosMonitorService from '../services/aptos-monitor.service';
 import stripeMonitorService from '../services/stripe-monitor.service';
 import { pool } from '../database/connection';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 /**
  * Get combined transaction feed (Aptos + Stripe)

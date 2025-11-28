@@ -6,7 +6,7 @@
  */
 
 import { pool } from '../database/connection';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import aptosService from './aptos.service';
 import Decimal from 'decimal.js';
 

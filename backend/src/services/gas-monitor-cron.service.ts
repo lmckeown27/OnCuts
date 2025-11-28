@@ -6,7 +6,7 @@
 
 import cron from 'node-cron';
 import gasEstimatorService from './gas-estimator.service';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 class GasMonitorCronService {
   private cronJob: cron.ScheduledTask | null = null;
