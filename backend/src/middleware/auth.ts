@@ -5,7 +5,7 @@ import { ApiError } from './errorHandler';
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: 'student' | 'barber';
+  role: 'student' | 'barber' | 'admin';
   campusId: number;
 }
 

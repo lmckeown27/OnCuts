@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import withdrawalBatchService, { DestinationType } from './withdrawal-batch.service';
 import auditService from './audit.service';
+import { pool } from '../database/connection';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -55,7 +56,7 @@ class PayoutServiceV2 {
       );
 
       // 3. Mark as completed
-      await withdrawalBatchService['pool'].query(
+      await pool.query(
         `UPDATE withdrawal_queue
          SET status = 'completed', processed_at = NOW()
          WHERE id = $1`,
@@ -196,7 +197,7 @@ class PayoutServiceV2 {
       });
 
       // Store in database
-      await withdrawalBatchService['pool'].query(
+      await pool.query(
         `UPDATE users
          SET stripe_account_id = $1
          WHERE id = $2`,

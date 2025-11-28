@@ -12,6 +12,7 @@ import paymentServiceV2 from '../services/payment-v2.service';
 import payoutServiceV2 from '../services/payout-v2.service';
 import escrowService from '../services/escrow.service';
 import { logger } from '../utils/logger';
+import { pool } from '../database/connection';
 
 /**
  * Get wallet balance
@@ -130,7 +131,7 @@ export const withdrawToBank = async (req: AuthRequest, res: Response, next: Next
     }
 
     // Get user's Stripe account ID
-    const userResult = await transactionService['pool'].query(
+    const userResult = await pool.query(
       `SELECT stripe_account_id FROM users WHERE id = $1`,
       [userId]
     );

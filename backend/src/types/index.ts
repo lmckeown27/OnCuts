@@ -5,7 +5,7 @@ export interface User {
   lastName: string;
   phone?: string;
   campusId: number;
-  role: 'student' | 'barber';
+  role: 'student' | 'barber' | 'admin';
   aptosAddress: string;
   emailVerified: boolean;
   studentIdVerified: boolean;

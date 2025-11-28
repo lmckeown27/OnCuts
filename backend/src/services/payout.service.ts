@@ -105,6 +105,9 @@ class PayoutService {
       });
 
       // 4. Create Stripe payout
+      if (!withdrawal.stripe_destination_id) {
+        throw new Error('Stripe destination ID is required for bank withdrawals');
+      }
       const payout = await this.createStripePayout(
         withdrawal.amount,
         withdrawal.stripe_destination_id

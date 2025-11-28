@@ -138,7 +138,9 @@ class ReconciliationService {
         });
 
         // Send alert to admin
-        await this.sendDiscrepancyAlert(finalReport);
+        if (finalReport) {
+          await this.sendDiscrepancyAlert(finalReport);
+        }
       } else {
         logger.info('Reconciliation completed successfully - no discrepancies');
       }

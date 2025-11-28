@@ -64,7 +64,6 @@ class AuditService {
       // Return a mock audit log to prevent breaking the main flow
       return {
         id: -1,
-        action: input.action,
         created_at: new Date(),
         ...input,
       };
