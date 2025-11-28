@@ -6,7 +6,7 @@
  * Broadcasts to admin dashboard via WebSocket
  */
 
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 import { io } from '../index'; // Socket.IO instance
 import Stripe from 'stripe';
@@ -140,18 +140,19 @@ class StripeMonitorService {
         break;
       }
 
-      // Transfer Paid
-      case 'transfer.paid': {
-        const transfer = event.data.object as Stripe.Transfer;
-        parsed.amount_cents = transfer.amount;
-        parsed.amount_usd = transfer.amount / 100;
-        parsed.status = 'paid';
-        parsed.description = `Transfer paid to barber: $${(transfer.amount / 100).toFixed(2)}`;
-        parsed.metadata = transfer.metadata;
-        parsed.booking_id = transfer.metadata.bookingId;
-        parsed.barber_email = transfer.metadata.barberEmail;
-        break;
-      }
+      // Transfer Paid (Note: 'transfer.paid' is not a valid Stripe event type)
+      // Use 'transfer.created' instead for transfer events
+      // case 'transfer.paid': {
+      //   const transfer = event.data.object as Stripe.Transfer;
+      //   parsed.amount_cents = transfer.amount;
+      //   parsed.amount_usd = transfer.amount / 100;
+      //   parsed.status = 'paid';
+      //   parsed.description = `Transfer paid to barber: $${(transfer.amount / 100).toFixed(2)}`;
+      //   parsed.metadata = transfer.metadata;
+      //   parsed.booking_id = transfer.metadata.bookingId;
+      //   parsed.barber_email = transfer.metadata.barberEmail;
+      //   break;
+      // }
 
       // Payout Created
       case 'payout.created': {
