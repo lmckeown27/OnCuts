@@ -63,8 +63,124 @@ export default function ConsumerPage() {
   const loadBarbers = async () => {
     try {
       setLoading(true);
-      const response = await barberService.getBarbers();
-      const rankedBarbers = rankBarbers(response.data);
+      
+      // Mock data for demonstration (no backend required)
+      const mockBarbers = [
+        {
+          id: '1',
+          user_id: 'barber-1',
+          campus_id: '1',
+          bio: 'Specializing in modern cuts and fades. 5+ years experience.',
+          years_of_experience: 5,
+          instant_book_enabled: true,
+          vacation_mode: false,
+          average_rating: 4.8,
+          total_bookings: 234,
+          specialties: ['Fades', 'Modern Cuts', 'Beard Trim'],
+          created_at: new Date(Date.now() - 86400000 * 365).toISOString(),
+          updated_at: new Date().toISOString(),
+          user: {
+            id: 'barber-1',
+            first_name: 'Marcus',
+            last_name: 'Johnson',
+            email: 'marcus@calpoly.edu',
+          },
+          portfolio: [
+            { id: '1', image_url: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=400', uploaded_at: new Date().toISOString() },
+            { id: '2', image_url: 'https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=400', uploaded_at: new Date().toISOString() },
+          ],
+          services: [
+            { id: '1', name: 'Classic Fade', price_cents: 2500, duration_minutes: 30 },
+            { id: '2', name: 'Beard Trim', price_cents: 1500, duration_minutes: 15 },
+          ],
+        },
+        {
+          id: '2',
+          user_id: 'barber-2',
+          campus_id: '1',
+          bio: 'Expert in textured cuts and natural styles. Your hair, your way.',
+          years_of_experience: 3,
+          instant_book_enabled: true,
+          vacation_mode: false,
+          average_rating: 4.9,
+          total_bookings: 189,
+          specialties: ['Textured Cuts', 'Natural Hair', 'Braids'],
+          created_at: new Date(Date.now() - 86400000 * 730).toISOString(),
+          updated_at: new Date().toISOString(),
+          user: {
+            id: 'barber-2',
+            first_name: 'Jasmine',
+            last_name: 'Williams',
+            email: 'jasmine@calpoly.edu',
+          },
+          portfolio: [
+            { id: '3', image_url: 'https://images.unsplash.com/photo-1560869713-bf165a6e2e66?w=400', uploaded_at: new Date().toISOString() },
+            { id: '4', image_url: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=400', uploaded_at: new Date().toISOString() },
+          ],
+          services: [
+            { id: '3', name: 'Natural Hair Cut', price_cents: 3000, duration_minutes: 45 },
+            { id: '4', name: 'Braiding', price_cents: 5000, duration_minutes: 90 },
+          ],
+        },
+        {
+          id: '3',
+          user_id: 'barber-3',
+          campus_id: '2',
+          bio: 'Classic barbering meets modern style. Walk-ins welcome!',
+          years_of_experience: 7,
+          instant_book_enabled: false,
+          vacation_mode: false,
+          average_rating: 4.7,
+          total_bookings: 412,
+          specialties: ['Classic Cuts', 'Hot Towel Shave', 'Gentleman\'s Cut'],
+          created_at: new Date(Date.now() - 86400000 * 1095).toISOString(),
+          updated_at: new Date().toISOString(),
+          user: {
+            id: 'barber-3',
+            first_name: 'David',
+            last_name: 'Chen',
+            email: 'david@ucsb.edu',
+          },
+          portfolio: [
+            { id: '5', image_url: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400', uploaded_at: new Date().toISOString() },
+            { id: '6', image_url: 'https://images.unsplash.com/photo-1599351431613-151b5dee8c90?w=400', uploaded_at: new Date().toISOString() },
+          ],
+          services: [
+            { id: '5', name: 'Classic Cut', price_cents: 2800, duration_minutes: 35 },
+            { id: '6', name: 'Hot Towel Shave', price_cents: 3500, duration_minutes: 40 },
+          ],
+        },
+        {
+          id: '4',
+          user_id: 'barber-4',
+          campus_id: '1',
+          bio: 'Precision cuts, attention to detail. Book now for the best look on campus.',
+          years_of_experience: 4,
+          instant_book_enabled: true,
+          vacation_mode: false,
+          average_rating: 4.6,
+          total_bookings: 156,
+          specialties: ['Precision Cuts', 'Line-ups', 'Design Work'],
+          created_at: new Date(Date.now() - 86400000 * 800).toISOString(),
+          updated_at: new Date().toISOString(),
+          user: {
+            id: 'barber-4',
+            first_name: 'Tyler',
+            last_name: 'Rodriguez',
+            email: 'tyler@calpoly.edu',
+          },
+          portfolio: [
+            { id: '7', image_url: 'https://images.unsplash.com/photo-1621607512214-68297480165e?w=400', uploaded_at: new Date().toISOString() },
+            { id: '8', image_url: 'https://images.unsplash.com/photo-1620231419658-f2f4e175eb7d?w=400', uploaded_at: new Date().toISOString() },
+          ],
+          services: [
+            { id: '7', name: 'Precision Cut + Line-up', price_cents: 3200, duration_minutes: 40 },
+            { id: '8', name: 'Design Work', price_cents: 4000, duration_minutes: 50 },
+          ],
+        },
+      ];
+
+      const rankedBarbers = rankBarbers(mockBarbers as any);
       setBarbers(rankedBarbers);
     } catch (error) {
       console.error('Failed to load barbers:', error);

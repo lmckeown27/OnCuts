@@ -48,19 +48,84 @@ const AdminPage: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      const [treasury, fees, reports, batches, logs] = await Promise.all([
-        adminService.getTreasuryStats(),
-        adminService.getPlatformFees(),
-        adminService.getReconciliationReports(10),
-        adminService.getWithdrawalBatches(),
-        adminService.getAuditLogs(50),
-      ]);
+      
+      // Use mock data for demonstration (no backend required)
+      const mockTreasury: TreasuryStats = {
+        total_user_balances_dollars: 12500,
+        total_escrow_dollars: 3450,
+        total_fees_dollars: 875.50,
+      };
 
-      setTreasuryStats(treasury);
-      setPlatformFees(fees);
-      setReconciliationReports(reports);
-      setBatchStats(batches);
-      setAuditLogs(logs.logs);
+      const mockFees: PlatformFees = {
+        total_fees_dollars: 875.50,
+        total_fees_collected: 1245,
+        pending_fees_dollars: 125.00,
+        last_withdrawal_at: new Date(Date.now() - 3600000 * 24).toISOString(),
+      };
+
+      const mockReports: ReconciliationReport[] = [
+        {
+          id: '1',
+          period_start: new Date(Date.now() - 86400000).toISOString(),
+          period_end: new Date().toISOString(),
+          status: 'completed',
+          discrepancies_found: 0,
+          total_transactions_checked: 1523,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          period_start: new Date(Date.now() - 86400000 * 2).toISOString(),
+          period_end: new Date(Date.now() - 86400000).toISOString(),
+          status: 'completed',
+          discrepancies_found: 2,
+          total_transactions_checked: 1456,
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+        },
+      ];
+
+      const mockBatches: WithdrawalBatchStats = {
+        pending_count: 3,
+        pending_total_dollars: 450,
+        completed_today: 5,
+        completed_today_dollars: 2340,
+      };
+
+      const mockLogs: AuditLog[] = [
+        {
+          id: '1',
+          user_id: 'user-123',
+          action: 'PLATFORM_FEE_WITHDRAWAL',
+          entity_type: 'platform_fee',
+          entity_id: 'fee-456',
+          metadata: { amount: 125.50 },
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: '2',
+          user_id: 'user-456',
+          action: 'BOOKING_PAYMENT_SUCCESS',
+          entity_type: 'booking',
+          entity_id: 'booking-789',
+          metadata: { amount: 35.00 },
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+        },
+        {
+          id: '3',
+          user_id: 'admin-1',
+          action: 'RECONCILIATION_RUN',
+          entity_type: 'system',
+          entity_id: 'recon-123',
+          metadata: { discrepancies: 0 },
+          created_at: new Date(Date.now() - 10800000).toISOString(),
+        },
+      ];
+
+      setTreasuryStats(mockTreasury);
+      setPlatformFees(mockFees);
+      setReconciliationReports(mockReports);
+      setBatchStats(mockBatches);
+      setAuditLogs(mockLogs);
     } catch (error) {
       toast.error('Failed to load admin data');
     } finally {
