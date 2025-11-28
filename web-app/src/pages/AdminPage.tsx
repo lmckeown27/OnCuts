@@ -22,6 +22,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import LiveTransactionFeed from '../components/LiveTransactionFeed';
+import GasWalletManager from '../components/GasWalletManager';
 import adminService from '../services/admin.service';
 import toast from 'react-hot-toast';
 import type { 
@@ -35,7 +36,7 @@ import { CampusCutsLogo } from '@assets';
 
 const AdminPage: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'treasury' | 'fees' | 'reconciliation' | 'batches' | 'wallet' | 'users' | 'audit'>('treasury');
+  const [activeTab, setActiveTab] = useState<'treasury' | 'fees' | 'reconciliation' | 'batches' | 'wallet' | 'gas' | 'users' | 'audit'>('treasury');
   const [isLoading, setIsLoading] = useState(true);
 
   // Data states
@@ -336,6 +337,7 @@ const AdminPage: React.FC = () => {
               { key: 'reconciliation', label: 'Reconciliation', icon: CheckCircle },
               { key: 'batches', label: 'Withdrawals', icon: Clock },
               { key: 'wallet', label: 'Custodial Wallet', icon: DollarSign },
+              { key: 'gas', label: '⛽ Gas Wallet', icon: TrendingUp },
               { key: 'users', label: 'Users', icon: Users },
               { key: 'audit', label: 'Audit Logs', icon: AlertCircle },
             ].map((tab) => {
@@ -366,6 +368,7 @@ const AdminPage: React.FC = () => {
         {activeTab === 'reconciliation' && <ReconciliationSection reports={reconciliationReports} onRefresh={loadInitialData} />}
         {activeTab === 'batches' && <BatchesSection stats={batchStats} onRefresh={loadInitialData} />}
         {activeTab === 'wallet' && <CustodialWalletSection data={walletData} onRefresh={loadInitialData} />}
+        {activeTab === 'gas' && <GasWalletManager />}
         {activeTab === 'users' && <UsersSection />}
         {activeTab === 'audit' && <AuditSection logs={auditLogs} />}
       </div>
