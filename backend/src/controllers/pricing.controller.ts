@@ -601,7 +601,7 @@ export async function updateConfig(req: Request, res: Response) {
         updates.maxDailyPriceChangePct || currentConfig.max_daily_price_change_pct,
         updates.minPriceChangeThresholdPct || currentConfig.min_price_change_threshold_pct,
         updates.recomputeFrequencyHours || currentConfig.recompute_frequency_hours,
-        req.user?.id || 'admin', // TODO: Get from auth middleware
+        (req as any).user?.id || 'admin', // TODO: Get from auth middleware
       ]
     );
 
@@ -611,7 +611,7 @@ export async function updateConfig(req: Request, res: Response) {
       INSERT INTO pricing_config_audit (config_id, version, changes, changed_by)
       VALUES ($1, $2, $3, $4)
       `,
-      [result.rows[0].id, newVersion, JSON.stringify(updates), req.user?.id || 'admin']
+      [result.rows[0].id, newVersion, JSON.stringify(updates), (req as any).user?.id || 'admin']
     );
 
     res.json({
