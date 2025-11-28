@@ -4,9 +4,10 @@ export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
 
 export const ROUTES = {
   HOME: '/',
-  LOGIN: '/login',
-  SIGNUP: '/signup',
-  CAMPUS_SELECT: '/campus-select',
+  ADMIN: '/admin',
+  CONSUMER: '/consumer',
+  BARBER: '/barber',
+  WALLET: '/wallet',
   
   // Student routes
   STUDENT_DISCOVERY: '/student/discovery',

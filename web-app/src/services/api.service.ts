@@ -50,12 +50,12 @@ class ApiService {
             } catch (refreshError) {
               // Refresh failed, logout user
               localStorage.clear();
-              window.location.href = '/login';
+              window.location.href = '/';
             }
           } else {
             // No refresh token, logout
             localStorage.clear();
-            window.location.href = '/login';
+            window.location.href = '/';
           }
         }
         return Promise.reject(error);
