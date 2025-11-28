@@ -139,6 +139,15 @@ const AdminPage: React.FC = () => {
           active_escrows: 23,
           platform_balance: 8750.25,
         },
+        platformWallet: {
+          address: '0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa',
+          network: 'devnet',
+          onchain_balance_apt: 145.8932,
+          onchain_balance_usd: 1458.93,
+          total_deposits: 1245,
+          total_withdrawals: 1099,
+          last_onchain_activity: new Date(Date.now() - 3600000).toISOString(),
+        },
         userBalances: [
           {
             user_id: 'student-1',
@@ -958,6 +967,77 @@ const CustodialWalletSection: React.FC<{ data: any; onRefresh: () => void }> = (
                   ${data.overview.total_available_balance.toFixed(2)}
                 </p>
               </div>
+            </div>
+          </Card>
+
+          {/* Platform Master Wallet */}
+          <Card className="md:col-span-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Platform Master Wallet (Aptos)</h3>
+                <p className="text-sm text-gray-600 mt-1">The custodial wallet's on-chain address</p>
+              </div>
+              <div className="px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-full">
+                {data.platformWallet.network.toUpperCase()}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs text-gray-600 font-medium mb-2">WALLET ADDRESS</p>
+                <div className="bg-white border border-gray-300 rounded-lg p-3 font-mono text-xs break-all">
+                  {data.platformWallet.address}
+                </div>
+                <div className="flex items-center space-x-2 mt-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(data.platformWallet.address);
+                      toast.success('Address copied!');
+                    }}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    📋 Copy Address
+                  </button>
+                  <a
+                    href={`https://explorer.aptoslabs.com/account/${data.platformWallet.address}?network=${data.platformWallet.network}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    🔗 View on Explorer
+                  </a>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-white border border-gray-300 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 mb-1">ON-CHAIN BALANCE</p>
+                  <p className="text-2xl font-bold text-indigo-600">
+                    {data.platformWallet.onchain_balance_apt.toFixed(4)} APT
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    ≈ ${data.platformWallet.onchain_balance_usd.toFixed(2)} USD
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white border border-gray-300 rounded-lg p-3">
+                    <p className="text-xs text-gray-600">Total Deposits</p>
+                    <p className="text-lg font-bold text-green-600">{data.platformWallet.total_deposits}</p>
+                  </div>
+                  <div className="bg-white border border-gray-300 rounded-lg p-3">
+                    <p className="text-xs text-gray-600">Total Withdrawals</p>
+                    <p className="text-lg font-bold text-blue-600">{data.platformWallet.total_withdrawals}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>💡 How it works:</strong> All users share this single platform wallet on Aptos. 
+                When users deposit APT, it goes to this address and their internal balance is credited. 
+                When they withdraw, APT is sent from this wallet to their external address.
+              </p>
             </div>
           </Card>
         </div>
