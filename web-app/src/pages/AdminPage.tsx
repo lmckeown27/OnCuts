@@ -58,8 +58,10 @@ const AdminPage: React.FC = () => {
 
       const mockFees: PlatformFees = {
         total_fees_dollars: 875.50,
-        total_fees_collected: 1245,
-        pending_fees_dollars: 125.00,
+        available_fees_dollars: 625.50,
+        available_count: 78,
+        withdrawn_fees_dollars: 250.00,
+        withdrawn_count: 32,
         last_withdrawal_at: new Date(Date.now() - 3600000 * 24).toISOString(),
       };
 
@@ -85,10 +87,14 @@ const AdminPage: React.FC = () => {
       ];
 
       const mockBatches: WithdrawalBatchStats = {
-        pending_count: 3,
-        pending_total_dollars: 450,
-        completed_today: 5,
-        completed_today_dollars: 2340,
+        queued_count: 12,
+        queued_total_dollars: 1450.50,
+        processing_count: 2,
+        processing_total_dollars: 325.00,
+        completed_today: 8,
+        completed_today_dollars: 2340.75,
+        failed_today: 0,
+        failed_today_dollars: 0,
       };
 
       const mockLogs: AuditLog[] = [
