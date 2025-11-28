@@ -13,18 +13,28 @@ export interface User {
   isActive: boolean;
 }
 
+export interface Service {
+  id?: string;
+  name: string;
+  description?: string;
+  price: number;
+  duration_minutes: number;
+}
+
 export interface Barber {
   id: string;
   userId: string;
   bio: string;
+  specialties: string[];
   profileImageUrl?: string;
-  pricing: Record<string, number>;
+  pricing: Service[] | Record<string, number>; // Support both formats
   instantBook: boolean;
   averageResponseTime?: number;
   totalEarnings: number;
   totalBookings: number;
   averageRating: number;
   yearsExperience?: number;
+  aptosAddress?: string;
   createdAt: Date;
 }
 
