@@ -271,44 +271,6 @@ class AptosService {
   }
 
   /**
-   * Generic transaction submission helper
-   */
-  private async submitTransaction(
-    module: string,
-    functionName: string,
-    typeArgs: string[],
-    args: any[]
-  ): Promise<string> {
-    try {
-      const payload: Types.TransactionPayload = {
-        type: 'entry_function_payload',
-        function: `${this.moduleAddress}::${module}::${functionName}`,
-        type_arguments: typeArgs,
-        arguments: args,
-      };
-
-      const txnRequest = await this.client.generateTransaction(
-        this.platformAccount.address(),
-        payload
-      );
-
-      const signedTxn = await this.client.signTransaction(
-        this.platformAccount,
-        txnRequest
-      );
-
-      const transactionRes = await this.client.submitTransaction(signedTxn);
-      await this.client.waitForTransaction(transactionRes.hash);
-
-      logger.info(`✅ Transaction submitted: ${transactionRes.hash}`);
-      return transactionRes.hash;
-    } catch (error) {
-      logger.error(`Transaction failed (${module}::${functionName}):`, error);
-      throw error;
-    }
-  }
-
-  /**
    * Get account balance
    */
   async getAccountBalance(address: string): Promise<number> {
