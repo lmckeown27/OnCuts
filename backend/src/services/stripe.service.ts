@@ -95,6 +95,66 @@ class StripeService {
     }
   }
 
+  // === CUSTOMER MANAGEMENT (Step 2 from user instructions) ===
+
+  /**
+   * Create Stripe customer for a user
+   * Called when a student makes their first payment
+   */
+  async createCustomer(params: {
+    userId: string;
+    email: string;
+    name: string;
+  }): Promise<Stripe.Customer> {
+    try {
+      const { userId, email, name } = params;
+
+      logger.info('Creating Stripe customer', {
+        user_id: userId,
+        email,
+      });
+
+      const customer = await this.stripe.customers.create({
+        email,
+        name,
+        metadata: {
+          platform: 'CampusCuts',
+          user_id: userId,
+        },
+      });
+
+      logger.info(`✅ Stripe customer created: ${customer.id} for user ${userId}`);
+      return customer;
+    } catch (error) {
+      logger.error('Failed to create Stripe customer:', error);
+      throw new ApiError(500, 'Customer creation failed');
+    }
+  }
+
+  /**
+   * Get customer by ID
+   */
+  async getCustomer(customerId: string): Promise<Stripe.Customer> {
+    try {
+      return await this.stripe.customers.retrieve(customerId) as Stripe.Customer;
+    } catch (error) {
+      logger.error(`Failed to retrieve customer ${customerId}:`, error);
+      throw new ApiError(500, 'Failed to retrieve customer');
+    }
+  }
+
+  /**
+   * Get Payment Intent details
+   */
+  async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+    try {
+      return await this.stripe.paymentIntents.retrieve(paymentIntentId);
+    } catch (error) {
+      logger.error(`Failed to retrieve payment intent ${paymentIntentId}:`, error);
+      throw new ApiError(500, 'Failed to retrieve payment');
+    }
+  }
+
   /**
    * Create connected account for barber (Stripe Connect)
    */
@@ -152,20 +212,30 @@ class StripeService {
 
   /**
    * Transfer funds to barber (instant payout)
+   * Step 6: Distribute payment (minus 5% CampusCuts fee) to barber
    */
   async transferToBarber(params: {
-    amount: number; // Amount in cents (after platform fee)
+    amount: number; // Amount in cents (after platform fee deduction)
     barberStripeAccountId: string;
     bookingId: number;
     description: string;
+    sourceTransaction?: string; // Payment Intent ID for tracking
   }): Promise<string> {
     try {
-      const { amount, barberStripeAccountId, bookingId, description } = params;
+      const { amount, barberStripeAccountId, bookingId, description, sourceTransaction } = params;
+
+      logger.info('Transferring funds to barber', {
+        amount_dollars: amount / 100,
+        barber_account: barberStripeAccountId,
+        booking_id: bookingId,
+        source_transaction: sourceTransaction,
+      });
 
       const transfer = await this.stripe.transfers.create({
         amount,
         currency: 'usd',
         destination: barberStripeAccountId,
+        source_transaction: sourceTransaction, // Link to original payment
         metadata: {
           booking_id: bookingId.toString(),
           platform: 'CampusCuts',
@@ -173,7 +243,7 @@ class StripeService {
         description,
       });
 
-      logger.info(`Transfer created: ${transfer.id} for $${amount / 100} to ${barberStripeAccountId}`);
+      logger.info(`✅ Transfer created: ${transfer.id} for $${amount / 100} to barber`);
       return transfer.id;
     } catch (error) {
       logger.error('Failed to transfer to barber:', error);

@@ -30,6 +30,11 @@ import bookingV2Routes from './routes/booking-v2.routes';
 import walletV2Routes from './routes/wallet-v2.routes';
 import adminRoutes from './routes/admin.routes';
 
+// Stripe Integration Routes
+import webhookRoutes from './routes/webhook.routes';
+import bookingPaymentRoutes from './routes/booking-payment.routes';
+import barberConnectRoutes from './routes/barber-connect.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -121,6 +126,12 @@ app.use(cors({
 }));
 app.use(compression());
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
+
+// IMPORTANT: Webhook routes MUST come BEFORE express.json()
+// Stripe requires raw body to verify webhook signatures
+app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
+
+// Then apply JSON parsing for all other routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -153,7 +164,8 @@ app.get('/health', async (req: Request, res: Response) => {
 // API Routes (V1 - kept for backward compatibility)
 app.use('/api/auth', authRoutes);
 app.use('/api/barbers', barberRoutes);
-app.use('/api/bookings', bookingRoutes);  // V1
+app.use('/api/barber', barberConnectRoutes);  // Stripe Connect for barbers
+app.use('/api/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/campus', campusRoutes);
