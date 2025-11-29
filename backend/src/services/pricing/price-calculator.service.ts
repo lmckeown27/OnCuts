@@ -81,14 +81,14 @@ class PriceCalculatorService {
     );
 
     // Calculate price bounds
-    const minPriceCents = this.calculateMinPrice(basePriceCents);
-    const maxPriceCents = this.calculateMaxPrice(basePriceCents);
+    const minPriceCents = await this.calculateMinPrice(basePriceCents);
+    const maxPriceCents = await this.calculateMaxPrice(basePriceCents);
 
     // Calculate price multiplier from effective score
-    const priceMultiplier = this.calculatePriceMultiplier(effectiveScore);
+    const priceMultiplier = await this.calculatePriceMultiplier(effectiveScore);
 
     // Calculate market demand adjustment
-    const marketAdjustment = this.calculateMarketAdjustment(mdi);
+    const marketAdjustment = await this.calculateMarketAdjustment(mdi);
 
     // Compute raw price
     const computedPriceCents = new Decimal(basePriceCents)
@@ -192,7 +192,7 @@ class PriceCalculatorService {
   /**
    * Calculate minimum price (80% of base)
    */
-  private calculateMinPrice(basePriceCents: number): number {
+  private async calculateMinPrice(basePriceCents: number): Promise<number> {
     const config = await this.loadConfig();
     return new Decimal(basePriceCents)
       .times(config.minPriceMultiplier)
@@ -203,7 +203,7 @@ class PriceCalculatorService {
   /**
    * Calculate maximum price (150% of base)
    */
-  private calculateMaxPrice(basePriceCents: number): number {
+  private async calculateMaxPrice(basePriceCents: number): Promise<number> {
     const config = await this.loadConfig();
     return new Decimal(basePriceCents)
       .times(config.maxPriceMultiplier)
@@ -216,7 +216,7 @@ class PriceCalculatorService {
    * PriceMultiplier = 0.80 + (EffectiveScore / 100) × 0.70
    * Range: [0.80, 1.50]
    */
-  private calculatePriceMultiplier(effectiveScore: number): number {
+  private async calculatePriceMultiplier(effectiveScore: number): Promise<number> {
     const config = await this.loadConfig();
     
     const multiplier = new Decimal(config.minPriceMultiplier)
@@ -236,7 +236,7 @@ class PriceCalculatorService {
    * MarketAdjustment = 0.90 + (MDI × 0.20)
    * Range: [0.90, 1.10]
    */
-  private calculateMarketAdjustment(mdi: number): number {
+  private async calculateMarketAdjustment(mdi: number): Promise<number> {
     const config = await this.loadConfig();
     
     const adjustment = new Decimal(config.mdiMinAdjustment)
