@@ -2,6 +2,9 @@
 
 **Comprehensive Analysis of All Platform Costs**
 
+> **Note:** All calculations based on **APT price of $3.00** (current market price as of Nov 2025).  
+> Gas fees will fluctuate with APT price. At $3/APT, blockchain costs are 70% lower than at $10/APT.
+
 ---
 
 ## 📋 Table of Contents
@@ -21,17 +24,17 @@
 
 ## 🎯 Executive Summary
 
-### **Total Monthly Cost: $90 - $150/month**
+### **Total Monthly Cost: $45 - $105/month**
 
 **Cost Breakdown by Category:**
 ```
-Infrastructure (Blockchain + Storage):  $70/month
+Infrastructure (Blockchain + Storage):  $35/month
 Payment Processing (Stripe):            Variable (2.9% + $0.30 per transaction)
 Hosting (Backend):                      $10-20/month
 Optional Services:                      $10-60/month
 
 vs Traditional Stack:                   $600/month
-SAVINGS:                                85% ($510/month)
+SAVINGS:                                92% ($555/month)
 ```
 
 **Key Insight:** Blockchain-first architecture reduces fixed costs by 85% while maintaining professional infrastructure.
@@ -40,16 +43,16 @@ SAVINGS:                                85% ($510/month)
 
 ## 💳 Monthly Operational Costs
 
-### **1. Blockchain Infrastructure: $50/month**
+### **1. Blockchain Infrastructure: $15/month**
 
 #### **Aptos Blockchain (Primary Database)**
 
 **Cost Components:**
 ```
 Gas Fees (Transaction Costs):
-├─ Average transaction:           0.001 APT (~$0.01)
+├─ Average transaction:           0.001 APT (~$0.003)
 ├─ Monthly transactions (est.):   ~5,000 txs
-├─ Total gas cost:                5 APT (~$50/month)
+├─ Total gas cost:                5 APT (~$15/month)
 └─ Platform pays all gas fees     ✓
 
 Node Access (Free Tier):
@@ -62,21 +65,21 @@ Node Access (Free Tier):
 **Transaction Breakdown:**
 | Transaction Type | Count/Month | Gas/Tx | Monthly Cost |
 |-----------------|-------------|---------|--------------|
-| User Signup | 500 | 0.001 APT | $5 |
-| Deposits (Fiat→Chain) | 800 | 0.001 APT | $8 |
-| Create Booking | 1,000 | 0.002 APT | $20 |
-| Complete Booking | 900 | 0.002 APT | $18 |
-| Cancel Booking | 100 | 0.001 APT | $1 |
-| Create Review | 800 | 0.001 APT | $8 |
-| Profile Updates | 400 | 0.001 APT | $4 |
-| Withdrawals | 500 | 0.001 APT | $5 |
-| **TOTAL** | **5,000** | - | **~$50/month** |
+| User Signup | 500 | 0.001 APT | $1.50 |
+| Deposits (Fiat→Chain) | 800 | 0.001 APT | $2.40 |
+| Create Booking | 1,000 | 0.002 APT | $6.00 |
+| Complete Booking | 900 | 0.002 APT | $5.40 |
+| Cancel Booking | 100 | 0.001 APT | $0.30 |
+| Create Review | 800 | 0.001 APT | $2.40 |
+| Profile Updates | 400 | 0.001 APT | $1.20 |
+| Withdrawals | 500 | 0.001 APT | $1.50 |
+| **TOTAL** | **5,000** | - | **~$15/month** |
 
 **Notes:**
 - Gas prices are stable on Aptos (~0.001 APT/tx)
 - Platform absorbs ALL gas fees (users pay $0)
 - Scales linearly with transaction volume
-- APT price assumed at $10 (fluctuates)
+- APT price: $3 (current market price)
 
 **Alternative: Dedicated Node (Optional)**
 ```
@@ -395,19 +398,19 @@ Free Tier:
 
 ### **Minimal Configuration (MVP)**
 ```
-Aptos Gas Fees:                   $50/month
+Aptos Gas Fees:                   $15/month
 IPFS (Pinata Free):               $0/month
 Backend (Vercel Free):            $0/month
 Stripe Fees:                      Variable (2.9% + $0.30)
 Email (Gmail SMTP):               $0/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $50/month
+TOTAL FIXED:                      $15/month
 TOTAL VARIABLE:                   ~3-4% of revenue
 ```
 
 ### **Recommended Configuration (Production)**
 ```
-Aptos Gas Fees:                   $50/month
+Aptos Gas Fees:                   $15/month
 IPFS (Pinata Picnic):             $20/month
 Backend (Vercel Pro):             $20/month
 Redis (Upstash):                  $10/month
@@ -416,13 +419,13 @@ Email (SendGrid):                 $15/month
 Monitoring (Sentry):              $26/month
 Domain:                           $2/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $143/month
+TOTAL FIXED:                      $108/month
 TOTAL VARIABLE:                   ~3-4% of revenue
 ```
 
 ### **Scale Configuration (1,000+ users)**
 ```
-Aptos Gas Fees:                   $150/month (15k txs)
+Aptos Gas Fees:                   $45/month (15k txs)
 IPFS (Pinata Growth):             $40/month
 Backend (AWS Lambda):             $30/month
 Redis (Upstash):                  $20/month
@@ -431,7 +434,7 @@ Email (SendGrid):                 $15/month
 Monitoring:                       $26/month
 Domain:                           $2/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $283/month
+TOTAL FIXED:                      $178/month
 TOTAL VARIABLE:                   ~3-4% of revenue
 ```
 
@@ -499,38 +502,38 @@ TOTAL PER USER:                   $0.013
 
 **Per Booking:**
 ```
-Create booking (blockchain):      $0.02 (gas)
-Complete booking (blockchain):    $0.02 (gas)
-Review creation (blockchain):     $0.01 (gas)
+Create booking (blockchain):      $0.006 (gas)
+Complete booking (blockchain):    $0.006 (gas)
+Review creation (blockchain):     $0.003 (gas)
 Review text (IPFS):               $0.001 (storage)
 Notification emails (2x):         $0.002 (email)
 ────────────────────────────────────────────
-TOTAL PER BOOKING:                $0.053
+TOTAL PER BOOKING:                $0.018
 ```
 
 **Per Transaction (Student Pays $30):**
 ```
 Stripe fee (2.9% + $0.30):       $1.17
-Deposit to blockchain:            $0.01 (gas)
-Create booking:                   $0.02 (gas)
-Complete booking:                 $0.02 (gas)
+Deposit to blockchain:            $0.003 (gas)
+Create booking:                   $0.006 (gas)
+Complete booking:                 $0.006 (gas)
 Notifications:                    $0.002 (email)
 ────────────────────────────────────────────
-TOTAL PLATFORM COST:              $1.21
+TOTAL PLATFORM COST:              $1.19
 PLATFORM FEE (5%):                $1.50
 ────────────────────────────────────────────
-NET PROFIT PER BOOKING:           $0.29 (after costs)
+NET PROFIT PER BOOKING:           $0.31 (after costs)
 ```
 
 **Scaling Example: 100 Bookings/Month**
 ```
 Gross Platform Revenue (5%):      $150
-Platform Transaction Costs:       -$121
-Fixed Infrastructure Costs:       -$90
+Platform Transaction Costs:       -$119
+Fixed Infrastructure Costs:       -$45
 ────────────────────────────────────────────
-NET PROFIT:                       -$61/month (loss)
+NET PROFIT:                       -$14/month (loss)
 ────────────────────────────────────────────
-BREAK-EVEN POINT:                 ~520 bookings/month
+BREAK-EVEN POINT:                 ~145 bookings/month
 ```
 
 ---
@@ -585,7 +588,7 @@ GRAND TOTAL:                      ~$700/month
 
 ```
 DATABASE:
-Aptos Blockchain:                 $50/month (gas)
+Aptos Blockchain:                 $15/month (gas)
 └─ Infinite scale
 └─ Immutable data
 └─ No backups needed
@@ -615,23 +618,23 @@ MONITORING:
 Sentry:                           $26/month
 Vercel Analytics:                 $0/month
 
-TOTAL INFRASTRUCTURE:             $126/month
+TOTAL INFRASTRUCTURE:             $91/month
 ────────────────────────────────────────────
 + Stripe fees (variable, same)
 + Email service ($15)
 ────────────────────────────────────────────
-GRAND TOTAL:                      ~$141/month
+GRAND TOTAL:                      ~$106/month
 ```
 
-### **Cost Savings: 80% Reduction**
+### **Cost Savings: 85% Reduction**
 
 ```
 Traditional Stack:                $700/month
-Blockchain Stack:                 $141/month
+Blockchain Stack:                 $106/month
 ────────────────────────────────────────────
-MONTHLY SAVINGS:                  $559/month
-ANNUAL SAVINGS:                   $6,708/year
-3-YEAR SAVINGS:                   $20,124
+MONTHLY SAVINGS:                  $594/month
+ANNUAL SAVINGS:                   $7,128/year
+3-YEAR SAVINGS:                   $21,384
 ```
 
 ---
@@ -643,51 +646,51 @@ ANNUAL SAVINGS:                   $6,708/year
 #### **100 Users (MVP)**
 ```
 Monthly Transactions:             ~500
-Aptos Gas:                        $50/month
-IPFS Storage:                     $20/month (free tier OK)
+Aptos Gas:                        $15/month
+IPFS Storage:                     $0/month (free tier)
 Backend:                          $0/month (free tier)
 ────────────────────────────────────────────
-TOTAL FIXED:                      $70/month
-Per-User Cost:                    $0.70/user
+TOTAL FIXED:                      $15/month
+Per-User Cost:                    $0.15/user
 ```
 
 #### **1,000 Users**
 ```
 Monthly Transactions:             ~5,000
-Aptos Gas:                        $50/month
+Aptos Gas:                        $15/month
 IPFS Storage:                     $20/month
 Backend:                          $20/month
 Redis:                            $10/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $100/month
-Per-User Cost:                    $0.10/user
+TOTAL FIXED:                      $65/month
+Per-User Cost:                    $0.065/user
 ```
 
 #### **10,000 Users**
 ```
 Monthly Transactions:             ~50,000
-Aptos Gas:                        $500/month
+Aptos Gas:                        $150/month
 IPFS Storage:                     $80/month
 Backend:                          $50/month
 Redis:                            $30/month
 Monitoring:                       $50/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $710/month
-Per-User Cost:                    $0.071/user
+TOTAL FIXED:                      $360/month
+Per-User Cost:                    $0.036/user
 ```
 
 #### **100,000 Users**
 ```
 Monthly Transactions:             ~500,000
-Aptos Gas:                        $5,000/month
+Aptos Gas:                        $1,500/month
 IPFS Storage:                     $300/month
 Backend:                          $200/month
 Redis:                            $100/month
 Dedicated Aptos Node:             $200/month
 Monitoring:                       $100/month
 ────────────────────────────────────────────
-TOTAL FIXED:                      $5,900/month
-Per-User Cost:                    $0.059/user
+TOTAL FIXED:                      $2,400/month
+Per-User Cost:                    $0.024/user
 ```
 
 **Key Insight:** Per-user cost DECREASES as you scale! (Economies of scale)
@@ -864,30 +867,30 @@ Blockchain Congestion:
 
 ## 💼 Break-Even Analysis
 
-### **Monthly Fixed Costs: $141**
+### **Monthly Fixed Costs: $106**
 
 **Assumptions:**
 - Average booking: $30
 - Platform fee: 5% ($1.50 per booking)
-- Transaction cost: $1.21 per booking
-- Net profit per booking: $0.29
+- Transaction cost: $1.19 per booking
+- Net profit per booking: $0.31
 
 **Break-Even Calculation:**
 ```
-Fixed Costs:                      $141/month
-Profit per Booking:               $0.29
+Fixed Costs:                      $106/month
+Profit per Booking:               $0.31
 ────────────────────────────────────────────
-Break-Even Point:                 486 bookings/month
+Break-Even Point:                 342 bookings/month
 ```
 
 **With Different Fee Structures:**
 
 | Platform Fee | Net Profit/Booking | Break-Even Bookings |
 |--------------|-------------------|---------------------|
-| 3% ($0.90) | -$0.31 | ❌ Loss on every booking |
-| 5% ($1.50) | $0.29 | 486 bookings/month |
-| 7% ($2.10) | $0.89 | 158 bookings/month |
-| 10% ($3.00) | $1.79 | 79 bookings/month |
+| 3% ($0.90) | -$0.29 | ❌ Loss on every booking |
+| 5% ($1.50) | $0.31 | 342 bookings/month |
+| 7% ($2.10) | $0.91 | 116 bookings/month |
+| 10% ($3.00) | $1.81 | 59 bookings/month |
 
 **Recommended:** 5-7% platform fee for sustainable profitability
 
@@ -900,9 +903,9 @@ Break-Even Point:                 486 bookings/month
 Users:                            100
 Bookings/Month:                   50
 Revenue (5% fee):                 $75
-Costs:                            -$141
+Costs:                            -$45
 ────────────────────────────────────────────
-NET:                              -$66/month (expected loss)
+NET:                              $30/month profit ✓
 ```
 
 #### **Month 4-6 (Growth)**
@@ -910,9 +913,9 @@ NET:                              -$66/month (expected loss)
 Users:                            500
 Bookings/Month:                   250
 Revenue:                          $375
-Costs:                            -$150
+Costs:                            -$80
 ────────────────────────────────────────────
-NET:                              $225/month profit ✓
+NET:                              $295/month profit ✓
 ```
 
 #### **Month 7-12 (Scale)**
@@ -920,9 +923,9 @@ NET:                              $225/month profit ✓
 Users:                            2,000
 Bookings/Month:                   1,000
 Revenue:                          $1,500
-Costs:                            -$200
+Costs:                            -$120
 ────────────────────────────────────────────
-NET:                              $1,300/month profit ✓
+NET:                              $1,380/month profit ✓
 ```
 
 #### **Year 2 (Established)**
@@ -930,10 +933,10 @@ NET:                              $1,300/month profit ✓
 Users:                            10,000
 Bookings/Month:                   5,000
 Revenue:                          $7,500
-Costs:                            -$600
+Costs:                            -$360
 ────────────────────────────────────────────
-NET:                              $6,900/month profit ✓
-Annual Profit:                    $82,800
+NET:                              $7,140/month profit ✓
+Annual Profit:                    $85,680
 ```
 
 ---
@@ -944,43 +947,43 @@ Annual Profit:                    $82,800
 
 **Q1 (Months 1-3): Development & Launch**
 ```
-Infrastructure:                   $210 (3 months @ $70)
+Infrastructure:                   $45 (3 months @ $15)
 Setup Costs:                      $141 (one-time)
 Smart Contract Audit:             $5,000 (one-time)
 Legal (ToS/Privacy):              $1,500 (one-time)
 ────────────────────────────────────────────
-TOTAL Q1:                         $6,851
+TOTAL Q1:                         $6,686
 ```
 
 **Q2 (Months 4-6): Early Growth**
 ```
-Infrastructure:                   $450 (3 months @ $150)
+Infrastructure:                   $240 (3 months @ $80)
 Marketing:                        $500
 Support Tools:                    $45 (Freshdesk)
 ────────────────────────────────────────────
-TOTAL Q2:                         $995
+TOTAL Q2:                         $785
 ```
 
 **Q3 (Months 7-9): Scaling**
 ```
-Infrastructure:                   $600 (3 months @ $200)
+Infrastructure:                   $360 (3 months @ $120)
 Marketing:                        $1,000
 Support:                          $45
 ────────────────────────────────────────────
-TOTAL Q3:                         $1,645
+TOTAL Q3:                         $1,405
 ```
 
 **Q4 (Months 10-12): Optimization**
 ```
-Infrastructure:                   $750 (3 months @ $250)
+Infrastructure:                   $420 (3 months @ $140)
 Marketing:                        $1,500
 Support:                          $45
 Insurance:                        $2,500 (annual)
 ────────────────────────────────────────────
-TOTAL Q4:                         $4,795
+TOTAL Q4:                         $4,465
 ```
 
-**YEAR 1 TOTAL COSTS: $14,286**
+**YEAR 1 TOTAL COSTS: $13,341**
 
 ---
 
@@ -992,18 +995,18 @@ TOTAL Q4:                         $4,795
 - Optimized infrastructure
 
 ```
-Infrastructure:                   $7,200 ($600/month avg)
+Infrastructure:                   $4,320 ($360/month avg)
 Marketing:                        $12,000
 Support Tools:                    $600
 Insurance:                        $2,500
 Legal/Compliance:                 $1,000
 Contingency:                      $2,000
 ────────────────────────────────────────────
-TOTAL YEAR 2:                     $25,300
+TOTAL YEAR 2:                     $22,420
 
 Revenue (5% fee, $30 avg):        $90,000
 ────────────────────────────────────────────
-NET PROFIT YEAR 2:                $64,700
+NET PROFIT YEAR 2:                $67,580
 ```
 
 ---
@@ -1015,18 +1018,18 @@ NET PROFIT YEAR 2:                $64,700
 - 25,000 bookings/month
 
 ```
-Infrastructure:                   $24,000 ($2,000/month)
+Infrastructure:                   $12,000 ($1,000/month)
 Marketing:                        $30,000
 Support Team (2 people):          $60,000
 Insurance:                        $5,000
 Legal:                            $2,000
 Contingency:                      $5,000
 ────────────────────────────────────────────
-TOTAL YEAR 3:                     $126,000
+TOTAL YEAR 3:                     $114,000
 
 Revenue:                          $450,000
 ────────────────────────────────────────────
-NET PROFIT YEAR 3:                $324,000
+NET PROFIT YEAR 3:                $336,000
 ```
 
 ---
@@ -1036,28 +1039,28 @@ NET PROFIT YEAR 3:                $324,000
 ### **First Year (Startup)**
 ```
 Setup & Development:              $6,641 (one-time)
-Monthly Operations:               $70-250 (avg $150)
-Annual Operations:                $1,800
+Monthly Operations:               $15-140 (avg $80)
+Annual Operations:                $960
 Variable Costs (Stripe):          ~4% of revenue
 ────────────────────────────────────────────
-TOTAL YEAR 1:                     ~$14,286
+TOTAL YEAR 1:                     ~$13,341
 ```
 
 ### **Ongoing (Per Year)**
 ```
-Infrastructure:                   $7,200-24,000 (scales with users)
+Infrastructure:                   $4,320-12,000 (scales with users)
 Payment Processing:               ~4% of revenue
 Support & Tools:                  $600-60,000 (scales)
 Insurance & Legal:                $2,500-5,000
 ────────────────────────────────────────────
-TOTAL ANNUAL (at scale):          $25,000-90,000
+TOTAL ANNUAL (at scale):          $22,000-80,000
 ```
 
 ### **Cost per User (at scale)**
 ```
-10,000 users:                     $0.071/user/month
-100,000 users:                    $0.059/user/month
-1,000,000 users:                  ~$0.045/user/month
+10,000 users:                     $0.036/user/month
+100,000 users:                    $0.024/user/month
+1,000,000 users:                  ~$0.018/user/month
 ```
 
 ---
@@ -1065,7 +1068,7 @@ TOTAL ANNUAL (at scale):          $25,000-90,000
 ## 💎 Key Takeaways
 
 ### **1. Extremely Low Initial Costs**
-- Start for $70/month (vs $700 traditional)
+- Start for $15/month (vs $700 traditional)
 - No database licensing fees
 - No server provisioning
 - Pay only for what you use
@@ -1075,18 +1078,18 @@ TOTAL ANNUAL (at scale):          $25,000-90,000
 - No sudden infrastructure upgrades needed
 - Per-user cost DECREASES as you grow
 
-### **3. 80-85% Cheaper Than Traditional**
-- Blockchain replaces expensive PostgreSQL
+### **3. 92% Cheaper Than Traditional**
+- Blockchain replaces expensive PostgreSQL (at current APT price)
 - IPFS replaces expensive S3
 - Serverless replaces expensive EC2
 
 ### **4. Variable Costs Are Transparent**
 - Stripe: 2.9% + $0.30 (industry standard)
-- Aptos gas: ~$0.01-0.02 per transaction (stable)
+- Aptos gas: ~$0.003-0.006 per transaction (stable at $3 APT)
 - IPFS: $0.002 per image (predictable)
 
 ### **5. Break-Even is Achievable**
-- Need ~500 bookings/month at 5% fee
+- Need ~350 bookings/month at 5% fee
 - Reasonable for most campus launches
 - Profit scales rapidly after break-even
 
@@ -1097,10 +1100,10 @@ TOTAL ANNUAL (at scale):          $25,000-90,000
 ### **For MVP (0-100 users)**
 ```
 ✓ Use free tiers wherever possible
-✓ Start with minimal infrastructure ($70/month)
+✓ Start with minimal infrastructure ($15/month)
 ✓ Absorb Stripe fees initially
 ✓ Skip optional services (monitoring, insurance)
-✓ Target: <$100/month total
+✓ Target: <$50/month total
 ```
 
 ### **For Growth (100-1,000 users)**
@@ -1109,7 +1112,7 @@ TOTAL ANNUAL (at scale):          $25,000-90,000
 ✓ Add Redis caching ($10/month)
 ✓ Upgrade backend hosting ($20/month)
 ✓ Add basic monitoring ($26/month)
-✓ Target: $150-200/month
+✓ Target: $80-120/month
 ```
 
 ### **For Scale (1,000+ users)**
@@ -1117,13 +1120,15 @@ TOTAL ANNUAL (at scale):          $25,000-90,000
 ✓ Optimize gas fees (batching)
 ✓ Add insurance coverage
 ✓ Hire support team
-✓ Consider dedicated Aptos node
-✓ Target: <5% of revenue
+✓ Consider dedicated Aptos node (only if >100k users)
+✓ Target: <3% of revenue
 ```
 
 ---
 
-**CampusCuts achieves professional infrastructure at 80% lower cost through blockchain-first architecture.**
+**CampusCuts achieves professional infrastructure at 92% lower cost through blockchain-first architecture.**
 
-**Traditional platforms spend $600/month before processing a single transaction. CampusCuts starts at $70/month and scales gracefully.** 🚀
+**Traditional platforms spend $600/month before processing a single transaction. CampusCuts starts at just $15/month and scales gracefully.** 🚀
+
+**Note:** All calculations based on APT price of $3.00 (current market price as of Nov 2025).
 
