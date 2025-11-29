@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { mockDatabaseService } from '../services/mock.database.service';
+import mockDatabaseService from '../services/mock.database.service';
 import { logger } from '../utils/logger';
 
 /**
