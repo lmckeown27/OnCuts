@@ -115,7 +115,7 @@ export async function signup(req: Request, res: Response) {
         role,
       },
       process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: '7d' } as jwt.SignOptions
     );
 
     // Step 6: Return success (user thinks it's a normal signup)
@@ -213,7 +213,7 @@ export async function login(req: Request, res: Response) {
         role,
       },
       process.env.JWT_SECRET || 'dev-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: '7d' } as jwt.SignOptions
     );
 
     // Step 6: Return success
