@@ -10,7 +10,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -43,7 +43,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -52,24 +52,13 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       });
     }
 
-    // Update user
-    const updatedUser = {
-      ...user,
-      ...updates,
-      id: user.id, // Don't allow ID changes
-      email: user.email, // Don't allow email changes
-      role: user.role, // Don't allow role changes
-      password_hash: user.password_hash, // Don't allow password changes here
-    };
+    // Filter out fields that shouldn't be updated
+    const { id: _id, email, role, password_hash, ...allowedUpdates } = updates;
 
-    // Update in mock database
-    const users = mockDatabaseService['users'] as any[];
-    const userIndex = users.findIndex((u) => u.id === id);
-    if (userIndex !== -1) {
-      users[userIndex] = updatedUser;
-    }
+    // Update user using the service method
+    const updatedUser = await mockDatabaseService.updateUser(id, allowedUpdates);
 
-    const { password_hash, ...userWithoutPassword } = updatedUser;
+    const { password_hash: _pwd, ...userWithoutPassword } = updatedUser;
 
     res.json({
       success: true,
@@ -93,7 +82,7 @@ export const uploadProfilePhoto = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { photoUrl } = req.body;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -103,7 +92,7 @@ export const uploadProfilePhoto = async (req: Request, res: Response) => {
     }
 
     // Update profile picture
-    user.profile_picture_url = photoUrl;
+    await mockDatabaseService.updateUser(id, { profile_picture_url: photoUrl });
 
     res.json({
       success: true,
@@ -128,7 +117,7 @@ export const getNotificationPreferences = async (req: Request, res: Response) =>
   try {
     const { id } = req.params;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -167,7 +156,7 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
     const { id } = req.params;
     const preferences = req.body;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -177,15 +166,17 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
     }
 
     // Update notification preferences
-    user.notification_preferences = {
+    const updatedPreferences = {
       ...user.notification_preferences,
       ...preferences,
     };
 
+    await mockDatabaseService.updateUser(id, { notification_preferences: updatedPreferences });
+
     res.json({
       success: true,
       message: 'Notification preferences updated successfully',
-      data: user.notification_preferences,
+      data: updatedPreferences,
     });
   } catch (error) {
     logger.error('Error updating notification preferences:', error);
@@ -211,7 +202,7 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     }
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -234,7 +225,7 @@ export const changePassword = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    user.password_hash = hashedPassword;
+    await mockDatabaseService.updateUser(id, { password_hash: hashedPassword });
 
     res.json({
       success: true,
@@ -256,7 +247,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const user = mockDatabaseService.getUserById(id);
+    const user = await mockDatabaseService.findUserById(id);
 
     if (!user) {
       return res.status(404).json({
@@ -266,7 +257,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
     }
 
     // In mock database, just mark as inactive
-    user.is_active = false;
+    await mockDatabaseService.updateUser(id, { is_active: false });
 
     res.json({
       success: true,
