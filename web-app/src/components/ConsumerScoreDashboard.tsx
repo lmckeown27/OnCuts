@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Award, AlertCircle, Star, Calendar, DollarSign, Target } from 'lucide-react';
-import { Card } from './Card';
-import { Button } from './Button';
+import Card from './Card';
+import Button from './Button';
 
 interface ConsumerScore {
   overall_score: number;
