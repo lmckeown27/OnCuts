@@ -9,8 +9,8 @@
     "start": "node dist/index.js",
     "test": "jest",
     "lint": "eslint src --ext .ts",
-    "migrate": "node dist/database/migrate.js",
-    "seed": "node dist/database/seed.js"
+    "verify": "ts-node src/scripts/verify-integration.ts",
+    "check": "npm run verify"
   },
   "keywords": [
     "aptos",
