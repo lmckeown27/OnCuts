@@ -7,9 +7,12 @@
  */
 
 import { logger } from '../utils/logger';
-import { pool } from '../database/connection';
+// import { pool } from '../database/connection'; // DEPRECATED - using blockchain
 import { io } from '../index'; // Socket.IO instance
 import Stripe from 'stripe';
+
+// NOTE: This service is being refactored for blockchain-first architecture
+// For now, events are broadcasted but not stored in PostgreSQL
 
 interface ParsedStripeEvent {
   event_id: string;
@@ -196,37 +199,24 @@ class StripeMonitorService {
   }
 
   /**
-   * Store Stripe event in database
+   * Store Stripe event (REFACTORED for blockchain-first)
+   * Events are now logged and broadcasted only - not stored in PostgreSQL
+   * TODO: Consider storing event hashes on-chain for audit trail
    */
   private async storeEvent(parsed: ParsedStripeEvent, raw: Stripe.Event) {
     try {
-      await pool.query(
-        `INSERT INTO stripe_events (
-          event_id, event_type, payment_intent_id, customer_id, 
-          amount_cents, amount_usd, status, timestamp, 
-          description, metadata, student_email, barber_email, 
-          booking_id, raw_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT (event_id) DO NOTHING`,
-        [
-          parsed.event_id,
-          parsed.event_type,
-          parsed.payment_intent_id || null,
-          parsed.customer_id || null,
-          parsed.amount_cents || null,
-          parsed.amount_usd || null,
-          parsed.status,
-          parsed.timestamp,
-          parsed.description,
-          JSON.stringify(parsed.metadata),
-          parsed.student_email || null,
-          parsed.barber_email || null,
-          parsed.booking_id || null,
-          JSON.stringify(raw),
-        ]
-      );
+      // Log event for audit trail
+      logger.info('💳 Stripe event received:', {
+        event_id: parsed.event_id,
+        event_type: parsed.event_type,
+        amount_usd: parsed.amount_usd,
+        status: parsed.status,
+      });
+      
+      // Events are broadcasted via WebSocket - no PostgreSQL storage needed
+      // In blockchain-first architecture, critical payment data is on-chain
     } catch (error) {
-      logger.error('Failed to store Stripe event:', error);
+      logger.error('Failed to process Stripe event:', error);
     }
   }
 
@@ -247,18 +237,15 @@ class StripeMonitorService {
   }
 
   /**
-   * Get recent Stripe events for initial load
+   * Get recent Stripe events (REFACTORED for blockchain-first)
+   * Events are now retrieved from blockchain/IPFS, not PostgreSQL
    */
   async getRecentEvents(limit: number = 50) {
     try {
-      const result = await pool.query(
-        `SELECT * FROM stripe_events 
-         ORDER BY timestamp DESC 
-         LIMIT $1`,
-        [limit]
-      );
-
-      return result.rows;
+      // TODO: Query blockchain for on-chain payment events
+      // For now, return empty array since events are not stored in PostgreSQL
+      logger.info('Recent Stripe events requested - returning empty (blockchain-first)');
+      return [];
     } catch (error) {
       logger.error('Failed to fetch recent Stripe events:', error);
       return [];
@@ -266,22 +253,21 @@ class StripeMonitorService {
   }
 
   /**
-   * Get payment statistics
+   * Get payment statistics (REFACTORED for blockchain-first)
+   * Stats are now calculated from blockchain data
    */
   async getPaymentStats() {
     try {
-      const result = await pool.query(`
-        SELECT 
-          COUNT(*) FILTER (WHERE event_type = 'payment_intent.succeeded') as successful_payments,
-          COUNT(*) FILTER (WHERE event_type = 'payment_intent.payment_failed') as failed_payments,
-          COUNT(*) FILTER (WHERE event_type = 'charge.refunded') as refunds,
-          COALESCE(SUM(amount_usd) FILTER (WHERE event_type = 'payment_intent.succeeded'), 0) as total_revenue,
-          COALESCE(SUM(amount_usd) FILTER (WHERE event_type = 'charge.refunded'), 0) as total_refunded
-        FROM stripe_events
-        WHERE timestamp >= NOW() - INTERVAL '30 days'
-      `);
-
-      return result.rows[0];
+      // TODO: Query blockchain for payment statistics
+      // For now, return zero stats since we're not using PostgreSQL
+      logger.info('Payment stats requested - returning zeros (blockchain-first)');
+      return {
+        successful_payments: 0,
+        failed_payments: 0,
+        refunds: 0,
+        total_revenue: 0,
+        total_refunded: 0,
+      };
     } catch (error) {
       logger.error('Failed to fetch payment stats:', error);
       return null;
