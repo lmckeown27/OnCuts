@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Star, DollarSign, Award, Filter, Users, User as UserIcon, Home } from 'lucide-react';
+import { ArrowLeft, Search, Star, DollarSign, Award, Filter, Users, User as UserIcon, Home, TrendingUp } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
+import { ConsumerScoreDashboard } from '../components/ConsumerScoreDashboard';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutsLogo } from '@assets';
 
-type TabType = 'discovery' | 'profile';
+type TabType = 'discovery' | 'score' | 'profile';
 
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
@@ -77,6 +78,17 @@ export default function ConsumerPage() {
                 Find Barbers
               </button>
               <button
+                onClick={() => setActiveTab('score')}
+                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'score'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4 inline mr-2" />
+                My Score
+              </button>
+              <button
                 onClick={() => setActiveTab('profile')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'profile'
@@ -94,11 +106,9 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'discovery' ? (
-          <DiscoveryView navigate={navigate} />
-        ) : (
-          <ConsumerProfileEditor userId={consumerId} />
-        )}
+        {activeTab === 'discovery' && <DiscoveryView navigate={navigate} />}
+        {activeTab === 'score' && <ConsumerScoreDashboard userId={consumerId} />}
+        {activeTab === 'profile' && <ConsumerProfileEditor userId={consumerId} />}
       </div>
     </div>
   );

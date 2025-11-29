@@ -526,3 +526,61 @@ Get **restricted, flagged, and eventually blocked.**
 
 **Result:** A healthy, balanced marketplace where both sides are accountable! 🎉
 
+---
+
+## 📱 **Student Dashboard: "My Score" Tab**
+
+### **Full Transparency**
+
+Students can view their own customer score in real-time via the **"My Score"** tab in the Consumer Dashboard.
+
+### **What Students See:**
+
+1. **Overall Customer Score (0-100)** with grade badge (🌟 VIP, 🥇 Excellent, etc.)
+2. **Score Breakdown:**
+   - Review Fairness Score (40%)
+   - Attendance Score (40%)
+   - Engagement Score (20%)
+3. **Detailed Metrics:**
+   - Total bookings, no-shows, cancellations
+   - Average rating given, reviews left
+   - Total spent, avg tip percentage
+4. **Benefits & Restrictions:**
+   - Current perks (discounts, instant book access)
+   - Active restrictions (if any)
+5. **Review Impact Weight:**
+   - How much their reviews count (1.2x for VIP, 0.0x for Poor)
+6. **Path to Next Level:**
+   - What they need to do to improve their score
+   - Tips for reaching VIP status
+7. **Grade Level Explanation:**
+   - All 6 customer grades with benefits/restrictions
+
+### **Why This Matters:**
+
+- **No Surprises:** Students know exactly where they stand
+- **Motivation:** Clear path to VIP benefits
+- **Fairness:** Understanding why restrictions exist
+- **Improvement:** Actionable tips to raise their score
+- **Accountability:** Real-time feedback on behavior
+
+### **Example Scenarios:**
+
+**🌟 VIP Customer (Score: 97)**
+- Sees: "Your reviews count 20% MORE" + "10% discount on all bookings"
+- Goal: Maintain VIP status, keep no-show rate at 0%
+
+**🥈 Good Customer (Score: 78)**
+- Sees: "Improve to 85+ for 5% discount" + tips to increase engagement
+- Goal: Book more frequently, leave more reviews
+
+**⚪ Below Average (Score: 42)**
+- Sees: "⚠️ Request-book only" + "Your reviews count 50% less"
+- Goal: Show up to ALL appointments, stop harsh reviews
+
+**🔴 Poor Customer (Score: 18)**
+- Sees: "⛔ SEVERE RESTRICTIONS" + "Your reviews are IGNORED"
+- Action: Major behavior change required or account suspension
+
+---
+

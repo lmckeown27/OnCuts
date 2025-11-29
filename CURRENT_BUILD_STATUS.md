@@ -242,11 +242,19 @@ Pricing updates automatically every night at 2 AM based on:
 7 new database tables
 6 grade levels (VIP to Poor)
 Auto-restriction system
+✅ Consumer dashboard "My Score" tab
 
 Students graded HARSHER than barbers:
 - 40% weight on attendance (vs 20% for barbers)
 - No-show >15% = near-zero score
 - Harsh reviewers heavily penalized
+
+Students can now view:
+- Overall customer score (0-100)
+- Score breakdown (Fairness, Attendance, Engagement)
+- Benefits & restrictions
+- Review impact weight
+- Path to VIP status
 ```
 
 ### **3. Review Weighting System**
