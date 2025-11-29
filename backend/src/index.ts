@@ -47,6 +47,11 @@ import pricingRoutes from './routes/pricing.routes';
 // User Management Routes
 import userRoutes from './routes/user.routes';
 
+// Blockchain-First Routes (Decentralized)
+import authBlockchainRoutes from './routes/auth-blockchain.routes';
+import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
+import reviewBlockchainRoutes from './routes/review-blockchain.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -207,6 +212,11 @@ app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 // User Management Routes
 app.use('/api/users', userRoutes);  // User profile management
 
+// Blockchain-First Routes (Decentralized - NEW!)
+app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
+app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
+app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
+
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
 logger.info('   - /api/v2/wallet (production wallet)');
@@ -214,6 +224,11 @@ logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
 logger.info('   - /api/gas (gas wallet & top-up management)');
 logger.info('   - /api/pricing (dynamic pricing engine)');
+
+logger.info('🌐 Blockchain-first routes enabled:');
+logger.info('   - /api/auth-blockchain (custodial auth + IPFS profiles)');
+logger.info('   - /api/bookings-blockchain (smart contract escrow)');
+logger.info('   - /api/reviews-blockchain (immutable reviews + IPFS text)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
