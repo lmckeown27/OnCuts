@@ -199,9 +199,13 @@ class CustodialSignerService {
       const account = await this.loadUserAccount(userEmail, password, encryptedPrivateKey);
 
       // Build transaction
+      const entryPayload = {
+        ...payload,
+        type_arguments: payload.type_arguments || [],
+      };
       const rawTxn = await this.aptosClient.generateTransaction(
         account.address(),
-        payload
+        entryPayload as any
       );
 
       // Sign transaction
@@ -249,9 +253,13 @@ class CustodialSignerService {
       logger.info(`⚡ Optimistic transaction for: ${this.maskEmail(userEmail)}`);
 
       // Build and sign
+      const entryPayload = {
+        ...payload,
+        type_arguments: payload.type_arguments || [],
+      };
       const rawTxn = await this.aptosClient.generateTransaction(
         account.address(),
-        payload
+        entryPayload as any
       );
       const signedTxn = await this.aptosClient.signTransaction(account, rawTxn);
 
@@ -311,8 +319,8 @@ class CustodialSignerService {
       let encrypted = cipher.update(privateKeyHex, 'utf8', 'hex');
       encrypted += cipher.final('hex');
       
-      // Get auth tag
-      const authTag = cipher.getAuthTag();
+      // Get auth tag (GCM mode only)
+      const authTag = (cipher as any).getAuthTag();
       
       // Combine: iv + authTag + encrypted
       return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
@@ -338,7 +346,7 @@ class CustodialSignerService {
       
       // Decrypt
       const decipher = crypto.createDecipheriv(this.encryptionAlgorithm, key, iv);
-      decipher.setAuthTag(authTag);
+      (decipher as any).setAuthTag(authTag);
       
       let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
