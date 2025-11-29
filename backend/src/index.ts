@@ -51,6 +51,7 @@ import userRoutes from './routes/user.routes';
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
 import reviewBlockchainRoutes from './routes/review-blockchain.routes';
+import fiatBridgeRoutes from './routes/fiat-bridge.routes';
 
 // Load environment variables
 dotenv.config();
@@ -216,6 +217,7 @@ app.use('/api/users', userRoutes);  // User profile management
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
 app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
 app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
+app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (Stripe integration)
 
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
@@ -229,6 +231,7 @@ logger.info('🌐 Blockchain-first routes enabled:');
 logger.info('   - /api/auth-blockchain (custodial auth + IPFS profiles)');
 logger.info('   - /api/bookings-blockchain (smart contract escrow)');
 logger.info('   - /api/reviews-blockchain (immutable reviews + IPFS text)');
+logger.info('   - /api/fiat-bridge (Stripe → Blockchain deposits & withdrawals)');
 
 // Development routes (mock database testing)
 if (process.env.NODE_ENV === 'development') {
