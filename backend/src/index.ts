@@ -6,11 +6,13 @@ import dotenv from 'dotenv';
 import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { pool } from './database/connection';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { connectRedis } from './config/redis';
 import rateLimit from 'express-rate-limit';
+
+// Note: PostgreSQL removed! Using Aptos blockchain + IPFS for all data
+// import { pool } from './database/connection'; // DEPRECATED
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -169,20 +171,29 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Health check
+// Health check (Blockchain-First - checks Aptos connection)
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    await pool.query('SELECT 1');
+    // Check Aptos blockchain connection (replaces PostgreSQL check)
+    const blockchainQuery = await import('./services/blockchain-query.service');
+    const stats = await blockchainQuery.default.getPlatformStats();
+    
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      database: 'connected',
+      blockchain: 'connected',
+      data_layer: 'aptos + ipfs',
+      stats: {
+        total_users: stats.totalUsers,
+        total_bookings: stats.totalBookings,
+      },
     });
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
+      blockchain: 'disconnected',
+      error: 'Cannot connect to Aptos blockchain',
     });
   }
 });
@@ -281,17 +292,15 @@ httpServer.listen(PORT, async () => {
   logger.info(`⏰ Pricing cron jobs started (see logs for details)`);
 });
 
-// Graceful shutdown
+// Graceful shutdown (Blockchain-First - no database pool to close)
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing servers');
   httpServer.close(() => {
     logger.info('HTTP server closed');
     io.close(() => {
       logger.info('Socket.IO server closed');
-      pool.end(() => {
-        logger.info('Database pool closed');
-        process.exit(0);
-      });
+      logger.info('✅ All services shut down gracefully (blockchain-first architecture)');
+      process.exit(0);
     });
   });
 });
