@@ -8,8 +8,8 @@
 
 import axios from 'axios';
 import { logger } from '../utils/logger';
-import { pool } from '../database/connection';
 import { io } from '../index'; // Socket.IO instance
+import { redisGet, redisSet } from '../config/redis';
 
 interface AptosTransaction {
   version: string;
@@ -105,19 +105,15 @@ class AptosMonitorService {
   }
 
   /**
-   * Load the last processed transaction version from database
+   * Load the last processed transaction version from Redis
    */
   private async loadLastProcessedVersion() {
     try {
-      const result = await pool.query(
-        `SELECT MAX(version::bigint) as last_version 
-         FROM aptos_transactions 
-         WHERE platform_address = $1`,
-        [this.platformAddress]
-      );
+      const cacheKey = `aptos:last_version:${this.platformAddress}`;
+      const cached = await redisGet(cacheKey);
 
-      if (result.rows[0]?.last_version) {
-        this.lastProcessedVersion = parseInt(result.rows[0].last_version);
+      if (cached) {
+        this.lastProcessedVersion = parseInt(cached);
         logger.info(`📖 Resuming from version: ${this.lastProcessedVersion}`);
       } else {
         logger.info('📖 Starting fresh - no previous transactions found');
@@ -281,36 +277,26 @@ class AptosMonitorService {
   }
 
   /**
-   * Store transaction in database
+   * Store transaction in Redis cache (for recent history)
    */
   private async storeTransaction(parsed: ParsedTransaction, raw: AptosTransaction) {
     try {
-      await pool.query(
-        `INSERT INTO aptos_transactions (
-          version, tx_hash, tx_type, sender, recipient, 
-          amount_octas, amount_usd, gas_used, success, 
-          timestamp, description, metadata, platform_address, raw_data
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        ON CONFLICT (tx_hash) DO NOTHING`,
-        [
-          raw.version,
-          parsed.tx_hash,
-          parsed.tx_type,
-          parsed.sender,
-          parsed.recipient || null,
-          parsed.amount_octas || null,
-          parsed.amount_usd || null,
-          parsed.gas_used,
-          parsed.success,
-          parsed.timestamp,
-          parsed.description,
-          JSON.stringify(parsed.metadata),
-          this.platformAddress,
-          JSON.stringify(raw),
-        ]
-      );
+      // Store in Redis with 7-day TTL for recent transaction history
+      const cacheKey = `aptos:tx:${parsed.tx_hash}`;
+      const txData = {
+        ...parsed,
+        version: raw.version,
+        raw_data: raw,
+      };
+      await redisSet(cacheKey, JSON.stringify(txData), 7 * 24 * 60 * 60); // 7 days
+
+      // Also update last processed version in Redis
+      const versionKey = `aptos:last_version:${this.platformAddress}`;
+      await redisSet(versionKey, raw.version, 30 * 24 * 60 * 60); // 30 days
+
+      logger.debug(`Cached transaction: ${parsed.tx_hash.substring(0, 10)}...`);
     } catch (error) {
-      logger.error('Failed to store Aptos transaction:', error);
+      logger.error('Failed to cache Aptos transaction:', error);
     }
   }
 
@@ -332,21 +318,34 @@ class AptosMonitorService {
   }
 
   /**
-   * Get recent transactions for initial load
+   * Get recent transactions for initial load (from blockchain)
+   * In blockchain-first architecture, we query the blockchain directly
    */
   async getRecentTransactions(limit: number = 50) {
     try {
-      const result = await pool.query(
-        `SELECT * FROM aptos_transactions 
-         WHERE platform_address = $1 
-         ORDER BY timestamp DESC 
-         LIMIT $2`,
-        [this.platformAddress, limit]
-      );
+      // Fetch directly from Aptos blockchain
+      const url = `${this.nodeUrl}/accounts/${this.platformAddress}/transactions`;
+      const response = await axios.get<AptosTransaction[]>(url, {
+        params: { limit },
+      });
 
-      return result.rows;
-    } catch (error) {
-      logger.error('Failed to fetch recent Aptos transactions:', error);
+      // Parse and return transactions
+      const transactions = response.data.map((tx) => {
+        const parsed = this.parseTransaction(tx);
+        return {
+          ...parsed,
+          version: tx.version,
+          raw_data: tx,
+        };
+      });
+
+      return transactions;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        logger.debug('Platform account not found on-chain yet');
+      } else {
+        logger.error('Failed to fetch recent Aptos transactions:', error.message);
+      }
       return [];
     }
   }
