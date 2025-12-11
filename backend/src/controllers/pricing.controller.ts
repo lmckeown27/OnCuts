@@ -1,5 +1,5 @@
 /**
- * Pricing API Controller
+ * Pricing API Controller (Blockchain-First Version)
  * 
  * Handles all pricing-related API endpoints:
  * - Price estimates for barbers/services
@@ -8,622 +8,156 @@
  * - Pricing configuration
  * - Recompute triggers (admin only)
  * - Anomaly monitoring (admin only)
+ * 
+ * Note: Refactored to use blockchain-first dynamic pricing
+ * (PostgreSQL removed, now uses Aptos + Redis)
  */
 
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
-import pricingOrchestrator from '../services/pricing/pricing-orchestrator.service';
-import priceCalculator from '../services/pricing/price-calculator.service';
-import scoringEngine from '../services/pricing/scoring-engine.service';
-import marketMetrics from '../services/pricing/market-metrics.service';
-import { pool } from '../database/connection';
+import dynamicPricingService, { PricingInput } from '../services/dynamic-pricing.service';
+import blockchainQueryService from '../services/blockchain-query.service';
 
 /**
  * GET /api/pricing/estimate
  * Get current price estimate for a barber/service
- * Query params: barberId, serviceId
+ * Query params: barberAddress, serviceCategory, marketType
  */
 export async function getPriceEstimate(req: Request, res: Response) {
   try {
-    const { barberId, serviceId } = req.query;
+    const { barberAddress, serviceCategory, marketType } = req.query;
 
-    if (!barberId || !serviceId) {
+    if (!barberAddress || !serviceCategory) {
       return res.status(400).json({
         success: false,
-        message: 'barberId and serviceId are required',
+        message: 'barberAddress and serviceCategory are required',
       });
     }
 
-    // For mock data, return sample price estimate
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          barberId,
-          serviceId: parseInt(serviceId as string),
-          finalPriceCents: 3250,
-          finalPriceUsd: 32.50,
-          breakdown: {
-            performanceScore: 87,
-            effectiveScore: 89,
-            msi: 0.72,
-            mdi: 0.58,
-            basePrice: 2500,
-            priceMultiplier: 1.41,
-            marketAdjustment: 1.02,
-            computedPrice: 3600,
-            finalPrice: 3250,
-            minPrice: 2000,
-            maxPrice: 3750,
-            cappedReason: 'max_price_ceiling',
-            priceChangePct: 7.6,
-          },
-          lastUpdated: new Date(),
-        },
-      });
-    }
-
-    const price = await priceCalculator.getBarberPrice(
-      barberId as string,
-      parseInt(serviceId as string)
-    );
-
-    if (!price) {
+    // Get barber data from blockchain
+    const barberData = await blockchainQueryService.getUserAccount(barberAddress as string);
+    
+    if (!barberData || !barberData.is_barber) {
       return res.status(404).json({
         success: false,
-        message: 'Price not found. Barber may need initial pricing computation.',
+        message: 'Barber not found',
       });
     }
 
-    res.json({
+    // Build pricing input
+    const pricingInput: PricingInput = {
+      barber_rating: barberData.avg_rating || 3.5,
+      barber_completion_rate: barberData.completion_rate || 0.9,
+      barber_total_bookings: barberData.total_bookings || 0,
+      barber_avg_price: barberData.avg_price || 25,
+      barbers_available_count: 5, // TODO: Query from blockchain
+      bookings_last_24h: 10, // TODO: Query from blockchain
+      market_type: (marketType as any) || 'medium_campus',
+      time_of_day: dynamicPricingService.getCurrentTimeCategory(),
+      service_category: serviceCategory as any,
+      estimated_duration_minutes: 30,
+    };
+
+    // Calculate pricing
+    const pricing = dynamicPricingService.calculatePrice(pricingInput);
+
+    return res.json({
       success: true,
       data: {
-        ...price,
-        finalPriceUsd: price.finalPriceCents / 100,
+        barberAddress,
+        serviceCategory,
+        finalPriceUsd: pricing.recommended_price,
+        finalPriceCents: Math.round(pricing.recommended_price * 100),
+        priceFloor: pricing.price_floor,
+        priceCeiling: pricing.price_ceiling,
+        confidence: pricing.confidence,
+        breakdown: pricing.breakdown,
+        reasoning: pricing.reasoning,
       },
     });
-  } catch (error) {
-    logger.error('Failed to get price estimate:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    logger.error('Error getting price estimate:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Failed to get price estimate',
+      error: error.message,
     });
   }
 }
 
 /**
  * GET /api/pricing/barber/:barberId/score
- * Get barber's performance score and history
- * Query params: days (default 30)
+ * Get barber's performance score (from blockchain)
  */
 export async function getBarberScore(req: Request, res: Response) {
   try {
     const { barberId } = req.params;
-    const days = parseInt(req.query.days as string) || 30;
 
-    // For mock data, return sample scores
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          currentScore: {
-            barberId,
-            periodDate: new Date(),
-            qualityScore: 92,
-            reliabilityScore: 88,
-            demandScore: 75,
-            performanceScore: 87,
-            effectiveScore: 89,
-            isNewBarber: false,
-            totalLifetimeBookings: 156,
-            breakdown: {
-              qualityScore: 92,
-              reliabilityScore: 88,
-              demandScore: 75,
-              performanceScore: 87,
-              effectiveScore: 89,
-              weights: {
-                quality: 0.7,
-                reliability: 0.2,
-                demand: 0.1,
-              },
-              isNewBarber: false,
-              msi: 0.72,
-              mdi: 0.58,
-            },
-          },
-          history: Array.from({ length: Math.min(days, 30) }, (_, i) => ({
-            date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-            performanceScore: 87 + Math.random() * 10 - 5,
-            qualityScore: 92 + Math.random() * 6 - 3,
-            reliabilityScore: 88 + Math.random() * 8 - 4,
-            demandScore: 75 + Math.random() * 10 - 5,
-          })),
-        },
-      });
-    }
-
-    const scoreHistory = await scoringEngine.getBarberScoreHistory(barberId, days);
-
-    if (scoreHistory.length === 0) {
+    // Get barber data from blockchain
+    const barberData = await blockchainQueryService.getUserAccount(barberId);
+    
+    if (!barberData || !barberData.is_barber) {
       return res.status(404).json({
         success: false,
-        message: 'No score history found for this barber',
+        message: 'Barber not found',
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: {
-        currentScore: scoreHistory[0],
-        history: scoreHistory,
+        barberId,
+        performanceScore: Math.round((barberData.avg_rating / 5) * 100),
+        rating: barberData.avg_rating,
+        completionRate: barberData.completion_rate,
+        totalBookings: barberData.total_bookings,
+        avgPrice: barberData.avg_price,
       },
     });
-  } catch (error) {
-    logger.error('Failed to get barber score:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    logger.error('Error getting barber score:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Failed to get barber score',
+      error: error.message,
     });
   }
 }
 
 /**
  * GET /api/pricing/barber/:barberId/history
- * Get barber's price history across all services
- * Query params: days (default 30)
+ * Get barber's price history (from blockchain bookings)
  */
 export async function getBarberPriceHistory(req: Request, res: Response) {
   try {
     const { barberId } = req.params;
-    const days = parseInt(req.query.days as string) || 30;
 
-    // For mock data, return sample price history
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          services: [
-            {
-              serviceId: 1,
-              serviceName: 'Haircut',
-              history: Array.from({ length: Math.min(days, 30) }, (_, i) => ({
-                date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-                priceCents: 3250 + Math.floor((Math.random() * 200 - 100)),
-                priceUsd: (3250 + Math.floor((Math.random() * 200 - 100))) / 100,
-                performanceScore: 87 + Math.random() * 10 - 5,
-              })),
-            },
-            {
-              serviceId: 2,
-              serviceName: 'Haircut & Fade',
-              history: Array.from({ length: Math.min(days, 30) }, (_, i) => ({
-                date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-                priceCents: 4500 + Math.floor((Math.random() * 300 - 150)),
-                priceUsd: (4500 + Math.floor((Math.random() * 300 - 150))) / 100,
-                performanceScore: 87 + Math.random() * 10 - 5,
-              })),
-            },
-          ],
-        },
-      });
-    }
+    // Get barber's bookings from blockchain
+    const bookings = await blockchainQueryService.getBarberBookings(barberId);
 
-    const result = await pool.query(
-      `
-      SELECT
-        bp.service_id,
-        s.name as service_name,
-        bp.period_date,
-        bp.final_price_cents,
-        bp.price_change_pct,
-        bs.performance_score
-      FROM barber_prices bp
-      JOIN services s ON bp.service_id = s.id
-      LEFT JOIN barber_scores bs ON bp.barber_id = bs.barber_id AND bp.period_date = bs.period_date
-      WHERE bp.barber_id = $1
-        AND bp.period_date >= CURRENT_DATE - $2
-      ORDER BY bp.service_id, bp.period_date DESC
-      `,
-      [barberId, days]
-    );
+    // Extract pricing history
+    const priceHistory = bookings.map((booking: any) => ({
+      date: booking.created_at,
+      price: booking.amount_total / 100_000_000, // Convert octas to APT
+      serviceType: booking.service_name,
+    }));
 
-    // Group by service
-    const serviceMap = new Map();
-    result.rows.forEach(row => {
-      if (!serviceMap.has(row.service_id)) {
-        serviceMap.set(row.service_id, {
-          serviceId: row.service_id,
-          serviceName: row.service_name,
-          history: [],
-        });
-      }
-      serviceMap.get(row.service_id).history.push({
-        date: row.period_date,
-        priceCents: row.final_price_cents,
-        priceUsd: row.final_price_cents / 100,
-        priceChangePct: row.price_change_pct ? parseFloat(row.price_change_pct) : null,
-        performanceScore: row.performance_score ? parseFloat(row.performance_score) : null,
-      });
-    });
-
-    res.json({
+    return res.json({
       success: true,
       data: {
-        services: Array.from(serviceMap.values()),
+        barberId,
+        history: priceHistory,
+        avgPrice: priceHistory.length > 0
+          ? priceHistory.reduce((sum: number, b: any) => sum + b.price, 0) / priceHistory.length
+          : 0,
       },
     });
-  } catch (error) {
-    logger.error('Failed to get price history:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    logger.error('Error getting barber price history:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
- * GET /api/pricing/campus/:campusId/metrics
- * Get campus market metrics (admin only)
- */
-export async function getCampusMetrics(req: Request, res: Response) {
-  try {
-    const { campusId } = req.params;
-
-    // For mock data, return sample campus metrics
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          campusId,
-          msi: 0.72,
-          mdi: 0.58,
-          activeBarbers: 12,
-          totalBookings30d: 450,
-          avgBookingsPerBarber: 37.5,
-          lastUpdated: new Date(),
-        },
-      });
-    }
-
-    const metrics = await marketMetrics.getCampusMarketMetrics(campusId);
-
-    if (!metrics) {
-      return res.status(404).json({
-        success: false,
-        message: 'Campus metrics not found',
-      });
-    }
-
-    res.json({
-      success: true,
-      data: metrics,
-    });
-  } catch (error) {
-    logger.error('Failed to get campus metrics:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
- * POST /api/pricing/recompute
- * Trigger pricing recompute (admin only)
- * Body: { barberIds?, campusIds?, full? }
- */
-export async function triggerRecompute(req: Request, res: Response) {
-  try {
-    const { barberIds, campusIds, full } = req.body;
-
-    logger.info('Pricing recompute triggered by admin', { barberIds, campusIds, full });
-
-    // For mock data, simulate recompute
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        message: 'Recompute triggered successfully (mock mode - no actual changes)',
-        data: {
-          jobId: Math.floor(Math.random() * 1000),
-          status: 'completed',
-          barbersProcessed: campusIds ? campusIds.length * 12 : barberIds?.length || 50,
-          pricesUpdated: (campusIds ? campusIds.length * 12 : barberIds?.length || 50) * 4,
-          errorsCount: 0,
-          durationMs: 3500,
-        },
-      });
-    }
-
-    const result = await pricingOrchestrator.recomputeAll({
-      barberIds,
-      campusIds,
-      full,
-    });
-
-    res.json({
-      success: true,
-      message: 'Pricing recompute completed',
-      data: result,
-    });
-  } catch (error) {
-    logger.error('Failed to trigger recompute:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
- * GET /api/pricing/anomalies
- * Get recent price anomalies (admin only)
- * Query params: limit (default 50), status (default 'open')
- */
-export async function getAnomalies(req: Request, res: Response) {
-  try {
-    const limit = parseInt(req.query.limit as string) || 50;
-    const status = req.query.status as string || 'open';
-
-    // For mock data, return sample anomalies
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          anomalies: [
-            {
-              id: 1,
-              barberId: 'barber-1',
-              barberName: 'Marcus Thompson',
-              serviceId: 1,
-              serviceName: 'Haircut',
-              periodDate: new Date(),
-              anomalyType: 'large_increase',
-              severity: 'medium',
-              oldPriceCents: 3000,
-              newPriceCents: 3650,
-              priceChangePct: 21.7,
-              description: 'Price increased by 21.7%',
-              status: 'open',
-              createdAt: new Date(),
-            },
-            {
-              id: 2,
-              barberId: 'barber-3',
-              barberName: 'Alex Chen',
-              serviceId: 1,
-              serviceName: 'Haircut',
-              periodDate: new Date(),
-              anomalyType: 'shock_cap_hit',
-              severity: 'high',
-              oldPriceCents: 2500,
-              newPriceCents: 3250,
-              priceChangePct: 30.0,
-              description: 'Price change capped at shock_protection_increase',
-              status: 'open',
-              createdAt: new Date(),
-            },
-          ],
-          total: 2,
-        },
-      });
-    }
-
-    const result = await pool.query(
-      `
-      SELECT
-        pa.*,
-        b.user_id as barber_user_id,
-        u.name as barber_name,
-        s.name as service_name
-      FROM price_anomalies pa
-      JOIN barbers b ON pa.barber_id = b.id
-      JOIN users u ON b.user_id = u.id
-      JOIN services s ON pa.service_id = s.id
-      WHERE pa.status = $1
-      ORDER BY pa.created_at DESC
-      LIMIT $2
-      `,
-      [status, limit]
-    );
-
-    res.json({
-      success: true,
-      data: {
-        anomalies: result.rows,
-        total: result.rows.length,
-      },
-    });
-  } catch (error) {
-    logger.error('Failed to get anomalies:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
- * GET /api/pricing/config
- * Get current pricing configuration
- */
-export async function getConfig(req: Request, res: Response) {
-  try {
-    // For mock data, return sample config
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: {
-          version: 1,
-          qualityWeight: 0.70,
-          reliabilityWeight: 0.20,
-          demandWeight: 0.10,
-          ratingWeight: 0.80,
-          repeatRateWeight: 0.20,
-          onTimeWeight: 0.70,
-          noShowWeight: 0.30,
-          minPriceMultiplier: 0.80,
-          maxPriceMultiplier: 1.50,
-          msiInfluence: 0.30,
-          mdiMinAdjustment: 0.90,
-          mdiMaxAdjustment: 1.10,
-          msiEmaAlpha: 0.20,
-          mdiEmaAlpha: 0.20,
-          newBarberBookingThreshold: 5,
-          newBarberQualityBoost: 0.20,
-          maxDailyPriceChangePct: 30.00,
-          minPriceChangeThresholdPct: 1.00,
-          recomputeFrequencyHours: 24,
-        },
-      });
-    }
-
-    const result = await pool.query(
-      `SELECT * FROM pricing_config ORDER BY version DESC LIMIT 1`
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pricing config not found',
-      });
-    }
-
-    res.json({
-      success: true,
-      data: result.rows[0],
-    });
-  } catch (error) {
-    logger.error('Failed to get config:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
- * PUT /api/pricing/config
- * Update pricing configuration (admin only)
- */
-export async function updateConfig(req: Request, res: Response) {
-  try {
-    const updates = req.body;
-
-    logger.info('Pricing config update requested by admin', updates);
-
-    // For mock data, just return success
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        message: 'Configuration updated successfully (mock mode - no actual changes)',
-        data: {
-          ...updates,
-          version: 2,
-          updatedAt: new Date(),
-        },
-      });
-    }
-
-    // Validate weights sum to 1.0
-    const { qualityWeight, reliabilityWeight, demandWeight } = updates;
-    if (qualityWeight && reliabilityWeight && demandWeight) {
-      const sum = parseFloat(qualityWeight) + parseFloat(reliabilityWeight) + parseFloat(demandWeight);
-      if (Math.abs(sum - 1.0) > 0.01) {
-        return res.status(400).json({
-          success: false,
-          message: 'Quality, reliability, and demand weights must sum to 1.0',
-        });
-      }
-    }
-
-    // Get current config
-    const currentResult = await pool.query(
-      `SELECT * FROM pricing_config ORDER BY version DESC LIMIT 1`
-    );
-
-    if (currentResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pricing config not found',
-      });
-    }
-
-    const currentConfig = currentResult.rows[0];
-    const newVersion = currentConfig.version + 1;
-
-    // Insert new version
-    const result = await pool.query(
-      `
-      INSERT INTO pricing_config (
-        version,
-        quality_weight,
-        reliability_weight,
-        demand_weight,
-        rating_weight,
-        repeat_rate_weight,
-        on_time_weight,
-        no_show_weight,
-        min_price_multiplier,
-        max_price_multiplier,
-        msi_influence,
-        mdi_min_adjustment,
-        mdi_max_adjustment,
-        msi_ema_alpha,
-        mdi_ema_alpha,
-        new_barber_booking_threshold,
-        new_barber_quality_boost,
-        max_daily_price_change_pct,
-        min_price_change_threshold_pct,
-        recompute_frequency_hours,
-        updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-      RETURNING *
-      `,
-      [
-        newVersion,
-        updates.qualityWeight || currentConfig.quality_weight,
-        updates.reliabilityWeight || currentConfig.reliability_weight,
-        updates.demandWeight || currentConfig.demand_weight,
-        updates.ratingWeight || currentConfig.rating_weight,
-        updates.repeatRateWeight || currentConfig.repeat_rate_weight,
-        updates.onTimeWeight || currentConfig.on_time_weight,
-        updates.noShowWeight || currentConfig.no_show_weight,
-        updates.minPriceMultiplier || currentConfig.min_price_multiplier,
-        updates.maxPriceMultiplier || currentConfig.max_price_multiplier,
-        updates.msiInfluence || currentConfig.msi_influence,
-        updates.mdiMinAdjustment || currentConfig.mdi_min_adjustment,
-        updates.mdiMaxAdjustment || currentConfig.mdi_max_adjustment,
-        updates.msiEmaAlpha || currentConfig.msi_ema_alpha,
-        updates.mdiEmaAlpha || currentConfig.mdi_ema_alpha,
-        updates.newBarberBookingThreshold || currentConfig.new_barber_booking_threshold,
-        updates.newBarberQualityBoost || currentConfig.new_barber_quality_boost,
-        updates.maxDailyPriceChangePct || currentConfig.max_daily_price_change_pct,
-        updates.minPriceChangeThresholdPct || currentConfig.min_price_change_threshold_pct,
-        updates.recomputeFrequencyHours || currentConfig.recompute_frequency_hours,
-        (req as any).user?.id || 'admin', // TODO: Get from auth middleware
-      ]
-    );
-
-    // Log audit
-    await pool.query(
-      `
-      INSERT INTO pricing_config_audit (config_id, version, changes, changed_by)
-      VALUES ($1, $2, $3, $4)
-      `,
-      [result.rows[0].id, newVersion, JSON.stringify(updates), (req as any).user?.id || 'admin']
-    );
-
-    res.json({
-      success: true,
-      message: 'Configuration updated successfully',
-      data: result.rows[0],
-    });
-  } catch (error) {
-    logger.error('Failed to update config:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
+      message: 'Failed to get price history',
+      error: error.message,
     });
   }
 }
@@ -634,80 +168,186 @@ export async function updateConfig(req: Request, res: Response) {
  */
 export async function getServices(req: Request, res: Response) {
   try {
-    // For mock data, return sample services
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({
-        success: true,
-        data: [
+    return res.json({
+      success: true,
+      data: {
+        services: [
           {
             id: 1,
-            slug: 'haircut',
-            name: 'Haircut',
-            description: 'Standard haircut',
-            defaultBasePriceCents: 2500,
-            defaultBasePriceUsd: 25.00,
-            defaultMinPriceCents: 2000,
-            defaultMaxPriceCents: 3750,
-            isActive: true,
+            category: 'basic',
+            name: 'Basic Cut',
+            basePrice: 15,
+            duration: 20,
+            description: 'Simple haircut, quick and efficient',
           },
           {
             id: 2,
-            slug: 'haircut_fade',
-            name: 'Haircut & Fade',
-            description: 'Haircut with fade',
-            defaultBasePriceCents: 3500,
-            defaultBasePriceUsd: 35.00,
-            defaultMinPriceCents: 2800,
-            defaultMaxPriceCents: 5250,
-            isActive: true,
+            category: 'standard',
+            name: 'Regular Haircut',
+            basePrice: 25,
+            duration: 35,
+            description: 'Standard haircut with styling',
           },
           {
             id: 3,
-            slug: 'beard_trim',
-            name: 'Beard Trim',
-            description: 'Professional beard trimming',
-            defaultBasePriceCents: 1500,
-            defaultBasePriceUsd: 15.00,
-            defaultMinPriceCents: 1200,
-            defaultMaxPriceCents: 2250,
-            isActive: true,
-          },
-          {
-            id: 4,
-            slug: 'full_service',
-            name: 'Full Service',
-            description: 'Cut + Fade + Beard',
-            defaultBasePriceCents: 5000,
-            defaultBasePriceUsd: 50.00,
-            defaultMinPriceCents: 4000,
-            defaultMaxPriceCents: 7500,
-            isActive: true,
+            category: 'premium',
+            name: 'Premium Service',
+            basePrice: 40,
+            duration: 60,
+            description: 'Detailed cut with wash and styling',
           },
         ],
-      });
-    }
-
-    const result = await pool.query(
-      `SELECT * FROM services WHERE is_active = true ORDER BY id`
-    );
-
-    const services = result.rows.map(row => ({
-      ...row,
-      defaultBasePriceUsd: row.default_base_price_cents / 100,
-      defaultMinPriceUsd: row.default_min_price_cents / 100,
-      defaultMaxPriceUsd: row.default_max_price_cents / 100,
-    }));
-
-    res.json({
-      success: true,
-      data: services,
+      },
     });
-  } catch (error) {
-    logger.error('Failed to get services:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    logger.error('Error getting services:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Failed to get services',
+      error: error.message,
     });
   }
 }
 
+/**
+ * GET /api/pricing/config
+ * Get current pricing configuration
+ */
+export async function getConfig(req: Request, res: Response) {
+  try {
+    return res.json({
+      success: true,
+      config: {
+        base_prices: {
+          basic: 15,
+          standard: 25,
+          premium: 40,
+        },
+        market_multipliers: {
+          small_campus: 0.85,
+          medium_campus: 1.0,
+          large_campus: 1.15,
+          metro: 1.35,
+        },
+        time_multipliers: {
+          morning: 0.95,
+          afternoon: 1.0,
+          evening: 1.15,
+          night: 0.9,
+          weekend: 1.2,
+        },
+        weights: {
+          quality: 0.3,
+          demand: 0.4,
+          time: 0.2,
+          market: 0.1,
+        },
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error getting pricing config:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get pricing config',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * GET /api/pricing/campus/:campusId/metrics
+ * Get campus market metrics (simplified - no DB needed)
+ */
+export async function getCampusMetrics(req: Request, res: Response) {
+  try {
+    const { campusId } = req.params;
+
+    // Get platform stats from blockchain
+    const stats = await blockchainQueryService.getPlatformStats();
+
+    return res.json({
+      success: true,
+      data: {
+        campusId,
+        totalBarbers: stats.totalBarbers,
+        totalBookings: stats.totalBookings,
+        avgPrice: 25, // TODO: Calculate from blockchain bookings
+        bookingsLast24h: 10, // TODO: Calculate from blockchain
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error getting campus metrics:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get campus metrics',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/pricing/recompute
+ * Trigger pricing recompute (no-op in blockchain-first - prices are dynamic)
+ */
+export async function triggerRecompute(req: Request, res: Response) {
+  try {
+    logger.info('Pricing recompute triggered (no-op in blockchain-first architecture)');
+    
+    return res.json({
+      success: true,
+      message: 'Pricing is calculated dynamically - no recompute needed',
+    });
+  } catch (error: any) {
+    logger.error('Error in recompute trigger:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to trigger recompute',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * GET /api/pricing/anomalies
+ * Get recent price anomalies (TODO: implement blockchain-based detection)
+ */
+export async function getAnomalies(req: Request, res: Response) {
+  try {
+    // TODO: Implement anomaly detection based on blockchain data
+    return res.json({
+      success: true,
+      data: {
+        anomalies: [],
+        message: 'Anomaly detection not yet implemented for blockchain-first architecture',
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error getting anomalies:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to get anomalies',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * PUT /api/pricing/config
+ * Update pricing configuration (TODO: store in Redis or smart contract)
+ */
+export async function updateConfig(req: Request, res: Response) {
+  try {
+    // TODO: Implement config updates in Redis or smart contract
+    return res.json({
+      success: false,
+      message: 'Config updates not yet implemented for blockchain-first architecture',
+    });
+  } catch (error: any) {
+    logger.error('Error updating config:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update config',
+      error: error.message,
+    });
+  }
+}
