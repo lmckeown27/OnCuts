@@ -8,7 +8,20 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 
 /**
+ * Shuffle array (Fisher-Yates algorithm)
+ */
+const shuffleArray = (array: any[]) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+/**
  * Generate mock transactions for a specific campus
+ * Randomizes order on each call to simulate live updates
  */
 const generateMockTransactions = (campus: string, limit: number) => {
   const campusData: Record<string, any> = {
@@ -74,7 +87,10 @@ const generateMockTransactions = (campus: string, limit: number) => {
   const data = campusData[campus] || campusData['campus-1'];
   const now = new Date();
 
-  return data.transactions.slice(0, limit).map((tx: any, index: number) => {
+  // Shuffle transactions to simulate live updates on each reload
+  const shuffledTransactions = shuffleArray(data.transactions);
+
+  return shuffledTransactions.slice(0, limit).map((tx: any, index: number) => {
     const timestamp = new Date(now.getTime() - tx.minutesAgo * 60000);
     
     return {

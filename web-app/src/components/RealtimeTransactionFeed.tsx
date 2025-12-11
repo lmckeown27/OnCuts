@@ -227,15 +227,27 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
           <h3 className="text-xl font-bold text-gray-900">Live Transactions</h3>
           <p className="text-sm text-gray-600">Real-time blockchain activity</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-            }`}
-          />
-          <span className="text-sm text-gray-600">
-            {isConnected ? 'Live' : 'Disconnected'}
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchRecentTransactions}
+            className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1.5"
+            title="Reload transactions"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reload
+          </button>
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-3 h-3 rounded-full ${
+                isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+              }`}
+            />
+            <span className="text-sm text-gray-600">
+              {isConnected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
         </div>
       </div>
 
