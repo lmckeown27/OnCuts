@@ -1,20 +1,24 @@
 version: '3.8'
 
 services:
-  # Backend API (Blockchain-First Architecture)
+  # Backend API (Hybrid Architecture: Blockchain + PostgreSQL Cache)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: campuscuts-api
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_started
     environment:
       NODE_ENV: production
       PORT: 3000
       
-      # No PostgreSQL needed! Data stored on Aptos blockchain + IPFS
+      # PostgreSQL (CACHE LAYER - Not source of truth!)
+      # Blockchain is source of truth, PostgreSQL caches for fast queries
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/campuscuts
       
       # Redis for caching blockchain queries (optional but recommended)
       REDIS_URL: redis://redis:6379
@@ -53,8 +57,28 @@ services:
     command: npm run dev
     restart: unless-stopped
 
+  # PostgreSQL (CACHE LAYER for fast queries)
+  # NOTE: Blockchain is source of truth, PostgreSQL is just a cache
+  postgres:
+    image: postgis/postgis:15-3.4
+    container_name: campuscuts-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: campuscuts
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Redis (OPTIONAL - for caching blockchain queries)
-  # If omitted, backend will work but queries will be slower
   redis:
     image: redis:7-alpine
     container_name: campuscuts-redis
@@ -71,5 +95,6 @@ services:
       retries: 5
 
 volumes:
-  # Only Redis volume needed - no PostgreSQL!
+  # PostgreSQL cache + Redis cache
+  postgres_data:
   redis_data:

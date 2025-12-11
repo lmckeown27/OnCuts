@@ -291,12 +291,17 @@ httpServer.listen(PORT, async () => {
   gasMonitorCronService.start(cronSchedule);
   logger.info(`Gas monitor cron job started (schedule: ${cronSchedule})`);
 
+  // Start blockchain → PostgreSQL sync (hourly)
+  // This keeps PostgreSQL cache up-to-date with blockchain data
+  const blockchainSyncCronService = (await import('./services/blockchain-sync-cron.service')).default;
+  blockchainSyncCronService.start();
+  logger.info(`Blockchain sync cron job started (hourly sync)`);
+
   // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
-  // DISABLED: These services require PostgreSQL which was removed for blockchain-first architecture
-  // TODO: Refactor pricing system to query blockchain instead of PostgreSQL
-  // const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
-  // pricingCronService.start();
-  // logger.info(`⏰ Pricing cron jobs started (see logs for details)`);
+  // NOW ENABLED: PostgreSQL is back as a cache layer
+  const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
+  pricingCronService.start();
+  logger.info(`Pricing cron jobs started (see logs for details)`);
 });
 
 // Graceful shutdown (Blockchain-First - no database pool to close)
