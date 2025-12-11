@@ -342,9 +342,21 @@ export default function AdminPage() {
         ) : selectedView === 'campuses' ? (
           /* Campus Detail View */
           <>
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{selectedCampus.name}</h2>
-              <p className="text-gray-600 mt-1">{selectedCampus.city}, {selectedCampus.state}</p>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedCampus.name}</h2>
+                <p className="text-gray-600 mt-1">{selectedCampus.city}, {selectedCampus.state}</p>
+              </div>
+              <Button 
+                onClick={() => {
+                  setSelectedCampus(null);
+                  setSelectedView('campuses');
+                }} 
+                variant="secondary"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to All Campuses
+              </Button>
             </div>
 
             {/* Campus Stats */}
