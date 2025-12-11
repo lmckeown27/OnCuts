@@ -26,7 +26,6 @@ const poolConfig: PoolConfig = {
   min: 1,                          // Minimum idle connections
   idleTimeoutMillis: 30000,        // 30s - release idle connections
   connectionTimeoutMillis: 10000,  // 10s - timeout for new connections
-  acquireTimeoutMillis: 15000,     // 15s - timeout for acquiring from pool
   
   // Query timeouts (cache queries should be fast!)
   statement_timeout: 5000,         // 5s - cache queries must be fast
@@ -44,11 +43,11 @@ pool.on('connect', (client) => {
   client.query(`SET application_name = 'campuscuts-api'`).catch(() => {});
 });
 
-pool.on('error', (err, client) => {
+pool.on('error', (err: any, client) => {
   logger.error('PostgreSQL cache connection error:', {
     message: err.message,
-    code: err.code,
-    detail: (err as any).detail,
+    code: err.code || 'UNKNOWN',
+    detail: err.detail || 'No details available',
   });
   
   // Don't exit process - allow graceful degradation
