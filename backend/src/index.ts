@@ -12,7 +12,7 @@ import { connectRedis } from './config/redis';
 import rateLimit from 'express-rate-limit';
 
 // PostgreSQL Cache Layer (Hybrid Architecture)
-import { pool, checkHealth as checkPostgresHealth, closePool } from './database/connection';
+import { pool, checkHealth as checkPostgresHealth, closePool, connectToPostgres } from './database/connection';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -301,6 +301,16 @@ httpServer.listen(PORT, async () => {
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔗 Aptos Network: ${process.env.APTOS_NETWORK || 'devnet'}`);
   logger.info(`💬 Socket.IO ready for real-time messaging`);
+
+  // Initialize PostgreSQL cache connection
+  try {
+    await connectToPostgres();
+    logger.info(`✅ PostgreSQL cache layer ready`);
+  } catch (error: any) {
+    logger.error(`❌ PostgreSQL cache unavailable (app will use blockchain fallback)`, {
+      error: error.message,
+    });
+  }
 
   // Start Aptos blockchain monitor for live transaction feed
   if (process.env.APTOS_PLATFORM_ADDRESS) {

@@ -107,6 +107,30 @@ export const query = async (text: string, params?: any[]) => {
 };
 
 /**
+ * Initialize database connection (test connectivity)
+ */
+export const connectToPostgres = async () => {
+  try {
+    const result = await pool.query('SELECT NOW() as time');
+    logger.info('PostgreSQL cache connected successfully', {
+      timestamp: result.rows[0].time,
+      pool: {
+        max: poolConfig.max,
+        min: poolConfig.min,
+      },
+    });
+    return true;
+  } catch (error: any) {
+    logger.error('Failed to connect to PostgreSQL cache:', {
+      error: error.message,
+      code: error.code,
+      hint: 'Check DATABASE_URL in .env file',
+    });
+    throw error;
+  }
+};
+
+/**
  * Test database connection and return health status
  */
 export const checkHealth = async () => {
@@ -124,6 +148,11 @@ export const checkHealth = async () => {
       },
     };
   } catch (error: any) {
+    logger.error('PostgreSQL health check failed:', {
+      error: error.message,
+      code: error.code || 'UNKNOWN',
+    });
+    
     return {
       healthy: false,
       connected: false,
