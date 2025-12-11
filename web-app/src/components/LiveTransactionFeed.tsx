@@ -63,7 +63,7 @@ export default function LiveTransactionFeed() {
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ Connected to live feed WebSocket');
+      console.log('Connected to live feed WebSocket');
       setIsConnected(true);
       // Join admin live feed room
       socketInstance.emit('join-admin-live-feed', 1); // TODO: Use actual admin user ID
@@ -78,20 +78,20 @@ export default function LiveTransactionFeed() {
 
     // Listen for Aptos transactions
     socketInstance.on('aptos-transaction', (tx: Transaction) => {
-      console.log('📥 New Aptos transaction:', tx);
+      console.log('New Aptos transaction:', tx);
       setTransactions((prev) => [tx, ...prev].slice(0, 100)); // Keep last 100
       toast(`New Aptos transaction: ${tx.description}`, {
-        icon: '⛓️',
+        icon: 'CHAIN',
         duration: 3000,
       });
     });
 
     // Listen for Stripe payments
     socketInstance.on('stripe-payment', (payment: Transaction) => {
-      console.log('📥 New Stripe payment:', payment);
+      console.log('New Stripe payment:', payment);
       setTransactions((prev) => [payment, ...prev].slice(0, 100)); // Keep last 100
       toast(`New Stripe payment: ${payment.description}`, {
-        icon: '💳',
+        icon: 'CARD',
         duration: 3000,
       });
     });
@@ -141,9 +141,9 @@ export default function LiveTransactionFeed() {
   });
 
   const getPlatformIcon = (platform: string) => {
-    if (platform === 'aptos') return '⛓️';
-    if (platform === 'stripe') return '💳';
-    return '💰';
+    if (platform === 'aptos') return 'CHAIN';
+    if (platform === 'stripe') return 'CARD';
+    return 'TXN';
   };
 
   const getStatusBadge = (tx: Transaction) => {
@@ -205,7 +205,7 @@ export default function LiveTransactionFeed() {
             <div>
               <p className="text-sm text-gray-600">WebSocket Status</p>
               <p className={`text-2xl font-bold ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
-                {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+                {isConnected ? 'Connected' : 'Disconnected'}
               </p>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function LiveTransactionFeed() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            ⛓️ Aptos ({transactions.filter((t) => t.platform === 'aptos').length})
+            Aptos ({transactions.filter((t) => t.platform === 'aptos').length})
           </button>
           <button
             onClick={() => setFilter('stripe')}
@@ -261,7 +261,7 @@ export default function LiveTransactionFeed() {
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            💳 Stripe ({transactions.filter((t) => t.platform === 'stripe').length})
+            Stripe ({transactions.filter((t) => t.platform === 'stripe').length})
           </button>
         </div>
       </Card>

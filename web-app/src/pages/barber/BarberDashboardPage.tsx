@@ -313,7 +313,7 @@ export default function BarberDashboardPage() {
           <div className="text-center py-12">
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">No appointments today</p>
-            <p className="text-sm text-gray-500 mt-2">Enjoy your day off! 🎉</p>
+            <p className="text-sm text-gray-500 mt-2">Enjoy your day off!</p>
           </div>
         ) : (
           <div className="space-y-3">

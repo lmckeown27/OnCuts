@@ -40,7 +40,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Connected to transaction feed');
+      console.log('Connected to transaction feed');
       setIsConnected(true);
       
       // Join campus-specific room if provided
@@ -173,17 +173,17 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
   const getTransactionIcon = (type: Transaction['type']) => {
     switch (type) {
       case 'booking':
-        return '📅';
+        return 'BOOK';
       case 'payment':
-        return '💳';
+        return 'PAY';
       case 'completion':
-        return '✅';
+        return 'DONE';
       case 'withdrawal':
-        return '💰';
+        return 'OUT';
       case 'deposit':
-        return '⬇️';
+        return 'IN';
       default:
-        return '📊';
+        return 'TXN';
     }
   };
 
@@ -241,7 +241,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
 
       {transactions.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <div className="text-4xl mb-2">📊</div>
+          <div className="text-4xl mb-2 font-bold text-gray-400">TXN</div>
           <p>No transactions yet</p>
           <p className="text-sm mt-1">Transactions will appear here in real-time</p>
         </div>

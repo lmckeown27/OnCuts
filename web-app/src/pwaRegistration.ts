@@ -10,7 +10,7 @@ export function registerServiceWorker() {
       navigator.serviceWorker
         .register('/service-worker.js')
         .then((registration) => {
-          console.log('✅ Service Worker registered:', registration.scope);
+          console.log('Service Worker registered:', registration.scope);
           
           // Check for updates every hour
           setInterval(() => {
@@ -25,7 +25,7 @@ export function registerServiceWorker() {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New service worker available
-                  console.log('🔄 New version available! Please refresh.');
+                  console.log('New version available! Please refresh.');
                   
                   // Show update notification
                   showUpdateNotification(registration);
@@ -39,7 +39,7 @@ export function registerServiceWorker() {
         });
     });
   } else {
-    console.log('⚠️ Service Worker not supported in this browser');
+    console.log('Service Worker not supported in this browser');
   }
 }
 
@@ -102,7 +102,7 @@ function showUpdateNotification(registration: ServiceWorkerRegistration) {
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (!('Notification' in window)) {
-    console.log('⚠️ Notifications not supported');
+    console.log('Notifications not supported');
     return false;
   }
   
@@ -137,7 +137,7 @@ export function setupInstallPrompt() {
   
   // Handle successful installation
   window.addEventListener('appinstalled', () => {
-    console.log('✅ CampusCuts installed as PWA');
+    console.log('CampusCuts installed as PWA');
     deferredPrompt = null;
   });
 }
@@ -165,7 +165,7 @@ function showInstallPrompt(deferredPrompt: any) {
   `;
   
   prompt.innerHTML = `
-    <span>📱 Install CampusCuts for quick access!</span>
+    <span>Install CampusCuts for quick access!</span>
     <button id="pwa-install-btn" style="
       background: #4F46E5;
       color: white;
@@ -251,7 +251,7 @@ if (typeof window !== 'undefined') {
   setupInstallPrompt();
   
   // Log display mode
-  console.log(`📱 Display mode: ${getDisplayMode()}`);
-  console.log(`📦 Installed: ${isAppInstalled()}`);
+  console.log(`Display mode: ${getDisplayMode()}`);
+  console.log(`Installed: ${isAppInstalled()}`);
 }
 

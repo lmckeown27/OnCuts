@@ -30,7 +30,7 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ Socket.IO connected');
+      console.log('Socket.IO connected');
       this.isConnected = true;
       
       // Join personal room
@@ -42,7 +42,7 @@ class SocketService {
     });
 
     this.socket.on('disconnect', () => {
-      console.log('🔌 Socket.IO disconnected');
+      console.log('Socket.IO disconnected');
       this.isConnected = false;
     });
 

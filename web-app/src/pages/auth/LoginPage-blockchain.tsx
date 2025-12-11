@@ -42,7 +42,7 @@ export default function LoginPageBlockchain() {
       {
         onSuccess: (response) => {
           if (response.success) {
-            toast.success('Welcome back! 👋');
+            toast.success('Welcome back!');
             // Navigation happens automatically in the hook
           } else {
             toast.error(response.message || 'Invalid email or password');
@@ -149,10 +149,10 @@ export default function LoginPageBlockchain() {
                 <strong>Dev Mode:</strong> Behind the scenes
               </p>
               <ul className="text-xs text-gray-600 space-y-1">
-                <li>✅ Authenticates with Aptos blockchain</li>
-                <li>✅ Loads account from on-chain storage</li>
-                <li>✅ No wallet or crypto needed!</li>
-                <li>✅ User has NO IDEA they're using blockchain!</li>
+                <li>Authenticates with Aptos blockchain</li>
+                <li>Loads account from on-chain storage</li>
+                <li>No wallet or crypto needed!</li>
+                <li>User has NO IDEA they're using blockchain!</li>
               </ul>
             </div>
           )}

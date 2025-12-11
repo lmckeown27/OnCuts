@@ -196,14 +196,14 @@ export default function StudentBookingsPageBlockchain() {
         {import.meta.env.DEV && bookings && bookings.length > 0 && (
           <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm font-medium text-blue-900 mb-2">
-              🔗 Blockchain Integration Active
+              Blockchain Integration Active
             </p>
             <ul className="text-xs text-blue-800 space-y-1">
-              <li>✅ Bookings loaded from Aptos blockchain</li>
-              <li>✅ Data cached for 30 seconds (React Query)</li>
-              <li>✅ Auto-refetches in background</li>
-              <li>✅ Optimistic UI on cancel (instant feedback)</li>
-              <li>✅ Works offline (shows cached data)</li>
+              <li>Bookings loaded from Aptos blockchain</li>
+              <li>Data cached for 30 seconds (React Query)</li>
+              <li>Auto-refetches in background</li>
+              <li>Optimistic UI on cancel (instant feedback)</li>
+              <li>Works offline (shows cached data)</li>
             </ul>
           </div>
         )}

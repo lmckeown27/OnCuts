@@ -476,7 +476,7 @@ export default function AdminPage() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-gray-600">Rating</p>
-                          <p className="font-semibold">⭐ {barber.average_rating}</p>
+                          <p className="font-semibold">{barber.average_rating} stars</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Bookings</p>

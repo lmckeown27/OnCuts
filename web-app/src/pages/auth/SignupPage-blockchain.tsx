@@ -69,7 +69,7 @@ export default function SignupPageBlockchain() {
       {
         onSuccess: (response) => {
           if (response.success) {
-            toast.success('Account created! Welcome to CampusCuts! 🎉');
+            toast.success('Account created! Welcome to CampusCuts!');
             // Navigation happens automatically in the hook
           } else {
             toast.error(response.message || 'Failed to create account');
@@ -243,15 +243,15 @@ export default function SignupPageBlockchain() {
           {import.meta.env.DEV && (
             <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
               <p className="text-xs text-yellow-800 mb-2">
-                <strong>🎭 The Illusion:</strong> What's really happening
+                <strong>The Illusion:</strong> What's really happening
               </p>
               <ul className="text-xs text-yellow-700 space-y-1">
                 <li>1. Deriving Aptos address from email</li>
                 <li>2. Encrypting private key with password</li>
                 <li>3. Creating on-chain blockchain account</li>
                 <li>4. Storing metadata on Aptos</li>
-                <li>5. User thinks: "Normal signup" ✨</li>
-                <li>6. Reality: They own a blockchain account! 🔗</li>
+                <li>5. User thinks: "Normal signup"</li>
+                <li>6. Reality: They own a blockchain account!</li>
               </ul>
             </div>
           )}

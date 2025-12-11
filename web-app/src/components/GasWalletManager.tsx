@@ -170,7 +170,7 @@ export default function GasWalletManager() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">⛽ Gas Wallet Management</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Gas Wallet Management</h2>
             <p className="text-gray-600 mt-1">Monitor platform gas and approve top-up requests</p>
           </div>
 
@@ -501,7 +501,7 @@ export default function GasWalletManager() {
 
               <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                 <p className="text-xs text-yellow-800">
-                  <strong>⏱️ Verification:</strong> After submitting, the backend will verify your transaction on the Aptos blockchain. This may take up to 10 minutes.
+                  <strong>Verification:</strong> After submitting, the backend will verify your transaction on the Aptos blockchain. This may take up to 10 minutes.
                 </p>
               </div>
 

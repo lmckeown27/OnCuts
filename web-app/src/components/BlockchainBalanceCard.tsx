@@ -144,13 +144,13 @@ export function BlockchainBalanceCard() {
       {import.meta.env.DEV && balance && (
         <div className="mt-4 p-3 bg-black/20 rounded-md">
           <p className="text-xs text-blue-100 mb-1">
-            🔗 <strong>Behind the scenes:</strong>
+            <strong>Behind the scenes:</strong>
           </p>
           <ul className="text-xs text-blue-50 space-y-1">
-            <li>✅ Balance stored on Aptos blockchain</li>
-            <li>✅ Locked funds in smart contract escrow</li>
-            <li>✅ Auto-refreshes every 60 seconds</li>
-            <li>✅ User thinks: "Normal balance" ✨</li>
+            <li>Balance stored on Aptos blockchain</li>
+            <li>Locked funds in smart contract escrow</li>
+            <li>Auto-refreshes every 60 seconds</li>
+            <li>User thinks: "Normal balance"</li>
           </ul>
         </div>
       )}

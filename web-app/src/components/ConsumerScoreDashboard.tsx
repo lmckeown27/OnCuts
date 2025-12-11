@@ -124,12 +124,12 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
   };
 
   const getGradeBadgeEmoji = (score: number) => {
-    if (score >= 95) return '🌟';
-    if (score >= 85) return '🥇';
-    if (score >= 70) return '🥈';
-    if (score >= 50) return '🥉';
-    if (score >= 30) return '⚪';
-    return '🔴';
+    if (score >= 95) return 'A+';
+    if (score >= 85) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 50) return 'C';
+    if (score >= 30) return 'D';
+    return 'F';
   };
 
   return (
@@ -164,7 +164,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
             </span>
           </div>
           <div className="text-sm text-gray-600 space-y-1">
-            <div>Avg Rating Given: {score.metrics.avg_rating_given.toFixed(1)} ⭐</div>
+            <div>Avg Rating Given: {score.metrics.avg_rating_given.toFixed(1)} stars</div>
             <div>Reviews Left: {score.metrics.total_reviews_left}</div>
             <div>Review Rate: {score.metrics.review_rate.toFixed(0)}%</div>
           </div>
@@ -244,7 +244,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
           <ul className="space-y-2">
             {score.restrictions.map((restriction, index) => (
               <li key={index} className="flex items-start gap-2 text-sm text-red-700">
-                <span>⚠️</span>
+                <span className="text-red-600 font-bold">!</span>
                 <span>{restriction}</span>
               </li>
             ))}
@@ -350,16 +350,16 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
             </div>
             <div className="text-xs text-gray-600">
               {score.overall_score >= 95 ? 
-                '🌟 Your reviews count 20% MORE than normal (trusted reviewer)' :
+                'Your reviews count 20% MORE than normal (trusted reviewer)' :
                score.overall_score >= 85 ?
-                '✅ Your reviews have full impact (fair reviewer)' :
+                'Your reviews have full impact (fair reviewer)' :
                score.overall_score >= 70 ?
-                '⚠️ Your reviews count 20% less (improve fairness)' :
+                'Your reviews count 20% less (improve fairness)' :
                score.overall_score >= 50 ?
-                '⚠️⚠️ Your reviews count 50% less (improve behavior)' :
+                'Your reviews count 50% less (improve behavior)' :
                score.overall_score >= 30 ?
-                '⚠️⚠️⚠️ Your reviews have minimal impact (80% reduced)' :
-                '⛔ Your reviews are IGNORED (improve score to 30+ first)'}
+                'Your reviews have minimal impact (80% reduced)' :
+                'Your reviews are IGNORED (improve score to 30+ first)'}
             </div>
           </div>
 
@@ -415,7 +415,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
         <h3 className="text-lg font-semibold mb-3">Customer Grade Levels</h3>
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between p-2 rounded bg-purple-100">
-            <span>🌟 VIP Customer (95-100)</span>
+            <span>VIP Customer (95-100)</span>
             <span className="text-xs text-purple-700">10% discount, instant book all</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-yellow-100">
@@ -435,7 +435,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
             <span className="text-xs text-orange-700">Request-book only</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-red-100">
-            <span>🔴 Poor (0-29)</span>
+            <span>Poor (0-29)</span>
             <span className="text-xs text-red-700">Severe restrictions</span>
           </div>
         </div>
@@ -448,7 +448,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
             <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
             <div>
               <h3 className="text-lg font-semibold text-red-800 mb-2">
-                ⚠️ Action Required
+                Action Required
               </h3>
               <p className="text-sm text-red-700 mb-3">
                 Your customer score is below 50. This affects your ability to book appointments and your review impact.

@@ -52,11 +52,11 @@ export const AdminWalletConnect: React.FC = () => {
     const initWallet = async () => {
       // Check for Petra
       if ((window as any).aptos) {
-        console.log('✅ Petra wallet detected');
+        console.log('Petra wallet detected');
       }
       // Check for Martian
       if ((window as any).martian) {
-        console.log('✅ Martian wallet detected');
+        console.log('Martian wallet detected');
       }
     };
 
@@ -184,7 +184,7 @@ export const AdminWalletConnect: React.FC = () => {
       await fetchGasWalletStatus();
       
       setTransferAmount('');
-      alert(`✅ Successfully transferred ${transferAmount} APT to gas wallet!`);
+      alert(`Successfully transferred ${transferAmount} APT to gas wallet!`);
       
     } catch (err: any) {
       setError(err.message || 'Transfer failed');
@@ -233,7 +233,7 @@ export const AdminWalletConnect: React.FC = () => {
                 className="p-6 border-2 border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors disabled:opacity-50"
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-2">🔷</div>
+                  <div className="text-4xl mb-2 font-bold text-blue-500">P</div>
                   <div className="font-semibold">Petra</div>
                   <div className="text-xs text-gray-500">Most Popular</div>
                 </div>
@@ -245,7 +245,7 @@ export const AdminWalletConnect: React.FC = () => {
                 className="p-6 border-2 border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-2">👽</div>
+                  <div className="text-4xl mb-2 font-bold text-purple-500">M</div>
                   <div className="font-semibold">Martian</div>
                   <div className="text-xs text-gray-500">Alternative</div>
                 </div>
@@ -277,7 +277,7 @@ export const AdminWalletConnect: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-green-600 font-semibold mb-1">
-                    ✅ Wallet Connected
+                    Wallet Connected
                   </div>
                   <div className="font-mono text-sm text-gray-700">
                     {adminAddress?.substring(0, 10)}...{adminAddress?.substring(adminAddress.length - 8)}
@@ -302,7 +302,7 @@ export const AdminWalletConnect: React.FC = () => {
                   <h3 className="text-xl font-semibold">Platform Gas Wallet</h3>
                   {gasWallet.needs_topup && (
                     <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                      ⚠️ Needs Top-Up
+                      Needs Top-Up
                     </span>
                   )}
                 </div>

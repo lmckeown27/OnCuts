@@ -108,7 +108,7 @@ export const AdminDashboard: React.FC = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">🔍 Pending Disputes</h3>
+            <h3 className="text-lg font-semibold mb-4">Pending Disputes</h3>
             <p className="text-gray-600 mb-4">View and resolve booking disputes</p>
             <button className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
               View Disputes (0)
@@ -116,7 +116,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">💰 Withdraw Fees</h3>
+            <h3 className="text-lg font-semibold mb-4">Withdraw Fees</h3>
             <p className="text-gray-600 mb-4">Withdraw accumulated platform fees</p>
             <button 
               className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -127,7 +127,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">⚙️ Platform Settings</h3>
+            <h3 className="text-lg font-semibold mb-4">Platform Settings</h3>
             <p className="text-gray-600 mb-4">Configure platform parameters</p>
             <button className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
               Open Settings
@@ -138,14 +138,14 @@ export const AdminDashboard: React.FC = () => {
         {/* Blockchain Info */}
         <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-indigo-900 mb-2">
-            ⛓️ Blockchain-First Architecture
+            Blockchain-First Architecture
           </h3>
           <div className="text-sm text-indigo-700 space-y-1">
-            <div>✅ All data stored on-chain (Aptos)</div>
-            <div>✅ Decentralized file storage (IPFS)</div>
-            <div>✅ Custodial wallet service (Gas-free UX)</div>
-            <div>✅ Smart contract escrow (Trustless payments)</div>
-            <div>✅ Zero database costs (PostgreSQL removed)</div>
+            <div>All data stored on-chain (Aptos)</div>
+            <div>Decentralized file storage (IPFS)</div>
+            <div>Custodial wallet service (Gas-free UX)</div>
+            <div>Smart contract escrow (Trustless payments)</div>
+            <div>Zero database costs (PostgreSQL removed)</div>
           </div>
         </div>
       </div>

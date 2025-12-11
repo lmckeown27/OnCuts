@@ -278,7 +278,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
             </div>
             <p className="text-sm text-gray-600 mt-2">
               {performanceScore.isNewBarber
-                ? '🎉 New barber! Keep up the great work!'
+                ? 'New barber! Keep up the great work!'
                 : `Based on ${performanceScore.totalLifetimeBookings} completed bookings`}
             </p>
           </div>
@@ -398,7 +398,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
       {/* Improvement Tips */}
       {improvementTips.length > 0 && (
         <Card>
-          <h3 className="text-xl font-bold text-gray-900 mb-4">💡 How to Increase Your Prices</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-4">How to Increase Your Prices</h3>
           <div className="space-y-3">
             {improvementTips.map((tip, idx) => (
               <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">

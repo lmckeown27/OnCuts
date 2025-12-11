@@ -390,7 +390,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {barber.instant_book_enabled && (
                   <div className="mb-3">
                     <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                      ⚡ Instant Book
+                      Instant Book
                     </span>
                   </div>
                 )}

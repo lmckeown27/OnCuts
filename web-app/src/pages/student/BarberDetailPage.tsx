@@ -105,7 +105,7 @@ export default function BarberDetailPage() {
                 </div>
                 {barber.instant_book_enabled && (
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                    ⚡ Instant Book
+                    Instant Book
                   </span>
                 )}
               </div>

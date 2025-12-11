@@ -59,16 +59,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 // Log startup info
-console.log('%c🎓 CampusCuts - Blockchain-First Platform', 'color: #4F46E5; font-size: 16px; font-weight: bold;');
+console.log('%cCampusCuts - Blockchain-First Platform', 'color: #4F46E5; font-size: 16px; font-weight: bold;');
 console.log('%cRunning on Aptos blockchain + IPFS', 'color: #6366F1; font-size: 12px;');
-console.log('%cUsers have NO IDEA they\'re using blockchain! ✨', 'color: #8B5CF6; font-size: 12px;');
+console.log('%cUsers have NO IDEA they\'re using blockchain!', 'color: #8B5CF6; font-size: 12px;');
 
 if (import.meta.env.DEV) {
-  console.log('\n📊 Development Mode Features:');
-  console.log('  ✅ React Query DevTools enabled');
-  console.log('  ✅ Detailed error messages');
-  console.log('  ✅ Blockchain info displayed on pages');
-  console.log('  ✅ Performance monitoring');
-  console.log('\n🔗 API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
+  console.log('\nDevelopment Mode Features:');
+  console.log('  - React Query DevTools enabled');
+  console.log('  - Detailed error messages');
+  console.log('  - Blockchain info displayed on pages');
+  console.log('  - Performance monitoring');
+  console.log('\nAPI Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001');
 }
 
