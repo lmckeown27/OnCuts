@@ -264,19 +264,10 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
               key={tx.id}
               className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <div className="text-2xl">{getTransactionIcon(tx.type)}</div>
-              
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-gray-900 truncate">
                     {tx.description}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(
-                      tx.status
-                    )}`}
-                  >
-                    {tx.status}
                   </span>
                 </div>
                 

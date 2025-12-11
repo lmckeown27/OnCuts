@@ -300,6 +300,44 @@ export default function AdminPage() {
               <p className="text-gray-600 mt-1">Choose a university to view barbers and students</p>
             </div>
 
+            {/* How Payments Work Section */}
+            <Card className="mb-8 bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
+              <div className="flex items-start gap-4">
+                <div className="bg-indigo-100 rounded-full p-3 flex-shrink-0">
+                  <DollarSign className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">How Payments Work on CampusCuts</h3>
+                  
+                  <div className="space-y-4 text-sm text-gray-700">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">1. Student Books & Pays</h4>
+                      <p>Student pays via credit card (Stripe). Funds are converted to USDC and held in escrow on the Aptos blockchain.</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">2. Escrow & Platform Fee (5%)</h4>
+                      <p>The platform automatically deducts a 5% fee. Remaining 95% is held in escrow until service completion.</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">3. Service Completed</h4>
+                      <p>After the haircut, the barber marks the booking as complete. Funds are released from escrow to the barber's wallet.</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">4. Barber Withdraws</h4>
+                      <p>Barber can withdraw earnings to their bank account via Stripe Connect. Platform absorbs all blockchain gas fees.</p>
+                    </div>
+                    
+                    <div className="pt-3 border-t border-indigo-200">
+                      <p className="font-semibold text-indigo-900">All transactions are recorded on the Aptos blockchain for transparency and auditability.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {campuses.map((campus) => (
                 <Card
