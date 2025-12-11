@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, School, Users, UserCheck, TrendingUp, DollarSign, Award } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -506,7 +506,12 @@ export default function AdminPage() {
                     {/* Barber Info */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{barber.name}</h3>
+                        <Link
+                          to={`/admin/user/${barber.id}`}
+                          className="text-lg font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          {barber.name}
+                        </Link>
                         <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                           barber.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
@@ -654,7 +659,12 @@ export default function AdminPage() {
                     {(mockStudents[selectedCampus.id] || []).map((student) => (
                       <tr key={student.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{student.name}</div>
+                          <Link
+                            to={`/admin/user/${student.id}`}
+                            className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            {student.name}
+                          </Link>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {student.email}

@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 
 interface Transaction {
@@ -15,6 +16,10 @@ interface Transaction {
   amount?: number;
   from?: string;
   to?: string;
+  fromName?: string;
+  toName?: string;
+  fromId?: string;
+  toId?: string;
   status: 'pending' | 'confirmed' | 'completed' | 'failed';
   description: string;
   txHash?: string;
@@ -278,12 +283,32 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                 )}
                 
                 <div className="flex items-center gap-4 text-xs text-gray-500">
-                  {tx.from && (
+                  {tx.fromName && tx.fromId ? (
+                    <span>
+                      From:{' '}
+                      <Link
+                        to={`/admin/user/${tx.fromId}`}
+                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold"
+                      >
+                        {tx.fromName}
+                      </Link>
+                    </span>
+                  ) : tx.from ? (
                     <span>From: {formatAddress(tx.from)}</span>
-                  )}
-                  {tx.to && (
+                  ) : null}
+                  {tx.toName && tx.toId ? (
+                    <span>
+                      To:{' '}
+                      <Link
+                        to={`/admin/user/${tx.toId}`}
+                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold"
+                      >
+                        {tx.toName}
+                      </Link>
+                    </span>
+                  ) : tx.to ? (
                     <span>To: {formatAddress(tx.to)}</span>
-                  )}
+                  ) : null}
                   <span>{formatTimestamp(tx.timestamp)}</span>
                 </div>
                 

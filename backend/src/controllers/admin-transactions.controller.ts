@@ -93,6 +93,10 @@ const generateMockTransactions = (campus: string, limit: number) => {
   return shuffledTransactions.slice(0, limit).map((tx: any, index: number) => {
     const timestamp = new Date(now.getTime() - tx.minutesAgo * 60000);
     
+    // Generate consistent user IDs based on names (for demo purposes)
+    const studentId = `user-${tx.student.replace(/\s/g, '-').toLowerCase()}`;
+    const barberId = `user-${tx.barber.replace(/\s/g, '-').toLowerCase()}`;
+    
     return {
       id: `mock-${campus}-${index}`,
       type: tx.status === 'completed' ? 'DONE' : 
@@ -102,6 +106,10 @@ const generateMockTransactions = (campus: string, limit: number) => {
       amount: tx.amount, // Return as number, let frontend format it
       from: tx.student,
       to: tx.barber,
+      fromName: tx.student,
+      toName: tx.barber,
+      fromId: studentId,
+      toId: barberId,
       status: tx.status,
       description: `${tx.student} → ${tx.barber}`,
       txHash: `0x${(campus + index).padStart(64, '0')}`,

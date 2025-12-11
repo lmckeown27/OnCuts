@@ -52,6 +52,9 @@ import userRoutes from './routes/user.routes';
 // Admin Transaction Monitoring Routes
 import adminTransactionsRoutes from './routes/admin-transactions.routes';
 
+// Admin User Management Routes
+import adminUsersRoutes from './routes/admin-users.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -246,6 +249,7 @@ app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
 app.use('/api/admin/transactions', adminTransactionsRoutes);  // Transaction history
+app.use('/api/admin/users', adminUsersRoutes);  // User management (block, ban, etc.)
 app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
 
 // Dynamic Pricing Routes
