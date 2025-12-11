@@ -280,21 +280,23 @@ httpServer.listen(PORT, async () => {
   if (process.env.APTOS_PLATFORM_ADDRESS) {
     const aptosMonitorService = (await import('./services/aptos-monitor.service')).default;
     await aptosMonitorService.start();
-    logger.info(`🔍 Aptos blockchain monitor started`);
+    logger.info(`Aptos blockchain monitor started`);
   } else {
-    logger.warn('⚠️  Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
+    logger.warn('Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
   }
 
   // Start gas monitor cron job (checks every 30 minutes)
   const gasMonitorCronService = (await import('./services/gas-monitor-cron.service')).default;
   const cronSchedule = process.env.GAS_MONITOR_CRON_SCHEDULE || '*/30 * * * *'; // Every 30 min
   gasMonitorCronService.start(cronSchedule);
-  logger.info(`⏰ Gas monitor cron job started (schedule: ${cronSchedule})`);
+  logger.info(`Gas monitor cron job started (schedule: ${cronSchedule})`);
 
   // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
-  const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
-  pricingCronService.start();
-  logger.info(`⏰ Pricing cron jobs started (see logs for details)`);
+  // DISABLED: These services require PostgreSQL which was removed for blockchain-first architecture
+  // TODO: Refactor pricing system to query blockchain instead of PostgreSQL
+  // const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
+  // pricingCronService.start();
+  // logger.info(`⏰ Pricing cron jobs started (see logs for details)`);
 });
 
 // Graceful shutdown (Blockchain-First - no database pool to close)
