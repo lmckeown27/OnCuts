@@ -140,7 +140,7 @@ export const getTransactionStats = async (
   try {
     const { campus } = req.query;
 
-    const stats = {
+    const stats: Record<string, any> = {
       'campus-1': {
         name: 'Cal Poly',
         total_transactions: 156,
