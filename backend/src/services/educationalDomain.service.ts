@@ -70,7 +70,7 @@ class EducationalDomainService {
           country: 'US',
           domain: domain,
           confidence: 'high',
-          source: 'unsupported_university',
+          source: 'none',
         };
       }
 
@@ -193,31 +193,15 @@ class EducationalDomainService {
 
   /**
    * Add new university to database
+   * Note: Disabled in blockchain-first architecture (no PostgreSQL)
    */
   private async addNewUniversity(
     domain: string,
     validationData: ValidationResult
-  ): Promise<void> => {
-    try {
-      await pool.query(
-        `INSERT INTO campuses (name, domain, city, state, country, is_active, created_at)
-         VALUES ($1, $2, $3, $4, $5, true, CURRENT_TIMESTAMP)
-         ON CONFLICT (domain) DO UPDATE SET
-           country = EXCLUDED.country,
-           is_active = true`,
-        [
-          validationData.university || domain,
-          domain,
-          'Unknown',
-          'Unknown',
-          validationData.country,
-        ]
-      );
-
-      console.log(`✅ Added new university: ${domain} (${validationData.country})`);
-    } catch (error) {
-      console.error('Error adding new university:', error);
-    }
+  ): Promise<void> {
+    // Note: PostgreSQL removed - this method is now a no-op
+    // In blockchain-first architecture, universities would be stored on-chain
+    console.log(`ℹ️  Would add university: ${domain} (${validationData.country})`);
   }
 
   /**

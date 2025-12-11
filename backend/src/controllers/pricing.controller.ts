@@ -37,19 +37,22 @@ export async function getPriceEstimate(req: Request, res: Response) {
     // Get barber data from blockchain
     const barberData = await blockchainQueryService.getUserAccount(barberAddress as string);
     
-    if (!barberData || !barberData.is_barber) {
+    if (!barberData || barberData.role !== 1) { // role 1 = barber
       return res.status(404).json({
         success: false,
         message: 'Barber not found',
       });
     }
 
+    // Get barber ratings to calculate avg
+    const barberRating = await blockchainQueryService.getBarberRating(barberAddress as string);
+
     // Build pricing input
     const pricingInput: PricingInput = {
-      barber_rating: barberData.avg_rating || 3.5,
-      barber_completion_rate: barberData.completion_rate || 0.9,
-      barber_total_bookings: barberData.total_bookings || 0,
-      barber_avg_price: barberData.avg_price || 25,
+      barber_rating: barberRating ? parseFloat(barberRating.weighted_average_rating) : 3.5,
+      barber_completion_rate: 0.9, // TODO: Calculate from booking history
+      barber_total_bookings: parseInt(barberData.total_bookings) || 0,
+      barber_avg_price: 25, // TODO: Calculate from booking history
       barbers_available_count: 5, // TODO: Query from blockchain
       bookings_last_24h: 10, // TODO: Query from blockchain
       market_type: (marketType as any) || 'medium_campus',
@@ -96,22 +99,26 @@ export async function getBarberScore(req: Request, res: Response) {
     // Get barber data from blockchain
     const barberData = await blockchainQueryService.getUserAccount(barberId);
     
-    if (!barberData || !barberData.is_barber) {
+    if (!barberData || barberData.role !== 1) { // role 1 = barber
       return res.status(404).json({
         success: false,
         message: 'Barber not found',
       });
     }
 
+    // Get barber ratings
+    const barberRating = await blockchainQueryService.getBarberRating(barberId);
+    const avgRating = barberRating ? parseFloat(barberRating.weighted_average_rating) : 0;
+
     return res.json({
       success: true,
       data: {
         barberId,
-        performanceScore: Math.round((barberData.avg_rating / 5) * 100),
-        rating: barberData.avg_rating,
-        completionRate: barberData.completion_rate,
-        totalBookings: barberData.total_bookings,
-        avgPrice: barberData.avg_price,
+        performanceScore: Math.round((avgRating / 5) * 100),
+        rating: avgRating,
+        completionRate: 0.9, // TODO: Calculate from booking history
+        totalBookings: parseInt(barberData.total_bookings),
+        avgPrice: 25, // TODO: Calculate from booking history
       },
     });
   } catch (error: any) {
@@ -133,7 +140,7 @@ export async function getBarberPriceHistory(req: Request, res: Response) {
     const { barberId } = req.params;
 
     // Get barber's bookings from blockchain
-    const bookings = await blockchainQueryService.getBarberBookings(barberId);
+    const bookings = await blockchainQueryService.getUserBookings(barberId);
 
     // Extract pricing history
     const priceHistory = bookings.map((booking: any) => ({
