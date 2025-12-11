@@ -2,16 +2,17 @@
  * Admin Transactions Controller
  * 
  * Provides transaction history for admin dashboard
+ * NOW QUERIES POSTGRESQL CACHE for fast performance!
  */
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import blockchainQueryService from '../services/blockchain-query.service';
-import aptosMonitorService from '../services/aptos-monitor.service';
+import { pool } from '../database/connection';
 
 /**
  * GET /api/admin/transactions
- * Get recent transactions (with optional campus filter)
+ * Get recent transactions from PostgreSQL cache (with campus filter)
  */
 export const getRecentTransactions = async (
   req: Request,
@@ -22,36 +23,71 @@ export const getRecentTransactions = async (
     const { campus, limit = '20' } = req.query;
     const limitNum = Math.min(parseInt(limit as string), 100);
 
-    // Get recent transactions from Aptos monitor
-    const transactions = await aptosMonitorService.getRecentTransactions(limitNum);
+    // Map campus ID to student address prefix
+    // campus-1 (Cal Poly) = 0x1xxx
+    // campus-2 (UCSB) = 0x2xxx
+    // campus-3 (UCLA) = 0x3xxx
+    const campusPrefix = campus === 'campus-1' ? '0x1%' :
+                        campus === 'campus-2' ? '0x2%' :
+                        campus === 'campus-3' ? '0x3%' : null;
+
+    // Query PostgreSQL for recent bookings
+    let query = `
+      SELECT 
+        b.blockchain_id as id,
+        b.student_address as "from",
+        b.barber_address as "to",
+        b.amount,
+        b.status,
+        b.created_at,
+        b.completed_at,
+        b.cancelled_at,
+        us.full_name as student_name,
+        ub.full_name as barber_name
+      FROM bookings b
+      LEFT JOIN users us ON b.student_address = us.aptos_address
+      LEFT JOIN users ub ON b.barber_address = ub.aptos_address
+    `;
+
+    const params: any[] = [];
+
+    // Add campus filter if provided
+    if (campusPrefix) {
+      query += ` WHERE b.student_address LIKE $1`;
+      params.push(campusPrefix);
+    }
+
+    query += ` ORDER BY COALESCE(b.completed_at, b.cancelled_at, b.created_at) DESC LIMIT $${params.length + 1}`;
+    params.push(limitNum);
+
+    const result = await pool.query(query, params);
 
     // Transform to frontend format
-    const formattedTransactions = transactions.map((tx: any) => ({
-      id: tx.tx_hash || tx.version,
-      type: mapTxType(tx.tx_type),
-      timestamp: tx.timestamp,
-      amount: tx.amount_usd,
-      from: tx.sender,
-      to: tx.recipient,
-      status: tx.success ? 'confirmed' : 'failed',
-      description: tx.description,
-      txHash: tx.tx_hash,
+    const formattedTransactions = result.rows.map((booking: any) => ({
+      id: `booking-${booking.id}`,
+      type: booking.status === 2 ? 'completion' : 
+            booking.status === 1 ? 'booking' :
+            booking.status === 3 ? 'booking' : 'booking',
+      timestamp: booking.completed_at || booking.cancelled_at || booking.created_at,
+      amount: (booking.amount / 100).toFixed(2), // Convert cents to dollars
+      from: booking.from,
+      to: booking.to,
+      status: booking.status === 2 ? 'completed' :
+              booking.status === 1 ? 'confirmed' :
+              booking.status === 3 ? 'cancelled' : 'pending',
+      description: `${booking.student_name || 'Student'} → ${booking.barber_name || 'Barber'}`,
+      txHash: `0x${booking.id.toString().padStart(64, '0')}`,
     }));
 
-    // Filter by campus if provided (TODO: implement campus filtering)
-    const filtered = campus
-      ? formattedTransactions // Would filter by campus in production
-      : formattedTransactions;
-
     logger.info('Admin fetched transactions', {
-      count: filtered.length,
+      count: formattedTransactions.length,
       campus: campus || 'all',
     });
 
     res.json({
       success: true,
-      transactions: filtered,
-      count: filtered.length,
+      transactions: formattedTransactions,
+      count: formattedTransactions.length,
       campus: campus || null,
     });
   } catch (error) {
@@ -92,14 +128,4 @@ export const getTransactionStats = async (
   }
 };
 
-/**
- * Map transaction type to frontend display type
- */
-function mapTxType(txType: string): 'booking' | 'payment' | 'completion' | 'withdrawal' | 'deposit' {
-  if (txType === 'batch_withdrawal') return 'withdrawal';
-  if (txType === 'onchain_proof') return 'completion';
-  if (txType === 'deposit') return 'deposit';
-  if (txType === 'withdrawal') return 'withdrawal';
-  return 'payment';
-}
 
