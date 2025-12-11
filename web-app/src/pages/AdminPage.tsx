@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import { CampusCutsLogo } from '@assets';
+import RealtimeTransactionFeed from '../components/RealtimeTransactionFeed';
 
 type Campus = {
   id: string;
@@ -383,6 +384,11 @@ export default function AdminPage() {
                   </div>
                 </div>
               </Card>
+            </div>
+
+            {/* Real-Time Transaction Feed */}
+            <div className="mb-8">
+              <RealtimeTransactionFeed campusId={selectedCampus.id} maxItems={20} />
             </div>
 
             {/* Action Cards */}
