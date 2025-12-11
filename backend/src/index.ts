@@ -49,6 +49,9 @@ import pricingRoutes from './routes/pricing.routes';
 // User Management Routes
 import userRoutes from './routes/user.routes';
 
+// Admin Transaction Monitoring Routes
+import adminTransactionsRoutes from './routes/admin-transactions.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -216,6 +219,7 @@ app.use('/api/v2/bookings', bookingV2Routes);
 app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
+app.use('/api/admin/transactions', adminTransactionsRoutes);  // Transaction history
 app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
 
 // Dynamic Pricing Routes
@@ -235,6 +239,7 @@ logger.info('   - /api/v2/bookings (escrow-based)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
+logger.info('   - /api/admin/transactions (transaction history)');
 logger.info('   - /api/gas (gas wallet & top-up management)');
 logger.info('   - /api/pricing (dynamic pricing engine)');
 
