@@ -83,7 +83,7 @@ const generateMockTransactions = (campus: string, limit: number) => {
             tx.status === 'pending' ? 'BOOK' : 
             tx.status === 'confirmed' ? 'PAY' : 'TXN',
       timestamp: timestamp.toISOString(),
-      amount: tx.amount.toFixed(2),
+      amount: tx.amount, // Return as number, let frontend format it
       from: tx.student,
       to: tx.barber,
       status: tx.status,
