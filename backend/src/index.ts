@@ -11,8 +11,8 @@ import { errorHandler } from './middleware/errorHandler';
 import { connectRedis } from './config/redis';
 import rateLimit from 'express-rate-limit';
 
-// Note: PostgreSQL removed! Using Aptos blockchain + IPFS for all data
-// import { pool } from './database/connection'; // DEPRECATED
+// PostgreSQL Cache Layer (Hybrid Architecture)
+import { pool, checkHealth as checkPostgresHealth, closePool } from './database/connection';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -174,29 +174,55 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Health check (Blockchain-First - checks Aptos connection)
+// Health check (Hybrid Architecture - checks Blockchain + PostgreSQL cache)
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    // Check Aptos blockchain connection (replaces PostgreSQL check)
+    // Check PostgreSQL cache layer
+    const pgHealth = await checkPostgresHealth();
+    
+    // Check Aptos blockchain connection
     const blockchainQuery = await import('./services/blockchain-query.service');
-    const stats = await blockchainQuery.default.getPlatformStats();
+    let blockchainStatus = 'connected';
+    let stats = null;
+    
+    try {
+      stats = await blockchainQuery.default.getPlatformStats();
+    } catch {
+      blockchainStatus = 'degraded';
+    }
+    
+    const overallStatus = pgHealth.healthy && blockchainStatus === 'connected' 
+      ? 'healthy' 
+      : pgHealth.healthy 
+        ? 'degraded' 
+        : 'unhealthy';
     
     res.json({
-      status: 'healthy',
+      status: overallStatus,
       timestamp: new Date().toISOString(),
-      blockchain: 'connected',
-      data_layer: 'aptos + ipfs',
-      stats: {
+      architecture: 'hybrid',
+      layers: {
+        blockchain: {
+          status: blockchainStatus,
+          provider: 'aptos',
+          storage: 'ipfs',
+        },
+        cache: {
+          status: pgHealth.healthy ? 'connected' : 'disconnected',
+          provider: 'postgresql',
+          pool: pgHealth.pool,
+        },
+      },
+      stats: stats ? {
         total_users: stats.totalUsers,
         total_bookings: stats.totalBookings,
-      },
+      } : null,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      blockchain: 'disconnected',
-      error: 'Cannot connect to Aptos blockchain',
+      error: error.message,
     });
   }
 });
@@ -304,17 +330,50 @@ httpServer.listen(PORT, async () => {
   logger.info(`Pricing cron jobs started (see logs for details)`);
 });
 
-// Graceful shutdown (Blockchain-First - no database pool to close)
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing servers');
-  httpServer.close(() => {
-    logger.info('HTTP server closed');
-    io.close(() => {
-      logger.info('Socket.IO server closed');
-      logger.info('✅ All services shut down gracefully (blockchain-first architecture)');
-      process.exit(0);
+// Graceful shutdown (Hybrid Architecture - close PostgreSQL pool + servers)
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM signal received: closing servers and database connections');
+  
+  try {
+    // Close HTTP server
+    await new Promise((resolve) => {
+      httpServer.close(() => {
+        logger.info('HTTP server closed');
+        resolve(true);
+      });
     });
-  });
+    
+    // Close Socket.IO
+    await new Promise((resolve) => {
+      io.close(() => {
+        logger.info('Socket.IO server closed');
+        resolve(true);
+      });
+    });
+    
+    // Close PostgreSQL pool
+    await closePool();
+    logger.info('PostgreSQL pool closed');
+    
+    logger.info('✅ All services shut down gracefully (hybrid architecture)');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+});
+
+process.on('SIGINT', async () => {
+  logger.info('SIGINT signal received: closing servers and database connections');
+  
+  try {
+    await closePool();
+    logger.info('PostgreSQL pool closed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
 });
 
 // Export Socket.IO instance for use in services
