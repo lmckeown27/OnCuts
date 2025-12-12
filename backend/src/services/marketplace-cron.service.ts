@@ -33,7 +33,10 @@ export class MarketplaceCronService {
         VALUES ($1, NOW(), $2, $3, $4, $5)
       `, [jobName, status, durationMs, recordsProcessed, errorMessage]);
     } catch (error) {
-      logger.error(`Failed to log cron execution for ${jobName}:`, error);
+      // Silently fail if PostgreSQL is not available (blockchain fallback mode)
+      if (process.env.NODE_ENV !== 'production') {
+        logger.debug(`Cron logging skipped (PostgreSQL unavailable): ${jobName}`);
+      }
     }
   }
 
@@ -144,9 +147,30 @@ export class MarketplaceCronService {
   }
 
   /**
+   * Check if PostgreSQL is available
+   */
+  private async isPostgresAvailable(): Promise<boolean> {
+    try {
+      await pool.query('SELECT 1');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Start all cron jobs
    */
-  startAllJobs(): void {
+  async startAllJobs(): Promise<void> {
+    // Check if PostgreSQL is available
+    const postgresAvailable = await this.isPostgresAvailable();
+    
+    if (!postgresAvailable) {
+      logger.warn('⚠️  Marketplace cron jobs disabled: PostgreSQL not available');
+      logger.warn('   The system will operate in blockchain-only mode');
+      return;
+    }
+
     logger.info('🚀 Starting marketplace cron jobs...');
 
     // Nightly jobs at 2am: BQS → Pricing → Rankings

@@ -362,8 +362,7 @@ httpServer.listen(PORT, async () => {
   logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
-  marketplaceCronService.startAllJobs();
-  logger.info(`Marketplace cron jobs started (nightly: 2am, surge: every 15 min)`);
+  await marketplaceCronService.startAllJobs();
 
   // Start blockchain → PostgreSQL sync (hourly)
   // This keeps PostgreSQL cache up-to-date with blockchain data
