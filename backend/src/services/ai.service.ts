@@ -1,11 +1,12 @@
 /**
  * AI Service - Direct integration with AI Worker
  * 
- * Imports AI functions directly from ai-worker module
+ * Imports AI functions and passes backend's database and logger
  * No HTTP calls needed - everything runs in-process
  */
 
 import { logger } from '../utils/logger';
+import { pool } from '../database/connection';
 
 // Import AI functions directly from ai-worker
 import {
@@ -16,6 +17,7 @@ import {
   getFraudFlags as aiGetFraudFlags,
   getDisputes as aiGetDisputes,
   calculateBookingPrice as aiCalculateBookingPrice,
+  AIFunctionDeps,
 } from '../../../ai-worker/src/services/ai-functions';
 
 // Import queue functions
@@ -27,12 +29,26 @@ import {
   addMarketDemandJob,
 } from '../../../ai-worker/src/queues';
 
+// Create dependencies object with backend's resources
+const aiDeps: AIFunctionDeps = {
+  query: async (text: string, params?: any[]) => {
+    const result = await pool.query(text, params);
+    return result;
+  },
+  logger: {
+    info: (message: string, ...args: any[]) => logger.info(message, ...args),
+    error: (message: string, ...args: any[]) => logger.error(message, ...args),
+    warn: (message: string, ...args: any[]) => logger.warn(message, ...args),
+    debug: (message: string, ...args: any[]) => logger.debug(message, ...args),
+  },
+};
+
 /**
  * Get barber pricing multiplier with AI
  */
 export async function getBarberPricing(barberId: string) {
   try {
-    return await aiGetBarberPricing(barberId);
+    return await aiGetBarberPricing(barberId, aiDeps);
   } catch (error) {
     logger.error('AI Service - getBarberPricing error:', error);
     return {
@@ -49,7 +65,7 @@ export async function getBarberPricing(barberId: string) {
  */
 export async function getBarberQualityScore(barberId: string) {
   try {
-    return await aiGetBarberQualityScore(barberId);
+    return await aiGetBarberQualityScore(barberId, aiDeps);
   } catch (error) {
     logger.error('AI Service - getBarberQualityScore error:', error);
     return {
@@ -66,7 +82,7 @@ export async function getBarberQualityScore(barberId: string) {
  */
 export async function getBarberHistory(barberId: string, limit = 30) {
   try {
-    return await aiGetBarberHistory(barberId, limit);
+    return await aiGetBarberHistory(barberId, limit, aiDeps);
   } catch (error) {
     logger.error('AI Service - getBarberHistory error:', error);
     return { barberId, pricing: [], quality: [] };
@@ -78,7 +94,7 @@ export async function getBarberHistory(barberId: string, limit = 30) {
  */
 export async function calculateBookingPrice(barberId: string, basePrice: number) {
   try {
-    return await aiCalculateBookingPrice(barberId, basePrice);
+    return await aiCalculateBookingPrice(barberId, basePrice, aiDeps);
   } catch (error) {
     logger.error('AI Service - calculateBookingPrice error:', error);
     return {
@@ -97,7 +113,7 @@ export async function calculateBookingPrice(barberId: string, basePrice: number)
  */
 export async function getMarketSummary() {
   try {
-    return await aiGetMarketSummary();
+    return await aiGetMarketSummary(aiDeps);
   } catch (error) {
     logger.error('AI Service - getMarketSummary error:', error);
     return null;
@@ -109,7 +125,7 @@ export async function getMarketSummary() {
  */
 export async function getFraudFlags(status = 'PENDING', limit = 50) {
   try {
-    return await aiGetFraudFlags(status, limit);
+    return await aiGetFraudFlags(status, limit, aiDeps);
   } catch (error) {
     logger.error('AI Service - getFraudFlags error:', error);
     return { flags: [] };
@@ -121,7 +137,7 @@ export async function getFraudFlags(status = 'PENDING', limit = 50) {
  */
 export async function getDisputes(limit = 50) {
   try {
-    return await aiGetDisputes(limit);
+    return await aiGetDisputes(limit, aiDeps);
   } catch (error) {
     logger.error('AI Service - getDisputes error:', error);
     return { disputes: [] };

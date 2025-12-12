@@ -1,42 +1,27 @@
 /**
  * AI Functions - Direct callable functions for backend integration
  * 
- * These functions can be called directly from the backend without HTTP
+ * These functions accept database query function and logger as parameters
+ * Uses backend's existing resources instead of creating its own
  */
 
-// Simple console logger fallback for when used from backend
-const logger = {
-  info: (message: string, ...args: any[]) => console.log('[AI]', message, ...args),
-  error: (message: string, ...args: any[]) => console.error('[AI ERROR]', message, ...args),
-  warn: (message: string, ...args: any[]) => console.warn('[AI WARN]', message, ...args),
-  debug: (message: string, ...args: any[]) => console.debug('[AI DEBUG]', message, ...args),
-};
-
-import { query } from '../db/connection';
-import { 
-  buildDynamicPricingPrompt, 
-  DynamicPricingInput, 
-  DynamicPricingOutput,
-  SYSTEM_PROMPT as PRICING_SYSTEM_PROMPT 
-} from '../prompts/dynamicPricingPrompt';
-import {
-  buildFraudDetectionPrompt,
-  FraudDetectionInput,
-  FraudDetectionOutput,
-  SYSTEM_PROMPT as FRAUD_SYSTEM_PROMPT
-} from '../prompts/fraudDetectionPrompt';
-import {
-  buildDisputeResolutionPrompt,
-  DisputeResolutionInput,
-  DisputeResolutionOutput,
-  SYSTEM_PROMPT as DISPUTE_SYSTEM_PROMPT
-} from '../prompts/disputeResolutionPrompt';
+// Type definitions for backend resources
+export interface AIFunctionDeps {
+  query: (text: string, params?: any[]) => Promise<any>;
+  logger: {
+    info: (message: string, ...args: any[]) => void;
+    error: (message: string, ...args: any[]) => void;
+    warn: (message: string, ...args: any[]) => void;
+    debug: (message: string, ...args: any[]) => void;
+  };
+}
 
 /**
  * Get barber pricing multiplier
  * Direct function - no HTTP call needed
  */
-export async function getBarberPricing(barberId: string) {
+export async function getBarberPricing(barberId: string, deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const result = await query(
       `SELECT 
@@ -92,7 +77,8 @@ export async function getBarberPricing(barberId: string) {
  * Get barber quality score
  * Direct function - no HTTP call needed
  */
-export async function getBarberQualityScore(barberId: string) {
+export async function getBarberQualityScore(barberId: string, deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const result = await query(
       `SELECT 
@@ -140,7 +126,8 @@ export async function getBarberQualityScore(barberId: string) {
  * Get barber history
  * Direct function - no HTTP call needed
  */
-export async function getBarberHistory(barberId: string, limit = 30) {
+export async function getBarberHistory(barberId: string, limit: number, deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const pricingResult = await query(
       `SELECT multiplier, created_at
@@ -181,7 +168,8 @@ export async function getBarberHistory(barberId: string, limit = 30) {
  * Get market summary
  * Direct function - no HTTP call needed
  */
-export async function getMarketSummary() {
+export async function getMarketSummary(deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const marketStats = await query(
       `SELECT 
@@ -240,7 +228,8 @@ export async function getMarketSummary() {
  * Get fraud flags
  * Direct function - no HTTP call needed
  */
-export async function getFraudFlags(status = 'PENDING', limit = 50) {
+export async function getFraudFlags(status: string, limit: number, deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const result = await query(
       `SELECT 
@@ -285,7 +274,8 @@ export async function getFraudFlags(status = 'PENDING', limit = 50) {
  * Get disputes
  * Direct function - no HTTP call needed
  */
-export async function getDisputes(limit = 50) {
+export async function getDisputes(limit: number, deps: AIFunctionDeps) {
+  const { query, logger } = deps;
   try {
     const result = await query(
       `SELECT 
@@ -333,9 +323,10 @@ export async function getDisputes(limit = 50) {
  * Calculate booking price with AI multiplier
  * Direct function - called during booking creation
  */
-export async function calculateBookingPrice(barberId: string, basePrice: number) {
+export async function calculateBookingPrice(barberId: string, basePrice: number, deps: AIFunctionDeps) {
+  const { logger } = deps;
   try {
-    const pricingData = await getBarberPricing(barberId);
+    const pricingData = await getBarberPricing(barberId, deps);
     const finalPrice = Math.round(basePrice * pricingData.multiplier * 100) / 100;
     const platformFee = Math.round(finalPrice * 0.05 * 100) / 100;
 
@@ -361,16 +352,6 @@ export async function calculateBookingPrice(barberId: string, basePrice: number)
   }
 }
 
-// Export all functions
-export const AIFunctions = {
-  getBarberPricing,
-  getBarberQualityScore,
-  getBarberHistory,
-  getMarketSummary,
-  getFraudFlags,
-  getDisputes,
-  calculateBookingPrice,
-};
-
-export default AIFunctions;
+// Export type for use in backend
+export type { AIFunctionDeps };
 
