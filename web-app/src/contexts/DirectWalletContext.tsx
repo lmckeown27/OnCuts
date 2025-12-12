@@ -1,15 +1,16 @@
 /**
  * Direct Wallet Context
  * 
- * Primary wallet connection system using direct Petra API integration
+ * Enhanced wallet adapter with persistence
  * Features:
- * - Direct window.aptos integration
+ * - Uses Aptos Wallet Adapter standard (compliant with Petra)
  * - Persistent connections via localStorage
  * - Auto-reconnection on page load
  * - Simple, reliable connection management
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import toast from 'react-hot-toast';
 
 interface DirectWalletContextType {
@@ -20,6 +21,7 @@ interface DirectWalletContextType {
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
   getAccount: () => { address: string } | null;
+  signAndSubmitTransaction: (payload: any) => Promise<any>;
 }
 
 const DirectWalletContext = createContext<DirectWalletContextType | undefined>(undefined);
@@ -29,73 +31,76 @@ interface DirectWalletProviderProps {
 }
 
 export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
-  const [connected, setConnected] = useState(false);
-  const [address, setAddress] = useState('');
-  const [petraInstalled, setPetraInstalled] = useState(false);
-  const [wallet, setWallet] = useState<any>(null);
+  // Use wallet adapter hooks
+  const { 
+    connected: adapterConnected, 
+    account, 
+    connect, 
+    disconnect, 
+    wallet: adapterWallet,
+    wallets,
+    signAndSubmitTransaction: adapterSignAndSubmit
+  } = useWallet();
 
-  // Check if Petra is installed (with delay for extension load)
+  const [localConnected, setLocalConnected] = useState(false);
+  const [localAddress, setLocalAddress] = useState('');
+  const [petraInstalled, setPetraInstalled] = useState(false);
+
+  // Check if Petra is available
   useEffect(() => {
     const checkPetra = () => {
-      const petra = (window as any).aptos;
-      const isInstalled = !!petra;
-      
-      console.log('🔍 Checking for Petra wallet...', isInstalled ? 'Found!' : 'Not found');
-      setPetraInstalled(isInstalled);
-      
-      if (isInstalled) {
-        setWallet(petra);
-      }
+      const hasPetra = wallets.some(w => w.name.toLowerCase().includes('petra'));
+      console.log('🔍 Checking for Petra wallet...', hasPetra ? 'Found!' : 'Not found');
+      setPetraInstalled(hasPetra);
     };
 
-    // Check immediately
     checkPetra();
-    
-    // Check again after 1 second (extension might load late)
     const timer = setTimeout(checkPetra, 1000);
-    
     return () => clearTimeout(timer);
-  }, []);
+  }, [wallets]);
 
-  // Auto-reconnection logic on page load
+  // Sync adapter state with local state
+  useEffect(() => {
+    if (adapterConnected && account?.address) {
+      console.log('✅ Wallet connected via adapter:', account.address);
+      setLocalConnected(true);
+      setLocalAddress(account.address);
+      
+      // Persist to localStorage
+      localStorage.setItem('ccWalletConnected', 'true');
+      localStorage.setItem('ccWalletAddress', account.address);
+    } else if (!adapterConnected) {
+      setLocalConnected(false);
+      setLocalAddress('');
+    }
+  }, [adapterConnected, account]);
+
+  // Auto-reconnection on page load
   useEffect(() => {
     const autoReconnect = async () => {
-      if (!petraInstalled || !wallet) {
-        console.log('⏸️ Petra not installed, skipping auto-reconnect');
+      // Check if was previously connected
+      const wasConnected = localStorage.getItem('ccWalletConnected') === 'true';
+      
+      if (!wasConnected) {
+        console.log('⏸️ No previous connection found');
         return;
       }
 
-      // Check if was previously connected
-      const wasConnected = localStorage.getItem('ccWalletConnected') === 'true';
-      const cachedAddress = localStorage.getItem('ccWalletAddress');
-
-      if (!wasConnected) {
-        console.log('⏸️ No previous connection found');
+      // If adapter says connected, we're good
+      if (adapterConnected) {
+        console.log('✅ Already connected via adapter');
         return;
       }
 
       console.log('🔄 Attempting auto-reconnection...');
 
       try {
-        // Check if still connected in Petra
-        const isConnected = await wallet.isConnected();
-        
-        if (isConnected) {
-          // Get current account
-          const account = await wallet.account();
-          
-          if (account && account.address) {
-            console.log('✅ Auto-reconnected:', account.address);
-            setAddress(account.address);
-            setConnected(true);
-            localStorage.setItem('ccWalletAddress', account.address);
-            toast.success('Wallet reconnected');
-          }
-        } else {
-          // Petra says disconnected, clear stale data
-          console.log('⚠️ Petra reports disconnected, clearing cache');
-          localStorage.removeItem('ccWalletConnected');
-          localStorage.removeItem('ccWalletAddress');
+        // Try to reconnect
+        const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
+        if (petra) {
+          await connect(petra.name);
+          console.log('✅ Auto-reconnected to Petra');
+          toast.success('Wallet reconnected');
         }
       } catch (error) {
         console.error('❌ Auto-reconnect failed:', error);
@@ -105,15 +110,17 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       }
     };
 
-    if (petraInstalled && wallet) {
-      autoReconnect();
-    }
-  }, [petraInstalled, wallet]);
+    // Wait a bit for wallets to load
+    const timer = setTimeout(autoReconnect, 1500);
+    return () => clearTimeout(timer);
+  }, [wallets, connect, adapterConnected]);
 
   const connectWallet = async () => {
     console.log('🔗 Connecting to Petra wallet...');
 
-    if (!petraInstalled || !wallet) {
+    const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
+    
+    if (!petra) {
       const installUrl = 'https://petra.app/';
       const shouldInstall = window.confirm(
         'Petra wallet not detected. Would you like to install it?'
@@ -126,27 +133,13 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
     }
 
     try {
-      // Request connection
-      const response = await wallet.connect();
-      
-      if (response && response.address) {
-        console.log('✅ Connected to Petra wallet!');
-        console.log('📍 Address:', response.address);
-        
-        setAddress(response.address);
-        setConnected(true);
-        
-        // Persist connection state
-        localStorage.setItem('ccWalletConnected', 'true');
-        localStorage.setItem('ccWalletAddress', response.address);
-        
-        toast.success('Wallet connected successfully!');
-      }
+      await connect(petra.name);
+      console.log('✅ Connected to Petra wallet!');
+      toast.success('Wallet connected successfully!');
     } catch (error: any) {
       console.error('❌ Connection error:', error);
       
       if (error.code === 4001) {
-        // User rejected connection
         toast.error('Connection cancelled');
       } else {
         toast.error('Failed to connect wallet');
@@ -158,13 +151,7 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
     console.log('🔌 Disconnecting wallet...');
 
     try {
-      if (wallet) {
-        await wallet.disconnect();
-      }
-      
-      // Clear state
-      setAddress('');
-      setConnected(false);
+      await disconnect();
       
       // Clear localStorage
       localStorage.removeItem('ccWalletConnected');
@@ -176,29 +163,36 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       console.error('❌ Disconnect error:', error);
       
       // Clear state anyway
-      setAddress('');
-      setConnected(false);
       localStorage.removeItem('ccWalletConnected');
       localStorage.removeItem('ccWalletAddress');
     }
   };
 
   const getAccount = () => {
-    if (!connected || !address) {
+    if (!localConnected || !localAddress) {
       return null;
     }
     
-    return { address };
+    return { address: localAddress };
+  };
+
+  const signAndSubmitTransaction = async (payload: any) => {
+    if (!localConnected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    return await adapterSignAndSubmit(payload);
   };
 
   const value: DirectWalletContextType = {
-    connected,
-    address,
+    connected: localConnected,
+    address: localAddress,
     petraInstalled,
-    wallet,
+    wallet: adapterWallet,
     connectWallet,
     disconnectWallet,
     getAccount,
+    signAndSubmitTransaction,
   };
 
   return (

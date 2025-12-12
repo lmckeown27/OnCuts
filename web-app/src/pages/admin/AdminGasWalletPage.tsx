@@ -40,7 +40,7 @@ const GAS_WALLET_ADDRESS = import.meta.env.VITE_GAS_WALLET_ADDRESS || '0x742d35C
 
 export default function AdminGasWalletPage() {
   const navigate = useNavigate();
-  const { connected, address, petraInstalled, wallet, connectWallet, disconnectWallet } = useDirectWallet();
+  const { connected, address, petraInstalled, connectWallet, disconnectWallet, signAndSubmitTransaction } = useDirectWallet();
   const [status, setStatus] = useState<GasWalletStatus | null>(null);
   const [usageHistory, setUsageHistory] = useState<UsageHistory[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -92,7 +92,7 @@ export default function AdminGasWalletPage() {
   };
 
   const handleRefillGasWallet = async () => {
-    if (!connected || !address || !wallet) {
+    if (!connected || !address) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -118,8 +118,8 @@ export default function AdminGasWalletPage() {
 
       console.log('🔥 Submitting refill transaction...', { amount, amountInOctas, to: GAS_WALLET_ADDRESS });
 
-      // Sign and submit transaction via Petra
-      const response = await wallet.signAndSubmitTransaction(payload);
+      // Sign and submit transaction via wallet adapter
+      const response = await signAndSubmitTransaction(payload);
       
       console.log('✅ Transaction submitted:', response);
       
