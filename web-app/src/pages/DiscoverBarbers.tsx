@@ -1,14 +1,15 @@
 /**
  * Discover Barbers Page
  * 
- * Dating app-style interface for browsing barbers
- * Swipe through barber profiles and schedule bookings
+ * Progressive filtering system with questionnaire
+ * Filters barbers by service, availability, and location in real-time
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram } from 'lucide-react';
+import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import BarberFilterQuestionnaire, { FilterCriteria } from '../components/BarberFilterQuestionnaire';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -35,8 +36,15 @@ interface Props {
 }
 
 export default function DiscoverBarbers({ customerId, customerName }: Props) {
-  const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [allBarbers, setAllBarbers] = useState<Barber[]>([]);
+  const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
+    serviceType: null,
+    date: null,
+    time: null,
+    location: null,
+    locationDetails: null,
+  });
   const [loading, setLoading] = useState(true);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -99,7 +107,8 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
         },
       ];
 
-      setBarbers(mockBarbers);
+      setAllBarbers(mockBarbers);
+      setFilteredBarbers(mockBarbers); // Initially show all
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch barbers:', error);
@@ -108,26 +117,53 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     }
   };
 
-  const handleNext = () => {
-    if (currentIndex < barbers.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+  // Filter barbers based on criteria
+  useEffect(() => {
+    let filtered = [...allBarbers];
+
+    // Filter by service type
+    if (filterCriteria.serviceType) {
+      filtered = filtered.filter(barber =>
+        barber.specialties.some(specialty =>
+          specialty.toLowerCase().includes(filterCriteria.serviceType!.toLowerCase()) ||
+          filterCriteria.serviceType!.toLowerCase().includes(specialty.toLowerCase())
+        )
+      );
     }
+
+    // Filter by availability (date/time)
+    // For now, this is mock logic - in production, check actual availability
+    if (filterCriteria.date && filterCriteria.time) {
+      // Mock: filter out barbers with "tomorrow" availability if date is today
+      // In production, query actual calendar/availability
+      filtered = filtered.filter(barber => {
+        // All barbers are "available" for this demo
+        return true;
+      });
+    }
+
+    // Filter by location
+    if (filterCriteria.location) {
+      // Mock: all barbers support all locations
+      // In production, check barber preferences
+      filtered = filtered.filter(barber => {
+        return true; // All barbers available for all locations in demo
+      });
+    }
+
+    // Sort by rating (highest first) for top performers visibility
+    filtered.sort((a, b) => b.avgRating - a.avgRating);
+
+    setFilteredBarbers(filtered);
+  }, [filterCriteria, allBarbers]);
+
+  const handleFilterChange = (filters: FilterCriteria) => {
+    setFilterCriteria(filters);
   };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const handleViewProfile = (barber: Barber) => {
+  const handleSelectBarber = (barber: Barber) => {
     setSelectedBarber(barber);
-  };
-
-  const handleSchedule = () => {
-    if (selectedBarber) {
-      setShowBookingModal(true);
-    }
+    setShowBookingModal(true);
   };
 
   if (loading) {
@@ -141,75 +177,101 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     );
   }
 
-  if (barbers.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="text-center max-w-md">
-          <p className="text-gray-600">No barbers available in your area</p>
-          <p className="text-sm text-gray-500 mt-2">Check back soon!</p>
-        </Card>
-      </div>
-    );
-  }
-
-  const currentBarber = barbers[currentIndex];
+  const availableServices = [
+    'Haircut',
+    'Fade',
+    'Beard Trim',
+    'Full Service',
+    'Hot Towel Shave',
+    'Color',
+    'Styling',
+    'Lineup',
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
-      {!selectedBarber ? (
-        /* Browsing Mode */
-        <div className="max-w-md mx-auto px-4 py-8">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Discover Barbers</h1>
-            <p className="text-gray-600">Find your perfect barber</p>
-          </div>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Discover Barbers</h1>
+          <p className="text-gray-600">Answer a few questions to find the perfect match</p>
+        </div>
 
-          {/* Barber Card */}
-          <div className="relative">
-            <Card className="overflow-hidden shadow-2xl">
+        {/* Filter Questionnaire */}
+        <BarberFilterQuestionnaire
+          onFilterChange={handleFilterChange}
+          availableServices={availableServices}
+        />
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-indigo-600" />
+            <h2 className="text-2xl font-bold text-gray-900">
+              {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Barber' : 'Barbers'} Available
+            </h2>
+          </div>
+          {filterCriteria.serviceType && (
+            <div className="text-sm text-gray-600">
+              Sorted by top performers first
+            </div>
+          )}
+        </div>
+
+        {/* No Results */}
+        {filteredBarbers.length === 0 && filterCriteria.serviceType && (
+          <Card className="text-center py-12">
+            <p className="text-gray-600 text-lg mb-2">No barbers match your criteria</p>
+            <p className="text-sm text-gray-500">Try adjusting your filters or check back later</p>
+          </Card>
+        )}
+
+        {/* Barber Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredBarbers.map((barber) => (
+            <Card key={barber.barberId} className="overflow-hidden hover:shadow-xl transition-shadow">
               {/* Profile Image Placeholder */}
-              <div className="h-80 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center relative">
-                <div className="text-white text-8xl font-bold">
-                  {currentBarber.name.charAt(0)}
+              <div className="h-48 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center relative">
+                <div className="text-white text-6xl font-bold">
+                  {barber.name.charAt(0)}
                 </div>
-                {currentBarber.verified && (
-                  <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full flex items-center gap-1 text-sm font-semibold">
-                    <Award className="w-4 h-4" />
+                {barber.verified && (
+                  <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full flex items-center gap-1 text-xs font-semibold">
+                    <Award className="w-3 h-3" />
                     Verified
                   </div>
                 )}
               </div>
 
               {/* Profile Info */}
-              <div className="p-6">
+              <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{currentBarber.name}</h2>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <span className="text-gray-600">{currentBarber.location}</span>
+                    <h3 className="text-xl font-bold text-gray-900">{barber.name}</h3>
+                    <div className="flex items-center gap-1 mt-1">
+                      <MapPin className="w-3 h-3 text-gray-500" />
+                      <span className="text-sm text-gray-600">{barber.location}</span>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-1">
-                      <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                      <span className="font-bold text-gray-900">{currentBarber.avgRating}</span>
+                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                      <span className="font-bold text-gray-900">{barber.avgRating}</span>
                     </div>
-                    <p className="text-xs text-gray-500">{currentBarber.totalReviews} reviews</p>
+                    <p className="text-xs text-gray-500">{barber.totalReviews} reviews</p>
                   </div>
                 </div>
 
                 {/* Bio */}
-                <p className="text-gray-700 mb-4 leading-relaxed">{currentBarber.bio}</p>
+                <p className="text-sm text-gray-700 mb-3 line-clamp-2">{barber.bio}</p>
 
                 {/* Specialties */}
-                <div className="mb-4">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">Specialties</p>
-                  <div className="flex flex-wrap gap-2">
-                    {currentBarber.specialties.map((specialty) => (
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-1">
+                    {barber.specialties.slice(0, 3).map((specialty) => (
                       <span
                         key={specialty}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
+                        className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium"
                       >
                         {specialty}
                       </span>
@@ -218,85 +280,36 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 gap-2 mb-3 p-2 bg-gray-50 rounded-lg text-center">
                   <div>
                     <p className="text-xs text-gray-500">Price Range</p>
-                    <p className="font-semibold text-gray-900">{currentBarber.priceRange}</p>
+                    <p className="font-semibold text-sm text-gray-900">{barber.priceRange}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Total Cuts</p>
-                    <p className="font-semibold text-gray-900">{currentBarber.totalBookings}</p>
+                    <p className="font-semibold text-sm text-gray-900">{barber.totalBookings}</p>
                   </div>
                 </div>
 
                 {/* Availability */}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-600 font-medium">{currentBarber.availability}</span>
+                  <span className="text-sm text-green-600 font-medium">{barber.availability}</span>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <MessageSquare className="w-4 h-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">{currentBarber.responseTime}</span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => handleViewProfile(currentBarber)}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    View Full Profile
-                  </Button>
-                  <Button
-                    onClick={handleSchedule}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                  >
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule
-                  </Button>
-                </div>
+                {/* Action Button */}
+                <Button
+                  onClick={() => handleSelectBarber(barber)}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Book Now
+                </Button>
               </div>
             </Card>
-
-            {/* Navigation */}
-            <div className="flex justify-between items-center mt-6">
-              <Button
-                onClick={handlePrevious}
-                disabled={currentIndex === 0}
-                variant="secondary"
-                size="lg"
-                className="w-24"
-              >
-                ← Previous
-              </Button>
-
-              <span className="text-gray-600 font-medium">
-                {currentIndex + 1} / {barbers.length}
-              </span>
-
-              <Button
-                onClick={handleNext}
-                disabled={currentIndex === barbers.length - 1}
-                variant="secondary"
-                size="lg"
-                className="w-24"
-              >
-                Next →
-              </Button>
-            </div>
-          </div>
+          ))}
         </div>
-      ) : (
-        /* Profile View Mode */
-        <BarberProfileView
-          barber={selectedBarber}
-          customerId={customerId}
-          customerName={customerName}
-          onBack={() => setSelectedBarber(null)}
-          onSchedule={() => setShowBookingModal(true)}
-        />
-      )}
+      </div>
 
       {/* Booking Modal */}
       {showBookingModal && selectedBarber && (
