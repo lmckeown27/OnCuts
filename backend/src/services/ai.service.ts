@@ -186,7 +186,7 @@ export async function triggerDisputeResolution(disputeData: {
  */
 export async function triggerOnboardingAssessment(applicationData: any) {
   try {
-    await addBarberOnboardingJob('onboarding-assessment', applicationData);
+    await addBarberOnboardingJob(applicationData);
     logger.info(`Onboarding assessment queued for: ${applicationData.userId}`);
   } catch (error) {
     logger.error('Failed to queue onboarding assessment:', error);
