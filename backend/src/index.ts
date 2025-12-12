@@ -337,10 +337,11 @@ httpServer.listen(PORT, async () => {
   logger.info(`Blockchain sync cron job started (hourly sync)`);
 
   // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
-  // NOW ENABLED: PostgreSQL is back as a cache layer
-  const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
-  pricingCronService.start();
-  logger.info(`Pricing cron jobs started (see logs for details)`);
+  // TEMPORARILY DISABLED: Requires PostgreSQL database to be properly configured
+  // Uncomment when PostgreSQL is set up with correct DATABASE_URL
+  // const pricingCronService = (await import('./services/pricing/pricing-cron.service')).default;
+  // pricingCronService.start();
+  logger.info(`⏸️  Pricing cron jobs disabled (enable when PostgreSQL is configured)`);
 });
 
 // Graceful shutdown (Hybrid Architecture - close PostgreSQL pool + servers)
