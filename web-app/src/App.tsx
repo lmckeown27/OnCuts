@@ -10,6 +10,7 @@ import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
 import AdminMarketplacePage from './pages/admin/AdminMarketplacePage';
 import AdminPricingManagement from './pages/AdminPricingManagement';
 import AdminUserView from './pages/admin/AdminUserView';
+import DiscoverBarbers from './pages/DiscoverBarbers';
 import ConsumerPage from './pages/ConsumerPage';
 import BarberPage from './pages/BarberPage';
 import BarberEarningsPage from './pages/barber/BarberEarningsPage';
@@ -36,6 +37,7 @@ function App() {
           
           {/* Consumer/Student Routes */}
           <Route path="/consumer" element={<ConsumerPage />} />
+          <Route path="/discover" element={<DiscoverBarbers customerId="user-temp" customerName="User" />} />
           <Route path="/student/booking/payment" element={<BookingPaymentPage />} />
           
           {/* Barber Routes */}
