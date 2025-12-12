@@ -4,11 +4,11 @@
  * Monitors gas wallet balance and sends alerts when low
  */
 
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import { AptosClient, Types } from 'aptos';
 import { logger } from '../utils/logger';
 import { sendEmail } from './email.service';
 import { sendSlackAlert } from './slack.service';
-import { redis } from '../config/redis';
+import { getRedisClient, redisGet, redisSet } from '../config/redis';
 
 const APTOS_NODE_URL = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
 const GAS_WALLET_ADDRESS = process.env.GAS_WALLET_ADDRESS || '';
@@ -43,11 +43,10 @@ interface AlertHistory {
 }
 
 class GasWalletMonitorService {
-  private aptos: Aptos;
+  private aptos: AptosClient;
 
   constructor() {
-    const config = new AptosConfig({ network: Network.DEVNET });
-    this.aptos = new Aptos(config);
+    this.aptos = new AptosClient(APTOS_NODE_URL);
   }
 
   /**
@@ -60,16 +59,14 @@ class GasWalletMonitorService {
       }
 
       // Fetch account balance
-      const resources = await this.aptos.getAccountResources({
-        accountAddress: GAS_WALLET_ADDRESS,
-      });
+      const resources = await this.aptos.getAccountResources(GAS_WALLET_ADDRESS);
 
       // Find AptosCoin resource
       const coinResource = resources.find(
-        (r) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
+        (r: Types.MoveResource) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
       );
 
-      const balanceOctas = coinResource?.data?.coin?.value || BigInt(0);
+      const balanceOctas = BigInt((coinResource?.data as any)?.coin?.value || '0');
       const balance = Number(balanceOctas) / 100000000; // Convert octas to APT
 
       // Determine status
@@ -98,12 +95,7 @@ class GasWalletMonitorService {
       };
 
       // Cache status in Redis
-      await redis.set(
-        'gas_wallet_status',
-        JSON.stringify(walletStatus),
-        'EX',
-        300 // 5 minute cache
-      );
+      await redisSet('gas_wallet_status', walletStatus, 300); // 5 minute cache
 
       return walletStatus;
     } catch (error: any) {
@@ -119,13 +111,12 @@ class GasWalletMonitorService {
     try {
       // Get usage stats from last 7 days
       const usageKey = 'gas_wallet_daily_usage';
-      const usageData = await redis.get(usageKey);
+      const usage = await redisGet(usageKey);
       
-      if (!usageData) {
+      if (!usage) {
         return 5; // Default estimate: 5 APT per day
       }
 
-      const usage = JSON.parse(usageData);
       const values = Object.values(usage) as number[];
       
       if (values.length === 0) {
@@ -147,8 +138,7 @@ class GasWalletMonitorService {
       const today = new Date().toISOString().split('T')[0];
       const usageKey = 'gas_wallet_daily_usage';
       
-      const usageData = await redis.get(usageKey);
-      const usage = usageData ? JSON.parse(usageData) : {};
+      const usage = (await redisGet(usageKey)) || {};
       
       usage[today] = (usage[today] || 0) + amountAPT;
       
@@ -159,7 +149,7 @@ class GasWalletMonitorService {
         toDelete.forEach(date => delete usage[date]);
       }
       
-      await redis.set(usageKey, JSON.stringify(usage), 'EX', 86400 * 31); // 31 days
+      await redisSet(usageKey, usage, 86400 * 31); // 31 days
     } catch (error) {
       logger.error('Error recording gas usage:', error);
     }
@@ -171,7 +161,7 @@ class GasWalletMonitorService {
   private async canSendAlert(level: 'critical' | 'warning'): Promise<boolean> {
     try {
       const key = `gas_alert_cooldown_${level}`;
-      const lastAlert = await redis.get(key);
+      const lastAlert = await redisGet(key);
       
       if (!lastAlert) {
         return true;
@@ -194,7 +184,7 @@ class GasWalletMonitorService {
     try {
       const key = `gas_alert_cooldown_${level}`;
       const now = new Date().toISOString();
-      await redis.set(key, now, 'EX', ALERT_COOLDOWN_HOURS * 3600);
+      await redisSet(key, now, ALERT_COOLDOWN_HOURS * 3600);
     } catch (error) {
       logger.error('Error setting alert cooldown:', error);
     }
@@ -323,16 +313,21 @@ class GasWalletMonitorService {
       }
     }
 
-    // Log alert history
-    const alertHistory: AlertHistory = {
-      level: status.status,
-      balance: status.balance,
-      timestamp: new Date().toISOString(),
-      alertsSent,
-    };
+    // Log alert history (only if critical or warning)
+    if (status.status === 'critical' || status.status === 'warning') {
+      const alertHistory: AlertHistory = {
+        level: status.status,
+        balance: status.balance,
+        timestamp: new Date().toISOString(),
+        alertsSent,
+      };
 
-    await redis.lpush('gas_alert_history', JSON.stringify(alertHistory));
-    await redis.ltrim('gas_alert_history', 0, 99); // Keep last 100 alerts
+      const redis = getRedisClient();
+      if (redis && redis.isReady) {
+        await redis.lPush('gas_alert_history', JSON.stringify(alertHistory));
+        await redis.lTrim('gas_alert_history', 0, 99); // Keep last 100 alerts
+      }
+    }
   }
 
   /**
@@ -381,8 +376,11 @@ class GasWalletMonitorService {
    */
   async getAlertHistory(limit: number = 10): Promise<AlertHistory[]> {
     try {
-      const history = await redis.lrange('gas_alert_history', 0, limit - 1);
-      return history.map(h => JSON.parse(h));
+      const redis = getRedisClient();
+      if (!redis || !redis.isReady) return [];
+      
+      const history = await redis.lRange('gas_alert_history', 0, limit - 1);
+      return history.map((h: string) => JSON.parse(h));
     } catch (error) {
       logger.error('Error fetching alert history:', error);
       return [];
@@ -394,8 +392,8 @@ class GasWalletMonitorService {
    */
   async getUsageStatistics(): Promise<Record<string, number>> {
     try {
-      const usageData = await redis.get('gas_wallet_daily_usage');
-      return usageData ? JSON.parse(usageData) : {};
+      const usageData = await redisGet('gas_wallet_daily_usage');
+      return usageData || {};
     } catch (error) {
       logger.error('Error fetching usage statistics:', error);
       return {};
