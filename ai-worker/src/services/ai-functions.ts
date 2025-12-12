@@ -1,34 +1,37 @@
 /**
- * Internal API Server
+ * AI Functions - Direct callable functions for backend integration
  * 
- * Exposes AI-generated data to the main backend
+ * These functions can be called directly from the backend without HTTP
  */
 
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import { query } from '../db/connection';
 import { logger } from '../utils/logger';
+import { callAI } from '../utils/openai-client';
+import { query } from '../db/connection';
+import { 
+  buildDynamicPricingPrompt, 
+  DynamicPricingInput, 
+  DynamicPricingOutput,
+  SYSTEM_PROMPT as PRICING_SYSTEM_PROMPT 
+} from '../prompts/dynamicPricingPrompt';
+import {
+  buildFraudDetectionPrompt,
+  FraudDetectionInput,
+  FraudDetectionOutput,
+  SYSTEM_PROMPT as FRAUD_SYSTEM_PROMPT
+} from '../prompts/fraudDetectionPrompt';
+import {
+  buildDisputeResolutionPrompt,
+  DisputeResolutionInput,
+  DisputeResolutionOutput,
+  SYSTEM_PROMPT as DISPUTE_SYSTEM_PROMPT
+} from '../prompts/disputeResolutionPrompt';
 
-const app = express();
-const PORT = process.env.PORT || 3002;
-
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-
-// Health check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'healthy', service: 'ai-worker' });
-});
-
-// GET /barber/:id/pricing
-// Returns current pricing multiplier for a barber
-app.get('/barber/:id/pricing', async (req: Request, res: Response) => {
+/**
+ * Get barber pricing multiplier
+ * Direct function - no HTTP call needed
+ */
+export async function getBarberPricing(barberId: string) {
   try {
-    const { id } = req.params;
-
     const result = await query(
       `SELECT 
         multiplier, 
@@ -43,18 +46,20 @@ app.get('/barber/:id/pricing', async (req: Request, res: Response) => {
        WHERE barber_id = $1 AND (expires_at IS NULL OR expires_at > NOW())
        ORDER BY created_at DESC
        LIMIT 1`,
-      [id]
+      [barberId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        error: 'No pricing data found',
-        defaultMultiplier: 1.0 
-      });
+      return { 
+        barberId,
+        multiplier: 1.0,
+        isDefault: true,
+        reasoning: 'No AI pricing data yet, using default multiplier'
+      };
     }
 
-    res.json({
-      barberId: id,
+    return {
+      barberId,
       multiplier: parseFloat(result.rows[0].multiplier),
       breakdown: {
         base: parseFloat(result.rows[0].base_multiplier),
@@ -65,19 +70,24 @@ app.get('/barber/:id/pricing', async (req: Request, res: Response) => {
       reasoning: result.rows[0].reasoning,
       expiresAt: result.rows[0].expires_at,
       updatedAt: result.rows[0].created_at,
-    });
+    };
   } catch (error) {
     logger.error('Error fetching barber pricing:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return {
+      barberId,
+      multiplier: 1.0,
+      isDefault: true,
+      error: true,
+    };
   }
-});
+}
 
-// GET /barber/:id/quality-score
-// Returns current quality score for a barber
-app.get('/barber/:id/quality-score', async (req: Request, res: Response) => {
+/**
+ * Get barber quality score
+ * Direct function - no HTTP call needed
+ */
+export async function getBarberQualityScore(barberId: string) {
   try {
-    const { id } = req.params;
-
     const result = await query(
       `SELECT 
         quality_score,
@@ -89,44 +99,50 @@ app.get('/barber/:id/quality-score', async (req: Request, res: Response) => {
        WHERE barber_id = $1
        ORDER BY created_at DESC
        LIMIT 1`,
-      [id]
+      [barberId]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ 
-        error: 'No quality score found',
-        defaultScore: 50 
-      });
+      return { 
+        barberId,
+        qualityScore: 50,
+        isDefault: true,
+        reasoning: 'No AI quality data yet, using default score'
+      };
     }
 
-    res.json({
-      barberId: id,
+    return {
+      barberId,
       qualityScore: parseFloat(result.rows[0].quality_score),
       sentimentScore: parseFloat(result.rows[0].sentiment_score),
       reasoning: result.rows[0].reasoning,
       factors: result.rows[0].factors,
       updatedAt: result.rows[0].created_at,
-    });
+    };
   } catch (error) {
     logger.error('Error fetching quality score:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return {
+      barberId,
+      qualityScore: 50,
+      isDefault: true,
+      error: true,
+    };
   }
-});
+}
 
-// GET /barber/:id/history
-// Returns historical pricing and quality trends
-app.get('/barber/:id/history', async (req: Request, res: Response) => {
+/**
+ * Get barber history
+ * Direct function - no HTTP call needed
+ */
+export async function getBarberHistory(barberId: string, limit = 30) {
   try {
-    const { id } = req.params;
-    const { limit = 30 } = req.query;
-
     const pricingResult = await query(
       `SELECT multiplier, created_at
        FROM barber_pricing_multipliers
        WHERE barber_id = $1
        ORDER BY created_at DESC
        LIMIT $2`,
-      [id, limit]
+      [barberId, limit]
     );
 
     const qualityResult = await query(
@@ -135,11 +151,11 @@ app.get('/barber/:id/history', async (req: Request, res: Response) => {
        WHERE barber_id = $1
        ORDER BY created_at DESC
        LIMIT $2`,
-      [id, limit]
+      [barberId, limit]
     );
 
-    res.json({
-      barberId: id,
+    return {
+      barberId,
       pricing: pricingResult.rows.map(r => ({
         multiplier: parseFloat(r.multiplier),
         date: r.created_at,
@@ -148,16 +164,18 @@ app.get('/barber/:id/history', async (req: Request, res: Response) => {
         score: parseFloat(r.quality_score),
         date: r.created_at,
       })),
-    });
+    };
   } catch (error) {
     logger.error('Error fetching barber history:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return { barberId, pricing: [], quality: [] };
   }
-});
+}
 
-// GET /admin/market-summary
-// Returns current market summary across all campuses
-app.get('/admin/market-summary', async (req: Request, res: Response) => {
+/**
+ * Get market summary
+ * Direct function - no HTTP call needed
+ */
+export async function getMarketSummary() {
   try {
     const marketStats = await query(
       `SELECT 
@@ -188,7 +206,7 @@ app.get('/admin/market-summary', async (req: Request, res: Response) => {
        WHERE created_at >= NOW() - INTERVAL '7 days' AND admin_decision IS NULL`
     );
 
-    res.json({
+    return {
       campuses: marketStats.rows.map((row: any) => ({
         campusId: row.campus_id,
         demandIndex: parseFloat(row.demand_index),
@@ -205,19 +223,19 @@ app.get('/admin/market-summary', async (req: Request, res: Response) => {
       }, {}),
       pendingDisputes: parseInt(disputes.rows[0]?.count) || 0,
       lastUpdated: marketStats.rows[0]?.created_at,
-    });
+    };
   } catch (error) {
     logger.error('Error fetching market summary:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return null;
   }
-});
+}
 
-// GET /admin/fraud-flags
-// Returns recent fraud flags
-app.get('/admin/fraud-flags', async (req: Request, res: Response) => {
+/**
+ * Get fraud flags
+ * Direct function - no HTTP call needed
+ */
+export async function getFraudFlags(status = 'PENDING', limit = 50) {
   try {
-    const { status = 'PENDING', limit = 50 } = req.query;
-
     const result = await query(
       `SELECT 
         id,
@@ -237,7 +255,7 @@ app.get('/admin/fraud-flags', async (req: Request, res: Response) => {
       [status, limit]
     );
 
-    res.json({
+    return {
       flags: result.rows.map((row: any) => ({
         id: row.id,
         userId: row.user_id,
@@ -250,19 +268,19 @@ app.get('/admin/fraud-flags', async (req: Request, res: Response) => {
         status: row.status,
         createdAt: row.created_at,
       })),
-    });
+    };
   } catch (error) {
     logger.error('Error fetching fraud flags:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return { flags: [] };
   }
-});
+}
 
-// GET /admin/disputes
-// Returns dispute recommendations
-app.get('/admin/disputes', async (req: Request, res: Response) => {
+/**
+ * Get disputes
+ * Direct function - no HTTP call needed
+ */
+export async function getDisputes(limit = 50) {
   try {
-    const { limit = 50 } = req.query;
-
     const result = await query(
       `SELECT 
         id,
@@ -284,7 +302,7 @@ app.get('/admin/disputes', async (req: Request, res: Response) => {
       [limit]
     );
 
-    res.json({
+    return {
       disputes: result.rows.map((row: any) => ({
         id: row.id,
         bookingId: row.booking_id,
@@ -298,52 +316,55 @@ app.get('/admin/disputes', async (req: Request, res: Response) => {
         evidenceAnalyzed: row.evidence_analyzed,
         createdAt: row.created_at,
       })),
-    });
+    };
   } catch (error) {
     logger.error('Error fetching disputes:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return { disputes: [] };
   }
-});
-
-// GET /ai/events
-// Returns recent AI processing events (for debugging)
-app.get('/ai/events', async (req: Request, res: Response) => {
-  try {
-    const { limit = 100, eventType } = req.query;
-
-    let queryText = `SELECT * FROM ai_events_log `;
-    const params: any[] = [limit];
-
-    if (eventType) {
-      queryText += `WHERE event_type = $2 `;
-      params.push(eventType);
-    }
-
-    queryText += `ORDER BY created_at DESC LIMIT $1`;
-
-    const result = await query(queryText, params);
-
-    res.json({
-      events: result.rows,
-      total: result.rowCount,
-    });
-  } catch (error) {
-    logger.error('Error fetching AI events:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Error handling
-app.use((err: Error, req: Request, res: Response, next: any) => {
-  logger.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-export function startServer() {
-  app.listen(PORT, () => {
-    logger.info(`🚀 AI Worker API listening on port ${PORT}`);
-  });
 }
 
-export default app;
+/**
+ * Calculate booking price with AI multiplier
+ * Direct function - called during booking creation
+ */
+export async function calculateBookingPrice(barberId: string, basePrice: number) {
+  try {
+    const pricingData = await getBarberPricing(barberId);
+    const finalPrice = Math.round(basePrice * pricingData.multiplier * 100) / 100;
+    const platformFee = Math.round(finalPrice * 0.05 * 100) / 100;
+
+    return {
+      basePrice,
+      multiplier: pricingData.multiplier,
+      finalPrice,
+      platformFee,
+      barberReceives: Math.round((finalPrice - platformFee) * 100) / 100,
+      reasoning: pricingData.reasoning,
+      breakdown: pricingData.breakdown,
+    };
+  } catch (error) {
+    logger.error('Error calculating booking price:', error);
+    return {
+      basePrice,
+      multiplier: 1.0,
+      finalPrice: basePrice,
+      platformFee: Math.round(basePrice * 0.05 * 100) / 100,
+      barberReceives: Math.round(basePrice * 0.95 * 100) / 100,
+      error: true,
+    };
+  }
+}
+
+// Export all functions
+export const AIFunctions = {
+  getBarberPricing,
+  getBarberQualityScore,
+  getBarberHistory,
+  getMarketSummary,
+  getFraudFlags,
+  getDisputes,
+  calculateBookingPrice,
+};
+
+export default AIFunctions;
 

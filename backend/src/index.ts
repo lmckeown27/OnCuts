@@ -55,6 +55,9 @@ import adminTransactionsRoutes from './routes/admin-transactions.routes';
 // Admin User Management Routes
 import adminUsersRoutes from './routes/admin-users.routes';
 
+// AI Routes (Integrated AI Worker)
+import aiRoutes from './routes/ai.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -257,6 +260,9 @@ app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 
 // User Management Routes
 app.use('/api/users', userRoutes);  // User profile management
+
+// AI-powered features (integrated AI Worker)
+app.use('/api/ai', aiRoutes);  // AI pricing, quality scores, fraud detection, disputes
 
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts

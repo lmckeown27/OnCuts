@@ -8,8 +8,6 @@ dotenv.config();
 import { logger } from './utils/logger';
 import { testConnection, closePool } from './db/connection';
 import { closeAllQueues } from './queues';
-import { startServer } from './api/server';
-
 // Import all workers
 import { reviewProcessingWorker } from './processors/reviewProcessing.processor';
 import { fraudDetectionWorker } from './processors/fraudDetection.processor';
@@ -18,8 +16,12 @@ import { onboardingAssessmentWorker } from './processors/onboardingAssessment.pr
 import { marketDemandWorker } from './processors/marketDemand.processor';
 import { weeklySummaryWorker } from './processors/weeklySummary.processor';
 
+// Export AI functions for direct backend integration
+export * from './services/ai-functions';
+export * from './queues';
+
 async function startAIWorker() {
-  logger.info('🤖 Starting CampusCuts AI Worker...');
+  logger.info('🤖 Starting CampusCuts AI Worker (Background Processors)...');
 
   try {
     // Test database connection
@@ -31,15 +33,11 @@ async function startAIWorker() {
     // Log environment
     logger.info('Environment Configuration:', {
       nodeEnv: process.env.NODE_ENV,
-      port: process.env.PORT || 3002,
       redisHost: process.env.REDIS_HOST || 'localhost',
       hasOpenAIKey: !!process.env.OPENAI_API_KEY,
       hasSendGridKey: !!process.env.SENDGRID_API_KEY,
       queueConcurrency: process.env.QUEUE_CONCURRENCY || 5,
     });
-
-    // Start API server
-    startServer();
 
     // Log worker status
     logger.info('✅ All workers initialized:', {
@@ -52,8 +50,8 @@ async function startAIWorker() {
     });
 
     logger.info('🎉 AI Worker is fully operational!');
-    logger.info(`📡 API available at http://localhost:${process.env.PORT || 3002}`);
     logger.info('📊 Workers are listening for jobs...');
+    logger.info('💡 Functions exported for direct backend integration');
 
   } catch (error) {
     logger.error('❌ Failed to start AI Worker:', error);
