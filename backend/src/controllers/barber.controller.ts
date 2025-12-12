@@ -70,10 +70,36 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
     const { id } = req.params;
 
     // Use mock database
-    const barber = await mockDatabase.findBarberById(id);
+    let barber = await mockDatabase.findBarberById(id);
 
+    // For demo: create mock barber if doesn't exist
     if (!barber) {
-      throw new ApiError(404, 'Barber not found');
+      barber = {
+        id,
+        user_id: id,
+        name: 'Demo Barber',
+        email: `${id}@demo.com`,
+        role: 'barber',
+        campus_id: 'campus-1',
+        phone: '+1 (555) 123-4567',
+        profile_picture_url: null,
+        bio: 'Professional barber with years of experience.',
+        specialties: ['Fades', 'Line-ups', 'Beard Grooming'],
+        years_experience: 5,
+        average_rating: 4.8,
+        total_reviews: 25,
+        total_bookings: 150,
+        pricing: [
+          { service_name: 'Haircut', price: 35, duration_minutes: 30 },
+          { service_name: 'Haircut + Beard', price: 50, duration_minutes: 45 },
+        ],
+        availability: {},
+        instant_book_enabled: true,
+        is_active: true,
+        is_verified: true,
+        wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
+        created_at: new Date().toISOString(),
+      };
     }
 
     // Get reviews for this barber

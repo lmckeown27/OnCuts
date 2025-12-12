@@ -43,7 +43,7 @@ router.get(
  * @desc    Get barber by ID
  * @access  Public
  */
-router.get('/:id', [param('id').isUUID(), validate], getBarberById);
+router.get('/:id', getBarberById); // Removed UUID validation for demo
 
 /**
  * @route   POST /api/barbers
