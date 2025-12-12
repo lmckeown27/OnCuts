@@ -4,16 +4,7 @@
  * These functions can be called directly from the backend without HTTP
  */
 
-// Use backend's logger when imported by backend, otherwise use AI worker's logger
-let logger: any;
-try {
-  // Try to import backend logger first
-  logger = require('../../../backend/src/utils/logger').logger;
-} catch {
-  // Fallback to AI worker logger
-  logger = require('../utils/logger').logger;
-}
-
+import { logger } from '../utils/logger';
 import { callAI } from '../utils/openai-client';
 import { query } from '../db/connection';
 import { 
