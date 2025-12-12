@@ -4,8 +4,14 @@
  * These functions can be called directly from the backend without HTTP
  */
 
-import { logger } from '../utils/logger';
-import { callAI } from '../utils/openai-client';
+// Simple console logger fallback for when used from backend
+const logger = {
+  info: (message: string, ...args: any[]) => console.log('[AI]', message, ...args),
+  error: (message: string, ...args: any[]) => console.error('[AI ERROR]', message, ...args),
+  warn: (message: string, ...args: any[]) => console.warn('[AI WARN]', message, ...args),
+  debug: (message: string, ...args: any[]) => console.debug('[AI DEBUG]', message, ...args),
+};
+
 import { query } from '../db/connection';
 import { 
   buildDynamicPricingPrompt, 
