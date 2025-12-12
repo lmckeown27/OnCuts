@@ -61,6 +61,9 @@ import aiRoutes from './routes/ai.routes';
 // System Health Routes
 import systemHealthRoutes from './routes/system-health.routes';
 
+// Gas Wallet Monitoring Routes (Admin)
+import gasMonitorRoutes from './routes/gas-wallet.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -269,6 +272,9 @@ app.use('/api/ai', aiRoutes);  // AI pricing, quality scores, fraud detection, d
 
 // System health monitoring
 app.use('/api/system', systemHealthRoutes);  // System health and database status
+
+// Gas wallet monitoring (Admin)
+app.use('/api/gas', gasMonitorRoutes);  // Gas wallet balance and usage monitoring
 
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts

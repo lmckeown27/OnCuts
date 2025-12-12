@@ -3,7 +3,10 @@ import { Toaster } from 'react-hot-toast';
 
 // Role Selection & Pages
 import RoleSelectionPage from './pages/RoleSelectionPage';
-import AdminPage from './pages/AdminPage';
+import AdminDashboardMain from './pages/admin/AdminDashboardMain';
+import AdminCampusesPage from './pages/admin/AdminCampusesPage';
+import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
+import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
 import AdminPricingManagement from './pages/AdminPricingManagement';
 import AdminUserView from './pages/admin/AdminUserView';
 import ConsumerPage from './pages/ConsumerPage';
@@ -20,13 +23,24 @@ function App() {
         
         <Routes>
           <Route path="/" element={<RoleSelectionPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboardMain />} />
+          <Route path="/admin/campuses" element={<AdminCampusesPage />} />
+          <Route path="/admin/system-health" element={<AdminSystemHealthPage />} />
+          <Route path="/admin/gas-wallet" element={<AdminGasWalletPage />} />
           <Route path="/admin/pricing" element={<AdminPricingManagement />} />
           <Route path="/admin/user/:userId" element={<AdminUserView />} />
+          
+          {/* Consumer/Student Routes */}
           <Route path="/consumer" element={<ConsumerPage />} />
+          <Route path="/student/booking/payment" element={<BookingPaymentPage />} />
+          
+          {/* Barber Routes */}
           <Route path="/barber" element={<BarberPage />} />
           <Route path="/barber/earnings" element={<BarberEarningsPage />} />
-          <Route path="/student/booking/payment" element={<BookingPaymentPage />} />
+          
+          {/* Wallet */}
           <Route path="/wallet" element={<WalletPage />} />
         </Routes>
       </div>

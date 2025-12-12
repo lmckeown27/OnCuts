@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, School, Users, UserCheck, TrendingUp, DollarSign, Award } from 'lucide-react';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import Loading from '../components/Loading';
+import Button from '../../components/Button';
+import Card from '../../components/Card';
+import Loading from '../../components/Loading';
 import { CampusCutsLogo } from '@assets';
-import RealtimeTransactionFeed from '../components/RealtimeTransactionFeed';
-import SystemModeMeter from '../components/SystemModeMeter';
+import RealtimeTransactionFeed from '../../components/RealtimeTransactionFeed';
 
 type Campus = {
   id: string;
@@ -45,7 +44,7 @@ type Student = {
   is_active: boolean;
 };
 
-export default function AdminPage() {
+export default function AdminCampusesPage() {
   const navigate = useNavigate();
   const [selectedView, setSelectedView] = useState<'campuses' | 'barbers' | 'students'>('campuses');
   const [selectedCampus, setSelectedCampus] = useState<Campus | null>(null);
@@ -258,9 +257,9 @@ export default function AdminPage() {
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
-            <Button onClick={() => navigate('/')} variant="secondary" size="sm">
+            <Button onClick={() => navigate('/admin')} variant="secondary" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Roles
+              Back to Dashboard
             </Button>
           </div>
 
@@ -299,11 +298,6 @@ export default function AdminPage() {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Select a Campus</h2>
               <p className="text-gray-600 mt-1">Choose a university to view barbers and students</p>
-            </div>
-
-            {/* System Mode Meter */}
-            <div className="mb-8">
-              <SystemModeMeter />
             </div>
 
             {/* How Payments Work Section */}
