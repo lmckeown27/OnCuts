@@ -12,7 +12,7 @@ import Card from '../../components/Card';
 import { CampusCutsLogo } from '@assets';
 import axios from 'axios';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { AptosClient, Types } from 'aptos';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import toast from 'react-hot-toast';
 
 interface GasWalletStatus {
@@ -116,8 +116,8 @@ export default function AdminGasWalletPage() {
       // Convert APT to Octas (1 APT = 100,000,000 Octas)
       const amountInOctas = Math.floor(amount * 100000000);
 
-      // Create transfer transaction
-      const payload: Types.TransactionPayload = {
+      // Create transfer transaction payload
+      const payload = {
         type: 'entry_function_payload',
         function: '0x1::aptos_account::transfer',
         type_arguments: [],
