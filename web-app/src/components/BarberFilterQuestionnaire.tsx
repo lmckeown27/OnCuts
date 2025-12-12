@@ -233,3 +233,6 @@ export default function BarberFilterQuestionnaire({
   );
 }
 
+// Explicit named export for TypeScript
+export type { FilterCriteria };
+
