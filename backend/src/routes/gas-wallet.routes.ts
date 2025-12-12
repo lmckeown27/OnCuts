@@ -15,6 +15,15 @@ import {
   manualMarkCompleted,
   getGasWalletHealth,
 } from '../controllers/gas-wallet.controller';
+import {
+  getGasWalletStatus,
+  getUsageStatistics,
+  getAlertHistory,
+  checkNow,
+  recordUsage,
+  getCronStatus,
+  getDashboardData,
+} from '../controllers/gas-monitoring.controller';
 
 const router = express.Router();
 
@@ -93,6 +102,59 @@ router.post('/topup-request/:id/mark-completed', authenticate, manualMarkComplet
  * Auth: Admin only
  */
 router.get('/health', authenticate, getGasWalletHealth);
+
+/**
+ * Gas Wallet Monitoring Routes
+ */
+
+/**
+ * GET /api/gas/monitor/status
+ * Get current gas wallet monitoring status
+ * Auth: Admin only (remove for demo)
+ */
+router.get('/monitor/status', getGasWalletStatus);
+
+/**
+ * GET /api/gas/monitor/usage
+ * Get gas usage statistics
+ * Auth: Admin only (remove for demo)
+ */
+router.get('/monitor/usage', getUsageStatistics);
+
+/**
+ * GET /api/gas/monitor/alerts
+ * Get alert history
+ * Auth: Admin only (remove for demo)
+ */
+router.get('/monitor/alerts', getAlertHistory);
+
+/**
+ * POST /api/gas/monitor/check-now
+ * Manually trigger gas wallet check
+ * Auth: Admin only
+ */
+router.post('/monitor/check-now', authenticate, checkNow);
+
+/**
+ * POST /api/gas/monitor/record-usage
+ * Record gas usage (internal use)
+ * Auth: Admin only
+ */
+router.post('/monitor/record-usage', authenticate, recordUsage);
+
+/**
+ * GET /api/gas/monitor/cron-status
+ * Get cron job status
+ * Auth: Admin only (remove for demo)
+ */
+router.get('/monitor/cron-status', getCronStatus);
+
+/**
+ * GET /api/gas/monitor/dashboard
+ * Get complete monitoring dashboard data
+ * Auth: Admin only (remove for demo)
+ */
+router.get('/monitor/dashboard', getDashboardData);
 
 export default router;
 

@@ -325,11 +325,10 @@ httpServer.listen(PORT, async () => {
     logger.warn('Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
   }
 
-  // Start gas monitor cron job (checks every 30 minutes)
-  const gasMonitorCronService = (await import('./services/gas-monitor-cron.service')).default;
-  const cronSchedule = process.env.GAS_MONITOR_CRON_SCHEDULE || '*/30 * * * *'; // Every 30 min
-  gasMonitorCronService.start(cronSchedule);
-  logger.info(`Gas monitor cron job started (schedule: ${cronSchedule})`);
+  // Start comprehensive gas wallet monitoring (every 15 min + alerts)
+  const { gasWalletCron } = await import('./services/gas-wallet-cron.service');
+  gasWalletCron.start();
+  logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
 
   // Start blockchain → PostgreSQL sync (hourly)
   // This keeps PostgreSQL cache up-to-date with blockchain data

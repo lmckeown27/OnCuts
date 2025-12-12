@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminWalletConnect from '../../components/AdminWalletConnect';
+import GasWalletMonitor from '../../components/GasWalletMonitor';
 
 interface PlatformStats {
   total_users: number;
@@ -103,6 +104,11 @@ export const AdminDashboard: React.FC = () => {
         {/* Wallet Connection */}
         <div className="mb-8">
           <AdminWalletConnect />
+        </div>
+
+        {/* Gas Wallet Monitoring */}
+        <div className="mb-8">
+          <GasWalletMonitor />
         </div>
 
         {/* Quick Actions */}
