@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Star, DollarSign, Award, Filter, Users, User as UserIcon, Home, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Star, DollarSign, Award, Users as UsersIcon, User as UserIcon, Home, TrendingUp, Calendar } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
 import { ConsumerScoreDashboard } from '../components/ConsumerScoreDashboard';
+import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
+import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
@@ -118,15 +120,12 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  
-  // Filter states
-  const [filters, setFilters] = useState({
-    minRating: 0,
-    maxPrice: 1000,
-    instantBook: false,
-    specialty: '',
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
+    serviceType: null,
+    date: null,
+    time: null,
+    location: null,
+    locationDetails: null,
   });
 
   useEffect(() => {
@@ -135,7 +134,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
   useEffect(() => {
     applyFilters();
-  }, [barbers, searchQuery, filters]);
+  }, [barbers, filterCriteria]);
 
   const loadBarbers = async () => {
     try {
@@ -159,54 +158,49 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const applyFilters = () => {
     let filtered = [...barbers];
 
-    // Search query
-    if (searchQuery) {
+    // Filter by service type
+    if (filterCriteria.serviceType) {
       filtered = filtered.filter(barber =>
-        barber.user?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        barber.user?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        barber.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        barber.specialties?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+        barber.specialties?.some(specialty =>
+          specialty.toLowerCase().includes(filterCriteria.serviceType!.toLowerCase()) ||
+          filterCriteria.serviceType!.toLowerCase().includes(specialty.toLowerCase())
+        )
       );
     }
 
-    // Rating filter
-    if (filters.minRating > 0) {
-      filtered = filtered.filter(b => b.average_rating >= filters.minRating);
+    // Filter by availability (date/time)
+    // For now, mock logic - in production, check actual availability
+    if (filterCriteria.date && filterCriteria.time) {
+      // All barbers available in demo
+      filtered = filtered.filter(() => true);
     }
 
-    // Price filter
-    if (filters.maxPrice < 1000) {
-      filtered = filtered.filter(b => {
-        if (!b.pricing || b.pricing.length === 0) return true;
-        const minPrice = Math.min(...b.pricing.map(p => p.price));
-        return minPrice <= filters.maxPrice;
-      });
+    // Filter by location
+    if (filterCriteria.location) {
+      // All barbers support all locations in demo
+      filtered = filtered.filter(() => true);
     }
 
-    // Instant book filter
-    if (filters.instantBook) {
-      filtered = filtered.filter(b => b.instant_book_enabled);
-    }
-
-    // Specialty filter
-    if (filters.specialty) {
-      filtered = filtered.filter(b =>
-        b.specialties?.some(s => s.toLowerCase().includes(filters.specialty.toLowerCase()))
-      );
-    }
+    // Sort by rating (highest first)
+    filtered.sort((a, b) => b.average_rating - a.average_rating);
 
     setFilteredBarbers(filtered);
   };
 
-  const clearFilters = () => {
-    setFilters({
-      minRating: 0,
-      maxPrice: 1000,
-      instantBook: false,
-      specialty: '',
-    });
-    setSearchQuery('');
+  const handleFilterChange = (filters: FilterCriteria) => {
+    setFilterCriteria(filters);
   };
+
+  const availableServices = [
+    'Haircut',
+    'Fade',
+    'Beard Trim',
+    'Full Service',
+    'Hot Towel Shave',
+    'Color',
+    'Styling',
+    'Lineup',
+  ];
 
   if (loading) {
     return <Loading />;
@@ -214,103 +208,35 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
   return (
     <>
-      {/* Search & Filter Bar */}
-      <div className="mb-6">
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search barbers by name, style, or specialty..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
-            />
-          </div>
-          <Button onClick={() => setShowFilters(!showFilters)} variant="secondary">
-            <Filter className="w-5 h-5 mr-2" />
-            Filters
-          </Button>
+      {/* Progressive Filter Questionnaire */}
+      <BarberFilterQuestionnaire
+        onFilterChange={handleFilterChange}
+        availableServices={availableServices}
+      />
+
+      {/* Results Count */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <UsersIcon className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-2xl font-bold text-gray-900">
+            {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Barber' : 'Barbers'} Available
+          </h2>
         </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <Card className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Rating
-                </label>
-                <select
-                  value={filters.minRating}
-                  onChange={(e) => setFilters({ ...filters, minRating: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
-                >
-                  <option value={0}>Any</option>
-                  <option value={3}>3+ Stars</option>
-                  <option value={4}>4+ Stars</option>
-                  <option value={4.5}>4.5+ Stars</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Price
-                </label>
-                <select
-                  value={filters.maxPrice}
-                  onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
-                >
-                  <option value={1000}>Any</option>
-                  <option value={20}>Under $20</option>
-                  <option value={30}>Under $30</option>
-                  <option value={40}>Under $40</option>
-                  <option value={50}>Under $50</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Specialty
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Fades"
-                  value={filters.specialty}
-                  onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.instantBook}
-                    onChange={(e) => setFilters({ ...filters, instantBook: e.target.checked })}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-600"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Instant Book Only</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end">
-              <Button onClick={clearFilters} variant="secondary" size="sm">
-                Clear All Filters
-              </Button>
-            </div>
-          </Card>
+        {filterCriteria.serviceType && (
+          <div className="text-sm text-gray-600">
+            Sorted by top performers first
+          </div>
         )}
       </div>
 
-      {/* Results Count */}
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          {filteredBarbers.length} barber{filteredBarbers.length !== 1 ? 's' : ''} found
-        </p>
-      </div>
+      {/* No Results */}
+      {filteredBarbers.length === 0 && filterCriteria.serviceType && (
+        <Card className="text-center py-12">
+          <p className="text-gray-600 text-lg mb-2">No barbers match your criteria</p>
+          <p className="text-sm text-gray-500">Try adjusting your filters or check back later</p>
+        </Card>
+      )}
+
 
       {/* Barbers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
