@@ -49,6 +49,11 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
   // Check if Petra is available
   useEffect(() => {
     const checkPetra = () => {
+      if (!wallets || wallets.length === 0) {
+        console.log('🔍 Checking for Petra wallet... Waiting for wallets to load');
+        return;
+      }
+      
       const hasPetra = wallets.some(w => w.name.toLowerCase().includes('petra'));
       console.log('🔍 Checking for Petra wallet...', hasPetra ? 'Found!' : 'Not found');
       setPetraInstalled(hasPetra);
@@ -95,6 +100,12 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       console.log('🔄 Attempting auto-reconnection...');
 
       try {
+        // Check if wallets are loaded
+        if (!wallets || wallets.length === 0) {
+          console.log('⏸️ Wallets not loaded yet, skipping auto-reconnect');
+          return;
+        }
+        
         // Try to reconnect
         const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
         if (petra) {
@@ -117,6 +128,11 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
 
   const connectWallet = async () => {
     console.log('🔗 Connecting to Petra wallet...');
+
+    if (!wallets || wallets.length === 0) {
+      toast.error('Wallets not loaded yet. Please wait a moment and try again.');
+      return;
+    }
 
     const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
     
