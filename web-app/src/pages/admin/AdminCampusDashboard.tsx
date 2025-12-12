@@ -47,11 +47,11 @@ export const AdminCampusDashboard: React.FC = () => {
               <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
             <button
-              onClick={() => navigate('/admin/campuses')}
+              onClick={() => navigate('/admin')}
               className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 px-3 py-1.5 text-sm"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Roles
+              Back to Dashboard
             </button>
           </div>
 

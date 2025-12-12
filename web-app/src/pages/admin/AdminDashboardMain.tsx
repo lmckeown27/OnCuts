@@ -90,7 +90,7 @@ export default function AdminDashboardMain() {
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
             </div>
-            <Button onClick={() => navigate('/')} variant="secondary" size="sm">
+            <Button onClick={() => navigate('/web')} variant="secondary" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Roles
             </Button>
