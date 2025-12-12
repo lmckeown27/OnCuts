@@ -1,264 +1,393 @@
-import { Response, NextFunction } from 'express';
-import { pool } from '../database/connection';
-import { ApiError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/auth';
-import stripeService from '../services/stripe.service';
-import aptosService from '../services/aptos.service';
+/**
+ * Payment Controller
+ * 
+ * Handles payment operations for bookings
+ */
+
+import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
-import crypto from 'crypto';
+import stripePaymentService from '../services/stripe-payment.service';
+import stripeConnectService from '../services/stripe-connect.service';
+import mockDatabase from '../services/mock.database.service';
 
-export const createPaymentIntent = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * POST /api/payments/create-intent
+ * Create payment intent for booking
+ */
+export const createPaymentIntent = async (req: Request, res: Response) => {
   try {
-    const { bookingId, amount } = req.body;
-    const clientId = req.user!.userId;
+    const { amount, bookingId, barberId, studentId } = req.body;
 
-    // Verify booking exists and belongs to client
-    const booking = await pool.query(
-      `SELECT bm.*, b.id as barber_id
-       FROM booking_metadata bm
-       JOIN barbers b ON bm.barber_id = b.id
-       WHERE bm.blockchain_booking_id = $1 AND bm.client_id = $2`,
-      [bookingId, clientId]
-    );
-
-    if (booking.rows.length === 0) {
-      throw new ApiError(404, 'Booking not found or not authorized');
+    if (!amount || !bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount and booking ID are required',
+      });
     }
 
-    const { barber_id } = booking.rows[0];
+    // Get student details
+    const student = await mockDatabase.findUserById(studentId);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Student not found',
+      });
+    }
 
-    // Create Stripe payment intent
-    const { clientSecret, paymentIntentId } = await stripeService.createPaymentIntent({
-      amount,
-      clientId,
-      barberId: barber_id,
-      bookingId,
-      description: `CampusCuts booking #${bookingId}`,
-    });
-
-    // Calculate fees
-    const { platformFee, barberPayout } = stripeService.calculateFees(amount);
-
-    // Store payment transaction
-    await pool.query(
-      `INSERT INTO payment_transactions 
-       (blockchain_payment_id, booking_id, stripe_payment_intent_id, barber_id, client_id, amount, platform_fee, barber_payout, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [bookingId, bookingId, paymentIntentId, barber_id, clientId, amount / 100, platformFee / 100, barberPayout / 100, 'pending']
+    // Create or get Stripe customer
+    const customerId = await stripePaymentService.createOrGetCustomer(
+      student.email,
+      studentId,
+      student.name
     );
 
-    // Create payment record on blockchain
-    const stripeIdHash = crypto.createHash('sha256').update(paymentIntentId).digest('hex');
-    
-    await aptosService.createPayment({
-      bookingId,
-      barberAddress: booking.rows[0].barber_address,
-      clientAddress: clientId,
+    // Create payment intent
+    const paymentIntent = await stripePaymentService.createPaymentIntent({
       amount,
-      stripePaymentIdHash: stripeIdHash,
+      customerId,
+      metadata: {
+        bookingId,
+        barberId,
+        studentId,
+      },
     });
+
+    logger.info(`Payment intent created for booking: ${bookingId}`);
 
     res.json({
       success: true,
       data: {
-        clientSecret,
-        paymentIntentId,
+        clientSecret: paymentIntent.clientSecret,
+        paymentIntentId: paymentIntent.paymentIntentId,
+        amount: paymentIntent.amount,
+        platformFee: paymentIntent.platformFee,
+        barberAmount: paymentIntent.barberAmount,
       },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error('Error creating payment intent:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create payment intent',
+    });
   }
 };
 
-export const capturePayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * GET /api/payments/:paymentIntentId/status
+ * Get payment status
+ */
+export const getPaymentStatus = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const userId = req.user!.userId;
+    const { paymentIntentId } = req.params;
 
-    // Get payment transaction
-    const payment = await pool.query(
-      `SELECT pt.*, b.user_id as barber_user_id
-       FROM payment_transactions pt
-       JOIN barbers b ON pt.barber_id = b.id
-       WHERE pt.id = $1`,
-      [id]
-    );
-
-    if (payment.rows.length === 0) {
-      throw new ApiError(404, 'Payment not found');
-    }
-
-    if (payment.rows[0].barber_user_id !== userId) {
-      throw new ApiError(403, 'Not authorized');
-    }
-
-    // Capture payment on Stripe
-    await stripeService.capturePayment(payment.rows[0].stripe_payment_intent_id);
-
-    // Update status
-    await pool.query(
-      `UPDATE payment_transactions SET status = 'succeeded' WHERE id = $1`,
-      [id]
-    );
-
-    // Release payment on blockchain
-    await aptosService.releasePayment(payment.rows[0].blockchain_payment_id);
-
-    logger.info(`Payment captured: ${id}`);
+    const paymentIntent = await stripePaymentService.getPaymentIntent(paymentIntentId);
 
     res.json({
       success: true,
-      message: 'Payment captured and released to barber',
+      data: {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        amount: paymentIntent.amount / 100,
+        currency: paymentIntent.currency,
+        metadata: paymentIntent.metadata,
+      },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error('Error getting payment status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get payment status',
+    });
   }
 };
 
-export const processRefund = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * POST /api/payments/:paymentIntentId/cancel
+ * Cancel payment
+ */
+export const cancelPayment = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { reason, amount } = req.body;
+    const { paymentIntentId } = req.params;
 
-    const payment = await pool.query(
-      'SELECT * FROM payment_transactions WHERE id = $1',
-      [id]
-    );
+    await stripePaymentService.cancelPaymentIntent(paymentIntentId);
 
-    if (payment.rows.length === 0) {
-      throw new ApiError(404, 'Payment not found');
-    }
-
-    // Process refund on Stripe
-    const refundId = await stripeService.refundPayment(
-      payment.rows[0].stripe_payment_intent_id,
-      amount ? amount * 100 : undefined
-    );
-
-    // Update status
-    await pool.query(
-      `UPDATE payment_transactions SET status = 'refunded' WHERE id = $1`,
-      [id]
-    );
-
-    logger.info(`Refund processed: ${id} (${refundId})`);
+    logger.info(`Payment cancelled: ${paymentIntentId}`);
 
     res.json({
       success: true,
-      message: 'Refund processed successfully',
-      refundId,
+      message: 'Payment cancelled successfully',
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error('Error cancelling payment:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to cancel payment',
+    });
   }
 };
 
-export const getEarningsSummary = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * POST /api/payments/:paymentIntentId/refund
+ * Create refund
+ */
+export const createRefund = async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.userId;
+    const { paymentIntentId } = req.params;
+    const { amount, reason } = req.body;
 
-    // Get barber ID
-    const barberResult = await pool.query('SELECT id, total_earnings FROM barbers WHERE user_id = $1', [userId]);
-    
-    if (barberResult.rows.length === 0) {
-      throw new ApiError(404, 'Barber profile not found');
-    }
+    const refund = await stripePaymentService.createRefund(paymentIntentId, amount);
 
-    const barberId = barberResult.rows[0].id;
-
-    // Get earnings breakdown
-    const earnings = await pool.query(
-      `SELECT 
-        COALESCE(SUM(barber_payout), 0) as total_earnings,
-        COALESCE(SUM(CASE WHEN status = 'succeeded' THEN barber_payout ELSE 0 END), 0) as paid_out,
-        COALESCE(SUM(CASE WHEN status = 'pending' THEN barber_payout ELSE 0 END), 0) as pending,
-        COUNT(*) as total_transactions,
-        COALESCE(SUM(tip_amount), 0) as total_tips
-      FROM payment_transactions
-      WHERE barber_id = $1`,
-      [barberId]
-    );
+    logger.info(`Refund created: ${refund.id} for payment: ${paymentIntentId}`);
 
     res.json({
       success: true,
-      data: earnings.rows[0],
+      message: 'Refund created successfully',
+      data: {
+        refundId: refund.id,
+        amount: refund.amount / 100,
+        status: refund.status,
+      },
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error('Error creating refund:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create refund',
+    });
   }
 };
 
-export const requestPayout = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * GET /api/payments/customer/:customerId/payment-methods
+ * Get customer payment methods
+ */
+export const getPaymentMethods = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
-    const userId = req.user!.userId;
+    const { customerId } = req.params;
 
-    // Get barber info
-    const barber = await pool.query(
-      `SELECT b.id, u.aptos_address
-       FROM barbers b
-       JOIN users u ON b.user_id = u.id
-       WHERE b.user_id = $1`,
-      [userId]
-    );
-
-    if (barber.rows.length === 0) {
-      throw new ApiError(404, 'Barber profile not found');
-    }
-
-    // Process payout on blockchain
-    await aptosService.releasePayment(0); // Would use actual payment ID
-
-    // Create Stripe payout (requires Connect account setup)
-    // const payoutId = await stripeService.createPayout({
-    //   amount: amount * 100,
-    //   barberStripeAccountId: 'acct_xxx',
-    // });
-
-    logger.info(`Payout requested: $${amount / 100} for barber ${barber.rows[0].id}`);
+    const paymentMethods = await stripePaymentService.getCustomerPaymentMethods(customerId);
 
     res.json({
       success: true,
-      message: 'Payout processed successfully',
+      data: paymentMethods.map(pm => ({
+        id: pm.id,
+        type: pm.type,
+        card: pm.card ? {
+          brand: pm.card.brand,
+          last4: pm.card.last4,
+          expMonth: pm.card.exp_month,
+          expYear: pm.card.exp_year,
+        } : null,
+      })),
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    logger.error('Error getting payment methods:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get payment methods',
+    });
   }
 };
 
-export const stripeWebhook = async (req: AuthRequest, res: Response, next: NextFunction) => {
+/**
+ * POST /api/payments/barber/connect
+ * Create Stripe Connect account for barber
+ */
+export const createBarberConnectAccount = async (req: Request, res: Response) => {
   try {
-    const sig = req.headers['stripe-signature'] as string;
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const { userId, email, firstName, lastName } = req.body;
 
-    if (!webhookSecret) {
-      throw new Error('STRIPE_WEBHOOK_SECRET not configured');
+    if (!userId || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and email are required',
+      });
     }
 
-    const event = stripeService.verifyWebhookSignature(
-      req.body,
-      sig,
-      webhookSecret
-    );
+    // Create Connect account
+    const accountId = await stripeConnectService.createConnectAccount({
+      userId,
+      email,
+      firstName,
+      lastName,
+    });
 
-    // Handle different event types
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        logger.info('Payment succeeded:', event.data.object);
-        break;
-      case 'payment_intent.payment_failed':
-        logger.error('Payment failed:', event.data.object);
-        break;
-      case 'transfer.created':
-        logger.info('Transfer created:', event.data.object);
-        break;
-      default:
-        logger.info('Unhandled event type:', event.type);
-    }
+    // Create onboarding link
+    const accountLink = await stripeConnectService.createAccountLink(accountId);
 
-    res.json({ received: true });
-  } catch (error) {
-    next(error);
+    logger.info(`Stripe Connect account created for barber: ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Connect account created successfully',
+      data: {
+        accountId,
+        onboardingUrl: accountLink.url,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error creating Connect account:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create Connect account',
+    });
   }
 };
 
+/**
+ * GET /api/payments/barber/:accountId/status
+ * Get barber Connect account status
+ */
+export const getBarberAccountStatus = async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+
+    const account = await stripeConnectService.getAccount(accountId);
+    const isOnboarded = await stripeConnectService.isAccountOnboarded(accountId);
+
+    res.json({
+      success: true,
+      data: {
+        accountId: account.id,
+        isOnboarded,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error getting account status:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get account status',
+    });
+  }
+};
+
+/**
+ * POST /api/payments/barber/:accountId/payout
+ * Create payout to barber
+ */
+export const createBarberPayout = async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+    const { amount, bookingId } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount is required',
+      });
+    }
+
+    // Check if account is onboarded
+    const isOnboarded = await stripeConnectService.isAccountOnboarded(accountId);
+    if (!isOnboarded) {
+      return res.status(400).json({
+        success: false,
+        message: 'Barber account is not fully onboarded',
+      });
+    }
+
+    // Create payout
+    const transfer = await stripeConnectService.createPayout(accountId, amount, {
+      bookingId: bookingId || '',
+    });
+
+    logger.info(`Payout created for barber account: ${accountId}`);
+
+    res.json({
+      success: true,
+      message: 'Payout created successfully',
+      data: {
+        transferId: transfer.id,
+        amount: transfer.amount / 100,
+        status: 'succeeded',
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error creating payout:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create payout',
+    });
+  }
+};
+
+/**
+ * GET /api/payments/barber/:accountId/balance
+ * Get barber account balance
+ */
+export const getBarberBalance = async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+
+    const balance = await stripeConnectService.getAccountBalance(accountId);
+
+    res.json({
+      success: true,
+      data: balance,
+    });
+  } catch (error: any) {
+    logger.error('Error getting barber balance:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get balance',
+    });
+  }
+};
+
+/**
+ * GET /api/payments/barber/:accountId/payouts
+ * Get barber payout history
+ */
+export const getBarberPayoutHistory = async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const payouts = await stripeConnectService.getPayoutHistory(accountId, limit);
+
+    res.json({
+      success: true,
+      data: payouts.map(payout => ({
+        id: payout.id,
+        amount: payout.amount / 100,
+        created: new Date(payout.created * 1000).toISOString(),
+        metadata: payout.metadata,
+      })),
+    });
+  } catch (error: any) {
+    logger.error('Error getting payout history:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get payout history',
+    });
+  }
+};
+
+/**
+ * GET /api/payments/barber/:accountId/dashboard-link
+ * Get Stripe Express dashboard login link
+ */
+export const getBarberDashboardLink = async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+
+    const loginUrl = await stripeConnectService.createLoginLink(accountId);
+
+    res.json({
+      success: true,
+      data: {
+        url: loginUrl,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error creating dashboard link:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create dashboard link',
+    });
+  }
+};

@@ -8,6 +8,8 @@ import AdminPricingManagement from './pages/AdminPricingManagement';
 import AdminUserView from './pages/admin/AdminUserView';
 import ConsumerPage from './pages/ConsumerPage';
 import BarberPage from './pages/BarberPage';
+import BarberEarningsPage from './pages/barber/BarberEarningsPage';
+import BookingPaymentPage from './pages/student/BookingPaymentPage';
 import WalletPage from './pages/WalletPage';
 
 function App() {
@@ -23,6 +25,8 @@ function App() {
           <Route path="/admin/user/:userId" element={<AdminUserView />} />
           <Route path="/consumer" element={<ConsumerPage />} />
           <Route path="/barber" element={<BarberPage />} />
+          <Route path="/barber/earnings" element={<BarberEarningsPage />} />
+          <Route path="/student/booking/payment" element={<BookingPaymentPage />} />
           <Route path="/wallet" element={<WalletPage />} />
         </Routes>
       </div>

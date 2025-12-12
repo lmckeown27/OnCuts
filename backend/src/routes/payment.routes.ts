@@ -1,95 +1,68 @@
-import express, { Router } from 'express';
-import { body, param } from 'express-validator';
+/**
+ * Payment Routes
+ * 
+ * API routes for payment processing
+ */
+
+import express from 'express';
 import {
   createPaymentIntent,
-  capturePayment,
-  processRefund,
-  getEarningsSummary,
-  requestPayout,
-  stripeWebhook,
+  getPaymentStatus,
+  cancelPayment,
+  createRefund,
+  getPaymentMethods,
+  createBarberConnectAccount,
+  getBarberAccountStatus,
+  createBarberPayout,
+  getBarberBalance,
+  getBarberPayoutHistory,
+  getBarberDashboardLink,
 } from '../controllers/payment.controller';
-import { authenticate, requireRole } from '../middleware/auth';
-import { validate } from '../middleware/validator';
 
-const router: Router = express.Router();
+const router = express.Router();
 
-/**
- * @route   POST /api/payments/create-intent
- * @desc    Create Stripe payment intent for booking
- * @access  Private (Students)
- */
-router.post(
-  '/create-intent',
-  authenticate,
-  [
-    body('bookingId').isInt().withMessage('Valid booking ID required'),
-    body('amount').isInt({ min: 500 }).withMessage('Minimum amount is $5.00'),
-    validate,
-  ],
-  createPaymentIntent
-);
+// Note: Auth temporarily disabled for demo
+// In production: add authenticate middleware
 
 /**
- * @route   POST /api/payments/:id/capture
- * @desc    Capture payment after service completion
- * @access  Private (Platform or Barber)
+ * Student Payment Routes
  */
-router.post(
-  '/:id/capture',
-  authenticate,
-  requireRole('barber'),
-  [param('id').isUUID(), validate],
-  capturePayment
-);
+
+// POST /api/payments/create-intent
+router.post('/create-intent', createPaymentIntent);
+
+// GET /api/payments/:paymentIntentId/status
+router.get('/:paymentIntentId/status', getPaymentStatus);
+
+// POST /api/payments/:paymentIntentId/cancel
+router.post('/:paymentIntentId/cancel', cancelPayment);
+
+// POST /api/payments/:paymentIntentId/refund
+router.post('/:paymentIntentId/refund', createRefund);
+
+// GET /api/payments/customer/:customerId/payment-methods
+router.get('/customer/:customerId/payment-methods', getPaymentMethods);
 
 /**
- * @route   POST /api/payments/:id/refund
- * @desc    Process refund
- * @access  Private (Platform or authorized user)
+ * Barber Payment Routes (Stripe Connect)
  */
-router.post(
-  '/:id/refund',
-  authenticate,
-  [
-    param('id').isUUID(),
-    body('reason').optional().isString(),
-    body('amount').optional().isInt(),
-    validate,
-  ],
-  processRefund
-);
 
-/**
- * @route   GET /api/payments/earnings/summary
- * @desc    Get earnings summary for barber
- * @access  Private (Barber only)
- */
-router.get(
-  '/earnings/summary',
-  authenticate,
-  requireRole('barber'),
-  getEarningsSummary
-);
+// POST /api/payments/barber/connect
+router.post('/barber/connect', createBarberConnectAccount);
 
-/**
- * @route   POST /api/payments/payout
- * @desc    Request instant payout
- * @access  Private (Barber only)
- */
-router.post(
-  '/payout',
-  authenticate,
-  requireRole('barber'),
-  [body('amount').isInt({ min: 1000 }).withMessage('Minimum payout is $10.00'), validate],
-  requestPayout
-);
+// GET /api/payments/barber/:accountId/status
+router.get('/barber/:accountId/status', getBarberAccountStatus);
 
-/**
- * @route   POST /api/payments/webhook
- * @desc    Stripe webhook handler
- * @access  Public (Stripe only)
- */
-router.post('/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
+// POST /api/payments/barber/:accountId/payout
+router.post('/barber/:accountId/payout', createBarberPayout);
+
+// GET /api/payments/barber/:accountId/balance
+router.get('/barber/:accountId/balance', getBarberBalance);
+
+// GET /api/payments/barber/:accountId/payouts
+router.get('/barber/:accountId/payouts', getBarberPayoutHistory);
+
+// GET /api/payments/barber/:accountId/dashboard-link
+router.get('/barber/:accountId/dashboard-link', getBarberDashboardLink);
 
 export default router;
-
