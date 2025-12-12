@@ -352,6 +352,3 @@ export async function calculateBookingPrice(barberId: string, basePrice: number,
   }
 }
 
-// Export type for use in backend
-export type { AIFunctionDeps };
-
