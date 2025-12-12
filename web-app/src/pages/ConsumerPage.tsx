@@ -263,7 +263,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 ))}
                 {(!barber.portfolio || barber.portfolio.length === 0) && (
                   <div className="col-span-3 bg-gray-200 flex items-center justify-center h-full">
-                    <Users className="w-12 h-12 text-gray-400" />
+                    <UsersIcon className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
               </div>
