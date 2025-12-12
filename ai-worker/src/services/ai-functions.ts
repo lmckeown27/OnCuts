@@ -156,11 +156,11 @@ export async function getBarberHistory(barberId: string, limit = 30) {
 
     return {
       barberId,
-      pricing: pricingResult.rows.map(r => ({
+      pricing: pricingResult.rows.map((r: any) => ({
         multiplier: parseFloat(r.multiplier),
         date: r.created_at,
       })),
-      quality: qualityResult.rows.map(r => ({
+      quality: qualityResult.rows.map((r: any) => ({
         score: parseFloat(r.quality_score),
         date: r.created_at,
       })),
