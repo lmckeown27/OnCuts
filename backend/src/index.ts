@@ -68,6 +68,9 @@ import gasMonitorRoutes from './routes/gas-wallet.routes';
 import marketplaceRoutes from './routes/marketplace.routes';
 import { marketplaceCronService } from './services/marketplace-cron.service';
 
+// Booking Request Routes (AirBnb-style)
+import bookingRequestRoutes from './routes/booking-request.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -282,6 +285,9 @@ app.use('/api/gas', gasMonitorRoutes);  // Gas wallet balance and usage monitori
 
 // Marketplace Engine (Capitalistic)
 app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankings, surge
+
+// Booking Requests (AirBnb-style)
+app.use('/api/booking-requests', bookingRequestRoutes);  // Accept/reject, messaging, profiles
 
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts

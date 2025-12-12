@@ -7,7 +7,7 @@
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 import { bqsService } from '../services/bqs-calculation.service';
-import { dynamicPricingService } from '../services/dynamic-pricing.service';
+import { marketplacePricingService } from '../services/marketplace-pricing.service';
 import { rankingService } from '../services/ranking-algorithm.service';
 import { surgePricingService } from '../services/surge-pricing.service';
 import { marketCalibrationService } from '../services/market-calibration.service';
@@ -58,7 +58,7 @@ export async function updateBarberPrice(req: Request, res: Response) {
     const newPrice = parseFloat(price);
 
     // Validate price is within bounds
-    const validation = await dynamicPricingService.validatePrice(id, newPrice);
+    const validation = await marketplacePricingService.validatePrice(id, newPrice);
 
     if (!validation.valid) {
       return res.status(400).json({
@@ -68,7 +68,7 @@ export async function updateBarberPrice(req: Request, res: Response) {
     }
 
     // Set the price
-    const result = await dynamicPricingService.setBarberPrice(id, newPrice);
+    const result = await marketplacePricingService.setBarberPrice(id, newPrice);
 
     res.json(result);
   } catch (error: any) {
@@ -85,7 +85,7 @@ export async function getBarberPricingInfo(req: Request, res: Response) {
   try {
     const { id } = req.params;
 
-    const info = await dynamicPricingService.getBarberPricingInfo(id);
+    const info = await marketplacePricingService.getBarberPricingInfo(id);
     const surgeInfo = await surgePricingService.getBarberPriceWithSurge(id);
 
     res.json({

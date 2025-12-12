@@ -10,7 +10,7 @@ import cron from 'node-cron';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { bqsService } from './bqs-calculation.service';
-import { dynamicPricingService } from './dynamic-pricing.service';
+import { marketplacePricingService } from './marketplace-pricing.service';
 import { rankingService } from './ranking-algorithm.service';
 import { surgePricingService } from './surge-pricing.service';
 
@@ -74,7 +74,7 @@ export class MarketplaceCronService {
 
       logger.info('💰 Starting nightly pricing update...');
 
-      const result = await dynamicPricingService.updateAllPricingBounds();
+      const result = await marketplacePricingService.updateAllPricingBounds();
       const duration = Date.now() - startTime;
 
       await this.logCronExecution(jobName, 'success', duration, result.processed);
