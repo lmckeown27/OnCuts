@@ -58,6 +58,9 @@ import adminUsersRoutes from './routes/admin-users.routes';
 // AI Routes (Integrated AI Worker)
 import aiRoutes from './routes/ai.routes';
 
+// System Health Routes
+import systemHealthRoutes from './routes/system-health.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -263,6 +266,9 @@ app.use('/api/users', userRoutes);  // User profile management
 
 // AI-powered features (integrated AI Worker)
 app.use('/api/ai', aiRoutes);  // AI pricing, quality scores, fraud detection, disputes
+
+// System health monitoring
+app.use('/api/system', systemHealthRoutes);  // System health and database status
 
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts

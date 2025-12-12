@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Loading from '../components/Loading';
 import { CampusCutsLogo } from '@assets';
 import RealtimeTransactionFeed from '../components/RealtimeTransactionFeed';
+import SystemModeMeter from '../components/SystemModeMeter';
 
 type Campus = {
   id: string;
@@ -298,6 +299,11 @@ export default function AdminPage() {
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Select a Campus</h2>
               <p className="text-gray-600 mt-1">Choose a university to view barbers and students</p>
+            </div>
+
+            {/* System Mode Meter */}
+            <div className="mb-8">
+              <SystemModeMeter />
             </div>
 
             {/* How Payments Work Section */}
