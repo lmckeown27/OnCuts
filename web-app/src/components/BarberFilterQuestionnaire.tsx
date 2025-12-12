@@ -12,14 +12,7 @@
 import React, { useState } from 'react';
 import { Scissors, Calendar, MapPin, ChevronRight } from 'lucide-react';
 import Card from './Card';
-
-export type FilterCriteria = {
-  serviceType: string | null;
-  date: string | null;
-  time: string | null;
-  location: string | null;
-  locationDetails: string | null;
-};
+import type { FilterCriteria } from '../types/barber-filters';
 
 interface BarberFilterQuestionnaireProps {
   onFilterChange: (filters: FilterCriteria) => void;

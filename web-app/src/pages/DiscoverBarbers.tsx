@@ -9,7 +9,8 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram, Users } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import BarberFilterQuestionnaire, { FilterCriteria } from '../components/BarberFilterQuestionnaire';
+import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
+import type { FilterCriteria } from '../types/barber-filters';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
