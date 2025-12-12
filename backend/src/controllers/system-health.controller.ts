@@ -15,15 +15,17 @@ import { checkHealth as checkPostgresHealth } from '../database/connection';
 export async function getSystemHealth(req: Request, res: Response) {
   try {
     // Check PostgreSQL connection
-    const postgresHealthy = await checkPostgresHealth();
+    const postgresHealth = await checkPostgresHealth();
+    const isPostgresHealthy = typeof postgresHealth === 'object' && postgresHealth.healthy === true;
 
-    const systemMode = postgresHealthy ? 'hybrid' : 'blockchain-only';
+    const systemMode = isPostgresHealthy ? 'hybrid' : 'blockchain-only';
     
     res.json({
       mode: systemMode,
       postgres: {
-        status: postgresHealthy ? 'connected' : 'disconnected',
-        healthy: postgresHealthy,
+        status: isPostgresHealthy ? 'connected' : 'disconnected',
+        healthy: isPostgresHealthy,
+        details: postgresHealth,
       },
       blockchain: {
         status: 'connected',
@@ -47,16 +49,18 @@ export async function getSystemHealth(req: Request, res: Response) {
  */
 export async function getDatabaseStatus(req: Request, res: Response) {
   try {
-    const postgresHealthy = await checkPostgresHealth();
+    const postgresHealth = await checkPostgresHealth();
+    const isPostgresHealthy = typeof postgresHealth === 'object' && postgresHealth.healthy === true;
 
     res.json({
       postgres: {
         enabled: true,
-        connected: postgresHealthy,
-        status: postgresHealthy ? 'healthy' : 'unavailable',
-        message: postgresHealthy 
+        connected: isPostgresHealthy,
+        status: isPostgresHealthy ? 'healthy' : 'unavailable',
+        message: isPostgresHealthy 
           ? 'PostgreSQL cache is working - queries are fast'
           : 'PostgreSQL unavailable - using blockchain fallback',
+        details: postgresHealth,
       },
       blockchain: {
         enabled: true,
@@ -64,7 +68,7 @@ export async function getDatabaseStatus(req: Request, res: Response) {
         status: 'healthy',
         message: 'Aptos blockchain is the source of truth',
       },
-      recommendation: postgresHealthy
+      recommendation: isPostgresHealthy
         ? 'System running optimally in hybrid mode'
         : 'Consider fixing PostgreSQL for better performance',
     });
