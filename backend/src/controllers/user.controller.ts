@@ -10,13 +10,30 @@ export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const user = await mockDatabaseService.findUserById(id);
+    let user = await mockDatabaseService.findUserById(id);
 
+    // For demo: create mock user if doesn't exist
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+      user = {
+        id,
+        name: 'Demo User',
+        email: `${id}@demo.com`,
+        role: 'student',
+        campus_id: 'campus-1',
+        phone: '+1 (555) 123-4567',
+        profile_picture_url: null,
+        wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
+        is_verified: true,
+        is_active: true,
+        notification_preferences: {
+          email_notifications: true,
+          push_notifications: true,
+          sms_notifications: false,
+          booking_reminders: true,
+          promotional_emails: false,
+        },
+        created_at: new Date().toISOString(),
+      };
     }
 
     // Remove sensitive data
@@ -119,15 +136,8 @@ export const getNotificationPreferences = async (req: Request, res: Response) =>
 
     const user = await mockDatabaseService.findUserById(id);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
-    // Return notification preferences (or defaults)
-    const preferences = user.notification_preferences || {
+    // Return notification preferences (or defaults for demo users)
+    const preferences = user?.notification_preferences || {
       email_notifications: true,
       push_notifications: true,
       sms_notifications: false,

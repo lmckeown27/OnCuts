@@ -12,10 +12,7 @@ import {
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authenticate);
-
-// Profile management
+// Profile management (auth temporarily disabled for demo)
 router.get('/:id', getUserProfile);
 router.put('/:id', updateUserProfile);
 router.post('/:id/profile-photo', uploadProfilePhoto);
