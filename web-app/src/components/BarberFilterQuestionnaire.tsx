@@ -13,13 +13,13 @@ import React, { useState } from 'react';
 import { Scissors, Calendar, MapPin, ChevronRight } from 'lucide-react';
 import Card from './Card';
 
-export interface FilterCriteria {
+export type FilterCriteria = {
   serviceType: string | null;
   date: string | null;
   time: string | null;
   location: string | null;
   locationDetails: string | null;
-}
+};
 
 interface BarberFilterQuestionnaireProps {
   onFilterChange: (filters: FilterCriteria) => void;
@@ -232,7 +232,4 @@ export default function BarberFilterQuestionnaire({
     </Card>
   );
 }
-
-// Explicit named export for TypeScript
-export type { FilterCriteria };
 
