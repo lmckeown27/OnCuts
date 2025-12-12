@@ -54,14 +54,22 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
         return;
       }
       
+      console.log('🔍 Available wallets:', wallets.map(w => w.name));
+      
       const hasPetra = wallets.some(w => w.name.toLowerCase().includes('petra'));
       console.log('🔍 Checking for Petra wallet...', hasPetra ? 'Found!' : 'Not found');
-      setPetraInstalled(hasPetra);
+      
+      // Set installed to true if we have any wallets (not just Petra)
+      setPetraInstalled(wallets.length > 0);
     };
 
     checkPetra();
     const timer = setTimeout(checkPetra, 1000);
-    return () => clearTimeout(timer);
+    const timer2 = setTimeout(checkPetra, 2000); // Check again after 2 seconds
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(timer2);
+    };
   }, [wallets]);
 
   // Sync adapter state with local state
@@ -127,19 +135,28 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
   }, [wallets, connect, adapterConnected]);
 
   const connectWallet = async () => {
-    console.log('🔗 Connecting to Petra wallet...');
+    console.log('🔗 Connecting to wallet...');
 
     if (!wallets || wallets.length === 0) {
       toast.error('Wallets not loaded yet. Please wait a moment and try again.');
       return;
     }
 
-    const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
+    console.log('🔗 Available wallets:', wallets.map(w => w.name));
+
+    // Try to find Petra first
+    let targetWallet = wallets.find(w => w.name.toLowerCase().includes('petra'));
     
-    if (!petra) {
+    // If no Petra, use the first available wallet
+    if (!targetWallet && wallets.length > 0) {
+      console.log('⚠️ Petra not found, using first available wallet:', wallets[0].name);
+      targetWallet = wallets[0];
+    }
+    
+    if (!targetWallet) {
       const installUrl = 'https://petra.app/';
       const shouldInstall = window.confirm(
-        'Petra wallet not detected. Would you like to install it?'
+        'No Aptos wallet detected. Would you like to install Petra?'
       );
       
       if (shouldInstall) {
@@ -149,8 +166,9 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
     }
 
     try {
-      await connect(petra.name);
-      console.log('✅ Connected to Petra wallet!');
+      console.log('🔗 Connecting to:', targetWallet.name);
+      await connect(targetWallet.name);
+      console.log('✅ Connected to wallet!');
       toast.success('Wallet connected successfully!');
     } catch (error: any) {
       console.error('❌ Connection error:', error);
@@ -158,7 +176,7 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       if (error.code === 4001) {
         toast.error('Connection cancelled');
       } else {
-        toast.error('Failed to connect wallet');
+        toast.error(`Failed to connect: ${error.message || 'Unknown error'}`);
       }
     }
   };
