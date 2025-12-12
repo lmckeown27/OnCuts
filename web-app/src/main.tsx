@@ -1,14 +1,17 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { DirectWalletProvider } from './contexts/DirectWalletContext.tsx';
 import WalletProvider from './providers/WalletProvider.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <WalletProvider>
-      <App />
-    </WalletProvider>
+    <DirectWalletProvider>
+      <WalletProvider>
+        <App />
+      </WalletProvider>
+    </DirectWalletProvider>
   </StrictMode>,
 );
 

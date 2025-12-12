@@ -11,8 +11,7 @@ import Button from '../../components/Button';
 import Card from '../../components/Card';
 import { CampusCutsLogo } from '@assets';
 import axios from 'axios';
-import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import { useDirectWallet } from '../../contexts/DirectWalletContext';
 import toast from 'react-hot-toast';
 
 interface GasWalletStatus {
@@ -41,7 +40,7 @@ const GAS_WALLET_ADDRESS = import.meta.env.VITE_GAS_WALLET_ADDRESS || '0x742d35C
 
 export default function AdminGasWalletPage() {
   const navigate = useNavigate();
-  const { connected, account, signAndSubmitTransaction, connect, disconnect, wallet } = useWallet();
+  const { connected, address, petraInstalled, wallet, connectWallet, disconnectWallet } = useDirectWallet();
   const [status, setStatus] = useState<GasWalletStatus | null>(null);
   const [usageHistory, setUsageHistory] = useState<UsageHistory[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -85,22 +84,15 @@ export default function AdminGasWalletPage() {
   };
 
   const handleConnectWallet = async () => {
-    try {
-      if (connected) {
-        await disconnect();
-        toast.success('Wallet disconnected');
-      } else {
-        await connect();
-        toast.success('Wallet connected');
-      }
-    } catch (error) {
-      console.error('Wallet connection error:', error);
-      toast.error('Failed to connect wallet');
+    if (connected) {
+      await disconnectWallet();
+    } else {
+      await connectWallet();
     }
   };
 
   const handleRefillGasWallet = async () => {
-    if (!connected || !account) {
+    if (!connected || !address || !wallet) {
       toast.error('Please connect your wallet first');
       return;
     }
@@ -124,10 +116,14 @@ export default function AdminGasWalletPage() {
         arguments: [GAS_WALLET_ADDRESS, amountInOctas.toString()],
       };
 
-      // Sign and submit transaction
-      const response = await signAndSubmitTransaction(payload);
+      console.log('🔥 Submitting refill transaction...', { amount, amountInOctas, to: GAS_WALLET_ADDRESS });
+
+      // Sign and submit transaction via Petra
+      const response = await wallet.signAndSubmitTransaction(payload);
       
-      toast.success(`Refill initiated! Transaction: ${response.hash.substring(0, 10)}...`);
+      console.log('✅ Transaction submitted:', response);
+      
+      toast.success(`Refill initiated! Transaction: ${response.hash?.substring(0, 10) || response}...`);
       
       // Wait a moment for blockchain to process
       setTimeout(async () => {
@@ -136,7 +132,7 @@ export default function AdminGasWalletPage() {
       }, 3000);
 
     } catch (error: any) {
-      console.error('Refill error:', error);
+      console.error('❌ Refill error:', error);
       toast.error(error?.message || 'Failed to refill gas wallet');
     } finally {
       setRefilling(false);
@@ -309,12 +305,14 @@ export default function AdminGasWalletPage() {
                 <Wallet className="w-5 h-5 text-gray-600" />
                 <div>
                   <p className="text-sm font-semibold text-gray-900">Admin Wallet</p>
-                  {connected && account ? (
-                    <p className="text-xs text-gray-600">
-                      {account.address?.substring(0, 10)}...{account.address?.substring(account.address.length - 8)}
+                  {connected && address ? (
+                    <p className="text-xs text-gray-600 font-mono">
+                      {address.substring(0, 10)}...{address.substring(address.length - 8)}
                     </p>
-                  ) : (
+                  ) : petraInstalled ? (
                     <p className="text-xs text-gray-500">Not connected</p>
+                  ) : (
+                    <p className="text-xs text-red-500">Petra not installed</p>
                   )}
                 </div>
               </div>
