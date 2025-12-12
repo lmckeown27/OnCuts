@@ -32,6 +32,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   
   // Form state
   const [bio, setBio] = useState('');
+  const [instagramHandle, setInstagramHandle] = useState('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [newSpecialty, setNewSpecialty] = useState('');
   const [services, setServices] = useState<Service[]>([]);
@@ -60,6 +61,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       
       // Populate form fields
       setBio(data.bio || '');
+      setInstagramHandle(data.instagram_handle || '');
       setSpecialties(data.specialties || []);
       setServices(data.pricing || []);
       setYearsExperience(data.years_experience || 0);
@@ -81,6 +83,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
 
       const updateData: Partial<Barber> = {
         bio,
+        instagram_handle: instagramHandle,
         specialties,
         pricing: services,
         years_experience: yearsExperience,
@@ -257,6 +260,24 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           maxLength={500}
         />
         <p className="text-xs text-gray-500 mt-2">{bio.length}/500 characters</p>
+      </Card>
+
+      {/* Instagram Handle (Optional) */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-2">Instagram</h3>
+        <p className="text-sm text-gray-600 mb-4">Link your Instagram to showcase your work (optional)</p>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-600">@</span>
+          <input
+            type="text"
+            value={instagramHandle}
+            onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
+            placeholder="yourusername"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            maxLength={30}
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">Your Instagram handle without the @</p>
       </Card>
 
       {/* Years of Experience */}

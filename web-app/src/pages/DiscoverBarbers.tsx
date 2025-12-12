@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Award, Clock, MessageSquare, Calendar } from 'lucide-react';
+import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import axios from 'axios';
@@ -16,6 +16,7 @@ interface Barber {
   barberId: string;
   name: string;
   bio?: string;
+  instagramHandle?: string;
   profileImageUrl?: string;
   avgRating: number;
   totalReviews: number;
@@ -52,6 +53,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           barberId: 'barber-1',
           name: 'Marcus Johnson',
           bio: 'Specializing in fades and modern cuts. 10+ years experience. Your hair, your style, perfected.',
+          instagramHandle: 'marcuscuts_slo',
           profileImageUrl: null,
           avgRating: 4.9,
           totalReviews: 127,
@@ -67,6 +69,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           barberId: 'barber-2',
           name: 'Alex Rivera',
           bio: 'Creative cuts and classic styles. I listen to what you want and deliver excellence every time.',
+          instagramHandle: 'alexthebarber',
           profileImageUrl: null,
           avgRating: 4.8,
           totalReviews: 95,
@@ -82,6 +85,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           barberId: 'barber-3',
           name: 'Jordan Lee',
           bio: 'Traditional barber with a modern twist. Clean cuts, great conversations, and affordable prices.',
+          instagramHandle: undefined,
           profileImageUrl: null,
           avgRating: 4.7,
           totalReviews: 78,
@@ -366,6 +370,19 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
           <div className="mb-6">
             <h3 className="font-semibold text-gray-900 mb-2">About</h3>
             <p className="text-gray-700 leading-relaxed">{barber.bio}</p>
+            
+            {/* Instagram Link - Only show if provided */}
+            {barber.instagramHandle && (
+              <a
+                href={`https://instagram.com/${barber.instagramHandle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-3 text-sm text-gray-600 hover:text-indigo-600 transition-colors"
+              >
+                <Instagram className="w-4 h-4" />
+                <span>@{barber.instagramHandle}</span>
+              </a>
+            )}
           </div>
 
           {/* Specialties */}

@@ -29,6 +29,7 @@ export interface Barber {
   user_id: string;
   user?: User;
   bio: string;
+  instagram_handle?: string;
   specialties: string[];
   years_experience: number;
   years_of_experience?: number; // Alias for backwards compatibility
