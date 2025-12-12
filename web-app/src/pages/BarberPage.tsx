@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, DollarSign, TrendingUp, User, LayoutDashboard, Award } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, TrendingUp, User, LayoutDashboard, Award, Inbox } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberPricingDashboard from '../components/BarberPricingDashboard';
+import BarberBookingRequests from '../components/booking/BarberBookingRequests';
 import { CampusCutsLogo } from '@assets';
 
-type TabType = 'dashboard' | 'pricing' | 'profile';
+type TabType = 'dashboard' | 'requests' | 'pricing' | 'profile';
 
 export default function BarberPage() {
   const navigate = useNavigate();
@@ -47,6 +48,17 @@ export default function BarberPage() {
                 Dashboard
               </button>
               <button
+                onClick={() => setActiveTab('requests')}
+                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'requests'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Inbox className="w-4 h-4 inline mr-2" />
+                Booking Requests
+              </button>
+              <button
                 onClick={() => setActiveTab('pricing')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'pricing'
@@ -76,6 +88,7 @@ export default function BarberPage() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'dashboard' && <DashboardView />}
+        {activeTab === 'requests' && <BarberBookingRequests barberId={barberId} />}
         {activeTab === 'pricing' && <BarberPricingDashboard barberId={barberId} />}
         {activeTab === 'profile' && <BarberProfileEditor barberId={barberId} />}
       </div>
