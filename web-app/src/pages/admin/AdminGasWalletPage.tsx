@@ -6,11 +6,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Fuel, AlertTriangle, TrendingDown, Calendar } from 'lucide-react';
+import { ArrowLeft, Fuel, AlertTriangle, TrendingDown, Calendar, Wallet, Info, Zap, Shield } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import { CampusCutsLogo } from '@assets';
 import axios from 'axios';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { AptosClient, Types } from 'aptos';
+import toast from 'react-hot-toast';
 
 interface GasWalletStatus {
   balance: number;
@@ -33,12 +36,18 @@ interface Alert {
   timestamp: string;
 }
 
+const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+const GAS_WALLET_ADDRESS = import.meta.env.VITE_GAS_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+
 export default function AdminGasWalletPage() {
   const navigate = useNavigate();
+  const { connected, account, signAndSubmitTransaction, connect, disconnect, wallet } = useWallet();
   const [status, setStatus] = useState<GasWalletStatus | null>(null);
   const [usageHistory, setUsageHistory] = useState<UsageHistory[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refilling, setRefilling] = useState(false);
+  const [refillAmount, setRefillAmount] = useState('100');
 
   useEffect(() => {
     fetchGasWalletData();
@@ -68,8 +77,69 @@ export default function AdminGasWalletPage() {
     try {
       await axios.post('http://localhost:3001/api/gas/monitor/check-now');
       await fetchGasWalletData();
+      toast.success('Balance check completed');
     } catch (error) {
       console.error('Failed to trigger gas check:', error);
+      toast.error('Failed to check balance');
+    }
+  };
+
+  const handleConnectWallet = async () => {
+    try {
+      if (connected) {
+        await disconnect();
+        toast.success('Wallet disconnected');
+      } else {
+        await connect();
+        toast.success('Wallet connected');
+      }
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+      toast.error('Failed to connect wallet');
+    }
+  };
+
+  const handleRefillGasWallet = async () => {
+    if (!connected || !account) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    const amount = parseFloat(refillAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    setRefilling(true);
+    try {
+      // Convert APT to Octas (1 APT = 100,000,000 Octas)
+      const amountInOctas = Math.floor(amount * 100000000);
+
+      // Create transfer transaction
+      const payload: Types.TransactionPayload = {
+        type: 'entry_function_payload',
+        function: '0x1::aptos_account::transfer',
+        type_arguments: [],
+        arguments: [GAS_WALLET_ADDRESS, amountInOctas.toString()],
+      };
+
+      // Sign and submit transaction
+      const response = await signAndSubmitTransaction(payload);
+      
+      toast.success(`Refill initiated! Transaction: ${response.hash.substring(0, 10)}...`);
+      
+      // Wait a moment for blockchain to process
+      setTimeout(async () => {
+        await fetchGasWalletData();
+        toast.success('Gas wallet refilled successfully!');
+      }, 3000);
+
+    } catch (error: any) {
+      console.error('Refill error:', error);
+      toast.error(error?.message || 'Failed to refill gas wallet');
+    } finally {
+      setRefilling(false);
     }
   };
 
@@ -228,21 +298,158 @@ export default function AdminGasWalletPage() {
           )}
         </Card>
 
-        {/* Actions */}
-        <Card>
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Actions</h3>
+        {/* Wallet Connection & Refill */}
+        <Card className="mb-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Refill Gas Wallet</h3>
+          
+          {/* Wallet Connection Status */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wallet className="w-5 h-5 text-gray-600" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Admin Wallet</p>
+                  {connected && account ? (
+                    <p className="text-xs text-gray-600">
+                      {account.address?.substring(0, 10)}...{account.address?.substring(account.address.length - 8)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Not connected</p>
+                  )}
+                </div>
+              </div>
+              <Button onClick={handleConnectWallet} variant={connected ? 'secondary' : 'primary'} size="sm">
+                <Wallet className="w-4 h-4 mr-2" />
+                {connected ? 'Disconnect' : 'Connect Wallet'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Refill Controls */}
+          {connected ? (
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Refill Amount (APT)
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={refillAmount}
+                  onChange={(e) => setRefillAmount(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  placeholder="Enter amount in APT"
+                />
+                <Button 
+                  onClick={handleRefillGasWallet} 
+                  disabled={refilling}
+                  className="min-w-[140px]"
+                >
+                  {refilling ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Refilling...
+                    </>
+                  ) : (
+                    <>
+                      <Fuel className="w-4 h-4 mr-2" />
+                      Refill Now
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                You will be prompted to sign the transaction with your connected wallet. 
+                Recommended refill: 100 APT when balance drops below 20 APT.
+              </p>
+            </div>
+          ) : (
+            <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div className="flex items-start gap-2">
+                <Info className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-yellow-900">
+                  Connect your admin wallet above to refill the gas wallet. You'll sign a transaction 
+                  to transfer APT from your wallet to the platform's gas wallet.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
           <div className="flex flex-wrap gap-3">
-            <Button onClick={handleCheckNow}>
+            <Button onClick={handleCheckNow} variant="secondary">
               Check Balance Now
             </Button>
-            <Button variant="secondary" onClick={() => window.open('https://explorer.aptoslabs.com/account/' + process.env.VITE_GAS_WALLET_ADDRESS, '_blank')}>
+            <Button variant="secondary" onClick={() => window.open('https://explorer.aptoslabs.com/account/' + GAS_WALLET_ADDRESS, '_blank')}>
               View on Explorer
             </Button>
           </div>
         </Card>
 
+        {/* Future Options Recommendation */}
+        <Card className="mb-8 bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200">
+          <div className="flex items-start gap-3 mb-4">
+            <Zap className="w-6 h-6 text-purple-600 mt-1 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Recommended for Growing Platforms</h3>
+              <p className="text-sm text-gray-700 mb-4">
+                As CampusCuts grows, consider upgrading to more advanced gas management solutions:
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {/* Automated Top-Up */}
+            <div className="bg-white rounded-lg p-4 border border-purple-200">
+              <div className="flex items-start gap-3">
+                <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 mb-1">Automated Top-Up (Recommended)</h4>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Connect your admin wallet once and enable automated refills. When the gas wallet 
+                    balance drops below your threshold, the system automatically requests approval 
+                    from your wallet to transfer funds.
+                  </p>
+                  <div className="flex items-start gap-2 text-xs text-gray-500">
+                    <span className="font-semibold text-green-600">Benefits:</span>
+                    <span>No manual monitoring needed · Instant refills · Wallet approval required for security</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Multi-Sig Treasury */}
+            <div className="bg-white rounded-lg p-4 border border-purple-200">
+              <div className="flex items-start gap-3">
+                <Shield className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900 mb-1">Multi-Signature Treasury (Enterprise)</h4>
+                  <p className="text-sm text-gray-600 mb-2">
+                    For production environments, use a multi-signature wallet requiring approval 
+                    from 2-of-3 or 3-of-5 admin wallets before any refill transaction can be executed. 
+                    Provides maximum security for large platforms.
+                  </p>
+                  <div className="flex items-start gap-2 text-xs text-gray-500">
+                    <span className="font-semibold text-green-600">Benefits:</span>
+                    <span>Enhanced security · Prevents single-point failure · Audit trail · Best for high-value operations</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Implementation Note */}
+            <div className="pt-3 border-t border-purple-200">
+              <p className="text-xs text-gray-600 italic">
+                💡 <strong>When to upgrade:</strong> Consider automated top-up when you have 100+ daily transactions, 
+                and multi-sig when your platform processes $10k+ daily volume or holds significant treasury reserves.
+              </p>
+            </div>
+          </div>
+        </Card>
+
         {/* Info */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
             <strong>About Gas Wallet:</strong> The gas wallet pays for all blockchain transaction fees (gas) 
             so users never have to worry about gas costs. The platform automatically monitors balance and 
