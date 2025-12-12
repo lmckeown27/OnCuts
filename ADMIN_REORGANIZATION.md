@@ -150,8 +150,17 @@ Response:
 - Days remaining calculation
 - Alert notifications
 - 7-day usage history chart
+- **One-Click Wallet Refill** (NEW!)
+  - Connect admin wallet (Petra/Martian/etc.)
+  - Enter refill amount
+  - Sign transaction with wallet
+  - Instant refill with blockchain confirmation
 - Manual balance check button
 - Link to blockchain explorer
+- **Future Options Recommendations** (NEW!)
+  - Automated top-up guidance
+  - Multi-sig treasury guidance
+  - Implementation recommendations
 
 **Status Thresholds:**
 - **Healthy:** > 100 APT (green)
@@ -180,7 +189,33 @@ Response:
 │ │ 2024-01-03  [████████] 0.0198 APT  46.0 APT │   │
 │ └──────────────────────────────────────────────┘   │
 │                                                      │
+│ ┌──────────────────────────────────────────────┐   │
+│ │ Refill Gas Wallet                            │   │
+│ ├──────────────────────────────────────────────┤   │
+│ │ Admin Wallet         [Connect Wallet] ✓      │   │
+│ │ 0x1234...5678                                │   │
+│ │                                              │   │
+│ │ Refill Amount (APT)                          │   │
+│ │ ┌──────────────┐ ┌────────────────┐         │   │
+│ │ │ 100          │ │ [🔥 Refill Now]│         │   │
+│ │ └──────────────┘ └────────────────┘         │   │
+│ │ Sign with your wallet to transfer funds     │   │
+│ └──────────────────────────────────────────────┘   │
+│                                                      │
 │ [Check Balance Now] [View on Explorer]              │
+│                                                      │
+│ 💡 Recommended for Growing Platforms                │
+│ ┌──────────────────────────────────────────────┐   │
+│ │ ⚡ Automated Top-Up                          │   │
+│ │ Auto-refills when balance low                │   │
+│ │ Benefits: No monitoring · Instant refills    │   │
+│ │ When: 100+ daily transactions                │   │
+│ │                                              │   │
+│ │ 🛡️ Multi-Signature Treasury                  │   │
+│ │ Requires 2-of-3 admin approvals              │   │
+│ │ Benefits: Max security · Audit trail         │   │
+│ │ When: $10k+ daily volume                     │   │
+│ └──────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -369,8 +404,16 @@ Admin Dashboard (/admin)
 ✅ Days remaining calculation  
 ✅ Alert notifications  
 ✅ 7-day usage history chart  
+✅ **One-click wallet refill** (NEW!)  
+✅ Wallet connection (Petra/Martian/etc.)  
+✅ Amount input with validation  
+✅ Transaction signing flow  
+✅ Success/error notifications  
 ✅ Manual balance check  
 ✅ Link to blockchain explorer  
+✅ **Future options recommendations** (NEW!)  
+✅ Automated top-up guidance  
+✅ Multi-sig treasury guidance  
 
 ---
 
@@ -398,11 +441,23 @@ http://localhost:3000/admin
 - Click "System Health" → Should show meter with current mode
 - Click "Gas Wallet Monitor" → Should show balance and usage
 
-### 3. Test Navigation
+### 3. Test Gas Wallet Refill (NEW!)
+1. Visit `http://localhost:3000/admin/gas-wallet`
+2. Click "Connect Wallet" button
+3. Approve wallet connection in Petra/Martian
+4. See connected address displayed
+5. Enter refill amount (e.g., 100 APT)
+6. Click "Refill Now" button
+7. Sign transaction in wallet
+8. See success toast with transaction hash
+9. Wait 3 seconds for balance to refresh
+10. Verify new balance is updated
+
+### 4. Test Navigation
 - From any page, click "Back to Dashboard" → Should return to `/admin`
 - From dashboard, click "Back to Roles" → Should return to `/`
 
-### 4. Test API Endpoints
+### 5. Test API Endpoints
 ```bash
 # System health
 curl http://localhost:3001/api/system/health
