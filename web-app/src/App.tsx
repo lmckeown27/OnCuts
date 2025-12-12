@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
-// Role Selection & Pages
+// Landing & Role Selection
+import LandingPage from './pages/LandingPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import AdminDashboardMain from './pages/admin/AdminDashboardMain';
 import AdminCampusesPage from './pages/admin/AdminCampusesPage';
@@ -18,14 +20,24 @@ import BarberEarningsPage from './pages/barber/BarberEarningsPage';
 import BookingPaymentPage from './pages/student/BookingPaymentPage';
 import WalletPage from './pages/WalletPage';
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const isAppRoute = location.pathname.startsWith('/app');
+
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
-        <Toaster position="top-right" />
-        
-        <Routes>
-          <Route path="/" element={<RoleSelectionPage />} />
+    <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
+      
+      {/* PWA Install Prompt - Only on /app routes */}
+      {isAppRoute && <PWAInstallPrompt />}
+      
+      <Routes>
+            {/* Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* Platform-Specific Entry Points */}
+            <Route path="/web" element={<RoleSelectionPage platform="web" />} />
+            <Route path="/app" element={<RoleSelectionPage platform="app" />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboardMain />} />
@@ -49,8 +61,15 @@ function App() {
           
           {/* Wallet */}
           <Route path="/wallet" element={<WalletPage />} />
-        </Routes>
-      </div>
+      </Routes>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

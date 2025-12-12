@@ -1,18 +1,57 @@
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, Shield, Users } from 'lucide-react';
+import { UserCircle, Shield, Users, ArrowLeft, Monitor, Smartphone } from 'lucide-react';
 import { CampusCutsLogo } from '@assets';
 
-export default function RoleSelectionPage() {
+interface RoleSelectionPageProps {
+  platform?: 'web' | 'app';
+}
+
+export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPageProps) {
   const navigate = useNavigate();
+
+  const platformInfo = {
+    web: {
+      icon: Monitor,
+      title: 'Web Version',
+      subtitle: 'Access from any browser',
+      color: 'indigo',
+    },
+    app: {
+      icon: Smartphone,
+      title: 'Mobile App',
+      subtitle: 'Install for offline access',
+      color: 'purple',
+    },
+  };
+
+  const info = platformInfo[platform];
+  const PlatformIcon = info.icon;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
       <div className="w-full max-w-2xl">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span>Back to Home</span>
+        </button>
+
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <img src={CampusCutsLogo} alt="CampusCuts" className="h-24 w-auto" />
           </div>
-          <p className="text-xl text-gray-600">Select Your Role</p>
+          
+          {/* Platform Badge */}
+          <div className={`inline-flex items-center gap-2 px-4 py-2 bg-${info.color}-100 text-${info.color}-700 rounded-full mb-4`}>
+            <PlatformIcon className="w-5 h-5" />
+            <span className="font-semibold">{info.title}</span>
+          </div>
+          
+          <p className="text-xl text-gray-600 mb-2">Select Your Role</p>
+          <p className="text-sm text-gray-500">{info.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
