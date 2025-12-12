@@ -64,6 +64,10 @@ import systemHealthRoutes from './routes/system-health.routes';
 // Gas Wallet Monitoring Routes (Admin)
 import gasMonitorRoutes from './routes/gas-wallet.routes';
 
+// Marketplace Engine Routes (Capitalistic)
+import marketplaceRoutes from './routes/marketplace.routes';
+import { marketplaceCronService } from './services/marketplace-cron.service';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -276,6 +280,9 @@ app.use('/api/system', systemHealthRoutes);  // System health and database statu
 // Gas wallet monitoring (Admin)
 app.use('/api/gas', gasMonitorRoutes);  // Gas wallet balance and usage monitoring
 
+// Marketplace Engine (Capitalistic)
+app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankings, surge
+
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
 app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
@@ -347,6 +354,10 @@ httpServer.listen(PORT, async () => {
   const { gasWalletCron } = await import('./services/gas-wallet-cron.service');
   gasWalletCron.start();
   logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
+
+  // Start marketplace cron jobs (BQS, pricing, rankings, surge)
+  marketplaceCronService.startAllJobs();
+  logger.info(`Marketplace cron jobs started (nightly: 2am, surge: every 15 min)`);
 
   // Start blockchain → PostgreSQL sync (hourly)
   // This keeps PostgreSQL cache up-to-date with blockchain data
