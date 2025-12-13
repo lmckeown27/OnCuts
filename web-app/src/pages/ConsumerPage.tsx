@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Star, DollarSign, Award, Users as UsersIcon, User as UserIcon, Home, Calendar } from 'lucide-react';
+import { Star, DollarSign, Award, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
@@ -11,8 +11,6 @@ import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutsLogo } from '@assets';
-
-type TabType = 'discovery' | 'profile';
 
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
@@ -43,10 +41,24 @@ function rankBarbers(barbers: Barber[]): Barber[] {
 
 export default function ConsumerPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('discovery');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Mock consumer ID - in production this would come from auth
   const consumerId = 'consumer-1';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -58,37 +70,44 @@ export default function ConsumerPage() {
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             </div>
-            <Button onClick={() => navigate('/web')} variant="secondary" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Roles
-            </Button>
-          </div>
+            
+            {/* Profile Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                  S
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+              </button>
 
-          {/* Tabs */}
-          <div className="mt-4 border-b border-gray-200">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab('discovery')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'discovery'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Home className="w-4 h-4 inline mr-2" />
-                Find Barbers
-              </button>
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'profile'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <UserIcon className="w-4 h-4 inline mr-2" />
-                My Profile
-              </button>
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <button
+                    onClick={() => {
+                      setShowProfileEditor(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Settings className="w-4 h-4 text-gray-500" />
+                    Edit Profile
+                  </button>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      navigate('/web');
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <LogOut className="w-4 h-4 text-gray-500" />
+                    Back to Roles
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -96,9 +115,28 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'discovery' && <DiscoveryView navigate={navigate} />}
-        {activeTab === 'profile' && <ConsumerProfileEditor userId={consumerId} />}
+        <DiscoveryView navigate={navigate} />
       </div>
+
+      {/* Profile Editor Modal */}
+      {showProfileEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+              <button
+                onClick={() => setShowProfileEditor(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <ConsumerProfileEditor userId={consumerId} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
