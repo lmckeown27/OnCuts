@@ -344,7 +344,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
       onClick={onClose}
     >
       <Card 
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-50"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
