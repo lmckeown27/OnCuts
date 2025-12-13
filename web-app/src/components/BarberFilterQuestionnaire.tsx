@@ -222,6 +222,7 @@ export default function BarberFilterQuestionnaire({
             </div>
           </div>
         </div>
+        </div>
       </Card>
     </div>
   );
