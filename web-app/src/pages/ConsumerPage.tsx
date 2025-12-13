@@ -242,7 +242,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
 
       {/* Barbers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {filteredBarbers.map((barber) => {
           const lowestPrice = barber.pricing && barber.pricing.length > 0
             ? Math.min(...barber.pricing.map(p => p.price))
@@ -254,18 +254,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               className="cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => navigate(`/student/barbers/${barber.id}`)}
             >
-              {/* Portfolio Grid (Pinterest-style) */}
-              <div className="grid grid-cols-3 gap-1 mb-4 h-48 overflow-hidden rounded-lg">
-                {barber.portfolio?.slice(0, 6).map((img, idx) => (
+              {/* Portfolio Image */}
+              <div className="mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
+                {barber.portfolio && barber.portfolio.length > 0 ? (
                   <img
-                    key={idx}
-                    src={img.url}
-                    alt={`Portfolio ${idx + 1}`}
+                    src={barber.portfolio[0].url}
+                    alt="Portfolio"
                     className="w-full h-full object-cover"
                   />
-                ))}
-                {(!barber.portfolio || barber.portfolio.length === 0) && (
-                  <div className="col-span-3 bg-gray-200 flex items-center justify-center h-full">
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
                     <UsersIcon className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
