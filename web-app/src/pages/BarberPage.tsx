@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberPricingDashboard from '../components/BarberPricingDashboard';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
-import BarberBookingRequests from '../components/booking/BarberBookingRequests';
+import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { CampusCutsLogo } from '@assets';
 
 export default function BarberPage() {
@@ -43,8 +43,12 @@ export default function BarberPage() {
               <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
             </div>
             
-            {/* Profile Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-4">
+              {/* Booking Requests Inbox */}
+              <BarberBookingRequestsDropdown barberId={barberId} />
+
+              {/* Profile Dropdown */}
+              <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -100,6 +104,7 @@ export default function BarberPage() {
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
@@ -201,12 +206,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
 
   return (
     <>
-      {/* Booking Requests - Top Priority */}
-      <div className="mb-6">
-        <BarberBookingRequests barberId={barberId} />
-      </div>
-
-      {/* Schedule Section */}
+      {/* Schedule Section - Top Priority */}
       <Card>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">My Schedule</h2>
