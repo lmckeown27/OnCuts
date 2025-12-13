@@ -86,7 +86,7 @@ export default function AppointmentDetailsPage() {
                 <p className="text-sm text-gray-600">ID: #{appointment.id}</p>
               </div>
             </div>
-            <CampusCutsLogo className="h-8" />
+            <img src={CampusCutsLogo} alt="CampusCuts" className="h-8" />
           </div>
         </div>
       </div>
