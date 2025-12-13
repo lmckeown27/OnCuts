@@ -170,10 +170,10 @@ function DashboardView() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Today's Schedule</h2>
         <div className="space-y-4">
           {[
-            { time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-            { time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$20', status: 'confirmed' },
-            { time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$55', status: 'pending' },
-            { time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$30', status: 'confirmed' },
+            { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+            { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$20', status: 'confirmed' },
+            { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$55', status: 'pending' },
+            { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$30', status: 'confirmed' },
           ].map((apt, idx) => (
             <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-indigo-300 transition-colors">
               <div className="flex items-center gap-4">
@@ -195,7 +195,12 @@ function DashboardView() {
               </div>
               <div className="text-right">
                 <p className="font-bold text-green-600">{apt.price}</p>
-                <Button size="sm" variant="secondary" className="mt-1">
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="mt-1"
+                  onClick={() => navigate(`/barber/appointment/${apt.id}`)}
+                >
                   View Details
                 </Button>
               </div>
