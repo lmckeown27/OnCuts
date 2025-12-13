@@ -153,7 +153,7 @@ export default function BarberFilterQuestionnaire({
           {/* Question 1: Service Type (default view) */}
           {!serviceType && (
             <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2 text-gray-700">
+              <div className="flex items-center justify-center gap-2 text-gray-700">
                 <Scissors className="w-5 h-5 text-indigo-600" />
                 <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
               </div>
@@ -175,7 +175,7 @@ export default function BarberFilterQuestionnaire({
           {/* Question 2: Date & Time (only show if service selected and date/time not set) */}
           {serviceType && (!date || !time) && (
             <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2 text-gray-700">
+              <div className="flex items-center justify-center gap-2 text-gray-700">
                 <Calendar className="w-5 h-5 text-green-600" />
                 <label className="font-semibold text-lg">When would you like your haircut?</label>
               </div>
@@ -208,7 +208,7 @@ export default function BarberFilterQuestionnaire({
           {/* Question 3: Location (only show if date/time selected and location not set) */}
           {serviceType && date && time && !location && (
             <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2 text-gray-700">
+              <div className="flex items-center justify-center gap-2 text-gray-700">
                 <MapPin className="w-5 h-5 text-purple-600" />
                 <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
               </div>
@@ -232,7 +232,7 @@ export default function BarberFilterQuestionnaire({
           {/* Location Details (only show if location selected) */}
           {location && (
             <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2 text-gray-700">
+              <div className="flex items-center justify-center gap-2 text-gray-700">
                 <MapPin className="w-5 h-5 text-purple-600" />
                 <label className="font-semibold text-lg">Specify the exact location</label>
               </div>
