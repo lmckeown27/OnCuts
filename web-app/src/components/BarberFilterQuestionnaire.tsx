@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { Scissors, Calendar, MapPin, ChevronRight } from 'lucide-react';
+import { Scissors, Calendar, MapPin } from 'lucide-react';
 import Card from './Card';
 import type { FilterCriteria } from '../types/barber-filters';
 
@@ -259,32 +259,6 @@ export default function BarberFilterQuestionnaire({
               </div>
             </div>
           )}
-        </div>
-
-        {/* Progress Indicator */}
-        <div className="pt-4 border-t border-gray-200">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Filter Progress:</span>
-            <div className="flex items-center gap-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                serviceType ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
-                1
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                date && time ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
-                2
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                location ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'
-              }`}>
-                3
-              </div>
-            </div>
-          </div>
         </div>
         </div>
       </Card>
