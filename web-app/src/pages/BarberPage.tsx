@@ -97,6 +97,8 @@ export default function BarberPage() {
 }
 
 function DashboardView() {
+  const navigate = useNavigate();
+  
   return (
     <>
       {/* Stats Cards */}
