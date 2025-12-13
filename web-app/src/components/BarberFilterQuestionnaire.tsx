@@ -17,11 +17,13 @@ import type { FilterCriteria } from '../types/barber-filters';
 interface BarberFilterQuestionnaireProps {
   onFilterChange: (filters: FilterCriteria) => void;
   availableServices: string[];
+  availableCount: number;
 }
 
 export default function BarberFilterQuestionnaire({ 
   onFilterChange, 
-  availableServices 
+  availableServices,
+  availableCount 
 }: BarberFilterQuestionnaireProps) {
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -97,7 +99,13 @@ export default function BarberFilterQuestionnaire({
         {/* Header */}
         <div className="text-center pb-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
-          <p className="text-sm text-gray-600">Answer a few questions to see barbers who match your needs</p>
+          <p className="text-sm text-gray-600 mb-3">Answer a few questions to see barbers who match your needs</p>
+          
+          {/* Real-time Barber Count */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-semibold">
+            <span className="text-2xl">{availableCount}</span>
+            <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
+          </div>
         </div>
 
         {/* Question 1: Service Type */}

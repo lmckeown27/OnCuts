@@ -212,22 +212,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       <BarberFilterQuestionnaire
         onFilterChange={handleFilterChange}
         availableServices={availableServices}
+        availableCount={filteredBarbers.length}
       />
 
-      {/* Results Count */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <UsersIcon className="w-5 h-5 text-indigo-600" />
-          <h2 className="text-2xl font-bold text-gray-900">
-            {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Barber' : 'Barbers'} Available
-          </h2>
+      {/* Sort Info */}
+      {filterCriteria.serviceType && filteredBarbers.length > 0 && (
+        <div className="mb-6 text-center text-sm text-gray-600">
+          Sorted by top performers first
         </div>
-        {filterCriteria.serviceType && (
-          <div className="text-sm text-gray-600">
-            Sorted by top performers first
-          </div>
-        )}
-      </div>
+      )}
 
       {/* No Results */}
       {filteredBarbers.length === 0 && filterCriteria.serviceType && (
