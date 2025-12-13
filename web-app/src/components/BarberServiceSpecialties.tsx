@@ -38,13 +38,13 @@ interface Props {
 }
 
 // Available service types aligned with "Earn More, Lower Prices" model
-// Budget tier (~$22): Basic services
+// Budget tier ($23): Basic services (barber earns $21.85, beating traditional $21 max)
 // Standard tier (~$28): Most haircuts
 // Premium tier ($35-$45): Specialized services
 const AVAILABLE_SERVICES: ServiceType[] = [
-  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Simple buzz cut', basePrice: 22 },
-  { id: 'line-up', name: 'Line Up', description: 'Hairline and edge cleanup', basePrice: 22 },
-  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 22 },
+  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Simple buzz cut', basePrice: 23 },
+  { id: 'line-up', name: 'Line Up', description: 'Hairline and edge cleanup', basePrice: 23 },
+  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 23 },
   { id: 'haircut', name: 'Haircut', description: 'Basic haircut service', basePrice: 28 },
   { id: 'taper', name: 'Taper', description: 'Tapered haircut', basePrice: 28 },
   { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28 },
@@ -150,8 +150,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
             <div className="text-sm text-gray-700 space-y-2">
               <div className="grid grid-cols-3 gap-4 my-3">
                 <div className="bg-white rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">$22 Service</p>
-                  <p className="text-lg font-bold text-green-600">You Earn: $20.90</p>
+                  <p className="text-xs text-gray-500 mb-1">$23 Service</p>
+                  <p className="text-lg font-bold text-green-600">You Earn: $21.85</p>
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-green-200">
                   <p className="text-xs text-gray-500 mb-1">$28 Service</p>

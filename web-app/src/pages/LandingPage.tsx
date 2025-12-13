@@ -339,20 +339,20 @@ export default function LandingPage() {
                         <h4 className="font-bold text-lg text-gray-900 mb-1">CampusCuts</h4>
                         <p className="text-sm text-green-600 font-semibold">MINIMUM PRICING</p>
                       </div>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">New barber charges budget price</p>
-                          <p className="text-2xl font-bold text-gray-900">$22</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Everyone keeps 95%</p>
-                          <p className="text-lg text-gray-700">(Standard platform rate)</p>
-                        </div>
-                        <div className="pt-3 border-t-2 border-green-300">
-                          <p className="text-sm text-gray-600 mb-1">Minimum Earnings:</p>
-                          <p className="text-4xl font-bold text-green-600">$20.90</p>
-                        </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">New barber charges budget price</p>
+                        <p className="text-2xl font-bold text-gray-900">$23</p>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Everyone keeps 95%</p>
+                        <p className="text-lg text-gray-700">(Standard platform rate)</p>
+                      </div>
+                      <div className="pt-3 border-t-2 border-green-300">
+                        <p className="text-sm text-gray-600 mb-1">Minimum Earnings:</p>
+                        <p className="text-4xl font-bold text-green-600">$21.85</p>
+                      </div>
+                    </div>
                     </div>
                   </div>
 
@@ -362,14 +362,14 @@ export default function LandingPage() {
                         <p className="text-sm text-gray-600">Traditional MAX</p>
                         <p className="text-2xl font-bold text-red-600">$21.00</p>
                       </div>
-                      <div className="text-3xl font-bold text-gray-400">{'<'}</div>
+                      <div className="text-3xl font-bold text-green-600">{'<'}</div>
                       <div className="text-center">
                         <p className="text-sm text-gray-600">CampusCuts MIN</p>
-                        <p className="text-2xl font-bold text-green-600">$20.90</p>
+                        <p className="text-2xl font-bold text-green-600">$21.85</p>
                       </div>
                     </div>
                     <p className="text-center text-gray-700 font-semibold">
-                      Our floor is their ceiling. Every barber wins, regardless of experience level.
+                      Our floor beats their ceiling. Every barber wins, regardless of experience level.
                     </p>
                   </div>
 

@@ -101,7 +101,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           totalBookings: 250,
           verified: false,
           specialties: ['Classic Cuts', 'Hot Towel Shave', 'Lineup'],
-          priceRange: '$22-$28',
+          priceRange: '$23-$28',
           location: 'Cal Poly SLO',
           availability: 'Available tomorrow',
           responseTime: 'Usually responds in 3 hours',
@@ -212,7 +212,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="bg-white rounded-lg p-3 text-center border border-green-200">
                   <p className="text-xs text-gray-500 mb-1">Budget Services</p>
-                  <p className="text-xl font-bold text-green-600">$22</p>
+                  <p className="text-xl font-bold text-green-600">$23</p>
                   <p className="text-xs text-gray-500">Buzz cuts, line-ups, trim</p>
                 </div>
                 <div className="bg-white rounded-lg p-3 text-center border border-green-200">

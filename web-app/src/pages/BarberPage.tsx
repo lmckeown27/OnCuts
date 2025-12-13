@@ -254,7 +254,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
             <div className="space-y-3">
               {[
                 { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-                { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$22', status: 'confirmed' },
+                { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' },
                 { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$45', status: 'pending' },
                 { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
                 { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$28', status: 'confirmed' },
