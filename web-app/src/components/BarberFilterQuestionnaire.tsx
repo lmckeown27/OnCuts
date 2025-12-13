@@ -108,102 +108,158 @@ export default function BarberFilterQuestionnaire({
           </div>
         </div>
 
-        {/* Question 1: Service Type */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-gray-700">
-            <Scissors className="w-5 h-5 text-indigo-600" />
-            <label className="font-semibold">1. What type of haircut are you looking for?</label>
-          </div>
-          
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {availableServices.map((service) => (
-              <button
-                key={service}
-                onClick={() => handleServiceChange(service)}
-                className={`px-4 py-3 rounded-lg font-medium text-sm transition-all ${
-                  serviceType === service
-                    ? 'bg-indigo-600 text-white shadow-md scale-105'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {service}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Question 2: Date & Time (only show if service selected) */}
-        {serviceType && (
-          <div className="space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2 text-gray-700">
-              <Calendar className="w-5 h-5 text-green-600" />
-              <label className="font-semibold">2. When would you like your haircut?</label>
-            </div>
-            
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
-                <input
-                  type="date"
-                  value={date || ''}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  min={getMinDate()}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+        {/* Summary Pills - Show selections made */}
+        {(serviceType || date || location) && (
+          <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-200">
+            {serviceType && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-medium">
+                <Scissors className="w-3 h-3" />
+                <span>{serviceType}</span>
+                <button
+                  onClick={() => handleServiceChange('')}
+                  className="hover:bg-indigo-700 rounded-full"
+                >
+                  ×
+                </button>
               </div>
-              
-              <div>
-                <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
-                <input
-                  type="time"
-                  value={time || ''}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+            )}
+            {date && time && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium">
+                <Calendar className="w-3 h-3" />
+                <span>{date} at {time}</span>
+                <button
+                  onClick={() => { setDate(null); setTime(null); onFilterChange({ serviceType, date: null, time: null, location, locationDetails }); }}
+                  className="hover:bg-green-700 rounded-full"
+                >
+                  ×
+                </button>
               </div>
-            </div>
+            )}
+            {location && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-full text-sm font-medium">
+                <MapPin className="w-3 h-3" />
+                <span>{location}</span>
+                <button
+                  onClick={() => { setLocation(null); setLocationDetails(''); onFilterChange({ serviceType, date, time, location: null, locationDetails: null }); }}
+                  className="hover:bg-purple-700 rounded-full"
+                >
+                  ×
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Question 3: Location (only show if date/time selected) */}
-        {serviceType && date && time && (
-          <div className="space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2 text-gray-700">
-              <MapPin className="w-5 h-5 text-purple-600" />
-              <label className="font-semibold">3. Where would you like to receive your haircut?</label>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {['On Campus', 'My Dorm/Apartment', "Barber's Location"].map((loc) => (
+        {/* Active Question - Only show current question */}
+        <div className="min-h-[200px]">
+          {/* Question 1: Service Type (default view) */}
+          {!serviceType && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Scissors className="w-5 h-5 text-indigo-600" />
+                <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {availableServices.map((service) => (
                   <button
-                    key={loc}
-                    onClick={() => handleLocationChange(loc)}
-                    className={`px-4 py-3 rounded-lg font-medium text-sm transition-all ${
-                      location === loc
-                        ? 'bg-purple-600 text-white shadow-md scale-105'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    key={service}
+                    onClick={() => handleServiceChange(service)}
+                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all"
                   >
-                    {loc}
+                    {service}
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Question 2: Date & Time (only show if service selected and date/time not set) */}
+          {serviceType && (!date || !time) && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Calendar className="w-5 h-5 text-green-600" />
+                <label className="font-semibold text-lg">When would you like your haircut?</label>
+              </div>
               
-              {location && (
-                <div className="animate-fade-in">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
                   <input
-                    type="text"
-                    value={locationDetails}
-                    onChange={(e) => handleLocationDetailsChange(e.target.value)}
-                    placeholder="Specific location (e.g., Building name, Room number)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    type="date"
+                    value={date || ''}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    min={getMinDate()}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
-              )}
+                
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
+                  <input
+                    type="time"
+                    value={time || ''}
+                    onChange={(e) => handleTimeChange(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Question 3: Location (only show if date/time selected and location not set) */}
+          {serviceType && date && time && !location && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-gray-700">
+                <MapPin className="w-5 h-5 text-purple-600" />
+                <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {['On Campus', 'My Dorm/Apartment', "Barber's Location"].map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => handleLocationChange(loc)}
+                      className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-all"
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Location Details (only show if location selected) */}
+          {location && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-2 text-gray-700">
+                <MapPin className="w-5 h-5 text-purple-600" />
+                <label className="font-semibold text-lg">Specify the exact location</label>
+              </div>
+              <input
+                type="text"
+                value={locationDetails}
+                onChange={(e) => handleLocationDetailsChange(e.target.value)}
+                placeholder="Building name, Room number, or specific area"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          )}
+
+          {/* All Complete - Show summary */}
+          {serviceType && date && time && location && locationDetails && (
+            <div className="text-center animate-fade-in">
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg font-semibold">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>All filters set! Scroll down to see matching barbers</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Progress Indicator */}
         <div className="pt-4 border-t border-gray-200">
