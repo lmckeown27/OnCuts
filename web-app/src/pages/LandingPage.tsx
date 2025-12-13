@@ -294,6 +294,103 @@ export default function LandingPage() {
               </Card>
             </div>
 
+            {/* Game-Changing Insight: Our Minimum > Their Maximum */}
+            <div className="max-w-5xl mx-auto mt-12">
+              <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400">
+                <div className="p-8">
+                  <div className="text-center mb-6">
+                    <div className="inline-block bg-yellow-400 text-gray-900 px-4 py-2 rounded-full font-bold text-sm mb-4">
+                      💡 GAME CHANGER
+                    </div>
+                    <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                      Our Minimum Beats Their Maximum
+                    </h3>
+                    <p className="text-lg text-gray-700">
+                      Even entry-level barbers on CampusCuts earn more than top performers at traditional shops
+                    </p>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    {/* Traditional BEST Case */}
+                    <div className="bg-white rounded-lg p-6 border-2 border-red-300">
+                      <div className="text-center mb-4">
+                        <h4 className="font-bold text-lg text-gray-900 mb-1">Traditional Barbershop</h4>
+                        <p className="text-sm text-red-600 font-semibold">BEST CASE SCENARIO</p>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Customer pays premium price</p>
+                          <p className="text-2xl font-bold text-gray-900">$35</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Top barber negotiates 60% split</p>
+                          <p className="text-lg text-gray-700">(Best commission rate)</p>
+                        </div>
+                        <div className="pt-3 border-t-2 border-red-200">
+                          <p className="text-sm text-gray-600 mb-1">Maximum Earnings:</p>
+                          <p className="text-4xl font-bold text-red-600">$21.00</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CampusCuts MINIMUM */}
+                    <div className="bg-white rounded-lg p-6 border-2 border-green-400">
+                      <div className="text-center mb-4">
+                        <h4 className="font-bold text-lg text-gray-900 mb-1">CampusCuts</h4>
+                        <p className="text-sm text-green-600 font-semibold">MINIMUM PRICING</p>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">New barber charges budget price</p>
+                          <p className="text-2xl font-bold text-gray-900">$22</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Everyone keeps 95%</p>
+                          <p className="text-lg text-gray-700">(Standard platform rate)</p>
+                        </div>
+                        <div className="pt-3 border-t-2 border-green-300">
+                          <p className="text-sm text-gray-600 mb-1">Minimum Earnings:</p>
+                          <p className="text-4xl font-bold text-green-600">$20.90</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg p-6 border-2 border-yellow-400">
+                    <div className="flex items-center justify-center gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Traditional MAX</p>
+                        <p className="text-2xl font-bold text-red-600">$21.00</p>
+                      </div>
+                      <div className="text-3xl font-bold text-gray-400">{'<'}</div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">CampusCuts MIN</p>
+                        <p className="text-2xl font-bold text-green-600">$20.90</p>
+                      </div>
+                    </div>
+                    <p className="text-center text-gray-700 font-semibold">
+                      Our floor is their ceiling. Every barber wins, regardless of experience level.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 grid md:grid-cols-3 gap-4">
+                    <div className="bg-yellow-100 rounded-lg p-4 text-center">
+                      <p className="font-bold text-gray-900 mb-1">New Barbers</p>
+                      <p className="text-sm text-gray-600">Start earning more than traditional veterans</p>
+                    </div>
+                    <div className="bg-yellow-100 rounded-lg p-4 text-center">
+                      <p className="font-bold text-gray-900 mb-1">Experienced Barbers</p>
+                      <p className="text-sm text-gray-600">Charge $35+ and keep $33.25+ per cut</p>
+                    </div>
+                    <div className="bg-yellow-100 rounded-lg p-4 text-center">
+                      <p className="font-bold text-gray-900 mb-1">No Negotiation</p>
+                      <p className="text-sm text-gray-600">95% rate for everyone, always</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
             {/* Real Data Source */}
             <div className="max-w-3xl mx-auto mt-8">
               <p className="text-center text-sm text-gray-500">
