@@ -163,7 +163,7 @@ export default function BarberFilterQuestionnaire({
                   <button
                     key={service}
                     onClick={() => handleServiceChange(service)}
-                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all whitespace-nowrap flex-shrink-0"
+                    className="px-4 py-3 rounded-lg font-semibold text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
                   >
                     {service}
                   </button>
