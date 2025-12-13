@@ -160,7 +160,7 @@ export default function BarberFilterQuestionnaire({
                 <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
               </div>
               
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex justify-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {availableServices.map((service) => (
                   <button
                     key={service}
