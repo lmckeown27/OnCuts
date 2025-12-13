@@ -1,13 +1,13 @@
 /**
  * CampusCuts Landing Page
  * 
- * Main entry point explaining the decentralized platform
+ * Main entry point explaining the platform
  * Provides options for Web Version or Mobile App
  */
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Monitor, Smartphone, Shield, Zap, Users, Globe, CheckCircle } from 'lucide-react';
+import { Monitor, Smartphone, DollarSign, Zap, Users, Star, CheckCircle, TrendingUp } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { CampusCutsLogo } from '@assets';
@@ -27,10 +27,10 @@ export default function LandingPage() {
               CampusCuts
             </h1>
             <p className="text-2xl md:text-3xl text-gray-700 mb-3">
-              Decentralized Campus Barbering
+              Fair Pricing, Happy Barbers, Great Haircuts
             </p>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              The future of student grooming. Connect directly with talented barbers on campus through a trustless, blockchain-powered marketplace.
+              Connect directly with talented barbers on campus. Barbers keep 95% of their earnings. Students get affordable, quality haircuts.
             </p>
           </div>
 
@@ -73,73 +73,73 @@ export default function LandingPage() {
             </Card>
           </div>
 
-          {/* Decentralized Features */}
+          {/* Key Benefits */}
           <div className="mb-20">
             <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">
-              Why Decentralized?
+              Why CampusCuts?
             </h2>
             <p className="text-center text-gray-600 mb-12 max-w-3xl mx-auto">
-              Built on the Aptos blockchain, CampusCuts eliminates middlemen, ensures transparency, and puts control directly in your hands.
+              We eliminate the middleman and pass the savings to you. Fair prices for students, great earnings for barbers.
             </p>
             
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <Card className="text-center">
                 <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-green-600" />
+                  <DollarSign className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Trustless Payments</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Barbers Keep 95%</h3>
                 <p className="text-gray-600">
-                  Smart contracts hold funds in escrow. No disputes, no chargebacks, no middleman taking a cut.
+                  Only 5% platform fee. Most platforms take 20-30%. We believe barbers deserve fair compensation for their skills.
                 </p>
               </Card>
 
               <Card className="text-center">
                 <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Zap className="w-8 h-8 text-blue-600" />
+                  <TrendingUp className="w-8 h-8 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Instant Transactions</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Lower Prices for Students</h3>
                 <p className="text-gray-600">
-                  Payments settle in seconds on Aptos. Barbers get paid immediately after service completion.
+                  No high platform fees means barbers can charge less while earning more. Quality haircuts at student-friendly prices.
                 </p>
               </Card>
 
               <Card className="text-center">
                 <div className="bg-yellow-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-yellow-600" />
+                  <Zap className="w-8 h-8 text-yellow-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Community Owned</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Instant Payments</h3>
                 <p className="text-gray-600">
-                  No corporate control. The platform is governed by its users through transparent, on-chain rules.
-                </p>
-              </Card>
-
-              <Card className="text-center">
-                <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Globe className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Censorship Resistant</h3>
-                <p className="text-gray-600">
-                  Your account and reputation are yours forever. No one can ban you or delete your history.
+                  Barbers get paid immediately after service completion. Secure escrow protects both parties during the booking.
                 </p>
               </Card>
 
               <Card className="text-center">
                 <div className="bg-indigo-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-indigo-600" />
+                  <Users className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Transparent Reviews</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Direct Connection</h3>
                 <p className="text-gray-600">
-                  All reviews are stored on-chain and immutable. See exactly what customers really think.
+                  Message barbers directly, see their work, check availability. Build relationships with your preferred barber.
                 </p>
               </Card>
 
               <Card className="text-center">
                 <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-purple-600" />
+                  <Star className="w-8 h-8 text-purple-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Self-Custodial</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Quality Focused</h3>
                 <p className="text-gray-600">
-                  You control your wallet and funds. Optional custodial service for ease of use.
+                  Verified reviews, barber portfolios, and performance-based ranking ensure you always find top talent.
+                </p>
+              </Card>
+
+              <Card className="text-center">
+                <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">On-Campus Convenience</h3>
+                <p className="text-gray-600">
+                  Get haircuts in your dorm, on campus, or at the barber's location. Flexible scheduling that works for students.
                 </p>
               </Card>
             </div>
@@ -174,14 +174,14 @@ export default function LandingPage() {
                     <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Get Your Cut</h4>
-                      <p className="text-gray-600">Meet at the agreed location. Payment automatically releases from escrow.</p>
+                      <p className="text-gray-600">Meet at the agreed location. Payment processes automatically upon completion.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
                     <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Leave a Review</h4>
-                      <p className="text-gray-600">Your on-chain review helps build the barber's reputation.</p>
+                      <p className="text-gray-600">Your verified review helps build the barber's reputation and helps other students.</p>
                     </div>
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export default function LandingPage() {
                     <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Get Paid Instantly</h4>
-                      <p className="text-gray-600">Smart contract releases payment to your wallet. No waiting.</p>
+                      <p className="text-gray-600">Receive 95% of the payment immediately. No waiting periods or hidden fees.</p>
                     </div>
                   </div>
                 </div>
@@ -224,17 +224,23 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Tech Stack */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Built on Aptos Blockchain</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-              CampusCuts leverages the speed, security, and low cost of the Aptos blockchain to provide a seamless experience for both barbers and students.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <span className="px-6 py-3 bg-white rounded-full shadow-md text-gray-800 font-medium">Move Smart Contracts</span>
-              <span className="px-6 py-3 bg-white rounded-full shadow-md text-gray-800 font-medium">IPFS Storage</span>
-              <span className="px-6 py-3 bg-white rounded-full shadow-md text-gray-800 font-medium">Web3 Wallet Integration</span>
-              <span className="px-6 py-3 bg-white rounded-full shadow-md text-gray-800 font-medium">Progressive Web App</span>
+          {/* Value Proposition */}
+          <div className="text-center mb-12 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50">
+                <h3 className="text-3xl font-bold text-purple-600 mb-2">For Barbers</h3>
+                <p className="text-5xl font-bold text-gray-900 mb-2">Keep 95%</p>
+                <p className="text-gray-600">
+                  Most platforms take 20-30%. We only charge 5% so you can earn what you deserve while charging fair prices.
+                </p>
+              </Card>
+              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50">
+                <h3 className="text-3xl font-bold text-blue-600 mb-2">For Students</h3>
+                <p className="text-5xl font-bold text-gray-900 mb-2">Save 30%</p>
+                <p className="text-gray-600">
+                  Lower platform fees mean barbers can offer great prices. Quality cuts from talented students, right on campus.
+                </p>
+              </Card>
             </div>
           </div>
 
@@ -266,10 +272,10 @@ export default function LandingPage() {
       <footer className="bg-gray-900 text-white py-8 mt-20">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-gray-400 mb-2">
-            CampusCuts is a decentralized application. No corporate ownership, no central control.
+            CampusCuts - Connecting talented barbers with students since 2025
           </p>
           <p className="text-gray-500 text-sm">
-            Built with Move on Aptos • IPFS • Web3 • Open Source
+            Fair Pricing • Secure Payments • Campus Community
           </p>
         </div>
       </footer>
