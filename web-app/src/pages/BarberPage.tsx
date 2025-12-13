@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberPricingDashboard from '../components/BarberPricingDashboard';
+import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequests from '../components/booking/BarberBookingRequests';
 import { CampusCutsLogo } from '@assets';
 
@@ -12,6 +13,7 @@ export default function BarberPage() {
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [showPricingDashboard, setShowPricingDashboard] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -67,6 +69,16 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
+                      setShowServiceSpecialties(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Scissors className="w-4 h-4 text-gray-500" />
+                    My Services
+                  </button>
+                  <button
+                    onClick={() => {
                       setShowPricingDashboard(true);
                       setShowProfileDropdown(false);
                     }}
@@ -113,6 +125,26 @@ export default function BarberPage() {
             </div>
             <div className="p-6">
               <BarberProfileEditor barberId={barberId} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Specialties Modal */}
+      {showServiceSpecialties && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">My Services & Pricing</h2>
+              <button
+                onClick={() => setShowServiceSpecialties(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <BarberServiceSpecialties barberId={barberId} />
             </div>
           </div>
         </div>
