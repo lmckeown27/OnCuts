@@ -150,11 +150,11 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-lg font-bold text-gray-900">Pending Booking Requests ({requests.length})</h2>
       
       {requests.map((request) => (
-        <Card key={request.bookingId} className="hover:shadow-md transition-shadow">
+        <Card key={request.bookingId} className="hover:shadow-md transition-shadow rounded-xl">
           <div className="flex flex-col md:flex-row md:items-start gap-4">
             {/* Customer Info */}
             <div className="flex-1">
