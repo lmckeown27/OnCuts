@@ -285,8 +285,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               className="cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => navigate(`/student/barbers/${barber.id}`)}
             >
-              {/* Portfolio Image */}
-              <div className="mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
+              {/* Portfolio Image with Name Overlay */}
+              <div className="relative mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
                 {barber.portfolio && barber.portfolio.length > 0 ? (
                   <img
                     src={barber.portfolio[0].url}
@@ -298,13 +298,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <UsersIcon className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
+                {/* Name Overlay */}
+                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-3">
+                  <h3 className="text-lg font-bold text-white">
+                    {barber.user?.first_name} {barber.user?.last_name}
+                  </h3>
+                </div>
               </div>
 
               {/* Barber Info */}
               <div>
-                <h3 className="text-lg font-bold text-gray-900">
-                  {barber.user?.first_name} {barber.user?.last_name}
-                </h3>
 
                 {/* Rating & Bookings */}
                 <div className="flex items-center gap-2 mt-1 mb-2">
