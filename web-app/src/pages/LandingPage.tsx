@@ -26,11 +26,15 @@ export default function LandingPage() {
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
               CampusCuts
             </h1>
-            <p className="text-2xl md:text-3xl text-gray-700 mb-3">
-              Fair Pricing, Happy Barbers, Great Haircuts
+            <p className="text-3xl md:text-4xl font-bold text-primary-400 mb-3">
+              Earn More, Lower Prices
+            </p>
+            <p className="text-xl md:text-2xl text-gray-700 mb-4">
+              Barbers earn 50% more. Students save 20%. Everyone wins.
             </p>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Connect directly with talented barbers on campus. Barbers keep 95% of their earnings. Students get affordable, quality haircuts.
+              We eliminated the expensive middleman. Barbers keep 95% instead of the typical 40-60% commission. 
+              Students get quality haircuts at fair prices.
             </p>
           </div>
 
@@ -89,7 +93,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Barbers Keep 95%</h3>
                 <p className="text-gray-600">
-                  Only 5% platform fee. Most platforms take 20-30%. We believe barbers deserve fair compensation for their skills.
+                  Earn $26.60 per $28 haircut vs $17.50 per $35 at traditional shops. 
+                  That's 52% more earnings per cut with a 5% platform fee instead of 40-60% shop commission.
                 </p>
               </Card>
 
@@ -99,7 +104,8 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Lower Prices for Students</h3>
                 <p className="text-gray-600">
-                  No high platform fees means barbers can charge less while earning more. Quality haircuts at student-friendly prices.
+                  Pay $28 instead of $35 for the same quality cut. Save 20% compared to traditional barbershops 
+                  while supporting barbers who earn more. Win-win economics.
                 </p>
               </Card>
 
@@ -142,6 +148,159 @@ export default function LandingPage() {
                   Get haircuts in your dorm, on campus, or at the barber's location. Flexible scheduling that works for students.
                 </p>
               </Card>
+            </div>
+          </div>
+
+          {/* Economic Comparison - The Math Behind "Earn More, Lower Prices" */}
+          <div className="mb-20">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Earn More, Lower Prices
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                See how CampusCuts transforms traditional barber economics to benefit everyone
+              </p>
+            </div>
+
+            {/* The Numbers */}
+            <div className="max-w-6xl mx-auto mb-12">
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Traditional Barbershop */}
+                <Card className="border-2 border-red-200 bg-red-50">
+                  <div className="p-6">
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Traditional Barbershop</h3>
+                      <p className="text-gray-600">How it usually works</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-700 font-medium">Customer Pays:</span>
+                          <span className="text-2xl font-bold text-gray-900">$35</span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-red-500" style={{ width: '100%' }}></div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-700 font-medium">Shop Takes (50%):</span>
+                          <span className="text-xl font-bold text-red-600">-$17.50</span>
+                        </div>
+                        <p className="text-xs text-gray-500">Rent, utilities, reception, overhead</p>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-4 border-2 border-red-300">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900 font-bold">Barber Earns:</span>
+                          <span className="text-3xl font-bold text-red-700">$17.50</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">Only 50% of what customer paid</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-red-100 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <strong>Reality:</strong> Traditional shops take 40-60% commission. Industry average is ~50% split.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* CampusCuts Model */}
+                <Card className="border-2 border-green-300 bg-green-50">
+                  <div className="p-6">
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCuts</h3>
+                      <p className="text-gray-600">How we're different</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-700 font-medium">Customer Pays:</span>
+                          <span className="text-2xl font-bold text-gray-900">$28</span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500" style={{ width: '100%' }}></div>
+                        </div>
+                        <p className="text-xs text-green-600 mt-1 font-medium">$7 less than traditional!</p>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-gray-700 font-medium">Platform Fee (5%):</span>
+                          <span className="text-xl font-bold text-orange-600">-$1.40</span>
+                        </div>
+                        <p className="text-xs text-gray-500">No overhead, just technology</p>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-4 border-2 border-green-400">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900 font-bold">Barber Earns:</span>
+                          <span className="text-3xl font-bold text-green-700">$26.60</span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">95% of what customer paid</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-green-100 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <strong>Result:</strong> Barber earns $9.10 more per cut. Customer saves $7. Everyone wins!
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+
+            {/* Key Insights */}
+            <div className="max-w-4xl mx-auto">
+              <Card className="bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-300">
+                <div className="p-8">
+                  <h3 className="text-2xl font-bold text-center text-gray-900 mb-6">
+                    Why This Works
+                  </h3>
+                  
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-green-600 mb-2">+52%</div>
+                      <p className="text-gray-700 font-semibold mb-1">More Earnings</p>
+                      <p className="text-sm text-gray-600">Barbers earn $26.60 vs $17.50 traditional</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">-20%</div>
+                      <p className="text-gray-700 font-semibold mb-1">Lower Prices</p>
+                      <p className="text-sm text-gray-600">Students pay $28 vs $35 traditional</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-primary-400 mb-2">5%</div>
+                      <p className="text-gray-700 font-semibold mb-1">Platform Fee</p>
+                      <p className="text-sm text-gray-600">vs 40-60% traditional shop take</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 p-4 bg-white rounded-lg border border-primary-200">
+                    <p className="text-center text-gray-700">
+                      <strong>The Secret:</strong> No physical shop = no rent, utilities, or reception staff. 
+                      We pass those savings directly to barbers and customers.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Real Data Source */}
+            <div className="max-w-3xl mx-auto mt-8">
+              <p className="text-center text-sm text-gray-500">
+                Data based on industry reports showing traditional barbers earn 40-60% commission (median 50%) 
+                and typical haircut prices of $25-$45 in U.S. markets. Sources: Sheets.Market, BusinessDojo, 
+                Salon & Barbers Connect industry studies.
+              </p>
             </div>
           </div>
 
