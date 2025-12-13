@@ -325,8 +325,17 @@ export default function GasWalletManager() {
 
       {/* Create Top-Up Modal */}
       {isTopUpModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => {
+            setIsTopUpModalOpen(false);
+            setCustomAmount('');
+          }}
+        >
+          <Card 
+            className="w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-4">Create Top-Up Request</h3>
 
             <div className="space-y-4">
@@ -379,8 +388,19 @@ export default function GasWalletManager() {
 
       {/* Transfer Instructions & Confirmation Modal */}
       {isConfirmModalOpen && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setIsConfirmModalOpen(false);
+            setSelectedRequest(null);
+            setTxHash('');
+            setFromAddress('');
+          }}
+        >
+          <Card 
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-4">Transfer APT to Gas Wallet</h3>
 
             {/* Transfer Details */}

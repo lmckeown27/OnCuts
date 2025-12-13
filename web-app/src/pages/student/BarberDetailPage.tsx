@@ -273,8 +273,14 @@ export default function BarberDetailPage() {
 
       {/* Tip Modal */}
       {showTipModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowTipModal(false)}
+        >
+          <Card 
+            className="max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 className="text-2xl font-bold mb-4">Send a Tip</h2>
             <p className="text-gray-600 mb-6">
               Show your appreciation to {barber.user?.first_name}!
