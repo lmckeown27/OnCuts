@@ -109,13 +109,13 @@ export default function AdminDashboardMain() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100">
+          <Card className="bg-gradient-to-br from-primary-50 to-primary-100">
             <div className="flex items-center gap-4">
-              <div className="bg-indigo-600 rounded-full p-3">
+              <div className="bg-primary-400 rounded-full p-3">
                 <School className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm text-indigo-600 font-semibold">CAMPUSES</p>
+                <p className="text-sm text-primary-400 font-semibold">CAMPUSES</p>
                 <p className="text-2xl font-bold text-gray-900">5</p>
               </div>
             </div>
@@ -151,10 +151,10 @@ export default function AdminDashboardMain() {
           {sections.map((section) => {
             const IconComponent = section.icon;
             const colorClasses = {
-              indigo: 'bg-indigo-100 text-indigo-600',
+              indigo: 'bg-primary-100 text-primary-400',
               green: 'bg-green-100 text-green-600',
               orange: 'bg-orange-100 text-orange-600',
-              purple: 'bg-purple-100 text-purple-600',
+              purple: 'bg-primary-100 text-primary-400',
               red: 'bg-red-100 text-red-600',
               blue: 'bg-blue-100 text-blue-600',
             }[section.color];

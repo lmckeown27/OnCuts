@@ -44,7 +44,7 @@ export function BlockchainBalanceCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+      <div className="bg-gradient-to-r from-blue-600 to-primary-400 rounded-lg shadow-lg p-6 text-white">
         <Skeleton width="120px" height="20px" />
         <Skeleton width="180px" height="40px" className="mt-2" />
         <div className="mt-4 flex space-x-3">
@@ -72,7 +72,7 @@ export function BlockchainBalanceCard() {
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+    <div className="bg-gradient-to-r from-blue-600 to-primary-400 rounded-lg shadow-lg p-6 text-white">
       {/* Balance Display */}
       <div className="flex items-center justify-between mb-4">
         <div>

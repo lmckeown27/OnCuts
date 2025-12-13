@@ -63,7 +63,7 @@ export default function AdminPricingManagement() {
                 onClick={() => setActiveTab('overview')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'overview'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -74,7 +74,7 @@ export default function AdminPricingManagement() {
                 onClick={() => setActiveTab('anomalies')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'anomalies'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -85,7 +85,7 @@ export default function AdminPricingManagement() {
                 onClick={() => setActiveTab('config')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'config'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -175,9 +175,9 @@ function OverviewTab({ onRecompute, isRecomputing, recomputeResult }: any) {
           <button
             onClick={() => onRecompute('all')}
             disabled={isRecomputing}
-            className="flex items-center justify-center gap-2 p-4 border-2 border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 p-4 border-2 border-primary-300 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-5 h-5 text-indigo-600 ${isRecomputing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-5 h-5 text-primary-400 ${isRecomputing ? 'animate-spin' : ''}`} />
             <div className="text-left">
               <p className="font-semibold text-gray-900">Recompute All Barbers</p>
               <p className="text-xs text-gray-600">~50 barbers across all campuses</p>
@@ -244,7 +244,7 @@ function OverviewTab({ onRecompute, isRecomputing, recomputeResult }: any) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="w-8 h-8 text-indigo-600" />
+            <TrendingUp className="w-8 h-8 text-primary-400" />
             <div>
               <p className="text-sm text-gray-600">Avg Performance</p>
               <p className="text-2xl font-bold text-gray-900">85.2</p>
@@ -374,7 +374,7 @@ function AnomaliesTab() {
 
         <div className="space-y-4">
           {anomalies.map((anomaly) => (
-            <div key={anomaly.id} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+            <div key={anomaly.id} className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 mb-1">

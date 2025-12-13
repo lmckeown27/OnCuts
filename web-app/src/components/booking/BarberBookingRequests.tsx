@@ -130,7 +130,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
     return (
       <Card>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading requests...</p>
         </div>
       </Card>
@@ -159,7 +159,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
             {/* Customer Info */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold">
                   {request.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -168,7 +168,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                     {getReliabilityBadge(request.customerProfile)}
                     <button
                       onClick={() => viewCustomerProfile(request)}
-                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                      className="text-xs text-primary-400 hover:text-primary-500 font-medium"
                     >
                       View Profile
                     </button>
@@ -282,7 +282,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
             <div className="space-y-4">
               {/* Profile Header */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-2xl">
                   {selectedRequest.customerName.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -313,7 +313,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 </div>
                 <div className="p-4 bg-white border border-gray-200 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">Completion Rate</p>
-                  <p className="text-2xl font-bold text-indigo-600">{selectedRequest.customerProfile.stats.completionRate}%</p>
+                  <p className="text-2xl font-bold text-primary-400">{selectedRequest.customerProfile.stats.completionRate}%</p>
                 </div>
                 <div className="p-4 bg-white border border-gray-200 rounded-lg">
                   <p className="text-sm text-gray-500 mb-1">No-shows</p>

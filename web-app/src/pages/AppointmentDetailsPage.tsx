@@ -69,7 +69,7 @@ export default function AppointmentDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -130,14 +130,14 @@ export default function AppointmentDetailsPage() {
         {/* Customer Information */}
         <Card>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-5 h-5 text-indigo-600" />
+            <User className="w-5 h-5 text-primary-400" />
             Customer Information
           </h3>
           
           <div className="space-y-4">
             {/* Customer Profile */}
             <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-500 flex items-center justify-center text-white text-2xl font-bold">
                 {appointment.client.name.split(' ').map(n => n[0]).join('')}
               </div>
               <div className="flex-1">
@@ -168,7 +168,7 @@ export default function AppointmentDetailsPage() {
             {/* Customer Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
               <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">{appointment.client.totalBookings}</p>
+                <p className="text-2xl font-bold text-primary-400">{appointment.client.totalBookings}</p>
                 <p className="text-xs text-gray-600">Total Bookings</p>
               </div>
               <div className="text-center">
@@ -201,7 +201,7 @@ export default function AppointmentDetailsPage() {
         {/* Service Details */}
         <Card>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-indigo-600" />
+            <AlertCircle className="w-5 h-5 text-primary-400" />
             Service Details
           </h3>
           
@@ -235,7 +235,7 @@ export default function AppointmentDetailsPage() {
         {/* Location Details */}
         <Card>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-indigo-600" />
+            <MapPin className="w-5 h-5 text-primary-400" />
             Location Details
           </h3>
           
@@ -262,7 +262,7 @@ export default function AppointmentDetailsPage() {
         {/* Payment Information */}
         <Card>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-indigo-600" />
+            <DollarSign className="w-5 h-5 text-primary-400" />
             Payment Information
           </h3>
           
@@ -280,18 +280,18 @@ export default function AppointmentDetailsPage() {
               <span className="font-bold text-2xl text-green-600">${appointment.price.total.toFixed(2)}</span>
             </div>
             
-            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+            <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
               <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-indigo-900">Payment Status</p>
+                <p className="font-semibold text-primary-700">Payment Status</p>
                 <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-semibold">
                   ESCROWED
                 </span>
               </div>
-              <p className="text-sm text-indigo-800 mb-2">
+              <p className="text-sm text-primary-600 mb-2">
                 Funds are securely held in blockchain escrow. You'll receive payment after service completion.
               </p>
-              <div className="flex items-center gap-2 text-xs text-indigo-700">
-                <span className="font-mono bg-indigo-100 px-2 py-1 rounded">
+              <div className="flex items-center gap-2 text-xs text-primary-500">
+                <span className="font-mono bg-primary-100 px-2 py-1 rounded">
                   TX: {appointment.blockchainTx}
                 </span>
               </div>

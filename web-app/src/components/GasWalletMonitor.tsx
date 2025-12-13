@@ -125,7 +125,7 @@ export default function GasWalletMonitor() {
     return (
       <Card>
         <div className="flex items-center justify-center p-8">
-          <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+          <RefreshCw className="w-6 h-6 animate-spin text-primary-400" />
           <span className="ml-2 text-gray-600">Loading gas wallet data...</span>
         </div>
       </Card>
@@ -150,7 +150,7 @@ export default function GasWalletMonitor() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Zap className="w-7 h-7 text-indigo-600" />
+            <Zap className="w-7 h-7 text-primary-400" />
             Gas Wallet Monitor
           </h2>
           <p className="text-gray-600 mt-1">
@@ -238,7 +238,7 @@ export default function GasWalletMonitor() {
       {/* Usage Statistics */}
       <Card>
         <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-indigo-600" />
+          <TrendingUp className="w-5 h-5 text-primary-400" />
           Usage Statistics
         </h3>
         
@@ -251,11 +251,11 @@ export default function GasWalletMonitor() {
             <p className="text-2xl font-bold text-gray-900">{usage.average.toFixed(2)}</p>
             <p className="text-xs text-gray-600 mt-1">Daily Average (APT)</p>
           </div>
-          <div className="text-center p-4 bg-purple-50 rounded-lg">
+          <div className="text-center p-4 bg-primary-50 rounded-lg">
             <p className="text-2xl font-bold text-gray-900">{usage.daysTracked}</p>
             <p className="text-xs text-gray-600 mt-1">Days Tracked</p>
           </div>
-          <div className="text-center p-4 bg-indigo-50 rounded-lg">
+          <div className="text-center p-4 bg-primary-50 rounded-lg">
             <p className="text-2xl font-bold text-gray-900">
               {monitoring.running ? 'Active' : 'Inactive'}
             </p>
@@ -276,7 +276,7 @@ export default function GasWalletMonitor() {
                   <span className="text-xs text-gray-600 w-20">{date}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
                     <div
-                      className="bg-indigo-600 h-6 rounded-full transition-all flex items-center justify-end pr-2"
+                      className="bg-primary-400 h-6 rounded-full transition-all flex items-center justify-end pr-2"
                       style={{ width: `${Math.min(percentage, 100)}%` }}
                     >
                       <span className="text-xs font-semibold text-white">
@@ -294,7 +294,7 @@ export default function GasWalletMonitor() {
       {alerts.recent.length > 0 && (
         <Card>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Bell className="w-5 h-5 text-indigo-600" />
+            <Bell className="w-5 h-5 text-primary-400" />
             Recent Alerts ({alerts.count})
           </h3>
           
@@ -348,10 +348,10 @@ export default function GasWalletMonitor() {
       )}
 
       {/* Monitoring Info */}
-      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
+      <Card className="bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200">
         <div className="flex items-start gap-4">
-          <div className="bg-indigo-100 rounded-full p-3">
-            <CheckCircle className="w-6 h-6 text-indigo-600" />
+          <div className="bg-primary-100 rounded-full p-3">
+            <CheckCircle className="w-6 h-6 text-primary-400" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">

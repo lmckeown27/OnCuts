@@ -235,7 +235,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
         <div className="flex items-center gap-3">
           <button
             onClick={fetchRecentTransactions}
-            className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 text-sm font-medium text-primary-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5"
             title="Reload transactions"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +277,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                 </div>
                 
                 {tx.amount && (
-                  <div className="text-sm font-medium text-indigo-600 mb-1">
+                  <div className="text-sm font-medium text-primary-400 mb-1">
                     ${tx.amount.toFixed(2)}
                   </div>
                 )}
@@ -288,7 +288,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                       From:{' '}
                       <Link
                         to={`/admin/user/${tx.fromId}`}
-                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold"
+                        className="text-primary-400 hover:text-primary-600 hover:underline font-semibold"
                       >
                         {tx.fromName}
                       </Link>
@@ -301,7 +301,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
                       To:{' '}
                       <Link
                         to={`/admin/user/${tx.toId}`}
-                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-semibold"
+                        className="text-primary-400 hover:text-primary-600 hover:underline font-semibold"
                       >
                         {tx.toName}
                       </Link>
@@ -332,7 +332,7 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <button
             onClick={fetchRecentTransactions}
-            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-sm text-primary-400 hover:text-primary-500 font-medium"
           >
             Refresh Transactions
           </button>

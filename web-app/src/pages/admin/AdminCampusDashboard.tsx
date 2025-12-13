@@ -59,7 +59,7 @@ export const AdminCampusDashboard: React.FC = () => {
           <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
             <button
               onClick={() => navigate('/admin/campuses')}
-              className="hover:text-indigo-600"
+              className="hover:text-primary-400"
             >
               All Campuses
             </button>
@@ -109,8 +109,8 @@ export const AdminCampusDashboard: React.FC = () => {
 
           <div className="card">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-100 rounded-full p-3">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
+              <div className="bg-primary-100 rounded-full p-3">
+                <TrendingUp className="w-6 h-6 text-primary-400" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Bookings</p>
@@ -132,8 +132,8 @@ export const AdminCampusDashboard: React.FC = () => {
             onClick={() => navigate(`/admin/campus/${campusId}/barbers`)}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-indigo-100 rounded-full p-4">
-                <UserCheck className="w-8 h-8 text-indigo-600" />
+              <div className="bg-primary-100 rounded-full p-4">
+                <UserCheck className="w-8 h-8 text-primary-400" />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-gray-900">View Barbers</h3>

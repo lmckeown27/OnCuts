@@ -93,7 +93,7 @@ export const AdminDashboard: React.FC = () => {
             
             <div className="bg-white rounded-lg shadow p-6">
               <div className="text-sm font-medium text-gray-500 mb-1">Platform Fees</div>
-              <div className="text-3xl font-bold text-indigo-600">{stats.platform_fees_accumulated.toFixed(2)} APT</div>
+              <div className="text-3xl font-bold text-primary-400">{stats.platform_fees_accumulated.toFixed(2)} APT</div>
               <div className="text-xs text-gray-500 mt-1">
                 ≈ ${(stats.platform_fees_accumulated * 10).toFixed(2)} USD available
               </div>
@@ -142,11 +142,11 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Blockchain Info */}
-        <div className="mt-8 bg-indigo-50 border border-indigo-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-indigo-900 mb-2">
+        <div className="mt-8 bg-primary-50 border border-primary-200 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-primary-700 mb-2">
             Blockchain-First Architecture
           </h3>
-          <div className="text-sm text-indigo-700 space-y-1">
+          <div className="text-sm text-primary-500 space-y-1">
             <div>All data stored on-chain (Aptos)</div>
             <div>Decentralized file storage (IPFS)</div>
             <div>Custodial wallet service (Gas-free UX)</div>

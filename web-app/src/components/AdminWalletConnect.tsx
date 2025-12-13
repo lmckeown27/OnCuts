@@ -230,7 +230,7 @@ export const AdminWalletConnect: React.FC = () => {
               <button
                 onClick={() => handleConnect('petra')}
                 disabled={loading}
-                className="p-6 border-2 border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors disabled:opacity-50"
+                className="p-6 border-2 border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50"
               >
                 <div className="text-center">
                   <div className="text-4xl mb-2 font-bold text-blue-500">P</div>
@@ -245,7 +245,7 @@ export const AdminWalletConnect: React.FC = () => {
                 className="p-6 border-2 border-gray-300 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <div className="text-center">
-                  <div className="text-4xl mb-2 font-bold text-purple-500">M</div>
+                  <div className="text-4xl mb-2 font-bold text-primary-500">M</div>
                   <div className="font-semibold">Martian</div>
                   <div className="text-xs text-gray-500">Alternative</div>
                 </div>
@@ -254,7 +254,7 @@ export const AdminWalletConnect: React.FC = () => {
               <button
                 onClick={() => handleConnect('fewcha')}
                 disabled={loading}
-                className="p-6 border-2 border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors disabled:opacity-50"
+                className="p-6 border-2 border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors disabled:opacity-50"
               >
                 <div className="text-center">
                   <div className="text-4xl mb-2">🦄</div>
@@ -356,7 +356,7 @@ export const AdminWalletConnect: React.FC = () => {
             
             {/* Transfer Form */}
             {gasWallet && (
-              <div className="border-2 border-indigo-200 rounded-lg p-6 bg-indigo-50">
+              <div className="border-2 border-primary-200 rounded-lg p-6 bg-primary-50">
                 <h3 className="text-lg font-semibold mb-4">Transfer APT to Gas Wallet</h3>
                 
                 <div className="space-y-4">
@@ -372,7 +372,7 @@ export const AdminWalletConnect: React.FC = () => {
                       value={transferAmount}
                       onChange={(e) => setTransferAmount(e.target.value)}
                       placeholder="Enter amount"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <div className="mt-2 flex gap-2">
                       <button
@@ -405,7 +405,7 @@ export const AdminWalletConnect: React.FC = () => {
                   <button
                     onClick={handleTransfer}
                     disabled={loading || !transferAmount || parseFloat(transferAmount) <= 0 || parseFloat(transferAmount) > adminBalance}
-                    className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full px-6 py-3 bg-primary-400 text-white font-semibold rounded-lg hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {loading ? 'Processing...' : `Transfer ${transferAmount || '0'} APT`}
                   </button>

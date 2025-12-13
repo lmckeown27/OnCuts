@@ -190,7 +190,7 @@ export default function LiveTransactionFeed() {
     return (
       <Card>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400"></div>
         </div>
       </Card>
     );
@@ -214,7 +214,7 @@ export default function LiveTransactionFeed() {
         <Card>
           <div>
             <p className="text-sm text-gray-600">Total Transactions (24h)</p>
-            <p className="text-2xl font-bold text-indigo-600">
+            <p className="text-2xl font-bold text-primary-400">
               {stats.reduce((sum, s) => sum + s.transaction_count, 0)}
             </p>
           </div>
@@ -237,7 +237,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('all')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'all'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-primary-400 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -247,7 +247,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('aptos')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'aptos'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-primary-400 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -257,7 +257,7 @@ export default function LiveTransactionFeed() {
             onClick={() => setFilter('stripe')}
             className={`px-4 py-2 rounded-lg font-semibold ${
               filter === 'stripe'
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-primary-400 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >

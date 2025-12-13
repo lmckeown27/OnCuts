@@ -72,7 +72,7 @@ export default function ConsumerPage() {
                 onClick={() => setActiveTab('discovery')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'discovery'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -83,7 +83,7 @@ export default function ConsumerPage() {
                 onClick={() => setActiveTab('score')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'score'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -94,7 +94,7 @@ export default function ConsumerPage() {
                 onClick={() => setActiveTab('profile')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'profile'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -292,7 +292,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   {barber.specialties?.slice(0, 3).map((specialty, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full"
+                      className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"
                     >
                       {specialty}
                     </span>

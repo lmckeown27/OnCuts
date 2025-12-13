@@ -150,17 +150,17 @@ export default function BarberDashboardPage() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-700 text-sm font-medium">Growth</p>
-              <p className="text-3xl font-bold text-purple-900">
+              <p className="text-primary-500 text-sm font-medium">Growth</p>
+              <p className="text-3xl font-bold text-primary-700">
                 <TrendingUp className="w-6 h-6 inline mr-1" />
                 12%
               </p>
-              <p className="text-xs text-purple-600 mt-1">vs last {timeframe}</p>
+              <p className="text-xs text-primary-400 mt-1">vs last {timeframe}</p>
             </div>
-            <Award className="w-12 h-12 text-purple-600" />
+            <Award className="w-12 h-12 text-primary-400" />
           </div>
         </Card>
       </div>
@@ -287,15 +287,15 @@ export default function BarberDashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-primary-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <TrendingUp className="w-8 h-8 text-purple-600" />
+                <TrendingUp className="w-8 h-8 text-primary-400" />
                 <div>
                   <p className="font-semibold text-gray-900">Repeat Clients</p>
                   <p className="text-sm text-gray-600">Loyalty rate</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-purple-600">65%</p>
+              <p className="text-2xl font-bold text-primary-400">65%</p>
             </div>
           </div>
         </Card>

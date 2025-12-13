@@ -188,7 +188,7 @@ export function BlockchainErrorBoundary({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-primary-50 px-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 space-y-6">
             <div className="text-center">
               <svg className="mx-auto h-16 w-16 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

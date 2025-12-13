@@ -340,7 +340,7 @@ export default function GasWalletManager() {
                   placeholder="Auto-calculated if empty"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Leave empty to use estimated amount: {estimate?.amountNeededAPT.toFixed(6)} APT
@@ -385,9 +385,9 @@ export default function GasWalletManager() {
 
             {/* Transfer Details */}
             <div className="space-y-4 mb-6">
-              <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-indigo-300 rounded-lg">
-                <p className="text-sm font-semibold text-indigo-900 mb-2">Transfer Amount:</p>
-                <p className="text-3xl font-bold text-indigo-600">
+              <div className="p-4 bg-gradient-to-r from-primary-50 to-primary-50 border-2 border-primary-300 rounded-lg">
+                <p className="text-sm font-semibold text-primary-700 mb-2">Transfer Amount:</p>
+                <p className="text-3xl font-bold text-primary-400">
                   {selectedRequest.requested_amount_apt.toFixed(6)} APT
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
@@ -403,7 +403,7 @@ export default function GasWalletManager() {
                   </code>
                   <button
                     onClick={() => copyToClipboard(selectedRequest.gas_wallet_address, 'Address')}
-                    className="text-indigo-600 hover:text-indigo-800"
+                    className="text-primary-400 hover:text-primary-600"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
@@ -418,12 +418,12 @@ export default function GasWalletManager() {
               {/* Petra Wallet Instructions */}
               <div className="mb-4 p-4 border border-gray-300 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-semibold text-indigo-600">Option 1: Petra Wallet</h5>
+                  <h5 className="font-semibold text-primary-400">Option 1: Petra Wallet</h5>
                   <a
                     href="https://petra.app/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                    className="text-xs text-primary-400 hover:text-primary-600 flex items-center gap-1"
                   >
                     Install Petra <ExternalLink className="w-3 h-3" />
                   </a>
@@ -441,7 +441,7 @@ export default function GasWalletManager() {
 
               {/* Aptos CLI Instructions */}
               <div className="p-4 border border-gray-300 rounded-lg">
-                <h5 className="font-semibold text-indigo-600 mb-2">Option 2: Aptos CLI</h5>
+                <h5 className="font-semibold text-primary-400 mb-2">Option 2: Aptos CLI</h5>
                 <p className="text-sm text-gray-600 mb-2">Run this command:</p>
                 <div className="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
                   <code>
@@ -456,7 +456,7 @@ export default function GasWalletManager() {
                     `aptos account transfer --account YOUR_WALLET_PROFILE --receiver-account ${selectedRequest.gas_wallet_address} --amount ${convertAPTToOctas(selectedRequest.requested_amount_apt)}`,
                     'Command'
                   )}
-                  className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  className="mt-2 text-xs text-primary-400 hover:text-primary-600 flex items-center gap-1"
                 >
                   <Copy className="w-3 h-3" /> Copy Command
                 </button>
@@ -476,7 +476,7 @@ export default function GasWalletManager() {
                   placeholder="0xabc123def456..."
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 font-mono text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Copy from Petra wallet or CLI output
@@ -492,7 +492,7 @@ export default function GasWalletManager() {
                   placeholder="0x789abc..."
                   value={fromAddress}
                   onChange={(e) => setFromAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 font-mono text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 font-mono text-sm"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   The address you sent APT from

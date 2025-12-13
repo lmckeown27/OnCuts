@@ -130,7 +130,7 @@ export default function PaymentForm({
         </div>
         <div className="pt-2 border-t border-gray-200 flex justify-between">
           <span className="font-bold text-gray-900">Total</span>
-          <span className="font-bold text-xl text-indigo-600">${amount.toFixed(2)}</span>
+          <span className="font-bold text-xl text-primary-400">${amount.toFixed(2)}</span>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export default function PaymentForm({
               onClick={() => setPaymentMethod('card')}
               className={`p-4 border-2 rounded-lg flex items-center justify-center gap-2 transition-colors ${
                 paymentMethod === 'card'
-                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                  ? 'border-primary-400 bg-primary-50 text-primary-500'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -159,7 +159,7 @@ export default function PaymentForm({
               onClick={() => setPaymentMethod('saved')}
               className={`p-4 border-2 rounded-lg flex items-center justify-center gap-2 transition-colors ${
                 paymentMethod === 'saved'
-                  ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                  ? 'border-primary-400 bg-primary-50 text-primary-500'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
               disabled
@@ -182,7 +182,7 @@ export default function PaymentForm({
                 type="text"
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="John Doe"
                 required
               />
@@ -197,7 +197,7 @@ export default function PaymentForm({
                 type="text"
                 value={cardNumber}
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="4242 4242 4242 4242"
                 maxLength={19}
                 required
@@ -217,7 +217,7 @@ export default function PaymentForm({
                   type="text"
                   value={cardExpiry}
                   onChange={(e) => setCardExpiry(formatExpiry(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="MM / YY"
                   maxLength={7}
                   required
@@ -231,7 +231,7 @@ export default function PaymentForm({
                   type="text"
                   value={cardCvc}
                   onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, ''))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="123"
                   maxLength={4}
                   required
@@ -274,11 +274,11 @@ export default function PaymentForm({
         {/* Terms */}
         <p className="text-xs text-center text-gray-500 mt-4">
           By completing this payment, you agree to our{' '}
-          <a href="/terms" className="text-indigo-600 hover:underline">
+          <a href="/terms" className="text-primary-400 hover:underline">
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="/refund-policy" className="text-indigo-600 hover:underline">
+          <a href="/refund-policy" className="text-primary-400 hover:underline">
             Refund Policy
           </a>
         </p>

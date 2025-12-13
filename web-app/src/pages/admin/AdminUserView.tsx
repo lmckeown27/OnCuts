@@ -339,13 +339,13 @@ export default function AdminUserView() {
             <Card>
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="bg-indigo-100 rounded-full p-4">
-                    <User className="w-8 h-8 text-indigo-600" />
+                  <div className="bg-primary-100 rounded-full p-4">
+                    <User className="w-8 h-8 text-primary-400" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded">
+                      <span className="px-2 py-1 bg-primary-100 text-primary-600 text-xs font-semibold rounded">
                         {user.role.toUpperCase()}
                       </span>
                       {user.is_verified && (
@@ -418,8 +418,8 @@ export default function AdminUserView() {
                   </div>
                 )}
                 {user.total_spent !== undefined && (
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-purple-600 mx-auto mb-2" />
+                  <div className="text-center p-4 bg-primary-50 rounded-lg">
+                    <DollarSign className="w-6 h-6 text-primary-400 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-gray-900">${user.total_spent.toLocaleString()}</p>
                     <p className="text-xs text-gray-600">Total Spent</p>
                   </div>
@@ -439,7 +439,7 @@ export default function AdminUserView() {
                     {user.specialties.map((specialty) => (
                       <span
                         key={specialty}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-medium rounded-full"
+                        className="px-3 py-1 bg-primary-100 text-primary-600 text-sm font-medium rounded-full"
                       >
                         {specialty}
                       </span>

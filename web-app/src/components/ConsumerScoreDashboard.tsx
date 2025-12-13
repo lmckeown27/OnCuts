@@ -106,7 +106,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 95) return 'text-purple-600';
+    if (score >= 95) return 'text-primary-400';
     if (score >= 85) return 'text-yellow-600';
     if (score >= 70) return 'text-green-600';
     if (score >= 50) return 'text-blue-600';
@@ -115,7 +115,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
   };
 
   const getScoreBgColor = (score: number) => {
-    if (score >= 95) return 'bg-purple-50';
+    if (score >= 95) return 'bg-primary-50';
     if (score >= 85) return 'bg-yellow-50';
     if (score >= 70) return 'bg-green-50';
     if (score >= 50) return 'bg-blue-50';
@@ -275,9 +275,9 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
 
       {/* Path to Next Level */}
       {score.overall_score < 95 && (
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <Card className="bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Target className="w-5 h-5 text-purple-600" />
+            <Target className="w-5 h-5 text-primary-400" />
             Path to {score.overall_score >= 85 ? 'VIP Status' : 'Next Level'}
           </h3>
           <div className="space-y-4">
@@ -288,7 +288,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <div
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 h-3 rounded-full transition-all"
+                  className="bg-gradient-to-r from-primary-500 to-blue-500 h-3 rounded-full transition-all"
                   style={{ width: `${score.overall_score}%` }}
                 />
               </div>
@@ -303,7 +303,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
                   <li>• Book regularly (2x/month)</li>
                   <li>• Tip 15%+ on average</li>
                 </ul>
-                <div className="mt-3 p-3 bg-purple-100 rounded-lg">
+                <div className="mt-3 p-3 bg-primary-100 rounded-lg">
                   <strong>VIP Benefits:</strong> 10% discount, instant book everywhere, priority scheduling
                 </div>
               </div>
@@ -404,7 +404,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
             <div className="text-xs text-gray-600">Total Spent</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{score.metrics.avg_tip_percentage}%</div>
+            <div className="text-2xl font-bold text-primary-400">{score.metrics.avg_tip_percentage}%</div>
             <div className="text-xs text-gray-600">Avg Tip</div>
           </div>
         </div>
@@ -414,9 +414,9 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
       <Card className="bg-gray-50">
         <h3 className="text-lg font-semibold mb-3">Customer Grade Levels</h3>
         <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between p-2 rounded bg-purple-100">
+          <div className="flex items-center justify-between p-2 rounded bg-primary-100">
             <span>VIP Customer (95-100)</span>
-            <span className="text-xs text-purple-700">10% discount, instant book all</span>
+            <span className="text-xs text-primary-500">10% discount, instant book all</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-yellow-100">
             <span>🥇 Excellent (85-94)</span>

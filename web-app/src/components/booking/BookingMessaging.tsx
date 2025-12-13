@@ -92,7 +92,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
     return (
       <Card>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading messages...</p>
         </div>
       </Card>
@@ -102,7 +102,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
   return (
     <Card>
       <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-        <MessageSquare className="w-5 h-5 text-indigo-600" />
+        <MessageSquare className="w-5 h-5 text-primary-400" />
         <h3 className="font-semibold text-gray-900">Messages with {otherPartyName}</h3>
       </div>
 
@@ -125,7 +125,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
                 <div
                   className={`max-w-[70%] rounded-lg px-4 py-2 ${
                     isOwn
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary-400 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
@@ -137,7 +137,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
                   <p className="text-sm">{msg.message}</p>
                   <p
                     className={`text-xs mt-1 ${
-                      isOwn ? 'text-indigo-200' : 'text-gray-500'
+                      isOwn ? 'text-primary-200' : 'text-gray-500'
                     }`}
                   >
                     {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -160,7 +160,7 @@ export default function BookingMessaging({ bookingId, userId, userType, otherPar
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           disabled={sending}
         />
         <Button

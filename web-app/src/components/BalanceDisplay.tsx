@@ -24,7 +24,7 @@ const BalanceDisplay: React.FC<BalanceDisplayProps> = ({
       {/* Total Balance */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          <Wallet className="h-6 w-6 text-indigo-600 mr-2" />
+          <Wallet className="h-6 w-6 text-primary-400 mr-2" />
           <h3 className="text-lg font-semibold text-gray-900">
             Wallet Balance
           </h3>

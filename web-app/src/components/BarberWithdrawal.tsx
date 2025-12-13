@@ -176,7 +176,7 @@ export default function BarberWithdrawal({ barberId, stripeAccountId }: BarberWi
     return (
       <Card>
         <div className="flex items-center justify-center p-8">
-          <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+          <RefreshCw className="w-6 h-6 animate-spin text-primary-400" />
           <span className="ml-2 text-gray-600">Loading earnings...</span>
         </div>
       </Card>
@@ -187,8 +187,8 @@ export default function BarberWithdrawal({ barberId, stripeAccountId }: BarberWi
   if (!isOnboarded) {
     return (
       <Card className="text-center p-8">
-        <div className="bg-indigo-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-          <CreditCard className="w-8 h-8 text-indigo-600" />
+        <div className="bg-primary-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+          <CreditCard className="w-8 h-8 text-primary-400" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Setup Payouts</h2>
         <p className="text-gray-600 mb-6 max-w-md mx-auto">
@@ -256,7 +256,7 @@ export default function BarberWithdrawal({ barberId, stripeAccountId }: BarberWi
                   type="number"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="0.00"
                   min="0"
                   max={balance.available}

@@ -76,8 +76,8 @@ export default function BarberEarningsPage() {
 
           <Card>
             <div className="flex items-center gap-3">
-              <div className="bg-purple-100 rounded-full p-3">
-                <DollarSign className="w-6 h-6 text-purple-600" />
+              <div className="bg-primary-100 rounded-full p-3">
+                <DollarSign className="w-6 h-6 text-primary-400" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">This Month</p>
@@ -88,8 +88,8 @@ export default function BarberEarningsPage() {
 
           <Card>
             <div className="flex items-center gap-3">
-              <div className="bg-indigo-100 rounded-full p-3">
-                <TrendingUp className="w-6 h-6 text-indigo-600" />
+              <div className="bg-primary-100 rounded-full p-3">
+                <TrendingUp className="w-6 h-6 text-primary-400" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">All Time</p>
@@ -130,11 +130,11 @@ export default function BarberEarningsPage() {
         </Card>
 
         {/* How Payouts Work */}
-        <Card className="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
+        <Card className="mt-8 bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200">
           <h3 className="text-lg font-bold text-gray-900 mb-3">How Payouts Work</h3>
           <div className="space-y-3 text-sm text-gray-700">
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 1
               </span>
               <div>
@@ -143,7 +143,7 @@ export default function BarberEarningsPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 2
               </span>
               <div>
@@ -152,7 +152,7 @@ export default function BarberEarningsPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 3
               </span>
               <div>
@@ -161,7 +161,7 @@ export default function BarberEarningsPage() {
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <span className="flex-shrink-0 w-6 h-6 bg-indigo-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
+              <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">
                 4
               </span>
               <div>
@@ -170,8 +170,8 @@ export default function BarberEarningsPage() {
               </div>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t border-indigo-200">
-            <p className="text-xs text-indigo-700">
+          <div className="mt-4 pt-4 border-t border-primary-200">
+            <p className="text-xs text-primary-500">
               Platform absorbs all blockchain gas fees. You receive 95% of every transaction.
             </p>
           </div>

@@ -40,7 +40,7 @@ export default function BarberPage() {
                 onClick={() => setActiveTab('dashboard')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'dashboard'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -51,7 +51,7 @@ export default function BarberPage() {
                 onClick={() => setActiveTab('requests')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'requests'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -62,7 +62,7 @@ export default function BarberPage() {
                 onClick={() => setActiveTab('pricing')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'pricing'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -73,7 +73,7 @@ export default function BarberPage() {
                 onClick={() => setActiveTab('profile')}
                 className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'profile'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-primary-400 text-primary-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -129,8 +129,8 @@ function DashboardView() {
 
         <Card>
           <div className="flex items-center gap-4">
-            <div className="bg-purple-100 rounded-full p-3">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+            <div className="bg-primary-100 rounded-full p-3">
+              <TrendingUp className="w-6 h-6 text-primary-400" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Average Rating</p>
@@ -177,10 +177,10 @@ function DashboardView() {
             { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$55', status: 'pending' },
             { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$30', status: 'confirmed' },
           ].map((apt, idx) => (
-            <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-indigo-300 transition-colors">
+            <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="text-center">
-                  <p className="font-bold text-indigo-600">{apt.time}</p>
+                  <p className="font-bold text-primary-400">{apt.time}</p>
                   <span className={`text-xs px-2 py-1 rounded-full ${
                     apt.status === 'confirmed' 
                       ? 'bg-green-100 text-green-800' 

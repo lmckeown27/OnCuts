@@ -225,13 +225,13 @@ export default function AdminGasWalletPage() {
           </Card>
 
           {/* Days Remaining Card */}
-          <Card className="bg-gradient-to-br from-purple-50 to-purple-100">
+          <Card className="bg-gradient-to-br from-primary-50 to-primary-100">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-600 rounded-full p-3">
+              <div className="bg-primary-400 rounded-full p-3">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-sm text-purple-600 font-semibold">DAYS REMAINING</p>
+                <p className="text-sm text-primary-400 font-semibold">DAYS REMAINING</p>
                 <p className="text-2xl font-bold text-gray-900">{status?.daysRemaining || 'N/A'}</p>
                 <p className="text-xs text-gray-600 mt-1">at current usage rate</p>
               </div>
@@ -386,9 +386,9 @@ export default function AdminGasWalletPage() {
         </Card>
 
         {/* Future Options Recommendation */}
-        <Card className="mb-8 bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-200">
+        <Card className="mb-8 bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200">
           <div className="flex items-start gap-3 mb-4">
-            <Zap className="w-6 h-6 text-purple-600 mt-1 flex-shrink-0" />
+            <Zap className="w-6 h-6 text-primary-400 mt-1 flex-shrink-0" />
             <div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Recommended for Growing Platforms</h3>
               <p className="text-sm text-gray-700 mb-4">
@@ -399,7 +399,7 @@ export default function AdminGasWalletPage() {
 
           <div className="space-y-4">
             {/* Automated Top-Up */}
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
+            <div className="bg-white rounded-lg p-4 border border-primary-200">
               <div className="flex items-start gap-3">
                 <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
@@ -418,9 +418,9 @@ export default function AdminGasWalletPage() {
             </div>
 
             {/* Multi-Sig Treasury */}
-            <div className="bg-white rounded-lg p-4 border border-purple-200">
+            <div className="bg-white rounded-lg p-4 border border-primary-200">
               <div className="flex items-start gap-3">
-                <Shield className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                <Shield className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900 mb-1">Multi-Signature Treasury (Enterprise)</h4>
                   <p className="text-sm text-gray-600 mb-2">
@@ -437,7 +437,7 @@ export default function AdminGasWalletPage() {
             </div>
 
             {/* Implementation Note */}
-            <div className="pt-3 border-t border-purple-200">
+            <div className="pt-3 border-t border-primary-200">
               <p className="text-xs text-gray-600 italic">
                 💡 <strong>When to upgrade:</strong> Consider automated top-up when you have 100+ daily transactions, 
                 and multi-sig when your platform processes $10k+ daily volume or holds significant treasury reserves.

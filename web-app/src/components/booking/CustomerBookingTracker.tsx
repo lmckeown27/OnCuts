@@ -92,7 +92,7 @@ export default function CustomerBookingTracker({ customerId }: Props) {
     return (
       <Card>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading your bookings...</p>
         </div>
       </Card>
@@ -122,7 +122,7 @@ export default function CustomerBookingTracker({ customerId }: Props) {
               <div className="flex items-center gap-3 mb-3">
                 {getStatusBadge(booking.status)}
                 {booking.unreadMessages > 0 && (
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full">
+                  <span className="px-2 py-1 bg-primary-100 text-primary-600 text-xs font-semibold rounded-full">
                     {booking.unreadMessages} new message{booking.unreadMessages > 1 ? 's' : ''}
                   </span>
                 )}
@@ -168,7 +168,7 @@ export default function CustomerBookingTracker({ customerId }: Props) {
             <div className="flex md:flex-col gap-2">
               <button
                 onClick={() => openMessaging(booking)}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg font-medium transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-100 text-primary-500 hover:bg-primary-200 rounded-lg font-medium transition-colors"
               >
                 <MessageSquare className="w-4 h-4" />
                 Message

@@ -93,7 +93,7 @@ export default function BarberFilterQuestionnaire({
   };
 
   return (
-    <div className="sticky top-0 z-20 bg-gradient-to-br from-indigo-50 to-purple-50 pb-6 -mx-4 px-4 mb-8">
+    <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 pb-6 -mx-4 px-4 mb-8">
       <Card className="shadow-lg">
         <div className="space-y-6">
         {/* Header */}
@@ -103,19 +103,19 @@ export default function BarberFilterQuestionnaire({
           
           {/* Real-time Barber Count with Selected Filter Pills */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full font-semibold">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-500 rounded-full font-semibold">
               <span className="text-2xl">{availableCount}</span>
               <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
             </div>
             
             {/* Selected Filter Pills - Inline with Count */}
             {serviceType && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-medium">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
                 <Scissors className="w-3 h-3" />
                 <span>{serviceType}</span>
                 <button
                   onClick={() => handleServiceChange('')}
-                  className="hover:bg-indigo-700 rounded-full"
+                  className="hover:bg-primary-500 rounded-full"
                 >
                   ×
                 </button>
@@ -134,12 +134,12 @@ export default function BarberFilterQuestionnaire({
               </div>
             )}
             {location && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-full text-sm font-medium">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
                 <MapPin className="w-3 h-3" />
                 <span>{location}</span>
                 <button
                   onClick={() => { setLocation(null); setLocationDetails(''); onFilterChange({ serviceType, date, time, location: null, locationDetails: null }); }}
-                  className="hover:bg-purple-700 rounded-full"
+                  className="hover:bg-primary-500 rounded-full"
                 >
                   ×
                 </button>
@@ -154,7 +154,7 @@ export default function BarberFilterQuestionnaire({
           {!serviceType && (
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-center gap-2 text-gray-700">
-                <Scissors className="w-5 h-5 text-indigo-600" />
+                <Scissors className="w-5 h-5 text-primary-400" />
                 <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
               </div>
               
@@ -163,7 +163,7 @@ export default function BarberFilterQuestionnaire({
                   <button
                     key={service}
                     onClick={() => handleServiceChange(service)}
-                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all whitespace-nowrap flex-shrink-0"
+                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all whitespace-nowrap flex-shrink-0"
                   >
                     {service}
                   </button>
@@ -188,7 +188,7 @@ export default function BarberFilterQuestionnaire({
                     value={date || ''}
                     onChange={(e) => handleDateChange(e.target.value)}
                     min={getMinDate()}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
                 
@@ -198,7 +198,7 @@ export default function BarberFilterQuestionnaire({
                     type="time"
                     value={time || ''}
                     onChange={(e) => handleTimeChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -209,7 +209,7 @@ export default function BarberFilterQuestionnaire({
           {serviceType && date && time && !location && (
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-center gap-2 text-gray-700">
-                <MapPin className="w-5 h-5 text-purple-600" />
+                <MapPin className="w-5 h-5 text-primary-400" />
                 <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
               </div>
               
@@ -219,7 +219,7 @@ export default function BarberFilterQuestionnaire({
                     <button
                       key={loc}
                       onClick={() => handleLocationChange(loc)}
-                      className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-all"
+                      className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all"
                     >
                       {loc}
                     </button>
@@ -233,7 +233,7 @@ export default function BarberFilterQuestionnaire({
           {location && (
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-center gap-2 text-gray-700">
-                <MapPin className="w-5 h-5 text-purple-600" />
+                <MapPin className="w-5 h-5 text-primary-400" />
                 <label className="font-semibold text-lg">Specify the exact location</label>
               </div>
               <input
@@ -241,7 +241,7 @@ export default function BarberFilterQuestionnaire({
                 value={locationDetails}
                 onChange={(e) => handleLocationDetailsChange(e.target.value)}
                 placeholder="Building name, Room number, or specific area"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           )}

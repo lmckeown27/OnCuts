@@ -90,7 +90,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
             min="10"
             step="0.01"
             max={availableBalance}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
         <p className="mt-1 text-sm text-gray-500">
@@ -106,14 +106,14 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
           className={`
             w-full p-4 rounded-lg border-2 text-left transition-all
             ${selectedMethod === 'bank'
-              ? 'border-indigo-600 bg-indigo-50'
+              ? 'border-primary-400 bg-primary-50'
               : 'border-gray-200 hover:border-gray-300'
             }
           `}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start">
-              <Zap className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'bank' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <Zap className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'bank' ? 'text-primary-400' : 'text-gray-400'}`} />
               <div>
                 <div className="font-medium text-gray-900">Bank Transfer (Instant)</div>
                 <div className="text-sm text-gray-600 mt-1">
@@ -122,7 +122,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
               </div>
             </div>
             {selectedMethod === 'bank' && (
-              <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-primary-400 flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-white"></div>
               </div>
             )}
@@ -135,14 +135,14 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
           className={`
             w-full p-4 rounded-lg border-2 text-left transition-all
             ${selectedMethod === 'onchain'
-              ? 'border-indigo-600 bg-indigo-50'
+              ? 'border-primary-400 bg-primary-50'
               : 'border-gray-200 hover:border-gray-300'
             }
           `}
         >
           <div className="flex items-start justify-between">
             <div className="flex items-start">
-              <Clock className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'onchain' ? 'text-indigo-600' : 'text-gray-400'}`} />
+              <Clock className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'onchain' ? 'text-primary-400' : 'text-gray-400'}`} />
               <div>
                 <div className="font-medium text-gray-900">On-Chain (Batched)</div>
                 <div className="text-sm text-gray-600 mt-1">
@@ -154,7 +154,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
               </div>
             </div>
             {selectedMethod === 'onchain' && (
-              <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+              <div className="w-5 h-5 rounded-full bg-primary-400 flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-white"></div>
               </div>
             )}
@@ -173,7 +173,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
             value={destinationAddress}
             onChange={(e) => setDestinationAddress(e.target.value)}
             placeholder="0x..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
           />
         </div>
       )}

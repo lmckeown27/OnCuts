@@ -257,7 +257,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
           <h3 className="text-xl font-bold text-gray-900">Your Performance Score</h3>
           <button
             onClick={() => setShowBreakdown(!showBreakdown)}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1"
+            className="text-primary-400 hover:text-primary-500 text-sm font-medium flex items-center gap-1"
           >
             <Info className="w-4 h-4" />
             {showBreakdown ? 'Hide Details' : 'Show Details'}
@@ -318,7 +318,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div
-                  className="bg-purple-500 h-2.5 rounded-full transition-all"
+                  className="bg-primary-500 h-2.5 rounded-full transition-all"
                   style={{ width: `${performanceScore.demandScore}%` }}
                 ></div>
               </div>
@@ -334,7 +334,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
               <p><strong>Quality (70% weight):</strong> Based on your average rating and repeat customer rate</p>
               <p><strong>Reliability (20% weight):</strong> Based on your on-time percentage and low no-show rate</p>
               <p><strong>Demand (10% weight):</strong> Based on your booking volume compared to other barbers on campus</p>
-              <p className="text-indigo-600 font-medium mt-4">
+              <p className="text-primary-400 font-medium mt-4">
                 Performance Score = (Quality × 0.7) + (Reliability × 0.2) + (Demand × 0.1)
               </p>
             </div>

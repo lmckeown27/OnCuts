@@ -256,7 +256,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           onChange={(e) => setBio(e.target.value)}
           placeholder="Tell students about yourself, your style, and what makes you unique..."
           rows={5}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
           maxLength={500}
         />
         <p className="text-xs text-gray-500 mt-2">{bio.length}/500 characters</p>
@@ -273,7 +273,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
             value={instagramHandle}
             onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
             placeholder="yourusername"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             maxLength={30}
           />
         </div>
@@ -291,7 +291,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
             max="50"
             value={yearsExperience}
             onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)}
-            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
           />
           <span className="text-sm text-gray-600">years</span>
         </div>
@@ -309,7 +309,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
             onChange={(e) => setNewSpecialty(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleAddSpecialty()}
             placeholder="e.g., Taper Fades"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
           />
           <Button onClick={handleAddSpecialty} size="sm">
             <Plus className="w-4 h-4 mr-2" />
@@ -321,12 +321,12 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           {specialties.map((specialty, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm flex items-center gap-2"
+              className="px-3 py-1 bg-primary-100 text-primary-600 rounded-full text-sm flex items-center gap-2"
             >
               {specialty}
               <button
                 onClick={() => handleRemoveSpecialty(specialty)}
-                className="hover:text-indigo-600"
+                className="hover:text-primary-400"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -413,14 +413,14 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
               value={newService.name}
               onChange={(e) => setNewService({ ...newService, name: e.target.value })}
               placeholder="Service name"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
             />
             <input
               type="text"
               value={newService.description}
               onChange={(e) => setNewService({ ...newService, description: e.target.value })}
               placeholder="Description (optional)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
             />
             <input
               type="number"
@@ -429,7 +429,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
               value={newService.price || ''}
               onChange={(e) => setNewService({ ...newService, price: parseFloat(e.target.value) || 0 })}
               placeholder="Price ($)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
             />
             <input
               type="number"
@@ -438,7 +438,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
               value={newService.duration_minutes}
               onChange={(e) => setNewService({ ...newService, duration_minutes: parseInt(e.target.value) || 30 })}
               placeholder="Duration (min)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
             />
           </div>
           <Button onClick={handleAddService} size="sm">
@@ -471,7 +471,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           ))}
 
           {portfolio.length < 12 && (
-            <label className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-600 hover:bg-indigo-50 transition-colors">
+            <label className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
               <Upload className="w-8 h-8 text-gray-400 mb-2" />
               <span className="text-sm text-gray-600">Upload Image</span>
               <input
@@ -506,7 +506,7 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
               onChange={(e) => setInstantBookEnabled(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-400"></div>
           </label>
         </div>
       </Card>

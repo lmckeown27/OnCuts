@@ -271,7 +271,7 @@ export default function AdminCampusesPage() {
                   setSelectedCampus(null);
                   setSelectedView('campuses');
                 }}
-                className="hover:text-indigo-600"
+                className="hover:text-primary-400"
               >
                 All Campuses
               </button>
@@ -301,10 +301,10 @@ export default function AdminCampusesPage() {
             </div>
 
             {/* How Payments Work Section */}
-            <Card className="mb-8 bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
+            <Card className="mb-8 bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200">
               <div className="flex items-start gap-4">
-                <div className="bg-indigo-100 rounded-full p-3 flex-shrink-0">
-                  <DollarSign className="w-6 h-6 text-indigo-600" />
+                <div className="bg-primary-100 rounded-full p-3 flex-shrink-0">
+                  <DollarSign className="w-6 h-6 text-primary-400" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-900 mb-3">How Payments Work on CampusCuts</h3>
@@ -330,8 +330,8 @@ export default function AdminCampusesPage() {
                       <p>Barber can withdraw earnings to their bank account via Stripe Connect. Platform absorbs all blockchain gas fees.</p>
                     </div>
                     
-                    <div className="pt-3 border-t border-indigo-200">
-                      <p className="font-semibold text-indigo-900">All transactions are recorded on the Aptos blockchain for transparency and auditability.</p>
+                    <div className="pt-3 border-t border-primary-200">
+                      <p className="font-semibold text-primary-700">All transactions are recorded on the Aptos blockchain for transparency and auditability.</p>
                     </div>
                   </div>
                 </div>
@@ -346,8 +346,8 @@ export default function AdminCampusesPage() {
                   onClick={() => handleSelectCampus(campus)}
                 >
                   <div className="flex items-start gap-3 mb-4">
-                    <div className="bg-indigo-100 rounded-full p-3">
-                      <School className="w-6 h-6 text-indigo-600" />
+                    <div className="bg-primary-100 rounded-full p-3">
+                      <School className="w-6 h-6 text-primary-400" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900">{campus.name}</h3>
@@ -425,8 +425,8 @@ export default function AdminCampusesPage() {
 
               <Card>
                 <div className="flex items-center gap-4">
-                  <div className="bg-purple-100 rounded-full p-3">
-                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  <div className="bg-primary-100 rounded-full p-3">
+                    <TrendingUp className="w-6 h-6 text-primary-400" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total Bookings</p>
@@ -448,8 +448,8 @@ export default function AdminCampusesPage() {
                 onClick={() => setSelectedView('barbers')}
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="bg-indigo-100 rounded-full p-4">
-                    <UserCheck className="w-8 h-8 text-indigo-600" />
+                  <div className="bg-primary-100 rounded-full p-4">
+                    <UserCheck className="w-8 h-8 text-primary-400" />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">View Barbers</h3>
@@ -508,7 +508,7 @@ export default function AdminCampusesPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <Link
                           to={`/admin/user/${barber.id}`}
-                          className="text-lg font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                          className="text-lg font-bold text-primary-400 hover:text-primary-600 hover:underline"
                         >
                           {barber.name}
                         </Link>
@@ -522,7 +522,7 @@ export default function AdminCampusesPage() {
 
                       <div className="flex flex-wrap gap-2 mb-3">
                         {barber.specialties.map((specialty, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
+                          <span key={idx} className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full">
                             {specialty}
                           </span>
                         ))}
@@ -549,10 +549,10 @@ export default function AdminCampusesPage() {
                     </div>
 
                     {/* Performance Score Panel */}
-                    <div className="ml-6 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border-2 border-indigo-200 min-w-[280px]">
+                    <div className="ml-6 p-4 bg-gradient-to-br from-primary-50 to-primary-50 rounded-lg border-2 border-primary-200 min-w-[280px]">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold text-gray-900">Performance Score</h4>
-                        <Award className="w-5 h-5 text-indigo-600" />
+                        <Award className="w-5 h-5 text-primary-400" />
                       </div>
                       
                       <div className="text-center mb-4">
@@ -599,7 +599,7 @@ export default function AdminCampusesPage() {
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-purple-500 h-2 rounded-full"
+                              className="bg-primary-500 h-2 rounded-full"
                               style={{ width: `${barber.demand_score}%` }}
                             ></div>
                           </div>
@@ -661,7 +661,7 @@ export default function AdminCampusesPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <Link
                             to={`/admin/user/${student.id}`}
-                            className="font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                            className="font-medium text-primary-400 hover:text-primary-600 hover:underline"
                           >
                             {student.name}
                           </Link>

@@ -302,7 +302,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.01"
                         defaultValue={selectedMarket.basePrice}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="basePrice"
                       />
                     </div>
@@ -312,7 +312,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.01"
                         defaultValue={selectedMarket.averagePrice}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="averagePrice"
                       />
                     </div>
@@ -322,7 +322,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.01"
                         defaultValue={selectedMarket.premiumPriceCeiling}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="premiumCeiling"
                       />
                     </div>
@@ -339,7 +339,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.1"
                         defaultValue={selectedMarket.demandNormalizationFactor}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="demandFactor"
                       />
                       <p className="text-xs text-gray-500 mt-1">0.8-1.3 range</p>
@@ -350,7 +350,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.1"
                         defaultValue={selectedMarket.reviewWeightAdjustment}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="reviewWeight"
                       />
                       <p className="text-xs text-gray-500 mt-1">0.9-1.2 range</p>
@@ -361,7 +361,7 @@ export default function AdminMarketplacePage() {
                         type="number"
                         step="0.1"
                         defaultValue={selectedMarket.competitionIntensityScore}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         id="competitionIntensity"
                       />
                       <p className="text-xs text-gray-500 mt-1">0.7-1.5 range</p>
@@ -408,7 +408,7 @@ export default function AdminMarketplacePage() {
 
         {/* Info Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100">
+          <Card className="bg-gradient-to-br from-primary-50 to-primary-100">
             <h4 className="font-bold text-gray-900 mb-2">BQS Formula</h4>
             <p className="text-sm text-gray-700 font-mono">
               BQS = 0.45×R + 0.25×D + 0.15×P + 0.15×L

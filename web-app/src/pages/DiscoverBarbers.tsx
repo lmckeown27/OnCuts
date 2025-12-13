@@ -171,7 +171,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto"></div>
           <p className="mt-4 text-gray-600">Finding great barbers...</p>
         </div>
       </div>
@@ -190,7 +190,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -207,7 +207,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-600" />
+            <Users className="w-5 h-5 text-primary-400" />
             <h2 className="text-2xl font-bold text-gray-900">
               {filteredBarbers.length} {filteredBarbers.length === 1 ? 'Barber' : 'Barbers'} Available
             </h2>
@@ -232,7 +232,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           {filteredBarbers.map((barber) => (
             <Card key={barber.barberId} className="overflow-hidden hover:shadow-xl transition-shadow">
               {/* Profile Image Placeholder */}
-              <div className="h-48 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center relative">
+              <div className="h-48 bg-gradient-to-br from-primary-400 to-primary-400 flex items-center justify-center relative">
                 <div className="text-white text-6xl font-bold">
                   {barber.name.charAt(0)}
                 </div>
@@ -272,7 +272,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
                     {barber.specialties.slice(0, 3).map((specialty) => (
                       <span
                         key={specialty}
-                        className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium"
+                        className="px-2 py-1 bg-primary-100 text-primary-500 rounded text-xs font-medium"
                       >
                         {specialty}
                       </span>
@@ -349,7 +349,7 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
 
       <Card className="overflow-hidden">
         {/* Header */}
-        <div className="h-60 bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center relative">
+        <div className="h-60 bg-gradient-to-br from-primary-400 to-primary-400 flex items-center justify-center relative">
           <div className="text-white text-9xl font-bold">
             {barber.name.charAt(0)}
           </div>
@@ -391,7 +391,7 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
                 href={`https://instagram.com/${barber.instagramHandle}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 mt-3 text-sm text-gray-600 hover:text-indigo-600 transition-colors"
+                className="inline-flex items-center gap-2 mt-3 text-sm text-gray-600 hover:text-primary-400 transition-colors"
               >
                 <Instagram className="w-4 h-4" />
                 <span>@{barber.instagramHandle}</span>
@@ -406,7 +406,7 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
               {barber.specialties.map((specialty) => (
                 <span
                   key={specialty}
-                  className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-medium"
+                  className="px-4 py-2 bg-primary-100 text-primary-500 rounded-lg font-medium"
                 >
                   {specialty}
                 </span>
@@ -440,7 +440,7 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-indigo-600" />
+              <MessageSquare className="w-5 h-5 text-primary-400" />
               <div>
                 <p className="font-medium text-gray-900">Response Time</p>
                 <p className="text-sm text-gray-600">{barber.responseTime}</p>
@@ -549,7 +549,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <select
               value={formData.serviceType}
               onChange={(e) => setFormData({ ...formData, serviceType: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             >
               <option value="haircut">Haircut</option>
@@ -569,7 +569,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               min={getMinDate()}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
           </div>
@@ -583,7 +583,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               type="time"
               value={formData.time}
               onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
           </div>
@@ -596,7 +596,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <select
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-2"
               required
             >
               <option value="on-campus">On Campus</option>
@@ -608,7 +608,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               value={formData.locationDetails}
               onChange={(e) => setFormData({ ...formData, locationDetails: e.target.value })}
               placeholder="Specific location details (e.g., Building name, Room number)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
@@ -621,7 +621,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Tell the barber what style you're looking for, or any special requests..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               rows={4}
             />
           </div>

@@ -107,9 +107,9 @@ export default function BookingPaymentPage() {
             </div>
           </div>
 
-          <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg mb-6 text-sm">
-            <p className="text-indigo-900 font-medium mb-1">Funds Secured in Escrow</p>
-            <p className="text-indigo-700">
+          <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg mb-6 text-sm">
+            <p className="text-primary-700 font-medium mb-1">Funds Secured in Escrow</p>
+            <p className="text-primary-500">
               Your payment is held safely on the Aptos blockchain until service completion.
             </p>
           </div>
@@ -150,7 +150,7 @@ export default function BookingPaymentPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-400 rounded-full animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Processing Payment...</h2>
           <p className="text-gray-600">
             Securing your funds on the blockchain. This may take a moment.
@@ -208,15 +208,15 @@ export default function BookingPaymentPage() {
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-indigo-600">${bookingDetails.servicePrice.toFixed(2)}</span>
+                  <span className="text-primary-400">${bookingDetails.servicePrice.toFixed(2)}</span>
                 </div>
               </div>
             </Card>
 
             {/* How Escrow Works */}
-            <Card className="mt-4 bg-indigo-50 border-2 border-indigo-200">
-              <h3 className="text-sm font-bold text-indigo-900 mb-2">How Payment Works</h3>
-              <ul className="text-xs text-indigo-700 space-y-2">
+            <Card className="mt-4 bg-primary-50 border-2 border-primary-200">
+              <h3 className="text-sm font-bold text-primary-700 mb-2">How Payment Works</h3>
+              <ul className="text-xs text-primary-500 space-y-2">
                 <li className="flex items-start gap-2">
                   <span className="font-bold">1.</span>
                   <span>Payment held in blockchain escrow</span>

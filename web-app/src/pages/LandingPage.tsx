@@ -16,7 +16,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-primary-50 to-pink-50">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -37,17 +37,17 @@ export default function LandingPage() {
           {/* Platform Selection */}
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-20">
             {/* Web Version */}
-            <Card className="hover:shadow-2xl transition-shadow duration-300 cursor-pointer border-2 border-transparent hover:border-indigo-500"
+            <Card className="hover:shadow-2xl transition-shadow duration-300 cursor-pointer border-2 border-transparent hover:border-primary-500"
                   onClick={() => navigate('/web')}>
               <div className="text-center p-8">
-                <div className="bg-indigo-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                  <Monitor className="w-12 h-12 text-indigo-600" />
+                <div className="bg-primary-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                  <Monitor className="w-12 h-12 text-primary-400" />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Web Version</h2>
                 <p className="text-gray-600 mb-6">
                   Access CampusCuts from any browser. Perfect for desktop and laptop users who want the full experience.
                 </p>
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-lg py-4">
+                <Button className="w-full bg-primary-400 hover:bg-primary-500 text-lg py-4">
                   Launch Web App
                 </Button>
                 <p className="text-sm text-gray-500 mt-3">No installation required</p>
@@ -55,17 +55,17 @@ export default function LandingPage() {
             </Card>
 
             {/* Mobile App */}
-            <Card className="hover:shadow-2xl transition-shadow duration-300 cursor-pointer border-2 border-transparent hover:border-purple-500"
+            <Card className="hover:shadow-2xl transition-shadow duration-300 cursor-pointer border-2 border-transparent hover:border-primary-500"
                   onClick={() => navigate('/app')}>
               <div className="text-center p-8">
-                <div className="bg-purple-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                  <Smartphone className="w-12 h-12 text-purple-600" />
+                <div className="bg-primary-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+                  <Smartphone className="w-12 h-12 text-primary-400" />
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Mobile App</h2>
                 <p className="text-gray-600 mb-6">
                   Install CampusCuts on your phone for on-the-go access. Works offline and sends push notifications.
                 </p>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-lg py-4">
+                <Button className="w-full bg-primary-400 hover:bg-primary-500 text-lg py-4">
                   Download App
                 </Button>
                 <p className="text-sm text-gray-500 mt-3">iOS & Android compatible</p>
@@ -114,8 +114,8 @@ export default function LandingPage() {
               </Card>
 
               <Card className="text-center">
-                <div className="bg-indigo-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-indigo-600" />
+                <div className="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-primary-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Direct Connection</h3>
                 <p className="text-gray-600">
@@ -124,8 +124,8 @@ export default function LandingPage() {
               </Card>
 
               <Card className="text-center">
-                <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Star className="w-8 h-8 text-purple-600" />
+                <div className="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-8 h-8 text-primary-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Quality Focused</h3>
                 <p className="text-gray-600">
@@ -154,31 +154,31 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-12 max-w-5xl mx-auto">
               {/* For Students */}
               <div>
-                <h3 className="text-2xl font-bold text-indigo-600 mb-6">For Students</h3>
+                <h3 className="text-2xl font-bold text-primary-400 mb-6">For Students</h3>
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Browse Barbers</h4>
                       <p className="text-gray-600">Swipe through profiles, see ratings, portfolios, and Instagram.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Send Booking Request</h4>
                       <p className="text-gray-600">Choose date, time, and location. Message the barber directly.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Get Your Cut</h4>
                       <p className="text-gray-600">Meet at the agreed location. Payment processes automatically upon completion.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-indigo-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Leave a Review</h4>
                       <p className="text-gray-600">Your verified review helps build the barber's reputation and helps other students.</p>
@@ -189,31 +189,31 @@ export default function LandingPage() {
 
               {/* For Barbers */}
               <div>
-                <h3 className="text-2xl font-bold text-purple-600 mb-6">For Barbers</h3>
+                <h3 className="text-2xl font-bold text-primary-400 mb-6">For Barbers</h3>
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Create Your Profile</h4>
                       <p className="text-gray-600">Showcase your skills, set your prices, link your Instagram.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Review Requests</h4>
                       <p className="text-gray-600">See customer reliability scores. Accept or decline requests.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Complete Service</h4>
                       <p className="text-gray-600">Provide quality service. Mark booking as complete.</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
+                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
                     <div>
                       <h4 className="font-semibold text-gray-900">Get Paid Instantly</h4>
                       <p className="text-gray-600">Receive 95% of the payment immediately. No waiting periods or hidden fees.</p>
@@ -227,8 +227,8 @@ export default function LandingPage() {
           {/* Value Proposition */}
           <div className="text-center mb-12 max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8">
-              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50">
-                <h3 className="text-3xl font-bold text-purple-600 mb-2">For Barbers</h3>
+              <Card className="bg-gradient-to-br from-primary-50 to-primary-50">
+                <h3 className="text-3xl font-bold text-primary-400 mb-2">For Barbers</h3>
                 <p className="text-5xl font-bold text-gray-900 mb-2">Keep 95%</p>
                 <p className="text-gray-600">
                   Most platforms take 20-30%. We only charge 5% so you can earn what you deserve while charging fair prices.
@@ -251,14 +251,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 onClick={() => navigate('/web')}
-                className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 py-4"
+                className="bg-primary-400 hover:bg-primary-500 text-lg px-8 py-4"
               >
                 <Monitor className="w-5 h-5 mr-2" />
                 Launch Web Version
               </Button>
               <Button 
                 onClick={() => navigate('/app')}
-                className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-4"
+                className="bg-primary-400 hover:bg-primary-500 text-lg px-8 py-4"
               >
                 <Smartphone className="w-5 h-5 mr-2" />
                 Download Mobile App
