@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, DollarSign, TrendingUp, User, LayoutDashboard, Award, Inbox } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -8,14 +8,27 @@ import BarberPricingDashboard from '../components/BarberPricingDashboard';
 import BarberBookingRequests from '../components/booking/BarberBookingRequests';
 import { CampusCutsLogo } from '@assets';
 
-type TabType = 'dashboard' | 'requests' | 'pricing' | 'profile';
-
 export default function BarberPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showPricingDashboard, setShowPricingDashboard] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Mock barber ID - in production this would come from auth
   const barberId = 'barber-1';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -27,78 +40,113 @@ export default function BarberPage() {
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
             </div>
-            <Button onClick={() => navigate('/web')} variant="secondary" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Roles
-            </Button>
-          </div>
+            
+            {/* Profile Dropdown */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                  B
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+              </button>
 
-          {/* Tabs */}
-          <div className="mt-4 border-b border-gray-200">
-            <div className="flex gap-4">
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'dashboard'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <LayoutDashboard className="w-4 h-4 inline mr-2" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab('requests')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'requests'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Inbox className="w-4 h-4 inline mr-2" />
-                Booking Requests
-              </button>
-              <button
-                onClick={() => setActiveTab('pricing')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'pricing'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Award className="w-4 h-4 inline mr-2" />
-                Performance & Pricing
-              </button>
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'profile'
-                    ? 'border-primary-400 text-primary-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <User className="w-4 h-4 inline mr-2" />
-                Manage Profile
-              </button>
+              {showProfileDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <button
+                    onClick={() => {
+                      setShowProfileEditor(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Settings className="w-4 h-4 text-gray-500" />
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPricingDashboard(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Award className="w-4 h-4 text-gray-500" />
+                    Performance & Pricing
+                  </button>
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      navigate('/web');
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <LogOut className="w-4 h-4 text-gray-500" />
+                    Back to Roles
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'requests' && <BarberBookingRequests barberId={barberId} />}
-        {activeTab === 'pricing' && <BarberPricingDashboard barberId={barberId} />}
-        {activeTab === 'profile' && <BarberProfileEditor barberId={barberId} />}
+        <DashboardView navigate={navigate} barberId={barberId} />
       </div>
+
+      {/* Profile Editor Modal */}
+      {showProfileEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+              <button
+                onClick={() => setShowProfileEditor(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <BarberProfileEditor barberId={barberId} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pricing Dashboard Modal */}
+      {showPricingDashboard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Performance & Pricing</h2>
+              <button
+                onClick={() => setShowPricingDashboard(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <BarberPricingDashboard barberId={barberId} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function DashboardView() {
-  const navigate = useNavigate();
-  
+interface DashboardViewProps {
+  navigate: any;
+  barberId: string;
+}
+
+function DashboardView({ navigate, barberId }: DashboardViewProps) {
   return (
     <>
       {/* Stats Cards */}
@@ -166,6 +214,11 @@ function DashboardView() {
           </div>
         </div>
       </Card>
+
+      {/* Booking Requests - Integrated */}
+      <div className="mb-6">
+        <BarberBookingRequests barberId={barberId} />
+      </div>
 
       {/* Upcoming Appointments */}
       <Card className="mb-6">
