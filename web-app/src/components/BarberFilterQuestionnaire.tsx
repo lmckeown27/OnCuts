@@ -160,12 +160,12 @@ export default function BarberFilterQuestionnaire({
                 <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {availableServices.map((service) => (
                   <button
                     key={service}
                     onClick={() => handleServiceChange(service)}
-                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all"
+                    className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-all whitespace-nowrap flex-shrink-0"
                   >
                     {service}
                   </button>
