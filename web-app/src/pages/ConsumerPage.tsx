@@ -191,6 +191,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     setFilterCriteria(filters);
   };
 
+  const clearFilters = () => {
+    setFilterCriteria({
+      serviceType: null,
+      date: null,
+      time: null,
+      location: null,
+      locationDetails: null,
+    });
+  };
+
   const availableServices = [
     'Haircut',
     'Fade',
