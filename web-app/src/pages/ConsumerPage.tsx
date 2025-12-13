@@ -330,7 +330,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Empty State */}
       {filteredBarbers.length === 0 && (
         <div className="text-center py-12">
-          <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <UsersIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No barbers found</h3>
           <p className="text-gray-600 mb-4">Try adjusting your filters or search query</p>
           <Button onClick={clearFilters} variant="secondary">
