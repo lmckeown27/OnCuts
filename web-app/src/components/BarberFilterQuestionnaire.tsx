@@ -149,7 +149,7 @@ export default function BarberFilterQuestionnaire({
         </div>
 
         {/* Active Question - Only show current question */}
-        <div className="min-h-[200px]">
+        <div>
           {/* Question 1: Service Type (default view) */}
           {!serviceType && (
             <div className="space-y-3 animate-fade-in">
