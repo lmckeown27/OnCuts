@@ -37,20 +37,23 @@ interface Props {
   barberId: string;
 }
 
-// Available service types
+// Available service types aligned with "Earn More, Lower Prices" model
+// Budget tier (~$22): Basic services
+// Standard tier (~$28): Most haircuts
+// Premium tier ($35-$45): Specialized services
 const AVAILABLE_SERVICES: ServiceType[] = [
-  { id: 'haircut', name: 'Haircut', description: 'Basic haircut service', basePrice: 25 },
-  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 30 },
-  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Complete haircut with fade', basePrice: 35 },
-  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 15 },
-  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Simple buzz cut', basePrice: 20 },
+  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Simple buzz cut', basePrice: 22 },
+  { id: 'line-up', name: 'Line Up', description: 'Hairline and edge cleanup', basePrice: 22 },
+  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 22 },
+  { id: 'haircut', name: 'Haircut', description: 'Basic haircut service', basePrice: 28 },
   { id: 'taper', name: 'Taper', description: 'Tapered haircut', basePrice: 28 },
-  { id: 'line-up', name: 'Line Up', description: 'Hairline and edge cleanup', basePrice: 18 },
-  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 22 },
-  { id: 'design', name: 'Design/Art', description: 'Custom hair designs', basePrice: 40 },
-  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 50 },
-  { id: 'color', name: 'Color Treatment', description: 'Hair coloring service', basePrice: 60 },
-  { id: 'womens-cut', name: "Women's Cut", description: 'Womens haircut service', basePrice: 45 },
+  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28 },
+  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35 },
+  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Complete haircut with fade', basePrice: 35 },
+  { id: 'design', name: 'Design/Art', description: 'Custom hair designs', basePrice: 38 },
+  { id: 'womens-cut', name: "Women's Cut", description: 'Womens haircut service', basePrice: 40 },
+  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45 },
+  { id: 'color', name: 'Color Treatment', description: 'Hair coloring service', basePrice: 45 },
 ];
 
 export default function BarberServiceSpecialties({ barberId }: Props) {
@@ -138,6 +141,36 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Earnings Banner */}
+      <Card className="bg-green-50 border-green-200 mb-4">
+        <div className="flex items-start gap-3">
+          <TrendingUp className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-2">You Keep 95% of Every Dollar</h3>
+            <div className="text-sm text-gray-700 space-y-2">
+              <div className="grid grid-cols-3 gap-4 my-3">
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">$22 Service</p>
+                  <p className="text-lg font-bold text-green-600">You Earn: $20.90</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">$28 Service</p>
+                  <p className="text-lg font-bold text-green-600">You Earn: $26.60</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">$35 Service</p>
+                  <p className="text-lg font-bold text-green-600">You Earn: $33.25</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600">
+                At traditional shops, barbers earn 40-60% (typically $14-$21 per $35 haircut). 
+                On CampusCuts, you keep 95% with just a 5% platform fee. No overhead costs to subsidize!
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* Info Banner */}
       <Card className="bg-primary-50 border-primary-200">
         <div className="flex items-start gap-3">

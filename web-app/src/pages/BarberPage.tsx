@@ -254,10 +254,10 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
             <div className="space-y-3">
               {[
                 { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-                { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$20', status: 'confirmed' },
-                { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$55', status: 'pending' },
-                { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$30', status: 'confirmed' },
-                { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$30', status: 'confirmed' },
+                { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$22', status: 'confirmed' },
+                { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$45', status: 'pending' },
+                { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
+                { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$28', status: 'confirmed' },
               ].map((apt, idx) => (
                 <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
                   <div className="flex items-center gap-4">
@@ -314,7 +314,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
                           <span className="text-gray-900">Client Name</span>
                           <span className="text-gray-500">• Haircut</span>
                         </div>
-                        <span className="font-semibold text-green-600">$30</span>
+                        <span className="font-semibold text-green-600">$28</span>
                       </div>
                     ))}
                   </div>

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram, Users } from 'lucide-react';
+import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram, Users, DollarSign, TrendingDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
@@ -69,7 +69,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           totalBookings: 450,
           verified: true,
           specialties: ['Fades', 'Tapers', 'Beard Trim'],
-          priceRange: '$25-$40',
+          priceRange: '$28-$35',
           location: 'Cal Poly SLO',
           availability: 'Available this week',
           responseTime: 'Usually responds in 2 hours',
@@ -85,7 +85,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           totalBookings: 320,
           verified: true,
           specialties: ['Creative Cuts', 'Color', 'Styling'],
-          priceRange: '$30-$50',
+          priceRange: '$35-$45',
           location: 'Cal Poly SLO',
           availability: 'Available today',
           responseTime: 'Usually responds in 1 hour',
@@ -101,7 +101,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           totalBookings: 250,
           verified: false,
           specialties: ['Classic Cuts', 'Hot Towel Shave', 'Lineup'],
-          priceRange: '$20-$35',
+          priceRange: '$22-$28',
           location: 'Cal Poly SLO',
           availability: 'Available tomorrow',
           responseTime: 'Usually responds in 3 hours',
@@ -197,6 +197,42 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Discover Barbers</h1>
           <p className="text-gray-600">Answer a few questions to find the perfect match</p>
         </div>
+
+        {/* Pricing Education Banner */}
+        <Card className="bg-gradient-to-r from-blue-50 to-green-50 border-2 border-green-200 mb-6">
+          <div className="flex items-start gap-4">
+            <div className="bg-white rounded-full p-3 shadow-sm">
+              <TrendingDown className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                Save 20% Compared to Traditional Barbershops
+                <DollarSign className="w-5 h-5 text-green-600" />
+              </h3>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">Budget Services</p>
+                  <p className="text-xl font-bold text-green-600">$22</p>
+                  <p className="text-xs text-gray-500">Buzz cuts, line-ups, trim</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">Standard Haircuts</p>
+                  <p className="text-xl font-bold text-green-600">$28</p>
+                  <p className="text-xs text-gray-500">Most popular option</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center border border-green-200">
+                  <p className="text-xs text-gray-500 mb-1">Premium Services</p>
+                  <p className="text-xl font-bold text-green-600">$35-$45</p>
+                  <p className="text-xs text-gray-500">Fades, color, specialty</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700">
+                <strong>Why so affordable?</strong> Traditional shops charge $35+ and barbers only keep 40-60%. 
+                We eliminated the middleman—barbers keep 95%, so they can charge less while earning more!
+              </p>
+            </div>
+          </div>
+        </Card>
 
         {/* Filter Questionnaire */}
         <BarberFilterQuestionnaire
