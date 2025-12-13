@@ -91,8 +91,9 @@ export default function BarberFilterQuestionnaire({
   };
 
   return (
-    <Card className="mb-8 sticky top-4 z-10 shadow-lg">
-      <div className="space-y-6">
+    <div className="sticky top-0 z-20 bg-gradient-to-br from-indigo-50 to-purple-50 pb-6 -mx-4 px-4 mb-8">
+      <Card className="shadow-lg">
+        <div className="space-y-6">
         {/* Header */}
         <div className="text-center pb-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
@@ -221,8 +222,8 @@ export default function BarberFilterQuestionnaire({
             </div>
           </div>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
