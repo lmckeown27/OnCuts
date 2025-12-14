@@ -299,53 +299,65 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
         </div>
 
         {/* Daily View */}
-        {scheduleView === 'daily' && (
-          <div>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Today - Friday, January 12, 2025</h3>
-              <p className="text-sm text-gray-600">8 appointments</p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-                { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-                { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$45', status: 'pending' },
-                { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
-                { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$28', status: 'confirmed' },
-              ].map((apt, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="text-center min-w-[80px]">
-                      <p className="font-bold text-primary-400">{apt.time}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        apt.status === 'confirmed' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {apt.status}
-                      </span>
-                    </div>
-                    <div className="h-12 w-px bg-gray-300"></div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{apt.client}</p>
-                      <p className="text-sm text-gray-600">{apt.service}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-green-600 mb-1">{apt.price}</p>
-                    <Button 
-                      size="sm" 
-                      variant="secondary"
-                      onClick={() => navigate(`/barber/appointment/${apt.id}`)}
-                    >
-                      View Details
-                    </Button>
-                  </div>
+        {scheduleView === 'daily' && (() => {
+          const dailyAppointments = [
+            { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+            { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' },
+            { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$45', status: 'pending' },
+            { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
+            { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$28', status: 'confirmed' },
+          ];
+
+          return (
+            <div>
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Today - Friday, January 12, 2025</h3>
+                <p className="text-sm text-gray-600">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
+              </div>
+              {dailyAppointments.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
+                  <p className="text-gray-600">You have no appointments scheduled for today.</p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3">
+                  {dailyAppointments.map((apt, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center min-w-[80px]">
+                          <p className="font-bold text-primary-400">{apt.time}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            apt.status === 'confirmed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {apt.status}
+                          </span>
+                        </div>
+                        <div className="h-12 w-px bg-gray-300"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{apt.client}</p>
+                          <p className="text-sm text-gray-600">{apt.service}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600 mb-1">{apt.price}</p>
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => navigate(`/barber/appointment/${apt.id}`)}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Weekly View */}
         {scheduleView === 'weekly' && (
