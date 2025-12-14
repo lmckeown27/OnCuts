@@ -5,7 +5,6 @@
  * - Profile photo
  * - Bio/description
  * - Specialties
- * - Years of experience
  * - Availability settings
  * - Instant booking toggle
  */
@@ -33,7 +32,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   const [instagramHandle, setInstagramHandle] = useState('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [newSpecialty, setNewSpecialty] = useState('');
-  const [yearsExperience, setYearsExperience] = useState(0);
   const [instantBookEnabled, setInstantBookEnabled] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string>('');
 
@@ -51,7 +49,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setSpecialties(data.specialties || []);
-      setYearsExperience(data.years_experience || 0);
       setInstantBookEnabled(data.instant_book_enabled || false);
       setProfilePhoto(data.profile_photo_url || '');
       
@@ -71,7 +68,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
         bio,
         instagram_handle: instagramHandle,
         specialties,
-        years_experience: yearsExperience,
         instant_book_enabled: instantBookEnabled,
       };
 
@@ -176,23 +172,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           />
         </div>
         <p className="text-xs text-gray-500 mt-2">Your Instagram handle without the @</p>
-      </Card>
-
-      {/* Years of Experience */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Experience</h3>
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Years of Experience:</label>
-          <input
-            type="number"
-            min="0"
-            max="50"
-            value={yearsExperience}
-            onChange={(e) => setYearsExperience(parseInt(e.target.value) || 0)}
-            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-          />
-          <span className="text-sm text-gray-600">years</span>
-        </div>
       </Card>
 
       {/* Specialties */}
