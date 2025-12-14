@@ -4,7 +4,6 @@
  * Allows students to customize their profile information:
  * - Profile photo
  * - Name (first, last)
- * - Username
  * - Bio/About
  * - Phone number
  * - Campus (read-only, set during registration)
@@ -34,7 +33,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   // Profile form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
@@ -64,7 +62,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       // Populate form fields
       setFirstName(data.first_name || '');
       setLastName(data.last_name || '');
-      setUsername(data.username || '');
       setBio(data.bio || '');
       setPhone(data.phone || '');
       setProfilePhoto(data.profile_picture_url || '');
@@ -96,7 +93,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       const updateData = {
         first_name: firstName,
         last_name: lastName,
-        username,
         bio,
         phone,
       };
@@ -306,20 +302,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="@username"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Optional - For reviews and comments</p>
               </div>
 
               <div>
