@@ -339,19 +339,74 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
                 </div>
               ))}
               {/* Calendar days */}
-              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                <div
-                  key={day}
-                  className={`aspect-square p-2 rounded-lg border ${
-                    day === 12 
-                      ? 'bg-primary-400 text-white border-primary-500' 
-                      : 'bg-gray-50 border-gray-200 hover:border-primary-300'
-                  } cursor-pointer transition-colors`}
-                >
-                  <div className="text-sm font-semibold">{day}</div>
-                  <div className="text-xs mt-1">{Math.floor(Math.random() * 10)} apts</div>
-                </div>
-              ))}
+              {(() => {
+                // Mock appointment data for each day
+                const monthAppointments: { [day: number]: string[] } = {
+                  1: ['John Doe', 'Sarah Miller'],
+                  2: ['Mike Smith'],
+                  3: ['Chris Lee'],
+                  4: [],
+                  5: ['David Brown', 'James Wilson', 'Robert Taylor', 'Michael Davis', 'William Anderson', 'Richard Thomas', 'Joseph Jackson', 'Thomas White'],
+                  6: ['Jennifer Harris', 'Linda Martin', 'Patricia Thompson'],
+                  7: ['Mary Garcia', 'Barbara Martinez', 'Elizabeth Robinson', 'Susan Clark', 'Jessica Rodriguez', 'Karen Lewis'],
+                  8: ['Nancy Lee', 'Lisa Walker', 'Betty Hall', 'Margaret Allen', 'Sandra Young', 'Ashley Hernandez', 'Donna King', 'Carol Wright'],
+                  9: ['Michelle Lopez', 'Emily Hill'],
+                  10: ['Daniel Scott', 'Matthew Green', 'Anthony Adams', 'Mark Baker'],
+                  11: ['Donald Nelson', 'Steven Carter', 'Paul Mitchell', 'Andrew Perez', 'Joshua Roberts', 'Kenneth Turner', 'Kevin Phillips', 'Brian Campbell', 'George Parker'],
+                  12: ['Edward Evans', 'Ronald Edwards', 'Timothy Collins', 'Jason Stewart', 'Jeffrey Morris', 'Ryan Rogers'],
+                  13: ['Jacob Reed', 'Gary Cook', 'Nicholas Morgan', 'Eric Bell', 'Jonathan Murphy', 'Stephen Bailey', 'Larry Rivera', 'Justin Cooper', 'Scott Richardson'],
+                  14: ['Brandon Cox', 'Benjamin Howard', 'Samuel Ward', 'Frank Torres'],
+                  15: ['Raymond Peterson', 'Gregory Gray', 'Alexander Ramirez', 'Patrick James', 'Jack Watson', 'Dennis Brooks', 'Jerry Kelly', 'Tyler Sanders', 'Aaron Price'],
+                  16: ['Jose Bennett', 'Adam Wood', 'Henry Barnes', 'Nathan Ross', 'Douglas Henderson', 'Zachary Coleman', 'Peter Jenkins', 'Kyle Perry'],
+                  17: [],
+                  18: ['Walter Powell', 'Ethan Long', 'Jeremy Patterson', 'Harold Hughes', 'Keith Flores', 'Christian Washington'],
+                  19: ['Roger Butler', 'Noah Simmons', 'Gerald Foster', 'Carl Gonzales'],
+                  20: ['Terry Bryant', 'Sean Alexander', 'Austin Russell', 'Arthur Griffin', 'Lawrence Diaz', 'Jesse Hayes', 'Dylan Myers', 'Bryan Ford', 'Joe Hamilton'],
+                  21: ['Jordan Graham'],
+                  22: ['Billy Sullivan', 'Albert Wallace', 'Bruce Woods', 'Willie Cole', 'Gabriel West', 'Logan Jordan', 'Alan Owens', 'Juan Reynolds'],
+                  23: ['Wayne Fisher', 'Roy Ellis', 'Ralph Gibson', 'Randy Hunt'],
+                  24: ['Eugene Crawford', 'Vincent Black', 'Russell Daniels', 'Louis Palmer', 'Philip Mills', 'Bobby Nichols', 'Johnny Grant', 'Bradley Knight', 'Howard Ferguson'],
+                  25: ['Shawn Boyd', 'Harry Rose'],
+                  26: ['Carlos Stone', 'Jimmy Hawkins', 'Antonio Dunn', 'Bryan Perkins', 'Albert Hudson', 'Jonathan Spencer'],
+                  27: ['Craig Gardner', 'Philip Webb', 'Fred Gibson', 'Ernest Walsh', 'Todd Larson', 'Jesse Ramos'],
+                  28: ['Eddie Burton', 'Leonard Hicks', 'Danny Crawford', 'Sean Henry', 'Ronnie Boyd', 'Francis Mason', 'Curtis Dixon', 'Tony Fox'],
+                  29: ['Vernon Burns', 'Joel Gordon', 'Melvin Wagner'],
+                  30: [],
+                  31: ['Stanley Fields', 'Leslie Berry'],
+                };
+
+                return Array.from({ length: 31 }, (_, i) => {
+                  const day = i + 1;
+                  const appointments = monthAppointments[day] || [];
+                  
+                  return (
+                    <div
+                      key={day}
+                      className={`aspect-square p-2 rounded-lg border overflow-hidden ${
+                        day === 12 
+                          ? 'bg-primary-400 text-white border-primary-500' 
+                          : 'bg-gray-50 border-gray-200 hover:border-primary-300'
+                      } cursor-pointer transition-colors`}
+                    >
+                      <div className="text-sm font-semibold mb-1">{day}</div>
+                      <div className="text-xs space-y-0.5 overflow-hidden">
+                        {appointments.length === 0 ? (
+                          <div className="text-gray-400">No apts</div>
+                        ) : appointments.length === 1 ? (
+                          <div className="truncate">{appointments[0]}</div>
+                        ) : (
+                          <>
+                            <div className="truncate">{appointments[0]}</div>
+                            <div className={day === 12 ? 'text-white/80' : 'text-gray-500'}>
+                              +{appointments.length - 1} more
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </div>
           </div>
         )}
