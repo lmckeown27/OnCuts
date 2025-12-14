@@ -254,11 +254,8 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
   };
 
   const handleDayClick = (day: number) => {
-    const appointments = getAppointmentsForDay(day);
-    if (appointments.length > 0) {
-      setSelectedDay(day);
-      setShowDayModal(true);
-    }
+    setSelectedDay(day);
+    setShowDayModal(true);
   };
 
   return (
@@ -497,42 +494,50 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
               </div>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
-              <div className="space-y-3">
-                {getAppointmentsForDay(selectedDay).map((apt, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="text-center min-w-[80px]">
-                        <p className="font-bold text-primary-400">{apt.time}</p>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          apt.status === 'confirmed' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {apt.status}
-                        </span>
+              {getAppointmentsForDay(selectedDay).length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
+                  <p className="text-gray-600">You have no appointments scheduled for this day.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {getAppointmentsForDay(selectedDay).map((apt, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="text-center min-w-[80px]">
+                          <p className="font-bold text-primary-400">{apt.time}</p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            apt.status === 'confirmed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {apt.status}
+                          </span>
+                        </div>
+                        <div className="h-12 w-px bg-gray-300"></div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{apt.client}</p>
+                          <p className="text-sm text-gray-600">{apt.service}</p>
+                        </div>
                       </div>
-                      <div className="h-12 w-px bg-gray-300"></div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{apt.client}</p>
-                        <p className="text-sm text-gray-600">{apt.service}</p>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600 mb-1">{apt.price}</p>
+                        <Button 
+                          size="sm" 
+                          variant="secondary"
+                          onClick={() => {
+                            setShowDayModal(false);
+                            navigate(`/barber/appointment/${apt.time}`);
+                          }}
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-green-600 mb-1">{apt.price}</p>
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        onClick={() => {
-                          setShowDayModal(false);
-                          navigate(`/barber/appointment/${apt.time}`);
-                        }}
-                      >
-                        View Details
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
