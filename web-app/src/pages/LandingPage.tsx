@@ -27,7 +27,7 @@ export default function LandingPage() {
               CampusCuts
             </h1>
             <p className="text-3xl md:text-4xl font-bold text-primary-400 mb-3">
-              Earn More, Lower Prices
+              Earn More, Pay Less
             </p>
             <p className="text-xl md:text-2xl text-gray-700 mb-4">
               Barbers earn 50% more. Students save 20%. Everyone wins.
@@ -151,11 +151,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Economic Comparison - The Math Behind "Earn More, Lower Prices" */}
+          {/* Economic Comparison - The Math Behind "Earn More, Pay Less" */}
           <div className="mb-20">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                Earn More, Lower Prices
+                Earn More, Pay Less
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 See how CampusCuts transforms traditional barber economics to benefit everyone

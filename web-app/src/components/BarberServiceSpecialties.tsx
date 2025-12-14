@@ -37,7 +37,7 @@ interface Props {
   barberId: string;
 }
 
-// Available service types aligned with "Earn More, Lower Prices" model
+// Available service types aligned with "Earn More, Pay Less" model
 // Budget tier ($23): Basic services (barber earns $21.85, beating traditional $21 max)
 // Standard tier (~$28): Most haircuts
 // Premium tier ($35-$45): Specialized services
