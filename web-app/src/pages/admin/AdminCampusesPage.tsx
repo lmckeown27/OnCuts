@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { School, Users, UserCheck, TrendingUp, DollarSign, Award, ChevronDown, Activity, Fuel, Shield, LogOut } from 'lucide-react';
+import { School, Users, UserCheck, TrendingUp, DollarSign, Award } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import Loading from '../../components/Loading';
-import { CampusCutsLogo } from '@assets';
+import AdminHeader from '../../components/AdminHeader';
 import RealtimeTransactionFeed from '../../components/RealtimeTransactionFeed';
 
 type Campus = {
@@ -49,20 +49,6 @@ export default function AdminCampusesPage() {
   const [selectedView, setSelectedView] = useState<'campuses' | 'barbers' | 'students'>('campuses');
   const [selectedCampus, setSelectedCampus] = useState<Campus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Mock data for campuses
   const campuses: Campus[] = [
@@ -264,96 +250,13 @@ export default function AdminCampusesPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
-              <h1 className="text-2xl font-bold text-gray-900">Campus Management</h1>
-            </div>
-            
-            {/* Admin Profile Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  A
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
-              </button>
+      <AdminHeader title="Campus Management" />
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <p className="text-xs text-gray-500 uppercase font-semibold">Admin Tools</p>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/admin/system-health');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Activity className="w-4 h-4 text-green-600" />
-                    System Health Monitor
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/admin/gas-wallet');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Fuel className="w-4 h-4 text-orange-600" />
-                    Gas Wallet Monitor
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/admin/marketplace');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                    Marketplace Engine
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/admin/fraud');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Shield className="w-4 h-4 text-red-600" />
-                    Fraud Detection
-                  </button>
-                  
-                  <div className="border-t border-gray-200 my-1"></div>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/web');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <LogOut className="w-4 h-4 text-gray-500" />
-                    Back to Roles
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Breadcrumb */}
-          {selectedCampus && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+      {/* Breadcrumb - Inside separate container */}
+      {selectedCampus && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
               <button
                 onClick={() => {
                   setSelectedCampus(null);
@@ -374,9 +277,9 @@ export default function AdminCampusesPage() {
                 </>
               )}
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">

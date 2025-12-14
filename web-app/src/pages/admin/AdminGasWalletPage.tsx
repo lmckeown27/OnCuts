@@ -5,11 +5,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Fuel, AlertTriangle, TrendingDown, Calendar, Wallet, Info, Zap, Shield } from 'lucide-react';
+import { Fuel, AlertTriangle, TrendingDown, Calendar, Wallet, Info, Zap, Shield } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
-import { CampusCutsLogo } from '@assets';
+import AdminHeader from '../../components/AdminHeader';
 import axios from 'axios';
 import { useDirectWallet } from '../../contexts/DirectWalletContext';
 import toast from 'react-hot-toast';
@@ -176,20 +175,7 @@ export default function AdminGasWalletPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
-              <h1 className="text-2xl font-bold text-gray-900">Gas Wallet Monitor</h1>
-            </div>
-            <Button onClick={() => navigate('/admin')} variant="secondary" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AdminHeader title="Gas Wallet Monitor" />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
