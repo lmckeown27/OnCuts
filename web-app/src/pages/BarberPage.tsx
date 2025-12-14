@@ -203,6 +203,63 @@ interface DashboardViewProps {
 
 function DashboardView({ navigate, barberId }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showDayModal, setShowDayModal] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setShowDayModal(false);
+        setSelectedDay(null);
+      }
+    };
+
+    if (showDayModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDayModal]);
+
+  // Mock detailed appointment data by day
+  const getAppointmentsForDay = (day: number) => {
+    const appointments: { [day: number]: Array<{ time: string; client: string; service: string; price: string; status: string }> } = {
+      1: [
+        { time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { time: '2:00 PM', client: 'Sarah Miller', service: 'Full Service', price: '$45', status: 'confirmed' },
+      ],
+      2: [{ time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' }],
+      3: [{ time: '3:00 PM', client: 'Chris Lee', service: 'Haircut', price: '$28', status: 'pending' }],
+      5: [
+        { time: '9:00 AM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { time: '10:00 AM', client: 'James Wilson', service: 'Fade', price: '$30', status: 'confirmed' },
+        { time: '11:00 AM', client: 'Robert Taylor', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { time: '1:00 PM', client: 'Michael Davis', service: 'Full Service', price: '$45', status: 'confirmed' },
+        { time: '2:30 PM', client: 'William Anderson', service: 'Beard Trim', price: '$23', status: 'confirmed' },
+        { time: '3:30 PM', client: 'Richard Thomas', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { time: '4:30 PM', client: 'Joseph Jackson', service: 'Fade', price: '$30', status: 'confirmed' },
+        { time: '5:30 PM', client: 'Thomas White', service: 'Lineup', price: '$15', status: 'confirmed' },
+      ],
+      12: [
+        { time: '10:00 AM', client: 'Edward Evans', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { time: '11:30 AM', client: 'Ronald Edwards', service: 'Beard Trim', price: '$23', status: 'confirmed' },
+        { time: '1:00 PM', client: 'Timothy Collins', service: 'Full Service', price: '$45', status: 'pending' },
+        { time: '2:30 PM', client: 'Jason Stewart', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { time: '4:00 PM', client: 'Jeffrey Morris', service: 'Fade', price: '$30', status: 'confirmed' },
+        { time: '5:00 PM', client: 'Ryan Rogers', service: 'Haircut', price: '$28', status: 'confirmed' },
+      ],
+    };
+    return appointments[day] || [];
+  };
+
+  const handleDayClick = (day: number) => {
+    const appointments = getAppointmentsForDay(day);
+    if (appointments.length > 0) {
+      setSelectedDay(day);
+      setShowDayModal(true);
+    }
+  };
 
   return (
     <>
@@ -382,6 +439,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
                   return (
                     <div
                       key={day}
+                      onClick={() => handleDayClick(day)}
                       className={`aspect-square p-2 rounded-lg border overflow-hidden ${
                         day === 12 
                           ? 'bg-primary-400 text-white border-primary-500' 
@@ -411,6 +469,74 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
           </div>
         )}
       </Card>
+
+      {/* Day Detail Modal */}
+      {showDayModal && selectedDay !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div ref={modalRef} className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-primary-400 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">January {selectedDay}, 2025</h2>
+                  <p className="text-white/80">
+                    {getAppointmentsForDay(selectedDay).length} appointment{getAppointmentsForDay(selectedDay).length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDayModal(false);
+                    setSelectedDay(null);
+                  }}
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+              <div className="space-y-3">
+                {getAppointmentsForDay(selectedDay).map((apt, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="text-center min-w-[80px]">
+                        <p className="font-bold text-primary-400">{apt.time}</p>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          apt.status === 'confirmed' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {apt.status}
+                        </span>
+                      </div>
+                      <div className="h-12 w-px bg-gray-300"></div>
+                      <div>
+                        <p className="font-semibold text-gray-900">{apt.client}</p>
+                        <p className="text-sm text-gray-600">{apt.service}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600 mb-1">{apt.price}</p>
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        onClick={() => {
+                          setShowDayModal(false);
+                          navigate(`/barber/appointment/${apt.time}`);
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
