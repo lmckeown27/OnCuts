@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, DollarSign, Award, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown } from 'lucide-react';
-import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
@@ -277,7 +276,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           return (
             <Card
               key={barber.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
+              className="cursor-pointer hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col"
               onClick={() => navigate(`/student/barbers/${barber.id}`)}
             >
               {/* Portfolio Image with Name Overlay */}
@@ -302,7 +301,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               </div>
 
               {/* Barber Info */}
-              <div>
+              <div className="flex-1 flex flex-col">
 
                 {/* Rating & Bookings */}
                 <div className="flex items-center gap-2 mt-1 mb-2">
@@ -329,7 +328,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 </div>
 
                 {/* Price & Experience */}
-                <div className="flex items-center gap-3 text-sm text-gray-600 mb-3">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
                   {lowestPrice && (
                     <div className="flex items-center gap-1">
                       <DollarSign className="w-4 h-4" />
@@ -341,14 +340,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <span>{barber.years_experience} yrs</span>
                   </div>
                 </div>
-
-                {/* Book Button */}
-                <Button className="w-full mt-2" onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/student/barbers/${barber.id}`);
-                }}>
-                  View Profile
-                </Button>
               </div>
             </Card>
           );
