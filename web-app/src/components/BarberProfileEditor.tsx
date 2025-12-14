@@ -5,7 +5,6 @@
  * - Profile photo
  * - Bio/description
  * - Specialties
- * - Services & pricing
  * - Portfolio images
  * - Years of experience
  * - Availability settings
@@ -13,7 +12,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Plus, Save, Image as ImageIcon, DollarSign, Clock, Star, Trash2 } from 'lucide-react';
+import { Upload, X, Plus, Save, Image as ImageIcon, Star } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -35,19 +34,10 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   const [instagramHandle, setInstagramHandle] = useState('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [newSpecialty, setNewSpecialty] = useState('');
-  const [services, setServices] = useState<Service[]>([]);
   const [yearsExperience, setYearsExperience] = useState(0);
   const [instantBookEnabled, setInstantBookEnabled] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
-  
-  // New service form
-  const [newService, setNewService] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    duration_minutes: 30,
-  });
 
   useEffect(() => {
     loadBarberProfile();
@@ -63,7 +53,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setSpecialties(data.specialties || []);
-      setServices(data.pricing || []);
       setYearsExperience(data.years_experience || 0);
       setInstantBookEnabled(data.instant_book_enabled || false);
       setProfilePhoto(data.profile_photo_url || '');
@@ -85,7 +74,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
         bio,
         instagram_handle: instagramHandle,
         specialties,
-        pricing: services,
         years_experience: yearsExperience,
         instant_book_enabled: instantBookEnabled,
       };
@@ -119,46 +107,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
 
   const handleRemoveSpecialty = (specialty: string) => {
     setSpecialties(specialties.filter(s => s !== specialty));
-  };
-
-  const handleAddService = () => {
-    if (!newService.name.trim()) {
-      toast.error('Please enter a service name');
-      return;
-    }
-
-    if (newService.price <= 0) {
-      toast.error('Please enter a valid price');
-      return;
-    }
-
-    const service: Service = {
-      name: newService.name.trim(),
-      description: newService.description.trim(),
-      price: newService.price,
-      duration_minutes: newService.duration_minutes,
-    };
-
-    setServices([...services, service]);
-    setNewService({
-      name: '',
-      description: '',
-      price: 0,
-      duration_minutes: 30,
-    });
-  };
-
-  const handleRemoveService = (index: number) => {
-    setServices(services.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateService = (index: number, field: keyof Service, value: any) => {
-    const updatedServices = [...services];
-    updatedServices[index] = {
-      ...updatedServices[index],
-      [field]: value,
-    };
-    setServices(updatedServices);
   };
 
   const handleUploadPortfolio = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -335,116 +283,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           {specialties.length === 0 && (
             <p className="text-sm text-gray-500">No specialties added yet</p>
           )}
-        </div>
-      </Card>
-
-      {/* Services & Pricing */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Services & Pricing</h3>
-        <p className="text-sm text-gray-600 mb-4">Add the services you offer and their prices</p>
-
-        {/* Existing Services */}
-        <div className="space-y-3 mb-6">
-          {services.map((service, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Service Name</label>
-                  <input
-                    type="text"
-                    value={service.name}
-                    onChange={(e) => handleUpdateService(index, 'name', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-                  <input
-                    type="text"
-                    value={service.description || ''}
-                    onChange={(e) => handleUpdateService(index, 'description', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Price ($)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={service.price}
-                    onChange={(e) => handleUpdateService(index, 'price', parseFloat(e.target.value))}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                  />
-                </div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Duration (min)</label>
-                    <input
-                      type="number"
-                      min="15"
-                      step="15"
-                      value={service.duration_minutes || 30}
-                      onChange={(e) => handleUpdateService(index, 'duration_minutes', parseInt(e.target.value))}
-                      className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleRemoveService(index)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          {services.length === 0 && (
-            <p className="text-sm text-gray-500">No services added yet</p>
-          )}
-        </div>
-
-        {/* Add New Service */}
-        <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg">
-          <h4 className="font-medium text-sm mb-3">Add New Service</h4>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-            <input
-              type="text"
-              value={newService.name}
-              onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-              placeholder="Service name"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-            />
-            <input
-              type="text"
-              value={newService.description}
-              onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-              placeholder="Description (optional)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-            />
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={newService.price || ''}
-              onChange={(e) => setNewService({ ...newService, price: parseFloat(e.target.value) || 0 })}
-              placeholder="Price ($)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-            />
-            <input
-              type="number"
-              min="15"
-              step="15"
-              value={newService.duration_minutes}
-              onChange={(e) => setNewService({ ...newService, duration_minutes: parseInt(e.target.value) || 30 })}
-              placeholder="Duration (min)"
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-            />
-          </div>
-          <Button onClick={handleAddService} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Service
-          </Button>
         </div>
       </Card>
 
