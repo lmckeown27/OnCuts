@@ -9,7 +9,7 @@
  * Filters barbers in real-time as user answers
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Scissors, Calendar, MapPin } from 'lucide-react';
 import Card from './Card';
 import type { FilterCriteria } from '../types/barber-filters';
@@ -30,6 +30,27 @@ export default function BarberFilterQuestionnaire({
   const [time, setTime] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [locationDetails, setLocationDetails] = useState<string>('');
+  const [hideHeader, setHideHeader] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Track scroll direction to hide/show header
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Hide header when scrolling down past 100px, show when scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setHideHeader(true);
+      } else if (currentScrollY < lastScrollY) {
+        setHideHeader(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   const handleServiceChange = (service: string) => {
     setServiceType(service);
@@ -96,8 +117,12 @@ export default function BarberFilterQuestionnaire({
     <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 pb-6 -mx-4 px-4 mb-8">
       <Card className="shadow-lg rounded-xl">
         <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center pb-4 border-b border-gray-200">
+        {/* Header - Hides on scroll down */}
+        <div 
+          className={`text-center pb-4 border-b border-gray-200 transition-all duration-300 ease-in-out overflow-hidden ${
+            hideHeader ? 'max-h-0 opacity-0 pb-0 border-0 mb-0' : 'max-h-96 opacity-100'
+          }`}
+        >
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
           <p className="text-sm text-gray-600 mb-3">Answer a few questions to see barbers who match your needs</p>
           
@@ -149,7 +174,7 @@ export default function BarberFilterQuestionnaire({
         </div>
 
         {/* Active Question - Only show current question */}
-        <div>
+        <div className={hideHeader ? 'pt-0' : ''}>
           {/* Question 1: Service Type (default view) */}
           {!serviceType && (
             <div className="space-y-3 animate-fade-in">
