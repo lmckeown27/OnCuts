@@ -5,7 +5,6 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 // Landing & Role Selection
 import LandingPage from './pages/LandingPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
-import AdminDashboardMain from './pages/admin/AdminDashboardMain';
 import AdminCampusesPage from './pages/admin/AdminCampusesPage';
 import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
 import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
@@ -41,8 +40,7 @@ function AppContent() {
             <Route path="/app" element={<RoleSelectionPage platform="app" />} />
           
           {/* Admin Routes */}
-          <Route path="/admin" element={<AdminDashboardMain />} />
-          <Route path="/admin/campuses" element={<AdminCampusesPage />} />
+          <Route path="/admin" element={<AdminCampusesPage />} />
           <Route path="/admin/system-health" element={<AdminSystemHealthPage />} />
           <Route path="/admin/gas-wallet" element={<AdminGasWalletPage />} />
           <Route path="/admin/marketplace" element={<AdminMarketplacePage />} />
