@@ -95,8 +95,8 @@ export default function BarberFilterQuestionnaire({
   return (
     <>
       {/* Header Section - Scrolls away normally */}
-      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pt-4 pb-6 mb-4">
-        <Card className="shadow-lg rounded-xl">
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pt-4 pb-4">
+        <Card className="shadow-lg rounded-t-xl rounded-b-none">
           <div className="text-center py-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
             <p className="text-sm text-gray-600 mb-4">Answer a few questions to see barbers who match your needs</p>
@@ -112,7 +112,7 @@ export default function BarberFilterQuestionnaire({
 
       {/* Questionnaire Section - Stays sticky at top */}
       <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pb-6 mb-8">
-        <Card className="shadow-lg rounded-xl">
+        <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
           {/* Selected Filter Pills */}
           {(serviceType || (date && time) || location) && (
             <div className="flex flex-wrap items-center justify-center gap-2 pb-4 mb-4 border-b border-gray-200">
