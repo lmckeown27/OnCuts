@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, DollarSign, Award, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
@@ -279,7 +279,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               className="cursor-pointer hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col"
               onClick={() => navigate(`/student/barbers/${barber.id}`)}
             >
-              {/* Portfolio Image with Name Overlay */}
+              {/* Portfolio Image with Name & Price Overlays */}
               <div className="relative mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
                 {barber.portfolio && barber.portfolio.length > 0 ? (
                   <img
@@ -292,12 +292,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <UsersIcon className="w-12 h-12 text-gray-400" />
                   </div>
                 )}
-                {/* Name Overlay */}
+                {/* Name Overlay - Top */}
                 <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-3">
                   <h3 className="text-lg font-bold text-white">
                     {barber.user?.first_name} {barber.user?.last_name}
                   </h3>
                 </div>
+                {/* Price Overlay - Bottom Left */}
+                {lowestPrice && (
+                  <div className="absolute bottom-0 left-0 bg-black/70 backdrop-blur-sm px-3 py-2 rounded-tr-lg">
+                    <div className="flex items-center gap-1 text-white">
+                      <DollarSign className="w-4 h-4" />
+                      <span className="font-semibold text-sm">From ${lowestPrice}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Barber Info */}
@@ -327,19 +336,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   ))}
                 </div>
 
-                {/* Price & Experience */}
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  {lowestPrice && (
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="w-4 h-4" />
-                      <span>From ${lowestPrice}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <Award className="w-4 h-4" />
-                    <span>{barber.years_experience} yrs</span>
+                {/* Instagram Handle (if available) */}
+                {barber.instagram_handle && (
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Instagram className="w-4 h-4" />
+                    <span>@{barber.instagram_handle}</span>
                   </div>
-                </div>
+                )}
               </div>
             </Card>
           );
