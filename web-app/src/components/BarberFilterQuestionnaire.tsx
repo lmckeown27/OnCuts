@@ -9,7 +9,7 @@
  * Filters barbers in real-time as user answers
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Scissors, Calendar, MapPin } from 'lucide-react';
 import Card from './Card';
 import type { FilterCriteria } from '../types/barber-filters';
@@ -30,40 +30,6 @@ export default function BarberFilterQuestionnaire({
   const [time, setTime] = useState<string | null>(null);
   const [location, setLocation] = useState<string | null>(null);
   const [locationDetails, setLocationDetails] = useState<string>('');
-  const [hideHeader, setHideHeader] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  // Track scroll direction to hide/show header with throttling
-  useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentScrollY = window.scrollY;
-          
-          // Only update if scroll difference is significant (prevents glitching)
-          if (Math.abs(currentScrollY - lastScrollY) > 10) {
-            // Hide header when scrolling down past 150px, show when scrolling up
-            if (currentScrollY > lastScrollY && currentScrollY > 150) {
-              setHideHeader(true);
-            } else if (currentScrollY < lastScrollY - 5) {
-              setHideHeader(false);
-            }
-            
-            setLastScrollY(currentScrollY);
-          }
-          
-          ticking = false;
-        });
-
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const handleServiceChange = (service: string) => {
     setServiceType(service);
@@ -127,69 +93,70 @@ export default function BarberFilterQuestionnaire({
   };
 
   return (
-    <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 pb-6 -mx-4 px-4 mb-8">
-      <Card className="shadow-lg rounded-xl">
-        <div className="space-y-6">
-        {/* Header - Hides on scroll down */}
-        <div 
-          className={`text-center transition-all duration-500 ease-in-out ${
-            hideHeader 
-              ? 'max-h-0 opacity-0 pb-0 mb-0 overflow-hidden pointer-events-none' 
-              : 'max-h-96 opacity-100 pb-4 mb-0 border-b border-gray-200'
-          }`}
-        >
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
-          <p className="text-sm text-gray-600 mb-3">Answer a few questions to see barbers who match your needs</p>
-          
-          {/* Real-time Barber Count with Selected Filter Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
+    <>
+      {/* Header Section - Scrolls away normally */}
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pt-4 pb-6 mb-4">
+        <Card className="shadow-lg rounded-xl">
+          <div className="text-center py-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
+            <p className="text-sm text-gray-600 mb-4">Answer a few questions to see barbers who match your needs</p>
+            
+            {/* Real-time Barber Count */}
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-500 rounded-full font-semibold">
               <span className="text-2xl">{availableCount}</span>
               <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
             </div>
-            
-            {/* Selected Filter Pills - Inline with Count */}
-            {serviceType && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
-                <Scissors className="w-3 h-3" />
-                <span>{serviceType}</span>
-                <button
-                  onClick={() => handleServiceChange('')}
-                  className="hover:bg-primary-500 rounded-full"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {date && time && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium">
-                <Calendar className="w-3 h-3" />
-                <span>{date} at {time}</span>
-                <button
-                  onClick={() => { setDate(null); setTime(null); onFilterChange({ serviceType, date: null, time: null, location, locationDetails }); }}
-                  className="hover:bg-green-700 rounded-full"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {location && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
-                <MapPin className="w-3 h-3" />
-                <span>{location}</span>
-                <button
-                  onClick={() => { setLocation(null); setLocationDetails(''); onFilterChange({ serviceType, date, time, location: null, locationDetails: null }); }}
-                  className="hover:bg-primary-500 rounded-full"
-                >
-                  ×
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+        </Card>
+      </div>
 
-        {/* Active Question - Only show current question */}
-        <div className={hideHeader ? 'pt-0' : ''}>
+      {/* Questionnaire Section - Stays sticky at top */}
+      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pb-6 mb-8">
+        <Card className="shadow-lg rounded-xl">
+          {/* Selected Filter Pills */}
+          {(serviceType || (date && time) || location) && (
+            <div className="flex flex-wrap items-center justify-center gap-2 pb-4 mb-4 border-b border-gray-200">
+              {serviceType && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
+                  <Scissors className="w-3 h-3" />
+                  <span>{serviceType}</span>
+                  <button
+                    onClick={() => handleServiceChange('')}
+                    className="hover:bg-primary-500 rounded-full"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {date && time && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium">
+                  <Calendar className="w-3 h-3" />
+                  <span>{date} at {time}</span>
+                  <button
+                    onClick={() => { setDate(null); setTime(null); onFilterChange({ serviceType, date: null, time: null, location, locationDetails }); }}
+                    className="hover:bg-green-700 rounded-full"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              {location && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
+                  <MapPin className="w-3 h-3" />
+                  <span>{location}</span>
+                  <button
+                    onClick={() => { setLocation(null); setLocationDetails(''); onFilterChange({ serviceType, date, time, location: null, locationDetails: null }); }}
+                    className="hover:bg-primary-500 rounded-full"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Active Question - Only show current question */}
+          <div>
           {/* Question 1: Service Type (default view) */}
           {!serviceType && (
             <div className="space-y-3 animate-fade-in">
@@ -297,10 +264,10 @@ export default function BarberFilterQuestionnaire({
               </div>
             </div>
           )}
-        </div>
-        </div>
-      </Card>
-    </div>
+          </div>
+        </Card>
+      </div>
+    </>
   );
 }
 
