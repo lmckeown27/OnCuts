@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { School, Users, UserCheck, TrendingUp, DollarSign, Award } from 'lucide-react';
+import { School, Users, UserCheck, TrendingUp, DollarSign, Award, ArrowLeft } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import Loading from '../../components/Loading';
