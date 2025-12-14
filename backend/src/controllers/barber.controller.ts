@@ -9,7 +9,7 @@ import mockDatabase from '../services/mock.database.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, instantBook } = req.query;
+    const { campusId, minRating, maxPrice, specialty } = req.query;
 
     // Use mock database (PostgreSQL not required for MVP)
     const filter: any = {
@@ -34,10 +34,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         const minPrice = Math.min(...(b.pricing || []).map((p: any) => p.price));
         return minPrice <= Number(maxPrice);
       });
-    }
-
-    if (instantBook === 'true') {
-      filteredBarbers = filteredBarbers.filter(b => b.instant_book_enabled === true);
     }
 
     if (specialty) {
@@ -94,7 +90,6 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
           { service_name: 'Haircut + Beard', price: 50, duration_minutes: 45 },
         ],
         availability: {},
-        instant_book_enabled: true,
         is_active: true,
         is_verified: true,
         wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
@@ -130,7 +125,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
 
 export const createBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { bio, pricing, specialties, yearsExperience, instantBook } = req.body;
+    const { bio, pricing, specialties, yearsExperience } = req.body;
     const userId = req.user!.userId;
 
     // Check if barber profile already exists
@@ -150,10 +145,10 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 
     // Create barber profile in database
     const result = await pool.query(
-      `INSERT INTO barbers (user_id, bio, pricing, instant_book, years_experience)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO barbers (user_id, bio, pricing, years_experience)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [userId, bio, JSON.stringify(pricing), instantBook || false, yearsExperience]
+      [userId, bio, JSON.stringify(pricing), yearsExperience]
     );
 
     const barber = result.rows[0];
@@ -166,7 +161,6 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
       barberAddress: user.aptos_address,
       campusId: user.campus_id,
       specialties,
-      instantBookEnabled: instantBook || false,
       bioHash,
       pricingHash,
     });
@@ -186,7 +180,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, pricing, instantBook, yearsExperience } = req.body;
+    const { bio, pricing, yearsExperience } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
@@ -201,11 +195,10 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       `UPDATE barbers 
        SET bio = COALESCE($1, bio),
            pricing = COALESCE($2, pricing),
-           instant_book = COALESCE($3, instant_book),
-           years_experience = COALESCE($4, years_experience)
-       WHERE id = $5
+           years_experience = COALESCE($3, years_experience)
+       WHERE id = $4
        RETURNING *`,
-      [bio, pricing ? JSON.stringify(pricing) : null, instantBook, yearsExperience, id]
+      [bio, pricing ? JSON.stringify(pricing) : null, yearsExperience, id]
     );
 
     res.json({

@@ -359,7 +359,7 @@ class StudentScoringEngineService {
     // Check if already restricted
     const existing = await pool.query(
       `SELECT id FROM student_restrictions 
-       WHERE student_id = $1 AND restriction_type = 'instant_book_disabled' AND is_active = true`,
+       WHERE student_id = $1 AND restriction_type = 'barber_approval_required' AND is_active = true`,
       [studentId]
     );
 
@@ -375,7 +375,7 @@ class StudentScoringEngineService {
       ) VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         studentId,
-        'instant_book_disabled',
+        'barber_approval_required',
         `Automatically restricted due to critically low customer score: ${customerScore.toFixed(1)}`,
         'high',
         customerScore,

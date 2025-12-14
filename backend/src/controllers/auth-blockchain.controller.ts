@@ -340,7 +340,6 @@ export async function getCurrentUser(req: Request, res: Response) {
         ...(role === 'barber' && {
           years_of_experience: userAccount.years_of_experience,
           specialties: userAccount.specialties,
-          instant_book_enabled: userAccount.instant_book_enabled,
           portfolio: (userAccount.portfolio_cids || []).map((cid) => ipfsService.getGatewayUrl(cid)),
         }),
       },

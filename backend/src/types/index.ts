@@ -28,7 +28,6 @@ export interface Barber {
   specialties: string[];
   profileImageUrl?: string;
   pricing: Service[] | Record<string, number>; // Support both formats
-  instantBook: boolean;
   averageResponseTime?: number;
   totalEarnings: number;
   totalBookings: number;

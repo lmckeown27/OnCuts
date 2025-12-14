@@ -49,7 +49,6 @@ export const barberProfileSchema = Joi.object({
   specialties: Joi.array().items(Joi.string().max(50)).min(1).max(10).required(),
   years_of_experience: Joi.number().integer().min(0).max(50).required(),
   base_price: Joi.number().min(0).max(1000).required(),
-  instant_book_enabled: Joi.boolean().optional(),
   aptos_address: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).optional(),
 });
 
@@ -140,7 +139,6 @@ export const barberFilterSchema = Joi.object({
   min_rating: Joi.number().min(0).max(5).optional(),
   max_price: Joi.number().min(0).optional(),
   specialties: Joi.array().items(Joi.string()).optional(),
-  instant_book_only: Joi.boolean().optional(),
   available_on: Joi.date().iso().optional(),
 }).concat(paginationSchema);
 

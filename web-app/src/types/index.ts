@@ -36,7 +36,6 @@ export interface Barber {
   pricing: Service[];
   average_rating: number;
   total_bookings: number;
-  instant_book_enabled: boolean;
   is_active: boolean;
   profile_photo_url?: string;
   portfolio?: PortfolioImage[];

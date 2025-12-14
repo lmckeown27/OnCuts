@@ -263,7 +263,6 @@ class MockDatabaseService {
         average_rating: 4.8,
         total_bookings: 234,
         total_reviews: 156,
-        instant_book_enabled: true,
         is_active: true,
         aptos_address: '0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa',
         portfolio_images: [
@@ -286,7 +285,6 @@ class MockDatabaseService {
         average_rating: 4.9,
         total_bookings: 167,
         total_reviews: 98,
-        instant_book_enabled: false,
         is_active: true,
         aptos_address: '0x60c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21bb',
         portfolio_images: [
@@ -308,7 +306,6 @@ class MockDatabaseService {
         average_rating: 4.7,
         total_bookings: 289,
         total_reviews: 178,
-        instant_book_enabled: true,
         is_active: true,
         aptos_address: '0x70c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21cc',
         portfolio_images: [
@@ -334,7 +331,6 @@ class MockDatabaseService {
         average_rating: 4.9,
         total_bookings: 312,
         total_reviews: 201,
-        instant_book_enabled: true,
         is_active: true,
         aptos_address: '0x80c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21dd',
         portfolio_images: [
@@ -357,7 +353,6 @@ class MockDatabaseService {
         average_rating: 4.6,
         total_bookings: 143,
         total_reviews: 87,
-        instant_book_enabled: true,
         is_active: true,
         aptos_address: '0x90c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21ee',
         portfolio_images: [
@@ -379,7 +374,6 @@ class MockDatabaseService {
         average_rating: 4.8,
         total_bookings: 267,
         total_reviews: 145,
-        instant_book_enabled: false,
         is_active: true,
         aptos_address: '0xa0c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21ff',
         portfolio_images: [

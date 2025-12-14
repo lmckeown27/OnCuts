@@ -58,7 +58,6 @@ CREATE TABLE barbers (
     bio TEXT,
     profile_image_url TEXT,
     pricing JSONB, -- {"Haircut": 25, "Fade": 30, "Beard Trim": 15}
-    instant_book BOOLEAN DEFAULT FALSE,
     average_response_time INTEGER, -- In minutes
     total_earnings DECIMAL(10,2) DEFAULT 0,
     total_bookings INTEGER DEFAULT 0,

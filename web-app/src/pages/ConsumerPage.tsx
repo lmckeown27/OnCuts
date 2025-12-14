@@ -28,11 +28,6 @@ function rankBarbers(barbers: Barber[]): Barber[] {
         score += 20; // Give new high-rated barbers a chance
       }
       
-      // Instant book bonus (convenience factor)
-      if (barber.instant_book_enabled) {
-        score += 15;
-      }
-      
       return { barber, score };
     })
     .sort((a, b) => b.score - a.score)
@@ -346,15 +341,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <span>{barber.years_experience} yrs</span>
                   </div>
                 </div>
-
-                {/* Instant Book Badge */}
-                {barber.instant_book_enabled && (
-                  <div className="mb-3">
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                      Instant Book
-                    </span>
-                  </div>
-                )}
 
                 {/* Book Button */}
                 <Button className="w-full mt-2" onClick={(e) => {

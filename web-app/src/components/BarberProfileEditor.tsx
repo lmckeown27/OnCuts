@@ -29,7 +29,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   // Form state
   const [bio, setBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
-  const [instantBookEnabled, setInstantBookEnabled] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string>('');
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       // Populate form fields
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
-      setInstantBookEnabled(data.instant_book_enabled || false);
       setProfilePhoto(data.profile_photo_url || '');
       
       setIsLoading(false);
@@ -63,7 +61,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       const updateData: Partial<Barber> = {
         bio,
         instagram_handle: instagramHandle,
-        instant_book_enabled: instantBookEnabled,
       };
 
       await barberService.updateBarberProfile(barberId, updateData);
@@ -148,27 +145,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           />
         </div>
         <p className="text-xs text-gray-500 mt-2">Your Instagram handle without the @</p>
-      </Card>
-
-      {/* Booking Settings */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Booking Settings</h3>
-        
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div>
-            <p className="font-medium text-gray-900">Instant Booking</p>
-            <p className="text-sm text-gray-600">Allow students to book immediately without approval</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={instantBookEnabled}
-              onChange={(e) => setInstantBookEnabled(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-400"></div>
-          </label>
-        </div>
       </Card>
 
       {/* Save Button (Bottom) */}

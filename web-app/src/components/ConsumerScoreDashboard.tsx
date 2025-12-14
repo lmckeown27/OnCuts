@@ -72,9 +72,9 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
         },
         restrictions: [],
         benefits: [
-          'Instant book with most barbers',
           '5% loyalty discount',
-          'Priority scheduling'
+          'Priority scheduling',
+          'Preferred customer status'
         ],
         improvement_tips: [
           'Increase engagement score by trying new barbers',
@@ -304,7 +304,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
                   <li>• Tip 15%+ on average</li>
                 </ul>
                 <div className="mt-3 p-3 bg-primary-100 rounded-lg">
-                  <strong>VIP Benefits:</strong> 10% discount, instant book everywhere, priority scheduling
+                  <strong>VIP Benefits:</strong> 10% discount, priority scheduling, exclusive perks
                 </div>
               </div>
             ) : score.overall_score >= 70 ? (
@@ -416,11 +416,11 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between p-2 rounded bg-primary-100">
             <span>VIP Customer (95-100)</span>
-            <span className="text-xs text-primary-500">10% discount, instant book all</span>
+            <span className="text-xs text-primary-500">10% discount, priority scheduling</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-yellow-100">
             <span>🥇 Excellent (85-94)</span>
-            <span className="text-xs text-yellow-700">5% discount, instant book most</span>
+            <span className="text-xs text-yellow-700">5% discount, priority access</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-green-100">
             <span>🥈 Good (70-84)</span>
@@ -428,11 +428,11 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-blue-100">
             <span>🥉 Average (50-69)</span>
-            <span className="text-xs text-blue-700">Limited instant book</span>
+            <span className="text-xs text-blue-700">Standard access</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-orange-100">
             <span>⚪ Below Average (30-49)</span>
-            <span className="text-xs text-orange-700">Request-book only</span>
+            <span className="text-xs text-orange-700">Standard access</span>
           </div>
           <div className="flex items-center justify-between p-2 rounded bg-red-100">
             <span>Poor (0-29)</span>

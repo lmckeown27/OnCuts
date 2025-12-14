@@ -32,7 +32,6 @@ router.get(
     query('minRating').optional().isFloat({ min: 0, max: 5 }),
     query('maxPrice').optional().isInt(),
     query('specialty').optional().isString(),
-    query('instantBook').optional().isBoolean(),
     validate,
   ],
   getAllBarbers
@@ -59,7 +58,6 @@ router.post(
     body('pricing').isObject().withMessage('Pricing object required'),
     body('specialties').isArray().withMessage('Specialties array required'),
     body('yearsExperience').optional().isInt(),
-    body('instantBook').optional().isBoolean(),
     validate,
   ],
   createBarberProfile

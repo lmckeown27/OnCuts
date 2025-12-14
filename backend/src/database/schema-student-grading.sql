@@ -133,20 +133,20 @@ CREATE TABLE IF NOT EXISTS student_grade_levels (
 -- Seed grade levels (stricter than barber grading)
 INSERT INTO student_grade_levels (level_name, min_score, max_score, badge_color, benefits, restrictions, sort_order) VALUES
 ('VIP Customer', 95.00, 100.00, 'platinum', 
-    ARRAY['Instant book with all barbers', 'Priority scheduling', '10% loyalty discount', 'Skip waitlists'],
+    ARRAY['Priority scheduling', '10% loyalty discount', 'Skip waitlists', 'Exclusive perks'],
     ARRAY[]::TEXT[],
     1),
 ('Excellent Customer', 85.00, 94.99, 'gold',
-    ARRAY['Instant book with most barbers', 'Priority support', '5% loyalty discount'],
+    ARRAY['Priority support', '5% loyalty discount', 'Enhanced visibility'],
     ARRAY[]::TEXT[],
     2),
 ('Good Customer', 70.00, 84.99, 'silver',
-    ARRAY['Instant book available', 'Standard support'],
+    ARRAY['Standard support', 'Full platform access'],
     ARRAY[]::TEXT[],
     3),
 ('Average Customer', 50.00, 69.99, 'bronze',
-    ARRAY['Request-book only for some barbers'],
-    ARRAY['May have limited instant-book access']::TEXT[],
+    ARRAY['Standard access'],
+    ARRAY[]::TEXT[],
     4),
 ('Below Average', 30.00, 49.99, 'gray',
     ARRAY[]::TEXT[],
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS student_restrictions (
     student_id VARCHAR(255) NOT NULL,
     
     restriction_type VARCHAR(50) NOT NULL,
-    -- Types: 'instant_book_disabled', 'requires_deposit', 'barber_approval_required',
+    -- Types: 'requires_deposit', 'barber_approval_required',
     --        'booking_cooldown', 'account_suspended'
     
     reason TEXT NOT NULL,

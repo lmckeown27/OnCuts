@@ -46,13 +46,12 @@ async function seed() {
 
     // Create barber profiles
     await pool.query(
-      `INSERT INTO barbers (user_id, bio, pricing, instant_book, average_rating, total_bookings, years_experience)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO barbers (user_id, bio, pricing, average_rating, total_bookings, years_experience)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         barber1Result.rows[0].id,
         'Professional barber specializing in fades and tapers. 5 years of experience.',
         JSON.stringify({ 'Haircut': 25, 'Fade': 30, 'Beard Trim': 15, 'Line Up': 10 }),
-        true,
         4.8,
         150,
         5
@@ -60,13 +59,12 @@ async function seed() {
     );
 
     await pool.query(
-      `INSERT INTO barbers (user_id, bio, pricing, instant_book, average_rating, total_bookings, years_experience)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO barbers (user_id, bio, pricing, average_rating, total_bookings, years_experience)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         barber2Result.rows[0].id,
         'Expert in all hair types. Specializing in braids, locs, and natural hair care.',
         JSON.stringify({ 'Haircut': 30, 'Braids': 50, 'Locs': 60, 'Twist Out': 35 }),
-        false,
         4.9,
         200,
         7

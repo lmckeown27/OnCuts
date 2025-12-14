@@ -103,11 +103,6 @@ export default function BarberDetailPage() {
                   <Award className="w-5 h-5" />
                   <span>{barber.years_of_experience} years exp.</span>
                 </div>
-                {barber.instant_book_enabled && (
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-                    Instant Book
-                  </span>
-                )}
               </div>
             </div>
           </div>
@@ -239,15 +234,6 @@ export default function BarberDetailPage() {
               <MessageCircle className="w-4 h-4 mr-2" />
               Message
             </Button>
-
-            {barber.instant_book_enabled && (
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-700 font-medium flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Instant booking available - no waiting for approval!
-                </p>
-              </div>
-            )}
 
             {/* Quick Stats */}
             <div className="pt-4 border-t border-gray-200">

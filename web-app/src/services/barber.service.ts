@@ -7,7 +7,6 @@ interface BarberFilters {
   max_price?: number;
   min_rating?: number;
   specialties?: string[];
-  instant_book?: boolean;
   page?: number;
   limit?: number;
 }
@@ -45,10 +44,6 @@ class BarberService {
 
   async deletePortfolioImage(imageId: string): Promise<void> {
     await api.delete(`/barbers/portfolio/${imageId}`);
-  }
-
-  async toggleInstantBook(barberId: string, enabled: boolean): Promise<Barber> {
-    return await api.put<Barber>(`/barbers/${barberId}`, { instant_book_enabled: enabled });
   }
 
   async toggleVacationMode(barberId: string, isActive: boolean): Promise<Barber> {

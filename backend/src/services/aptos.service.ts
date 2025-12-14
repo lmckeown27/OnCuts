@@ -163,11 +163,10 @@ class AptosService {
     barberAddress: string;
     campusId: number;
     specialties: string[];
-    instantBookEnabled: boolean;
     bioHash: string;
     pricingHash: string;
   }): Promise<string> {
-    const { barberAddress, campusId, specialties, instantBookEnabled, bioHash, pricingHash } = params;
+    const { barberAddress, campusId, specialties, bioHash, pricingHash } = params;
 
     return await this.executeModuleFunction(
       'barber_registry',
@@ -177,7 +176,6 @@ class AptosService {
         barberAddress,
         campusId,
         specialties,
-        instantBookEnabled,
         Array.from(Buffer.from(bioHash, 'utf-8')),
         Array.from(Buffer.from(pricingHash, 'utf-8')),
       ]

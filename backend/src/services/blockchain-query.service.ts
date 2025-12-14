@@ -36,7 +36,6 @@ interface UserAccount {
   // Barber-specific
   years_of_experience?: number;
   specialties?: string[];
-  instant_book_enabled?: boolean;
   portfolio_cids?: string[];
   // Stats
   total_bookings: string;
@@ -155,7 +154,6 @@ class BlockchainQueryService {
         is_verified: data.is_verified,
         years_of_experience: parseInt(data.years_of_experience),
         specialties: data.specialties || [],
-        instant_book_enabled: data.instant_book_enabled,
         portfolio_cids: data.portfolio_cids || [],
         total_bookings: data.total_bookings,
         total_spent: data.total_spent,
