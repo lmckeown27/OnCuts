@@ -4,13 +4,12 @@
  * Allows barbers to customize all information visible to consumers:
  * - Profile photo
  * - Bio/description
- * - Specialties
  * - Availability settings
  * - Instant booking toggle
  */
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Plus, Save, Image as ImageIcon } from 'lucide-react';
+import { Upload, Save, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -30,8 +29,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   // Form state
   const [bio, setBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
-  const [specialties, setSpecialties] = useState<string[]>([]);
-  const [newSpecialty, setNewSpecialty] = useState('');
   const [instantBookEnabled, setInstantBookEnabled] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string>('');
 
@@ -48,7 +45,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       // Populate form fields
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
-      setSpecialties(data.specialties || []);
       setInstantBookEnabled(data.instant_book_enabled || false);
       setProfilePhoto(data.profile_photo_url || '');
       
@@ -67,7 +63,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       const updateData: Partial<Barber> = {
         bio,
         instagram_handle: instagramHandle,
-        specialties,
         instant_book_enabled: instantBookEnabled,
       };
 
@@ -81,25 +76,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleAddSpecialty = () => {
-    if (!newSpecialty.trim()) {
-      toast.error('Please enter a specialty');
-      return;
-    }
-    
-    if (specialties.includes(newSpecialty.trim())) {
-      toast.error('Specialty already exists');
-      return;
-    }
-
-    setSpecialties([...specialties, newSpecialty.trim()]);
-    setNewSpecialty('');
-  };
-
-  const handleRemoveSpecialty = (specialty: string) => {
-    setSpecialties(specialties.filter(s => s !== specialty));
   };
 
   if (isLoading) {
@@ -172,47 +148,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
           />
         </div>
         <p className="text-xs text-gray-500 mt-2">Your Instagram handle without the @</p>
-      </Card>
-
-      {/* Specialties */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Specialties</h3>
-        <p className="text-sm text-gray-600 mb-4">Add your areas of expertise (e.g., Fades, Curly Hair, Beard Grooming)</p>
-        
-        <div className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newSpecialty}
-            onChange={(e) => setNewSpecialty(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddSpecialty()}
-            placeholder="e.g., Taper Fades"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-          />
-          <Button onClick={handleAddSpecialty} size="sm">
-            <Plus className="w-4 h-4 mr-2" />
-            Add
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {specialties.map((specialty, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 bg-primary-100 text-primary-600 rounded-full text-sm flex items-center gap-2"
-            >
-              {specialty}
-              <button
-                onClick={() => handleRemoveSpecialty(specialty)}
-                className="hover:text-primary-400"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </span>
-          ))}
-          {specialties.length === 0 && (
-            <p className="text-sm text-gray-500">No specialties added yet</p>
-          )}
-        </div>
       </Card>
 
       {/* Booking Settings */}
