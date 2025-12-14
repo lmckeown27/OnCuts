@@ -300,7 +300,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 </div>
                 {/* Price Overlay - Bottom Left */}
                 {lowestPrice && (
-                  <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 py-2 rounded-tr-lg">
+                  <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 py-2 rounded-tr-lg rounded-bl-lg">
                     <div className="flex items-center text-white">
                       <DollarSign className="w-4 h-4" />
                       <span className="font-semibold text-sm">{lowestPrice}</span>
