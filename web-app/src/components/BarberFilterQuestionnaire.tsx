@@ -33,19 +33,32 @@ export default function BarberFilterQuestionnaire({
   const [hideHeader, setHideHeader] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Track scroll direction to hide/show header
+  // Track scroll direction to hide/show header with throttling
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Hide header when scrolling down past 100px, show when scrolling up
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setHideHeader(true);
-      } else if (currentScrollY < lastScrollY) {
-        setHideHeader(false);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          // Only update if scroll difference is significant (prevents glitching)
+          if (Math.abs(currentScrollY - lastScrollY) > 10) {
+            // Hide header when scrolling down past 150px, show when scrolling up
+            if (currentScrollY > lastScrollY && currentScrollY > 150) {
+              setHideHeader(true);
+            } else if (currentScrollY < lastScrollY - 5) {
+              setHideHeader(false);
+            }
+            
+            setLastScrollY(currentScrollY);
+          }
+          
+          ticking = false;
+        });
+
+        ticking = true;
       }
-      
-      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -119,8 +132,10 @@ export default function BarberFilterQuestionnaire({
         <div className="space-y-6">
         {/* Header - Hides on scroll down */}
         <div 
-          className={`text-center pb-4 border-b border-gray-200 transition-all duration-300 ease-in-out overflow-hidden ${
-            hideHeader ? 'max-h-0 opacity-0 pb-0 border-0 mb-0' : 'max-h-96 opacity-100'
+          className={`text-center transition-all duration-500 ease-in-out ${
+            hideHeader 
+              ? 'max-h-0 opacity-0 pb-0 mb-0 overflow-hidden pointer-events-none' 
+              : 'max-h-96 opacity-100 pb-4 mb-0 border-b border-gray-200'
           }`}
         >
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
