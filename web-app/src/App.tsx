@@ -9,6 +9,7 @@ import AdminCampusesPage from './pages/admin/AdminCampusesPage';
 import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
 import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
 import AdminMarketplacePage from './pages/admin/AdminMarketplacePage';
+import AdminFraudDetectionPage from './pages/admin/AdminFraudDetectionPage';
 import AdminPricingManagement from './pages/AdminPricingManagement';
 import AdminUserView from './pages/admin/AdminUserView';
 import DiscoverBarbers from './pages/DiscoverBarbers';
@@ -44,6 +45,7 @@ function AppContent() {
           <Route path="/admin/system-health" element={<AdminSystemHealthPage />} />
           <Route path="/admin/gas-wallet" element={<AdminGasWalletPage />} />
           <Route path="/admin/marketplace" element={<AdminMarketplacePage />} />
+          <Route path="/admin/fraud" element={<AdminFraudDetectionPage />} />
           <Route path="/admin/pricing" element={<AdminPricingManagement />} />
           <Route path="/admin/user/:userId" element={<AdminUserView />} />
           
