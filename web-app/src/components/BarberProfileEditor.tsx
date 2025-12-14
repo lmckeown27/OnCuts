@@ -5,20 +5,19 @@
  * - Profile photo
  * - Bio/description
  * - Specialties
- * - Portfolio images
  * - Years of experience
  * - Availability settings
  * - Instant booking toggle
  */
 
 import { useState, useEffect } from 'react';
-import { Upload, X, Plus, Save, Image as ImageIcon, Star } from 'lucide-react';
+import { Upload, X, Plus, Save, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
-import type { Barber, Service, PortfolioImage } from '../types';
+import type { Barber } from '../types';
 
 interface BarberProfileEditorProps {
   barberId: string;
@@ -37,7 +36,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
   const [yearsExperience, setYearsExperience] = useState(0);
   const [instantBookEnabled, setInstantBookEnabled] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<string>('');
-  const [portfolio, setPortfolio] = useState<PortfolioImage[]>([]);
 
   useEffect(() => {
     loadBarberProfile();
@@ -56,7 +54,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
       setYearsExperience(data.years_experience || 0);
       setInstantBookEnabled(data.instant_book_enabled || false);
       setProfilePhoto(data.profile_photo_url || '');
-      setPortfolio(data.portfolio || []);
       
       setIsLoading(false);
     } catch (error: any) {
@@ -107,53 +104,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
 
   const handleRemoveSpecialty = (specialty: string) => {
     setSpecialties(specialties.filter(s => s !== specialty));
-  };
-
-  const handleUploadPortfolio = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    try {
-      const fileArray = Array.from(files);
-      
-      // Validate file types
-      const validFiles = fileArray.filter(file => 
-        file.type.startsWith('image/')
-      );
-
-      if (validFiles.length !== fileArray.length) {
-        toast.error('Only image files are allowed');
-        return;
-      }
-
-      // Validate file sizes (max 5MB each)
-      const oversizedFiles = validFiles.filter(file => file.size > 5 * 1024 * 1024);
-      if (oversizedFiles.length > 0) {
-        toast.error('Images must be less than 5MB each');
-        return;
-      }
-
-      toast.info('Uploading images...');
-      
-      const uploadedImages = await barberService.uploadPortfolioImages(barberId, validFiles);
-      setPortfolio([...portfolio, ...uploadedImages]);
-      
-      toast.success(`${uploadedImages.length} image(s) uploaded!`);
-    } catch (error: any) {
-      console.error('Failed to upload portfolio images:', error);
-      toast.error('Failed to upload images');
-    }
-  };
-
-  const handleDeletePortfolioImage = async (imageId: string) => {
-    try {
-      await barberService.deletePortfolioImage(imageId);
-      setPortfolio(portfolio.filter(img => img.id !== imageId));
-      toast.success('Image deleted');
-    } catch (error: any) {
-      console.error('Failed to delete image:', error);
-      toast.error('Failed to delete image');
-    }
   };
 
   if (isLoading) {
@@ -284,48 +234,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
             <p className="text-sm text-gray-500">No specialties added yet</p>
           )}
         </div>
-      </Card>
-
-      {/* Portfolio */}
-      <Card>
-        <h3 className="text-lg font-semibold mb-4">Portfolio</h3>
-        <p className="text-sm text-gray-600 mb-4">Showcase your best work (max 12 images)</p>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          {portfolio.map((image) => (
-            <div key={image.id} className="relative group">
-              <img
-                src={image.url}
-                alt="Portfolio"
-                className="w-full h-48 object-cover rounded-lg"
-              />
-              <button
-                onClick={() => handleDeletePortfolioImage(image.id)}
-                className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-
-          {portfolio.length < 12 && (
-            <label className="w-full h-48 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
-              <Upload className="w-8 h-8 text-gray-400 mb-2" />
-              <span className="text-sm text-gray-600">Upload Image</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleUploadPortfolio}
-                className="hidden"
-              />
-            </label>
-          )}
-        </div>
-
-        <p className="text-xs text-gray-500">
-          {portfolio.length}/12 images uploaded. Max 5MB per image.
-        </p>
       </Card>
 
       {/* Booking Settings */}
