@@ -360,35 +360,90 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
         })()}
 
         {/* Weekly View */}
-        {scheduleView === 'weekly' && (
-          <div>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Week of January 8 - 14, 2025</h3>
-              <p className="text-sm text-gray-600">42 appointments this week</p>
-            </div>
-            <div className="space-y-6">
-              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, dayIdx) => (
-                <div key={day}>
-                  <h4 className="font-semibold text-gray-900 mb-2">{day}</h4>
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((apt, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm">
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium text-primary-400 min-w-[60px]">
-                            {`${10 + idx}:00 AM`}
-                          </span>
-                          <span className="text-gray-900">Client Name</span>
-                          <span className="text-gray-500">• Haircut</span>
-                        </div>
-                        <span className="font-semibold text-green-600">$28</span>
-                      </div>
-                    ))}
+        {scheduleView === 'weekly' && (() => {
+          // Week appointment data (January 8-14, 2025) - maps to days 8-14 from monthly calendar
+          const weekDays = [
+            { name: 'Monday', date: 8, shortName: 'Mon' },
+            { name: 'Tuesday', date: 9, shortName: 'Tue' },
+            { name: 'Wednesday', date: 10, shortName: 'Wed' },
+            { name: 'Thursday', date: 11, shortName: 'Thu' },
+            { name: 'Friday', date: 12, shortName: 'Fri' },
+            { name: 'Saturday', date: 13, shortName: 'Sat' },
+            { name: 'Sunday', date: 14, shortName: 'Sun' },
+          ];
+
+          const weekAppointmentNames: { [date: number]: string[] } = {
+            8: ['Nancy Lee', 'Lisa Walker', 'Betty Hall', 'Margaret Allen', 'Sandra Young', 'Ashley Hernandez', 'Donna King', 'Carol Wright'],
+            9: ['Michelle Lopez', 'Emily Hill'],
+            10: ['Daniel Scott', 'Matthew Green', 'Anthony Adams', 'Mark Baker'],
+            11: ['Donald Nelson', 'Steven Carter', 'Paul Mitchell', 'Andrew Perez', 'Joshua Roberts', 'Kenneth Turner', 'Kevin Phillips', 'Brian Campbell', 'George Parker'],
+            12: ['Edward Evans', 'Ronald Edwards', 'Timothy Collins', 'Jason Stewart', 'Jeffrey Morris', 'Ryan Rogers'],
+            13: ['Jacob Reed', 'Gary Cook', 'Nicholas Morgan', 'Eric Bell', 'Jonathan Murphy', 'Stephen Bailey', 'Larry Rivera', 'Justin Cooper', 'Scott Richardson'],
+            14: ['Brandon Cox', 'Benjamin Howard', 'Samuel Ward', 'Frank Torres'],
+          };
+
+          const totalWeekAppointments = Object.values(weekAppointmentNames).reduce((sum, arr) => sum + arr.length, 0);
+
+          return (
+            <div>
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Week of January 8 - 14, 2025</h3>
+                <p className="text-sm text-gray-600">{totalWeekAppointments} appointments this week</p>
+              </div>
+              <div className="grid grid-cols-7 gap-3">
+                {/* Week day headers */}
+                {weekDays.map(day => (
+                  <div key={day.date} className="text-center font-semibold text-gray-600 text-sm py-2">
+                    {day.shortName}
                   </div>
-                </div>
-              ))}
+                ))}
+                {/* Week day cards */}
+                {weekDays.map(day => {
+                  const appointments = weekAppointmentNames[day.date] || [];
+                  const isToday = day.date === 12;
+
+                  return (
+                    <div
+                      key={day.date}
+                      onClick={() => handleDayClick(day.date)}
+                      className={`p-4 rounded-lg border overflow-hidden min-h-[140px] flex flex-col ${
+                        isToday
+                          ? 'bg-primary-400 text-white border-primary-500'
+                          : 'bg-gray-50 border-gray-200 hover:border-primary-300'
+                      } cursor-pointer transition-colors`}
+                    >
+                      <div className="text-center mb-3">
+                        <div className="text-2xl font-bold mb-1">{day.date}</div>
+                        <div className={`text-xs ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
+                          {day.name}
+                        </div>
+                      </div>
+                      <div className="text-xs space-y-1 flex-1 overflow-hidden">
+                        {appointments.length === 0 ? (
+                          <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
+                        ) : (
+                          <>
+                            <div className="truncate font-medium">{appointments[0]}</div>
+                            {appointments.length > 1 && (
+                              <>
+                                <div className="truncate">{appointments[1]}</div>
+                                {appointments.length > 2 && (
+                                  <div className={isToday ? 'text-white/80 font-semibold' : 'text-gray-500 font-semibold'}>
+                                    +{appointments.length - 2} more
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Monthly View */}
         {scheduleView === 'monthly' && (
