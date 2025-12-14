@@ -38,7 +38,6 @@ const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fullnode.
 const GAS_WALLET_ADDRESS = import.meta.env.VITE_GAS_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
 
 export default function AdminGasWalletPage() {
-  const navigate = useNavigate();
   const { connected, address, petraInstalled, connectWallet, disconnectWallet, signAndSubmitTransaction } = useDirectWallet();
   const [status, setStatus] = useState<GasWalletStatus | null>(null);
   const [usageHistory, setUsageHistory] = useState<UsageHistory[]>([]);
