@@ -14,6 +14,7 @@ import { Search, MapPin, Check, Plus, ChevronDown } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/constants';
 
 interface LocationOption {
   id: string;
@@ -72,7 +73,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/locations`, {
+      const response = await axios.get(`${API_BASE_URL}/locations`, {
         params: { universityId },
       });
 
@@ -111,7 +112,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/locations/submit`,
+        `${API_BASE_URL}/locations/submit`,
         {
           universityId,
           locationName: newLocationName,
