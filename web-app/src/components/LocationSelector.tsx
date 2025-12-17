@@ -196,9 +196,6 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                 <span className="text-lg">+</span>
                 <span>Add "{inputValue}"</span>
               </div>
-              <div className="text-xs text-gray-500 mt-1 ml-6">
-                Create new location
-              </div>
             </button>
           )}
         </div>
