@@ -36,6 +36,7 @@ export default function BarberFilterQuestionnaire({
   const [dateTimeConfirmed, setDateTimeConfirmed] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [locationDetails, setLocationDetails] = useState<string>('');
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
   
   // Track which step we're editing (for clickable tags)
   const [editingStep, setEditingStep] = useState<'service' | 'datetime' | 'location' | null>(null);
@@ -65,6 +66,7 @@ export default function BarberFilterQuestionnaire({
     setDateTimeConfirmed(false);
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
       serviceType: null,
@@ -84,6 +86,7 @@ export default function BarberFilterQuestionnaire({
     setDateTimeConfirmed(false);
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     notifyFilterChange({
       serviceType: null,
       date,
@@ -108,6 +111,7 @@ export default function BarberFilterQuestionnaire({
     setDateTimeConfirmed(false);
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
       serviceType,
@@ -124,6 +128,7 @@ export default function BarberFilterQuestionnaire({
     setEditingStep('datetime');
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     notifyFilterChange({
       serviceType,
       date,
@@ -146,10 +151,19 @@ export default function BarberFilterQuestionnaire({
     });
   };
 
+  // Handle location confirmation
+  const handleLocationConfirm = () => {
+    if (location && locationDetails) {
+      setLocationConfirmed(true);
+      setEditingStep(null);
+    }
+  };
+
   // Handle location deletion - keeps service and date/time
   const handleLocationDelete = () => {
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
       serviceType,
@@ -165,6 +179,7 @@ export default function BarberFilterQuestionnaire({
     setEditingStep('location');
     setLocation(null);
     setLocationDetails('');
+    setLocationConfirmed(false);
     notifyFilterChange({
       serviceType,
       date,
@@ -195,8 +210,9 @@ export default function BarberFilterQuestionnaire({
   // Determine which question to show
   const showServiceQuestion = !serviceType || editingStep === 'service';
   const showDateTimeQuestion = serviceType && !dateTimeConfirmed && editingStep !== 'service';
-  const showLocationQuestion = serviceType && dateTimeConfirmed && !location && editingStep !== 'service';
+  const showLocationQuestion = serviceType && dateTimeConfirmed && !locationConfirmed && editingStep !== 'service';
   const showLocationDetails = location && !locationDetails;
+  const showLocationConfirmation = location && locationDetails && !locationConfirmed;
 
   return (
     <>
@@ -219,20 +235,23 @@ export default function BarberFilterQuestionnaire({
       {/* Questionnaire Section - Stays sticky at top */}
       <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pb-6 mb-8">
         <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
-          {/* Selected Filter Pills - Now clickable for editing */}
-          {(serviceType || (date && time && dateTimeConfirmed) || location) && (
+          {/* Selected Filter Pills - Fully clickable for editing */}
+          {(serviceType || (date && time && dateTimeConfirmed) || (location && locationConfirmed)) && (
             <div className="flex flex-wrap items-center justify-center gap-2 pb-4 mb-4 border-b border-gray-200">
               {serviceType && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
-                  <Scissors className="w-3 h-3" />
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
                   <button
                     onClick={handleServiceTagClick}
-                    className="hover:underline cursor-pointer"
+                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
-                    {serviceType}
+                    <Scissors className="w-3 h-3" />
+                    <span className="group-hover:underline">{serviceType}</span>
                   </button>
                   <button
-                    onClick={handleServiceDelete}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleServiceDelete();
+                    }}
                     className="hover:bg-primary-500 rounded-full px-1 ml-1"
                   >
                     ×
@@ -240,33 +259,39 @@ export default function BarberFilterQuestionnaire({
                 </div>
               )}
               {date && time && dateTimeConfirmed && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium">
-                  <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium group">
                   <button
                     onClick={handleDateTimeTagClick}
-                    className="hover:underline cursor-pointer"
+                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
-                    {date} at {time}
+                    <Calendar className="w-3 h-3" />
+                    <span className="group-hover:underline">{date} at {time}</span>
                   </button>
                   <button
-                    onClick={handleDateTimeDelete}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDateTimeDelete();
+                    }}
                     className="hover:bg-green-700 rounded-full px-1 ml-1"
                   >
                     ×
                   </button>
                 </div>
               )}
-              {location && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
-                  <MapPin className="w-3 h-3" />
+              {location && locationConfirmed && (
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
                   <button
                     onClick={handleLocationTagClick}
-                    className="hover:underline cursor-pointer"
+                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
-                    {location}
+                    <MapPin className="w-3 h-3" />
+                    <span className="group-hover:underline">{location}</span>
                   </button>
                   <button
-                    onClick={handleLocationDelete}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLocationDelete();
+                    }}
                     className="hover:bg-primary-500 rounded-full px-1 ml-1"
                   >
                     ×
@@ -441,8 +466,22 @@ export default function BarberFilterQuestionnaire({
               </div>
             )}
 
+            {/* Location Confirmation Button */}
+            {showLocationConfirmation && (
+              <div className="flex justify-center pt-2 animate-fade-in">
+                <Button
+                  onClick={handleLocationConfirm}
+                  variant="primary"
+                  className="px-6 py-2"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Confirm Location
+                </Button>
+              </div>
+            )}
+
             {/* All Complete - Show summary */}
-            {serviceType && dateTimeConfirmed && location && locationDetails && (
+            {serviceType && dateTimeConfirmed && locationConfirmed && (
               <div className="text-center animate-fade-in">
                 <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg font-semibold">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
