@@ -40,7 +40,6 @@ type Student = {
   email: string;
   total_bookings: number;
   total_spent: number;
-  joined_date: string;
   is_active: boolean;
 };
 
@@ -193,7 +192,6 @@ export default function AdminCampusesPage() {
         email: 'jdoe@calpoly.edu',
         total_bookings: 12,
         total_spent: 380,
-        joined_date: '2024-01-15',
         is_active: true,
       },
       {
@@ -202,7 +200,6 @@ export default function AdminCampusesPage() {
         email: 'jsmith@calpoly.edu',
         total_bookings: 8,
         total_spent: 240,
-        joined_date: '2024-03-20',
         is_active: true,
       },
     ],
@@ -213,7 +210,6 @@ export default function AdminCampusesPage() {
         email: 'mwilson@ucsb.edu',
         total_bookings: 15,
         total_spent: 450,
-        joined_date: '2023-09-10',
         is_active: true,
       },
     ],
@@ -224,7 +220,6 @@ export default function AdminCampusesPage() {
         email: 'ebrown@ucla.edu',
         total_bookings: 20,
         total_spent: 600,
-        joined_date: '2023-08-25',
         is_active: true,
       },
     ],
@@ -639,9 +634,6 @@ export default function AdminCampusesPage() {
                         Total Spent
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Joined
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                     </tr>
@@ -665,9 +657,6 @@ export default function AdminCampusesPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           ${student.total_spent.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {new Date(student.joined_date).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${

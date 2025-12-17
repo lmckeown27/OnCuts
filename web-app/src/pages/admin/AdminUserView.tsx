@@ -375,13 +375,6 @@ export default function AdminUserView() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-gray-600">Joined</p>
-                    <p className="font-semibold text-gray-900">{formatDate(user.created_at)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-gray-400" />
                   <div>
                     <p className="text-gray-600">Last Login</p>
