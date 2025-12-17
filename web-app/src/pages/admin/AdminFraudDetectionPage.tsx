@@ -1,7 +1,7 @@
 /**
  * Admin Fraud Detection Page
  * 
- * AI-powered fraud detection and risk management dashboard
+ * Automated fraud detection and risk management dashboard
  */
 
 import { useState, useEffect } from 'react';
@@ -83,7 +83,7 @@ export default function AdminFraudDetectionPage() {
     try {
       setIsRefreshing(true);
       
-      // Fetch fraud flags from AI service
+      // Fetch fraud flags from detection service
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/ai/admin/fraud-flags`, {
         params: { status: statusFilter, limit: 100 }
       });
@@ -371,7 +371,7 @@ export default function AdminFraudDetectionPage() {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs text-gray-600">
-                      <span>AI Confidence: {(flag.aiConfidence * 100).toFixed(0)}%</span>
+                      <span>Confidence: {(flag.aiConfidence * 100).toFixed(0)}%</span>
                       <span>•</span>
                       <span>Detected: {new Date(flag.detectedAt).toLocaleString()}</span>
                       {flag.reviewedAt && (
@@ -472,7 +472,7 @@ export default function AdminFraudDetectionPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">AI Confidence</p>
+                  <p className="text-sm font-semibold text-gray-600 mb-1">Detection Confidence</p>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                       <div 

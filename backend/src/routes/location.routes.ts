@@ -12,7 +12,7 @@
  * - GET /locations/unverified - Get unverified locations
  * - POST /locations/merge - Merge duplicate locations
  * - POST /locations/:id/verify - Manually verify location
- * - POST /locations/:id/enrich - Trigger AI enrichment
+ * - POST /locations/:id/enrich - Trigger location enrichment
  */
 
 import { Router, Request, Response, NextFunction } from 'express';

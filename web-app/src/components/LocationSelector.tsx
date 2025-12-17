@@ -5,7 +5,7 @@
  * Features:
  * - Typable input with autocomplete
  * - Shows suggestions as user types
- * - Crowd-sourced + AI-enriched system
+ * - Crowd-sourced + automatically enriched system
  */
 
 import React, { useState, useEffect, useRef } from 'react';

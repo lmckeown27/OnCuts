@@ -7,10 +7,10 @@
  * - GET /admin/locations/unverified - View unverified locations
  * - POST /admin/locations/:id/verify - Manually verify location
  * - POST /admin/locations/merge - Merge duplicate locations
- * - POST /admin/locations/:id/enrich - Trigger AI enrichment
+ * - POST /admin/locations/:id/enrich - Trigger location enrichment
  * - PUT /admin/locations/:id - Update location details
  * - DELETE /admin/locations/:id - Delete location
- * - GET /admin/locations/enrichment-log - View AI enrichment history
+ * - GET /admin/locations/enrichment-log - View enrichment history
  * - GET /admin/locations/merge-log - View merge history
  */
 
@@ -35,9 +35,9 @@ if (process.env.OPENAI_API_KEY) {
     apiKey: process.env.OPENAI_API_KEY,
   });
   enrichmentProcessor = new LocationEnrichmentProcessor(openai, pool);
-  logger.info('🤖 AI enrichment enabled for locations');
+  logger.info('🤖 Location enrichment enabled');
 } else {
-  logger.warn('⚠️  AI enrichment disabled: OPENAI_API_KEY not configured');
+  logger.warn('⚠️  Location enrichment disabled: OPENAI_API_KEY not configured');
 }
 
 /**
@@ -192,7 +192,7 @@ router.post(
 
 /**
  * POST /api/admin/locations/:id/enrich
- * Trigger AI enrichment for a location
+ * Trigger location enrichment
  */
 router.post(
   '/:id/enrich',
@@ -204,9 +204,9 @@ router.post(
     try {
       const { id } = req.params;
 
-      // Check if AI enrichment is available
+      // Check if enrichment is available
       if (!enrichmentProcessor) {
-        throw new ApiError(503, 'AI enrichment not available: OPENAI_API_KEY not configured');
+        throw new ApiError(503, 'Location enrichment not available: OPENAI_API_KEY not configured');
       }
 
       // Get location to verify it exists
@@ -226,7 +226,7 @@ router.post(
 
       res.json({
         success: true,
-        message: 'AI enrichment completed',
+        message: 'Location enrichment completed',
       });
     } catch (error) {
       next(error);
@@ -347,7 +347,7 @@ router.delete(
 
 /**
  * GET /api/admin/locations/enrichment-log
- * View AI enrichment history
+ * View enrichment history
  */
 router.get(
   '/enrichment-log',
