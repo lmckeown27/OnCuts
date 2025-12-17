@@ -188,25 +188,75 @@ export default function BarberFilterQuestionnaire({
               </div>
               
               <div className="grid sm:grid-cols-2 gap-4">
+                {/* Enhanced Date Input */}
                 <div>
                   <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
-                  <input
-                    type="date"
-                    value={date || ''}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    min={getMinDate()}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <div 
+                    className="relative cursor-pointer group"
+                    onClick={() => {
+                      const input = document.getElementById('date-picker-input') as HTMLInputElement;
+                      if (input) {
+                        input.showPicker?.();
+                      }
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div className="relative flex items-center">
+                      <Calendar className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" />
+                      <input
+                        id="date-picker-input"
+                        type="date"
+                        value={date || ''}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        min={getMinDate()}
+                        className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                        style={{
+                          colorScheme: 'light',
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
                 
+                {/* Enhanced Time Input */}
                 <div>
                   <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
-                  <input
-                    type="time"
-                    value={time || ''}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <div 
+                    className="relative cursor-pointer group"
+                    onClick={() => {
+                      const input = document.getElementById('time-picker-input') as HTMLInputElement;
+                      if (input) {
+                        input.showPicker?.();
+                      }
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div className="relative flex items-center">
+                      <svg 
+                        className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+                        />
+                      </svg>
+                      <input
+                        id="time-picker-input"
+                        type="time"
+                        value={time || ''}
+                        onChange={(e) => handleTimeChange(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                        style={{
+                          colorScheme: 'light',
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
