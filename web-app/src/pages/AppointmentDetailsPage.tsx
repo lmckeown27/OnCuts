@@ -24,7 +24,6 @@ export default function AppointmentDetailsPage() {
       cancelledBookings: 1,
       reliabilityScore: 92,
       avgRating: 4.7,
-      memberSince: 'Jan 2024',
     },
     service: {
       name: 'Haircut & Fade',
@@ -143,7 +142,6 @@ export default function AppointmentDetailsPage() {
               <div className="flex-1">
                 <h4 className="text-xl font-bold text-gray-900">{appointment.client.name}</h4>
                 <p className="text-sm text-gray-600">Student ID: {appointment.client.studentId}</p>
-                <p className="text-sm text-gray-600">Member since {appointment.client.memberSince}</p>
               </div>
             </div>
 

@@ -295,7 +295,6 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                   <h4 className="font-semibold text-gray-900 text-lg">{selectedRequest.customerProfile.displayName || selectedRequest.customerName}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     {getReliabilityBadge(selectedRequest.customerProfile)}
-                    <span className="text-sm text-gray-500">Member since {new Date(selectedRequest.requestedAt).getFullYear()}</span>
                   </div>
                 </div>
               </div>
