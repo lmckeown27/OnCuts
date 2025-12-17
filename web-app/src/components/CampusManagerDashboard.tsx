@@ -30,13 +30,6 @@ interface BarberApplication {
   phoneNumber?: string;
 }
 
-interface CampusMetrics {
-  activeBarbersCount: number;
-  weeklyBookings: number;
-  averageRating: number;
-  disputesFlagged: number;
-}
-
 interface Incident {
   id: string;
   barberName: string;
@@ -55,7 +48,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusId, 
   campusName 
 }) => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'metrics' | 'content' | 'incidents'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'content' | 'incidents'>('applications');
 
   return (
     <div className="space-y-6">
@@ -77,16 +70,16 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           </button>
           
           <button
-            onClick={() => setActiveTab('metrics')}
+            onClick={() => setActiveTab('barbers')}
             className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'metrics'
+              activeTab === 'barbers'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Campus Metrics
+              <Users className="w-4 h-4" />
+              Barber Management
             </div>
           </button>
           
@@ -123,7 +116,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       {/* Tab Content */}
       <div className="animate-fade-in">
         {activeTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
-        {activeTab === 'metrics' && <CampusMetricsPanel campusId={campusId} campusName={campusName} />}
+        {activeTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
         {activeTab === 'content' && <ContentManagementPanel campusId={campusId} />}
         {activeTab === 'incidents' && <IncidentsPanel campusId={campusId} />}
       </div>
@@ -260,72 +253,254 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 };
 
 // ═══════════════════════════════════════════════════════════════
-// CAMPUS METRICS PANEL
+// BARBER MANAGEMENT PANEL
 // ═══════════════════════════════════════════════════════════════
 
-const CampusMetricsPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
-  // TODO: Fetch metrics from API
-  const metrics: CampusMetrics = {
-    activeBarbersCount: 12,
-    weeklyBookings: 87,
-    averageRating: 4.7,
-    disputesFlagged: 2,
-  };
+interface CampusBarber {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  instagramHandle?: string;
+  avgRating: number;
+  totalBookings: number;
+  completedBookings: number;
+  isActive: boolean;
+  joinedDate: Date;
+}
+
+const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
+  // TODO: Fetch barbers from API
+  const [barbers] = useState<CampusBarber[]>([
+    {
+      id: '1',
+      name: 'Marcus Johnson',
+      email: 'marcus.j@example.com',
+      phoneNumber: '(555) 123-4567',
+      instagramHandle: 'marcuscuts_slo',
+      avgRating: 4.8,
+      totalBookings: 127,
+      completedBookings: 119,
+      isActive: true,
+      joinedDate: new Date('2024-01-15'),
+    },
+    {
+      id: '2',
+      name: 'David Kim',
+      email: 'david.kim@example.com',
+      instagramHandle: 'davidkim_fades',
+      avgRating: 4.7,
+      totalBookings: 89,
+      completedBookings: 84,
+      isActive: true,
+      joinedDate: new Date('2024-02-01'),
+    },
+    {
+      id: '3',
+      name: 'Carlos Martinez',
+      email: 'carlos.m@example.com',
+      phoneNumber: '(555) 987-6543',
+      avgRating: 4.6,
+      totalBookings: 56,
+      completedBookings: 52,
+      isActive: true,
+      joinedDate: new Date('2024-03-10'),
+    },
+    {
+      id: '4',
+      name: 'Tyler Brooks',
+      email: 'tyler.brooks@example.com',
+      avgRating: 4.9,
+      totalBookings: 8,
+      completedBookings: 7,
+      isActive: false,
+      joinedDate: new Date('2024-12-01'),
+    },
+  ]);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+
+  // Filter barbers based on search and status
+  const filteredBarbers = barbers.filter((barber) => {
+    const matchesSearch = barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         barber.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'active' && barber.isActive) ||
+                         (filterStatus === 'inactive' && !barber.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">{campusName} Metrics</h3>
-        <p className="text-sm text-gray-500">Read-only overview of campus performance</p>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
+        <p className="text-sm text-gray-500">View and manage barbers working on your campus</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active Barbers</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{metrics.activeBarbersCount}</p>
-            </div>
-            <Users className="w-8 h-8 text-primary-400" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Weekly Bookings</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{metrics.weeklyBookings}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-green-400" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Average Rating</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{metrics.averageRating.toFixed(1)}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-blue-400" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Disputes Flagged</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{metrics.disputesFlagged}</p>
-            </div>
-            <AlertTriangle className={`w-8 h-8 ${metrics.disputesFlagged > 0 ? 'text-red-400' : 'text-gray-300'}`} />
-          </div>
-        </Card>
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          />
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilterStatus('all')}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              filterStatus === 'all'
+                ? 'bg-primary-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All ({barbers.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('active')}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              filterStatus === 'active'
+                ? 'bg-primary-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Active ({barbers.filter(b => b.isActive).length})
+          </button>
+          <button
+            onClick={() => setFilterStatus('inactive')}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              filterStatus === 'inactive'
+                ? 'bg-primary-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Inactive ({barbers.filter(b => !b.isActive).length})
+          </button>
+        </div>
       </div>
 
-      <Card className="p-6">
-        <p className="text-sm text-gray-600">
-          These metrics are for informational purposes only. Campus Managers cannot manipulate rankings, 
-          pricing, or visibility of any barbers (including themselves).
-        </p>
+      {/* Barbers List */}
+      {filteredBarbers.length === 0 ? (
+        <Card className="text-center py-12">
+          <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No barbers found matching your criteria</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredBarbers.map((barber) => (
+            <Card key={barber.id} className="p-5">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  {/* Header Row */}
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="text-lg font-semibold text-gray-900">{barber.name}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      barber.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {barber.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    {barber.avgRating >= 4.8 && (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        ⭐ Top Rated
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span className="font-medium">Email:</span>
+                      <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline">
+                        {barber.email}
+                      </a>
+                    </div>
+                    {barber.phoneNumber && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="font-medium">Phone:</span>
+                        <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
+                          {barber.phoneNumber}
+                        </a>
+                      </div>
+                    )}
+                    {barber.instagramHandle && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="font-medium">Instagram:</span>
+                        <a
+                          href={`https://www.instagram.com/${barber.instagramHandle}/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-600 hover:underline"
+                        >
+                          @{barber.instagramHandle}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span className="font-medium">Joined:</span>
+                      <span>{barber.joinedDate.toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-gray-900">Rating:</span>
+                      <span className="text-yellow-600 font-semibold">{barber.avgRating.toFixed(1)}</span>
+                      <span className="text-gray-500">★</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-gray-900">Total Bookings:</span>
+                      <span className="text-gray-700">{barber.totalBookings}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-gray-900">Completed:</span>
+                      <span className="text-green-600 font-semibold">{barber.completedBookings}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium text-gray-900">Completion Rate:</span>
+                      <span className="text-gray-700">
+                        {((barber.completedBookings / barber.totalBookings) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2 ml-4">
+                  <Button variant="outline" size="sm">
+                    View Profile
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Contact
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Info Card */}
+      <Card className="p-6 bg-blue-50 border-blue-200">
+        <div className="flex gap-3">
+          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-2">Campus Manager Responsibilities</h4>
+            <ul className="text-sm text-blue-800 space-y-1.5">
+              <li>• Monitor barber performance and assist with onboarding</li>
+              <li>• Provide support and answer questions from barbers</li>
+              <li>• Help resolve issues between barbers and customers</li>
+              <li>• Ensure all barbers maintain professional standards</li>
+              <li>• Cannot manipulate rankings, pricing, or visibility</li>
+            </ul>
+          </div>
+        </div>
       </Card>
     </div>
   );
