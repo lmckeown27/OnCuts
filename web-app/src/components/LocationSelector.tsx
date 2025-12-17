@@ -135,8 +135,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     );
 
   return (
-    <div className={`relative ${className}`}>
-      <div className="relative">
+    <div className={`flex gap-4 ${className}`}>
+      {/* Input Field */}
+      <div className="relative flex-1">
         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
         <input
           ref={inputRef}
@@ -150,11 +151,11 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
         />
       </div>
 
-      {/* Autocomplete Suggestions */}
+      {/* Autocomplete Suggestions - Side by Side */}
       {showSuggestions && (filteredSuggestions.length > 0 || showCreateNew) && (
         <div
           ref={suggestionsRef}
-          className="absolute left-0 z-50 mt-2 w-full bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+          className="flex-1 z-50 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
         >
           {filteredSuggestions.length > 0 && (
             <div>
