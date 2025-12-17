@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram } from 'lucide-react';
 import Card from '../components/Card';
+import Button from '../components/Button';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
