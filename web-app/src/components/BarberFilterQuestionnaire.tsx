@@ -309,7 +309,7 @@ export default function BarberFilterQuestionnaire({
           )}
 
           {/* Active Question - Progressive flow */}
-          <div className="pt-6">
+          <div className="pt-6 pb-6">
             {/* Question 1: Service Type */}
             {showServiceQuestion && (
               <div className="space-y-3 animate-fade-in">
