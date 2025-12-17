@@ -14,7 +14,7 @@
  * - GET /admin/locations/merge-log - View merge history
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
 import { authenticate, requireAdmin } from '../../middleware/auth';
 import { pool } from '../../database/connection';
@@ -37,7 +37,7 @@ const enrichmentProcessor = new LocationEnrichmentProcessor(openai, pool);
 /**
  * Validation helper
  */
-const validate = (req: any, res: any, next: any) => {
+const validate = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -59,7 +59,7 @@ router.get(
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, minUsageCount = 2, limit = 50 } = req.query;
 
@@ -113,10 +113,10 @@ router.post(
   requireAdmin,
   [param('id').isUUID().withMessage('Valid location ID required')],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const adminId = req.user.userId;
+      const adminId = (req as any).user.userId;
 
       await pool.query(
         `UPDATE campus_locations
@@ -151,10 +151,10 @@ router.post(
     body('reason').optional().isString().trim(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { sourceLocationId, targetLocationId, reason = 'Admin manual merge' } = req.body;
-      const adminId = req.user.userId;
+      const adminId = (req as any).user.userId;
 
       // Prevent self-merge
       if (sourceLocationId === targetLocationId) {
@@ -194,7 +194,7 @@ router.post(
   requireAdmin,
   [param('id').isUUID().withMessage('Valid location ID required')],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
 
@@ -242,7 +242,7 @@ router.put(
       .isIn(['FIRST_YEAR', 'UPPER_CLASS', 'GRAD', 'MIXED', 'UNKNOWN']),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
       const { name, category, cohort } = req.body;
@@ -300,10 +300,10 @@ router.delete(
   requireAdmin,
   [param('id').isUUID().withMessage('Valid location ID required')],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const adminId = req.user.userId;
+      const adminId = (req as any).user.userId;
 
       // Check if location is in use
       const usageCheck = await pool.query(
@@ -347,7 +347,7 @@ router.get(
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { locationId, limit = 20 } = req.query;
 
@@ -392,7 +392,7 @@ router.get(
   requireAdmin,
   [query('limit').optional().isInt({ min: 1, max: 100 }).toInt()],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { limit = 20 } = req.query;
 
@@ -431,7 +431,7 @@ router.get(
     query('threshold').optional().isFloat({ min: 0.8, max: 0.99 }).toFloat(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, threshold = 0.9 } = req.query;
 

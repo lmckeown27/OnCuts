@@ -15,7 +15,7 @@
  * - POST /locations/:id/enrich - Trigger AI enrichment
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
 import { authenticate } from '../middleware/auth';
 import { pool } from '../database/connection';
@@ -29,7 +29,7 @@ const locationService = new CampusLocationService(pool);
 /**
  * Validation helper
  */
-const validate = (req: any, res: any, next: any) => {
+const validate = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
@@ -56,10 +56,10 @@ router.post(
       .withMessage('Valid category required'),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, locationName, category } = req.body;
-      const userId = req.user.userId;
+      const userId = (req as any).user.userId;
 
       logger.info('Location submission received', {
         userId,
@@ -99,13 +99,13 @@ router.get(
     query('category').optional().isString(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, category } = req.query;
 
       const locations = await locationService.getLocationsForSelection(
-        universityId,
-        category
+        universityId as string,
+        category as string | undefined
       );
 
       res.json({
@@ -134,13 +134,13 @@ router.get(
     query('limit').optional().isInt({ min: 1, max: 50 }).toInt(),
   ],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, q, limit = 10 } = req.query;
 
       const locations = await locationService.searchLocations(
-        universityId,
-        q,
+        universityId as string,
+        q as string,
         parseInt(limit as string)
       );
 
@@ -166,7 +166,7 @@ router.get(
   authenticate,
   [param('id').isUUID().withMessage('Valid location ID required')],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
 
@@ -197,7 +197,7 @@ router.get(
   authenticate,
   [param('universityId').isUUID().withMessage('Valid university ID required')],
   validate,
-  async (req: any, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId } = req.params;
 
