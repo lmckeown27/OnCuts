@@ -60,6 +60,16 @@ export default function BarberPage() {
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Quick Switch to Consumer (Testing) */}
+              <button
+                onClick={() => navigate('/consumer')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                title="Switch to Consumer view"
+              >
+                <Calendar className="w-4 h-4 text-primary-600" />
+                <span className="text-sm font-medium text-primary-700">Switch to Consumer</span>
+              </button>
+
               {/* Booking Requests Inbox */}
               <BarberBookingRequestsDropdown barberId={barberId} />
 
@@ -126,19 +136,6 @@ export default function BarberPage() {
                   )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
-                  
-                  {/* Quick Switch for Testing */}
-                  <button
-                    onClick={() => {
-                      navigate('/consumer');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    Switch to Consumer
-                  </button>
-                  
                   <button
                     onClick={() => {
                       navigate('/web');

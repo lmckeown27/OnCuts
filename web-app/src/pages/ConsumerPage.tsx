@@ -66,56 +66,55 @@ export default function ConsumerPage() {
               <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             </div>
             
-            {/* Profile Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="flex items-center gap-4">
+              {/* Quick Switch to Barber (Testing) */}
               <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                onClick={() => navigate('/barber')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                title="Switch to Barber view"
               >
-                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
-                  S
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                <Scissors className="w-4 h-4 text-primary-600" />
+                <span className="text-sm font-medium text-primary-700">Switch to Barber</span>
               </button>
 
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <button
-                    onClick={() => {
-                      setShowProfileEditor(true);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Settings className="w-4 h-4 text-gray-500" />
-                    Edit Profile
-                  </button>
-                  <div className="border-t border-gray-200 my-1"></div>
-                  
-                  {/* Quick Switch for Testing */}
-                  <button
-                    onClick={() => {
-                      navigate('/barber');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Scissors className="w-4 h-4 text-gray-500" />
-                    Switch to Barber
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      navigate('/web');
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <LogOut className="w-4 h-4 text-gray-500" />
-                    Back to Roles
-                  </button>
-                </div>
-              )}
+              {/* Profile Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                    S
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showProfileDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <button
+                      onClick={() => {
+                        setShowProfileEditor(true);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    >
+                      <Settings className="w-4 h-4 text-gray-500" />
+                      Edit Profile
+                    </button>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={() => {
+                        navigate('/web');
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    >
+                      <LogOut className="w-4 h-4 text-gray-500" />
+                      Back to Roles
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
