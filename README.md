@@ -1,930 +1,577 @@
-# 🎓 CampusCuts: Decentralized Campus Barber Marketplace
+# CampusCuts
 
-**A blockchain-powered barber booking platform that feels like Uber, but costs 85% less to operate.**
+**A blockchain-powered campus barber marketplace that prioritizes barber earnings and student savings.**
 
----
-
-## 🎯 **What is CampusCuts?**
-
-CampusCuts is a revolutionary campus marketplace that:
-- **Looks and feels like any Web2 app** (Uber, Airbnb, etc.)
-- **Actually runs on blockchain** (Aptos) + decentralized storage (IPFS)
-- **Costs 85% less** than traditional marketplace platforms ($90/mo vs $600/mo)
-- **Users have NO IDEA they're using crypto** - Perfect Web2 UX
-
-### **The Magic: Custodial Wallet Illusion** 🎭
-
-| What Users See | What Actually Happens |
-|----------------|----------------------|
-| "Sign up with email + password" | Creates Aptos blockchain account |
-| "Upload profile photo" | Uploads to IPFS, stores CID on-chain |
-| "Add $100" | Credits on-chain USDC balance |
-| "Book $30 haircut" | Locks 3 APT in smart contract escrow |
-| "Leave 5-star review" | Text on IPFS, rating on blockchain |
-| "Withdraw $500" | Deducts from blockchain, sends via Stripe |
-
-**Users NEVER see: "wallet", "blockchain", "gas fee", or "transaction hash"**
+![Status](https://img.shields.io/badge/status-active-success.svg)
+![Platform](https://img.shields.io/badge/platform-web%20%7C%20ios-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ---
 
-## 🏗️ **Architecture**
+## 🎯 Overview
 
-### **Blockchain-First Stack**
+CampusCuts is a decentralized marketplace connecting student barbers with customers on college campuses. By eliminating expensive intermediaries, barbers earn **95% of every transaction** (vs. 40-60% at traditional platforms) while students get quality haircuts at **20% lower prices**.
 
-```
-┌────────────────────────────────────────────┐
-│         FRONTEND (React + Vite)            │
-│  Users interact with familiar Web2 UI     │
-└──────────────────┬─────────────────────────┘
-                   │
-                   ▼
-┌────────────────────────────────────────────┐
-│      THIN BACKEND (Node.js + Express)      │
-│  Only 3 responsibilities:                  │
-│  1. Fiat Gateway (Stripe)                  │
-│  2. IPFS Gateway (Pinata)                  │
-│  3. Transaction Signing (Custodial)        │
-│                                            │
-│  NO PostgreSQL - All data on blockchain!   │
-└─────┬──────────┬──────────┬────────────────┘
-      │          │          │
-      ▼          ▼          ▼
-┌─────────┐ ┌────────┐ ┌──────────────┐
-│ Stripe  │ │  IPFS  │ │    Aptos     │
-│         │ │        │ │  Blockchain  │
-│ Fiat    │ │ Media  │ │              │
-│ In/Out  │ │ Storage│ │ User Accounts│
-│         │ │        │ │ Bookings     │
-│         │ │        │ │ Reviews      │
-└─────────┘ └────────┘ └──────────────┘
-```
+### Core Value Proposition
 
-### **Data Storage**
+**For Barbers:**
+- Keep 95% of earnings (only 5% platform fee)
+- Minimum earnings exceed traditional platforms' maximum
+- Full control over services and pricing
+- Direct customer relationships
 
-| Data Type | Storage Location | Why |
-|-----------|------------------|-----|
-| User accounts | Aptos blockchain | Immutable, transparent |
-| Balances | Aptos blockchain | Trustless escrow |
-| Bookings | Aptos blockchain | Smart contract enforced |
-| Reviews | Aptos blockchain | Can't be faked/deleted |
-| Profile pictures | IPFS | Decentralized, permanent |
-| Portfolio images | IPFS | Cost-effective CDN |
-| Review text | IPFS | Censorship-resistant |
+**For Students:**  
+- Save 20% compared to traditional barbershops
+- Book verified, rated barbers on campus
+- Convenient mobile-first experience
+- Secure escrow-based payments
 
-**NO PostgreSQL, NO AWS S3, NO centralized database!**
+**Platform Economics:**
+- Barber keeps: $19 of every $20 cut
+- Student pays: $18-22 (vs. $25-30 traditional)
+- Platform fee: 5% (vs. 40-60% typical marketplaces)
 
 ---
 
-## 💰 **Cost Savings: 85% Reduction**
+## 🚀 Quick Start
 
-### **Traditional Marketplace Stack**
-```
-PostgreSQL:    $200/month
-AWS EC2:       $300/month
-S3 Storage:    $50/month
-Redis:         $50/month
-───────────────────────────
-TOTAL:         $600/month
-```
+### Prerequisites
 
-### **CampusCuts Blockchain Stack**
-```
-Aptos blockchain:    $50/month (1000 transactions)
-IPFS (Pinata):       $20/month (100GB storage)
-Serverless backend:  $10/month (minimal compute)
-Redis (cache):       $10/month (optional)
-───────────────────────────
-TOTAL:               $90/month
+- Node.js 18+
+- PostgreSQL 15+
+- Redis 7+
+- OpenAI API Key (for AI features)
+- Stripe Account (for payments)
 
-💰 SAVINGS: $510/month ($6,120/year) - 85% reduction!
-```
-
----
-
-## 🚀 **Quick Start**
-
-### **Prerequisites**
-
-- Node.js 18+ and npm
-- Aptos CLI (for deploying smart contracts)
-- Pinata account (free tier works for development)
-- Stripe account (for fiat payments)
-
-### **1. Clone Repository**
+### Installation
 
 ```bash
+# Clone repository
 git clone https://github.com/yourusername/CampusCuts.git
 cd CampusCuts
-```
 
-### **2. Deploy Smart Contracts**
-
-```bash
-# Install Aptos CLI
-curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
-
-# Initialize Aptos account
-aptos init --network devnet
-
-# Deploy contracts
-cd contracts
-aptos move publish --named-addresses campus_cuts=default
-
-# Copy the deployed module address for env config
-```
-
-### **3. Set Up Backend**
-
-```bash
+# Install backend dependencies
 cd backend
 npm install
 
-# Copy and configure environment variables
-cp env.example .env
-
-# Edit .env with your values:
-# - APTOS_PLATFORM_ADDRESS (from aptos init)
-# - APTOS_PLATFORM_PRIVATE_KEY (from aptos init)
-# - APTOS_MODULE_ADDRESS (from deploy step)
-# - CUSTODIAL_ENCRYPTION_SECRET (generate strong random string)
-# - PINATA_API_KEY, PINATA_SECRET_API_KEY (from Pinata dashboard)
-# - STRIPE_SECRET_KEY (from Stripe dashboard)
-```
-
-### **4. Start Backend**
-
-```bash
-npm run dev
-```
-
-You should see:
-```
-✅ Aptos Service initialized
-✅ Custodial Signer Service initialized
-✅ Blockchain Query Service initialized
-✅ IPFS Service initialized
-✅ Socket.IO server initialized
-🌐 Blockchain-first routes enabled:
-   - /api/auth-blockchain ✅
-   - /api/bookings-blockchain ✅
-   - /api/reviews-blockchain ✅
-   - /api/fiat-bridge ✅
-🚀 CampusCuts API server running on port 3001
-```
-
-### **5. Set Up Frontend**
-
-```bash
+# Install frontend dependencies
 cd ../web-app
 npm install
+
+# Configure environment
+cp backend/.env.example backend/.env
+# Add your API keys to backend/.env
+
+# Start PostgreSQL & Redis (Docker)
+docker-compose up -d postgres redis
+
+# Initialize database
+cd backend
+psql -U postgres -d campuscuts < src/database/schema.sql
+
+# Start backend
+npm run dev
+
+# Start frontend (new terminal)
+cd web-app
 npm run dev
 ```
 
-Frontend runs on `http://localhost:3000` (or 3001 if 3000 is taken)
+Visit `http://localhost:3000` to see the app!
 
 ---
 
-## 📚 **API Endpoints**
+## 🏗️ Architecture
 
-### **Authentication (Blockchain-Based)**
+### Hybrid Blockchain + PostgreSQL
 
-```bash
-# Sign up (creates blockchain account)
-POST /api/auth-blockchain/signup
-Body: { email, password, username, campus_domain, role }
-
-# Login (loads from blockchain)
-POST /api/auth-blockchain/login
-Body: { email, password }
-
-# Get current user
-GET /api/auth-blockchain/me
-Headers: { Authorization: "Bearer <token>" }
-
-# Update profile (on-chain transaction)
-PUT /api/auth-blockchain/profile
-Body: { username, bio, password }
-
-# Upload profile photo (IPFS + on-chain CID)
-POST /api/auth-blockchain/profile/photo
-Body: multipart/form-data with 'photo' field
+```
+┌─────────────────────────────────────────────┐
+│           FRONTEND (React + Vite)           │
+│     Progressive Web App (PWA) + iOS App     │
+└──────────────────┬──────────────────────────┘
+                   │
+                   ↓
+┌─────────────────────────────────────────────┐
+│         BACKEND (Node.js + Express)         │
+│  • Custodial wallet service                 │
+│  • Stripe fiat gateway                      │
+│  • AI-powered marketplace engine            │
+│  • PostgreSQL cache layer                   │
+└─────┬─────────┬──────────┬──────────────────┘
+      │         │          │
+      ↓         ↓          ↓
+┌─────────┐ ┌────────┐ ┌───────────────┐
+│ Stripe  │ │  IPFS  │ │     Aptos     │
+│ Payment │ │ Media  │ │  Blockchain   │
+│ Gateway │ │Storage │ │  (Devnet)     │
+└─────────┘ └────────┘ └───────────────┘
 ```
 
-### **Bookings (Smart Contract Escrow)**
-
-```bash
-# Create booking (locks funds on-chain)
-POST /api/bookings-blockchain
-Body: {
-  barber_address,
-  service_name,
-  amount,
-  scheduled_time,
-  location,
-  notes,
-  password
-}
-
-# Get user bookings (from blockchain events)
-GET /api/bookings-blockchain
-
-# Complete booking (releases funds to barber)
-POST /api/bookings-blockchain/:id/complete
-Body: { booking_id }
-
-# Cancel booking (auto-refund to student)
-POST /api/bookings-blockchain/:id/cancel
-Body: { booking_id, reason, password }
-```
-
-### **Reviews (Immutable + IPFS)**
-
-```bash
-# Create review (IPFS upload + on-chain storage)
-POST /api/reviews-blockchain
-Body: {
-  booking_id,
-  barber_address,
-  rating,
-  review_text,
-  student_performance_score,
-  password
-}
-
-# Get barber reviews (blockchain + IPFS)
-GET /api/reviews-blockchain/barber/:address
-
-# Get barber rating (on-chain aggregate)
-GET /api/reviews-blockchain/barber/:address/rating
-```
-
-### **Fiat Bridge (Stripe Integration)**
-
-```bash
-# Create deposit intent (add funds)
-POST /api/fiat-bridge/deposit
-Body: { amount }
-
-# Get balance (on-chain balance in USD)
-GET /api/fiat-bridge/balance
-
-# Request withdrawal (cash out to bank)
-POST /api/fiat-bridge/withdrawal
-Body: { amount, password }
-
-# Get conversion rates
-GET /api/fiat-bridge/rates
-
-# Calculate platform fee
-GET /api/fiat-bridge/calculate-fee?amount=30
-
-# Stripe webhook (automatic on-chain crediting)
-POST /api/fiat-bridge/webhook
-```
+**Data Storage Strategy:**
+- **Blockchain** (Aptos): User accounts, bookings, reviews (source of truth)
+- **PostgreSQL**: Performance cache, analytics, marketplace data
+- **IPFS** (Pinata): Profile images, portfolio photos
+- **Redis**: Session cache, job queues
 
 ---
 
-## 🔧 **How It Works**
+## ✨ Key Features
 
-### **1. User Signup Flow**
+### Marketplace Engine
+- **Dynamic Pricing**: AI-powered price multipliers based on barber quality (1.0x-1.5x)
+- **Quality Scoring**: Continuous barber performance evaluation (BQS: 0-100)
+- **Smart Ranking**: Barbers ranked by quality, availability, and proximity
+- **Surge Pricing**: Real-time demand-based pricing adjustments
+- **Market Calibration**: City-specific pricing and competition factors
 
-```typescript
-// User does:
-POST /api/auth-blockchain/signup
-{
-  "email": "student@calpoly.edu",
-  "password": "mypassword123",
-  "username": "john_doe",
-  "campus_domain": "calpoly.edu",
-  "role": "student"
-}
+### Booking System
+- **Request-Based**: Barbers approve/reject bookings (AirBnb-style)
+- **Escrow Payments**: Funds held until service completion
+- **Real-Time Messaging**: Pre- and post-booking communication
+- **Review System**: Verified reviews with sentiment analysis
 
-// Backend does (behind the scenes):
-1. Derive Aptos address from email (deterministic)
-   → "student@calpoly.edu" always = 0xabc123...
+### User Experience
+- **Consumer Discovery**: Swipeable barber profiles (dating app UX)
+- **Progressive Filters**: Sequential filtering by service → time → location
+- **Barber Dashboard**: Schedule management, earnings tracking, performance metrics
+- **Admin Tools**: Campus management, fraud detection, system health monitoring
 
-2. Encrypt private key with password (AES-256-GCM)
-   → Stored in KMS or database
+### AI-Powered Features
+- **Location Enrichment**: Auto-verifies and categorizes campus locations
+- **Fraud Detection**: Pattern recognition for suspicious accounts
+- **Dispute Resolution**: AI-assisted conflict analysis
+- **Market Intelligence**: Campus-level supply-demand insights
+- **Weekly Summaries**: Automated admin reports
 
-3. Submit blockchain transaction:
-   user_accounts::register_user(
-     email_hash,
-     campus_domain,
-     role,
-     username
-   )
-
-4. Return JWT token (normal Web2 auth)
-   → { token: "eyJhbG...", user: { address, email, ... } }
-
-// User sees:
-✅ "Account created! Welcome to CampusCuts."
-
-// User has NO IDEA they just created a blockchain account!
-```
-
-### **2. Booking Flow**
-
-```typescript
-// User does:
-POST /api/bookings-blockchain
-{
-  "barber_address": "0xdef456...",
-  "service_name": "Classic Haircut",
-  "amount": 30,
-  "scheduled_time": 1701360000,
-  "location": "Dorm 4",
-  "password": "mypassword123"
-}
-
-// Backend does:
-1. Load user's custodial account
-2. Check on-chain balance >= $30
-3. Submit blockchain transaction:
-   bookings::create_booking(
-     student_addr,
-     barber_addr,
-     "Classic",
-     30 * 100_000_000, // Convert to octas
-     timestamp,
-     location,
-     notes
-   )
-
-// Smart contract does:
-1. Verify student.balance_available >= 30 APT
-2. Lock funds in escrow:
-   student.balance_available -= 30 APT
-   student.balance_locked += 30 APT
-3. Create immutable booking record
-4. Emit BookingCreatedEvent
-
-// User sees:
-✅ "Booking confirmed! See you at 3:00 PM."
-
-// Reality: Funds locked in immutable smart contract escrow!
-```
-
-### **3. Review Flow**
-
-```typescript
-// User does:
-POST /api/reviews-blockchain
-{
-  "booking_id": "123",
-  "barber_address": "0xdef456...",
-  "rating": 5,
-  "review_text": "Amazing haircut! Very professional.",
-  "password": "mypassword123"
-}
-
-// Backend does:
-1. Upload review text to IPFS
-   → Returns: { cid: "QmXyz123..." }
-
-2. Submit blockchain transaction:
-   reviews::create_review(
-     student_addr,
-     barber_addr,
-     booking_id,
-     5,                    // rating
-     "QmXyz123...",         // IPFS CID
-     85                    // student performance score
-   )
-
-// Smart contract does:
-1. Verify booking is completed
-2. Calculate weighted rating (VIP students = 1.2x weight)
-3. Update barber's aggregate rating
-4. Store review (immutable forever!)
-5. Emit ReviewCreatedEvent
-
-// User sees:
-✅ "Review posted! Thank you for your feedback."
-
-// Reality: Review permanently stored on IPFS + blockchain!
-```
-
-### **4. Fiat Deposit Flow**
-
-```typescript
-// User does:
-1. Click "Add Funds"
-2. Enter $100
-3. Enter credit card details (Stripe Elements)
-4. Confirm payment
-
-// Backend does:
-1. Stripe charges card → $100
-2. Stripe webhook fires: payment_intent.succeeded
-3. handleDeposit() converts $100 → 10 APT
-4. Submit blockchain transaction:
-   user_accounts::deposit_funds(
-     user_address,
-     10 * 100_000_000  // 10 APT in octas
-   )
-5. User's on-chain balance updated
-
-// User sees:
-✅ "Balance: $100.00"
-
-// Reality: 10 APT on Aptos blockchain!
-```
-
-### **5. Withdrawal Flow**
-
-```typescript
-// Barber does:
-POST /api/fiat-bridge/withdrawal
-{
-  "amount": 500,
-  "password": "barberpw123"
-}
-
-// Backend does:
-1. Check on-chain balance >= $500
-2. Submit blockchain transaction:
-   user_accounts::withdraw_funds(
-     barber_address,
-     50 * 100_000_000  // 50 APT in octas
-   )
-3. Send $500 to bank via Stripe Connect
-4. Charge $1 withdrawal fee
-
-// Barber sees:
-✅ "Transfer initiated! Arrives in 1-2 business days."
-
-// Reality: 50 APT deducted from blockchain, $500 sent to bank!
-```
+### Scoring Systems
+- **Barber Quality Score (BQS)**: `0.45*Reviews + 0.25*Demand + 0.15*PriceJustification + 0.15*Loyalty`
+- **Consumer Reliability**: Booking history, cancellations, payment timeliness
+- **Mutual Visibility**: Users see opposing party's score (not their own)
 
 ---
 
-## 🛠️ **Tech Stack**
+## 🛠️ Tech Stack
 
-### **Smart Contracts (On-Chain Logic)**
-- **Language:** Move
-- **Blockchain:** Aptos (devnet for testing, mainnet for production)
-- **Modules:**
-  - `user_accounts.move` - User profiles, balances, metadata
-  - `bookings.move` - Escrow-based booking lifecycle
-  - `reviews.move` - Weighted rating system
+### Frontend
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS (olive green theme)
+- **State**: Zustand
+- **API**: Axios + React Query
+- **Real-time**: Socket.IO Client
+- **Payments**: Stripe React
+- **PWA**: Service Workers + Manifest
 
-### **Backend (Thin Signing Layer)**
-- **Runtime:** Node.js 18+
-- **Framework:** Express.js
-- **Language:** TypeScript
-- **Key Services:**
-  - `custodial-signer.service.ts` - Signs transactions for users
-  - `blockchain-query.service.ts` - Queries Aptos blockchain
-  - `ipfs.service.ts` - Uploads to IPFS via Pinata
-  - `fiat-blockchain-bridge.service.ts` - Stripe ↔ Blockchain
+### Backend
+- **Runtime**: Node.js 18
+- **Framework**: Express.js + TypeScript
+- **Database**: PostgreSQL 15
+- **Cache**: Redis 7
+- **Queue**: BullMQ
+- **Blockchain**: Aptos SDK
+- **Storage**: Pinata (IPFS)
+- **Payments**: Stripe API
+- **AI**: OpenAI GPT-4
+- **Auth**: JWT
+- **Logging**: Winston
 
-### **Frontend (User Interface)**
-- **Framework:** React 18
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS
-- **State:** React Query (for blockchain data)
-- **PWA:** Service workers for offline support
+### Blockchain
+- **Platform**: Aptos (Move language)
+- **Network**: Devnet
+- **Smart Contracts**:
+  - `user_accounts.move` - User registration
+  - `bookings.move` - Booking escrow
+  - `reviews.move` - Review system
+  - `platform_admin.move` - Admin controls
 
-### **Data Layer**
-- **Primary Storage:** Aptos blockchain (replaces PostgreSQL)
-- **Media Storage:** IPFS via Pinata (replaces AWS S3)
-- **Caching:** Redis (optional, for performance)
-
----
-
-## 📊 **Project Structure**
-
-```
-CampusCuts/
-├── contracts/                   # Move smart contracts
-│   ├── sources/
-│   │   ├── user_accounts.move   # User profiles + balances
-│   │   ├── bookings.move        # Escrow-based bookings
-│   │   └── reviews.move         # Weighted review system
-│   └── Move.toml
-│
-├── backend/                     # Node.js backend (thin signing layer)
-│   ├── src/
-│   │   ├── services/
-│   │   │   ├── custodial-signer.service.ts    # 🔑 The magic!
-│   │   │   ├── blockchain-query.service.ts    # 🔍 Query blockchain
-│   │   │   ├── ipfs.service.ts                # 📦 IPFS uploads
-│   │   │   └── fiat-blockchain-bridge.service.ts  # 💰 Fiat bridge
-│   │   │
-│   │   ├── controllers/
-│   │   │   ├── auth-blockchain.controller.ts      # Auth
-│   │   │   ├── booking-blockchain.controller.ts   # Bookings
-│   │   │   ├── review-blockchain.controller.ts    # Reviews
-│   │   │   └── fiat-bridge.controller.ts          # Deposits/Withdrawals
-│   │   │
-│   │   ├── routes/              # API endpoints
-│   │   ├── middleware/          # Auth, validation, etc.
-│   │   └── index.ts             # Main server (NO PostgreSQL!)
-│   │
-│   ├── env.example              # Configuration template
-│   └── package.json
-│
-├── web-app/                     # React frontend
-│   ├── src/
-│   │   ├── components/          # UI components
-│   │   ├── pages/               # Pages/views
-│   │   ├── hooks/               # Custom React hooks
-│   │   └── services/            # API client
-│   └── package.json
-│
-└── docs/                        # Documentation
-    ├── DECENTRALIZED_ARCHITECTURE_ROADMAP.md
-    ├── DECENTRALIZED_BUILD_STATUS.md
-    ├── SESSION_SUMMARY.md
-    └── ...
-```
+### Infrastructure
+- **Containerization**: Docker + Docker Compose
+- **CI/CD**: GitHub Actions
+- **Deployment**: AWS Lambda (backend) + Vercel (frontend)
+- **Monitoring**: Winston logs + PostgreSQL analytics
 
 ---
 
-## 🔐 **Security**
+## ⚙️ Configuration
 
-### **Custodial Wallet Security**
+### Environment Variables
 
-1. **Private Key Encryption**
-   - User password → scrypt key derivation
-   - AES-256-GCM encryption
-   - Never stored in plain text
+Create `backend/.env`:
 
-2. **Deterministic Address Derivation**
-   - Email → SHA-256 → Aptos address
-   - Same email always generates same address
-   - Enables password recovery
+```env
+# Database
+DATABASE_URL=postgresql://postgres:password@localhost:5432/campuscuts
 
-3. **Production Key Management**
-   ```
-   Development:  Password-encrypted keys in memory
-   Staging:      AWS KMS for key encryption
-   Production:   Google Cloud HSM / AWS CloudHSM
-                 + Multisig for platform treasury
-   ```
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-### **Platform Gas Fee Coverage**
-
-- Platform pays ALL gas fees
-- Users never interact with crypto wallets
-- Gas costs absorbed into platform fee (5% on bookings)
-
----
-
-## 🎭 **The Custodial Wallet Illusion**
-
-### **How Users Experience It**
-
-```javascript
-// User signs up
-const response = await fetch('/api/auth-blockchain/signup', {
-  method: 'POST',
-  body: JSON.stringify({
-    email: 'student@calpoly.edu',
-    password: 'mypassword123',
-    username: 'john_doe',
-    campus_domain: 'calpoly.edu',
-    role: 'student'
-  })
-});
-
-// Response:
-{
-  "success": true,
-  "message": "Account created successfully!",
-  "data": {
-    "token": "eyJhbG...",
-    "user": {
-      "address": "0xabc123...",
-      "email": "student@calpoly.edu",
-      "username": "john_doe",
-      "role": "student"
-    }
-  }
-}
-
-// User thinks: "Normal signup, like any other app"
-// Reality: They just created a blockchain account with:
-//   - Aptos address: 0xabc123...
-//   - Encrypted private key stored in KMS
-//   - On-chain user account created
-//   - Ready to transact on blockchain
-```
-
-### **How Backend Handles It**
-
-```typescript
-// Custodial signer service (the magic!)
-const account = await custodialSigner.createUserAccount(
-  "student@calpoly.edu",
-  "mypassword123"
-);
-// Returns:
-// {
-//   address: "0xabc123...",
-//   publicKey: "0x456def...",
-//   encryptedPrivateKey: "iv:tag:encrypted_data"
-// }
-
-// Sign transaction on behalf of user
-const tx = await custodialSigner.signAndSubmitOptimistic(email, {
-  function: `${moduleAddress}::user_accounts::register_user`,
-  arguments: [emailHash, campusDomain, role, username]
-});
-
-// Transaction submitted to blockchain
-// User gets instant confirmation
-// Blockchain confirms in background (2-5 seconds)
-```
-
----
-
-## 📊 **Platform Economics**
-
-### **Fees**
-
-| Action | Fee | Who Pays |
-|--------|-----|----------|
-| Deposit (add funds) | FREE | User pays Stripe fee (~3%) |
-| Booking | 5% | Deducted from total |
-| Withdrawal | $1 flat | Deducted from amount |
-| Gas fees | FREE | Platform absorbs all gas |
-
-### **Example Booking Economics**
-
-```
-Student books: $30 haircut
-
-Breakdown:
-- Total charge: $30.00
-- Platform fee:  $1.50 (5%)
-- Barber gets:  $28.50
-
-On-chain:
-- Locked in escrow: 3 APT (@ $10/APT)
-- Platform fee: 0.15 APT
-- Barber receives: 2.85 APT
-- Gas fee: ~0.001 APT (platform absorbs)
-
-All handled by smart contract automatically!
-```
-
----
-
-## 🌐 **Environment Variables**
-
-### **Required (Minimum Setup)**
-
-```bash
-# Aptos Blockchain
-APTOS_PLATFORM_ADDRESS=0x...
+# Blockchain (Aptos)
+APTOS_NODE_URL=https://fullnode.devnet.aptoslabs.com/v1
 APTOS_PLATFORM_PRIVATE_KEY=0x...
-APTOS_MODULE_ADDRESS=0x...
+APTOS_PLATFORM_ADDRESS=0x...
+APTOS_NETWORK=devnet
 
-# Custodial Wallet
-CUSTODIAL_ENCRYPTION_SECRET=your-32-char-secret
-
-# IPFS (Pinata)
-PINATA_API_KEY=your-key
-PINATA_SECRET_API_KEY=your-secret
-
-# Stripe
+# Payments (Stripe)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PLATFORM_ACCOUNT_ID=acct_...
+
+# Storage (IPFS via Pinata)
+PINATA_API_KEY=...
+PINATA_SECRET_KEY=...
+
+# AI (OpenAI)
+OPENAI_API_KEY=sk-proj-...  # Single key for all AI services
+OPENAI_MODEL=gpt-4-turbo-preview
+OPENAI_MINI_MODEL=gpt-4o-mini
+
+# Security
+JWT_SECRET=your-secret-key-here
+
+# Email (SendGrid - optional)
+SENDGRID_API_KEY=SG...
+ADMIN_EMAIL=admin@campuscuts.com
+
+# Server
+PORT=3001
+NODE_ENV=development
 ```
 
-### **Optional (Enhanced Features)**
+### AI Services Configuration
 
-```bash
-# Redis (caching)
-REDIS_URL=redis://localhost:6379
+All AI services (location enrichment, dynamic pricing, fraud detection, etc.) use the **single `OPENAI_API_KEY`** configured in `backend/.env`. The ai-worker code is imported as a library and runs in the backend process, sharing the same environment.
 
-# Email notifications
-SMTP_HOST=smtp.gmail.com
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
+**AI Features:**
+- ✅ Location enrichment (GPT-4o-mini)
+- ✅ Dynamic pricing (GPT-4-turbo)
+- ✅ Quality scoring (GPT-4-turbo)
+- ✅ Fraud detection (GPT-4-turbo)
+- ✅ Dispute resolution (GPT-4-turbo)
+- ✅ Market analysis (GPT-4-turbo)
 
-# Push notifications
-FIREBASE_SERVICE_ACCOUNT={...}
-```
+**Estimated Cost**: $51-205/month for 1,000 active users
 
 ---
 
-## 🧪 **Testing**
+## 💻 Development
 
-### **Test the Blockchain Auth**
-
-```bash
-# Signup
-curl -X POST http://localhost:3000/api/auth-blockchain/signup \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@calpoly.edu",
-    "password": "test123",
-    "username": "testuser",
-    "campus_domain": "calpoly.edu",
-    "role": "student"
-  }'
-
-# Should return JWT token + user data
-```
-
-### **Test Blockchain Query**
+### Backend Development
 
 ```bash
-# Get current user (from blockchain)
-curl http://localhost:3000/api/auth-blockchain/me \
-  -H "Authorization: Bearer <your-jwt-token>"
+cd backend
 
-# Should return on-chain user data
-```
+# Start in development mode (auto-reload)
+npm run dev
 
-### **Health Check**
+# Run tests
+npm test
 
-```bash
-curl http://localhost:3000/health
+# Lint code
+npm run lint
 
-# Should return:
-{
-  "status": "healthy",
-  "blockchain": "connected",
-  "data_layer": "aptos + ipfs",
-  "stats": {
-    "total_users": 123,
-    "total_bookings": 456
-  }
-}
-```
-
----
-
-## 📖 **Documentation**
-
-| Document | Description |
-|----------|-------------|
-| `README.md` | This file - complete setup guide |
-| `DECENTRALIZED_ARCHITECTURE_ROADMAP.md` | Complete architectural overview |
-| `DECENTRALIZED_BUILD_STATUS.md` | Current build progress |
-| `SESSION_SUMMARY.md` | Latest build session details |
-| `CUSTODIAL_WALLET_ARCHITECTURE.md` | Detailed custodial wallet design |
-| `GAS_FEE_ECONOMICS.md` | How platform absorbs gas fees |
-| `STRIPE_CUSTODIAL_WALLET_INTEGRATION.md` | Fiat-blockchain bridge details |
-
----
-
-## 🎯 **Key Features**
-
-### **For Students**
-- ✅ Sign up with .edu email (no wallet needed)
-- ✅ Browse barbers by campus
-- ✅ Book haircuts with credit card
-- ✅ Automatic escrow protection
-- ✅ Leave verified reviews
-- ✅ Track booking history
-
-### **For Barbers**
-- ✅ Create professional profile
-- ✅ Upload portfolio to IPFS
-- ✅ Set availability and services
-- ✅ Receive instant booking notifications
-- ✅ Automatic payment on completion
-- ✅ Cash out earnings to bank account
-
-### **Platform Benefits**
-- ✅ 85% lower operational costs
-- ✅ Immutable review system (can't be faked)
-- ✅ Transparent on-chain escrow
-- ✅ Censorship-resistant
-- ✅ Automated payments
-- ✅ Real-time blockchain monitoring
-
----
-
-## 🚀 **Deployment**
-
-### **Smart Contracts**
-
-```bash
-# Deploy to Aptos devnet
-cd contracts
-aptos move publish --named-addresses campus_cuts=default --network devnet
-
-# Deploy to Aptos mainnet (production)
-aptos move publish --named-addresses campus_cuts=default --network mainnet
-```
-
-### **Backend**
-
-```bash
-# Option 1: Serverless (recommended)
-# Deploy to AWS Lambda, Google Cloud Functions, or Vercel
-
-# Option 2: Traditional server
-# Deploy to AWS EC2, DigitalOcean, or any VPS
+# Build for production
 npm run build
+
+# Start production server
 npm start
 ```
 
-### **Frontend**
+### Frontend Development
 
 ```bash
-# Option 1: IPFS (fully decentralized)
-npm run build
-ipfs add -r dist/
+cd web-app
 
-# Option 2: Traditional CDN
-# Deploy to Vercel, Netlify, or Cloudflare Pages
+# Start development server
+npm run dev
+
+# Run tests
+npm run test
+
+# Build for production
 npm run build
-# Upload dist/ folder
+
+# Preview production build
+npm run preview
+```
+
+### Database Migrations
+
+```bash
+cd backend
+
+# Apply migrations
+psql -U postgres -d campuscuts < src/database/migrations/001_initial.sql
+psql -U postgres -d campuscuts < src/database/migrations/002_user_grading.sql
+# ... apply each migration in order
+
+# Seed mock data
+psql -U postgres -d campuscuts < database/seed-mock-data.sql
+```
+
+### Docker Development
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f backend
+
+# Stop all services
+docker-compose down
+
+# Reset database
+docker-compose down -v
+docker-compose up -d postgres
 ```
 
 ---
 
-## 🔍 **Monitoring**
+## 📱 Platform-Specific Features
 
-### **Blockchain Monitoring**
+### Web App (`/web-app`)
+- Responsive design (mobile-first)
+- PWA capabilities (offline, install prompt)
+- Optimized for desktop and mobile browsers
+- Landing page with web/app routing
+
+### iOS App (`/ios-app`)
+- Native Swift/SwiftUI
+- Push notifications (APNs)
+- Wallet adapter integration
+- Biometric authentication
+- Native camera integration for portfolio uploads
+
+---
+
+## 🎨 Design System
+
+### Color Palette
+- **Primary**: Olive Green (`#708d81`) - Brand color
+- **Background**: Grey (`#525252`) - Main app background
+- **Accent**: Blue (`#0ea5e9`) - Info/links
+- **Semantic**: Green (success), Red (error), Amber (warning)
+
+### Typography
+- **Headings**: Bold, 2xl-5xl
+- **Body**: Regular, base-lg
+- **Buttons**: Semibold, uppercase
+
+### Components
+- Rounded corners (lg, xl)
+- Subtle shadows
+- Hover animations
+- Click-outside-to-close modals
+
+---
+
+## 🗄️ Database Schema
+
+### Core Tables
+- `users` - User accounts (students, barbers, admins)
+- `barbers` - Barber profiles & pricing
+- `barber_quality_scores` - BQS metrics
+- `bookings` - Booking records
+- `booking_requests` - Pending approval bookings
+- `reviews` - Customer reviews
+- `campus_locations` - Crowd-sourced location registry
+- `market_stats` - Campus market data
+
+### AI Tables
+- `barber_pricing_multipliers` - Dynamic pricing data
+- `fraud_flags` - Suspicious activity alerts
+- `dispute_recommendations` - AI dispute analysis
+- `location_enrichment_log` - AI location verification audit
+
+### Cron Tables
+- `cron_history` - Job execution log
+- `gas_wallet_usage_tracking` - Blockchain gas monitoring
+
+---
+
+## 🚢 Deployment
+
+### Backend Deployment (AWS Lambda)
 
 ```bash
-# Real-time transaction feed
-GET /api/admin/live-feed
+cd backend
 
-# Platform statistics
-GET /api/admin/stats
+# Build
+npm run build
 
-# Aptos Explorer (view all transactions)
-https://explorer.aptoslabs.com/account/<your-module-address>?network=devnet
+# Deploy
+serverless deploy --stage production
 ```
 
-### **IPFS Monitoring**
+### Frontend Deployment (Vercel)
 
 ```bash
-# Pinata dashboard
-https://app.pinata.cloud/
+cd web-app
 
-# View pinned content
-# Check storage usage
-# Monitor upload activity
+# Build
+npm run build
+
+# Deploy
+vercel --prod
+```
+
+### Smart Contract Deployment (Aptos)
+
+```bash
+cd contracts
+
+# Compile
+aptos move compile
+
+# Deploy to devnet
+aptos move publish --profile devnet
+
+# Deploy to mainnet
+aptos move publish --profile mainnet
 ```
 
 ---
 
-## 🤝 **Contributing**
+## 📊 Key Systems
 
-We welcome contributions! This project is open source.
+### 1. Campus Location System
+- **Crowd-sourced**: Barbers submit locations, system auto-deduplicates
+- **AI-enriched**: OpenAI verifies and classifies locations
+- **Fuzzy matching**: 88% similarity threshold prevents duplicates
+- **Auto-promotion**: High-usage locations automatically verified
 
-### **Development Setup**
+### 2. Dynamic Pricing Engine
+- **BQS-based multipliers**: 1.0x (new) to 1.5x (top-tier)
+- **Market calibration**: City-specific pricing factors
+- **Surge pricing**: Real-time demand adjustments (1.2x-1.4x)
+- **Server-enforced**: Barbers can't override calculated ranges
+
+### 3. Booking Request System
+- **Barber approval**: All bookings require barber acceptance
+- **Customer profiles**: Barbers view customer reliability before accepting
+- **Pre-booking chat**: AirBnb-style messaging
+- **Escrow**: Funds locked until service completion
+
+### 4. Payment Flow
+- **Customer**: Stripe → Backend → Escrow
+- **Barber**: Escrow → Stripe Connect → Barber bank
+- **Platform**: 5% fee deducted at payout
+- **Webhook-driven**: Event-based state management
+
+### 5. Gas Wallet Monitoring
+- **Automated monitoring**: Cron jobs check balance every hour
+- **Low balance alerts**: Email/Slack when balance < threshold
+- **One-click refill**: Admin can transfer APT via Petra wallet
+- **Usage tracking**: Historical gas consumption analytics
+
+---
+
+## 🔐 Security
+
+- **Authentication**: JWT tokens (7-day expiration)
+- **Authorization**: Role-based access control (student, barber, admin)
+- **API Security**: Rate limiting, CORS, Helmet headers
+- **Payment Security**: Stripe PCI compliance, webhook signature verification
+- **Blockchain Security**: Custodial wallet with AES-256 encryption
+- **Data Privacy**: GDPR-compliant data handling
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run backend tests
+cd backend && npm test
+
+# Run frontend tests
+cd web-app && npm test
+
+# E2E tests (Playwright)
+cd e2e && npx playwright test
+
+# Coverage report
+npm run test:coverage
+```
+
+---
+
+## 📈 Monitoring & Analytics
+
+### Backend Logs
+- **Location**: `backend/logs/`
+- **Format**: JSON structured logging (Winston)
+- **Levels**: error, warn, info, debug
+
+### System Health
+- **Endpoint**: `GET /api/system/health`
+- **Monitors**: PostgreSQL, blockchain, Redis
+- **Meter**: Hybrid (cache) vs. blockchain-only mode
+
+### Admin Dashboard
+- Real-time transaction feed
+- Campus performance metrics
+- Fraud detection alerts
+- Gas wallet status
+- Market summaries
+
+---
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test locally with blockchain-first architecture
-5. Submit a pull request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing feature`)
+5. Open Pull Request
 
-### **Testing Guidelines**
-
-- Test all API endpoints with blockchain integration
-- Ensure frontend works with optimistic UI
-- Verify smart contract functions correctly
-- Test fiat deposit/withdrawal flows
-
----
-
-## 📜 **License**
-
-MIT License - see LICENSE file for details
+### Development Guidelines
+- Follow TypeScript strict mode
+- Write tests for new features
+- Update documentation
+- Follow existing code style
+- Add comments for complex logic
 
 ---
 
-## 🙏 **Acknowledgments**
+## 📄 License
 
-Built with:
-- Aptos Labs (blockchain infrastructure)
-- Pinata (IPFS pinning service)
-- Stripe (fiat payment processing)
-- Open source community
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📞 **Support**
+## 👥 Team
 
-- **Documentation:** See `/docs` folder
-- **Issues:** GitHub Issues
-- **Email:** support@campuscuts.app (coming soon)
+Built for campus entrepreneurs by campus entrepreneurs.
 
 ---
 
-## 🎉 **Why CampusCuts is Revolutionary**
+## 📧 Support
 
-1. **Web2 UX + Web3 Infrastructure** - Best of both worlds
-2. **85% Cost Savings** - Blockchain is cheaper than databases
-3. **Immutable Data** - Reviews can't be faked or deleted
-4. **Trustless Escrow** - Smart contracts, not platform, hold funds
-5. **Censorship-Resistant** - No single point of control
-6. **Transparent** - All transactions auditable on-chain
-
-**This is the future of campus marketplaces!** 🚀
+- **Issues**: [GitHub Issues](https://github.com/yourusername/CampusCuts/issues)
+- **Email**: support@campuscuts.com
+- **Documentation**: This README
 
 ---
 
-**Ready to revolutionize campus services? Let's build!** 🎓✨
+## 🎯 Project Status
+
+- ✅ Core marketplace functionality
+- ✅ Booking request system
+- ✅ Payment integration (Stripe)
+- ✅ AI-powered features
+- ✅ Campus location system
+- ✅ Dynamic pricing engine
+- ✅ Web app (PWA)
+- ✅ iOS app
+- ✅ Admin dashboard
+- ⏳ Mainnet deployment (coming soon)
+- ⏳ Multi-university rollout
+
+---
+
+**CampusCuts** - Empowering campus barbers, one cut at a time. ✂️
