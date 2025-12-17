@@ -158,7 +158,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
       {/* Dropdown */}
       {isDropdownOpen && (
-        <Card className="absolute z-10 mt-2 w-full max-h-96 overflow-auto shadow-xl">
+        <Card className="absolute z-50 mt-2 w-full max-h-96 overflow-auto shadow-xl">
           {/* Search */}
           <div className="sticky top-0 bg-white p-3 border-b">
             <div className="relative">
