@@ -426,21 +426,21 @@ export default function BarberFilterQuestionnaire({
                     selectedLocationId={locationId || undefined}
                     onLocationSelect={handleLocationSelect}
                   />
+                  
+                  {/* Location Confirmation Button */}
+                  {locationId && locationName && (
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        onClick={handleLocationConfirm}
+                        variant="primary"
+                        className="px-6 py-2"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Confirm Location
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                
-                {/* Location Confirmation Button */}
-                {locationId && locationName && (
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={handleLocationConfirm}
-                      variant="primary"
-                      className="px-6 py-2"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Confirm Location
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
 
