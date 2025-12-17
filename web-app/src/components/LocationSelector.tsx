@@ -13,8 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Check, Plus, ChevronDown } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/constants';
+import apiService from '../services/api.service';
 
 interface LocationOption {
   id: string;
@@ -73,17 +72,17 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/locations`, {
-        params: { universityId },
+      const response = await apiService.get<{ locations: LocationOption[] }>('/locations', {
+        universityId,
       });
 
-      if (response.data.success) {
-        setLocations(response.data.data.locations);
-        setFilteredLocations(response.data.data.locations);
+      if (response.locations) {
+        setLocations(response.locations);
+        setFilteredLocations(response.locations);
 
         // Find selected location if provided
         if (selectedLocationId) {
-          const selected = response.data.data.locations.find(
+          const selected = response.locations.find(
             (loc: LocationOption) => loc.id === selectedLocationId
           );
           if (selected) {
@@ -111,20 +110,16 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/locations/submit`,
-        {
-          universityId,
-          locationName: newLocationName,
-          category: newLocationCategory,
-        }
-      );
+      const newLocation = await apiService.post<{ location: LocationOption }>('/locations/submit', {
+        universityId,
+        locationName: newLocationName,
+        category: newLocationCategory,
+      });
 
-      if (response.data.success) {
-        const newLocation = response.data.data.location;
-        setLocations(prev => [newLocation, ...prev]);
-        setSelectedLocation(newLocation);
-        onLocationSelect(newLocation.id, newLocation.name);
+      if (newLocation) {
+        setLocations(prev => [newLocation.location, ...prev]);
+        setSelectedLocation(newLocation.location);
+        onLocationSelect(newLocation.location.id, newLocation.location.name);
         setIsAddingNew(false);
         setNewLocationName('');
         setNewLocationCategory('ON_CAMPUS');

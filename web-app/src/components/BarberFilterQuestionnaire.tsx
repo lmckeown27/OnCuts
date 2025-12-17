@@ -422,7 +422,7 @@ export default function BarberFilterQuestionnaire({
                 
                 <div className="max-w-md mx-auto">
                   <LocationSelector
-                    universityId="calpoly-slo"
+                    universityId="00000000-0000-0000-0000-000000000001"
                     selectedLocationId={locationId || undefined}
                     onLocationSelect={handleLocationSelect}
                   />
