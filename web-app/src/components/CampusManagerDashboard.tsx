@@ -37,14 +37,6 @@ interface CampusMetrics {
   disputesFlagged: number;
 }
 
-interface ContentItem {
-  id: string;
-  title: string;
-  type: 'photo' | 'video' | 'post';
-  status: 'draft' | 'pending' | 'approved' | 'rejected';
-  createdAt: Date;
-}
-
 interface Incident {
   id: string;
   barberName: string;
@@ -340,75 +332,115 @@ const CampusMetricsPanel: React.FC<{ campusId: string; campusName: string }> = (
 };
 
 // ═══════════════════════════════════════════════════════════════
-// CONTENT MANAGEMENT PANEL
+// CONTENT MANAGEMENT PANEL (Instagram Integration)
 // ═══════════════════════════════════════════════════════════════
 
 const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
-  const [content] = useState<ContentItem[]>([
-    {
-      id: '1',
-      title: 'Campus Barber Showcase',
-      type: 'photo',
-      status: 'approved',
-      createdAt: new Date('2025-01-05'),
-    },
-    {
-      id: '2',
-      title: 'New Year Promo',
-      type: 'post',
-      status: 'pending',
-      createdAt: new Date('2025-01-10'),
-    },
-  ]);
+  // Map campus IDs to Instagram handles
+  const getCampusInstagram = (campusId: string): string => {
+    // TODO: Fetch from database/API
+    const instagramHandles: Record<string, string> = {
+      'campus-1': 'campuscutsslo',
+      '00000000-0000-0000-0000-000000000001': 'campuscutsslo',
+      // Add more campus-to-instagram mappings here
+    };
+    
+    return instagramHandles[campusId] || 'campuscutsslo'; // Default to SLO
+  };
+
+  const instagramHandle = getCampusInstagram(campusId);
+  const instagramUrl = `https://www.instagram.com/${instagramHandle}/`;
+
+  const openInstagram = () => {
+    window.open(instagramUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Campus Content</h3>
-        <Button variant="primary">
-          <FileText className="w-4 h-4 mr-2" />
-          Upload Content
-        </Button>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Campus Content & Social Media</h3>
+        <p className="text-sm text-gray-500">
+          Manage your campus's Instagram presence and share barber content with the community.
+        </p>
       </div>
 
-      {content.length === 0 ? (
-        <Card className="text-center py-12">
-          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No content uploaded yet</p>
-          <Button variant="primary" className="mt-4">
-            Upload First Content
-          </Button>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {content.map((item) => (
-            <Card key={item.id} className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-gray-500">{item.type}</span>
-                    <span className="text-xs text-gray-500">
-                      {item.createdAt.toLocaleDateString()}
-                    </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      item.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      item.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  View
-                </Button>
-              </div>
-            </Card>
-          ))}
+      {/* Instagram Card */}
+      <Card className="p-8">
+        <div className="text-center">
+          {/* Instagram Logo */}
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 flex items-center justify-center">
+            <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </div>
+
+          {/* Instagram Info */}
+          <h4 className="text-xl font-bold text-gray-900 mb-2">
+            Campus Instagram
+          </h4>
+          <p className="text-lg text-gray-700 mb-1">
+            @{instagramHandle}
+          </p>
+          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+            Post barber showcases, campus events, promotions, and student success stories to your campus Instagram page.
+          </p>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              variant="primary"
+              onClick={openInstagram}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Open Instagram
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(instagramUrl);
+                alert('Instagram link copied to clipboard!');
+              }}
+            >
+              Copy Link
+            </Button>
+          </div>
         </div>
-      )}
+      </Card>
+
+      {/* Content Guidelines */}
+      <Card className="p-6 bg-blue-50 border-blue-200">
+        <div className="flex gap-3">
+          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-2">Content Guidelines</h4>
+            <ul className="text-sm text-blue-800 space-y-1.5">
+              <li>• Showcase barber work and transformations</li>
+              <li>• Highlight positive customer experiences</li>
+              <li>• Promote campus events and special offers</li>
+              <li>• Tag barbers and customers (with permission)</li>
+              <li>• Use relevant hashtags (#CampusCuts, #YourCampusName)</li>
+              <li>• Maintain professional and inclusive content</li>
+            </ul>
+          </div>
+        </div>
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-gray-900">247</p>
+          <p className="text-xs text-gray-600 mt-1">Posts</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-gray-900">1.2K</p>
+          <p className="text-xs text-gray-600 mt-1">Followers</p>
+        </Card>
+        <Card className="p-4 text-center">
+          <p className="text-2xl font-bold text-gray-900">892</p>
+          <p className="text-xs text-gray-600 mt-1">Following</p>
+        </Card>
+      </div>
     </div>
   );
 };
