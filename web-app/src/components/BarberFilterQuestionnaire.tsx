@@ -242,7 +242,7 @@ export default function BarberFilterQuestionnaire({
         <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
           {/* Selected Filter Pills - Fully clickable for editing */}
           {(serviceType || (date && time && dateTimeConfirmed) || (location && locationConfirmed)) && (
-            <div className="flex flex-wrap items-center justify-center gap-2 pb-4 mb-4 border-b border-gray-200">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-4 pb-4 mb-4 border-b border-gray-200">
               {serviceType && (
                 <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
                   <button
