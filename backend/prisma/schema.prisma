@@ -202,6 +202,10 @@ model Barber {
   bqsScore             Decimal? @db.Decimal(5,2)  // Barber Quality Score
   pricingMultiplier    Decimal  @default(1.00) @db.Decimal(4,2)
   
+  // Campus Manager role (exactly one per campus)
+  isCampusManager      Boolean  @default(false)
+  campusManagerSince   DateTime? @db.Timestamptz
+  
   // Status
   isActive    Boolean  @default(true)
   isOnboarded Boolean  @default(false)
@@ -225,6 +229,7 @@ model Barber {
   @@index([campusId, isActive])
   @@index([bqsScore])
   @@index([avgRating])
+  @@index([campusId, isCampusManager])
   @@map("barbers")
 }
 

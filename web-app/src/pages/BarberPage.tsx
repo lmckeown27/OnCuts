@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberPricingDashboard from '../components/BarberPricingDashboard';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
+import { CampusManagerBadge } from '../components/CampusManagerBadge';
+import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import { CampusCutsLogo } from '@assets';
 
 export default function BarberPage() {
@@ -15,10 +17,15 @@ export default function BarberPage() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [showPricingDashboard, setShowPricingDashboard] = useState(false);
+  const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Mock barber ID - in production this would come from auth
+  // Mock barber data - in production this would come from API
   const barberId = 'barber-1';
+  const isCampusManager = true; // TODO: Fetch from API
+  const campusId = 'campus-1';
+  const campusName = 'California Polytechnic State University';
+  const campusManagerSince = new Date('2024-01-15'); // TODO: Fetch from API
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,7 +47,16 @@ export default function BarberPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
-              <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
+                {/* Campus Manager Badge (conditional) */}
+                {isCampusManager && (
+                  <CampusManagerBadge 
+                    campusName={campusName} 
+                    since={campusManagerSince}
+                  />
+                )}
+              </div>
             </div>
             
             <div className="flex items-center gap-4">
@@ -91,6 +107,24 @@ export default function BarberPage() {
                     <Award className="w-4 h-4 text-gray-500" />
                     Performance & Pricing
                   </button>
+                  
+                  {/* Campus Manager Option (conditional) */}
+                  {isCampusManager && (
+                    <>
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <button
+                        onClick={() => {
+                          setShowCampusManagerDashboard(true);
+                          setShowProfileDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      >
+                        <Shield className="w-4 h-4 text-primary-600" />
+                        Campus Manager
+                      </button>
+                    </>
+                  )}
+                  
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
@@ -188,6 +222,35 @@ export default function BarberPage() {
             </div>
             <div className="p-6">
               <BarberPricingDashboard barberId={barberId} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Campus Manager Dashboard Modal (conditional) */}
+      {isCampusManager && showCampusManagerDashboard && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCampusManagerDashboard(false)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary-600" />
+                <h2 className="text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
+              </div>
+              <button
+                onClick={() => setShowCampusManagerDashboard(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <CampusManagerDashboard campusId={campusId} campusName={campusName} />
             </div>
           </div>
         </div>
