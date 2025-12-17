@@ -135,9 +135,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     );
 
   return (
-    <div className={`flex gap-4 ${className}`}>
+    <div className={`flex items-stretch gap-4 ${className}`}>
       {/* Input Field */}
-      <div className="relative flex-1">
+      <div className="relative flex-1 flex items-center">
         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
         <input
           ref={inputRef}
@@ -146,7 +146,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
           onChange={handleInputChange}
           onFocus={() => setShowSuggestions(true)}
           placeholder="Type your location..."
-          className="w-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white text-gray-700 font-medium"
+          className="w-full h-full pl-11 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white text-gray-700 font-medium"
           autoComplete="off"
         />
       </div>
@@ -155,7 +155,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       {showSuggestions && (filteredSuggestions.length > 0 || showCreateNew) && (
         <div
           ref={suggestionsRef}
-          className="flex-1 z-50 bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+          className="flex-1 z-50 bg-white border-2 border-gray-200 rounded-lg shadow-xl overflow-y-auto flex flex-col"
         >
           {filteredSuggestions.length > 0 && (
             <div>
