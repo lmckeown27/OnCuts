@@ -10,10 +10,9 @@ import { Shield } from 'lucide-react';
 
 interface CampusManagerBadgeProps {
   campusName: string;
-  since?: Date;
 }
 
-export const CampusManagerBadge: React.FC<CampusManagerBadgeProps> = ({ campusName, since }) => {
+export const CampusManagerBadge: React.FC<CampusManagerBadgeProps> = ({ campusName }) => {
   return (
     <div className="flex items-center gap-2 mt-2">
       <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 border border-primary-200 rounded-full">
@@ -24,12 +23,6 @@ export const CampusManagerBadge: React.FC<CampusManagerBadgeProps> = ({ campusNa
         <span className="text-sm text-gray-500">—</span>
         <span className="text-sm text-gray-700">{campusName}</span>
       </div>
-      
-      {since && (
-        <span className="text-xs text-gray-500" title={`Campus Manager since ${since.toLocaleDateString()}`}>
-          Since {since.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-        </span>
-      )}
     </div>
   );
 };

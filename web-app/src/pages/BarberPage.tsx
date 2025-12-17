@@ -25,7 +25,6 @@ export default function BarberPage() {
   const isCampusManager = true; // TODO: Fetch from API
   const campusId = 'campus-1';
   const campusName = 'California Polytechnic State University';
-  const campusManagerSince = new Date('2024-01-15'); // TODO: Fetch from API
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,8 +51,7 @@ export default function BarberPage() {
                 {/* Campus Manager Badge (conditional) */}
                 {isCampusManager && (
                   <CampusManagerBadge 
-                    campusName={campusName} 
-                    since={campusManagerSince}
+                    campusName={campusName}
                   />
                 )}
               </div>
