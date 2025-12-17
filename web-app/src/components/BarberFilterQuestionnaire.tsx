@@ -203,17 +203,18 @@ export default function BarberFilterQuestionnaire({
                     <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     <div className="relative flex items-center">
                       <Calendar className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" />
-                      <input
-                        id="date-picker-input"
-                        type="date"
-                        value={date || ''}
-                        onChange={(e) => handleDateChange(e.target.value)}
-                        min={getMinDate()}
-                        className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                        style={{
-                          colorScheme: 'light',
-                        }}
-                      />
+                <input
+                  id="date-picker-input"
+                  type="date"
+                  value={date || ''}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  min={getMinDate()}
+                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                  style={{
+                    colorScheme: 'light',
+                    accentColor: '#708d81',
+                  }}
+                />
                     </div>
                   </div>
                 </div>
@@ -245,16 +246,17 @@ export default function BarberFilterQuestionnaire({
                           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
                         />
                       </svg>
-                      <input
-                        id="time-picker-input"
-                        type="time"
-                        value={time || ''}
-                        onChange={(e) => handleTimeChange(e.target.value)}
-                        className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                        style={{
-                          colorScheme: 'light',
-                        }}
-                      />
+                <input
+                  id="time-picker-input"
+                  type="time"
+                  value={time || ''}
+                  onChange={(e) => handleTimeChange(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                  style={{
+                    colorScheme: 'light',
+                    accentColor: '#708d81',
+                  }}
+                />
                     </div>
                   </div>
                 </div>

@@ -36,6 +36,19 @@
     --color-error: #ef4444;
     --color-info: #3b82f6;
   }
+
+  /* Global cursor pointer for interactive elements in date/time pickers */
+  *::-webkit-calendar-picker-indicator {
+    cursor: pointer !important;
+  }
+
+  /* Ensure all interactive date/time picker elements have pointer cursor */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-inner-spin-button {
+    cursor: pointer !important;
+  }
 }
 
 @layer utilities {
@@ -61,5 +74,68 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari, Opera */
+  }
+
+  /* Custom Date & Time Picker Styling */
+  /* Change accent color from blue to platform green */
+  input[type="date"],
+  input[type="time"] {
+    accent-color: var(--color-primary-400);
+    color-scheme: light;
+  }
+
+  /* Calendar picker indicator (icon) */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(48%) sepia(11%) saturate(852%) hue-rotate(117deg) brightness(93%) contrast(88%);
+    opacity: 0.7;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Firefox date/time picker styling */
+  input[type="date"]::-moz-calendar-picker-indicator,
+  input[type="time"]::-moz-calendar-picker-indicator {
+    cursor: pointer;
+  }
+
+  /* Webkit date/time inner spin button */
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-inner-spin-button {
+    cursor: pointer;
+  }
+
+  /* Custom styles for the calendar popup (limited browser support) */
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+  input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+    cursor: text;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text,
+  input[type="time"]::-webkit-datetime-edit-text {
+    color: var(--color-primary-400);
+  }
+
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field,
+  input[type="time"]::-webkit-datetime-edit-hour-field,
+  input[type="time"]::-webkit-datetime-edit-minute-field,
+  input[type="time"]::-webkit-datetime-edit-ampm-field {
+    cursor: pointer;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-month-field:hover,
+  input[type="date"]::-webkit-datetime-edit-day-field:hover,
+  input[type="date"]::-webkit-datetime-edit-year-field:hover,
+  input[type="time"]::-webkit-datetime-edit-hour-field:hover,
+  input[type="time"]::-webkit-datetime-edit-minute-field:hover,
+  input[type="time"]::-webkit-datetime-edit-ampm-field:hover {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary-600);
   }
 }

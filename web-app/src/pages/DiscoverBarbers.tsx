@@ -621,6 +621,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
                   className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
                   style={{
                     colorScheme: 'light',
+                    accentColor: '#708d81',
                   }}
                   required
                 />
@@ -665,6 +666,7 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
                   className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
                   style={{
                     colorScheme: 'light',
+                    accentColor: '#708d81',
                   }}
                   required
                 />
