@@ -668,6 +668,8 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
                   }}
                   required
                 />
+              </div>
+            </div>
           </div>
 
           {/* Location */}
