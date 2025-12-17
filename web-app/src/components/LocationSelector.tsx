@@ -75,8 +75,10 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       if (response.locations) {
         setSuggestions(response.locations);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch locations:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Validation errors:', error.response?.data?.errors);
     }
   };
 

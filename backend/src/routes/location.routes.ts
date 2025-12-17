@@ -46,7 +46,11 @@ router.post(
   '/submit',
   optionalAuthenticate,
   [
-    body('universityId').isUUID().withMessage('Valid university ID required'),
+    body('universityId')
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage('University ID required'),
     body('locationName')
       .isString()
       .trim()
@@ -96,7 +100,11 @@ router.post(
 router.get(
   '/',
   [
-    query('universityId').isUUID().withMessage('Valid university ID required'),
+    query('universityId')
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage('University ID required'),
     query('category').optional().isString(),
   ],
   validate,
@@ -104,10 +112,14 @@ router.get(
     try {
       const { universityId, category } = req.query;
 
+      logger.debug('Fetching locations', { universityId, category });
+
       const locations = await locationService.getLocationsForSelection(
         universityId as string,
         category as string | undefined
       );
+
+      logger.debug('Locations found', { count: locations.length });
 
       res.json({
         success: true,
@@ -117,6 +129,7 @@ router.get(
         },
       });
     } catch (error) {
+      logger.error('Error fetching locations:', error);
       next(error);
     }
   }
@@ -130,7 +143,11 @@ router.get(
 router.get(
   '/search',
   [
-    query('universityId').isUUID().withMessage('Valid university ID required'),
+    query('universityId')
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage('University ID required'),
     query('q').isString().trim().isLength({ min: 1 }).withMessage('Search query required'),
     query('limit').optional().isInt({ min: 1, max: 50 }).toInt(),
   ],
