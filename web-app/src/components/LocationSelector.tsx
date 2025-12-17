@@ -11,8 +11,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Check, Plus, ChevronDown } from 'lucide-react';
-import { Button } from './Button';
-import { Card } from './Card';
+import Button from './Button';
+import Card from './Card';
 import axios from 'axios';
 
 interface LocationOption {
