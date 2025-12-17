@@ -436,9 +436,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 interface CampusBarber {
   id: string;
   name: string;
-  email: string;
-  phoneNumber?: string;
-  instagramHandle?: string;
+  email: string; // Required
+  phoneNumber: string; // Required
+  instagramHandle?: string; // Optional
   avgRating: number;
   totalBookings: number;
   completedBookings: number;
@@ -465,6 +465,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '2',
       name: 'David Kim',
       email: 'david.kim@example.com',
+      phoneNumber: '(555) 234-5678',
       instagramHandle: 'davidkim_fades',
       avgRating: 4.7,
       totalBookings: 89,
@@ -487,6 +488,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '4',
       name: 'Tyler Brooks',
       email: 'tyler.brooks@example.com',
+      phoneNumber: '(555) 456-7890',
       avgRating: 4.9,
       totalBookings: 8,
       completedBookings: 7,
@@ -598,14 +600,12 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                         {barber.email}
                       </a>
                     </div>
-                    {barber.phoneNumber && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="font-medium">Phone:</span>
-                        <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
-                          {barber.phoneNumber}
-                        </a>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <span className="font-medium">Phone:</span>
+                      <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
+                        {barber.phoneNumber}
+                      </a>
+                    </div>
                     {barber.instagramHandle && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Instagram:</span>

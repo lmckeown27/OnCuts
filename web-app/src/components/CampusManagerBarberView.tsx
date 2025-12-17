@@ -29,9 +29,9 @@ import Button from './Button';
 interface BarberProfileData {
   id: string;
   name: string;
-  email: string;
-  phoneNumber?: string;
-  instagramHandle?: string;
+  email: string; // Required
+  phoneNumber: string; // Required
+  instagramHandle?: string; // Optional
   bio?: string;
   
   // Performance metrics
@@ -179,14 +179,12 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                   {barber.email}
                 </a>
               </div>
-              {barber.phoneNumber && (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Phone className="w-4 h-4 text-gray-500" />
-                  <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
-                    {barber.phoneNumber}
-                  </a>
-                </div>
-              )}
+              <div className="flex items-center gap-2 text-gray-700">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
+                  {barber.phoneNumber}
+                </a>
+              </div>
               {barber.instagramHandle && (
                 <div className="flex items-center gap-2 text-gray-700">
                   <Instagram className="w-4 h-4 text-gray-500" />
