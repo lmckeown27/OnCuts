@@ -40,10 +40,186 @@ interface Incident {
   createdAt: Date;
 }
 
+// AI-powered review aggregation interfaces
+interface NegativeReview {
+  reviewId: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  sentiment: 'negative' | 'very_negative';
+  aiAnalysis: string;
+}
+
+interface AIGeneratedIncident {
+  id: string;
+  barberId: string;
+  barberName: string;
+  barberEmail: string;
+  type: 'quality' | 'professionalism' | 'safety' | 'other';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  negativeReviewCount: number;
+  negativeReviews: NegativeReview[];
+  aiSummary: string;
+  aiRecommendation: string;
+  detectedAt: Date;
+  status: 'pending_review' | 'acknowledged' | 'escalated' | 'resolved';
+  campusManagerNotes?: string;
+}
+
 interface CampusManagerDashboardProps {
   campusId: string;
   campusName: string;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// INCIDENT DETAILS MODAL
+// ═══════════════════════════════════════════════════════════════
+
+const IncidentDetailsModal: React.FC<{ 
+  incident: AIGeneratedIncident; 
+  onClose: () => void 
+}> = ({ incident, onClose }) => {
+  return (
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Incident Report Details</h2>
+            <p className="text-sm text-gray-500">AI-generated from customer review analysis</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Barber Info */}
+          <Card className="p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Barber Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Name</p>
+                <p className="font-medium text-gray-900">{incident.barberName}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Email</p>
+                <p className="font-medium text-gray-900">{incident.barberEmail}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Issue Type</p>
+                <p className="font-medium text-gray-900 capitalize">{incident.type}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Severity</p>
+                <p className="font-medium text-gray-900 capitalize">{incident.severity}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Negative Reviews</p>
+                <p className="font-medium text-gray-900">{incident.negativeReviewCount}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Detected</p>
+                <p className="font-medium text-gray-900">{incident.detectedAt.toLocaleString()}</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* AI Summary */}
+          <Card className="p-6 bg-blue-50 border-blue-200">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              AI Analysis Summary
+            </h3>
+            <p className="text-sm text-blue-800 leading-relaxed">{incident.aiSummary}</p>
+          </Card>
+
+          {/* AI Recommendation */}
+          <Card className="p-6 bg-green-50 border-green-200">
+            <h3 className="font-semibold text-green-900 mb-3">Recommended Actions</h3>
+            <p className="text-sm text-green-800 leading-relaxed">{incident.aiRecommendation}</p>
+          </Card>
+
+          {/* Individual Reviews */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-4">Negative Reviews ({incident.negativeReviews.length})</h3>
+            <div className="space-y-4">
+              {incident.negativeReviews.map((review) => (
+                <Card 
+                  key={review.reviewId} 
+                  className={`p-5 ${
+                    review.sentiment === 'very_negative' 
+                      ? 'border-2 border-red-300 bg-red-50' 
+                      : 'border border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium text-gray-900">{review.customerName}</span>
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                          review.sentiment === 'very_negative'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {review.sentiment.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 mb-2">
+                        {[...Array(5)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={i < review.rating ? 'text-yellow-400' : 'text-gray-300'}
+                          >
+                            ★
+                          </span>
+                        ))}
+                        <span className="text-sm text-gray-600 ml-2">
+                          {review.createdAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <p className="text-sm text-gray-700 italic">"{review.comment}"</p>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-lg border border-gray-200">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">AI Analysis:</p>
+                    <p className="text-xs text-gray-600">{review.aiAnalysis}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+            <Button variant="primary">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Escalate to Admin
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({ 
   campusId, 
@@ -639,83 +815,265 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 };
 
 // ═══════════════════════════════════════════════════════════════
-// INCIDENTS PANEL
+// INCIDENTS PANEL (AI-Powered Review Aggregation)
 // ═══════════════════════════════════════════════════════════════
 
 const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
-  const [incidents] = useState<Incident[]>([
+  // TODO: Fetch AI-generated incidents from API
+  const [aiIncidents] = useState<AIGeneratedIncident[]>([
     {
-      id: '1',
-      barberName: 'John Doe',
-      type: 'Quality Complaint',
-      description: 'Multiple complaints about rushed service',
-      status: 'open',
-      createdAt: new Date('2025-01-15'),
+      id: 'ai-1',
+      barberId: '2',
+      barberName: 'David Kim',
+      barberEmail: 'david.kim@example.com',
+      type: 'quality',
+      severity: 'medium',
+      negativeReviewCount: 4,
+      negativeReviews: [
+        {
+          reviewId: 'r1',
+          customerName: 'Student A',
+          rating: 2,
+          comment: 'The fade was uneven and he seemed rushed. Had to get it fixed elsewhere.',
+          createdAt: new Date('2025-01-10'),
+          sentiment: 'negative',
+          aiAnalysis: 'Customer dissatisfied with quality of fade and perceived lack of attention.',
+        },
+        {
+          reviewId: 'r2',
+          customerName: 'Student B',
+          rating: 2,
+          comment: 'Not happy with the result. Very rushed job and didn\'t listen to what I wanted.',
+          createdAt: new Date('2025-01-12'),
+          sentiment: 'negative',
+          aiAnalysis: 'Customer reports poor communication and rushed service.',
+        },
+        {
+          reviewId: 'r3',
+          customerName: 'Student C',
+          rating: 1,
+          comment: 'Worst haircut I\'ve had. He was on his phone the whole time and completely messed up my hair.',
+          createdAt: new Date('2025-01-14'),
+          sentiment: 'very_negative',
+          aiAnalysis: 'Customer extremely dissatisfied. Reports unprofessional behavior (phone use) and poor quality.',
+        },
+        {
+          reviewId: 'r4',
+          customerName: 'Student D',
+          rating: 2,
+          comment: 'Haircut was okay but he was clearly distracted. Not worth the price.',
+          createdAt: new Date('2025-01-15'),
+          sentiment: 'negative',
+          aiAnalysis: 'Customer reports lack of focus and perceived low value.',
+        },
+      ],
+      aiSummary: 'AI has detected a pattern of 4 negative reviews for David Kim over the past 7 days. Common themes include: rushed service (75%), poor quality results (75%), lack of attention/distraction (50%), and unprofessional behavior (25%). This represents a significant quality decline from his historical 4.7 rating.',
+      aiRecommendation: 'Recommend immediate intervention by Campus Manager. Suggested actions: (1) Have 1-on-1 conversation with barber to identify root cause, (2) Review recent bookings for overload, (3) Provide feedback on time management and customer attention, (4) Monitor next 5 appointments closely. If pattern continues, escalate to admin for possible temporary suspension.',
+      detectedAt: new Date('2025-01-16'),
+      status: 'pending_review',
+    },
+    {
+      id: 'ai-2',
+      barberId: '5',
+      barberName: 'Alex Thompson',
+      barberEmail: 'alex.t@example.com',
+      type: 'professionalism',
+      severity: 'low',
+      negativeReviewCount: 2,
+      negativeReviews: [
+        {
+          reviewId: 'r5',
+          customerName: 'Student E',
+          rating: 3,
+          comment: 'Showed up 10 minutes late. Haircut was fine though.',
+          createdAt: new Date('2025-01-13'),
+          sentiment: 'negative',
+          aiAnalysis: 'Customer notes punctuality issue but acceptable service quality.',
+        },
+        {
+          reviewId: 'r6',
+          customerName: 'Student F',
+          rating: 3,
+          comment: 'He was late again. Good barber but needs to work on being on time.',
+          createdAt: new Date('2025-01-15'),
+          sentiment: 'negative',
+          aiAnalysis: 'Repeat punctuality issue noted. Quality acknowledged.',
+        },
+      ],
+      aiSummary: 'AI has detected 2 reviews mentioning late arrivals for Alex Thompson in the past 5 days. While service quality is maintained, punctuality issues may impact customer satisfaction and platform reliability.',
+      aiRecommendation: 'Low severity issue. Recommend informal reminder to barber about punctuality expectations. Monitor for additional instances over next 2 weeks. If pattern continues, escalate for formal warning.',
+      detectedAt: new Date('2025-01-16'),
+      status: 'pending_review',
     },
   ]);
 
+  const [selectedIncident, setSelectedIncident] = useState<AIGeneratedIncident | null>(null);
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-100 text-red-700 border-red-300';
+      case 'high': return 'bg-orange-100 text-orange-700 border-orange-300';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      case 'low': return 'bg-blue-100 text-blue-700 border-blue-300';
+      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending_review': return 'bg-yellow-100 text-yellow-700';
+      case 'acknowledged': return 'bg-blue-100 text-blue-700';
+      case 'escalated': return 'bg-red-100 text-red-700';
+      case 'resolved': return 'bg-green-100 text-green-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const handleAcknowledge = (incidentId: string) => {
+    console.log(`Acknowledging incident ${incidentId}`);
+    // TODO: Update status via API
+    alert('Incident acknowledged. You can now add notes and work with the barber.');
+  };
+
   const handleEscalate = (incidentId: string) => {
-    console.log(`Escalating incident ${incidentId}`);
-    // TODO: Implement API call
+    console.log(`Escalating incident ${incidentId} to admin`);
+    // TODO: Escalate via API
+    alert('Incident escalated to platform admin for review.');
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Incident Reports</h3>
-        <Button variant="outline">
-          <Flag className="w-4 h-4 mr-2" />
-          Report Issue
-        </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">AI-Powered Incident Detection</h3>
+        <p className="text-sm text-gray-500">
+          Automatically aggregated from negative customer reviews using sentiment analysis
+        </p>
       </div>
 
-      {incidents.length === 0 ? (
+      {/* AI Info Card */}
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <div className="flex gap-3">
+          <TrendingUp className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-semibold text-blue-900 mb-1">How AI Detection Works</h4>
+            <p className="text-sm text-blue-800">
+              Our AI continuously analyzes customer reviews for negative sentiment. When a pattern emerges 
+              (multiple negative reviews about the same barber in a short time), the system automatically 
+              creates an incident report with analysis and recommendations. This helps you address issues 
+              proactively before they become serious problems.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Incidents List */}
+      {aiIncidents.length === 0 ? (
         <Card className="text-center py-12">
           <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-4" />
-          <p className="text-gray-500">No open incidents</p>
+          <p className="text-gray-700 font-medium">No AI-detected incidents</p>
+          <p className="text-sm text-gray-500 mt-1">All barbers are maintaining good review patterns</p>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {incidents.map((incident) => (
-            <Card key={incident.id} className="p-4">
-              <div className="flex items-start justify-between">
+        <div className="space-y-4">
+          {aiIncidents.map((incident) => (
+            <Card 
+              key={incident.id} 
+              className={`p-6 border-2 ${getSeverityColor(incident.severity)}`}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-gray-900">{incident.barberName}</h4>
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-red-100 text-red-700">
-                      {incident.type}
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <h4 className="text-lg font-bold text-gray-900">{incident.barberName}</h4>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getSeverityColor(incident.severity)}`}>
+                      {incident.severity.toUpperCase()} SEVERITY
+                    </span>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStatusColor(incident.status)}`}>
+                      {incident.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">{incident.description}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-xs text-gray-500">
-                      {incident.createdAt.toLocaleDateString()}
-                    </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      incident.status === 'open' ? 'bg-yellow-100 text-yellow-700' :
-                      incident.status === 'escalated' ? 'bg-red-100 text-red-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {incident.status}
-                    </span>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span>{incident.negativeReviewCount} negative reviews</span>
+                    <span>•</span>
+                    <span>Detected {incident.detectedAt.toLocaleDateString()}</span>
+                    <span>•</span>
+                    <span className="capitalize">{incident.type} issue</span>
                   </div>
                 </div>
-                
-                {incident.status === 'open' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedIncident(incident)}
+                >
+                  View Details
+                </Button>
+              </div>
+
+              {/* AI Summary */}
+              <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
+                <h5 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  AI Analysis Summary
+                </h5>
+                <p className="text-sm text-gray-700">{incident.aiSummary}</p>
+              </div>
+
+              {/* AI Recommendation */}
+              <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-semibold text-green-900 mb-2">Recommended Actions</h5>
+                <p className="text-sm text-green-800">{incident.aiRecommendation}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 justify-end">
+                {incident.status === 'pending_review' && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAcknowledge(incident.id)}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Acknowledge
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleEscalate(incident.id)}
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Escalate to Admin
+                    </Button>
+                  </>
+                )}
+                {incident.status === 'acknowledged' && (
                   <Button
-                    variant="outline"
+                    variant="primary"
                     size="sm"
                     onClick={() => handleEscalate(incident.id)}
-                    className="ml-4"
                   >
                     <AlertTriangle className="w-4 h-4 mr-1" />
                     Escalate to Admin
                   </Button>
                 )}
+                {incident.status === 'escalated' && (
+                  <span className="text-sm text-gray-600 italic">
+                    Escalated to admin - awaiting resolution
+                  </span>
+                )}
               </div>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Incident Details Modal */}
+      {selectedIncident && (
+        <IncidentDetailsModal
+          incident={selectedIncident}
+          onClose={() => setSelectedIncident(null)}
+        />
       )}
     </div>
   );
