@@ -42,6 +42,23 @@ export default function BarberFilterQuestionnaire({
   // Track which step we're editing (for clickable tags)
   const [editingStep, setEditingStep] = useState<'service' | 'datetime' | 'location' | null>(null);
 
+  // Format date for display: "2025-12-30" → "Dec 30"
+  const formatDateDisplay = (dateString: string): string => {
+    const dateObj = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
+    return dateObj.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  // Format time for display: "18:30" → "6:30 PM"
+  const formatTimeDisplay = (timeString: string): string => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12; // Convert 0 to 12 for midnight
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
   const notifyFilterChange = (filters: FilterCriteria) => {
     onFilterChange(filters);
   };
@@ -253,7 +270,9 @@ export default function BarberFilterQuestionnaire({
                     className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
                     <Calendar className="w-3 h-3" />
-                    <span className="group-hover:underline">{date} at {time}</span>
+                    <span className="group-hover:underline">
+                      {formatDateDisplay(date)} at {formatTimeDisplay(time)}
+                    </span>
                   </button>
                   <button
                     onClick={(e) => {
