@@ -6,12 +6,17 @@
  * 2. When do you want it?
  * 3. Where do you want it?
  * 
- * Filters barbers in real-time as user answers
+ * Features:
+ * - Smart tag deletion (cascade resets)
+ * - Clickable tags for editing
+ * - Confirmation for date/time
+ * - Progressive questionnaire flow
  */
 
 import React, { useState } from 'react';
-import { Scissors, Calendar, MapPin } from 'lucide-react';
+import { Scissors, Calendar, MapPin, Check } from 'lucide-react';
 import Card from './Card';
+import Button from './Button';
 import type { FilterCriteria } from '../types/barber-filters';
 
 interface BarberFilterQuestionnaireProps {
@@ -28,12 +33,22 @@ export default function BarberFilterQuestionnaire({
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
+  const [dateTimeConfirmed, setDateTimeConfirmed] = useState(false);
   const [location, setLocation] = useState<string | null>(null);
   const [locationDetails, setLocationDetails] = useState<string>('');
+  
+  // Track which step we're editing (for clickable tags)
+  const [editingStep, setEditingStep] = useState<'service' | 'datetime' | 'location' | null>(null);
 
+  const notifyFilterChange = (filters: FilterCriteria) => {
+    onFilterChange(filters);
+  };
+
+  // Handle service type change
   const handleServiceChange = (service: string) => {
     setServiceType(service);
-    onFilterChange({
+    setEditingStep(null);
+    notifyFilterChange({
       serviceType: service,
       date,
       time,
@@ -42,31 +57,87 @@ export default function BarberFilterQuestionnaire({
     });
   };
 
-  const handleDateChange = (newDate: string) => {
-    setDate(newDate);
-    onFilterChange({
-      serviceType,
-      date: newDate,
+  // Handle service type deletion - CLEARS EVERYTHING
+  const handleServiceDelete = () => {
+    setServiceType(null);
+    setDate(null);
+    setTime(null);
+    setDateTimeConfirmed(false);
+    setLocation(null);
+    setLocationDetails('');
+    setEditingStep(null);
+    notifyFilterChange({
+      serviceType: null,
+      date: null,
+      time: null,
+      location: null,
+      locationDetails: null,
+    });
+  };
+
+  // Handle service tag click - return to service selection
+  const handleServiceTagClick = () => {
+    setEditingStep('service');
+    setServiceType(null);
+    setDate(null);
+    setTime(null);
+    setDateTimeConfirmed(false);
+    setLocation(null);
+    setLocationDetails('');
+    notifyFilterChange({
+      serviceType: null,
+      date,
       time,
       location,
       locationDetails,
     });
   };
 
-  const handleTimeChange = (newTime: string) => {
-    setTime(newTime);
-    onFilterChange({
+  // Handle date/time confirmation
+  const handleDateTimeConfirm = () => {
+    if (date && time) {
+      setDateTimeConfirmed(true);
+      setEditingStep(null);
+    }
+  };
+
+  // Handle date/time deletion - keeps service, clears location
+  const handleDateTimeDelete = () => {
+    setDate(null);
+    setTime(null);
+    setDateTimeConfirmed(false);
+    setLocation(null);
+    setLocationDetails('');
+    setEditingStep(null);
+    notifyFilterChange({
       serviceType,
-      date,
-      time: newTime,
-      location,
-      locationDetails,
+      date: null,
+      time: null,
+      location: null,
+      locationDetails: null,
     });
   };
 
+  // Handle date/time tag click - return to date/time with values prefilled
+  const handleDateTimeTagClick = () => {
+    setDateTimeConfirmed(false);
+    setEditingStep('datetime');
+    setLocation(null);
+    setLocationDetails('');
+    notifyFilterChange({
+      serviceType,
+      date,
+      time,
+      location: null,
+      locationDetails: null,
+    });
+  };
+
+  // Handle location change
   const handleLocationChange = (newLocation: string) => {
     setLocation(newLocation);
-    onFilterChange({
+    setEditingStep(null);
+    notifyFilterChange({
       serviceType,
       date,
       time,
@@ -75,9 +146,38 @@ export default function BarberFilterQuestionnaire({
     });
   };
 
+  // Handle location deletion - keeps service and date/time
+  const handleLocationDelete = () => {
+    setLocation(null);
+    setLocationDetails('');
+    setEditingStep(null);
+    notifyFilterChange({
+      serviceType,
+      date,
+      time,
+      location: null,
+      locationDetails: null,
+    });
+  };
+
+  // Handle location tag click - return to location selection
+  const handleLocationTagClick = () => {
+    setEditingStep('location');
+    setLocation(null);
+    setLocationDetails('');
+    notifyFilterChange({
+      serviceType,
+      date,
+      time,
+      location: null,
+      locationDetails: null,
+    });
+  };
+
+  // Handle location details change
   const handleLocationDetailsChange = (details: string) => {
     setLocationDetails(details);
-    onFilterChange({
+    notifyFilterChange({
       serviceType,
       date,
       time,
@@ -91,6 +191,12 @@ export default function BarberFilterQuestionnaire({
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
   };
+
+  // Determine which question to show
+  const showServiceQuestion = !serviceType || editingStep === 'service';
+  const showDateTimeQuestion = serviceType && !dateTimeConfirmed && editingStep !== 'service';
+  const showLocationQuestion = serviceType && dateTimeConfirmed && !location && editingStep !== 'service';
+  const showLocationDetails = location && !locationDetails;
 
   return (
     <>
@@ -113,28 +219,38 @@ export default function BarberFilterQuestionnaire({
       {/* Questionnaire Section - Stays sticky at top */}
       <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pb-6 mb-8">
         <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
-          {/* Selected Filter Pills */}
-          {(serviceType || (date && time) || location) && (
+          {/* Selected Filter Pills - Now clickable for editing */}
+          {(serviceType || (date && time && dateTimeConfirmed) || location) && (
             <div className="flex flex-wrap items-center justify-center gap-2 pb-4 mb-4 border-b border-gray-200">
               {serviceType && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
                   <Scissors className="w-3 h-3" />
-                  <span>{serviceType}</span>
                   <button
-                    onClick={() => handleServiceChange('')}
-                    className="hover:bg-primary-500 rounded-full"
+                    onClick={handleServiceTagClick}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {serviceType}
+                  </button>
+                  <button
+                    onClick={handleServiceDelete}
+                    className="hover:bg-primary-500 rounded-full px-1 ml-1"
                   >
                     ×
                   </button>
                 </div>
               )}
-              {date && time && (
+              {date && time && dateTimeConfirmed && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium">
                   <Calendar className="w-3 h-3" />
-                  <span>{date} at {time}</span>
                   <button
-                    onClick={() => { setDate(null); setTime(null); onFilterChange({ serviceType, date: null, time: null, location, locationDetails }); }}
-                    className="hover:bg-green-700 rounded-full"
+                    onClick={handleDateTimeTagClick}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {date} at {time}
+                  </button>
+                  <button
+                    onClick={handleDateTimeDelete}
+                    className="hover:bg-green-700 rounded-full px-1 ml-1"
                   >
                     ×
                   </button>
@@ -143,10 +259,15 @@ export default function BarberFilterQuestionnaire({
               {location && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium">
                   <MapPin className="w-3 h-3" />
-                  <span>{location}</span>
                   <button
-                    onClick={() => { setLocation(null); setLocationDetails(''); onFilterChange({ serviceType, date, time, location: null, locationDetails: null }); }}
-                    className="hover:bg-primary-500 rounded-full"
+                    onClick={handleLocationTagClick}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {location}
+                  </button>
+                  <button
+                    onClick={handleLocationDelete}
+                    className="hover:bg-primary-500 rounded-full px-1 ml-1"
                   >
                     ×
                   </button>
@@ -155,171 +276,185 @@ export default function BarberFilterQuestionnaire({
             </div>
           )}
 
-          {/* Active Question - Only show current question */}
+          {/* Active Question - Progressive flow */}
           <div className="pt-6">
-          {/* Question 1: Service Type (default view) */}
-          {!serviceType && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-center gap-2 text-gray-700">
-                <Scissors className="w-5 h-5 text-primary-400" />
-                <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
-              </div>
-              
-              <div className="flex justify-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                {availableServices.map((service) => (
-                  <button
-                    key={service}
-                    onClick={() => handleServiceChange(service)}
-                    className="px-4 py-3 rounded-lg font-semibold text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
-                  >
-                    {service}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Question 2: Date & Time (only show if service selected and date/time not set) */}
-          {serviceType && (!date || !time) && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-center gap-2 text-gray-700">
-                <Calendar className="w-5 h-5 text-green-600" />
-                <label className="font-semibold text-lg">When would you like your haircut?</label>
-              </div>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {/* Enhanced Date Input */}
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
-                  <div 
-                    className="relative cursor-pointer group"
-                    onClick={() => {
-                      const input = document.getElementById('date-picker-input') as HTMLInputElement;
-                      if (input) {
-                        input.showPicker?.();
-                      }
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div className="relative flex items-center">
-                      <Calendar className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" />
-                <input
-                  id="date-picker-input"
-                  type="date"
-                  value={date || ''}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  min={getMinDate()}
-                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                  style={{
-                    colorScheme: 'light',
-                    accentColor: '#708d81',
-                  }}
-                />
-                    </div>
-                  </div>
+            {/* Question 1: Service Type */}
+            {showServiceQuestion && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700">
+                  <Scissors className="w-5 h-5 text-primary-400" />
+                  <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
                 </div>
                 
-                {/* Enhanced Time Input */}
-                <div>
-                  <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
-                  <div 
-                    className="relative cursor-pointer group"
-                    onClick={() => {
-                      const input = document.getElementById('time-picker-input') as HTMLInputElement;
-                      if (input) {
-                        input.showPicker?.();
-                      }
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div className="relative flex items-center">
-                      <svg 
-                        className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
-                        />
-                      </svg>
-                <input
-                  id="time-picker-input"
-                  type="time"
-                  value={time || ''}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                  style={{
-                    colorScheme: 'light',
-                    accentColor: '#708d81',
-                  }}
-                />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Question 3: Location (only show if date/time selected and location not set) */}
-          {serviceType && date && time && !location && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-center gap-2 text-gray-700">
-                <MapPin className="w-5 h-5 text-primary-400" />
-                <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {['On Campus', 'My Dorm/Apartment', "Barber's Location"].map((loc) => (
+                <div className="flex justify-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                  {availableServices.map((service) => (
                     <button
-                      key={loc}
-                      onClick={() => handleLocationChange(loc)}
-                      className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all"
+                      key={service}
+                      onClick={() => handleServiceChange(service)}
+                      className="px-4 py-3 rounded-lg font-semibold text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
                     >
-                      {loc}
+                      {service}
                     </button>
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Location Details (only show if location selected) */}
-          {location && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-center gap-2 text-gray-700">
-                <MapPin className="w-5 h-5 text-primary-400" />
-                <label className="font-semibold text-lg">Specify the exact location</label>
-              </div>
-              <input
-                type="text"
-                value={locationDetails}
-                onChange={(e) => handleLocationDetailsChange(e.target.value)}
-                placeholder="Building name, Room number, or specific area"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              />
-            </div>
-          )}
+            {/* Question 2: Date & Time with Confirmation */}
+            {showDateTimeQuestion && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                  <label className="font-semibold text-lg">When would you like your haircut?</label>
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* Enhanced Date Input */}
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => {
+                        const input = document.getElementById('date-picker-input') as HTMLInputElement;
+                        if (input) {
+                          input.showPicker?.();
+                        }
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div className="relative flex items-center">
+                        <Calendar className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" />
+                        <input
+                          id="date-picker-input"
+                          type="date"
+                          value={date || ''}
+                          onChange={(e) => setDate(e.target.value)}
+                          min={getMinDate()}
+                          className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                          style={{
+                            colorScheme: 'light',
+                            accentColor: '#708d81',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Enhanced Time Input */}
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => {
+                        const input = document.getElementById('time-picker-input') as HTMLInputElement;
+                        if (input) {
+                          input.showPicker?.();
+                        }
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div className="relative flex items-center">
+                        <svg 
+                          className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+                          />
+                        </svg>
+                        <input
+                          id="time-picker-input"
+                          type="time"
+                          value={time || ''}
+                          onChange={(e) => setTime(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
+                          style={{
+                            colorScheme: 'light',
+                            accentColor: '#708d81',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-          {/* All Complete - Show summary */}
-          {serviceType && date && time && location && locationDetails && (
-            <div className="text-center animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg font-semibold">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>All filters set! Scroll down to see matching barbers</span>
+                {/* Confirmation Button */}
+                {date && time && (
+                  <div className="flex justify-center pt-2">
+                    <Button
+                      onClick={handleDateTimeConfirm}
+                      variant="primary"
+                      className="px-6 py-2"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Confirm Date & Time
+                    </Button>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Question 3: Location */}
+            {showLocationQuestion && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700">
+                  <MapPin className="w-5 h-5 text-primary-400" />
+                  <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {['On Campus', 'My Dorm/Apartment', "Barber's Location"].map((loc) => (
+                      <button
+                        key={loc}
+                        onClick={() => handleLocationChange(loc)}
+                        className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all"
+                      >
+                        {loc}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Location Details */}
+            {showLocationDetails && (
+              <div className="space-y-3 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700">
+                  <MapPin className="w-5 h-5 text-primary-400" />
+                  <label className="font-semibold text-lg">Specify the exact location</label>
+                </div>
+                <input
+                  type="text"
+                  value={locationDetails}
+                  onChange={(e) => handleLocationDetailsChange(e.target.value)}
+                  placeholder="Building name, Room number, or specific area"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* All Complete - Show summary */}
+            {serviceType && dateTimeConfirmed && location && locationDetails && (
+              <div className="text-center animate-fade-in">
+                <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg font-semibold">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>All filters set! Scroll down to see matching barbers</span>
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       </div>
     </>
   );
 }
-
