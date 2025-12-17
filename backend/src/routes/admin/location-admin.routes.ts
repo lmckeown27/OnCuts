@@ -27,12 +27,18 @@ import OpenAI from 'openai';
 const router = Router();
 const locationService = new CampusLocationService(pool);
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI client (optional - only if API key is configured)
+let enrichmentProcessor: LocationEnrichmentProcessor | null = null;
 
-const enrichmentProcessor = new LocationEnrichmentProcessor(openai, pool);
+if (process.env.OPENAI_API_KEY) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  enrichmentProcessor = new LocationEnrichmentProcessor(openai, pool);
+  logger.info('🤖 AI enrichment enabled for locations');
+} else {
+  logger.warn('⚠️  AI enrichment disabled: OPENAI_API_KEY not configured');
+}
 
 /**
  * Validation helper
@@ -197,6 +203,11 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
+
+      // Check if AI enrichment is available
+      if (!enrichmentProcessor) {
+        throw new ApiError(503, 'AI enrichment not available: OPENAI_API_KEY not configured');
+      }
 
       // Get location to verify it exists
       const location = await locationService.getLocationById(id);
