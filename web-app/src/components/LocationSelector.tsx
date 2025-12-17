@@ -154,7 +154,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       {showSuggestions && (filteredSuggestions.length > 0 || showCreateNew) && (
         <div
           ref={suggestionsRef}
-          className="absolute z-50 mt-2 w-full bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
+          className="absolute left-0 z-50 mt-2 w-full bg-white border-2 border-gray-200 rounded-lg shadow-xl max-h-64 overflow-y-auto"
         >
           {filteredSuggestions.length > 0 && (
             <div>
