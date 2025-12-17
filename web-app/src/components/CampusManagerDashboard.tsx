@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
+import { CampusManagerBarberView } from './CampusManagerBarberView';
 
 // Types
 interface BarberApplication {
@@ -320,6 +321,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
 
   // Filter barbers based on search and status
   const filteredBarbers = barbers.filter((barber) => {
@@ -473,10 +475,18 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2 ml-4">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedBarberId(barber.id)}
+                  >
                     View Profile
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.location.href = `mailto:${barber.email}`}
+                  >
                     Contact
                   </Button>
                 </div>
@@ -502,6 +512,14 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
           </div>
         </div>
       </Card>
+
+      {/* Barber Profile Modal */}
+      {selectedBarberId && (
+        <CampusManagerBarberView
+          barberId={selectedBarberId}
+          onClose={() => setSelectedBarberId(null)}
+        />
+      )}
     </div>
   );
 };
