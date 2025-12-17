@@ -211,8 +211,7 @@ export default function BarberFilterQuestionnaire({
   const showServiceQuestion = !serviceType || editingStep === 'service';
   const showDateTimeQuestion = serviceType && !dateTimeConfirmed && editingStep !== 'service';
   const showLocationQuestion = serviceType && dateTimeConfirmed && !locationConfirmed && editingStep !== 'service';
-  const showLocationDetails = location && !locationDetails;
-  const showLocationConfirmation = location && locationDetails && !locationConfirmed;
+  const showLocationDetails = location && !locationConfirmed;
 
   return (
     <>
@@ -450,7 +449,7 @@ export default function BarberFilterQuestionnaire({
 
             {/* Location Details */}
             {showLocationDetails && (
-              <div className="space-y-3 animate-fade-in">
+              <div className="space-y-4 animate-fade-in">
                 <div className="flex items-center justify-center gap-2 text-gray-700">
                   <MapPin className="w-5 h-5 text-primary-400" />
                   <label className="font-semibold text-lg">Specify the exact location</label>
@@ -463,20 +462,20 @@ export default function BarberFilterQuestionnaire({
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   autoFocus
                 />
-              </div>
-            )}
-
-            {/* Location Confirmation Button */}
-            {showLocationConfirmation && (
-              <div className="flex justify-center pt-2 animate-fade-in">
-                <Button
-                  onClick={handleLocationConfirm}
-                  variant="primary"
-                  className="px-6 py-2"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Confirm Location
-                </Button>
+                
+                {/* Location Confirmation Button */}
+                {locationDetails && (
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={handleLocationConfirm}
+                      variant="primary"
+                      className="px-6 py-2"
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Confirm Location
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
