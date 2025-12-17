@@ -17,6 +17,7 @@ import React, { useState } from 'react';
 import { Scissors, Calendar, MapPin, Check } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
+import { LocationSelector } from './LocationSelector';
 import type { FilterCriteria } from '../types/barber-filters';
 
 interface BarberFilterQuestionnaireProps {
@@ -34,8 +35,8 @@ export default function BarberFilterQuestionnaire({
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
   const [dateTimeConfirmed, setDateTimeConfirmed] = useState(false);
-  const [location, setLocation] = useState<string | null>(null);
-  const [locationDetails, setLocationDetails] = useState<string>('');
+  const [locationId, setLocationId] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null);
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   
   // Track which step we're editing (for clickable tags)
@@ -53,8 +54,8 @@ export default function BarberFilterQuestionnaire({
       serviceType: service,
       date,
       time,
-      location,
-      locationDetails,
+      location: locationName,
+      locationDetails: locationName,
     });
   };
 
@@ -64,8 +65,8 @@ export default function BarberFilterQuestionnaire({
     setDate(null);
     setTime(null);
     setDateTimeConfirmed(false);
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
@@ -84,15 +85,15 @@ export default function BarberFilterQuestionnaire({
     setDate(null);
     setTime(null);
     setDateTimeConfirmed(false);
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     notifyFilterChange({
       serviceType: null,
       date,
       time,
-      location,
-      locationDetails,
+      location: null,
+      locationDetails: null,
     });
   };
 
@@ -109,8 +110,8 @@ export default function BarberFilterQuestionnaire({
     setDate(null);
     setTime(null);
     setDateTimeConfirmed(false);
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
@@ -126,8 +127,8 @@ export default function BarberFilterQuestionnaire({
   const handleDateTimeTagClick = () => {
     setDateTimeConfirmed(false);
     setEditingStep('datetime');
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     notifyFilterChange({
       serviceType,
@@ -138,22 +139,23 @@ export default function BarberFilterQuestionnaire({
     });
   };
 
-  // Handle location change
-  const handleLocationChange = (newLocation: string) => {
-    setLocation(newLocation);
+  // Handle location selection from LocationSelector
+  const handleLocationSelect = (newLocationId: string, newLocationName: string) => {
+    setLocationId(newLocationId);
+    setLocationName(newLocationName);
     setEditingStep(null);
     notifyFilterChange({
       serviceType,
       date,
       time,
-      location: newLocation,
-      locationDetails,
+      location: newLocationName,
+      locationDetails: newLocationName,
     });
   };
 
   // Handle location confirmation
   const handleLocationConfirm = () => {
-    if (location && locationDetails) {
+    if (locationId && locationName) {
       setLocationConfirmed(true);
       setEditingStep(null);
     }
@@ -161,8 +163,8 @@ export default function BarberFilterQuestionnaire({
 
   // Handle location deletion - keeps service and date/time
   const handleLocationDelete = () => {
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     setEditingStep(null);
     notifyFilterChange({
@@ -177,8 +179,8 @@ export default function BarberFilterQuestionnaire({
   // Handle location tag click - return to location selection
   const handleLocationTagClick = () => {
     setEditingStep('location');
-    setLocation(null);
-    setLocationDetails('');
+    setLocationId(null);
+    setLocationName(null);
     setLocationConfirmed(false);
     notifyFilterChange({
       serviceType,
@@ -186,18 +188,6 @@ export default function BarberFilterQuestionnaire({
       time,
       location: null,
       locationDetails: null,
-    });
-  };
-
-  // Handle location details change
-  const handleLocationDetailsChange = (details: string) => {
-    setLocationDetails(details);
-    notifyFilterChange({
-      serviceType,
-      date,
-      time,
-      location,
-      locationDetails: details,
     });
   };
 
@@ -211,7 +201,6 @@ export default function BarberFilterQuestionnaire({
   const showServiceQuestion = !serviceType || editingStep === 'service';
   const showDateTimeQuestion = serviceType && !dateTimeConfirmed && editingStep !== 'service';
   const showLocationQuestion = serviceType && dateTimeConfirmed && !locationConfirmed && editingStep !== 'service';
-  const showLocationDetails = location && !locationConfirmed;
 
   return (
     <>
@@ -277,14 +266,14 @@ export default function BarberFilterQuestionnaire({
                   </button>
                 </div>
               )}
-              {location && locationConfirmed && (
+              {locationName && locationConfirmed && (
                 <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
                   <button
                     onClick={handleLocationTagClick}
                     className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
                     <MapPin className="w-3 h-3" />
-                    <span className="group-hover:underline">{location}</span>
+                    <span className="group-hover:underline">{locationName}</span>
                   </button>
                   <button
                     onClick={(e) => {
@@ -425,46 +414,22 @@ export default function BarberFilterQuestionnaire({
 
             {/* Question 3: Location */}
             {showLocationQuestion && (
-              <div className="space-y-3 animate-fade-in">
+              <div className="space-y-4 animate-fade-in">
                 <div className="flex items-center justify-center gap-2 text-gray-700">
                   <MapPin className="w-5 h-5 text-primary-400" />
                   <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
                 </div>
                 
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {['On Campus', 'My Dorm/Apartment', "Barber's Location"].map((loc) => (
-                      <button
-                        key={loc}
-                        onClick={() => handleLocationChange(loc)}
-                        className="px-4 py-3 rounded-lg font-medium text-sm bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-500 transition-all"
-                      >
-                        {loc}
-                      </button>
-                    ))}
-                  </div>
+                <div className="max-w-md mx-auto">
+                  <LocationSelector
+                    universityId="calpoly-slo"
+                    selectedLocationId={locationId || undefined}
+                    onLocationSelect={handleLocationSelect}
+                  />
                 </div>
-              </div>
-            )}
-
-            {/* Location Details */}
-            {showLocationDetails && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700">
-                  <MapPin className="w-5 h-5 text-primary-400" />
-                  <label className="font-semibold text-lg">Specify the exact location</label>
-                </div>
-                <input
-                  type="text"
-                  value={locationDetails}
-                  onChange={(e) => handleLocationDetailsChange(e.target.value)}
-                  placeholder="Building name, Room number, or specific area"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  autoFocus
-                />
                 
                 {/* Location Confirmation Button */}
-                {locationDetails && (
+                {locationId && locationName && (
                   <div className="flex justify-center">
                     <Button
                       onClick={handleLocationConfirm}
