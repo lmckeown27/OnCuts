@@ -59,6 +59,46 @@ export const authenticate = (
   }
 };
 
+/**
+ * Optional authentication middleware
+ * Extracts user from token if present, but allows request without token
+ */
+export const optionalAuthenticate = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // No token provided - continue without user
+      return next();
+    }
+
+    const token = authHeader.substring(7);
+    const secret = process.env.JWT_SECRET;
+
+    if (!secret) {
+      console.warn('JWT_SECRET not configured - continuing without authentication');
+      return next();
+    }
+
+    try {
+      const decoded = jwt.verify(token, secret) as JwtPayload;
+      req.user = decoded;
+    } catch (error) {
+      // Invalid token - just log and continue without user
+      console.warn('Invalid token provided, continuing without authentication');
+    }
+
+    next();
+  } catch (error) {
+    // Any error - just continue without user
+    next();
+  }
+};
+
 export const requireRole = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

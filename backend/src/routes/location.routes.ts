@@ -17,7 +17,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
-import { authenticate } from '../middleware/auth';
+import { authenticate, optionalAuthenticate } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { CampusLocationService } from '../services/campus-location.service';
 import { ApiError } from '../middleware/errorHandler';
@@ -39,11 +39,12 @@ const validate = (req: Request, res: Response, next: NextFunction) => {
 
 /**
  * POST /api/locations/submit
- * Submit a location from barber
+ * Submit a location from barber or consumer
+ * Optional authentication - userId attached if user is logged in
  */
 router.post(
   '/submit',
-  authenticate,
+  optionalAuthenticate,
   [
     body('universityId').isUUID().withMessage('Valid university ID required'),
     body('locationName')
@@ -59,10 +60,10 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { universityId, locationName, category } = req.body;
-      const userId = (req as any).user.userId;
+      const userId = (req as any).user?.userId || null; // Optional userId
 
       logger.info('Location submission received', {
-        userId,
+        userId: userId || 'anonymous',
         universityId,
         locationName,
         category,
@@ -90,10 +91,10 @@ router.post(
 /**
  * GET /api/locations
  * Get locations for selection (e.g., when barber is scheduling)
+ * Public endpoint - no auth required for browsing locations
  */
 router.get(
   '/',
-  authenticate,
   [
     query('universityId').isUUID().withMessage('Valid university ID required'),
     query('category').optional().isString(),
@@ -124,10 +125,10 @@ router.get(
 /**
  * GET /api/locations/search
  * Search locations by name (autocomplete)
+ * Public endpoint - no auth required for searching locations
  */
 router.get(
   '/search',
-  authenticate,
   [
     query('universityId').isUUID().withMessage('Valid university ID required'),
     query('q').isString().trim().isLength({ min: 1 }).withMessage('Search query required'),
