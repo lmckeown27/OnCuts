@@ -443,7 +443,6 @@ interface CampusBarber {
   totalBookings: number;
   completedBookings: number;
   isActive: boolean;
-  joinedDate: Date;
 }
 
 const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
@@ -459,7 +458,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 127,
       completedBookings: 119,
       isActive: true,
-      joinedDate: new Date('2024-01-15'),
     },
     {
       id: '2',
@@ -471,7 +469,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 89,
       completedBookings: 84,
       isActive: true,
-      joinedDate: new Date('2024-02-01'),
     },
     {
       id: '3',
@@ -482,7 +479,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 56,
       completedBookings: 52,
       isActive: true,
-      joinedDate: new Date('2024-03-10'),
     },
     {
       id: '4',
@@ -493,7 +489,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 8,
       completedBookings: 7,
       isActive: false,
-      joinedDate: new Date('2024-12-01'),
     },
     {
       id: '5',
@@ -505,7 +500,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 45,
       completedBookings: 30,
       isActive: true,
-      joinedDate: new Date('2024-06-15'),
     },
     {
       id: '6',
@@ -516,7 +510,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       totalBookings: 32,
       completedBookings: 14,
       isActive: true,
-      joinedDate: new Date('2024-09-20'),
     },
   ]);
 
@@ -642,10 +635,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                         </a>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span className="font-medium">Joined:</span>
-                      <span>{barber.joinedDate.toLocaleDateString()}</span>
-                    </div>
                   </div>
 
                   {/* Stats */}

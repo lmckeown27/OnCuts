@@ -51,7 +51,6 @@ interface BarberProfileData {
   // Status
   isActive: boolean;
   isVerified: boolean;
-  joinedDate: Date;
   lastActiveDate: Date;
   
   // Additional info
@@ -91,7 +90,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     
     isActive: true,
     isVerified: true,
-    joinedDate: new Date('2024-01-15'),
     lastActiveDate: new Date('2025-01-16'),
     
     specialties: ['Fade', 'Haircut', 'Beard Trim', 'Full Service'],
@@ -290,12 +288,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
               Activity
             </h4>
             <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Joined Platform:</span>
-                <span className="font-medium text-gray-900">
-                  {barber.joinedDate.toLocaleDateString()}
-                </span>
-              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Last Active:</span>
                 <span className="font-medium text-gray-900">
