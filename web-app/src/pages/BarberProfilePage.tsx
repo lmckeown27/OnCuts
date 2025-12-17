@@ -9,6 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, Star, Award, Clock, MessageSquare, Calendar, ArrowLeft, Instagram } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import { LocationSelector } from '../components/LocationSelector';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -302,8 +303,8 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
     serviceType: 'haircut',
     date: '',
     time: '',
-    location: 'on-campus',
-    locationDetails: '',
+    locationId: '',
+    locationName: '',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -319,8 +320,9 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
         serviceType: formData.serviceType,
         requestedDate: formData.date,
         requestedTime: formData.time,
+        locationId: formData.locationId,
         price: 30.00,
-        message: formData.message || `Location: ${formData.location}${formData.locationDetails ? ` - ${formData.locationDetails}` : ''}`,
+        message: formData.message || `Location: ${formData.locationName}`,
       });
 
       onSuccess();
@@ -410,22 +412,12 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Where should the cut take place?
             </label>
-            <select
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent mb-2"
-              required
-            >
-              <option value="on-campus">On Campus</option>
-              <option value="dorm">My Dorm/Apartment</option>
-              <option value="barber-location">Barber's Location</option>
-            </select>
-            <input
-              type="text"
-              value={formData.locationDetails}
-              onChange={(e) => setFormData({ ...formData, locationDetails: e.target.value })}
-              placeholder="Specific location details (e.g., Building name, Room number)"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            <LocationSelector
+              universityId={barber.universityId || 'calpoly-slo'} 
+              selectedLocationId={formData.locationId}
+              onLocationSelect={(locationId, locationName) => {
+                setFormData({ ...formData, locationId, locationName });
+              }}
             />
           </div>
 

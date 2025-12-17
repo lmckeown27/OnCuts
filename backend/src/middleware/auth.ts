@@ -83,3 +83,23 @@ export const requireEmailVerification = (
   next();
 };
 
+/**
+ * Admin-only middleware
+ * Ensures request is from an admin user
+ */
+export const requireAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  if (!req.user) {
+    return next(new ApiError(401, 'Not authenticated'));
+  }
+
+  if (req.user.role !== 'admin') {
+    return next(new ApiError(403, 'Admin access required'));
+  }
+
+  next();
+};
+

@@ -71,6 +71,10 @@ import { marketplaceCronService } from './services/marketplace-cron.service';
 // Booking Request Routes (AirBnb-style)
 import bookingRequestRoutes from './routes/booking-request.routes';
 
+// Campus Location Routes (Crowd-sourced location system)
+import locationRoutes from './routes/location.routes';
+import locationAdminRoutes from './routes/admin/location-admin.routes';
+
 // Blockchain-First Routes (Decentralized)
 import authBlockchainRoutes from './routes/auth-blockchain.routes';
 import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
@@ -276,6 +280,10 @@ app.use('/api/users', userRoutes);  // User profile management
 
 // AI-powered features (integrated AI Worker)
 app.use('/api/ai', aiRoutes);  // AI pricing, quality scores, fraud detection, disputes
+
+// Campus Location Management (Crowd-sourced + AI enrichment)
+app.use('/api/locations', locationRoutes);  // Location submission, search, retrieval
+app.use('/api/admin/locations', locationAdminRoutes);  // Admin location management
 
 // System health monitoring
 app.use('/api/system', systemHealthRoutes);  // System health and database status
