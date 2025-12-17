@@ -495,6 +495,29 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       isActive: false,
       joinedDate: new Date('2024-12-01'),
     },
+    {
+      id: '5',
+      name: 'James Wilson',
+      email: 'james.wilson@example.com',
+      phoneNumber: '(555) 321-9876',
+      instagramHandle: 'jameswilson_cuts',
+      avgRating: 4.3,
+      totalBookings: 45,
+      completedBookings: 30,
+      isActive: true,
+      joinedDate: new Date('2024-06-15'),
+    },
+    {
+      id: '6',
+      name: 'Mike Anderson',
+      email: 'mike.anderson@example.com',
+      phoneNumber: '(555) 654-3210',
+      avgRating: 3.8,
+      totalBookings: 32,
+      completedBookings: 14,
+      isActive: true,
+      joinedDate: new Date('2024-09-20'),
+    },
   ]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -642,7 +665,13 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="font-medium text-gray-900">Completion Rate:</span>
-                      <span className="text-gray-700">
+                      <span className={`font-semibold ${
+                        ((barber.completedBookings / barber.totalBookings) * 100) >= 76 
+                          ? 'text-green-600' 
+                          : ((barber.completedBookings / barber.totalBookings) * 100) >= 51 
+                            ? 'text-yellow-600' 
+                            : 'text-red-600'
+                      }`}>
                         {((barber.completedBookings / barber.totalBookings) * 100).toFixed(0)}%
                       </span>
                     </div>
