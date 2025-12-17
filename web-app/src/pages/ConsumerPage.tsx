@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram } from 'lucide-react';
+import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -91,6 +91,19 @@ export default function ConsumerPage() {
                     Edit Profile
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
+                  
+                  {/* Quick Switch for Testing */}
+                  <button
+                    onClick={() => {
+                      navigate('/barber');
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Scissors className="w-4 h-4 text-gray-500" />
+                    Switch to Barber
+                  </button>
+                  
                   <button
                     onClick={() => {
                       navigate('/web');
