@@ -76,7 +76,7 @@ export default function LandingPage() {
                 Launch Web App
               </button>
               <button
-                onClick={() => navigate('/app')}
+                onClick={() => navigate('/app/install')}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
                 Download App
@@ -113,7 +113,7 @@ export default function LandingPage() {
                 <button onClick={() => navigate('/web')} className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                   Launch Web App
                 </button>
-                <button onClick={() => navigate('/app')} className="block w-full px-4 py-2 bg-primary-400 hover:bg-primary-500 text-white rounded-lg transition-colors">
+                <button onClick={() => navigate('/app/install')} className="block w-full px-4 py-2 bg-primary-400 hover:bg-primary-500 text-white rounded-lg transition-colors">
                   Download App
                 </button>
               </div>
@@ -146,7 +146,7 @@ export default function LandingPage() {
               Launch Web App
             </button>
             <button
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/app/install')}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-gray-900 font-semibold rounded-lg transition-all shadow-md hover:shadow-lg border-2 border-gray-200 flex items-center justify-center gap-2"
             >
               <Smartphone className="w-5 h-5" />
@@ -530,7 +530,7 @@ export default function LandingPage() {
               Launch Web Version
             </button>
             <button 
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/app/install')}
               className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               <Smartphone className="w-5 h-5" />

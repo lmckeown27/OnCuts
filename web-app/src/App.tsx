@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import AppStatus from './components/AppStatus';
 
 // Landing & Role Selection
 import LandingPage from './pages/LandingPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
+import AppInstallPage from './pages/AppInstallPage';
 import AdminCampusesPage from './pages/admin/AdminCampusesPage';
 import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
 import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
@@ -33,6 +35,9 @@ function AppContent() {
       {/* PWA Install Prompt - Only on /app routes */}
       {isAppRoute && <PWAInstallPrompt />}
       
+      {/* App Status Indicators - Only on /app routes */}
+      {isAppRoute && <AppStatus />}
+      
       <Routes>
             {/* Landing Page */}
             <Route path="/" element={<LandingPage />} />
@@ -40,6 +45,7 @@ function AppContent() {
             {/* Platform-Specific Entry Points */}
             <Route path="/web" element={<RoleSelectionPage platform="web" />} />
             <Route path="/app" element={<RoleSelectionPage platform="app" />} />
+            <Route path="/app/install" element={<AppInstallPage />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminCampusesPage />} />
