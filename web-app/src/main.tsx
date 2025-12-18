@@ -15,8 +15,8 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator) {
+// Register service worker for PWA (disabled in development to avoid caching issues)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(
       (registration) => {
@@ -48,6 +48,8 @@ if ('serviceWorker' in navigator) {
       }
     );
   });
+} else if (!import.meta.env.PROD) {
+  console.log('🔧 Service Worker disabled in development mode');
 }
 
 // Listen for app install prompt
