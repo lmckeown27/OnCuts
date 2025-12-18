@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Star, Calendar, AlertCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import { CampusCutsLogo } from '@assets';
+import BarberHeader from '../components/BarberHeader';
 
 export default function AppointmentDetailsPage() {
   const { appointmentId } = useParams();
@@ -70,25 +70,7 @@ export default function AppointmentDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/barber')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Appointment Details</h1>
-                <p className="text-sm text-gray-600">ID: #{appointment.id}</p>
-              </div>
-            </div>
-            <img src={CampusCutsLogo} alt="CampusCuts" className="h-8" />
-          </div>
-        </div>
-      </div>
+      <BarberHeader title={`Appointment Details - #${appointment.id}`} showBookingRequests={false} />
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">

@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import BarberWithdrawal from '../../components/BarberWithdrawal';
+import BarberHeader from '../../components/BarberHeader';
 
 export default function BarberEarningsPage() {
   const navigate = useNavigate();
@@ -34,19 +35,10 @@ export default function BarberEarningsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 flex items-center gap-4">
-          <Button onClick={() => navigate('/barber')} variant="secondary">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Earnings & Payouts</h1>
-            <p className="text-gray-600 mt-1">Manage your earnings and withdraw funds</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <BarberHeader title="Earnings & Payouts" showBookingRequests={false} />
+      
+      <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* Earnings Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
