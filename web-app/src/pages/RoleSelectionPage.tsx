@@ -15,17 +15,24 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
       title: 'Web Version',
       subtitle: 'Access from any browser',
       color: 'indigo',
+      prefix: '/web',
     },
     app: {
       icon: Smartphone,
       title: 'Mobile App',
       subtitle: 'Install for offline access',
       color: 'purple',
+      prefix: '/app',
     },
   };
 
   const info = platformInfo[platform];
   const PlatformIcon = info.icon;
+  
+  // Helper function to navigate within the current platform
+  const navigateTo = (route: string) => {
+    navigate(`${info.prefix}${route}`);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
@@ -57,7 +64,7 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Admin Button */}
           <button
-            onClick={() => navigate('/admin')}
+            onClick={() => navigateTo('/admin')}
             className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-primary-500"
           >
             <div className="flex flex-col items-center gap-4">
@@ -71,7 +78,7 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
 
           {/* Consumer Button */}
           <button
-            onClick={() => navigate('/consumer')}
+            onClick={() => navigateTo('/consumer')}
             className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-primary-500"
           >
             <div className="flex flex-col items-center gap-4">
@@ -85,7 +92,7 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
 
           {/* Barber Button */}
           <button
-            onClick={() => navigate('/barber')}
+            onClick={() => navigateTo('/barber')}
             className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:-translate-y-1 cursor-pointer border-2 border-transparent hover:border-primary-500"
           >
             <div className="flex flex-col items-center gap-4">
@@ -96,6 +103,13 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
               <p className="text-gray-600 text-center">Manage your business</p>
             </div>
           </button>
+        </div>
+        
+        {/* Platform indicator */}
+        <div className="mt-8 text-center text-sm text-gray-500">
+          You're using the <strong className="text-primary-600">{info.title}</strong>
+          {platform === 'app' && ' • All routes are isolated to the app experience'}
+          {platform === 'web' && ' • All routes are isolated to the web experience'}
         </div>
       </div>
     </div>
