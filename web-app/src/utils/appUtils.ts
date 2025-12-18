@@ -5,6 +5,15 @@
  */
 
 // ═══════════════════════════════════════════════════════════
+//  TYPE DEFINITIONS
+// ═══════════════════════════════════════════════════════════
+
+export interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+// ═══════════════════════════════════════════════════════════
 //  PUSH NOTIFICATIONS
 // ═══════════════════════════════════════════════════════════
 
@@ -121,11 +130,6 @@ export async function registerBackgroundSync(tag: string): Promise<void> {
 // ═══════════════════════════════════════════════════════════
 //  APP INSTALLATION
 // ═══════════════════════════════════════════════════════════
-
-export interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
 
 export function isAppInstalled(): boolean {
   // Check if running as installed PWA
