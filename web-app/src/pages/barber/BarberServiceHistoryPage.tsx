@@ -197,7 +197,7 @@ export default function BarberServiceHistoryPage() {
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
               <div>
                 <button
-                  onClick={() => navigate('/barber/barber-1')}
+                  onClick={() => navigate('/barber')}
                   className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-1"
                 >
                   <ArrowLeft className="w-4 h-4" />
