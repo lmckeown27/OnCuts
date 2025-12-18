@@ -107,6 +107,16 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
+                      navigate('/barber/service-history');
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    Service History
+                  </button>
+                  <button
+                    onClick={() => {
                       setShowPricingDashboard(true);
                       setShowProfileDropdown(false);
                     }}

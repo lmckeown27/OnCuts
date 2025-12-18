@@ -17,6 +17,7 @@ import BarberProfilePage from './pages/BarberProfilePage';
 import ConsumerPage from './pages/ConsumerPage';
 import BarberPage from './pages/BarberPage';
 import BarberEarningsPage from './pages/barber/BarberEarningsPage';
+import BarberServiceHistoryPage from './pages/barber/BarberServiceHistoryPage';
 import AppointmentDetailsPage from './pages/AppointmentDetailsPage';
 import BookingPaymentPage from './pages/student/BookingPaymentPage';
 import WalletPage from './pages/WalletPage';
@@ -59,6 +60,7 @@ function AppContent() {
           {/* Barber Routes */}
           <Route path="/barber" element={<BarberPage />} />
           <Route path="/barber/earnings" element={<BarberEarningsPage />} />
+          <Route path="/barber/service-history" element={<BarberServiceHistoryPage />} />
           <Route path="/barber/appointment/:appointmentId" element={<AppointmentDetailsPage />} />
           
           {/* Wallet */}
