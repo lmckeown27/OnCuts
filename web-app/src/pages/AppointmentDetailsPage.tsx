@@ -8,43 +8,193 @@ export default function AppointmentDetailsPage() {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
 
-  // Mock appointment data - in production, fetch from API
-  const appointment = {
-    id: appointmentId || '1',
-    time: '10:00 AM',
-    date: 'Today, Dec 12, 2025',
-    client: {
-      name: 'John Doe',
-      email: 'john.doe@college.edu',
-      phone: '(555) 123-4567',
-      avatar: null,
-      studentId: 'STU-2024-001',
-      totalBookings: 12,
-      completedBookings: 11,
-      cancelledBookings: 1,
-      reliabilityScore: 92,
-      avgRating: 4.7,
+  // Mock appointment data - in production, fetch from API based on appointmentId
+  // Different data for each appointment ID to show variation
+  const mockAppointments: Record<string, any> = {
+    '1': {
+      id: '1',
+      time: '10:00 AM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'John Doe',
+        email: 'john.doe@college.edu',
+        phone: '(555) 123-4567',
+        avatar: null,
+        studentId: 'STU-2024-001',
+        totalBookings: 12,
+        completedBookings: 11,
+        cancelledBookings: 1,
+        reliabilityScore: 92,
+        avgRating: 4.7,
+      },
+      service: {
+        name: 'Haircut & Fade',
+        duration: '45 min',
+        notes: 'Looking for a mid-fade with texture on top, similar to last time',
+      },
+      location: {
+        type: 'My Dorm',
+        address: 'Yosemite Hall, Room 304',
+        instructions: 'Third floor, take elevator. Will meet you in lobby.',
+      },
+      price: {
+        service: 35.00,
+        platformFee: 1.75,
+        total: 36.75,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '2 hours ago',
+      blockchainTx: '0x7f8a...3d2c',
     },
-    service: {
-      name: 'Haircut & Fade',
-      duration: '45 min',
-      notes: 'Looking for a mid-fade with texture on top, similar to last time',
+    '2': {
+      id: '2',
+      time: '11:30 AM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'Mike Smith',
+        email: 'mike.smith@college.edu',
+        phone: '(555) 234-5678',
+        avatar: null,
+        studentId: 'STU-2024-002',
+        totalBookings: 8,
+        completedBookings: 8,
+        cancelledBookings: 0,
+        reliabilityScore: 100,
+        avgRating: 5.0,
+      },
+      service: {
+        name: 'Beard Trim',
+        duration: '20 min',
+        notes: 'Clean up the edges, keep it natural looking',
+      },
+      location: {
+        type: 'Student Union',
+        address: 'UU Plaza, 2nd Floor Lounge',
+        instructions: 'Near the food court, will be at the corner table.',
+      },
+      price: {
+        service: 23.00,
+        platformFee: 1.15,
+        total: 24.15,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '3 hours ago',
+      blockchainTx: '0x9a2b...4e5f',
     },
-    location: {
-      type: 'My Dorm',
-      address: 'Yosemite Hall, Room 304',
-      instructions: 'Third floor, take elevator. Will meet you in lobby.',
+    '3': {
+      id: '3',
+      time: '2:00 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'Chris Lee',
+        email: 'chris.lee@college.edu',
+        phone: '(555) 345-6789',
+        avatar: null,
+        studentId: 'STU-2024-003',
+        totalBookings: 5,
+        completedBookings: 4,
+        cancelledBookings: 1,
+        reliabilityScore: 80,
+        avgRating: 4.5,
+      },
+      service: {
+        name: 'Full Service',
+        duration: '60 min',
+        notes: 'Haircut, beard trim, and hot towel shave. First time here!',
+      },
+      location: {
+        type: 'Off-Campus Apartment',
+        address: 'The Grove Apartments, Unit 204B',
+        instructions: 'Use the west entrance, building 2. Parking available.',
+      },
+      price: {
+        service: 45.00,
+        platformFee: 2.25,
+        total: 47.25,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'pending',
+      bookedAt: '30 minutes ago',
+      blockchainTx: '0x3c4d...7g8h',
     },
-    price: {
-      service: 35.00,
-      platformFee: 1.75,
-      total: 36.75,
-      paymentMethod: 'Escrow (Blockchain)',
+    '4': {
+      id: '4',
+      time: '3:30 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'David Brown',
+        email: 'david.brown@college.edu',
+        phone: '(555) 456-7890',
+        avatar: null,
+        studentId: 'STU-2024-004',
+        totalBookings: 15,
+        completedBookings: 14,
+        cancelledBookings: 1,
+        reliabilityScore: 93,
+        avgRating: 4.8,
+      },
+      service: {
+        name: 'Haircut',
+        duration: '30 min',
+        notes: 'Regular trim, same as last 3 times',
+      },
+      location: {
+        type: 'My Dorm',
+        address: 'Sierra Madre Hall, Room 512',
+        instructions: 'Fifth floor, room at the end of the hall.',
+      },
+      price: {
+        service: 28.00,
+        platformFee: 1.40,
+        total: 29.40,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '1 day ago',
+      blockchainTx: '0x5e6f...9i0j',
     },
-    status: 'confirmed',
-    bookedAt: '2 hours ago',
-    blockchainTx: '0x7f8a...3d2c',
+    '5': {
+      id: '5',
+      time: '5:00 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'James Wilson',
+        email: 'james.wilson@college.edu',
+        phone: '(555) 567-8901',
+        avatar: null,
+        studentId: 'STU-2024-005',
+        totalBookings: 3,
+        completedBookings: 3,
+        cancelledBookings: 0,
+        reliabilityScore: 100,
+        avgRating: 5.0,
+      },
+      service: {
+        name: 'Haircut',
+        duration: '30 min',
+        notes: 'Keep it short on the sides, blend the top. Military style.',
+      },
+      location: {
+        type: 'Recreation Center',
+        address: 'Campus Rec Center, Main Lobby',
+        instructions: 'Meet near the front desk after my workout.',
+      },
+      price: {
+        service: 28.00,
+        platformFee: 1.40,
+        total: 29.40,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '4 hours ago',
+      blockchainTx: '0x7k8l...1m2n',
+    },
   };
+
+  // Get appointment data by ID, default to ID '1' if not found
+  const appointment = mockAppointments[appointmentId || '1'] || mockAppointments['1'];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -284,21 +434,54 @@ export default function AppointmentDetailsPage() {
           <h3 className="text-lg font-bold text-gray-900 mb-4">Activity Timeline</h3>
           
           <div className="space-y-4">
-            {[
-              { time: '2 hours ago', action: 'Booking confirmed', status: 'success' },
-              { time: '2 hours ago', action: 'Payment escrowed on blockchain', status: 'success' },
-              { time: '2 hours ago', action: 'Customer sent booking request', status: 'info' },
-            ].map((activity, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  activity.status === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                }`}></div>
-                <div>
-                  <p className="font-medium text-gray-900">{activity.action}</p>
-                  <p className="text-sm text-gray-500">{activity.time}</p>
+            {(() => {
+              const timelines: Record<string, any[]> = {
+                '1': [
+                  { time: appointment.bookedAt, action: 'Booking confirmed', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Payment escrowed on blockchain', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Customer sent booking request', status: 'info' },
+                ],
+                '2': [
+                  { time: appointment.bookedAt, action: 'Booking confirmed', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Payment escrowed on blockchain', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Customer sent booking request', status: 'info' },
+                ],
+                '3': [
+                  { time: appointment.bookedAt, action: 'Customer sent booking request', status: 'info' },
+                  { time: '25 minutes ago', action: 'Payment escrowed on blockchain', status: 'success' },
+                  { time: '20 minutes ago', action: 'Awaiting barber confirmation', status: 'warning' },
+                ],
+                '4': [
+                  { time: appointment.bookedAt, action: 'Booking confirmed', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Payment escrowed on blockchain', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Customer sent booking request', status: 'info' },
+                  { time: '23 hours ago', action: 'Customer added service notes', status: 'info' },
+                ],
+                '5': [
+                  { time: appointment.bookedAt, action: 'Booking confirmed', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Payment escrowed on blockchain', status: 'success' },
+                  { time: appointment.bookedAt, action: 'Customer sent booking request', status: 'info' },
+                ],
+              };
+
+              const timeline = timelines[appointment.id] || timelines['1'];
+
+              return timeline.map((activity, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    activity.status === 'success' 
+                      ? 'bg-green-500' 
+                      : activity.status === 'warning'
+                      ? 'bg-yellow-500'
+                      : 'bg-blue-500'
+                  }`}></div>
+                  <div>
+                    <p className="font-medium text-gray-900">{activity.action}</p>
+                    <p className="text-sm text-gray-500">{activity.time}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ));
+            })()}
           </div>
         </Card>
 

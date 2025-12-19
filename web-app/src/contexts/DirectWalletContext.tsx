@@ -46,29 +46,47 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
   const [localAddress, setLocalAddress] = useState('');
   const [petraInstalled, setPetraInstalled] = useState(false);
 
-  // Check if Petra is available
+  // Check if wallets are available via wallet adapter
   useEffect(() => {
-    const checkPetra = () => {
-      if (!wallets || wallets.length === 0) {
-        console.log('🔍 Checking for Petra wallet... Waiting for wallets to load');
+    let checkCount = 0;
+    const maxChecks = 15; // Check for up to 15 seconds (wallet adapter can be slow)
+    
+    const checkWallets = () => {
+      checkCount++;
+      
+      if (wallets && wallets.length > 0) {
+        console.log(`✅ [${checkCount}/${maxChecks}] Wallets detected:`, wallets.map(w => ({
+          name: w.name,
+          readyState: w.readyState,
+        })));
+        
+        setPetraInstalled(true);
         return;
       }
       
-      console.log('🔍 Available wallets:', wallets.map(w => w.name));
+      console.log(`🔍 [${checkCount}/${maxChecks}] Waiting for wallet adapter to detect wallets...`);
       
-      const hasPetra = wallets.some(w => w.name.toLowerCase().includes('petra'));
-      console.log('🔍 Checking for Petra wallet...', hasPetra ? 'Found!' : 'Not found');
-      
-      // Set installed to true if we have any wallets (not just Petra)
-      setPetraInstalled(wallets.length > 0);
+      if (checkCount >= maxChecks) {
+        console.error('❌ No wallets detected by adapter after 15 seconds.');
+        console.error('⚠️ Please ensure:');
+        console.error('   1. Petra wallet extension is installed');
+        console.error('   2. Petra extension is enabled in chrome://extensions/');
+        console.error('   3. Try refreshing the page');
+        setPetraInstalled(false);
+      }
     };
 
-    checkPetra();
-    const timer = setTimeout(checkPetra, 1000);
-    const timer2 = setTimeout(checkPetra, 2000); // Check again after 2 seconds
+    // Initial check
+    checkWallets();
+    
+    // Retry every 1 second
+    const timers: NodeJS.Timeout[] = [];
+    for (let i = 1; i <= maxChecks; i++) {
+      timers.push(setTimeout(checkWallets, i * 1000));
+    }
+    
     return () => {
-      clearTimeout(timer);
-      clearTimeout(timer2);
+      timers.forEach(timer => clearTimeout(timer));
     };
   }, [wallets]);
 
@@ -107,19 +125,22 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
 
       console.log('🔄 Attempting auto-reconnection...');
 
+      // Wait for wallets to load
+      if (!wallets || wallets.length === 0) {
+        console.log('⏸️ Wallets not loaded yet, will retry...');
+        return;
+      }
+
       try {
-        // Check if wallets are loaded
-        if (!wallets || wallets.length === 0) {
-          console.log('⏸️ Wallets not loaded yet, skipping auto-reconnect');
-          return;
-        }
-        
-        // Try to reconnect
         const petra = wallets.find(w => w.name.toLowerCase().includes('petra'));
         if (petra) {
           await connect(petra.name);
-          console.log('✅ Auto-reconnected to Petra');
+          console.log('✅ Auto-reconnected to', petra.name);
           toast.success('Wallet reconnected');
+        } else {
+          console.log('⏸️ Petra not found in wallets, clearing stale data');
+          localStorage.removeItem('ccWalletConnected');
+          localStorage.removeItem('ccWalletAddress');
         }
       } catch (error) {
         console.error('❌ Auto-reconnect failed:', error);
@@ -129,20 +150,31 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       }
     };
 
-    // Wait a bit for wallets to load
-    const timer = setTimeout(autoReconnect, 1500);
+    // Wait longer for wallets to load (wallet adapter can be slow)
+    const timer = setTimeout(autoReconnect, 2000);
     return () => clearTimeout(timer);
   }, [wallets, connect, adapterConnected]);
 
   const connectWallet = async () => {
     console.log('🔗 Connecting to wallet...');
+    console.log('🔗 Wallets available:', wallets?.length || 0);
 
     if (!wallets || wallets.length === 0) {
-      toast.error('Wallets not loaded yet. Please wait a moment and try again.');
+      console.error('❌ No wallets detected by adapter');
+      toast.error('No wallet detected. Please install Petra wallet and refresh the page.');
+      
+      const installUrl = 'https://petra.app/';
+      const shouldInstall = window.confirm(
+        'Petra wallet not detected. Would you like to install it?\n\nAfter installing, please refresh this page.'
+      );
+      
+      if (shouldInstall) {
+        window.open(installUrl, '_blank');
+      }
       return;
     }
 
-    console.log('🔗 Available wallets:', wallets.map(w => w.name));
+    console.log('🔗 Available wallets:', wallets.map(w => ({ name: w.name, readyState: w.readyState })));
 
     // Try to find Petra first
     let targetWallet = wallets.find(w => w.name.toLowerCase().includes('petra'));
@@ -154,27 +186,33 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
     }
     
     if (!targetWallet) {
-      const installUrl = 'https://petra.app/';
-      const shouldInstall = window.confirm(
-        'No Aptos wallet detected. Would you like to install Petra?'
-      );
-      
-      if (shouldInstall) {
-        window.open(installUrl, '_blank');
-      }
+      console.error('❌ No connectable wallet found');
+      toast.error('No wallet available. Please install Petra wallet.');
       return;
     }
 
     try {
       console.log('🔗 Connecting to:', targetWallet.name);
+      console.log('🔗 Wallet ready state:', targetWallet.readyState);
+      
       await connect(targetWallet.name);
+      
       console.log('✅ Connected to wallet!');
-      toast.success('Wallet connected successfully!');
+      toast.success(`Connected to ${targetWallet.name}!`);
     } catch (error: any) {
       console.error('❌ Connection error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        name: error.name
+      });
       
       if (error.code === 4001) {
-        toast.error('Connection cancelled');
+        toast.error('Connection cancelled by user');
+      } else if (error.message?.includes('network')) {
+        toast.error('Network mismatch. Please switch your wallet to Devnet.');
+      } else if (error.message?.includes('User rejected')) {
+        toast.error('Connection request rejected');
       } else {
         toast.error(`Failed to connect: ${error.message || 'Unknown error'}`);
       }
@@ -199,6 +237,8 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
       // Clear state anyway
       localStorage.removeItem('ccWalletConnected');
       localStorage.removeItem('ccWalletAddress');
+      
+      toast.success('Wallet disconnected');
     }
   };
 
@@ -213,6 +253,10 @@ export function DirectWalletProvider({ children }: DirectWalletProviderProps) {
   const signAndSubmitTransaction = async (payload: any) => {
     if (!localConnected) {
       throw new Error('Wallet not connected');
+    }
+    
+    if (!adapterSignAndSubmit) {
+      throw new Error('Wallet adapter not available for transaction signing');
     }
     
     return await adapterSignAndSubmit(payload);

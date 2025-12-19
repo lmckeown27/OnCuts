@@ -30,15 +30,133 @@ interface RealtimeTransactionFeedProps {
   maxItems?: number;
 }
 
+// Mock transaction data for testing
+const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: '1',
+    type: 'booking',
+    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    amount: 25.00,
+    from: '0x1234567890abcdef1234567890abcdef',
+    to: '0xabcdef1234567890abcdef1234567890',
+    fromName: 'Sarah Johnson',
+    toName: 'Mike Williams',
+    fromId: 'student-1',
+    toId: 'barber-1',
+    status: 'confirmed',
+    description: 'New booking: Fade Haircut',
+    txHash: '0xabc123def456...',
+  },
+  {
+    id: '2',
+    type: 'payment',
+    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    amount: 30.00,
+    from: '0x9876543210fedcba9876543210fedcba',
+    to: '0xfedcba9876543210fedcba9876543210',
+    fromName: 'James Chen',
+    toName: 'Alex Rodriguez',
+    fromId: 'student-2',
+    toId: 'barber-2',
+    status: 'completed',
+    description: 'Payment completed via Stripe',
+    txHash: '0xdef789ghi012...',
+  },
+  {
+    id: '3',
+    type: 'completion',
+    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    amount: 22.50,
+    from: '0x1111222233334444555566667777888',
+    to: '0x8888777766665555444433332222111',
+    fromName: 'Emily Davis',
+    toName: 'Jordan Taylor',
+    fromId: 'student-3',
+    toId: 'barber-3',
+    status: 'completed',
+    description: 'Service completed: Beard Trim',
+    txHash: '0xghi345jkl678...',
+  },
+  {
+    id: '4',
+    type: 'deposit',
+    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    amount: 50.00,
+    status: 'completed',
+    description: 'Stripe deposit: $50.00',
+  },
+  {
+    id: '5',
+    type: 'withdrawal',
+    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    amount: 180.00,
+    from: '0x5555666677778888999900001111222',
+    fromName: 'Chris Martinez',
+    fromId: 'barber-4',
+    status: 'confirmed',
+    description: 'Barber withdrawal',
+    txHash: '0xjkl901mno234...',
+  },
+  {
+    id: '6',
+    type: 'booking',
+    timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    amount: 28.00,
+    from: '0x2222333344445555666677778888999',
+    to: '0x9999888877776666555544443333222',
+    fromName: 'David Lee',
+    toName: 'Taylor Anderson',
+    fromId: 'student-4',
+    toId: 'barber-5',
+    status: 'confirmed',
+    description: 'New booking: Full Service',
+    txHash: '0xmno567pqr890...',
+  },
+  {
+    id: '7',
+    type: 'payment',
+    timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+    amount: 35.00,
+    from: '0x3333444455556666777788889999000',
+    to: '0x0000999988887777666655554444333',
+    fromName: 'Jessica Brown',
+    toName: 'Morgan Smith',
+    fromId: 'student-5',
+    toId: 'barber-6',
+    status: 'completed',
+    description: 'Payment completed via blockchain',
+    txHash: '0xpqr123stu456...',
+  },
+  {
+    id: '8',
+    type: 'booking',
+    timestamp: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
+    amount: 20.00,
+    from: '0x4444555566667777888899990000111',
+    to: '0x1111000099998888777766665555444',
+    fromName: 'Ryan Wilson',
+    toName: 'Casey Johnson',
+    fromId: 'student-6',
+    toId: 'barber-7',
+    status: 'pending',
+    description: 'New booking: Haircut',
+    txHash: '0xstu789vwx012...',
+  },
+];
+
 export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = ({
   campusId,
   maxItems = 20,
 }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   const [isConnected, setIsConnected] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
+    // For testing: Skip Socket.IO connection when backend is not available
+    // Uncomment this section when backend is running
+    
+    /*
     // Connect to Socket.IO
     const newSocket = io('http://localhost:3001', {
       transports: ['polling', 'websocket'],
@@ -128,6 +246,11 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
     return () => {
       newSocket.close();
     };
+    */
+    
+    // Mock mode: simulate disconnected state
+    console.log('📝 Using mock transaction data (Socket.IO disabled for testing)');
+    setIsConnected(false);
   }, [campusId, maxItems]);
 
   // Fetch initial transactions
@@ -152,9 +275,19 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
         if (data.transactions) {
           setTransactions(data.transactions);
         }
+      } else {
+        // Use mock data on API failure
+        console.log('Using mock transaction data for testing');
+        // Randomize the order to simulate "reloading"
+        const shuffled = [...MOCK_TRANSACTIONS].sort(() => Math.random() - 0.5);
+        setTransactions(shuffled.slice(0, maxItems));
       }
     } catch (error) {
       console.error('Failed to fetch recent transactions:', error);
+      console.log('Using mock transaction data for testing');
+      // Randomize the order to simulate "reloading"
+      const shuffled = [...MOCK_TRANSACTIONS].sort(() => Math.random() - 0.5);
+      setTransactions(shuffled.slice(0, maxItems));
     }
   };
 

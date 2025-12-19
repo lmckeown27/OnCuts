@@ -1,577 +1,692 @@
 # CampusCuts
 
-**A blockchain-powered campus barber marketplace that prioritizes barber earnings and student savings.**
+**Decentralized barber marketplace platform connecting students with campus barbers**
 
-![Status](https://img.shields.io/badge/status-active-success.svg)
-![Platform](https://img.shields.io/badge/platform-web%20%7C%20ios-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+CampusCuts enables students to discover and book haircuts from qualified barbers on their campus, while barbers earn 95% of their service fees through blockchain-based payments. The platform leverages Aptos blockchain for secure, transparent transactions and smart contract-based escrow.
 
 ---
 
-## 🎯 Overview
+## 🎯 **Core Value Proposition**
 
-CampusCuts is a decentralized marketplace connecting student barbers with customers on college campuses. By eliminating expensive intermediaries, barbers earn **95% of every transaction** (vs. 40-60% at traditional platforms) while students get quality haircuts at **20% lower prices**.
+### **For Barbers**
+- **Earn More**: Keep 95% of earnings (vs. 50-70% at traditional shops)
+- **Flexible Schedule**: Work when and where you want
+- **Campus Integration**: Built-in customer base
+- **Automated Payments**: Instant payouts via blockchain
 
-### Core Value Proposition
-
-**For Barbers:**
-- Keep 95% of earnings (only 5% platform fee)
-- Minimum earnings exceed traditional platforms' maximum
-- Full control over services and pricing
-- Direct customer relationships
-
-**For Students:**  
-- Save 20% compared to traditional barbershops
-- Book verified, rated barbers on campus
-- Convenient mobile-first experience
-- Secure escrow-based payments
-
-**Platform Economics:**
-- Barber keeps: $19 of every $20 cut
-- Student pays: $18-22 (vs. $25-30 traditional)
-- Platform fee: 5% (vs. 40-60% typical marketplaces)
+### **For Students**  
+- **Lower Prices**: Save 20-40% compared to off-campus barbershops
+- **Convenient**: On-campus service at dorms, common areas, etc.
+- **Quality-Driven**: Algorithmic ranking ensures top performers are visible
+- **Reliable**: Built-in review and reliability scoring system
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ **System Architecture**
 
-### Prerequisites
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     FRONTEND (React + TypeScript)            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Consumer   │  │    Barber    │  │    Admin     │      │
+│  │     Page     │  │     Page     │  │     Page     │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    BACKEND (Node.js + NestJS)               │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Business Logic Layer                                │   │
+│  │  - Booking Management    - Review System            │   │
+│  │  - Marketplace Engine    - Location Ingestion       │   │
+│  │  - AI Worker Integration - Gas Wallet Monitoring    │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            ▼               ▼               ▼
+    ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+    │  PostgreSQL  │ │ Aptos Chain  │ │  AI Worker   │
+    │   Database   │ │   (Devnet)   │ │  (OpenAI)    │
+    └──────────────┘ └──────────────┘ └──────────────┘
+```
+
+### **Tech Stack**
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19, TypeScript, Vite, TailwindCSS |
+| **Backend** | Node.js, NestJS, TypeScript |
+| **Database** | PostgreSQL 15+, Prisma ORM |
+| **Blockchain** | Aptos (Devnet), Petra Wallet |
+| **AI** | OpenAI GPT-4, BullMQ job queue |
+| **Payments** | Stripe (fiat gateway), Blockchain escrow |
+| **Real-time** | Socket.io |
+
+---
+
+## 📂 **Project Structure**
+
+```
+CampusCuts/
+├── web-app/              # Frontend React application
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── pages/        # Route-level page components
+│   │   ├── contexts/     # React contexts (wallet, auth)
+│   │   ├── services/     # API service layer
+│   │   ├── utils/        # Helper utilities
+│   │   └── assets/       # Static assets (logos, icons)
+│   └── public/           # Public assets
+│
+├── backend/              # Backend NestJS API
+│   ├── src/
+│   │   ├── modules/      # Feature modules
+│   │   ├── services/     # Business logic services
+│   │   ├── controllers/  # API route controllers
+│   │   ├── entities/     # Database entities
+│   │   └── config/       # Configuration
+│   └── prisma/           # Database schema & migrations
+│
+└── ai-worker/            # AI automation microservice
+    ├── src/
+    │   ├── queues/       # BullMQ job queues
+    │   ├── processors/   # Job processors
+    │   ├── prompts/      # AI prompt templates
+    │   └── services/     # AI business logic
+    └── config/           # Worker configuration
+```
+
+---
+
+## 🚀 **Quick Start**
+
+### **Prerequisites**
 
 - Node.js 18+
 - PostgreSQL 15+
-- Redis 7+
-- OpenAI API Key (for AI features)
-- Stripe Account (for payments)
+- Petra Wallet (Chrome extension)
+- OpenAI API key
 
-### Installation
+### **1. Install Dependencies**
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/CampusCuts.git
+git clone <repository-url>
 cd CampusCuts
 
-# Install backend dependencies
-cd backend
-npm install
-
 # Install frontend dependencies
-cd ../web-app
+cd web-app
 npm install
 
-# Configure environment
-cp backend/.env.example backend/.env
-# Add your API keys to backend/.env
+# Install backend dependencies
+cd ../backend
+npm install
 
-# Start PostgreSQL & Redis (Docker)
-docker-compose up -d postgres redis
-
-# Initialize database
-cd backend
-psql -U postgres -d campuscuts < src/database/schema.sql
-
-# Start backend
-npm run dev
-
-# Start frontend (new terminal)
-cd web-app
-npm run dev
+# Install AI worker dependencies (optional)
+cd ../ai-worker
+npm install
 ```
 
-Visit `http://localhost:3000` to see the app!
+### **2. Environment Setup**
 
----
-
-## 🏗️ Architecture
-
-### Hybrid Blockchain + PostgreSQL
-
-```
-┌─────────────────────────────────────────────┐
-│           FRONTEND (React + Vite)           │
-│     Progressive Web App (PWA) + iOS App     │
-└──────────────────┬──────────────────────────┘
-                   │
-                   ↓
-┌─────────────────────────────────────────────┐
-│         BACKEND (Node.js + Express)         │
-│  • Custodial wallet service                 │
-│  • Stripe fiat gateway                      │
-│  • AI-powered marketplace engine            │
-│  • PostgreSQL cache layer                   │
-└─────┬─────────┬──────────┬──────────────────┘
-      │         │          │
-      ↓         ↓          ↓
-┌─────────┐ ┌────────┐ ┌───────────────┐
-│ Stripe  │ │  IPFS  │ │     Aptos     │
-│ Payment │ │ Media  │ │  Blockchain   │
-│ Gateway │ │Storage │ │  (Devnet)     │
-└─────────┘ └────────┘ └───────────────┘
-```
-
-**Data Storage Strategy:**
-- **Blockchain** (Aptos): User accounts, bookings, reviews (source of truth)
-- **PostgreSQL**: Performance cache, analytics, marketplace data
-- **IPFS** (Pinata): Profile images, portfolio photos
-- **Redis**: Session cache, job queues
-
----
-
-## ✨ Key Features
-
-### Marketplace Engine
-- **Dynamic Pricing**: AI-powered price multipliers based on barber quality (1.0x-1.5x)
-- **Quality Scoring**: Continuous barber performance evaluation (BQS: 0-100)
-- **Smart Ranking**: Barbers ranked by quality, availability, and proximity
-- **Surge Pricing**: Real-time demand-based pricing adjustments
-- **Market Calibration**: City-specific pricing and competition factors
-
-### Booking System
-- **Request-Based**: Barbers approve/reject bookings (AirBnb-style)
-- **Escrow Payments**: Funds held until service completion
-- **Real-Time Messaging**: Pre- and post-booking communication
-- **Review System**: Verified reviews with sentiment analysis
-
-### User Experience
-- **Consumer Discovery**: Swipeable barber profiles (dating app UX)
-- **Progressive Filters**: Sequential filtering by service → time → location
-- **Barber Dashboard**: Schedule management, earnings tracking, performance metrics
-- **Admin Tools**: Campus management, fraud detection, system health monitoring
-
-### AI-Powered Features
-- **Location Enrichment**: Auto-verifies and categorizes campus locations
-- **Fraud Detection**: Pattern recognition for suspicious accounts
-- **Dispute Resolution**: AI-assisted conflict analysis
-- **Market Intelligence**: Campus-level supply-demand insights
-- **Weekly Summaries**: Automated admin reports
-
-### Scoring Systems
-- **Barber Quality Score (BQS)**: `0.45*Reviews + 0.25*Demand + 0.15*PriceJustification + 0.15*Loyalty`
-- **Consumer Reliability**: Booking history, cancellations, payment timeliness
-- **Mutual Visibility**: Users see opposing party's score (not their own)
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS (olive green theme)
-- **State**: Zustand
-- **API**: Axios + React Query
-- **Real-time**: Socket.IO Client
-- **Payments**: Stripe React
-- **PWA**: Service Workers + Manifest
-
-### Backend
-- **Runtime**: Node.js 18
-- **Framework**: Express.js + TypeScript
-- **Database**: PostgreSQL 15
-- **Cache**: Redis 7
-- **Queue**: BullMQ
-- **Blockchain**: Aptos SDK
-- **Storage**: Pinata (IPFS)
-- **Payments**: Stripe API
-- **AI**: OpenAI GPT-4
-- **Auth**: JWT
-- **Logging**: Winston
-
-### Blockchain
-- **Platform**: Aptos (Move language)
-- **Network**: Devnet
-- **Smart Contracts**:
-  - `user_accounts.move` - User registration
-  - `bookings.move` - Booking escrow
-  - `reviews.move` - Review system
-  - `platform_admin.move` - Admin controls
-
-### Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **CI/CD**: GitHub Actions
-- **Deployment**: AWS Lambda (backend) + Vercel (frontend)
-- **Monitoring**: Winston logs + PostgreSQL analytics
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create `backend/.env`:
-
+#### **Frontend** (`/web-app/.env`)
 ```env
-# Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/campuscuts
+VITE_APTOS_NETWORK=devnet
+VITE_API_URL=http://localhost:3001
+```
 
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
-# Blockchain (Aptos)
-APTOS_NODE_URL=https://fullnode.devnet.aptoslabs.com/v1
-APTOS_PLATFORM_PRIVATE_KEY=0x...
-APTOS_PLATFORM_ADDRESS=0x...
+#### **Backend** (`/backend/.env`)
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/campuscuts
 APTOS_NETWORK=devnet
-
-# Payments (Stripe)
+GAS_WALLET_ADDRESS=0x...
+GAS_WALLET_PRIVATE_KEY=0x...
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PLATFORM_ACCOUNT_ID=acct_...
-
-# Storage (IPFS via Pinata)
-PINATA_API_KEY=...
-PINATA_SECRET_KEY=...
-
-# AI (OpenAI)
-OPENAI_API_KEY=sk-proj-...  # Single key for all AI services
-OPENAI_MODEL=gpt-4-turbo-preview
-OPENAI_MINI_MODEL=gpt-4o-mini
-
-# Security
-JWT_SECRET=your-secret-key-here
-
-# Email (SendGrid - optional)
-SENDGRID_API_KEY=SG...
-ADMIN_EMAIL=admin@campuscuts.com
-
-# Server
-PORT=3001
-NODE_ENV=development
+OPENAI_API_KEY=sk-...
+JWT_SECRET=your-secret-key
 ```
 
-### AI Services Configuration
+#### **AI Worker** (`/ai-worker/.env`)
+```env
+OPENAI_API_KEY=sk-...
+DATABASE_URL=postgresql://user:password@localhost:5432/campuscuts
+REDIS_URL=redis://localhost:6379
+```
 
-All AI services (location enrichment, dynamic pricing, fraud detection, etc.) use the **single `OPENAI_API_KEY`** configured in `backend/.env`. The ai-worker code is imported as a library and runs in the backend process, sharing the same environment.
-
-**AI Features:**
-- ✅ Location enrichment (GPT-4o-mini)
-- ✅ Dynamic pricing (GPT-4-turbo)
-- ✅ Quality scoring (GPT-4-turbo)
-- ✅ Fraud detection (GPT-4-turbo)
-- ✅ Dispute resolution (GPT-4-turbo)
-- ✅ Market analysis (GPT-4-turbo)
-
-**Estimated Cost**: $51-205/month for 1,000 active users
-
----
-
-## 💻 Development
-
-### Backend Development
+### **3. Database Setup**
 
 ```bash
 cd backend
 
-# Start in development mode (auto-reload)
-npm run dev
+# Generate Prisma client
+npx prisma generate
 
-# Run tests
-npm test
+# Run migrations
+npx prisma migrate deploy
 
-# Lint code
-npm run lint
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# Seed database (optional)
+npx prisma db seed
 ```
 
-### Frontend Development
+### **4. Start Services**
 
+```bash
+# Terminal 1: Frontend
+cd web-app
+npm run dev
+# → http://localhost:5173
+
+# Terminal 2: Backend
+cd backend
+npm run start:dev
+# → http://localhost:3001
+
+# Terminal 3: AI Worker (optional)
+cd ai-worker
+npm run dev
+```
+
+### **5. Access Application**
+
+1. **Landing Page**: `http://localhost:5173`
+2. **Web Version**: `http://localhost:5173/web`
+3. **Role Selection**: Choose Admin, Barber, or Consumer
+
+---
+
+## 👥 **User Roles**
+
+### **Consumer (Student)**
+- Discover barbers by haircut type, availability, location
+- View barber profiles with ratings, pricing, Instagram
+- Book appointments with preferred barbers
+- Track booking status and history
+- Rate and review completed services
+- View personal reliability score
+
+### **Barber**
+- Manage schedule (daily/weekly/monthly views)
+- Accept/decline booking requests
+- View customer profiles before accepting
+- Set service specialties (pricing is algorithmic)
+- Track performance metrics and earnings
+- Receive automated gas wallet refills
+
+### **Campus Manager** (Barber Role Extension)
+- Approve new barber applications
+- Monitor campus metrics (bookings, ratings, disputes)
+- Manage campus content (Instagram integration)
+- Escalate issues to platform admin
+
+### **Platform Admin**
+- Manage multiple campuses
+- Monitor system health (blockchain/hybrid mode)
+- View live transaction feeds
+- Access gas wallet management
+- Configure dynamic pricing parameters
+- Review marketplace statistics
+
+---
+
+## 💰 **Marketplace Engine**
+
+### **Barber Quality Score (BQS)**
+
+**Formula:**
+```
+BQS = 0.45×ReviewScore + 0.25×DemandScore + 0.15×PriceJustification + 0.15×LoyaltyScore
+```
+
+- **ReviewScoreWeighted**: Exponentially weighted recent reviews
+- **DemandScore**: Based on booking frequency and completion rate
+- **PriceJustificationScore**: Value for money (quality vs. price)
+- **LoyaltyScore**: Repeat customer rate
+
+**Recomputed**: Nightly via cron job
+
+### **Dynamic Pricing**
+
+- **Base Price Range**: Set per market (campus/city)
+- **BQS Multiplier**: 1.0x to 1.5x based on barber quality
+- **Surge Pricing**: 1.2x to 1.4x during peak demand
+- **Server-Side Enforcement**: Cannot be manipulated by barbers
+
+### **Ranking Algorithm**
+
+**Formula:**
+```
+RankScore = 0.5×BQS + 0.3×AvailabilityFit + 0.2×Proximity
+```
+
+Ensures consumers see the best barbers first, weighted by:
+- Quality (50%)
+- Availability match (30%)
+- Location convenience (20%)
+
+---
+
+## 🤖 **AI Automation Worker**
+
+### **Automated Tasks**
+
+| Event Trigger | AI Task | Output |
+|---------------|---------|--------|
+| **Barber Onboarded** | Quality assessment from profile | Initial quality score |
+| **Review Created** | Sentiment analysis | Adjusted BQS, fraud detection |
+| **Booking Disputed** | Dispute resolution recommendation | Admin action suggestions |
+| **Weekly** | Market summary report | Trends, pricing changes, anomalies |
+| **Cancellation Pattern** | Fraud detection | Risk flags for accounts |
+| **Market Update** | Demand estimation | Surge pricing triggers |
+
+### **Fraud Detection**
+
+- Pattern analysis across bookings
+- Multi-account correlation detection
+- Behavioral anomaly identification
+- AI-powered risk scoring
+
+### **Quality Scoring**
+
+- Review sentiment analysis
+- Performance trend detection
+- Bonus/penalty adjustments
+- Campus-level normalization
+
+---
+
+## 🗺️ **Location Ingestion System**
+
+### **Crowd-Sourced Locations**
+
+- **No Hardcoding**: All locations user-submitted
+- **AI Normalization**: Standardizes similar location names
+- **Automatic Aliasing**: "North Hall" = "North Dormitory" = "N Hall"
+- **Confidence Scoring**: Increases with usage
+- **Campus Scoping**: All data isolated per university
+
+### **How It Works**
+
+1. **Barber submits location**: Free-text input (e.g., "my dorm room 204")
+2. **Backend normalizes**: Lowercasing, punctuation removal
+3. **Fuzzy matching**: Checks similarity to existing locations
+4. **AI enrichment**: Suggests canonical name and aliases
+5. **Promotion**: Verified after 5+ uses with 80%+ confidence
+
+---
+
+## 💳 **Payment Flow**
+
+### **Fiat → Blockchain Bridge**
+
+```
+Student pays $25 via Stripe
+        ↓
+Backend receives webhook
+        ↓
+Backend mints equivalent APT from custodial wallet
+        ↓
+APT locked in smart contract escrow
+        ↓
+Upon service completion:
+        ↓
+95% to barber wallet
+5% to platform fee wallet
+```
+
+### **Gas Wallet System**
+
+- **Automated Monitoring**: Checks balance every 15 minutes
+- **Low Balance Alerts**: Warning at <5 APT, critical at <2 APT
+- **One-Click Refill**: Admin can refill directly from Petra wallet
+- **Transaction History**: Full audit log of all gas usage
+
+---
+
+## 🔗 **Blockchain Integration**
+
+### **Aptos Wallet Connection**
+
+**Current Status**: Uses Aptos Wallet Adapter Standard v7+
+
+1. **Wallet Provider**: Auto-detects installed Aptos wallets
+2. **Connection**: Click "Connect Wallet" → Approve in Petra
+3. **Persistence**: Auto-reconnects on page reload
+4. **Network**: Devnet (configurable to Testnet/Mainnet)
+
+### **Setup Petra Wallet**
+
+1. Install from https://petra.app/
+2. Create new wallet or import existing
+3. Switch network to **Devnet**
+4. Get free devnet APT from faucet: https://aptoslabs.com/testnet-faucet
+
+### **Smart Contracts** (Planned)
+
+- **Escrow Module**: Holds funds until service completion
+- **Review Module**: Immutable review records
+- **Payment Module**: Automated distribution (95/5 split)
+
+---
+
+## 📊 **Database Schema (Key Tables)**
+
+### **Users**
+- Wallet-first authentication
+- Roles: consumer, barber, admin, campus_manager
+- Linked to Aptos addresses
+
+### **Campuses**
+- University/college records
+- Market configuration (base prices, surge rules)
+
+### **Barbers**
+- 1-to-1 with users
+- Campus-scoped profiles
+- Dynamic pricing, cached BQS
+- Service specialties
+
+### **Locations**
+- Campus-scoped service locations
+- Canonical names + aliases
+- Verification status, confidence scores
+
+### **Availability**
+- Barber-defined time slots
+- Location, price, status (available/booked/completed)
+
+### **Bookings**
+- References availability + consumer
+- Lifecycle states (pending → accepted → completed)
+- Blockchain transaction hash
+- Review linkage
+
+### **Reviews**
+- Ratings, text feedback
+- Linked to completed bookings
+- Feeds into BQS calculation
+
+### **Barber Quality Scores**
+- Historical snapshots
+- Nightly recomputation results
+
+---
+
+## 🎨 **UI/UX Highlights**
+
+### **Color System**
+- **Primary**: Olive green (`#6B7E3F`, `#8FAF47`)
+- **Greys**: `#F8F9FA`, `#E9ECEF`, `#6C757D`
+- **Success**: Green (`#28A745`)
+- **Warning**: Yellow (`#FFC107`)
+- **Error**: Red (`#DC3545`)
+
+### **Key Features**
+- **Progressive Filter Questionnaire**: Haircut type → Date/Time → Location
+- **Dynamic Barber Cards**: Quality-ranked, equal heights, Instagram handles
+- **Smooth Animations**: Fade-in, scale-in on modals
+- **Mobile-First**: Responsive design for all devices
+- **Click-Outside-to-Close**: All popups/modals
+
+### **Barber Discovery Flow**
+
+1. Consumer sees filter questionnaire
+2. Selects haircut type (horizontally scrollable tags)
+3. Selects date/time (custom calendar picker with confirm)
+4. Selects location (AI-powered auto-complete)
+5. Barbers filter in real-time, top-ranked appear first
+6. Click entire card to view profile
+7. Schedule directly from profile
+
+---
+
+## 🔐 **Security Features**
+
+### **Authentication**
+- JWT-based sessions
+- Wallet signature verification
+- Role-based access control (RBAC)
+
+### **Blockchain**
+- Non-custodial user wallets (users control keys)
+- Custodial platform wallet (for gas fees)
+- Multi-sig wallet support (future)
+
+### **Database**
+- PostgreSQL RLS (Row-Level Security)
+- Foreign key constraints
+- Indexed queries for performance
+- Audit logging on critical operations
+
+### **API**
+- Rate limiting
+- Input validation (Zod schemas)
+- CORS configuration
+- HTTPS required (production)
+
+---
+
+## 🧪 **Testing**
+
+### **Frontend**
 ```bash
 cd web-app
-
-# Start development server
-npm run dev
-
-# Run tests
-npm run test
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-### Database Migrations
-
-```bash
-cd backend
-
-# Apply migrations
-psql -U postgres -d campuscuts < src/database/migrations/001_initial.sql
-psql -U postgres -d campuscuts < src/database/migrations/002_user_grading.sql
-# ... apply each migration in order
-
-# Seed mock data
-psql -U postgres -d campuscuts < database/seed-mock-data.sql
-```
-
-### Docker Development
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f backend
-
-# Stop all services
-docker-compose down
-
-# Reset database
-docker-compose down -v
-docker-compose up -d postgres
-```
-
----
-
-## 📱 Platform-Specific Features
-
-### Web App (`/web-app`)
-- Responsive design (mobile-first)
-- PWA capabilities (offline, install prompt)
-- Optimized for desktop and mobile browsers
-- Landing page with web/app routing
-
-### iOS App (`/ios-app`)
-- Native Swift/SwiftUI
-- Push notifications (APNs)
-- Wallet adapter integration
-- Biometric authentication
-- Native camera integration for portfolio uploads
-
----
-
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Olive Green (`#708d81`) - Brand color
-- **Background**: Grey (`#525252`) - Main app background
-- **Accent**: Blue (`#0ea5e9`) - Info/links
-- **Semantic**: Green (success), Red (error), Amber (warning)
-
-### Typography
-- **Headings**: Bold, 2xl-5xl
-- **Body**: Regular, base-lg
-- **Buttons**: Semibold, uppercase
-
-### Components
-- Rounded corners (lg, xl)
-- Subtle shadows
-- Hover animations
-- Click-outside-to-close modals
-
----
-
-## 🗄️ Database Schema
-
-### Core Tables
-- `users` - User accounts (students, barbers, admins)
-- `barbers` - Barber profiles & pricing
-- `barber_quality_scores` - BQS metrics
-- `bookings` - Booking records
-- `booking_requests` - Pending approval bookings
-- `reviews` - Customer reviews
-- `campus_locations` - Crowd-sourced location registry
-- `market_stats` - Campus market data
-
-### AI Tables
-- `barber_pricing_multipliers` - Dynamic pricing data
-- `fraud_flags` - Suspicious activity alerts
-- `dispute_recommendations` - AI dispute analysis
-- `location_enrichment_log` - AI location verification audit
-
-### Cron Tables
-- `cron_history` - Job execution log
-- `gas_wallet_usage_tracking` - Blockchain gas monitoring
-
----
-
-## 🚢 Deployment
-
-### Backend Deployment (AWS Lambda)
-
-```bash
-cd backend
-
-# Build
-npm run build
-
-# Deploy
-serverless deploy --stage production
-```
-
-### Frontend Deployment (Vercel)
-
-```bash
-cd web-app
-
-# Build
-npm run build
-
-# Deploy
-vercel --prod
-```
-
-### Smart Contract Deployment (Aptos)
-
-```bash
-cd contracts
-
-# Compile
-aptos move compile
-
-# Deploy to devnet
-aptos move publish --profile devnet
-
-# Deploy to mainnet
-aptos move publish --profile mainnet
-```
-
----
-
-## 📊 Key Systems
-
-### 1. Campus Location System
-- **Crowd-sourced**: Barbers submit locations, system auto-deduplicates
-- **AI-enriched**: OpenAI verifies and classifies locations
-- **Fuzzy matching**: 88% similarity threshold prevents duplicates
-- **Auto-promotion**: High-usage locations automatically verified
-
-### 2. Dynamic Pricing Engine
-- **BQS-based multipliers**: 1.0x (new) to 1.5x (top-tier)
-- **Market calibration**: City-specific pricing factors
-- **Surge pricing**: Real-time demand adjustments (1.2x-1.4x)
-- **Server-enforced**: Barbers can't override calculated ranges
-
-### 3. Booking Request System
-- **Barber approval**: All bookings require barber acceptance
-- **Customer profiles**: Barbers view customer reliability before accepting
-- **Pre-booking chat**: AirBnb-style messaging
-- **Escrow**: Funds locked until service completion
-
-### 4. Payment Flow
-- **Customer**: Stripe → Backend → Escrow
-- **Barber**: Escrow → Stripe Connect → Barber bank
-- **Platform**: 5% fee deducted at payout
-- **Webhook-driven**: Event-based state management
-
-### 5. Gas Wallet Monitoring
-- **Automated monitoring**: Cron jobs check balance every hour
-- **Low balance alerts**: Email/Slack when balance < threshold
-- **One-click refill**: Admin can transfer APT via Petra wallet
-- **Usage tracking**: Historical gas consumption analytics
-
----
-
-## 🔐 Security
-
-- **Authentication**: JWT tokens (7-day expiration)
-- **Authorization**: Role-based access control (student, barber, admin)
-- **API Security**: Rate limiting, CORS, Helmet headers
-- **Payment Security**: Stripe PCI compliance, webhook signature verification
-- **Blockchain Security**: Custodial wallet with AES-256 encryption
-- **Data Privacy**: GDPR-compliant data handling
-
----
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run backend tests
-cd backend && npm test
-
-# Run frontend tests
-cd web-app && npm test
-
-# E2E tests (Playwright)
-cd e2e && npx playwright test
-
-# Coverage report
+npm run test        # Unit tests (Vitest)
+npm run test:ui     # Test UI
 npm run test:coverage
 ```
 
----
+### **Backend**
+```bash
+cd backend
+npm run test        # Unit tests (Jest)
+npm run test:e2e    # End-to-end tests
+npm run test:cov    # Coverage report
+```
 
-## 📈 Monitoring & Analytics
-
-### Backend Logs
-- **Location**: `backend/logs/`
-- **Format**: JSON structured logging (Winston)
-- **Levels**: error, warn, info, debug
-
-### System Health
-- **Endpoint**: `GET /api/system/health`
-- **Monitors**: PostgreSQL, blockchain, Redis
-- **Meter**: Hybrid (cache) vs. blockchain-only mode
-
-### Admin Dashboard
-- Real-time transaction feed
-- Campus performance metrics
-- Fraud detection alerts
-- Gas wallet status
-- Market summaries
+### **Database**
+```bash
+cd backend
+npx prisma studio   # Visual database browser
+```
 
 ---
 
-## 🤝 Contributing
+## 📈 **Performance Monitoring**
 
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing feature`)
-5. Open Pull Request
+### **System Health Meter**
 
-### Development Guidelines
-- Follow TypeScript strict mode
-- Write tests for new features
-- Update documentation
-- Follow existing code style
-- Add comments for complex logic
+Visual indicator on admin dashboard:
+- **🟢 Hybrid Mode**: PostgreSQL + Blockchain (optimal)
+- **🟡 Blockchain Only**: PostgreSQL down, fallback active
+- **🔴 System Error**: Both systems unavailable
 
----
+### **Cron Jobs**
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+| Job | Frequency | Purpose |
+|-----|-----------|---------|
+| **BQS Recomputation** | Nightly (2 AM) | Update barber quality scores |
+| **Dynamic Pricing** | Nightly (2:30 AM) | Adjust price ranges |
+| **Surge Detection** | Every 15 min | Monitor demand/supply ratio |
+| **Gas Monitoring** | Every 15 min | Check custodial wallet balance |
 
 ---
 
-## 👥 Team
+## 🚢 **Deployment**
 
-Built for campus entrepreneurs by campus entrepreneurs.
+### **Production Checklist**
+
+#### **Frontend**
+- [ ] Set `VITE_APTOS_NETWORK=mainnet`
+- [ ] Update API URL to production backend
+- [ ] Enable HTTPS
+- [ ] Configure CDN for assets
+- [ ] Build: `npm run build`
+
+#### **Backend**
+- [ ] Migrate to production database
+- [ ] Set secure `JWT_SECRET`
+- [ ] Configure Stripe production keys
+- [ ] Set Aptos mainnet node URL
+- [ ] Fund gas wallet with APT
+- [ ] Enable rate limiting
+- [ ] Configure CORS for production domain
+
+#### **Database**
+- [ ] Run production migrations
+- [ ] Enable backups (daily)
+- [ ] Set up read replicas (optional)
+- [ ] Configure connection pooling
+
+#### **Blockchain**
+- [ ] Deploy smart contracts to mainnet
+- [ ] Verify contract code on Aptos Explorer
+- [ ] Fund platform gas wallet
+- [ ] Set up wallet monitoring alerts
 
 ---
 
-## 📧 Support
+## 🐛 **Troubleshooting**
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/CampusCuts/issues)
-- **Email**: support@campuscuts.com
-- **Documentation**: This README
+### **Wallet Won't Connect**
+
+**Problem**: "No wallets detected by adapter after 15 seconds"
+
+**Solutions**:
+1. Ensure Petra extension is installed and enabled
+2. Check Petra is on correct network (Devnet)
+3. Refresh page (Cmd/Ctrl + Shift + R)
+4. Try different browser (Chrome recommended)
+5. Reinstall Petra extension if corrupted
+
+### **Database Connection Failed**
+
+**Problem**: `ECONNREFUSED ::1:5432`
+
+**Solutions**:
+1. Start PostgreSQL: `brew services start postgresql`
+2. Check `DATABASE_URL` in `.env`
+3. Verify database exists: `psql -l`
+4. Create database: `createdb campuscuts`
+
+### **Backend API 500 Errors**
+
+**Problem**: Internal server errors
+
+**Solutions**:
+1. Check backend logs: `npm run start:dev`
+2. Verify all `.env` variables are set
+3. Check database migrations: `npx prisma migrate status`
+4. Restart backend service
+
+### **Blockchain Transactions Failing**
+
+**Problem**: "Insufficient APT for gas fees"
+
+**Solutions**:
+1. Check gas wallet balance in admin dashboard
+2. Refill wallet from devnet faucet (devnet only)
+3. Verify wallet has >0.001 APT minimum
+4. Check Aptos network status
 
 ---
 
-## 🎯 Project Status
+## 📝 **Environment Variables Reference**
 
-- ✅ Core marketplace functionality
-- ✅ Booking request system
-- ✅ Payment integration (Stripe)
-- ✅ AI-powered features
-- ✅ Campus location system
+### **Frontend**
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_APTOS_NETWORK` | Blockchain network | `devnet` |
+| `VITE_API_URL` | Backend API base URL | `http://localhost:3001` |
+
+### **Backend**
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | ✅ |
+| `JWT_SECRET` | Secret for JWT tokens | ✅ |
+| `APTOS_NETWORK` | Blockchain network | ✅ |
+| `GAS_WALLET_ADDRESS` | Platform custodial wallet address | ✅ |
+| `GAS_WALLET_PRIVATE_KEY` | Private key for gas wallet | ✅ |
+| `STRIPE_SECRET_KEY` | Stripe API secret key | ✅ |
+| `OPENAI_API_KEY` | OpenAI API key for AI worker | ⚠️ Optional |
+| `REDIS_URL` | Redis connection for jobs | ⚠️ Optional |
+
+---
+
+## 🗺️ **Roadmap**
+
+### **Phase 1: MVP** (Current)
+- ✅ Basic marketplace functionality
+- ✅ Wallet connection (Petra)
 - ✅ Dynamic pricing engine
-- ✅ Web app (PWA)
-- ✅ iOS app
-- ✅ Admin dashboard
-- ⏳ Mainnet deployment (coming soon)
-- ⏳ Multi-university rollout
+- ✅ AI worker integration
+- ✅ Campus manager roles
+- ✅ Location ingestion system
+
+### **Phase 2: Blockchain** (In Progress)
+- ⏳ Smart contract deployment (Aptos mainnet)
+- ⏳ Full escrow implementation
+- ⏳ On-chain review system
+- ⏳ Multi-sig admin wallet
+
+### **Phase 3: Scale** (Planned)
+- 📅 Multi-campus expansion
+- 📅 Mobile app (React Native)
+- 📅 Advanced AI features (image recognition)
+- 📅 Loyalty rewards program
+- 📅 Barber training/certification
+
+### **Phase 4: Enterprise** (Future)
+- 📅 White-label solution for other campuses
+- 📅 API for third-party integrations
+- 📅 DAO governance model
+- 📅 Token economics ($CUTS token)
 
 ---
 
-**CampusCuts** - Empowering campus barbers, one cut at a time. ✂️
+## 🤝 **Contributing**
+
+We welcome contributions! Please follow these guidelines:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature`
+3. **Commit changes**: `git commit -m 'Add your feature'`
+4. **Push to branch**: `git push origin feature/your-feature`
+5. **Open a Pull Request**
+
+### **Code Style**
+- TypeScript for all new code
+- Follow existing patterns
+- Add comments for complex logic
+- Write tests for new features
+
+---
+
+## 📄 **License**
+
+This project is proprietary and confidential.
+
+---
+
+## 📧 **Contact**
+
+For questions or support:
+- **Platform**: CampusCuts
+- **Purpose**: Campus barber marketplace
+- **Tech**: React + NestJS + Aptos + AI
+
+---
+
+## 🙏 **Acknowledgments**
+
+- **Aptos Labs**: Blockchain infrastructure
+- **Petra Wallet**: Wallet adapter integration
+- **OpenAI**: AI automation capabilities
+- **Campus Communities**: Beta testing and feedback
+
+---
+
+**Built with ❤️ for campus communities**

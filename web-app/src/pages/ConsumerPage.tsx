@@ -12,6 +12,120 @@ import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutsLogo } from '@assets';
 
+// Mock data for demo
+function getMockBarbers(): Barber[] {
+  return [
+    {
+      id: 'barber-1',
+      user_id: 'user-1',
+      campus_id: 'campus-1',
+      bio: 'Specializing in modern fades and classic cuts. 5+ years experience.',
+      specialties: ['Haircut', 'Fade', 'Beard Trim'],
+      years_experience: 5,
+      average_rating: 4.8,
+      total_bookings: 156,
+      instagram_handle: 'cutsbymark',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+1'],
+      is_active: true,
+      base_price: 25,
+      max_price: 35,
+      name: 'Mark Johnson',
+      user: { first_name: 'Mark', last_name: 'Johnson' },
+      pricing: [{ service: 'Haircut', price: 25 }],
+    },
+    {
+      id: 'barber-2',
+      user_id: 'user-2',
+      campus_id: 'campus-1',
+      bio: 'Expert in hot towel shaves and beard grooming.',
+      specialties: ['Beard Trim', 'Hot Towel Shave', 'Full Service'],
+      years_experience: 7,
+      average_rating: 4.9,
+      total_bookings: 203,
+      instagram_handle: 'shavemaster',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+2'],
+      is_active: true,
+      base_price: 30,
+      max_price: 45,
+      name: 'David Chen',
+      user: { first_name: 'David', last_name: 'Chen' },
+      pricing: [{ service: 'Beard Trim', price: 30 }],
+    },
+    {
+      id: 'barber-3',
+      user_id: 'user-3',
+      campus_id: 'campus-1',
+      bio: 'Creative stylist with expertise in color and modern cuts.',
+      specialties: ['Haircut', 'Color', 'Styling'],
+      years_experience: 4,
+      average_rating: 4.7,
+      total_bookings: 98,
+      instagram_handle: 'stylebyalex',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+3'],
+      is_active: true,
+      base_price: 28,
+      max_price: 40,
+      name: 'Alex Rodriguez',
+      user: { first_name: 'Alex', last_name: 'Rodriguez' },
+      pricing: [{ service: 'Haircut', price: 28 }],
+    },
+    {
+      id: 'barber-4',
+      user_id: 'user-4',
+      campus_id: 'campus-1',
+      bio: 'Traditional barbering with a modern twist. Precision cuts guaranteed.',
+      specialties: ['Haircut', 'Fade', 'Lineup'],
+      years_experience: 6,
+      average_rating: 4.6,
+      total_bookings: 134,
+      instagram_handle: 'precision_cuts',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+4'],
+      is_active: true,
+      base_price: 26,
+      max_price: 36,
+      name: 'Jordan Smith',
+      user: { first_name: 'Jordan', last_name: 'Smith' },
+      pricing: [{ service: 'Haircut', price: 26 }],
+    },
+    {
+      id: 'barber-5',
+      user_id: 'user-5',
+      campus_id: 'campus-1',
+      bio: 'Specializing in textured hair and ethnic styles.',
+      specialties: ['Haircut', 'Styling', 'Fade'],
+      years_experience: 3,
+      average_rating: 4.9,
+      total_bookings: 76,
+      instagram_handle: 'texturekingz',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+5'],
+      is_active: true,
+      base_price: 27,
+      max_price: 38,
+      name: 'Marcus Williams',
+      user: { first_name: 'Marcus', last_name: 'Williams' },
+      pricing: [{ service: 'Haircut', price: 27 }],
+    },
+    {
+      id: 'barber-6',
+      user_id: 'user-6',
+      campus_id: 'campus-1',
+      bio: 'Full service barbering with a focus on customer experience.',
+      specialties: ['Full Service', 'Haircut', 'Beard Trim', 'Hot Towel Shave'],
+      years_experience: 8,
+      average_rating: 4.8,
+      total_bookings: 187,
+      instagram_handle: 'fullservice_barber',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+6'],
+      is_active: true,
+      base_price: 32,
+      max_price: 48,
+      name: 'Tyler Anderson',
+      user: { first_name: 'Tyler', last_name: 'Anderson' },
+      pricing: [{ service: 'Full Service', price: 32 }],
+    },
+  ];
+}
+
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
   return barbers
@@ -158,6 +272,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
     date: null,
@@ -180,15 +295,22 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       const response = await barberService.getBarbers();
       const barbersData = response.data || [];
       
+      // If no data from API, use mock data
+      const finalData = barbersData.length > 0 ? barbersData : getMockBarbers();
+      
       // Apply algorithmic ranking
-      const rankedBarbers = rankBarbers(barbersData);
+      const rankedBarbers = rankBarbers(finalData);
       setBarbers(rankedBarbers);
       setFilteredBarbers(rankedBarbers);
       
       setLoading(false);
     } catch (error) {
       console.error('Failed to load barbers:', error);
-      toast.error('Failed to load barbers');
+      // Use mock data on error
+      const mockData = getMockBarbers();
+      const rankedBarbers = rankBarbers(mockData);
+      setBarbers(rankedBarbers);
+      setFilteredBarbers(rankedBarbers);
       setLoading(false);
     }
   };
@@ -290,7 +412,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             <Card
               key={barber.id}
               className="cursor-pointer hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden"
-              onClick={() => navigate(`/student/barbers/${barber.id}`)}
+              onClick={() => setSelectedBarber(barber)}
             >
               {/* Portfolio Image with Name & Price Overlays */}
               <div className="relative mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
@@ -325,16 +447,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Info */}
               <div className="flex-1 flex flex-col pb-2">
 
-                {/* Rating & Bookings */}
+                {/* Rating & Instagram */}
                 <div className="flex items-center gap-2 mt-1 mb-2">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                     <span className="font-semibold">{barber.average_rating.toFixed(1)}</span>
                   </div>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-sm text-gray-600">
-                    {barber.total_bookings} booking{barber.total_bookings !== 1 ? 's' : ''}
-                  </span>
+                  {barber.instagram_handle && (
+                    <>
+                      <span className="text-gray-400">•</span>
+                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <Instagram className="w-4 h-4" />
+                        <span>@{barber.instagram_handle}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Specialties */}
@@ -348,14 +475,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </span>
                   ))}
                 </div>
-
-                {/* Instagram Handle (if available) */}
-                {barber.instagram_handle && (
-                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                    <Instagram className="w-4 h-4" />
-                    <span>@{barber.instagram_handle}</span>
-                  </div>
-                )}
               </div>
             </Card>
           );
@@ -371,6 +490,100 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           <Button onClick={clearFilters} variant="secondary">
             Clear Filters
           </Button>
+        </div>
+      )}
+
+      {/* Barber Profile Modal */}
+      {selectedBarber && (
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-fade-in"
+          onClick={() => setSelectedBarber(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {selectedBarber.user?.first_name} {selectedBarber.user?.last_name}
+              </h2>
+              <button
+                onClick={() => setSelectedBarber(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <span className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</span>
+              </button>
+            </div>
+            <div className="p-6">
+              {/* Barber Profile Content */}
+              <div className="space-y-6">
+                {/* Profile Header */}
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="w-full md:w-48 h-48 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+                    {selectedBarber.portfolio && selectedBarber.portfolio.length > 0 ? (
+                      <img
+                        src={selectedBarber.portfolio[0].url}
+                        alt="Portfolio"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <UsersIcon className="w-16 h-16 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                      <span className="text-xl font-bold">{selectedBarber.average_rating.toFixed(1)}</span>
+                    </div>
+                    <p className="text-gray-700 mb-4">{selectedBarber.bio}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {selectedBarber.specialties?.map((specialty, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
+                    {selectedBarber.instagram_handle && (
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Instagram className="w-5 h-5" />
+                        <a
+                          href={`https://instagram.com/${selectedBarber.instagram_handle}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary-600 transition-colors"
+                        >
+                          @{selectedBarber.instagram_handle}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Schedule Button */}
+                <div className="flex justify-center pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={() => {
+                      // Navigate to booking page with barber and filter data
+                      navigate(`/web/consumer/book/${selectedBarber.id}`, {
+                        state: {
+                          barber: selectedBarber,
+                          filters: filterCriteria,
+                        },
+                      });
+                    }}
+                    className="px-8 py-3 text-lg"
+                  >
+                    Schedule Service
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </>

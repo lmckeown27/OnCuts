@@ -1,5 +1,6 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, Shield, Users, ArrowLeft, Monitor, Smartphone } from 'lucide-react';
+import { UserCircle, Shield, Users, ArrowLeft } from 'lucide-react';
 import { CampusCutsLogo } from '@assets';
 
 interface RoleSelectionPageProps {
@@ -10,24 +11,11 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
   const navigate = useNavigate();
 
   const platformInfo = {
-    web: {
-      icon: Monitor,
-      title: 'Web Version',
-      subtitle: 'Access from any browser',
-      color: 'indigo',
-      prefix: '/web',
-    },
-    app: {
-      icon: Smartphone,
-      title: 'Mobile App',
-      subtitle: 'Install for offline access',
-      color: 'purple',
-      prefix: '/app',
-    },
+    web: { prefix: '/web' },
+    app: { prefix: '/app' },
   };
 
   const info = platformInfo[platform];
-  const PlatformIcon = info.icon;
   
   // Helper function to navigate within the current platform
   const navigateTo = (route: string) => {
@@ -51,14 +39,8 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
             <img src={CampusCutsLogo} alt="CampusCuts" className="h-24 w-auto" />
           </div>
           
-          {/* Platform Badge */}
-          <div className={`inline-flex items-center gap-2 px-4 py-2 bg-${info.color}-100 text-${info.color}-700 rounded-full mb-4`}>
-            <PlatformIcon className="w-5 h-5" />
-            <span className="font-semibold">{info.title}</span>
-          </div>
-          
-          <p className="text-xl text-gray-600 mb-2">Select Your Role</p>
-          <p className="text-sm text-gray-500">{info.subtitle}</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to CampusCuts</h1>
+          <p className="text-xl text-gray-600">Select Your Role</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -103,13 +85,6 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
               <p className="text-gray-600 text-center">Manage your business</p>
             </div>
           </button>
-        </div>
-        
-        {/* Platform indicator */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          You're using the <strong className="text-primary-600">{info.title}</strong>
-          {platform === 'app' && ' • All routes are isolated to the app experience'}
-          {platform === 'web' && ' • All routes are isolated to the web experience'}
         </div>
       </div>
     </div>

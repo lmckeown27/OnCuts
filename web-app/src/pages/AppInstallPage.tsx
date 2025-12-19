@@ -1,38 +1,48 @@
 /**
- * App Installation Instructions Page
+ * App Installation Instructions Page (Mobile-Optimized)
  * 
- * Guides users through installing CampusCuts as a PWA on their device
+ * Touch-friendly guide for installing CampusCuts as a PWA
+ * Features:
+ * - Platform-specific instructions (iOS/Android/Desktop)
+ * - Large touch targets
+ * - Single-column mobile layout
+ * - Visual step-by-step guide
  */
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Smartphone, 
   Monitor, 
   Download, 
   Share2, 
   Plus, 
-  Chrome, 
   ArrowLeft,
   Check,
-  AlertCircle
+  Zap,
+  Bell,
+  WifiOff
 } from 'lucide-react';
-import Button from '../components/Button';
-import Card from '../components/Card';
 import { 
   isAppInstalled, 
-  isIOSDevice, 
-  isAndroidDevice, 
-  getPlatform,
-  BeforeInstallPromptEvent 
+  getPlatform
 } from '../utils/appUtils';
-import { CampusCutsLogo } from '@assets';
+
+// PWA Install types
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 export default function AppInstallPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop' | 'unknown'>('unknown');
+  
+  // Check if we're on /app/* route (mobile) or /web/* route (desktop)
+  const isMobileRoute = location.pathname.startsWith('/app');
 
   useEffect(() => {
     setIsInstalled(isAppInstalled());
@@ -67,7 +77,6 @@ export default function AppInstallPage() {
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
       setIsInstalled(true);
     }
 
@@ -75,298 +84,260 @@ export default function AppInstallPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-pink-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <header className="bg-white border-b border-gray-200 px-4 py-4 safe-area-inset-top">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Back to Home</span>
+            <ArrowLeft className="w-6 h-6 text-gray-600" />
           </button>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">Install CampusCuts</h1>
+            <p className="text-xs text-gray-500">Get the app experience</p>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        {/* Logo and Title */}
-        <div className="text-center mb-12">
-          <img src={CampusCutsLogo} alt="CampusCuts" className="h-20 w-auto mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Install CampusCuts
-          </h1>
-          <p className="text-xl text-gray-600">
-            Get the full app experience with offline access and push notifications
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <img 
+            src="/src/assets/logos/Logo1.png" 
+            alt="CampusCuts" 
+            className="h-16 w-auto mx-auto mb-4" 
+          />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {isInstalled ? 'App Installed!' : 'Install CampusCuts'}
+          </h2>
+          <p className="text-gray-600">
+            {isInstalled 
+              ? 'You can now use CampusCuts offline!' 
+              : 'Get instant access from your home screen'}
           </p>
         </div>
 
-        {/* Installation Status */}
+        {/* Installation Status or Instructions */}
         {isInstalled ? (
-          <Card className="mb-8 bg-green-50 border-2 border-green-300">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-100 rounded-full p-3">
-                <Check className="w-8 h-8 text-green-600" />
+          <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-6 mb-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-green-500 rounded-full p-3">
+                <Check className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-green-900 mb-1">
-                  App Installed!
-                </h3>
-                <p className="text-green-700">
-                  CampusCuts is installed on your device. You can now use it offline and receive push notifications.
-                </p>
+                <h3 className="text-xl font-bold text-green-900">All Set!</h3>
+                <p className="text-green-700 text-sm">Ready to use offline</p>
               </div>
             </div>
-          </Card>
+            <p className="text-green-800 text-sm">
+              CampusCuts is installed on your device. You can now access it from your home screen and use it offline.
+            </p>
+          </div>
         ) : (
           <>
-            {/* Quick Install (Android/Desktop Chrome) */}
+            {/* Quick Install Button (if available) */}
             {deferredPrompt && (platform === 'android' || platform === 'desktop') && (
-              <Card className="mb-8 bg-primary-50 border-2 border-primary-300">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="bg-primary-100 rounded-full p-3">
-                    <Download className="w-8 h-8 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">
-                      Quick Install Available
-                    </h3>
-                    <p className="text-gray-600">
-                      Click the button below to install CampusCuts instantly
-                    </p>
-                  </div>
+              <button
+                onClick={handleInstallClick}
+                className="w-full bg-primary-400 text-white rounded-2xl p-6 mb-6 active:scale-98 transition-transform shadow-lg"
+              >
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <Download className="w-8 h-8" />
+                  <span className="text-2xl font-bold">Install Now</span>
                 </div>
-                <Button
-                  onClick={handleInstallClick}
-                  className="w-full bg-primary-400 hover:bg-primary-500"
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Install CampusCuts
-                </Button>
-              </Card>
+                <p className="text-sm opacity-90">One-tap instant install</p>
+              </button>
             )}
 
-            {/* iOS Installation Instructions */}
+            {/* iOS Instructions */}
             {platform === 'ios' && (
-              <Card className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
+              <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="bg-blue-100 rounded-full p-3">
-                    <Smartphone className="w-8 h-8 text-blue-600" />
+                    <Smartphone className="w-6 h-6 text-blue-600" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Install on iOS (iPhone/iPad)
-                    </h3>
-                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">iOS Installation</h3>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Tap the <strong>Share</strong> button <Share2 className="w-4 h-4 inline text-blue-600" /> at the bottom of Safari
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Tap the <strong>Share</strong> button <Share2 className="w-5 h-5 inline text-blue-600" /> at the bottom
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Scroll down and tap <strong>"Add to Home Screen"</strong> <Plus className="w-4 h-4 inline text-blue-600" />
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Scroll and tap <strong>"Add to Home Screen"</strong> <Plus className="w-5 h-5 inline text-blue-600" />
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Tap <strong>"Add"</strong> in the top-right corner
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Open CampusCuts from your home screen!
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Tap <strong>"Add"</strong> to complete installation
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex gap-2">
-                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-blue-800">
-                      <strong>Note:</strong> You must use Safari browser to install CampusCuts on iOS devices.
-                    </p>
-                  </div>
+                <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Safari browser required for iOS installation
+                  </p>
                 </div>
-              </Card>
+              </div>
             )}
 
-            {/* Android Installation Instructions */}
+            {/* Android Instructions */}
             {platform === 'android' && !deferredPrompt && (
-              <Card className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
+              <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="bg-green-100 rounded-full p-3">
-                    <Smartphone className="w-8 h-8 text-green-600" />
+                    <Smartphone className="w-6 h-6 text-green-600" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Install on Android
-                    </h3>
-                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Android Installation</h3>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Tap the <strong>menu button</strong> (⋮) in the top-right corner of Chrome
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Tap the <strong>menu</strong> (⋮) in the top-right
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Tap <strong>"Install"</strong> or <strong>"Add"</strong> to confirm
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Open CampusCuts from your home screen or app drawer!
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Tap <strong>"Install"</strong> to complete
                       </p>
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
             )}
 
-            {/* Desktop Installation Instructions */}
+            {/* Desktop Instructions */}
             {platform === 'desktop' && !deferredPrompt && (
-              <Card className="mb-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="bg-indigo-100 rounded-full p-3">
-                    <Monitor className="w-8 h-8 text-indigo-600" />
+              <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-primary-100 rounded-full p-3">
+                    <Monitor className="w-6 h-6 text-primary-600" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">
-                      Install on Desktop
-                    </h3>
-                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Desktop Installation</h3>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Look for the <strong>install icon</strong> <Download className="w-4 h-4 inline text-indigo-600" /> in your browser's address bar
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Look for the <strong>install icon</strong> <Download className="w-5 h-5 inline text-primary-600" /> in address bar
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
-                    <div>
-                      <p className="text-gray-700">
-                        Click the install icon and then click <strong>"Install"</strong>
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        Click the icon and then <strong>"Install"</strong>
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-4">
-                    <div className="bg-primary-400 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
-                    <div>
-                      <p className="text-gray-700">
-                        CampusCuts will open in its own window, like a native app!
+                    <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 text-base leading-relaxed">
+                        CampusCuts opens in its own window!
                       </p>
                     </div>
                   </div>
                 </div>
-
-                <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                  <div className="flex gap-2">
-                    <Chrome className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-indigo-800">
-                      <strong>Best Experience:</strong> Use Chrome, Edge, or another Chromium-based browser for the best installation experience.
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              </div>
             )}
           </>
         )}
 
-        {/* Benefits of Installing */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Why Install the App?
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="text-center">
-              <div className="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Smartphone className="w-8 h-8 text-primary-600" />
+        {/* Benefits */}
+        <div className="space-y-3 mb-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">App Benefits</h3>
+          
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="bg-primary-100 rounded-full p-2">
+                <WifiOff className="w-5 h-5 text-primary-600" />
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">Works Offline</h3>
-              <p className="text-gray-600 text-sm">
-                Access your bookings and barber profiles even without internet
-              </p>
-            </Card>
-
-            <Card className="text-center">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Download className="w-8 h-8 text-blue-600" />
+              <div>
+                <h4 className="font-semibold text-gray-900">Works Offline</h4>
+                <p className="text-sm text-gray-600">Access bookings without internet</p>
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">Push Notifications</h3>
-              <p className="text-gray-600 text-sm">
-                Get instant alerts for booking confirmations and messages
-              </p>
-            </Card>
+            </div>
+          </div>
 
-            <Card className="text-center">
-              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-green-600" />
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 rounded-full p-2">
+                <Bell className="w-5 h-5 text-blue-600" />
               </div>
-              <h3 className="font-bold text-gray-900 mb-2">Native Experience</h3>
-              <p className="text-gray-600 text-sm">
-                Feels like a real app with fast loading and smooth animations
-              </p>
-            </Card>
+              <div>
+                <h4 className="font-semibold text-gray-900">Push Notifications</h4>
+                <p className="text-sm text-gray-600">Instant booking alerts</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="bg-green-100 rounded-full p-2">
+                <Zap className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-900">Lightning Fast</h4>
+                <p className="text-sm text-gray-600">Native app performance</p>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* CTA */}
-        <div className="text-center">
-          <Button
-            onClick={() => navigate(isInstalled ? '/app' : '/')}
-            className="bg-primary-400 hover:bg-primary-500"
-          >
-            {isInstalled ? 'Open CampusCuts' : 'Continue to Website'}
-          </Button>
-        </div>
+      {/* Bottom CTA */}
+      <div className="border-t border-gray-200 p-4 bg-white safe-area-inset-bottom">
+        <button
+          onClick={() => navigate(isInstalled ? '/app' : '/')}
+          className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
+        >
+          {isInstalled ? 'Open CampusCuts' : 'Continue to Website'}
+        </button>
+        {!isInstalled && (
+          <p className="text-center text-xs text-gray-500 mt-3">
+            You can install the app later from your browser menu
+          </p>
+        )}
       </div>
     </div>
   );

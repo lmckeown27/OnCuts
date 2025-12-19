@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clear-cache": "rm -rf node_modules/.vite dist/",
+    "fresh-start": "npm run clear-cache && npm run dev",
+    "test-pwa": "npm run build && npm run preview"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.33.1",

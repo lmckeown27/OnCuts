@@ -8,6 +8,20 @@ export default defineConfig({
   
   server: {
     port: 3000,
+    
+    // Hot Module Replacement for instant updates
+    hmr: true,
+    
+    // Better file watching
+    watch: {
+      usePolling: true,  // Use polling for more reliable file watching
+      interval: 100,     // Check for changes every 100ms
+    },
+    
+    // Force browser to not cache during development
+    headers: {
+      'Cache-Control': 'no-store',
+    },
   },
   
   resolve: {
@@ -76,5 +90,8 @@ export default defineConfig({
       'react-router-dom',
       '@tanstack/react-query',
     ],
+    // Force re-bundle dependencies on server start if needed
+    // Set to true temporarily if you encounter caching issues
+    force: false,
   },
 })

@@ -1,3 +1,7 @@
+/**
+ * Barber Dashboard Page - Version 4.0 (Cache Buster)
+ * Last updated: 2025-12-18 00:15:00
+ */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield } from 'lucide-react';
@@ -9,15 +13,21 @@ import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
+import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import { CampusCutsLogo } from '@assets';
 
+const COMPONENT_VERSION = 'v4.0-modal-fix';
+
 export default function BarberPage() {
+  console.log('🚀 BarberPage loaded -', COMPONENT_VERSION);
   const navigate = useNavigate();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [showPricingDashboard, setShowPricingDashboard] = useState(false);
   const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
+  const [showServiceDetails, setShowServiceDetails] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Mock barber data - in production this would come from API
@@ -25,6 +35,198 @@ export default function BarberPage() {
   const isCampusManager = true; // TODO: Fetch from API
   const campusId = 'campus-1';
   const campusName = 'California Polytechnic State University';
+
+  // Mock appointment details data
+  const appointmentDetailsData: Record<string, any> = {
+    '1': {
+      id: '1',
+      time: '10:00 AM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'John Doe',
+        email: 'john.doe@college.edu',
+        phone: '(555) 123-4567',
+        studentId: 'STU-2024-001',
+        totalBookings: 12,
+        completedBookings: 11,
+        cancelledBookings: 1,
+        reliabilityScore: 92,
+        avgRating: 4.7,
+      },
+      service: {
+        name: 'Haircut & Fade',
+        duration: '45 min',
+        notes: 'Looking for a mid-fade with texture on top, similar to last time',
+      },
+      location: {
+        type: 'My Dorm',
+        address: 'Yosemite Hall, Room 304',
+        instructions: 'Third floor, take elevator. Will meet you in lobby.',
+      },
+      price: {
+        service: 35.00,
+        platformFee: 1.75,
+        total: 36.75,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '2 hours ago',
+      blockchainTx: '0x7f8a...3d2c',
+    },
+    '2': {
+      id: '2',
+      time: '11:30 AM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'Mike Smith',
+        email: 'mike.smith@college.edu',
+        phone: '(555) 234-5678',
+        studentId: 'STU-2024-002',
+        totalBookings: 8,
+        completedBookings: 8,
+        cancelledBookings: 0,
+        reliabilityScore: 100,
+        avgRating: 5.0,
+      },
+      service: {
+        name: 'Beard Trim',
+        duration: '20 min',
+        notes: 'Clean up the edges, keep it natural looking',
+      },
+      location: {
+        type: 'Student Union',
+        address: 'UU Plaza, 2nd Floor Lounge',
+        instructions: 'Near the food court, will be at the corner table.',
+      },
+      price: {
+        service: 23.00,
+        platformFee: 1.15,
+        total: 24.15,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '3 hours ago',
+      blockchainTx: '0x9a2b...4e5f',
+    },
+    '3': {
+      id: '3',
+      time: '2:00 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'Chris Lee',
+        email: 'chris.lee@college.edu',
+        phone: '(555) 345-6789',
+        studentId: 'STU-2024-003',
+        totalBookings: 5,
+        completedBookings: 4,
+        cancelledBookings: 1,
+        reliabilityScore: 80,
+        avgRating: 4.5,
+      },
+      service: {
+        name: 'Full Service',
+        duration: '60 min',
+        notes: 'Haircut, beard trim, and hot towel shave. First time here!',
+      },
+      location: {
+        type: 'Off-Campus Apartment',
+        address: 'The Grove Apartments, Unit 204B',
+        instructions: 'Use the west entrance, building 2. Parking available.',
+      },
+      price: {
+        service: 45.00,
+        platformFee: 2.25,
+        total: 47.25,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'pending',
+      bookedAt: '30 minutes ago',
+      blockchainTx: '0x3c4d...7g8h',
+    },
+    '4': {
+      id: '4',
+      time: '3:30 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'David Brown',
+        email: 'david.brown@college.edu',
+        phone: '(555) 456-7890',
+        studentId: 'STU-2024-004',
+        totalBookings: 15,
+        completedBookings: 14,
+        cancelledBookings: 1,
+        reliabilityScore: 93,
+        avgRating: 4.8,
+      },
+      service: {
+        name: 'Haircut',
+        duration: '30 min',
+        notes: 'Regular trim, same as last 3 times',
+      },
+      location: {
+        type: 'My Dorm',
+        address: 'Sierra Madre Hall, Room 512',
+        instructions: 'Fifth floor, room at the end of the hall.',
+      },
+      price: {
+        service: 28.00,
+        platformFee: 1.40,
+        total: 29.40,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '1 day ago',
+      blockchainTx: '0x5e6f...9i0j',
+    },
+    '5': {
+      id: '5',
+      time: '5:00 PM',
+      date: 'Today, Friday, January 12, 2025',
+      client: {
+        name: 'James Wilson',
+        email: 'james.wilson@college.edu',
+        phone: '(555) 567-8901',
+        studentId: 'STU-2024-005',
+        totalBookings: 3,
+        completedBookings: 3,
+        cancelledBookings: 0,
+        reliabilityScore: 100,
+        avgRating: 5.0,
+      },
+      service: {
+        name: 'Haircut',
+        duration: '30 min',
+        notes: 'Keep it short on the sides, blend the top. Military style.',
+      },
+      location: {
+        type: 'Recreation Center',
+        address: 'Campus Rec Center, Main Lobby',
+        instructions: 'Meet near the front desk after my workout.',
+      },
+      price: {
+        service: 28.00,
+        platformFee: 1.40,
+        total: 29.40,
+        paymentMethod: 'Escrow (Blockchain)',
+      },
+      status: 'confirmed',
+      bookedAt: '4 hours ago',
+      blockchainTx: '0x7k8l...1m2n',
+    },
+  };
+
+  // Function to open service details modal [v3.0]
+  const openServiceDetails = (appointmentId: string) => {
+    console.log('🔍 Opening service details for appointment:', appointmentId);
+    const appointmentData = appointmentDetailsData[appointmentId];
+    if (appointmentData) {
+      setSelectedAppointment(appointmentData);
+      setShowServiceDetails(true);
+      console.log('✅ Modal opened with data:', appointmentData);
+    } else {
+      console.error('❌ No appointment data found for ID:', appointmentId);
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -164,7 +366,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <DashboardView navigate={navigate} barberId={barberId} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openServiceDetails} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -273,6 +475,18 @@ export default function BarberPage() {
           </div>
         </div>
       )}
+
+      {/* Service Details Modal */}
+      {selectedAppointment && (
+        <ServiceDetailsModal
+          isOpen={showServiceDetails}
+          onClose={() => {
+            setShowServiceDetails(false);
+            setSelectedAppointment(null);
+          }}
+          appointment={selectedAppointment}
+        />
+      )}
     </div>
   );
 }
@@ -280,9 +494,10 @@ export default function BarberPage() {
 interface DashboardViewProps {
   navigate: any;
   barberId: string;
+  onViewDetails: (appointmentId: string) => void;
 }
 
-function DashboardView({ navigate, barberId }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
@@ -305,30 +520,30 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
 
   // Mock detailed appointment data by day
   const getAppointmentsForDay = (day: number) => {
-    const appointments: { [day: number]: Array<{ time: string; client: string; service: string; price: string; status: string }> } = {
+    const appointments: { [day: number]: Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> } = {
       1: [
-        { time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { time: '2:00 PM', client: 'Sarah Miller', service: 'Full Service', price: '$45', status: 'confirmed' },
+        { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { id: '2', time: '2:00 PM', client: 'Sarah Miller', service: 'Full Service', price: '$45', status: 'confirmed' },
       ],
-      2: [{ time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' }],
-      3: [{ time: '3:00 PM', client: 'Chris Lee', service: 'Haircut', price: '$28', status: 'pending' }],
+      2: [{ id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' }],
+      3: [{ id: '3', time: '3:00 PM', client: 'Chris Lee', service: 'Haircut', price: '$28', status: 'pending' }],
       5: [
-        { time: '9:00 AM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { time: '10:00 AM', client: 'James Wilson', service: 'Fade', price: '$30', status: 'confirmed' },
-        { time: '11:00 AM', client: 'Robert Taylor', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { time: '1:00 PM', client: 'Michael Davis', service: 'Full Service', price: '$45', status: 'confirmed' },
-        { time: '2:30 PM', client: 'William Anderson', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-        { time: '3:30 PM', client: 'Richard Thomas', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { time: '4:30 PM', client: 'Joseph Jackson', service: 'Fade', price: '$30', status: 'confirmed' },
-        { time: '5:30 PM', client: 'Thomas White', service: 'Lineup', price: '$15', status: 'confirmed' },
+        { id: '4', time: '9:00 AM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { id: '5', time: '10:00 AM', client: 'James Wilson', service: 'Fade', price: '$30', status: 'confirmed' },
+        { id: '1', time: '11:00 AM', client: 'Robert Taylor', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { id: '3', time: '1:00 PM', client: 'Michael Davis', service: 'Full Service', price: '$45', status: 'confirmed' },
+        { id: '2', time: '2:30 PM', client: 'William Anderson', service: 'Beard Trim', price: '$23', status: 'confirmed' },
+        { id: '4', time: '3:30 PM', client: 'Richard Thomas', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { id: '5', time: '4:30 PM', client: 'Joseph Jackson', service: 'Fade', price: '$30', status: 'confirmed' },
+        { id: '1', time: '5:30 PM', client: 'Thomas White', service: 'Lineup', price: '$15', status: 'confirmed' },
       ],
       12: [
-        { time: '10:00 AM', client: 'Edward Evans', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { time: '11:30 AM', client: 'Ronald Edwards', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-        { time: '1:00 PM', client: 'Timothy Collins', service: 'Full Service', price: '$45', status: 'pending' },
-        { time: '2:30 PM', client: 'Jason Stewart', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { time: '4:00 PM', client: 'Jeffrey Morris', service: 'Fade', price: '$30', status: 'confirmed' },
-        { time: '5:00 PM', client: 'Ryan Rogers', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { id: '1', time: '10:00 AM', client: 'Edward Evans', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
+        { id: '2', time: '11:30 AM', client: 'Ronald Edwards', service: 'Beard Trim', price: '$23', status: 'confirmed' },
+        { id: '3', time: '1:00 PM', client: 'Timothy Collins', service: 'Full Service', price: '$45', status: 'pending' },
+        { id: '4', time: '2:30 PM', client: 'Jason Stewart', service: 'Haircut', price: '$28', status: 'confirmed' },
+        { id: '5', time: '4:00 PM', client: 'Jeffrey Morris', service: 'Fade', price: '$30', status: 'confirmed' },
+        { id: '1', time: '5:00 PM', client: 'Ryan Rogers', service: 'Haircut', price: '$28', status: 'confirmed' },
       ],
     };
     return appointments[day] || [];
@@ -427,7 +642,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
                         <Button 
                           size="sm" 
                           variant="secondary"
-                          onClick={() => navigate(`/barber/appointment/${apt.id}`)}
+                          onClick={() => onViewDetails(apt.id)}
                         >
                           View Details
                         </Button>
@@ -617,8 +832,8 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
 
       {/* Day Detail Modal */}
       {showDayModal && selectedDay !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div ref={modalRef} className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div ref={modalRef} className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-scale-in">
             <div className="bg-primary-400 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -676,7 +891,7 @@ function DashboardView({ navigate, barberId }: DashboardViewProps) {
                           variant="secondary"
                           onClick={() => {
                             setShowDayModal(false);
-                            navigate(`/barber/appointment/${apt.time}`);
+                            onViewDetails(apt.id);
                           }}
                         >
                           View Details

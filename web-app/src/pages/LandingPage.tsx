@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Monitor, Smartphone, DollarSign, Zap, Users, Star, CheckCircle, TrendingUp, Menu, X, ExternalLink, Github, Twitter, Instagram, Mail } from 'lucide-react';
+import { Smartphone, DollarSign, Zap, Users, Star, CheckCircle, TrendingUp, Menu, X, ExternalLink, Youtube, Twitter, Instagram, Mail, Download, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { CampusCutsLogo } from '@assets';
@@ -16,6 +16,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showInstructionsPopup, setShowInstructionsPopup] = useState(false);
+  const [iosOpen, setIosOpen] = useState(false);
+  const [androidOpen, setAndroidOpen] = useState(false);
 
   // Handle scroll for sticky navigation
   useEffect(() => {
@@ -56,14 +59,14 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 How It Works
               </button>
+              <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+                Pricing Explained
+              </button>
               <button onClick={() => scrollToSection('for-barbers')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 For Barbers
               </button>
               <button onClick={() => scrollToSection('for-students')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 For Students
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                Pricing
               </button>
             </div>
 
@@ -71,15 +74,10 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-4">
               <button
                 onClick={() => navigate('/web')}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+                className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
               >
-                Launch Web App
-              </button>
-              <button
-                onClick={() => navigate('/app/install')}
-                className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
-              >
-                Download App
+                <Smartphone className="w-4 h-4" />
+                Get Started
               </button>
             </div>
 
@@ -100,21 +98,25 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 How It Works
               </button>
+              <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                Pricing Explained
+              </button>
               <button onClick={() => scrollToSection('for-barbers')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 For Barbers
               </button>
               <button onClick={() => scrollToSection('for-students')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 For Students
               </button>
-              <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Pricing
-              </button>
-              <div className="pt-3 border-t border-gray-200 space-y-2">
-                <button onClick={() => navigate('/web')} className="block w-full px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                  Launch Web App
-                </button>
-                <button onClick={() => navigate('/app/install')} className="block w-full px-4 py-2 bg-primary-400 hover:bg-primary-500 text-white rounded-lg transition-colors">
-                  Download App
+              <div className="pt-3 border-t border-gray-200">
+                <button 
+                  onClick={() => {
+                    navigate('/web');
+                    setMobileMenuOpen(false);
+                  }} 
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Get Started
                 </button>
               </div>
             </div>
@@ -140,99 +142,52 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <button
               onClick={() => navigate('/web')}
-              className="px-8 py-4 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="px-8 py-4 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
-              <Monitor className="w-5 h-5" />
-              Launch Web App
+              <Smartphone className="w-6 h-6" />
+              Get Started
             </button>
             <button
-              onClick={() => navigate('/app/install')}
-              className="px-8 py-4 bg-white hover:bg-gray-50 text-gray-900 font-semibold rounded-lg transition-all shadow-md hover:shadow-lg border-2 border-gray-200 flex items-center justify-center gap-2"
+              onClick={() => setShowInstructionsPopup(true)}
+              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 border-2 border-primary-400 font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
-              <Smartphone className="w-5 h-5" />
-              Download App
+              <Download className="w-6 h-6" />
+              Install Instructions
             </button>
           </div>
 
-          <p className="text-sm text-gray-500">No credit card required • Free to use • iOS & Android</p>
+          <p className="text-sm text-gray-500">Free to use • No App Store or Google Play Store required • Get started in seconds</p>
         </div>
       </div>
 
-      {/* Why CampusCuts Section */}
+      {/* Why CampusCuts Section - Video */}
       <div className="py-20 px-4 bg-white" id="how-it-works">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Why CampusCuts?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We eliminate the middleman and pass the savings to you. Fair prices for students, great earnings for barbers.
+              Watch how we're transforming campus barbering
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-green-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Barbers Keep 95%</h3>
-              <p className="text-gray-600">
-                Earn $26.60 per $28 haircut vs $17.50 per $35 at traditional shops. 
-                That's 52% more earnings per cut with a 5% platform fee instead of 40-60% shop commission.
-              </p>
-            </Card>
-
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Lower Prices for Students</h3>
-              <p className="text-gray-600">
-                Pay $28 instead of $35 for the same quality cut. Save 20% compared to traditional barbershops 
-                while supporting barbers who earn more. Win-win economics.
-              </p>
-            </Card>
-
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-yellow-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-yellow-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Instant Payments</h3>
-              <p className="text-gray-600">
-                Barbers get paid immediately after service completion. Secure escrow protects both parties during the booking.
-              </p>
-            </Card>
-
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Direct Connection</h3>
-              <p className="text-gray-600">
-                Message barbers directly, see their work, check availability. Build relationships with your preferred barber.
-              </p>
-            </Card>
-
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-primary-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-primary-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Quality Focused</h3>
-              <p className="text-gray-600">
-                Verified reviews, barber portfolios, and performance-based ranking ensure you always find top talent.
-              </p>
-            </Card>
-
-            <Card className="text-center p-6 hover:shadow-lg transition-shadow">
-              <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">On-Campus Convenience</h3>
-              <p className="text-gray-600">
-                Get haircuts in your dorm, on campus, or at the barber's location. Flexible scheduling that works for students.
-              </p>
-            </Card>
+          {/* Video Container */}
+          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+            <iframe
+              className="absolute top-0 left-0 w-full h-full rounded-2xl shadow-2xl"
+              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+              title="CampusCuts Platform Overview"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
           </div>
+
+          {/* Optional: Video Caption */}
+          <p className="text-center text-gray-600 mt-6 text-sm">
+            See how CampusCuts helps barbers earn more while students pay less
+          </p>
         </div>
       </div>
 
@@ -452,7 +407,7 @@ export default function LandingPage() {
       </div>
 
       {/* For Students Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-blue-50 to-cyan-50" id="for-students">
+      <div className="py-20 px-4 bg-gradient-to-br from-amber-50 to-yellow-50" id="for-students">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -464,15 +419,15 @@ export default function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-12">
-            <Card className="bg-gradient-to-br from-blue-50 to-cyan-100 p-8">
-              <h3 className="text-3xl font-bold text-blue-600 mb-4">For Students</h3>
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-100 p-8">
+              <h3 className="text-3xl font-bold text-amber-600 mb-4">For Students</h3>
               <p className="text-5xl font-bold text-gray-900 mb-4">Save 20%</p>
               <p className="text-gray-700 text-lg mb-6">
                 Lower platform fees mean barbers can offer great prices. Quality cuts from talented barbers, right on campus.
               </p>
               <button
                 onClick={() => navigate('/web')}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                className="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
               >
                 Find Your Barber
               </button>
@@ -480,28 +435,28 @@ export default function LandingPage() {
 
             <div className="space-y-6">
               <div className="flex gap-4">
-                <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
+                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg mb-2">Browse Barbers</h4>
                   <p className="text-gray-600">Swipe through profiles, see ratings, portfolios, and Instagram.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
+                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg mb-2">Send Booking Request</h4>
                   <p className="text-gray-600">Choose date, time, and location. Message the barber directly.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
+                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg mb-2">Get Your Cut</h4>
                   <p className="text-gray-600">Meet at the agreed location. Payment processes automatically upon completion.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">4</div>
+                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">4</div>
                 <div>
                   <h4 className="font-bold text-gray-900 text-lg mb-2">Leave a Review</h4>
                   <p className="text-gray-600">Your verified review helps build the barber's reputation and helps other students.</p>
@@ -524,21 +479,172 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={() => navigate('/web')}
-              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
-              <Monitor className="w-5 h-5" />
-              Launch Web Version
+              <Smartphone className="w-6 h-6" />
+              Get Started
             </button>
             <button 
-              onClick={() => navigate('/app/install')}
-              className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              onClick={() => setShowInstructionsPopup(true)}
+              className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white border-2 border-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
-              <Smartphone className="w-5 h-5" />
-              Download Mobile App
+              <Download className="w-6 h-6" />
+              Install Instructions
             </button>
           </div>
         </div>
       </div>
+
+      {/* Install Instructions Popup */}
+      {showInstructionsPopup && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowInstructionsPopup(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 text-center">Installation Instructions</h2>
+              <button
+                onClick={() => setShowInstructionsPopup(false)}
+                className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              {/* iOS Dropdown */}
+              <div className="border-2 border-gray-200 rounded-xl overflow-hidden self-start transition-all duration-500">
+                <button
+                  onClick={() => setIosOpen(!iosOpen)}
+                  className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-colors min-h-[100px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="w-6 h-6 text-blue-600" />
+                    <div className="text-left">
+                      <h3 className="text-xl font-bold text-gray-900">iOS</h3>
+                      <p className="text-sm text-gray-600">iPhone & iPad</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-6 h-6 text-gray-600 transition-transform duration-500 ${iosOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <div className={`transition-all duration-500 ease-in-out border-t border-gray-200 ${
+                  iosOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
+                }`}>
+                  <div className="p-6 space-y-4 bg-white min-h-[360px]">
+                    {/* Important Note */}
+                    <div className="bg-blue-50 border-l-4 border-blue-600 p-4 mb-2 min-h-[88px] flex items-center">
+                      <p className="text-sm text-blue-900">
+                        <strong>Important:</strong> First, tap the <strong>"Get Started"</strong> button on the landing page to access the platform, then follow these steps while on the platform.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        1
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Tap the <strong>Share</strong> icon at the bottom of Safari
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        2
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Scroll down and tap <strong>"Add to Home Screen"</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        3
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Tap <strong>"Add"</strong> in the top right corner
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Android Dropdown */}
+              <div className="border-2 border-gray-200 rounded-xl overflow-hidden self-start transition-all duration-500">
+                <button
+                  onClick={() => setAndroidOpen(!androidOpen)}
+                  className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-colors min-h-[100px]"
+                >
+                  <div className="flex items-center gap-3">
+                    <Smartphone className="w-6 h-6 text-green-600" />
+                    <div className="text-left">
+                      <h3 className="text-xl font-bold text-gray-900">Android</h3>
+                      <p className="text-sm text-gray-600">All Android devices</p>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-6 h-6 text-gray-600 transition-transform duration-500 ${androidOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <div className={`transition-all duration-500 ease-in-out border-t border-gray-200 ${
+                  androidOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
+                }`}>
+                  <div className="p-6 space-y-4 bg-white min-h-[360px]">
+                    {/* Important Note */}
+                    <div className="bg-green-50 border-l-4 border-green-600 p-4 mb-2 min-h-[88px] flex items-center">
+                      <p className="text-sm text-green-900">
+                        <strong>Important:</strong> First, tap the <strong>"Get Started"</strong> button on the landing page to access the platform, then follow these steps while on the platform.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        1
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Tap the <strong>three dots</strong> menu in Chrome
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        2
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 min-h-[56px]">
+                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        3
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-gray-700">
+                          Tap <strong>"Add"</strong> or <strong>"Install"</strong> to confirm
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
@@ -560,7 +666,7 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    Blog <span className="text-xs text-gray-600">(Coming Soon)</span>
+                    Help Center <span className="text-xs text-gray-600">(Coming Soon)</span>
                   </button>
                 </li>
               </ul>
@@ -571,6 +677,11 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">For You</h4>
               <ul className="space-y-2">
                 <li>
+                  <button onClick={() => scrollToSection('pricing')} className="text-gray-400 hover:text-white transition-colors">
+                    Pricing Explained
+                  </button>
+                </li>
+                <li>
                   <button onClick={() => scrollToSection('for-barbers')} className="text-gray-400 hover:text-white transition-colors">
                     For Barbers
                   </button>
@@ -578,11 +689,6 @@ export default function LandingPage() {
                 <li>
                   <button onClick={() => scrollToSection('for-students')} className="text-gray-400 hover:text-white transition-colors">
                     For Students
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('pricing')} className="text-gray-400 hover:text-white transition-colors">
-                    Pricing
                   </button>
                 </li>
               </ul>
@@ -654,9 +760,15 @@ export default function LandingPage() {
                 <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
                   <Twitter className="w-5 h-5" />
                 </button>
-                <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                  <Github className="w-5 h-5" />
-                </button>
+                <a 
+                  href="https://youtube.com/@campuscuts" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                  aria-label="YouTube"
+                >
+                  <Youtube className="w-5 h-5" />
+                </a>
               </div>
             </div>
 

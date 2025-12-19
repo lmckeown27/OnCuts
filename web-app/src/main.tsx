@@ -15,8 +15,22 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-// Register service worker for PWA (disabled in development to avoid caching issues)
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE WORKER - COMPLETELY DISABLED
+// ═══════════════════════════════════════════════════════════════════════════════
+// 
+// Service workers are DISABLED for testing to avoid caching issues and white screens.
+// 
+// TO RE-ENABLE (when ready for push notifications):
+// 1. Uncomment the registration code below
+// 2. Change ENABLE_SERVICE_WORKER to true
+// 3. Test with: npm run build && npm run preview
+// 
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const ENABLE_SERVICE_WORKER = false;  // ← Change to true to enable
+
+if (ENABLE_SERVICE_WORKER && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').then(
       (registration) => {
@@ -34,7 +48,6 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 console.log('🔄 New service worker available. Refresh to update.');
-                // Optionally show update notification to user
                 if (confirm('A new version of CampusCuts is available. Reload to update?')) {
                   window.location.reload();
                 }
@@ -48,11 +61,29 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       }
     );
   });
-} else if (!import.meta.env.PROD) {
-  console.log('🔧 Service Worker disabled in development mode');
 }
 
-// Listen for app install prompt
+// AUTO-CLEANUP: Unregister any lingering service workers
+// This runs ALWAYS to clean up any previously registered service workers
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    if (registrations.length > 0) {
+      console.log('🧹 Cleaning up', registrations.length, 'service worker(s)...');
+      registrations.forEach((registration) => {
+        registration.unregister().then((success) => {
+          if (success) {
+            console.log('✅ Unregistered service worker:', registration.scope);
+          }
+        });
+      });
+      console.log('💡 Service workers disabled for testing. Will re-enable for notifications.');
+    }
+  });
+}
+
+// PWA Install Prompt (disabled - re-enable with service worker)
+// Uncomment when ENABLE_SERVICE_WORKER is true
+/*
 let deferredPrompt: any;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -60,8 +91,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
   console.log('📱 Install prompt ready');
 });
 
-// Log when app is installed
 window.addEventListener('appinstalled', () => {
   console.log('✅ PWA installed successfully!');
   deferredPrompt = null;
 });
+*/

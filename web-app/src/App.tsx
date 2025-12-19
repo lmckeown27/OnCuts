@@ -8,6 +8,9 @@ import PlatformGuard from './components/PlatformGuard';
 import LandingPage from './pages/LandingPage';
 import RoleSelectionPage from './pages/RoleSelectionPage';
 import AppInstallPage from './pages/AppInstallPage';
+import MobileAppDownloadPage from './pages/MobileAppDownloadPage';
+
+// Desktop/Web Pages
 import AdminCampusesPage from './pages/admin/AdminCampusesPage';
 import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
 import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
@@ -18,12 +21,18 @@ import AdminUserView from './pages/admin/AdminUserView';
 import DiscoverBarbers from './pages/DiscoverBarbers';
 import BarberProfilePage from './pages/BarberProfilePage';
 import ConsumerPage from './pages/ConsumerPage';
+import ScheduleServicePage from './pages/ScheduleServicePage';
 import BarberPage from './pages/BarberPage';
 import BarberEarningsPage from './pages/barber/BarberEarningsPage';
 import BarberServiceHistoryPage from './pages/barber/BarberServiceHistoryPage';
 import AppointmentDetailsPage from './pages/AppointmentDetailsPage';
 import BookingPaymentPage from './pages/student/BookingPaymentPage';
 import WalletPage from './pages/WalletPage';
+
+// Mobile/App Pages (Touch-Optimized)
+import MobileAdminPage from './pages/mobile/MobileAdminPage';
+import MobileBarberPage from './pages/mobile/MobileBarberPage';
+import MobileConsumerPage from './pages/mobile/MobileConsumerPage';
 
 function AppContent() {
   const location = useLocation();
@@ -52,6 +61,7 @@ function AppContent() {
             All routes under /web/* are isolated to web experience
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/web" element={<PlatformGuard requiredPlatform="web"><RoleSelectionPage platform="web" /></PlatformGuard>} />
+        <Route path="/web/install" element={<AppInstallPage />} />
         
         {/* Web - Admin Routes */}
         <Route path="/web/admin" element={<PlatformGuard requiredPlatform="web"><AdminCampusesPage /></PlatformGuard>} />
@@ -64,6 +74,7 @@ function AppContent() {
         
         {/* Web - Consumer/Student Routes */}
         <Route path="/web/consumer" element={<PlatformGuard requiredPlatform="web"><ConsumerPage /></PlatformGuard>} />
+        <Route path="/web/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="web"><ScheduleServicePage /></PlatformGuard>} />
         <Route path="/web/discover" element={<PlatformGuard requiredPlatform="web"><DiscoverBarbers customerId="user-temp" customerName="User" /></PlatformGuard>} />
         <Route path="/web/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><BarberProfilePage /></PlatformGuard>} />
         <Route path="/web/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><BarberProfilePage /></PlatformGuard>} />
@@ -79,14 +90,16 @@ function AppContent() {
         <Route path="/web/wallet" element={<PlatformGuard requiredPlatform="web"><WalletPage /></PlatformGuard>} />
         
         {/* ═══════════════════════════════════════════════════════════
-            APP PLATFORM ROUTES (PWA/dApp Version)
-            All routes under /app/* are isolated to app experience
+            APP PLATFORM ROUTES (PWA/dApp Version - Mobile Optimized)
+            All routes under /app/* use touch-optimized mobile interfaces
+            Perfect for iOS/Android handheld devices
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/app" element={<PlatformGuard requiredPlatform="app"><RoleSelectionPage platform="app" /></PlatformGuard>} />
-        <Route path="/app/install" element={<AppInstallPage />} />
+        <Route path="/app/install" element={<MobileAppDownloadPage />} />
+        <Route path="/app/download" element={<MobileAppDownloadPage />} />
         
-        {/* App - Admin Routes */}
-        <Route path="/app/admin" element={<PlatformGuard requiredPlatform="app"><AdminCampusesPage /></PlatformGuard>} />
+        {/* App - Admin Routes (Mobile-Optimized) */}
+        <Route path="/app/admin" element={<PlatformGuard requiredPlatform="app"><MobileAdminPage /></PlatformGuard>} />
         <Route path="/app/admin/system-health" element={<PlatformGuard requiredPlatform="app"><AdminSystemHealthPage /></PlatformGuard>} />
         <Route path="/app/admin/gas-wallet" element={<PlatformGuard requiredPlatform="app"><AdminGasWalletPage /></PlatformGuard>} />
         <Route path="/app/admin/marketplace" element={<PlatformGuard requiredPlatform="app"><AdminMarketplacePage /></PlatformGuard>} />
@@ -94,15 +107,15 @@ function AppContent() {
         <Route path="/app/admin/pricing" element={<PlatformGuard requiredPlatform="app"><AdminPricingManagement /></PlatformGuard>} />
         <Route path="/app/admin/user/:userId" element={<PlatformGuard requiredPlatform="app"><AdminUserView /></PlatformGuard>} />
         
-        {/* App - Consumer/Student Routes */}
-        <Route path="/app/consumer" element={<PlatformGuard requiredPlatform="app"><ConsumerPage /></PlatformGuard>} />
+        {/* App - Consumer/Student Routes (Mobile-Optimized) */}
+        <Route path="/app/consumer" element={<PlatformGuard requiredPlatform="app"><MobileConsumerPage /></PlatformGuard>} />
         <Route path="/app/discover" element={<PlatformGuard requiredPlatform="app"><DiscoverBarbers customerId="user-temp" customerName="User" /></PlatformGuard>} />
         <Route path="/app/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><BarberProfilePage /></PlatformGuard>} />
         <Route path="/app/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><BarberProfilePage /></PlatformGuard>} />
         <Route path="/app/student/booking/payment" element={<PlatformGuard requiredPlatform="app"><BookingPaymentPage /></PlatformGuard>} />
         
-        {/* App - Barber Routes */}
-        <Route path="/app/barber" element={<PlatformGuard requiredPlatform="app"><BarberPage /></PlatformGuard>} />
+        {/* App - Barber Routes (Mobile-Optimized) */}
+        <Route path="/app/barber" element={<PlatformGuard requiredPlatform="app"><MobileBarberPage /></PlatformGuard>} />
         <Route path="/app/barber/earnings" element={<PlatformGuard requiredPlatform="app"><BarberEarningsPage /></PlatformGuard>} />
         <Route path="/app/barber/service-history" element={<PlatformGuard requiredPlatform="app"><BarberServiceHistoryPage /></PlatformGuard>} />
         <Route path="/app/barber/appointment/:appointmentId" element={<PlatformGuard requiredPlatform="app"><AppointmentDetailsPage /></PlatformGuard>} />

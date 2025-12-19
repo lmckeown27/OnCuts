@@ -1,0 +1,516 @@
+/**
+ * Mobile Barber Page
+ * 
+ * Touch-optimized mobile interface for barbers to manage their business.
+ * Features:
+ * - Swipe to accept/reject bookings
+ * - Bottom navigation
+ * - Mobile-optimized calendar
+ * - Quick actions with bottom sheets
+ * - Pull-to-refresh
+ */
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  MessageCircle,
+  User as UserIcon,
+  Home,
+  Check,
+  X,
+  ChevronRight,
+  Star,
+  MapPin,
+  Phone,
+  MoreVertical
+} from 'lucide-react';
+
+interface BookingRequest {
+  id: string;
+  customerName: string;
+  customerImage: string;
+  service: string;
+  date: string;
+  time: string;
+  location: string;
+  price: number;
+  customerRating: number;
+}
+
+interface Appointment {
+  id: string;
+  customerName: string;
+  service: string;
+  time: string;
+  price: number;
+  status: 'upcoming' | 'completed';
+}
+
+const MOCK_REQUESTS: BookingRequest[] = [
+  {
+    id: '1',
+    customerName: 'John Davis',
+    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
+    service: 'Fade + Beard Trim',
+    date: 'Today',
+    time: '2:00 PM',
+    location: 'Poly Canyon Dorms',
+    price: 28,
+    customerRating: 4.8
+  },
+  {
+    id: '2',
+    customerName: 'Michael Chen',
+    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
+    service: 'Haircut',
+    date: 'Tomorrow',
+    time: '10:30 AM',
+    location: 'Cerro Vista Apartments',
+    price: 20,
+    customerRating: 4.9
+  },
+  {
+    id: '3',
+    customerName: 'Sarah Williams',
+    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    service: 'Full Service',
+    date: 'Dec 20',
+    time: '3:00 PM',
+    location: 'Campus Market',
+    price: 35,
+    customerRating: 5.0
+  }
+];
+
+const MOCK_APPOINTMENTS: Appointment[] = [
+  {
+    id: '1',
+    customerName: 'Alex Johnson',
+    service: 'Fade',
+    time: '11:00 AM',
+    price: 22,
+    status: 'upcoming'
+  },
+  {
+    id: '2',
+    customerName: 'Chris Taylor',
+    service: 'Beard Trim',
+    time: '1:30 PM',
+    price: 15,
+    status: 'upcoming'
+  },
+  {
+    id: '3',
+    customerName: 'Jamie Lee',
+    service: 'Haircut + Color',
+    time: '4:00 PM',
+    price: 45,
+    status: 'upcoming'
+  }
+];
+
+export default function MobileBarberPage() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'schedule' | 'requests' | 'earnings' | 'profile'>('schedule');
+  const [requests, setRequests] = useState(MOCK_REQUESTS);
+  const [showRequestDetail, setShowRequestDetail] = useState<BookingRequest | null>(null);
+  const [swipingRequest, setSwipingRequest] = useState<string | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+
+  const todayEarnings = 87;
+  const weekEarnings = 412;
+  const todayAppointments = 3;
+
+  const handleAcceptRequest = (requestId: string) => {
+    setRequests(requests.filter(r => r.id !== requestId));
+    setShowRequestDetail(null);
+    // Show success toast
+  };
+
+  const handleRejectRequest = (requestId: string) => {
+    setRequests(requests.filter(r => r.id !== requestId));
+    setShowRequestDetail(null);
+    // Show toast
+  };
+
+  const handleSwipeRequest = (requestId: string, direction: 'accept' | 'reject') => {
+    setSwipingRequest(requestId);
+    setSwipeDirection(direction === 'accept' ? 'right' : 'left');
+    
+    setTimeout(() => {
+      if (direction === 'accept') {
+        handleAcceptRequest(requestId);
+      } else {
+        handleRejectRequest(requestId);
+      }
+      setSwipingRequest(null);
+      setSwipeDirection(null);
+    }, 300);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 safe-area-inset-top">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/src/assets/logos/Logo1.png" alt="CampusCuts" className="h-8" />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Barber Dashboard</h1>
+              <p className="text-xs text-gray-500">California Polytechnic State University</p>
+            </div>
+          </div>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <MoreVertical className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="bg-primary-50 rounded-lg p-3">
+            <div className="text-2xl font-bold text-primary-700">${todayEarnings}</div>
+            <div className="text-xs text-gray-600">Today</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-3">
+            <div className="text-2xl font-bold text-green-700">${weekEarnings}</div>
+            <div className="text-xs text-gray-600">This Week</div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-3">
+            <div className="text-2xl font-bold text-blue-700">{todayAppointments}</div>
+            <div className="text-xs text-gray-600">Appointments</div>
+          </div>
+        </div>
+      </header>
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'schedule' && (
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Today's Schedule</h2>
+              <button className="text-primary-600 text-sm font-medium">View Calendar</button>
+            </div>
+
+            {MOCK_APPOINTMENTS.map((appointment) => (
+              <div
+                key={appointment.id}
+                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 active:scale-98 transition-transform"
+                onClick={() => {/* Navigate to appointment details */}}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                      <UserIcon className="w-6 h-6 text-primary-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{appointment.customerName}</h3>
+                      <p className="text-sm text-gray-600">{appointment.service}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1 text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>{appointment.time}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-primary-600 font-semibold">
+                    <DollarSign className="w-4 h-4" />
+                    <span>${appointment.price}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'requests' && (
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Booking Requests</h2>
+              <span className="text-sm text-gray-500">{requests.length} pending</span>
+            </div>
+
+            {requests.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No pending requests</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {requests.map((request) => (
+                  <div
+                    key={request.id}
+                    className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-transform duration-300 ${
+                      swipingRequest === request.id ? (
+                        swipeDirection === 'left' ? '-translate-x-full opacity-0' :
+                        swipeDirection === 'right' ? 'translate-x-full opacity-0' : ''
+                      ) : ''
+                    }`}
+                    onClick={() => setShowRequestDetail(request)}
+                  >
+                    <div className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <img
+                          src={request.customerImage}
+                          alt={request.customerName}
+                          className="w-14 h-14 rounded-full"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{request.customerName}</h3>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                            <span className="font-medium">{request.customerRating}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-primary-600">${request.price}</div>
+                          <div className="text-xs text-gray-500">{request.date}</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>{request.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          <span>{request.location}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSwipeRequest(request.id, 'reject');
+                          }}
+                          className="flex-1 py-3 bg-red-50 text-red-600 font-semibold rounded-lg hover:bg-red-100 active:scale-95 transition-all"
+                        >
+                          Decline
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSwipeRequest(request.id, 'accept');
+                          }}
+                          className="flex-1 py-3 bg-primary-400 text-white font-semibold rounded-lg hover:bg-primary-500 active:scale-95 transition-all"
+                        >
+                          Accept
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'earnings' && (
+          <div className="p-4 space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">Earnings</h2>
+            
+            <div className="bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl p-6 text-white">
+              <div className="text-sm opacity-90 mb-1">Total Earnings</div>
+              <div className="text-4xl font-bold mb-4">${weekEarnings}</div>
+              <div className="flex items-center gap-2 text-sm">
+                <TrendingUp className="w-4 h-4" />
+                <span>+23% from last week</span>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-3">Recent Payments</h3>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                    <div>
+                      <div className="font-medium text-gray-900">Haircut Service</div>
+                      <div className="text-xs text-gray-500">Dec 17, 2025</div>
+                    </div>
+                    <div className="text-primary-600 font-semibold">+$22</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div className="p-4 space-y-4">
+            <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+              <div className="w-24 h-24 bg-primary-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <UserIcon className="w-12 h-12 text-primary-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Marcus Johnson</h2>
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                <span className="font-semibold">4.8</span>
+                <span className="text-gray-500 text-sm">(127 reviews)</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+                <span className="font-medium text-gray-900">Edit Profile</span>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+              
+              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+                <span className="font-medium text-gray-900">My Services</span>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+              
+              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+                <span className="font-medium text-gray-900">Availability</span>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+              
+              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+                <span className="font-medium text-gray-900">Settings</span>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => navigate('/web')}
+              className="w-full py-3 text-primary-600 font-medium"
+            >
+              Switch to Student
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Navigation */}
+      <nav className="bg-white border-t border-gray-200 px-2 py-2 safe-area-inset-bottom">
+        <div className="flex items-center justify-around">
+          <button
+            onClick={() => setActiveTab('schedule')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'schedule' ? 'text-primary-600 bg-primary-50' : 'text-gray-600'
+            }`}
+          >
+            <Calendar className="w-6 h-6" />
+            <span className="text-xs font-medium">Schedule</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('requests')}
+            className={`relative flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'requests' ? 'text-primary-600 bg-primary-50' : 'text-gray-600'
+            }`}
+          >
+            {requests.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {requests.length}
+              </span>
+            )}
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-xs font-medium">Requests</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('earnings')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'earnings' ? 'text-primary-600 bg-primary-50' : 'text-gray-600'
+            }`}
+          >
+            <DollarSign className="w-6 h-6" />
+            <span className="text-xs font-medium">Earnings</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+              activeTab === 'profile' ? 'text-primary-600 bg-primary-50' : 'text-gray-600'
+            }`}
+          >
+            <UserIcon className="w-6 h-6" />
+            <span className="text-xs font-medium">Profile</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* Request Detail Bottom Sheet */}
+      {showRequestDetail && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 animate-fade-in"
+          onClick={() => setShowRequestDetail(null)}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto safe-area-bottom"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
+            
+            <div className="flex items-center gap-4 mb-6">
+              <img
+                src={showRequestDetail.customerImage}
+                alt={showRequestDetail.customerName}
+                className="w-20 h-20 rounded-full"
+              />
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold text-gray-900">{showRequestDetail.customerName}</h3>
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{showRequestDetail.customerRating}</span>
+                  <span className="text-gray-500 text-sm">Customer Rating</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <div className="text-sm text-gray-500">When</div>
+                  <div className="font-semibold text-gray-900">{showRequestDetail.date} at {showRequestDetail.time}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <div className="text-sm text-gray-500">Where</div>
+                  <div className="font-semibold text-gray-900">{showRequestDetail.location}</div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <div className="text-sm text-gray-500">Service & Price</div>
+                  <div className="font-semibold text-gray-900">{showRequestDetail.service} - ${showRequestDetail.price}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleRejectRequest(showRequestDetail.id)}
+                className="flex-1 py-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 active:scale-98 transition-all"
+              >
+                Decline
+              </button>
+              <button
+                onClick={() => handleAcceptRequest(showRequestDetail.id)}
+                className="flex-1 py-4 bg-primary-400 text-white font-semibold rounded-xl hover:bg-primary-500 active:scale-98 transition-all shadow-lg"
+              >
+                Accept Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
