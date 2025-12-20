@@ -594,9 +594,9 @@ model AIAnnotation {
   createdAt   DateTime @default(now()) @db.Timestamptz
   
   // Optional relations (for convenience)
-  location    Location? @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  review      Review?   @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  dispute     Dispute?  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  location    Location? @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_location_fkey")
+  review      Review?   @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_review_fkey")
+  dispute     Dispute?  @relation(fields: [entityId], references: [id], onDelete: Cascade, map: "ai_annotations_dispute_fkey")
   
   @@index([entityType, entityId])
   @@index([modelType, createdAt])
