@@ -1,79 +1,57 @@
 /**
  * Blockchain Sync Cron Service
  * 
- * Runs hourly sync from Aptos blockchain → PostgreSQL cache
+ * This is a compatibility wrapper for the new blockchain-reconciliation.job.ts
  * 
- * Schedule: Every hour at :00
- * Purpose: Keep PostgreSQL cache up-to-date with blockchain
+ * DEPRECATED: This file exists for backward compatibility.
+ * New code should use blockchain-reconciliation.job.ts directly.
  * 
- * Why hourly?
- * - Balance between freshness and cost
- * - Most queries hit cache (fast)
- * - Critical data (bookings) can query blockchain directly
- * - Reduces blockchain read costs by 90%
+ * The new architecture uses:
+ * - Periodic reconciliation (every 5 minutes)
+ * - Full reindex (nightly at 3am)
+ * - Write-through sync (immediate after blockchain tx)
  */
 
-import cron from 'node-cron';
 import { logger } from '../utils/logger';
-import { blockchainSyncService } from './blockchain-sync.service';
+import { blockchainReconciliationJob } from './blockchain-reconciliation.job';
 
 class BlockchainSyncCronService {
-  private syncJob: cron.ScheduledTask | null = null;
-
   /**
-   * Start the hourly sync cron job
+   * Start the reconciliation job
+   * 
+   * This now delegates to the new blockchain-reconciliation.job
    */
   start() {
-    // Run every hour at :00
-    this.syncJob = cron.schedule('0 * * * *', async () => {
-      logger.info('Starting scheduled blockchain sync (cron)...');
-      
-      try {
-        await blockchainSyncService.syncAll();
-        logger.info('Scheduled blockchain sync complete');
-      } catch (error) {
-        logger.error('Scheduled blockchain sync failed:', error);
-      }
-    });
-
-    logger.info('Blockchain sync cron job started (hourly at :00)');
-
-    // Run initial sync on startup (after 10 seconds)
-    setTimeout(async () => {
-      logger.info('Running initial blockchain sync on startup...');
-      try {
-        await blockchainSyncService.syncAll();
-        logger.info('Initial blockchain sync complete');
-      } catch (error) {
-        logger.error('Initial blockchain sync failed:', error);
-      }
-    }, 10000);
+    logger.info('Starting blockchain reconciliation job (via compatibility wrapper)');
+    blockchainReconciliationJob.start();
   }
 
   /**
-   * Stop the cron job
-   */
-  stop() {
-    if (this.syncJob) {
-      this.syncJob.stop();
-      logger.info('Stopped blockchain sync cron job');
-    }
-  }
-
-  /**
-   * Manually trigger sync (for testing/admin)
+   * Manually trigger reconciliation (for testing/admin)
    */
   async triggerManualSync() {
-    logger.info('Manually triggering blockchain sync...');
-    await blockchainSyncService.syncAll();
-    logger.info('Manual blockchain sync complete');
+    logger.info('Manually triggering blockchain reconciliation...');
+    const result = await blockchainReconciliationJob.triggerManual();
+    logger.info('Manual blockchain reconciliation complete', {
+      scanned: result.recordsScanned,
+      updated: result.recordsUpdated,
+      discrepancies: result.discrepanciesFound
+    });
+    return result;
   }
 
   /**
    * Get sync status
    */
   getStatus() {
-    return blockchainSyncService.getStatus();
+    return blockchainReconciliationJob.getStatus();
+  }
+
+  /**
+   * Stop is no-op (reconciliation job manages its own lifecycle)
+   */
+  stop() {
+    logger.info('Stop called on BlockchainSyncCronService (no-op)');
   }
 }
 

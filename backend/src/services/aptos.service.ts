@@ -311,6 +311,183 @@ class AptosService {
     }
   }
 
+  // ==========================================
+  // USDC ESCROW METHODS
+  // ==========================================
+
+  /**
+   * Create USDC escrow for a booking
+   * Locks USDC in smart contract until service completion
+   * 
+   * Gas: Paid by platform's APT wallet
+   */
+  async createUsdcEscrow(params: {
+    bookingId: string;
+    amountUsdc: number;
+    barberAddress: string;
+    consumerAddress: string;
+    stripePaymentId: string;
+  }): Promise<string> {
+    const { bookingId, amountUsdc, barberAddress, consumerAddress, stripePaymentId } = params;
+
+    try {
+      // Convert booking ID to bytes
+      const bookingIdBytes = Buffer.from(bookingId).toString('hex');
+      
+      // Convert USDC amount to on-chain format (6 decimals)
+      const amountUsdcOnChain = Math.floor(amountUsdc * 1_000_000);
+
+      // Convert Stripe payment ID to bytes
+      const stripeIdBytes = Buffer.from(stripePaymentId).toString('hex');
+
+      logger.info('🔒 Creating USDC escrow on-chain', {
+        booking_id: bookingId,
+        amount_usdc: amountUsdc,
+        amount_on_chain: amountUsdcOnChain,
+      });
+
+      const txHash = await this.executeModuleFunction(
+        'usdc_escrow',
+        'create_escrow',
+        [], // No type arguments
+        [
+          `0x${bookingIdBytes}`,
+          amountUsdcOnChain,
+          barberAddress,
+          consumerAddress,
+          `0x${stripeIdBytes}`,
+        ]
+      );
+
+      logger.info('✅ USDC escrow created', {
+        booking_id: bookingId,
+        tx_hash: txHash,
+      });
+
+      return txHash;
+    } catch (error: any) {
+      logger.error('❌ Failed to create USDC escrow', {
+        booking_id: bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Release USDC from escrow to barber (95%) and platform (5%)
+   * Called after service completion and consumer confirmation
+   * 
+   * Gas: Paid by platform's APT wallet
+   */
+  async releaseUsdcEscrow(bookingId: string): Promise<string> {
+    try {
+      const bookingIdBytes = Buffer.from(bookingId).toString('hex');
+
+      logger.info('💸 Releasing USDC escrow', { booking_id: bookingId });
+
+      const txHash = await this.executeModuleFunction(
+        'usdc_escrow',
+        'release_payment',
+        [], // No type arguments
+        [`0x${bookingIdBytes}`]
+      );
+
+      logger.info('✅ USDC escrow released', {
+        booking_id: bookingId,
+        tx_hash: txHash,
+      });
+
+      return txHash;
+    } catch (error: any) {
+      logger.error('❌ Failed to release USDC escrow', {
+        booking_id: bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Refund USDC from escrow back to consumer (100%)
+   * Called if booking is cancelled before service
+   * 
+   * Gas: Paid by platform's APT wallet
+   */
+  async refundUsdcEscrow(bookingId: string): Promise<string> {
+    try {
+      const bookingIdBytes = Buffer.from(bookingId).toString('hex');
+
+      logger.info('↩️  Refunding USDC escrow', { booking_id: bookingId });
+
+      const txHash = await this.executeModuleFunction(
+        'usdc_escrow',
+        'refund_payment',
+        [], // No type arguments
+        [`0x${bookingIdBytes}`]
+      );
+
+      logger.info('✅ USDC escrow refunded', {
+        booking_id: bookingId,
+        tx_hash: txHash,
+      });
+
+      return txHash;
+    } catch (error: any) {
+      logger.error('❌ Failed to refund USDC escrow', {
+        booking_id: bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get escrow details from blockchain
+   */
+  async getEscrowDetails(bookingId: string): Promise<{
+    amount_usdc: number;
+    barber_payout_usdc: number;
+    platform_fee_usdc: number;
+    status: number;
+    barber_address: string;
+    consumer_address: string;
+  }> {
+    try {
+      const bookingIdBytes = Buffer.from(bookingId).toString('hex');
+
+      const result = await this.client.view({
+        function: `${this.moduleAddress}::usdc_escrow::get_escrow`,
+        type_arguments: [],
+        arguments: [this.moduleAddress, `0x${bookingIdBytes}`],
+      });
+
+      const [amount, barberPayout, platformFee, status, barberAddr, consumerAddr] = result as [
+        string,
+        string,
+        string,
+        number,
+        string,
+        string
+      ];
+
+      return {
+        amount_usdc: parseInt(amount) / 1_000_000,
+        barber_payout_usdc: parseInt(barberPayout) / 1_000_000,
+        platform_fee_usdc: parseInt(platformFee) / 1_000_000,
+        status,
+        barber_address: barberAddr,
+        consumer_address: consumerAddr,
+      };
+    } catch (error: any) {
+      logger.error('❌ Failed to get escrow details', {
+        booking_id: bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
   /**
    * Get platform address
    */

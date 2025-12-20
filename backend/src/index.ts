@@ -63,6 +63,7 @@ import systemHealthRoutes from './routes/system-health.routes';
 
 // Gas Wallet Monitoring Routes (Admin)
 import gasMonitorRoutes from './routes/gas-wallet.routes';
+import adminGasWalletRoutes from './routes/admin-gas-wallet.routes';
 
 // Marketplace Engine Routes (Capitalistic)
 import marketplaceRoutes from './routes/marketplace.routes';
@@ -290,6 +291,7 @@ app.use('/api/system', systemHealthRoutes);  // System health and database statu
 
 // Gas wallet monitoring (Admin)
 app.use('/api/gas', gasMonitorRoutes);  // Gas wallet balance and usage monitoring
+app.use('/api/admin/gas-wallet', adminGasWalletRoutes);  // Admin gas wallet management (USDC system)
 
 // Marketplace Engine (Capitalistic)
 app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankings, surge
