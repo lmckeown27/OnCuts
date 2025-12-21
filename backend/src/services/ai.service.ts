@@ -79,6 +79,14 @@ export async function getBarberQualityScore(barberId: string) {
       barberId,
       qualityScore: 50,
       isDefault: true,
+      error: false,
+    };
+  } catch (error) {
+    logger.error('AI Service - getBarberQualityScore error:', error);
+    return {
+      barberId,
+      qualityScore: 50,
+      isDefault: true,
       error: true,
     };
   }
