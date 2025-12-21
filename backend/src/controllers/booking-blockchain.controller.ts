@@ -254,11 +254,11 @@ export async function completeBooking(req: Request, res: Response) {
 
     // Submit transaction to complete booking
     // Platform signs this (with platform account)
-    const platformPrivateKey = process.env.APTOS_PLATFORM_PRIVATE_KEY;
+    const platformPrivateKey = process.env.PETRA_PRIVATEKEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
     if (!platformPrivateKey) {
       return res.status(500).json({
         success: false,
-        message: 'Platform not configured',
+        message: 'Platform not configured. Please set PETRA_PRIVATEKEY in your .env file',
       });
     }
 

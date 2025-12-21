@@ -49,11 +49,11 @@ class GasWalletService {
     this.client = new AptosClient(nodeUrl);
 
     // Initialize gas wallet from env
-    const privateKeyHex = process.env.GAS_WALLET_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
+    const privateKeyHex = process.env.PETRA_PRIVATEKEY || process.env.GAS_WALLET_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
     
     if (!privateKeyHex) {
-      logger.error('❌ GAS_WALLET_PRIVATE_KEY not configured');
-      throw new Error('GAS_WALLET_PRIVATE_KEY not configured');
+      logger.error('❌ PETRA_PRIVATEKEY not configured');
+      throw new Error('PETRA_PRIVATEKEY not configured. Please set PETRA_PRIVATEKEY in your .env file');
     }
 
     const privateKey = new HexString(privateKeyHex);

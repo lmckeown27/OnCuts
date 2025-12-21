@@ -20,9 +20,9 @@ class AptosService {
     this.faucetClient = process.env.APTOS_NETWORK !== 'mainnet' ? new FaucetClient(nodeUrl, faucetUrl) : null;
 
     // Initialize platform account from private key
-    const privateKeyHex = process.env.APTOS_PLATFORM_PRIVATE_KEY;
+    const privateKeyHex = process.env.PETRA_PRIVATEKEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
     if (!privateKeyHex) {
-      throw new Error('APTOS_PLATFORM_PRIVATE_KEY not configured');
+      throw new Error('PETRA_PRIVATEKEY not configured. Please set PETRA_PRIVATEKEY in your .env file');
     }
 
     const privateKey = new HexString(privateKeyHex);
