@@ -59,7 +59,7 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
     
     logger.info('Admin verifying payment against blockchain', {
       payment_id: paymentId,
-      admin_id: req.user?.id,
+      admin_id: req.user?.userId,
       auto_repair: autoRepair
     });
     
@@ -86,7 +86,7 @@ router.post('/verify-payment', async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Admin payment verification failed', {
       error: error.message,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     throw error;
   }
@@ -106,7 +106,7 @@ router.post('/repair-payment', async (req: Request, res: Response) => {
     
     logger.warn('Admin manually repairing payment', {
       payment_id: paymentId,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     
     const result = await blockchainSyncService.repairPaymentCache(paymentId);
@@ -121,7 +121,7 @@ router.post('/repair-payment', async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Admin payment repair failed', {
       error: error.message,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     throw error;
   }
@@ -178,7 +178,7 @@ router.post('/verify-booking', async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Admin booking verification failed', {
       error: error.message,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     throw error;
   }
@@ -195,7 +195,7 @@ router.post('/verify-booking', async (req: Request, res: Response) => {
 router.post('/reconcile', async (req: Request, res: Response) => {
   try {
     logger.info('Admin triggered manual reconciliation', {
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     
     const result = await blockchainReconciliationJob.triggerManual();
@@ -215,7 +215,7 @@ router.post('/reconcile', async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error('Admin reconciliation trigger failed', {
       error: error.message,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     throw error;
   }
@@ -299,7 +299,7 @@ router.post('/discrepancies/:id/resolve', async (req: Request, res: Response) =>
       data: {
         resolved: true,
         resolvedAt: new Date(),
-        resolvedBy: req.user?.id,
+        resolvedBy: req.user?.userId,
         resolutionAction: resolution
       }
     });
@@ -312,7 +312,7 @@ router.post('/discrepancies/:id/resolve', async (req: Request, res: Response) =>
   } catch (error: any) {
     logger.error('Failed to resolve discrepancy', {
       error: error.message,
-      admin_id: req.user?.id
+      admin_id: req.user?.userId
     });
     throw error;
   }
