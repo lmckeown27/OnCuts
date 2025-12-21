@@ -6,7 +6,7 @@
  */
 
 import express from 'express';
-import { handleStripeWebhook } from '../controllers/stripe-webhook.controller';
+import { handleStripeWebhook } from '../controllers/stripe-webhook-enhanced.controller';
 
 const router = express.Router();
 
@@ -15,6 +15,15 @@ const router = express.Router();
  * Handle Stripe webhook events
  * 
  * This route expects raw body (not JSON parsed)
+ * 
+ * Events handled:
+ * - payment_intent.succeeded → Mark booking paid, trigger escrow
+ * - payment_intent.payment_failed → Mark booking failed
+ * - payment_intent.canceled → Cancel booking
+ * - charge.refunded → Process refund
+ * - account.updated → Update barber Stripe Connect status
+ * - transfer.created → Log payout completion
+ * - transfer.updated → Handle failed payouts
  */
 router.post('/stripe', handleStripeWebhook);
 
