@@ -84,10 +84,10 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       bookingId,
       customerId: clientId,
       barberId: barber.user_id,
-      barberAptosAddress: barber.wallet_address || '0x0',
-      consumerAptosAddress: userWalletAddress || '0x0',
+      barberAptosAddress: barber.barber_address || '0x0',
+      consumerAptosAddress: clientAddress || '0x0',
       totalAmountCents: priceCents,
-      stripePaymentIntentId: paymentIntentId || 'manual_payment',
+      stripePaymentIntentId: `booking_${bookingId}`,
     });
 
     logger.info(`Booking created with custodial wallet payment`, {

@@ -9,9 +9,8 @@ export interface JwtPayload {
   campusId: number;
 }
 
-export interface AuthRequest extends Request {
-  user?: JwtPayload;
-}
+// Use the globally extended Express.Request type
+export type AuthRequest = Request;
 
 export const authenticate = (
   req: AuthRequest,

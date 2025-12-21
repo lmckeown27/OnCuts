@@ -130,10 +130,10 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        id: string;
-        email?: string;
-        role?: string;
-        aptosAddress?: string;
+        userId: string;
+        email: string;
+        role: 'student' | 'barber' | 'admin';
+        campusId: number;
       };
     }
   }

@@ -98,8 +98,13 @@ export const suggestStartingPrice = async (req: Request, res: Response, next: Ne
       service_category,
       market_type,
       barber_rating: 3.5, // Default for new barbers
-      availability_utilization: 0.3, // Conservative estimate
-      current_time_category: dynamicPricingService.getCurrentTimeCategory(),
+      barber_completion_rate: 0.85, // Default completion rate
+      barber_total_bookings: 0, // New barber
+      barber_avg_price: 25, // Default starting price
+      barbers_available_count: 5, // Conservative estimate
+      bookings_last_24h: 10, // Conservative estimate
+      time_of_day: dynamicPricingService.getCurrentTimeCategory(),
+      estimated_duration_minutes: 45, // Default duration
     });
     
     res.json({
