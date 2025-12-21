@@ -1,6 +1,16 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-export const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
-export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
+// API Configuration - Uses environment variables from .env
+export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
+
+// Aptos Blockchain Configuration
+export const APTOS_NETWORK = import.meta.env.VITE_APTOS_NETWORK || 'devnet';
+export const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+export const APTOS_MODULE_ADDRESS = import.meta.env.VITE_APTOS_MODULE_ADDRESS || '';
+
+// App Metadata
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCuts';
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 export const ROUTES = {
   HOME: '/',
