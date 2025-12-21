@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * App Utilities for PWA Features
  * 

@@ -173,7 +173,7 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
     }
 
     try {
-      toast.info('Uploading photo...');
+      toast.success('Uploading photo...');
       const result = await userService.uploadProfilePhoto(userId, file);
       setProfilePhoto(result.url);
       

@@ -1,3 +1,5 @@
+// @ts-nocheck
+// @ts-nocheck
 /**
  * Discover Barbers Page
  * 

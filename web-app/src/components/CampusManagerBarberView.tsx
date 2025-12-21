@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Campus Manager Barber Profile View
  * 

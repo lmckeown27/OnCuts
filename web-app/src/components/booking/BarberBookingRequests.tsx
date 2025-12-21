@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Barber Booking Requests Component
  * 

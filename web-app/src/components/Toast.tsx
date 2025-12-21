@@ -200,7 +200,7 @@ export function useFormToast() {
   const toast = useToast();
   
   return {
-    submitting: () => toast.info('Submitting...', 0),
+    submitting: () => toast.success('Submitting...', 0),
     success: (message: string = 'Saved successfully!') => toast.success(message),
     error: (message: string = 'Failed to save. Please try again.') => toast.error(message),
   };

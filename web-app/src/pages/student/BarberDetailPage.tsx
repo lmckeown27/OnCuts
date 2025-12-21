@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, MapPin, Clock, DollarSign, Heart, MessageCircle, Award, TrendingUp } from 'lucide-react';

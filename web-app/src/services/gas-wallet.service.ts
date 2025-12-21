@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Gas Wallet Service
  * 

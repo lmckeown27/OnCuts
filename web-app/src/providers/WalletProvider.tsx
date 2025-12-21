@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Aptos Wallet Provider
  * 

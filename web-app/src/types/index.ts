@@ -178,3 +178,13 @@ export interface PaginatedResponse<T> {
   };
 }
 
+// Blockchain / Wallet Types
+export interface Balance {
+  available: number;
+  locked: number;
+  total: number;
+  availableUsd?: number;
+  lockedUsd?: number;
+  totalUsd?: number;
+}
+

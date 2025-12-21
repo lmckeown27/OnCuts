@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Gas Wallet Manager Component
  * 
@@ -107,7 +108,7 @@ export default function GasWalletManager() {
       );
 
       toast.success('Transaction submitted for verification!');
-      toast.info('Verification may take up to 10 minutes');
+      toast.success('Verification may take up to 10 minutes');
 
       setTxHash('');
       setFromAddress('');

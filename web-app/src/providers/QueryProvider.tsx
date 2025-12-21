@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
       staleTime: 30 * 1000, // 30 seconds (blockchain updates slowly)
       
       // Cache time - how long unused data stays in memory
-      cacheTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 5 * 60 * 1000, // 5 minutes
       
       // Refetch on window focus (good for live data)
       refetchOnWindowFocus: true,

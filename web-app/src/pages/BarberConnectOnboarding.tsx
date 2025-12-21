@@ -159,7 +159,7 @@ export const BarberConnectOnboarding = () => {
             </p>
             <Button
               variant="primary"
-              size="large"
+              size="lg"
               onClick={handleSetupPayouts}
               disabled={isCreatingAccount}
             >
@@ -196,7 +196,7 @@ export const BarberConnectOnboarding = () => {
             </p>
             <Button
               variant="primary"
-              size="large"
+              size="lg"
               onClick={handleContinueOnboarding}
               disabled={isCreatingAccount}
             >

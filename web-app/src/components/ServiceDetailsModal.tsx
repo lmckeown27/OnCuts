@@ -108,7 +108,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
                 <Phone className="w-4 h-4 mr-2" />
                 Call
               </Button>
-              <Button variant="success" className="w-full">
+              <Button variant="primary" className="w-full">
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Complete
               </Button>

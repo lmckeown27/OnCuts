@@ -37,7 +37,7 @@ export function BlockchainBalanceCard() {
       return response.data.balance;
     },
     staleTime: 60 * 1000, // Fresh for 1 minute
-    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchInterval: 60 * 1000, // Auto-refresh every minute
     retry: 3,
   });

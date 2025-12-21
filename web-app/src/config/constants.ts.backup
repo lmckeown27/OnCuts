@@ -14,9 +14,6 @@ export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 export const ROUTES = {
   HOME: '/',
-  LOGIN: '/login',
-  SIGNUP: '/signup',
-  CAMPUS_SELECT: '/campus-select',
   ADMIN: '/admin',
   CONSUMER: '/consumer',
   BARBER: '/barber',
