@@ -1,144 +1,29 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { ApiError } from './errorHandler';
-
-export interface JwtPayload {
-  userId: string;
-  email: string;
-  role: 'student' | 'barber' | 'admin';
-  campusId: number;
-}
-
-// Use the globally extended Express.Request type
-export type AuthRequest = Request;
-
-export const authenticate = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    // DEVELOPMENT MODE BYPASS: Allow access without token
-    // TODO: Remove this bypass in production!
-    if (process.env.NODE_ENV === 'development' && (!authHeader || !authHeader.startsWith('Bearer '))) {
-      console.warn('⚠️  DEV MODE: Bypassing authentication - using mock admin user');
-      req.user = {
-        userId: 'dev-admin-001',
-        email: 'admin@campuscuts.dev',
-        role: 'admin',
-        campusId: 1,
-      };
-      return next();
-    }
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new ApiError(401, 'No token provided');
-    }
-
-    const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
-    const decoded = jwt.verify(token, secret) as JwtPayload;
-    req.user = decoded;
-    next();
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new ApiError(401, 'Invalid token'));
-    } else if (error instanceof jwt.TokenExpiredError) {
-      next(new ApiError(401, 'Token expired'));
-    } else {
-      next(error);
-    }
-  }
-};
-
 /**
- * Optional authentication middleware
- * Extracts user from token if present, but allows request without token
+ * Auth Middleware - Compatibility Export
+ * 
+ * This file maintains backward compatibility by re-exporting all authentication
+ * middleware from auth.middleware.ts.
+ * 
+ * All existing imports from '../middleware/auth' will continue to work.
+ * 
+ * For new code, consider importing directly from '../middleware/auth.middleware'
+ * for clearer naming.
+ * 
+ * @deprecated Use '../middleware/auth.middleware' for new code
+ * @see auth.middleware.ts for full documentation
  */
-export const optionalAuthenticate = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // No token provided - continue without user
-      return next();
-    }
-
-    const token = authHeader.substring(7);
-    const secret = process.env.JWT_SECRET;
-
-    if (!secret) {
-      console.warn('JWT_SECRET not configured - continuing without authentication');
-      return next();
-    }
-
-    try {
-      const decoded = jwt.verify(token, secret) as JwtPayload;
-      req.user = decoded;
-    } catch (error) {
-      // Invalid token - just log and continue without user
-      console.warn('Invalid token provided, continuing without authentication');
-    }
-
-    next();
-  } catch (error) {
-    // Any error - just continue without user
-    next();
-  }
-};
-
-export const requireRole = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return next(new ApiError(401, 'Not authenticated'));
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return next(new ApiError(403, 'Insufficient permissions'));
-    }
-
-    next();
-  };
-};
-
-export const requireEmailVerification = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  // This would check the user's email_verified status from database
-  // Implementation depends on how you structure your queries
-  next();
-};
-
-/**
- * Admin-only middleware
- * Ensures request is from an admin user
- */
-export const requireAdmin = (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  if (!req.user) {
-    return next(new ApiError(401, 'Not authenticated'));
-  }
-
-  if (req.user.role !== 'admin') {
-    return next(new ApiError(403, 'Admin access required'));
-  }
-
-  next();
-};
-
+export {
+  // Middleware functions
+  authenticate,
+  optionalAuthenticate,
+  requireRole,
+  requireEmailVerification,
+  requireAdmin,
+  requireCampusAccess,
+  getUserIdForRateLimit,
+  
+  // Types
+  JwtPayload,
+  AuthRequest,
+} from './auth.middleware';

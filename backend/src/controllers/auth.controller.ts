@@ -1,3 +1,95 @@
+/**
+ * Authentication Controller
+ * 
+ * Handles user authentication operations including registration, login, and token management.
+ * 
+ * ## JWT Authentication Flow:
+ * 
+ * ### 1. User Registration:
+ * ```
+ * POST /api/v1/auth/register
+ * Body: { email, password, firstName, lastName, campusId, role }
+ * 
+ * Process:
+ * - Validates campus email domain
+ * - Hashes password with bcrypt (10 rounds)
+ * - Creates Aptos wallet for user
+ * - Stores user in database
+ * - Generates JWT token
+ * - Returns user data + token
+ * ```
+ * 
+ * ### 2. User Login:
+ * ```
+ * POST /api/v1/auth/login
+ * Body: { email, password }
+ * 
+ * Process:
+ * - Finds user by email
+ * - Verifies password with bcrypt.compare()
+ * - Generates JWT token with user data
+ * - Updates last_login timestamp
+ * - Returns user data + token
+ * ```
+ * 
+ * ### 3. Authenticated Request:
+ * ```
+ * GET /api/v1/bookings
+ * Headers: { Authorization: "Bearer <token>" }
+ * 
+ * Process:
+ * - auth.middleware.ts extracts and verifies token
+ * - Token payload decoded to req.user
+ * - Route handler accesses req.user for user info
+ * ```
+ * 
+ * ## JWT Token Structure:
+ * 
+ * ### Header:
+ * ```json
+ * {
+ *   "alg": "HS256",  // HMAC with SHA-256
+ *   "typ": "JWT"     // Token type
+ * }
+ * ```
+ * 
+ * ### Payload (JwtPayload):
+ * ```json
+ * {
+ *   "userId": "123e4567-e89b-12d3-a456-426614174000",
+ *   "email": "student@university.edu",
+ *   "role": "student",
+ *   "campusId": 1,
+ *   "iat": 1704067200,  // Issued at (Unix timestamp)
+ *   "exp": 1704672000   // Expiration (Unix timestamp)
+ * }
+ * ```
+ * 
+ * ### Signature:
+ * ```
+ * HMACSHA256(
+ *   base64UrlEncode(header) + "." + base64UrlEncode(payload),
+ *   JWT_SECRET
+ * )
+ * ```
+ * 
+ * ## Environment Variables Required:
+ * - JWT_SECRET: Secret key for signing tokens (required, 32+ chars)
+ * - JWT_EXPIRES_IN: Token expiration time (default: "7d")
+ * - JWT_REFRESH_SECRET: Separate secret for refresh tokens (optional)
+ * - JWT_REFRESH_EXPIRES_IN: Refresh token expiration (default: "30d")
+ * 
+ * ## Security Features:
+ * 1. **Password Hashing**: bcrypt with 10 salt rounds
+ * 2. **Token Signing**: HMAC-SHA256 signature verification
+ * 3. **Token Expiration**: Automatic expiration (configurable)
+ * 4. **Domain Validation**: Email must match campus domain
+ * 5. **Account Status**: Checks is_active flag on login
+ * 6. **Credential Obfuscation**: Same error for wrong email/password
+ * 
+ * @module auth.controller
+ */
+
 import { Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -7,9 +99,57 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest, JwtPayload } from '../middleware/auth';
 import aptosService from '../services/aptos.service';
 import { logger } from '../utils/logger';
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  generateEmailVerificationToken,
+  generatePasswordResetToken,
+  verifyToken,
+} from '../utils/jwt.utils';
 
 /**
- * Register new user
+ * Register New User
+ * 
+ * Creates a new user account with email/password authentication.
+ * Also generates an Aptos wallet for blockchain transactions.
+ * 
+ * ## Request:
+ * ```json
+ * POST /api/v1/auth/register
+ * {
+ *   "email": "student@university.edu",
+ *   "password": "SecurePassword123!",
+ *   "firstName": "John",
+ *   "lastName": "Doe",
+ *   "campusId": 1,
+ *   "role": "student",
+ *   "phone": "+1234567890"
+ * }
+ * ```
+ * 
+ * ## Response:
+ * ```json
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "user": {
+ *       "id": "123e4567-e89b-12d3-a456-426614174000",
+ *       "email": "student@university.edu",
+ *       "firstName": "John",
+ *       "lastName": "Doe",
+ *       "role": "student",
+ *       "campusId": 1
+ *     },
+ *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+ *     "aptosAddress": "0x1234..."
+ *   },
+ *   "message": "Registration successful. Please verify your email."
+ * }
+ * ```
+ * 
+ * @param req - Express request with registration data
+ * @param res - Express response
+ * @param next - Express next function
  */
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -52,8 +192,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 
     const user = result.rows[0];
 
-    // Generate JWT
-    const token = generateToken({
+    // Generate JWT access token
+    const token = generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -120,8 +260,8 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     // Update last login
     await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
-    // Generate JWT
-    const token = generateToken({
+    // Generate JWT access token
+    const token = generateAccessToken({
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -261,7 +401,7 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
     const decoded = jwt.verify(refreshToken, secret) as JwtPayload;
 
     // Generate new access token
-    const newToken = generateToken({
+    const newToken = generateAccessToken({
       userId: decoded.userId,
       email: decoded.email,
       role: decoded.role,
@@ -278,30 +418,7 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 /**
- * Helper: Generate JWT token
+ * JWT token generation and verification is now handled by utils/jwt.utils.ts
+ * See that file for comprehensive JWT documentation and helper functions.
  */
-const generateToken = (payload: JwtPayload): string => {
-  const secret = process.env.JWT_SECRET;
-  const expiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
-
-  if (!secret) {
-    throw new Error('JWT_SECRET not configured');
-  }
-
-  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
-};
-
-/**
- * Helper: Generate refresh token
- */
-const generateRefreshToken = (payload: JwtPayload): string => {
-  const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-  const expiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
-
-  if (!secret) {
-    throw new Error('JWT_REFRESH_SECRET not configured');
-  }
-
-  return jwt.sign(payload, secret, { expiresIn } as jwt.SignOptions);
-};
 
