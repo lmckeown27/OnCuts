@@ -48,10 +48,9 @@ export default function LandingPage() {
             {/* Logo */}
             <button 
               onClick={() => navigate('/')}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              className="flex items-center hover:opacity-80 transition-opacity"
             >
               <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
-              <span className="text-xl font-bold text-gray-900">CampusCuts</span>
             </button>
 
             {/* Desktop Navigation */}
