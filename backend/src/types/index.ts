@@ -125,3 +125,17 @@ export interface Notification {
   createdAt: Date;
 }
 
+// Extend Express Request type to include authenticated user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email?: string;
+        role?: string;
+        aptosAddress?: string;
+      };
+    }
+  }
+}
+

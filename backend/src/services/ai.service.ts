@@ -9,16 +9,21 @@ import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 
 // Import AI functions directly from ai-worker
-import {
-  getBarberPricing as aiGetBarberPricing,
-  getBarberQualityScore as aiGetBarberQualityScore,
-  getBarberHistory as aiGetBarberHistory,
-  getMarketSummary as aiGetMarketSummary,
-  getFraudFlags as aiGetFraudFlags,
-  getDisputes as aiGetDisputes,
-  calculateBookingPrice as aiCalculateBookingPrice,
-  AIFunctionDeps,
-} from '../../../ai-worker/src/services/ai-functions';
+// NOTE: Commented out to avoid cross-project imports (outside rootDir)
+// AI Worker should be run as a separate microservice
+// import {
+//   getBarberPricing as aiGetBarberPricing,
+//   getBarberQualityScore as aiGetBarberQualityScore,
+//   getBarberHistory as aiGetBarberHistory,
+//   getMarketSummary as aiGetMarketSummary,
+//   getFraudFlags as aiGetFraudFlags,
+//   getDisputes as aiGetDisputes,
+//   calculateBookingPrice as aiCalculateBookingPrice,
+//   AIFunctionDeps,
+// } from '../../../ai-worker/src/services/ai-functions';
+
+// Placeholder type until AI Worker is properly integrated
+type AIFunctionDeps = { db: any; logger: any };
 
 // Queue functions (optional - only needed if running AI Worker separately)
 // Import queue functions if you want background processing
@@ -33,24 +38,24 @@ import {
 
 // Create dependencies object with backend's resources
 const aiDeps: AIFunctionDeps = {
-  query: async (text: string, params?: any[]) => {
-    const result = await pool.query(text, params);
-    return result;
-  },
-  logger: {
-    info: (message: string, ...args: any[]) => logger.info(message, ...args),
-    error: (message: string, ...args: any[]) => logger.error(message, ...args),
-    warn: (message: string, ...args: any[]) => logger.warn(message, ...args),
-    debug: (message: string, ...args: any[]) => logger.debug(message, ...args),
-  },
+  db: pool,
+  logger: logger,
 };
 
 /**
  * Get barber pricing multiplier with AI
+ * NOTE: AI Worker integration temporarily disabled
  */
 export async function getBarberPricing(barberId: string) {
   try {
-    return await aiGetBarberPricing(barberId, aiDeps);
+    // TODO: Integrate with AI Worker microservice via HTTP/Queue
+    logger.warn('AI Service - getBarberPricing: AI Worker not integrated');
+    return {
+      barberId,
+      multiplier: 1.0,
+      isDefault: true,
+      error: false,
+    };
   } catch (error) {
     logger.error('AI Service - getBarberPricing error:', error);
     return {
@@ -64,12 +69,12 @@ export async function getBarberPricing(barberId: string) {
 
 /**
  * Get barber quality score from AI
+ * NOTE: AI Worker integration temporarily disabled
  */
 export async function getBarberQualityScore(barberId: string) {
   try {
-    return await aiGetBarberQualityScore(barberId, aiDeps);
-  } catch (error) {
-    logger.error('AI Service - getBarberQualityScore error:', error);
+    // TODO: Integrate with AI Worker microservice via HTTP/Queue
+    logger.warn('AI Service - getBarberQualityScore: AI Worker not integrated');
     return {
       barberId,
       qualityScore: 50,
@@ -84,7 +89,9 @@ export async function getBarberQualityScore(barberId: string) {
  */
 export async function getBarberHistory(barberId: string, limit = 30) {
   try {
-    return await aiGetBarberHistory(barberId, limit, aiDeps);
+    // TODO: Integrate with AI Worker microservice
+    logger.warn('AI Service - getBarberHistory: AI Worker not integrated');
+    return { barberId, history: [], error: false };
   } catch (error) {
     logger.error('AI Service - getBarberHistory error:', error);
     return { barberId, pricing: [], quality: [] };
@@ -96,7 +103,9 @@ export async function getBarberHistory(barberId: string, limit = 30) {
  */
 export async function calculateBookingPrice(barberId: string, basePrice: number) {
   try {
-    return await aiCalculateBookingPrice(barberId, basePrice, aiDeps);
+    // TODO: Integrate with AI Worker microservice
+    logger.warn('AI Service - calculateBookingPrice: AI Worker not integrated');
+    return { barberId, price: basePrice, multiplier: 1.0, error: false };
   } catch (error) {
     logger.error('AI Service - calculateBookingPrice error:', error);
     return {
@@ -115,7 +124,9 @@ export async function calculateBookingPrice(barberId: string, basePrice: number)
  */
 export async function getMarketSummary() {
   try {
-    return await aiGetMarketSummary(aiDeps);
+    // TODO: Integrate with AI Worker microservice
+    logger.warn('AI Service - getMarketSummary: AI Worker not integrated');
+    return { markets: [], summary: 'AI Worker not integrated', error: false };
   } catch (error) {
     logger.error('AI Service - getMarketSummary error:', error);
     return null;
@@ -127,7 +138,9 @@ export async function getMarketSummary() {
  */
 export async function getFraudFlags(status = 'PENDING', limit = 50) {
   try {
-    return await aiGetFraudFlags(status, limit, aiDeps);
+    // TODO: Integrate with AI Worker microservice
+    logger.warn('AI Service - getFraudFlags: AI Worker not integrated');
+    return { flags: [], total: 0, error: false };
   } catch (error) {
     logger.error('AI Service - getFraudFlags error:', error);
     return { flags: [] };
@@ -139,7 +152,9 @@ export async function getFraudFlags(status = 'PENDING', limit = 50) {
  */
 export async function getDisputes(limit = 50) {
   try {
-    return await aiGetDisputes(limit, aiDeps);
+    // TODO: Integrate with AI Worker microservice
+    logger.warn('AI Service - getDisputes: AI Worker not integrated');
+    return { disputes: [], total: 0, error: false };
   } catch (error) {
     logger.error('AI Service - getDisputes error:', error);
     return { disputes: [] };

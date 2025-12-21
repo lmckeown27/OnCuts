@@ -64,8 +64,12 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
         await handleTransferCreated(event.data.object as Stripe.Transfer);
         break;
 
-      case 'transfer.failed':
-        await handleTransferFailed(event.data.object as Stripe.Transfer);
+      // Note: 'transfer.failed' is not a standard Stripe event type
+      // Stripe uses 'transfer.updated' with status checks instead
+      case 'transfer.updated':
+        if ((event.data.object as any).status === 'failed') {
+          await handleTransferFailed(event.data.object as Stripe.Transfer);
+        }
         break;
 
       default:

@@ -64,7 +64,8 @@ export const calculateBatchPrices = async (req: Request, res: Response, next: Ne
       });
     }
     
-    const results = dynamicPricingService.calculateBatchPrices(inputs);
+    // Calculate price for each input
+    const results = inputs.map((input: any) => dynamicPricingService.calculatePrice(input));
     
     res.json({
       success: true,
@@ -92,10 +93,13 @@ export const suggestStartingPrice = async (req: Request, res: Response, next: Ne
       });
     }
     
-    const result = dynamicPricingService.suggestStartingPrice({
+    // Use calculatePrice with default values
+    const result = dynamicPricingService.calculatePrice({
       service_category,
       market_type,
-      estimated_duration_minutes: estimated_duration_minutes || 30,
+      barber_rating: 3.5, // Default for new barbers
+      availability_utilization: 0.3, // Conservative estimate
+      current_time_category: dynamicPricingService.getCurrentTimeCategory(),
     });
     
     res.json({

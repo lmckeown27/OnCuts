@@ -29,7 +29,7 @@ class BlockchainSyncCronService {
   /**
    * Manually trigger reconciliation (for testing/admin)
    */
-  async triggerManualSync() {
+  async triggerManualSync(): Promise<any> {
     logger.info('Manually triggering blockchain reconciliation...');
     const result = await blockchainReconciliationJob.triggerManual();
     logger.info('Manual blockchain reconciliation complete', {
