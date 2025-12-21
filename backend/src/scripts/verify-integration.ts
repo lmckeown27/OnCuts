@@ -32,13 +32,13 @@ async function verifyIntegration() {
   
   // Aptos Configuration (REQUIRED)
   checkEnvVar('APTOS_PLATFORM_ADDRESS', true, 'Platform Aptos address');
-  // Check for PETRA_PRIVATEKEY first, then fall back to APTOS_PLATFORM_PRIVATE_KEY
-  if (!process.env.PETRA_PRIVATEKEY && !process.env.APTOS_PLATFORM_PRIVATE_KEY) {
-    logger.error('❌ PETRA_PRIVATEKEY or APTOS_PLATFORM_PRIVATE_KEY required');
+  // Check for PETRA_PRIVATE_KEY first, then fall back to APTOS_PLATFORM_PRIVATE_KEY
+  if (!process.env.PETRA_PRIVATE_KEY && !process.env.APTOS_PLATFORM_PRIVATE_KEY) {
+    logger.error('❌ PETRA_PRIVATE_KEY or APTOS_PLATFORM_PRIVATE_KEY required');
     results.push({
-      name: 'Env: PETRA_PRIVATEKEY',
+      name: 'Env: PETRA_PRIVATE_KEY',
       status: 'fail',
-      message: 'Platform private key - not set (need PETRA_PRIVATEKEY or APTOS_PLATFORM_PRIVATE_KEY)',
+      message: 'Platform private key - not set (need PETRA_PRIVATE_KEY or APTOS_PLATFORM_PRIVATE_KEY)',
       required: true,
     });
   }
@@ -106,9 +106,9 @@ async function verifyIntegration() {
     const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
     const client = new AptosClient(nodeUrl);
     
-    const platformPrivateKey = process.env.PETRA_PRIVATEKEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
+    const platformPrivateKey = process.env.PETRA_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
     if (!platformPrivateKey) {
-      throw new Error('PETRA_PRIVATEKEY not set. Please set PETRA_PRIVATEKEY in your .env file');
+      throw new Error('PETRA_PRIVATE_KEY not set. Please set PETRA_PRIVATE_KEY in your .env file');
     }
     
     const platformAccount = new AptosAccount(
