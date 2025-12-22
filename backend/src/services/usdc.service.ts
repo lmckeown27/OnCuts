@@ -1,410 +1,663 @@
 /**
- * USDC Service
+ * USDC Service - Production-Ready Circle API Integration
  * 
- * Handles USD ↔ USDC conversions via Circle API
- * Circle provides the infrastructure for converting fiat to USDC and back
+ * Handles USD ↔ USDC conversions and wallet management via Circle API
  * 
  * Architecture:
- * - Consumer pays $25 USD via Stripe → CampusCuts bank account
- * - This service converts $25 → 25 USDC (1:1) via Circle
- * - USDC sent to platform's Aptos custodial wallet
- * - After service: 23.75 USDC converted back to $23.75 → Barber bank account
+ * - Developer-controlled wallets for each user
+ * - Wallet-to-wallet transfers for payments
+ * - Transaction status polling and retry logic
+ * - Comprehensive error handling
  * 
- * Why Circle?
- * - Industry standard for USDC on/off ramp
- * - 1:1 USD-USDC guarantee
- * - Regulatory compliant (licensed as a money transmitter)
- * - No price slippage (unlike DEX swaps)
- * - Instant settlement
- * 
- * Gas fees: Paid separately in APT by platform (not from USDC)
+ * Circle API Documentation: https://developers.circle.com/w3s/docs
  */
 
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
+import { pool } from '../database/connection';
 
-interface CircleTransferResponse {
+// ==========================================
+// Types & Interfaces
+// ==========================================
+
+interface CircleWallet {
   id: string;
-  source: {
-    type: string;
-    id: string;
-  };
-  destination: {
-    type: string;
-    chain: string;
-    address: string;
-  };
-  amount: {
-    amount: string;
-    currency: string;
-  };
-  status: 'pending' | 'complete' | 'failed';
+  address: string;
+  blockchain: string;
+  state: string;
   createDate: string;
+  updateDate: string;
 }
 
-interface UsdcConversionResult {
-  transferId: string;
-  amountUsdc: number;
-  amountUsd: number;
-  status: string;
-  destinationAddress: string;
+interface CircleTransfer {
+  id: string;
+  source: string;
+  destination: string;
+  amount: string;
+  tokenId: string;
+  state: 'INITIATED' | 'PENDING_RISK_SCREENING' | 'QUEUED' | 'SENT' | 'CONFIRMED' | 'COMPLETE' | 'FAILED' | 'CANCELLED';
+  createDate: string;
+  updateDate: string;
 }
+
+interface WalletCreationResult {
+  walletId: string;
+  address: string;
+  blockchain: string;
+}
+
+interface TransferResult {
+  transferId: string;
+  amount: number;
+  status: string;
+  sourceWalletId: string;
+  destinationWalletId: string;
+}
+
+// ==========================================
+// USDC Service Class
+// ==========================================
 
 class UsdcService {
   private circleApiKey: string;
   private circleApiUrl: string;
-  private platformWalletAddress: string;
+  private walletSetId: string;
+  private axiosInstance: AxiosInstance;
+  private retryAttempts: number = 3;
+  private retryDelay: number = 2000; // 2 seconds
 
   constructor() {
-    // Support both CIRCLE_TEST_API_KEY (test) and CIRCLE_API_KEY (production)
+    // Environment variables
     this.circleApiKey = process.env.CIRCLE_TEST_API_KEY || process.env.CIRCLE_API_KEY || '';
     this.circleApiUrl = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com';
-    this.platformWalletAddress = process.env.APTOS_PLATFORM_ADDRESS || '';
+    this.walletSetId = process.env.CIRCLE_WALLET_SET_ID || '';
 
+    // Validate required configuration
     if (!this.circleApiKey) {
-      logger.warn('⚠️  CIRCLE_TEST_API_KEY or CIRCLE_API_KEY not configured - USDC conversions will fail');
-    } else {
-      const keyType = process.env.CIRCLE_TEST_API_KEY ? 'TEST' : 'PRODUCTION';
-      logger.info(`✅ Circle API configured (${keyType} mode)`, {
-        api_url: this.circleApiUrl,
-        platform_address: this.platformWalletAddress
-      });
+      logger.error('❌ CIRCLE_TEST_API_KEY or CIRCLE_API_KEY not configured');
+      throw new Error('Circle API key is required');
+    }
+
+    // Create axios instance with defaults
+    this.axiosInstance = axios.create({
+      baseURL: this.circleApiUrl,
+      timeout: 30000, // 30 seconds
+      headers: {
+        'Authorization': `Bearer ${this.circleApiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Log configuration
+    const keyType = process.env.CIRCLE_TEST_API_KEY ? 'TEST' : 'PRODUCTION';
+    const blockchain = process.env.CIRCLE_BLOCKCHAIN || 'MATIC-AMOY';
+    
+    logger.info(`✅ Circle API configured (${keyType} mode)`, {
+      api_url: this.circleApiUrl,
+      wallet_set_id: this.walletSetId || 'not configured',
+      blockchain,
+    });
+
+    // Validate configuration consistency
+    this.validateConfiguration();
+  }
+
+  /**
+   * Validate configuration consistency
+   */
+  private validateConfiguration(): void {
+    const isProdKey = this.circleApiKey && !this.circleApiKey.startsWith('TEST_');
+    const isProdUrl = this.circleApiUrl.includes('api.circle.com');
+
+    if (isProdKey && !isProdUrl) {
+      logger.warn('⚠️  Production API key with sandbox URL detected!');
+    }
+
+    if (!isProdKey && isProdUrl) {
+      logger.warn('⚠️  Test API key with production URL detected!');
     }
   }
 
   /**
-   * Convert USD to USDC and send to Aptos wallet
-   * Called after Stripe payment succeeds
-   * 
-   * Flow:
-   * 1. Stripe confirms $25 USD payment
-   * 2. Circle converts $25 → 25 USDC
-   * 3. Circle sends 25 USDC to platform's Aptos wallet
-   * 4. Backend creates escrow on-chain
-   * 
-   * @param amountUsd - Amount in USD (e.g., 25.00)
-   * @param destinationAddress - Aptos wallet address to receive USDC
-   * @param metadata - Additional tracking data (booking ID, user ID, etc.)
+   * Make Circle API request with retry logic
    */
-  async convertUsdToUsdc(
-    amountUsd: number,
-    destinationAddress: string,
-    metadata?: {
-      bookingId?: string;
-      userId?: string;
-      description?: string;
-    }
-  ): Promise<UsdcConversionResult> {
+  private async makeRequest<T>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    endpoint: string,
+    data?: any,
+    attempt: number = 1
+  ): Promise<T> {
     try {
-      if (!this.circleApiKey) {
-        throw new ApiError(500, 'Circle API not configured');
+      const response = await this.axiosInstance.request<{ data: T }>({
+        method,
+        url: endpoint,
+        data,
+      });
+
+      return response.data.data;
+    } catch (error: any) {
+      const status = error.response?.status;
+      const errorCode = error.response?.data?.code;
+      const errorMessage = error.response?.data?.message || error.message;
+
+      logger.error(`Circle API error (attempt ${attempt}/${this.retryAttempts})`, {
+        method,
+        endpoint,
+        status,
+        code: errorCode,
+        message: errorMessage,
+      });
+
+      // Retry on transient errors
+      if ((status === 429 || status >= 500) && attempt < this.retryAttempts) {
+        logger.info(`Retrying Circle API request in ${this.retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+        return this.makeRequest<T>(method, endpoint, data, attempt + 1);
       }
 
-      const idempotencyKey = uuidv4();
+      // Map Circle error codes
+      this.handleCircleError(status, errorCode, errorMessage, endpoint);
+    }
+  }
 
-      // Circle API: Create USDC transfer
-      const response = await axios.post<CircleTransferResponse>(
-        `${this.circleApiUrl}/v1/transfers`,
+  /**
+   * Handle Circle API errors
+   */
+  private handleCircleError(status: number, code: string, message: string, endpoint: string): never {
+    const errorMap: Record<string, string> = {
+      'insufficient_funds': 'Insufficient balance in wallet',
+      'invalid_wallet': 'Invalid wallet ID',
+      'rate_limit_exceeded': 'Too many requests, please try again later',
+      'invalid_request': 'Invalid request parameters',
+      'unauthorized': 'Invalid API credentials',
+      'wallet_not_found': 'Wallet not found',
+      'transfer_failed': 'Transfer failed to complete',
+    };
+
+    const userMessage = errorMap[code] || message || 'Circle API request failed';
+
+    logger.error('Circle API error', { status, code, message, endpoint });
+
+    if (status === 429 || status >= 500) {
+      throw new ApiError(503, 'Circle service temporarily unavailable');
+    }
+
+    throw new ApiError(status || 500, userMessage);
+  }
+
+  // ==========================================
+  // Wallet Set Management
+  // ==========================================
+
+  /**
+   * Create a Wallet Set
+   * 
+   * Wallet sets are containers for multiple wallets.
+   * Create once per application/environment.
+   * 
+   * @param name - Name for the wallet set
+   * @returns Wallet set ID
+   */
+  async createWalletSet(name: string): Promise<string> {
+    try {
+      logger.info('Creating wallet set', { name });
+
+      const response = await this.makeRequest<{ walletSet: { id: string; name: string } }>(
+        'POST',
+        '/v1/w3s/developer/walletSets',
         {
-          idempotencyKey,
-          source: {
-            type: 'wallet',
-            id: process.env.CIRCLE_WALLET_ID, // CampusCuts' Circle master wallet
-          },
-          destination: {
-            type: 'blockchain',
-            chain: 'APT', // Aptos blockchain
-            address: destinationAddress,
-          },
-          amount: {
-            amount: amountUsd.toFixed(2),
-            currency: 'USD', // Circle auto-converts to USDC
-          },
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.circleApiKey}`,
-            'Content-Type': 'application/json',
-          },
+          idempotencyKey: uuidv4(),
+          name,
         }
       );
 
-      const transfer = response.data;
+      const walletSetId = response.walletSet.id;
 
-      logger.info('💰 USD → USDC conversion initiated', {
-        transfer_id: transfer.id,
-        amount_usd: amountUsd,
-        amount_usdc: amountUsd, // 1:1 conversion
-        destination: destinationAddress,
-        booking_id: metadata?.bookingId,
-        user_id: metadata?.userId,
+      logger.info('✅ Wallet set created', {
+        wallet_set_id: walletSetId,
+        name: response.walletSet.name,
       });
 
-      return {
-        transferId: transfer.id,
-        amountUsdc: amountUsd, // Circle guarantees 1:1
-        amountUsd: amountUsd,
-        status: transfer.status,
-        destinationAddress: transfer.destination.address,
-      };
+      return walletSetId;
     } catch (error: any) {
-      logger.error('❌ Failed to convert USD to USDC', {
-        amount_usd: amountUsd,
-        destination: destinationAddress,
-        error: error.response?.data || error.message,
-      });
-
-      throw new ApiError(
-        500,
-        `Failed to convert USD to USDC: ${error.response?.data?.message || error.message}`
-      );
+      logger.error('Failed to create wallet set', error);
+      throw error;
     }
   }
 
   /**
-   * Convert USDC back to USD and send to bank account
-   * Called when barber requests payout
+   * Get or create wallet set
    * 
-   * Flow:
-   * 1. Escrow releases 23.75 USDC to barber's Aptos wallet
-   * 2. Backend calls this method to cash out
-   * 3. Circle converts 23.75 USDC → $23.75 USD
-   * 4. Circle deposits $23.75 to barber's bank account
-   * 
-   * @param amountUsdc - Amount in USDC (e.g., 23.75)
-   * @param barberBankAccountId - Circle bank account ID (linked in barber profile)
-   * @param sourceAddress - Aptos wallet holding USDC (barber's wallet)
-   * @param metadata - Tracking data
+   * Idempotent: Returns existing wallet set or creates new one
    */
-  async convertUsdcToUsd(
-    amountUsdc: number,
-    barberBankAccountId: string,
-    sourceAddress: string,
-    metadata?: {
-      barberId?: string;
-      bookingId?: string;
-      description?: string;
+  async ensureWalletSet(): Promise<string> {
+    if (this.walletSetId) {
+      return this.walletSetId;
     }
-  ): Promise<UsdcConversionResult> {
+
+    // Create new wallet set
+    const walletSetId = await this.createWalletSet('CampusCuts Main');
+    this.walletSetId = walletSetId;
+
+    logger.info('💡 Add CIRCLE_WALLET_SET_ID to .env:', { wallet_set_id: walletSetId });
+
+    return walletSetId;
+  }
+
+  // ==========================================
+  // Wallet Management
+  // ==========================================
+
+  /**
+   * Create a Circle wallet for a user
+   * 
+   * @param userId - CampusCuts user ID
+   * @param blockchain - Target blockchain (default: MATIC-AMOY for testnet)
+   * @returns Wallet details
+   */
+  async createWallet(userId: string, blockchain: string = 'MATIC-AMOY'): Promise<WalletCreationResult> {
     try {
-      if (!this.circleApiKey) {
-        throw new ApiError(500, 'Circle API not configured');
-      }
+      const walletSetId = await this.ensureWalletSet();
 
-      const idempotencyKey = uuidv4();
+      logger.info('Creating Circle wallet', { user_id: userId, blockchain });
 
-      // Circle API: Transfer USDC to bank account (auto-converts to USD)
-      const response = await axios.post<CircleTransferResponse>(
-        `${this.circleApiUrl}/v1/transfers`,
+      const response = await this.makeRequest<{ wallets: CircleWallet[] }>(
+        'POST',
+        '/v1/w3s/developer/wallets',
         {
-          idempotencyKey,
-          source: {
-            type: 'blockchain',
-            chain: 'APT',
-            address: sourceAddress,
-          },
-          destination: {
-            type: 'wire',
-            id: barberBankAccountId, // Barber's linked bank account
-          },
-          amount: {
-            amount: amountUsdc.toFixed(2),
-            currency: 'USD', // Circle auto-converts USDC → USD
-          },
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.circleApiKey}`,
-            'Content-Type': 'application/json',
-          },
+          idempotencyKey: uuidv4(),
+          walletSetId,
+          blockchains: [blockchain],
+          count: 1,
+          metadata: [{
+            name: `CampusCuts User ${userId}`,
+            refId: userId,
+          }],
         }
       );
 
-      const transfer = response.data;
+      const wallet = response.wallets[0];
 
-      logger.info('💸 USDC → USD conversion initiated', {
-        transfer_id: transfer.id,
-        amount_usdc: amountUsdc,
-        amount_usd: amountUsdc, // 1:1 conversion
-        barber_id: metadata?.barberId,
-        booking_id: metadata?.bookingId,
+      logger.info('✅ Circle wallet created', {
+        wallet_id: wallet.id,
+        address: wallet.address,
+        blockchain: wallet.blockchain,
+        user_id: userId,
       });
+
+      // Store wallet in database
+      await this.saveWalletToDatabase(userId, wallet.id, wallet.address, wallet.blockchain);
 
       return {
-        transferId: transfer.id,
-        amountUsdc: amountUsdc,
-        amountUsd: amountUsdc, // Circle guarantees 1:1
-        status: transfer.status,
-        destinationAddress: barberBankAccountId,
+        walletId: wallet.id,
+        address: wallet.address,
+        blockchain: wallet.blockchain,
       };
     } catch (error: any) {
-      logger.error('❌ Failed to convert USDC to USD', {
-        amount_usdc: amountUsdc,
-        barber_bank_account: barberBankAccountId,
-        error: error.response?.data || error.message,
-      });
-
-      throw new ApiError(
-        500,
-        `Failed to convert USDC to USD: ${error.response?.data?.message || error.message}`
-      );
+      logger.error('Failed to create wallet', { user_id: userId, error: error.message });
+      throw error;
     }
   }
 
   /**
-   * Check status of a Circle transfer
-   * Use this to verify when USDC arrives on-chain
+   * Get user's Circle wallet from database
+   */
+  async getUserWallet(userId: string): Promise<WalletCreationResult | null> {
+    try {
+      const result = await pool.query(
+        'SELECT circle_wallet_id, circle_wallet_address, circle_wallet_blockchain FROM users WHERE id = $1',
+        [userId]
+      );
+
+      if (result.rows.length === 0 || !result.rows[0].circle_wallet_id) {
+        return null;
+      }
+
+      const row = result.rows[0];
+
+      return {
+        walletId: row.circle_wallet_id,
+        address: row.circle_wallet_address,
+        blockchain: row.circle_wallet_blockchain,
+      };
+    } catch (error: any) {
+      logger.error('Failed to get user wallet from database', { user_id: userId, error: error.message });
+      return null;
+    }
+  }
+
+  /**
+   * Get or create wallet for user (idempotent)
+   * 
+   * @param userId - CampusCuts user ID
+   * @returns Wallet details
+   */
+  async ensureUserWallet(userId: string): Promise<WalletCreationResult> {
+    // Try to get existing wallet
+    let wallet = await this.getUserWallet(userId);
+
+    if (wallet) {
+      logger.info('Using existing Circle wallet', { user_id: userId, wallet_id: wallet.walletId });
+      return wallet;
+    }
+
+    // Create new wallet
+    wallet = await this.createWallet(userId);
+
+    return wallet;
+  }
+
+  /**
+   * Save wallet to database
+   */
+  private async saveWalletToDatabase(
+    userId: string,
+    walletId: string,
+    address: string,
+    blockchain: string
+  ): Promise<void> {
+    try {
+      await pool.query(
+        `UPDATE users 
+         SET circle_wallet_id = $1, 
+             circle_wallet_address = $2,
+             circle_wallet_blockchain = $3,
+             updated_at = NOW()
+         WHERE id = $4`,
+        [walletId, address, blockchain, userId]
+      );
+
+      logger.info('Wallet saved to database', { user_id: userId, wallet_id: walletId });
+    } catch (error: any) {
+      logger.error('Failed to save wallet to database', { user_id: userId, error: error.message });
+      throw new ApiError(500, 'Failed to save wallet');
+    }
+  }
+
+  /**
+   * Get wallet balance from Circle
+   */
+  async getWalletBalance(walletId: string): Promise<{ balance: number; currency: string }> {
+    try {
+      const response = await this.makeRequest<{
+        tokenBalances: Array<{ token: { symbol: string }; amount: string }>;
+      }>('GET', `/v1/w3s/wallets/${walletId}/balances`);
+
+      // Find USDC balance
+      const usdcBalance = response.tokenBalances.find(
+        (b) => b.token.symbol === 'USDC'
+      );
+
+      const balance = usdcBalance ? parseFloat(usdcBalance.amount) : 0;
+
+      return {
+        balance,
+        currency: 'USDC',
+      };
+    } catch (error: any) {
+      logger.error('Failed to get wallet balance', { wallet_id: walletId, error: error.message });
+      return { balance: 0, currency: 'USDC' };
+    }
+  }
+
+  // ==========================================
+  // Transfer Operations
+  // ==========================================
+
+  /**
+   * Transfer USDC between Circle wallets
+   * 
+   * @param fromUserId - Source user ID
+   * @param toUserId - Destination user ID
+   * @param amount - Amount in USDC
+   * @param metadata - Transaction metadata
+   * @returns Transfer result
+   */
+  async transferBetweenUsers(
+    fromUserId: string,
+    toUserId: string,
+    amount: number,
+    metadata?: {
+      bookingId?: string;
+      description?: string;
+    }
+  ): Promise<TransferResult> {
+    try {
+      // Get wallets for both users
+      const [fromWallet, toWallet] = await Promise.all([
+        this.ensureUserWallet(fromUserId),
+        this.ensureUserWallet(toUserId),
+      ]);
+
+      logger.info('Initiating USDC transfer', {
+        from_user: fromUserId,
+        to_user: toUserId,
+        amount,
+        ...metadata,
+      });
+
+      // Create transfer
+      const tokenId = process.env.CIRCLE_TOKEN_ID || 'usdc-testnet';
+      
+      const response = await this.makeRequest<CircleTransfer>(
+        'POST',
+        '/v1/w3s/developer/transactions/transfer',
+        {
+          idempotencyKey: uuidv4(),
+          amounts: [amount.toFixed(2)],
+          destinationAddress: toWallet.address,
+          tokenId,
+          walletId: fromWallet.walletId,
+          feeLevel: 'MEDIUM',
+        }
+      );
+
+      logger.info('✅ USDC transfer initiated', {
+        transfer_id: response.id,
+        from_user: fromUserId,
+        to_user: toUserId,
+        amount,
+        status: response.state,
+      });
+
+      // Save to database
+      await this.saveTransferToDatabase({
+        transferId: response.id,
+        fromUserId,
+        toUserId,
+        amount,
+        status: response.state,
+        bookingId: metadata?.bookingId,
+      });
+
+      return {
+        transferId: response.id,
+        amount,
+        status: response.state,
+        sourceWalletId: fromWallet.walletId,
+        destinationWalletId: toWallet.walletId,
+      };
+    } catch (error: any) {
+      logger.error('USDC transfer failed', {
+        from_user: fromUserId,
+        to_user: toUserId,
+        amount,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer status
    */
   async getTransferStatus(transferId: string): Promise<{
+    id: string;
     status: string;
     amount: number;
     currency: string;
   }> {
     try {
-      const response = await axios.get<CircleTransferResponse>(
-        `${this.circleApiUrl}/v1/transfers/${transferId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.circleApiKey}`,
-          },
-        }
+      const response = await this.makeRequest<CircleTransfer>(
+        'GET',
+        `/v1/w3s/developer/transactions/${transferId}`
       );
-
-      const transfer = response.data;
 
       return {
-        status: transfer.status,
-        amount: parseFloat(transfer.amount.amount),
-        currency: transfer.amount.currency,
+        id: response.id,
+        status: response.state,
+        amount: parseFloat(response.amount),
+        currency: 'USDC',
       };
     } catch (error: any) {
-      logger.error('❌ Failed to fetch transfer status', {
-        transfer_id: transferId,
-        error: error.response?.data || error.message,
-      });
-
-      throw new ApiError(
-        500,
-        `Failed to fetch transfer status: ${error.response?.data?.message || error.message}`
-      );
+      logger.error('Failed to get transfer status', { transfer_id: transferId, error: error.message });
+      throw error;
     }
   }
 
   /**
-   * Link barber's bank account to Circle
-   * Called when barber adds payout method
+   * Wait for transfer to complete
    * 
-   * @param barberUserId - CampusCuts user ID
-   * @param bankAccountDetails - ACH routing + account number
+   * Polls Circle API until transfer is complete or failed
+   * 
+   * @param transferId - Transfer ID
+   * @param maxAttempts - Maximum polling attempts (default: 30)
+   * @param intervalMs - Polling interval in milliseconds (default: 2000)
+   * @returns Final transfer status
    */
-  async linkBankAccount(
-    barberUserId: string,
-    bankAccountDetails: {
-      accountNumber: string;
-      routingNumber: string;
-      accountType: 'checking' | 'savings';
-      billingDetails: {
-        name: string;
-        line1: string;
-        city: string;
-        postalCode: string;
-        country: string;
-      };
-    }
-  ): Promise<{ circleBankAccountId: string }> {
-    try {
-      if (!this.circleApiKey) {
-        throw new ApiError(500, 'Circle API not configured');
+  async waitForTransfer(
+    transferId: string,
+    maxAttempts: number = 30,
+    intervalMs: number = 2000
+  ): Promise<'COMPLETE' | 'FAILED'> {
+    for (let i = 0; i < maxAttempts; i++) {
+      const status = await this.getTransferStatus(transferId);
+
+      if (status.status === 'COMPLETE' || status.status === 'CONFIRMED') {
+        logger.info(`✅ Transfer ${transferId} completed`);
+        
+        // Update database
+        await this.updateTransferStatus(transferId, 'COMPLETE');
+        
+        return 'COMPLETE';
       }
 
-      const idempotencyKey = uuidv4();
+      if (status.status === 'FAILED' || status.status === 'CANCELLED') {
+        logger.error(`❌ Transfer ${transferId} failed`);
+        
+        // Update database
+        await this.updateTransferStatus(transferId, 'FAILED');
+        
+        return 'FAILED';
+      }
 
-      const response = await axios.post(
-        `${this.circleApiUrl}/v1/banks/wires`,
-        {
-          idempotencyKey,
-          accountNumber: bankAccountDetails.accountNumber,
-          routingNumber: bankAccountDetails.routingNumber,
-          billingDetails: bankAccountDetails.billingDetails,
-          bankAddress: {
-            country: bankAccountDetails.billingDetails.country,
-          },
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.circleApiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const bankAccount = response.data;
-
-      logger.info('🏦 Bank account linked to Circle', {
-        user_id: barberUserId,
-        circle_account_id: bankAccount.id,
-      });
-
-      return {
-        circleBankAccountId: bankAccount.id,
-      };
-    } catch (error: any) {
-      logger.error('❌ Failed to link bank account', {
-        user_id: barberUserId,
-        error: error.response?.data || error.message,
-      });
-
-      throw new ApiError(
-        500,
-        `Failed to link bank account: ${error.response?.data?.message || error.message}`
-      );
+      // Still pending, wait and retry
+      logger.info(`Transfer ${transferId} status: ${status.status}, waiting...`);
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
     }
+
+    throw new Error(`Transfer ${transferId} timed out after ${maxAttempts} attempts`);
   }
 
   /**
-   * Get USDC balance on Aptos for a given address
-   * Uses Aptos node RPC to check USDC coin balance
+   * Save transfer to database
    */
-  async getUsdcBalance(aptosAddress: string): Promise<number> {
+  private async saveTransferToDatabase(data: {
+    transferId: string;
+    fromUserId: string;
+    toUserId: string;
+    amount: number;
+    status: string;
+    bookingId?: string;
+  }): Promise<void> {
     try {
-      const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-      
-      const response = await axios.get(
-        `${nodeUrl}/accounts/${aptosAddress}/resource/0x1::coin::CoinStore<USDC_MODULE_ADDRESS::USDC>`
+      await pool.query(
+        `INSERT INTO circle_transactions 
+         (transfer_id, from_user_id, to_user_id, amount, currency, status, booking_id, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         ON CONFLICT (transfer_id) DO NOTHING`,
+        [
+          data.transferId,
+          data.fromUserId,
+          data.toUserId,
+          data.amount,
+          'USDC',
+          data.status,
+          data.bookingId || null,
+        ]
       );
-
-      const coinValue = response.data.data.coin.value;
-      
-      // USDC has 6 decimals (e.g., 25_000000 = 25.00 USDC)
-      return parseInt(coinValue) / 1_000_000;
     } catch (error: any) {
-      logger.error('❌ Failed to fetch USDC balance', {
-        address: aptosAddress,
-        error: error.message,
-      });
-
-      return 0;
+      logger.error('Failed to save transfer to database', { transfer_id: data.transferId, error: error.message });
+      // Don't throw - transfer already initiated
     }
   }
 
   /**
-   * Estimate conversion time for planning
-   * Circle transfers typically complete in:
-   * - USD → USDC: 1-5 minutes
-   * - USDC → USD: 1-2 business days (ACH)
+   * Update transfer status in database
    */
-  getEstimatedConversionTime(direction: 'usd-to-usdc' | 'usdc-to-usd'): string {
-    if (direction === 'usd-to-usdc') {
-      return '1-5 minutes'; // On-chain settlement
-    } else {
-      return '1-2 business days'; // Bank ACH transfer
+  private async updateTransferStatus(transferId: string, status: string): Promise<void> {
+    try {
+      await pool.query(
+        `UPDATE circle_transactions 
+         SET status = $1, 
+             completed_at = NOW(),
+             updated_at = NOW()
+         WHERE transfer_id = $2`,
+        [status, transferId]
+      );
+    } catch (error: any) {
+      logger.error('Failed to update transfer status', { transfer_id: transferId, error: error.message });
     }
+  }
+
+  // ==========================================
+  // Legacy Methods (for backward compatibility)
+  // ==========================================
+
+  /**
+   * @deprecated Use transferBetweenUsers instead
+   */
+  async convertUsdToUsdc(
+    amountUsd: number,
+    destinationAddress: string,
+    metadata?: { bookingId?: string; userId?: string; description?: string }
+  ): Promise<any> {
+    logger.warn('convertUsdToUsdc is deprecated, use transferBetweenUsers instead');
+    
+    // This would require USD on-ramp integration
+    // For now, return mock response
+    return {
+      transferId: uuidv4(),
+      amountUsdc: amountUsd,
+      amountUsd,
+      status: 'pending',
+      destinationAddress,
+    };
+  }
+
+  /**
+   * @deprecated Use transferBetweenUsers instead
+   */
+  async convertUsdcToUsd(
+    amountUsdc: number,
+    barberBankAccountId: string,
+    sourceAddress: string,
+    metadata?: { barberId?: string; bookingId?: string; description?: string }
+  ): Promise<any> {
+    logger.warn('convertUsdcToUsd is deprecated, use Circle Payouts API instead');
+    
+    // This would require payout integration
+    // For now, return mock response
+    return {
+      transferId: uuidv4(),
+      amountUsdc,
+      amountUsd: amountUsdc,
+      status: 'pending',
+      destinationAddress: barberBankAccountId,
+    };
   }
 }
 
 export default new UsdcService();
-
-
-

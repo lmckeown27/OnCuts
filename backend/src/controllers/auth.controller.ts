@@ -330,6 +330,19 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     const user = result.rows[0];
 
+    // Create Circle wallet for USDC (non-blocking, continues in background)
+    import('../services/usdc.service').then(({ default: usdcService }) => {
+      usdcService.ensureUserWallet(user.id.toString()).then(wallet => {
+        logger.info(`✅ Circle wallet created for user ${user.id}`, {
+          wallet_id: wallet.walletId,
+          address: wallet.address,
+        });
+      }).catch(err => {
+        logger.error(`Failed to create Circle wallet for user ${user.id}:`, err.message);
+        // Don't block registration if Circle wallet creation fails
+      });
+    });
+
     // Generate JWT access token
     const token = generateAccessToken({
       userId: user.id,

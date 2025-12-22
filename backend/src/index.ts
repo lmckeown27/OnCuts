@@ -82,6 +82,9 @@ import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
 import reviewBlockchainRoutes from './routes/review-blockchain.routes';
 import fiatBridgeRoutes from './routes/fiat-bridge.routes';
 
+// Circle USDC Integration
+import circleWebhookRoutes from './routes/circle-webhook.routes';
+
 // Load environment variables
 dotenv.config();
 
@@ -304,6 +307,9 @@ app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-c
 app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
 app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
 app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (Stripe integration)
+
+// Circle USDC Integration
+app.use('/api/circle', circleWebhookRoutes);  // Circle webhook handler for USDC transfers
 
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
