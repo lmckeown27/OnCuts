@@ -6,19 +6,12 @@
  * - Pinata API
  * 
  * Usage:
- *   npx ts-node backend/scripts/test-ipfs.ts
- * 
- * Or with ts-node-esm for ESM support:
- *   npx ts-node-esm backend/scripts/test-ipfs.ts
+ *   npx ts-node scripts/test-ipfs.ts
+ *   (run from backend directory)
  */
 
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// ESM compatibility for __dirname
-const __filename = typeof __filename !== 'undefined' ? __filename : fileURLToPath(import.meta.url);
-const __dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(__filename);
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../.env') });
