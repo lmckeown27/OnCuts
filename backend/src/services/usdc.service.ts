@@ -58,12 +58,19 @@ class UsdcService {
   private platformWalletAddress: string;
 
   constructor() {
-    this.circleApiKey = process.env.CIRCLE_API_KEY || '';
+    // Support both CIRCLE_TEST_API_KEY (test) and CIRCLE_API_KEY (production)
+    this.circleApiKey = process.env.CIRCLE_TEST_API_KEY || process.env.CIRCLE_API_KEY || '';
     this.circleApiUrl = process.env.CIRCLE_API_URL || 'https://api-sandbox.circle.com';
     this.platformWalletAddress = process.env.APTOS_PLATFORM_ADDRESS || '';
 
     if (!this.circleApiKey) {
-      logger.warn('⚠️  CIRCLE_API_KEY not configured - USDC conversions will fail');
+      logger.warn('⚠️  CIRCLE_TEST_API_KEY or CIRCLE_API_KEY not configured - USDC conversions will fail');
+    } else {
+      const keyType = process.env.CIRCLE_TEST_API_KEY ? 'TEST' : 'PRODUCTION';
+      logger.info(`✅ Circle API configured (${keyType} mode)`, {
+        api_url: this.circleApiUrl,
+        platform_address: this.platformWalletAddress
+      });
     }
   }
 

@@ -350,7 +350,7 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51A1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
 
 ---
 
-#### **CIRCLE_API_KEY** (Optional but Recommended)
+#### **CIRCLE_TEST_API_KEY** / **CIRCLE_API_KEY** (Optional but Recommended)
 - **What:** Circle API for USD ↔ USDC conversions
 - **Purpose:** Convert fiat payments to stablecoin on blockchain
 - **Where to Get:** [Circle Developers](https://www.circle.com/en/developers)
@@ -358,16 +358,49 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51A1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0
 
 ```bash
 # Backend .env
-CIRCLE_API_KEY=your-circle-api-key-here
+
+# For Testing/Development (Sandbox)
+CIRCLE_TEST_API_KEY=TEST_API_KEY:your_test_key_here
 CIRCLE_API_URL=https://api-sandbox.circle.com
-CIRCLE_WALLET_ID=your-circle-wallet-id
+CIRCLE_WALLET_ID=your_test_wallet_id
+
+# For Production
+# CIRCLE_API_KEY=your_production_api_key_here
+# CIRCLE_API_URL=https://api.circle.com
+# CIRCLE_WALLET_ID=your_production_wallet_id
 ```
 
+**How to Get Circle API Keys:**
+
+1. **Sign up:** https://www.circle.com/en/developers
+2. **Create Sandbox Account** (for testing)
+3. **Go to:** API Keys section
+4. **Create New Key:**
+   - Name: "CampusCuts Test"
+   - Environment: Sandbox
+5. **Copy** the API key (starts with `TEST_API_KEY:`)
+6. **Create a Wallet:**
+   - Go to Wallets section
+   - Create new wallet
+   - Copy Wallet ID
+7. **Add to `.env`:**
+   ```bash
+   CIRCLE_TEST_API_KEY=TEST_API_KEY:abc123def456...
+   CIRCLE_WALLET_ID=1234567890
+   ```
+
 **Why Circle/USDC?**
-- 1:1 with USD (no volatility)
-- Instant settlement on blockchain
-- Industry standard for stablecoin payments
-- Backed by US dollar reserves
+- ✅ 1:1 with USD (no volatility)
+- ✅ Instant settlement on blockchain
+- ✅ Industry standard for stablecoin payments
+- ✅ Backed by US dollar reserves
+- ✅ Regulatory compliant (licensed money transmitter)
+- ✅ No price slippage (unlike DEX swaps)
+
+**Testing vs Production:**
+- **`CIRCLE_TEST_API_KEY`:** Uses sandbox (fake money, testing)
+- **`CIRCLE_API_KEY`:** Uses production (real money)
+- System checks `CIRCLE_TEST_API_KEY` first, then `CIRCLE_API_KEY`
 
 ---
 
