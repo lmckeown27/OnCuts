@@ -106,12 +106,28 @@ import {
   generatePasswordResetToken,
   verifyToken,
 } from '../utils/jwt.utils';
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+  isAutoVerifyEnabled
+} from '../services/email.service';
+import {
+  createPendingRegistration,
+  verifyCode,
+  hasPendingRegistration,
+  getPendingRegistration
+} from '../services/verification.service';
 
 /**
- * Register New User
+ * Register New User - Step 1: Create Pending Registration
  * 
- * Creates a new user account with email/password authentication.
- * Also generates an Aptos wallet for blockchain transactions.
+ * Creates a pending user registration and sends verification email.
+ * User account is NOT created until email is verified.
+ * 
+ * ## Two-Step Registration Flow:
+ * 1. POST /auth/register → Creates pending registration, sends verification email
+ * 2. POST /auth/verify-email → Verifies code, creates user account, issues JWT
  * 
  * ## Request:
  * ```json
@@ -131,21 +147,16 @@ import {
  * ```json
  * {
  *   "success": true,
+ *   "message": "Verification email sent. Please check your inbox.",
  *   "data": {
- *     "user": {
- *       "id": "123e4567-e89b-12d3-a456-426614174000",
- *       "email": "student@university.edu",
- *       "firstName": "John",
- *       "lastName": "Doe",
- *       "role": "student",
- *       "campusId": 1
- *     },
- *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *     "aptosAddress": "0x1234..."
- *   },
- *   "message": "Registration successful. Please verify your email."
+ *     "email": "student@university.edu",
+ *     "expiresIn": 600
+ *   }
  * }
  * ```
+ * 
+ * ## AUTO_VERIFY_EMAILS Mode (Development):
+ * If AUTO_VERIFY_EMAILS=true, the verification code is logged instead of emailed.
  * 
  * @param req - Express request with registration data
  * @param res - Express response
@@ -154,6 +165,11 @@ import {
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { email, password, firstName, lastName, campusId, role, phone } = req.body;
+
+    // Validate input
+    if (!email || !password || !firstName || !lastName || !campusId || !role) {
+      throw new ApiError(400, 'All fields are required');
+    }
 
     // Verify email domain matches campus
     const campusResult = await pool.query('SELECT domain FROM campuses WHERE id = $1', [campusId]);
@@ -169,25 +185,147 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, `Email must be from ${campusDomain}`);
     }
 
-    // Check if user already exists
+    // Check if user already exists in database
     const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     
     if (existingUser.rows.length > 0) {
-      throw new ApiError(400, 'User already exists');
+      throw new ApiError(400, 'User with this email already exists');
+    }
+
+    // Check if there's already a pending registration
+    if (hasPendingRegistration(email)) {
+      throw new ApiError(400, 'Verification email already sent. Please check your inbox or wait 10 minutes to try again.');
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Create pending registration with verification code
+    const verificationCode = createPendingRegistration({
+      email,
+      password: passwordHash,
+      firstName,
+      lastName,
+      phone: phone || '',
+      campusId,
+      role
+    });
+
+    // Send verification email
+    try {
+      await sendVerificationEmail(email, verificationCode);
+      
+      logger.info(`Verification email sent to ${email}`);
+      
+      // In auto-verify mode, include code in response for testing
+      if (isAutoVerifyEnabled()) {
+        return res.status(200).json({
+          success: true,
+          message: 'Registration pending verification (AUTO-VERIFY MODE)',
+          data: {
+            email,
+            expiresIn: 600, // 10 minutes
+            verificationCode // Only in dev mode!
+          }
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Verification email sent. Please check your inbox and enter the 6-digit code.',
+        data: {
+          email,
+          expiresIn: 600 // 10 minutes
+        }
+      });
+    } catch (emailError: any) {
+      logger.error('Failed to send verification email:', emailError);
+      throw new ApiError(500, 'Failed to send verification email. Please try again later.');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify Email - Step 2: Complete Registration
+ * 
+ * Verifies the 6-digit code and creates the user account.
+ * Generates Aptos wallet and issues JWT token.
+ * 
+ * ## Request:
+ * ```json
+ * POST /api/v1/auth/verify-email
+ * {
+ *   "email": "student@university.edu",
+ *   "code": "123456"
+ * }
+ * ```
+ * 
+ * ## Response:
+ * ```json
+ * {
+ *   "success": true,
+ *   "message": "Email verified successfully. Welcome to CampusCuts!",
+ *   "data": {
+ *     "user": {
+ *       "id": "123e4567-e89b-12d3-a456-426614174000",
+ *       "email": "student@university.edu",
+ *       "firstName": "John",
+ *       "lastName": "Doe",
+ *       "role": "student",
+ *       "campusId": 1
+ *     },
+ *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+ *     "aptosAddress": "0x1234..."
+ *   }
+ * }
+ * ```
+ * 
+ * @param req - Express request with email and verification code
+ * @param res - Express response
+ * @param next - Express next function
+ */
+export const verifyEmailRegistration = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      throw new ApiError(400, 'Email and verification code are required');
+    }
+
+    // Verify code and get pending registration
+    const pendingReg = verifyCode(email, code);
+
+    if (!pendingReg) {
+      throw new ApiError(400, 'Invalid or expired verification code');
+    }
+
+    // Check again if user was created in the meantime
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    
+    if (existingUser.rows.length > 0) {
+      throw new ApiError(400, 'User already exists. Please log in.');
+    }
+
     // Generate Aptos wallet for user (custodial)
     const aptosAccount = aptosService.generateAccount();
 
-    // Create user
+    // Create user in database
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, phone, campus_id, role, aptos_address)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO users (email, password_hash, first_name, last_name, phone, campus_id, role, aptos_address, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
        RETURNING id, email, first_name, last_name, campus_id, role, aptos_address, created_at`,
-      [email, passwordHash, firstName, lastName, phone, campusId, role, aptosAccount.address]
+      [
+        pendingReg.email,
+        pendingReg.password,
+        pendingReg.firstName,
+        pendingReg.lastName,
+        pendingReg.phone,
+        pendingReg.campusId,
+        pendingReg.role,
+        aptosAccount.address
+      ]
     );
 
     const user = result.rows[0];
@@ -200,13 +338,16 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       campusId: user.campus_id,
     });
 
-    // Send verification email (implement separately)
-    // await sendVerificationEmail(user.email, user.id);
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(user.email, user.first_name).catch(err => {
+      logger.error('Failed to send welcome email:', err);
+    });
 
-    logger.info(`New user registered: ${user.email} (${role})`);
+    logger.info(`New user registered and verified: ${user.email} (${user.role})`);
 
     res.status(201).json({
       success: true,
+      message: 'Email verified successfully. Welcome to CampusCuts!',
       data: {
         user: {
           id: user.id,
@@ -215,12 +356,110 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
           lastName: user.last_name,
           role: user.role,
           campusId: user.campus_id,
+          emailVerified: true
         },
         token,
         aptosAddress: aptosAccount.address,
-      },
-      message: 'Registration successful. Please verify your email.',
+      }
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Resend Verification Code
+ * 
+ * Resends verification email with a new code to a pending registration.
+ * 
+ * ## Request:
+ * ```json
+ * POST /api/v1/auth/resend-verification
+ * {
+ *   "email": "student@university.edu"
+ * }
+ * ```
+ * 
+ * ## Response:
+ * ```json
+ * {
+ *   "success": true,
+ *   "message": "Verification email resent. Please check your inbox.",
+ *   "data": {
+ *     "email": "student@university.edu",
+ *     "expiresIn": 600
+ *   }
+ * }
+ * ```
+ * 
+ * @param req - Express request with email
+ * @param res - Express response
+ * @param next - Express next function
+ */
+export const resendVerificationCode = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new ApiError(400, 'Email is required');
+    }
+
+    // Check if there's a pending registration
+    const pendingReg = getPendingRegistration(email);
+
+    if (!pendingReg) {
+      throw new ApiError(400, 'No pending registration found for this email. Please register first.');
+    }
+
+    // Check if user already exists
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    
+    if (existingUser.rows.length > 0) {
+      throw new ApiError(400, 'User already exists. Please log in.');
+    }
+
+    // Create new verification code (overwrites previous)
+    const newCode = createPendingRegistration({
+      email: pendingReg.email,
+      password: pendingReg.password,
+      firstName: pendingReg.firstName,
+      lastName: pendingReg.lastName,
+      phone: pendingReg.phone,
+      campusId: pendingReg.campusId,
+      role: pendingReg.role
+    });
+
+    // Send new verification email
+    try {
+      await sendVerificationEmail(email, newCode);
+      
+      logger.info(`Verification code resent to ${email}`);
+      
+      // In auto-verify mode, include code in response
+      if (isAutoVerifyEnabled()) {
+        return res.status(200).json({
+          success: true,
+          message: 'Verification email resent (AUTO-VERIFY MODE)',
+          data: {
+            email,
+            expiresIn: 600,
+            verificationCode: newCode // Only in dev mode!
+          }
+        });
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: 'Verification email resent. Please check your inbox.',
+        data: {
+          email,
+          expiresIn: 600
+        }
+      });
+    } catch (emailError: any) {
+      logger.error('Failed to resend verification email:', emailError);
+      throw new ApiError(500, 'Failed to resend verification email. Please try again later.');
+    }
   } catch (error) {
     next(error);
   }

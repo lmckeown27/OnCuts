@@ -4,6 +4,8 @@ import {
   register,
   login,
   verifyEmail,
+  verifyEmailRegistration,
+  resendVerificationCode,
   requestPasswordReset,
   resetPassword,
   refreshToken,
@@ -15,7 +17,7 @@ const router: Router = express.Router();
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register new user (student or barber)
+ * @desc    Register new user (creates pending registration, sends verification email)
  * @access  Public
  */
 router.post(
@@ -30,6 +32,35 @@ router.post(
     validate,
   ],
   register
+);
+
+/**
+ * @route   POST /api/auth/verify-email
+ * @desc    Verify email with 6-digit code (completes registration, creates user account)
+ * @access  Public
+ */
+router.post(
+  '/verify-email',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Verification code must be 6 digits'),
+    validate,
+  ],
+  verifyEmailRegistration
+);
+
+/**
+ * @route   POST /api/auth/resend-verification
+ * @desc    Resend verification code email
+ * @access  Public
+ */
+router.post(
+  '/resend-verification',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    validate,
+  ],
+  resendVerificationCode
 );
 
 /**
@@ -48,11 +79,11 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/verify-email
- * @desc    Verify email with token
+ * @route   POST /api/auth/verify-email-token
+ * @desc    Verify email with JWT token (legacy, for existing users)
  * @access  Public
  */
-router.post('/verify-email', verifyEmail);
+router.post('/verify-email-token', verifyEmail);
 
 /**
  * @route   POST /api/auth/request-password-reset
