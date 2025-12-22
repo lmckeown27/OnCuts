@@ -9,7 +9,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Prisma 7: url removed, pass to PrismaClient constructor instead
   extensions = [pgcrypto, pg_trgm]
 }
 
