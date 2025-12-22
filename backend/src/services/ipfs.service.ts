@@ -19,7 +19,7 @@
 
 import axios from 'axios';
 import FormData from 'form-data';
-import { create } from 'ipfs-http-client';
+import { create as createIPFSClient } from 'ipfs-http-client';
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
@@ -51,6 +51,7 @@ function isIPFSEnabled(): boolean {
  * Get IPFS HTTP Client
  * 
  * Connects to local IPFS node or Pinata IPFS gateway.
+ * Uses ipfs-http-client v56 (CommonJS compatible).
  * 
  * @returns IPFS HTTP client instance
  */
@@ -61,7 +62,8 @@ function getIPFSClient() {
     // Parse URL for explicit configuration
     const url = new URL(ipfsNodeUrl);
     
-    const client = create({
+    // v56 API: accepts URL string or options object
+    const client = createIPFSClient({
       host: url.hostname,
       port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 5001),
       protocol: url.protocol.replace(':', ''),
