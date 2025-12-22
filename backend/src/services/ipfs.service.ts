@@ -35,6 +35,9 @@ export interface IPFSUploadResult {
   pinataUrl?: string;
   gatewayUrl?: string;
   error?: string;
+  // Backward compatibility properties
+  cid?: string;  // Alias for pinataCID (primary CID)
+  url?: string;  // Alias for gatewayUrl
 }
 
 /**
@@ -331,6 +334,10 @@ export async function uploadToIPFS(
       result.pinataUrl = `https://gateway.pinata.cloud/ipfs/${pinataCID}`;
       result.gatewayUrl = `https://gateway.pinata.cloud/ipfs/${pinataCID}`;
       
+      // Backward compatibility
+      result.cid = pinataCID;
+      result.url = result.gatewayUrl;
+      
       logger.info(`✅ Pinata pinning successful: ${pinataCID}`);
       
       // If local failed but Pinata succeeded, still mark as success
@@ -348,6 +355,10 @@ export async function uploadToIPFS(
       result.success = true;
       result.error = `Pinata failed: ${error.message}`;
       result.gatewayUrl = `https://ipfs.io/ipfs/${result.localCID}`;
+      
+      // Backward compatibility
+      result.cid = result.localCID;
+      result.url = result.gatewayUrl;
     }
 
     // Verify CIDs match (they should!)
@@ -485,3 +496,85 @@ export function generateGatewayURLs(cid: string) {
     protocol: `ipfs://${cid}`
   };
 }
+
+/**
+ * Get Gateway URL (Helper for backward compatibility)
+ * 
+ * Returns the primary gateway URL for a CID.
+ * 
+ * @param cid - IPFS CID
+ * @returns Pinata gateway URL
+ */
+export function getGatewayUrl(cid: string): string {
+  return `https://gateway.pinata.cloud/ipfs/${cid}`;
+}
+
+/**
+ * Upload Profile Picture (Helper for backward compatibility)
+ * 
+ * @param buffer - Image buffer
+ * @param filename - Original filename
+ * @returns IPFS upload result
+ */
+export async function uploadProfilePicture(
+  buffer: Buffer,
+  filename: string
+): Promise<IPFSUploadResult> {
+  return uploadToIPFS(buffer, filename, {
+    name: 'Profile Picture',
+    keyvalues: {
+      type: 'profile',
+      timestamp: Date.now()
+    }
+  });
+}
+
+/**
+ * Upload Text to IPFS
+ * 
+ * @param text - Text content to upload
+ * @param filename - Filename for the text
+ * @returns IPFS upload result
+ */
+export async function uploadText(
+  text: string,
+  filename: string
+): Promise<IPFSUploadResult> {
+  const buffer = Buffer.from(text, 'utf-8');
+  return uploadToIPFS(buffer, filename, {
+    name: filename,
+    keyvalues: {
+      type: 'text',
+      timestamp: Date.now()
+    }
+  });
+}
+
+/**
+ * Fetch Text from IPFS
+ * 
+ * @param cid - IPFS CID
+ * @returns Text content
+ */
+export async function fetchText(cid: string): Promise<string> {
+  const buffer = await getFromIPFS(cid);
+  return buffer.toString('utf-8');
+}
+
+/**
+ * Default Export (for backward compatibility with existing controllers)
+ */
+export default {
+  uploadToIPFS,
+  uploadToLocalIPFS,
+  uploadToPinata,
+  uploadFileToLocalIPFS,
+  pinFileToPinata,
+  getFromIPFS,
+  verifyIPFSConnection,
+  generateGatewayURLs,
+  getGatewayUrl,
+  uploadProfilePicture,
+  uploadText,
+  fetchText
+};

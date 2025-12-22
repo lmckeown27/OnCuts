@@ -58,7 +58,7 @@ export const generateAccessToken = (payload: JwtPayload): string => {
   }
 
   // Default to 7 days if not specified
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  const expiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
 
   /**
    * JWT Signing Process:
@@ -71,10 +71,10 @@ export const generateAccessToken = (payload: JwtPayload): string => {
    * Result: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJpYXQiOjE3MDk...signature"
    */
   return jwt.sign(payload, secret, {
-    expiresIn,
+    expiresIn: expiresIn,
     issuer: 'campuscuts-api', // Identifies token issuer
     audience: 'campuscuts-client', // Identifies intended recipient
-  });
+  } as jwt.SignOptions);
 };
 
 /**
@@ -106,13 +106,13 @@ export const generateRefreshToken = (payload: JwtPayload): string => {
   }
 
   // Default to 30 days for refresh tokens
-  const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+  const expiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
   return jwt.sign(payload, secret, {
-    expiresIn,
+    expiresIn: expiresIn,
     issuer: 'campuscuts-api',
     audience: 'campuscuts-client',
-  });
+  } as jwt.SignOptions);
 };
 
 /**

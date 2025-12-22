@@ -458,10 +458,3 @@ export const getUserIdForRateLimit = (req: Request): string => {
   const authReq = req as AuthRequest;
   return authReq.user?.userId || req.ip || 'anonymous';
 };
-
-// Export all middleware for easy importing
-export {
-  JwtPayload,
-  AuthRequest,
-};
-

@@ -96,6 +96,45 @@ export function isAutoVerifyEnabled(): boolean {
 }
 
 /**
+ * Send Generic Email
+ * 
+ * Sends a generic email with subject and body.
+ * 
+ * @param to - Recipient email address
+ * @param subject - Email subject
+ * @param body - Email body (plain text or HTML)
+ * @returns Promise<void>
+ * 
+ * @example
+ * await sendEmail('admin@campuscuts.com', 'Alert', 'Gas wallet is low!');
+ */
+export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping email to ${to}, subject: ${subject}`);
+    return;
+  }
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCuts <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      text: body,
+      html: body.includes('<') ? body : `<p>${body.replace(/\n/g, '<br>')}</p>`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    
+    logger.info(`Email sent to ${to}`, { messageId: info.messageId, subject });
+  } catch (error: any) {
+    logger.error(`Failed to send email to ${to}:`, error.message);
+    throw new Error('Failed to send email. Please try again later.');
+  }
+}
+
+/**
  * Send Verification Email
  * 
  * Sends a 6-digit verification code to the user's email address.

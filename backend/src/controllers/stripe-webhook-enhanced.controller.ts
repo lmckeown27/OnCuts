@@ -279,7 +279,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
 
     const result = await client.query(updateQuery, [paymentIntent.id, bookingId]);
 
-    if (result.rowCount > 0) {
+    if (result.rowCount && result.rowCount > 0) {
       logger.info(`Booking ${bookingId} marked as payment_failed`);
     }
 
@@ -484,7 +484,7 @@ async function handleAccountUpdated(account: Stripe.Account) {
       userId || barberId,
     ]);
 
-    if (result.rowCount > 0) {
+    if (result.rowCount && result.rowCount > 0) {
       const user = result.rows[0];
       logger.info(`✅ Barber ${user.id} (${user.email}) Stripe Connect status updated`, {
         onboarded: isOnboarded,
