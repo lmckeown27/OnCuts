@@ -236,20 +236,44 @@ CUSTODIAL_ENCRYPTION_SECRET=change-this-to-a-very-long-random-string-min-32-char
 
 ### 4. **File Storage (IPFS via Pinata)**
 
-#### **PINATA_API_KEY, PINATA_SECRET_API_KEY, PINATA_JWT**
-- **What:** Pinata credentials for IPFS file uploads
-- **Purpose:** Store barber portfolio images, profile photos on decentralized storage
+#### **IPFS Configuration: Local Node + Pinata Pinning**
+
+CampusCuts uses a **two-tier IPFS storage strategy**:
+1. **Local IPFS Node** (optional, fast uploads)
+2. **Pinata** (required, permanent pinning)
+
+#### **USE_IPFS**
+- **What:** Enable/disable IPFS uploads
+- **Purpose:** Toggle IPFS functionality on/off
+- **Options:** `true` or `false`
+- **Default:** `false` (local storage only)
+
+#### **IPFS_NODE_URL**
+- **What:** URL of your local IPFS node
+- **Purpose:** Fast local uploads before pinning to Pinata
+- **Default:** `http://localhost:5001`
+- **Cost:** FREE
+- **Optional:** Can skip and use Pinata only
+
+#### **PINATA_API_KEY, PINATA_API_SECRET**
+- **What:** Pinata credentials for IPFS file pinning
+- **Purpose:** Permanently store barber portfolio images, profile photos on decentralized storage
 - **Where to Get:** [Pinata Cloud](https://app.pinata.cloud/)
-- **Cost:** FREE tier (1GB storage, 100GB bandwidth/month)
-- **Paid:** $20/month (100GB storage)
+- **Cost:** FREE tier (1GB storage, unlimited bandwidth)
+- **Paid:** Starting at $20/month (higher storage limits)
 
 ```bash
 # Backend .env
-PINATA_API_KEY=your-pinata-api-key-here
-PINATA_SECRET_API_KEY=your-pinata-secret-api-key-here
-PINATA_JWT=your-pinata-jwt-token-here
-IPFS_GATEWAY_URL=https://gateway.pinata.cloud/ipfs
-IPFS_API_URL=https://api.pinata.cloud
+
+# Enable IPFS
+USE_IPFS=true
+
+# Local IPFS node (optional - install IPFS Desktop)
+IPFS_NODE_URL=http://localhost:5001
+
+# Pinata credentials (required)
+PINATA_API_KEY=your_pinata_api_key_here
+PINATA_API_SECRET=your_pinata_api_secret_here
 ```
 
 **How to Get Pinata Keys:**
@@ -257,14 +281,38 @@ IPFS_API_URL=https://api.pinata.cloud
 2. Go to **API Keys** section
 3. Click **New Key**
 4. Enable **pinFileToIPFS** and **pinJSONToIPFS** permissions
-5. Copy API Key, Secret Key, and JWT
+5. Copy **API Key** and **API Secret** (NOT JWT)
 6. Paste into `.env` file
 
+**How to Install Local IPFS Node (Optional but Recommended):**
+1. Download IPFS Desktop: https://docs.ipfs.tech/install/ipfs-desktop/
+2. Install and run IPFS Desktop
+3. IPFS node will run at `http://localhost:5001`
+4. Or use CLI: `ipfs daemon`
+
 **Why IPFS?**
-- Decentralized (no single point of failure)
-- Permanent storage (content-addressed)
-- Blockchain-native (NFT metadata standard)
-- Censorship-resistant
+- ✅ Decentralized (no single point of failure)
+- ✅ Permanent storage (content-addressed, can't be deleted)
+- ✅ Blockchain-native (NFT metadata standard)
+- ✅ Censorship-resistant (no central authority)
+- ✅ Verifiable (CID proves file integrity)
+
+**What happens when you upload:**
+1. File is processed and saved locally (fallback/cache)
+2. File is uploaded to local IPFS node (fast, returns CID)
+3. File is pinned to Pinata (permanent, distributed)
+4. Response includes local URL + IPFS CID + gateway URLs
+
+**Testing IPFS:**
+```bash
+# Test IPFS connection
+npx ts-node backend/scripts/test-ipfs.ts
+
+# Should output:
+# ✅ Local IPFS Node: Connected
+# ✅ Pinata API: Connected
+# 🎉 All systems operational!
+```
 
 ---
 
@@ -669,14 +717,46 @@ sudo systemctl start postgresql
 psql $DATABASE_URL
 ```
 
-### Issue: "IPFS upload failed"
+### Issue: "IPFS upload failed" or "IPFS is disabled"
 
+**Solution 1: Enable IPFS**
 ```bash
-# Test Pinata credentials
-curl -X GET "https://api.pinata.cloud/data/testAuthentication" \
-  -H "Authorization: Bearer $PINATA_JWT"
+# Add to backend/.env
+USE_IPFS=true
+```
+
+**Solution 2: Test Pinata credentials**
+```bash
+# Test with API key/secret (new method)
+curl -X GET https://api.pinata.cloud/data/testAuthentication \
+  -H "pinata_api_key: YOUR_API_KEY" \
+  -H "pinata_secret_api_key: YOUR_API_SECRET"
 
 # Should return: {"message":"Congratulations! You are communicating with the Pinata API!"}
+```
+
+**Solution 3: Test IPFS connection**
+```bash
+# Run the test script
+npx ts-node backend/scripts/test-ipfs.ts
+
+# This will check:
+# - IPFS enabled status
+# - Local IPFS node connection
+# - Pinata API connection
+# - Test file upload
+```
+
+**Solution 4: Install local IPFS node (optional)**
+```bash
+# Download IPFS Desktop from:
+# https://docs.ipfs.tech/install/ipfs-desktop/
+
+# Or use CLI:
+ipfs daemon
+
+# Verify it's running:
+curl http://localhost:5001/api/v0/version
 ```
 
 ### Issue: "Insufficient gas fees"

@@ -1,17 +1,34 @@
 /**
  * Upload Routes for CampusCuts
  * Handles image uploads for barber portfolios and profile pictures
+ * 
+ * ## IPFS Integration:
+ * - Files are uploaded to local IPFS node first (fast)
+ * - Then pinned to Pinata for permanent storage (reliable)
+ * - Falls back to local storage if IPFS is disabled
+ * 
+ * Set USE_IPFS=true in .env to enable IPFS uploads
  */
 
 import express from 'express';
 import imageService from '../services/image.service';
 import { authenticate } from '../middleware/auth';
+import { uploadToIPFS, IPFSUploadResult } from '../services/ipfs.service';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
 
 /**
  * POST /api/upload/portfolio
  * Upload barber portfolio images (multiple)
+ * 
+ * ## IPFS Integration:
+ * If USE_IPFS=true, each image is:
+ * 1. Processed and saved locally
+ * 2. Uploaded to local IPFS node
+ * 3. Pinned to Pinata for permanent storage
+ * 
+ * Response includes both local URLs and IPFS CIDs
  */
 router.post(
   '/portfolio',
@@ -32,18 +49,59 @@ router.post(
       const processedImages = [];
 
       for (const file of files) {
+        // Process image locally
         const result = await imageService.processPortfolioImage(file.buffer);
-        processedImages.push({
+        
+        const imageData: any = {
           url: imageService.generateImageUrl(result.original),
           thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
           filename: result.original,
-        });
+        };
+
+        // Upload to IPFS (if enabled)
+        if (process.env.USE_IPFS === 'true') {
+          try {
+            const ipfsResult = await uploadToIPFS(
+              file.buffer,
+              file.originalname,
+              {
+                name: `Portfolio Image - ${userId}`,
+                keyvalues: {
+                  userId,
+                  type: 'portfolio',
+                  timestamp: Date.now()
+                }
+              }
+            );
+
+            if (ipfsResult.success) {
+              imageData.ipfs = {
+                localCID: ipfsResult.localCID,
+                pinataCID: ipfsResult.pinataCID,
+                gatewayUrl: ipfsResult.gatewayUrl,
+                ipfsUrl: ipfsResult.ipfsUrl
+              };
+              
+              logger.info(`Portfolio image uploaded to IPFS: ${ipfsResult.pinataCID}`);
+            } else {
+              logger.warn(`IPFS upload failed for portfolio image: ${ipfsResult.error}`);
+            }
+          } catch (ipfsError: any) {
+            logger.error(`IPFS upload error:`, ipfsError.message);
+            // Continue without IPFS - local storage is fallback
+          }
+        }
+
+        processedImages.push(imageData);
       }
 
       res.json({
         success: true,
         message: 'Portfolio images uploaded successfully',
-        data: { images: processedImages },
+        data: { 
+          images: processedImages,
+          ipfsEnabled: process.env.USE_IPFS === 'true'
+        },
       });
     } catch (error) {
       next(error);
@@ -54,6 +112,10 @@ router.post(
 /**
  * POST /api/upload/profile-picture
  * Upload profile picture (single)
+ * 
+ * ## IPFS Integration:
+ * Profile pictures are uploaded to both local storage and IPFS (if enabled).
+ * IPFS ensures the profile picture is permanently available.
  */
 router.post(
   '/profile-picture',
@@ -71,16 +133,53 @@ router.post(
         });
       }
 
+      // Process image locally
       const result = await imageService.processProfilePicture(file.buffer);
+
+      const responseData: any = {
+        url: imageService.generateImageUrl(result.original),
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
+        filename: result.original,
+      };
+
+      // Upload to IPFS (if enabled)
+      if (process.env.USE_IPFS === 'true') {
+        try {
+          const ipfsResult = await uploadToIPFS(
+            file.buffer,
+            file.originalname,
+            {
+              name: `Profile Picture - ${userId}`,
+              keyvalues: {
+                userId,
+                type: 'profile',
+                timestamp: Date.now()
+              }
+            }
+          );
+
+          if (ipfsResult.success) {
+            responseData.ipfs = {
+              localCID: ipfsResult.localCID,
+              pinataCID: ipfsResult.pinataCID,
+              gatewayUrl: ipfsResult.gatewayUrl,
+              ipfsUrl: ipfsResult.ipfsUrl
+            };
+            
+            logger.info(`Profile picture uploaded to IPFS: ${ipfsResult.pinataCID}`);
+          } else {
+            logger.warn(`IPFS upload failed for profile picture: ${ipfsResult.error}`);
+          }
+        } catch (ipfsError: any) {
+          logger.error(`IPFS upload error:`, ipfsError.message);
+          // Continue without IPFS - local storage is fallback
+        }
+      }
 
       res.json({
         success: true,
         message: 'Profile picture uploaded successfully',
-        data: {
-          url: imageService.generateImageUrl(result.original),
-          thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
-          filename: result.original,
-        },
+        data: responseData,
       });
     } catch (error) {
       next(error);
@@ -91,6 +190,9 @@ router.post(
 /**
  * POST /api/upload/chat-image
  * Upload image in chat conversation
+ * 
+ * ## IPFS Integration:
+ * Chat images can be uploaded to IPFS for permanent, decentralized storage.
  */
 router.post(
   '/chat-image',
@@ -108,19 +210,54 @@ router.post(
         });
       }
 
+      // Process image locally
       const result = await imageService.processAndSaveImage(file.buffer, 'chat', {
         width: 800,
         height: 800,
         quality: 80,
       });
 
+      const responseData: any = {
+        url: imageService.generateImageUrl(result.original),
+        filename: result.original,
+      };
+
+      // Upload to IPFS (if enabled)
+      if (process.env.USE_IPFS === 'true') {
+        try {
+          const ipfsResult = await uploadToIPFS(
+            file.buffer,
+            file.originalname,
+            {
+              name: `Chat Image - ${userId}`,
+              keyvalues: {
+                userId,
+                type: 'chat',
+                timestamp: Date.now()
+              }
+            }
+          );
+
+          if (ipfsResult.success) {
+            responseData.ipfs = {
+              localCID: ipfsResult.localCID,
+              pinataCID: ipfsResult.pinataCID,
+              gatewayUrl: ipfsResult.gatewayUrl,
+              ipfsUrl: ipfsResult.ipfsUrl
+            };
+            
+            logger.info(`Chat image uploaded to IPFS: ${ipfsResult.pinataCID}`);
+          }
+        } catch (ipfsError: any) {
+          logger.error(`IPFS upload error:`, ipfsError.message);
+          // Continue without IPFS
+        }
+      }
+
       res.json({
         success: true,
         message: 'Chat image uploaded successfully',
-        data: {
-          url: imageService.generateImageUrl(result.original),
-          filename: result.original,
-        },
+        data: responseData,
       });
     } catch (error) {
       next(error);
