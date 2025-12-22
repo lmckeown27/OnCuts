@@ -223,15 +223,23 @@ async function verifyIntegration() {
     const testData = Buffer.from('CampusCuts Integration Test', 'utf-8');
     const result = await ipfsService.uploadText('Integration Test', 'test.txt');
     
+    const cid = result.cid || result.pinataCID || result.localCID || 'unknown';
+    
     results.push({
       name: 'IPFS Upload',
-      status: 'pass',
-      message: `Successfully uploaded test file (CID: ${result.cid.substring(0, 10)}...)`,
+      status: result.success ? 'pass' : 'fail',
+      message: result.success 
+        ? `Successfully uploaded test file (CID: ${cid.substring(0, 10)}...)`
+        : `IPFS upload failed: ${result.error || 'Unknown error'}`,
       required: true,
     });
     
-    logger.info(`✅ IPFS service working`);
-    logger.info(`   Test upload CID: ${result.cid}`);
+    if (result.success) {
+      logger.info(`✅ IPFS service working`);
+      logger.info(`   Test upload CID: ${cid}`);
+    } else {
+      throw new Error(result.error || 'IPFS upload failed');
+    }
   } catch (error) {
     results.push({
       name: 'IPFS Upload',
