@@ -13,7 +13,8 @@
     "verify": "ts-node src/scripts/verify-integration.ts",
     "check": "npm run verify",
     "migrate:deploy": "npx prisma migrate deploy",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts"
   },
   "keywords": [
     "aptos",
