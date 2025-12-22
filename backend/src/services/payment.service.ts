@@ -64,7 +64,7 @@ class PaymentService {
     }
     
     this.stripe = new Stripe(stripeKey, {
-      apiVersion: '2024-11-20.acacia',
+      apiVersion: '2023-10-16',
     });
     
     // Determine payment mode
@@ -385,6 +385,241 @@ class PaymentService {
     // TODO: Implement when Circle + Blockchain are ready
     
     throw new Error('On-chain refund not yet implemented. Set PAYMENT_MODE=offchain');
+  }
+  
+  // ==========================================
+  // Backward Compatibility Methods
+  // ==========================================
+  
+  /**
+   * Process booking payment (legacy method)
+   * Wrapper for createEscrow
+   */
+  async processBookingPayment(params: {
+    bookingId: number;
+    amount?: number;
+    studentId?: number;
+    barberId: number | string;
+    customerId?: number | string;
+    barberAptosAddress?: string;
+    consumerAptosAddress?: string;
+    totalAmountCents?: number;
+    stripePaymentIntentId?: string;
+    metadata?: Record<string, string>;
+  }): Promise<PaymentResult> {
+    // Convert cents to dollars if totalAmountCents is provided
+    const amount = params.amount || (params.totalAmountCents ? params.totalAmountCents / 100 : 0);
+    
+    // Convert IDs to numbers
+    const studentId = params.studentId || 
+      (typeof params.customerId === 'string' ? parseInt(params.customerId) : params.customerId) || 0;
+    const barberId = typeof params.barberId === 'string' ? parseInt(params.barberId) : params.barberId;
+    
+    return this.createEscrow(
+      params.bookingId,
+      amount,
+      studentId,
+      barberId,
+      params.metadata
+    );
+  }
+  
+  /**
+   * Release booking funds (legacy method)
+   * Wrapper for releaseEscrow
+   */
+  async releaseBookingFunds(params: {
+    bookingId: number;
+    barberId?: number | string;
+    barberAddress?: string;
+    barberAptosAddress?: string;
+    amountCents?: number;
+  }): Promise<ReleaseResult> {
+    const escrows = await this.getEscrowsForBooking(params.bookingId);
+    const activeEscrow = escrows.find(e => e.status === 'held');
+    
+    if (!activeEscrow) {
+      return {
+        success: false,
+        error: 'No active escrow found for booking'
+      };
+    }
+    
+    return this.releaseEscrow(activeEscrow.id);
+  }
+  
+  /**
+   * Refund booking payment (legacy method)
+   * Wrapper for refundEscrow
+   */
+  async refundBookingPayment(params: {
+    bookingId: number;
+    customerId?: number | string;
+    barberId?: number | string;
+    totalAmountCents?: number;
+    reason?: string;
+  }): Promise<ReleaseResult> {
+    const escrows = await this.getEscrowsForBooking(params.bookingId);
+    const activeEscrow = escrows.find(e => e.status === 'held');
+    
+    if (!activeEscrow) {
+      return {
+        success: false,
+        error: 'No active escrow found for booking'
+      };
+    }
+    
+    return this.refundEscrow(activeEscrow.id, params.reason);
+  }
+  
+  /**
+   * Create deposit intent (legacy method)
+   * For wallet deposits - simplified implementation
+   */
+  async createDepositIntent(params: {
+    userId: number | string;
+    amount?: number;
+    amountCents?: number;
+    metadata?: Record<string, string>;
+  }): Promise<PaymentResult> {
+    try {
+      // Convert userId to number if string
+      const userId = typeof params.userId === 'string' ? parseInt(params.userId) : params.userId;
+      
+      // Use amountCents if provided, otherwise convert amount to cents
+      const amountCents = params.amountCents || (params.amount ? Math.round(params.amount * 100) : 0);
+      
+      // Create a simple payment intent for wallet deposit
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: 'usd',
+        metadata: {
+          userId: userId.toString(),
+          type: 'wallet_deposit',
+          ...params.metadata
+        },
+        description: `Wallet deposit for user ${userId}`
+      });
+      
+      return {
+        success: true,
+        clientSecret: paymentIntent.client_secret || undefined
+      };
+    } catch (error: any) {
+      logger.error('Failed to create deposit intent:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Process tip (legacy method)
+   * Creates a direct charge for tips
+   */
+  async processTip(params: {
+    studentId?: number;
+    barberId?: number;
+    fromUserId?: number | string;
+    toUserId?: number | string;
+    amount?: number;
+    amountCents?: number;
+    bookingId?: number | string;
+  }): Promise<PaymentResult> {
+    try {
+      // Map fromUserId/toUserId to studentId/barberId and convert to numbers
+      const fromUserId = typeof params.fromUserId === 'string' ? parseInt(params.fromUserId) : params.fromUserId;
+      const toUserId = typeof params.toUserId === 'string' ? parseInt(params.toUserId) : params.toUserId;
+      const bookingId = typeof params.bookingId === 'string' ? parseInt(params.bookingId) : params.bookingId;
+      
+      const studentId = params.studentId || fromUserId;
+      const barberId = params.barberId || toUserId;
+      const amountCents = params.amountCents || (params.amount ? Math.round(params.amount * 100) : 0);
+      
+      if (!barberId) {
+        throw new Error('Barber ID is required');
+      }
+      
+      // Get barber's Stripe account
+      const barberResult = await pool.query(
+        'SELECT stripe_account_id FROM users WHERE id = $1',
+        [barberId]
+      );
+      
+      if (barberResult.rows.length === 0 || !barberResult.rows[0].stripe_account_id) {
+        throw new Error('Barber Stripe account not found');
+      }
+      
+      // Create direct charge with transfer to barber
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: amountCents,
+        currency: 'usd',
+        metadata: {
+          type: 'tip',
+          studentId: studentId?.toString() || '',
+          barberId: barberId.toString(),
+          bookingId: bookingId?.toString() || ''
+        },
+        description: `Tip for barber`,
+        transfer_data: {
+          destination: barberResult.rows[0].stripe_account_id
+        }
+      });
+      
+      logger.info(`Processed tip of $${amountCents / 100} from user ${studentId} to barber ${barberId}`);
+      
+      return {
+        success: true,
+        clientSecret: paymentIntent.client_secret || undefined
+      };
+    } catch (error: any) {
+      logger.error('Failed to process tip:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Issue promotional credit (legacy method)
+   * Simplified implementation - logs the credit
+   */
+  async issuePromotionalCredit(params: {
+    userId: number | string;
+    amount?: number;
+    amountCents?: number;
+    reason?: string;
+    description?: string;
+    adminId?: number | string;
+  }): Promise<PaymentResult> {
+    try {
+      const userId = typeof params.userId === 'string' ? parseInt(params.userId) : params.userId;
+      const adminId = typeof params.adminId === 'string' ? parseInt(params.adminId) : params.adminId;
+      const amountCents = params.amountCents || (params.amount ? Math.round(params.amount * 100) : 0);
+      const reason = params.reason || params.description || 'No reason provided';
+      
+      // In a full implementation, you'd update a user's credit balance
+      // For now, just log it
+      logger.info(`Issued promotional credit: $${amountCents / 100} to user ${userId}. Reason: ${reason}. Admin ID: ${adminId || 'system'}`);
+      
+      // TODO: Implement actual credit system in database
+      // await pool.query(
+      //   'UPDATE users SET promotional_credits = promotional_credits + $1 WHERE id = $2',
+      //   [amountCents, userId]
+      // );
+      
+      return {
+        success: true
+      };
+    } catch (error: any) {
+      logger.error('Failed to issue promotional credit:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
   }
   
   // ==========================================

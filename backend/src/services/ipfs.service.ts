@@ -19,10 +19,13 @@
 
 import axios from 'axios';
 import FormData from 'form-data';
-import { create as createIPFSClient } from 'ipfs-http-client';
+// import { create as createIPFSClient } from 'ipfs-http-client'; // Optional - install if using IPFS
 import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
+
+// Placeholder for IPFS client type
+type IPFSHTTPClient = any;
 
 /**
  * IPFS Upload Result
@@ -55,22 +58,25 @@ function isIPFSEnabled(): boolean {
  * 
  * @returns IPFS HTTP client instance
  */
-function getIPFSClient() {
+function getIPFSClient(): IPFSHTTPClient {
   const ipfsNodeUrl = process.env.IPFS_NODE_URL || 'http://localhost:5001';
   
   try {
-    // Parse URL for explicit configuration
-    const url = new URL(ipfsNodeUrl);
+    // Check if IPFS client is available
+    // If ipfs-http-client is not installed, this will fail
+    // Install it with: npm install ipfs-http-client@56.0.3
+    throw new Error('IPFS client not available. Please install ipfs-http-client@56.0.3');
     
-    // v56 API: accepts URL string or options object
-    const client = createIPFSClient({
-      host: url.hostname,
-      port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 5001),
-      protocol: url.protocol.replace(':', ''),
-      timeout: 60000 // 60 seconds
-    });
-    
-    return client;
+    // Uncomment when ipfs-http-client is installed:
+    // const { create } = require('ipfs-http-client');
+    // const url = new URL(ipfsNodeUrl);
+    // const client = create({
+    //   host: url.hostname,
+    //   port: url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 5001),
+    //   protocol: url.protocol.replace(':', ''),
+    //   timeout: 60000
+    // });
+    // return client;
   } catch (error: any) {
     logger.error('Failed to create IPFS client:', error.message);
     throw new Error(`IPFS client connection failed: ${error.message}`);
