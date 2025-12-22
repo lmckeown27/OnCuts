@@ -1,565 +1,414 @@
 /**
- * Payment Service
+ * Payment Service - Unified Payment Interface
  * 
- * Orchestrates the USDC-based payment flow:
- * 1. Consumer pays USD via Stripe
- * 2. Convert USD → USDC via Circle
- * 3. Lock USDC in smart contract escrow
- * 4. Service happens
- * 5. Release USDC to barber (95%) and platform (5%)
- * 6. Convert USDC → USD for barber payout
+ * Supports both off-chain (Stripe) and on-chain (Circle + Blockchain) payments
+ * Current mode: OFF-CHAIN (Stripe only)
  * 
- * Gas fees paid separately by platform's APT wallet
+ * Architecture allows seamless migration to on-chain when needed.
  */
 
 import Stripe from 'stripe';
 import { logger } from '../utils/logger';
-import { ApiError } from '../middleware/errorHandler';
-import ledgerService from './ledger.service';
-import stripeService from './stripe.service';
-import usdcService from './usdc.service';
-import gasWalletService from './gas-wallet.service';
-import aptosService from './aptos.service';
-import {
-  TransactionType,
-  BalanceType,
-  dollarsToCents,
-  centsToDollars,
-} from '../types/wallet.types';
+import { pool } from '../database/connection';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+// ==========================================
+// Types & Interfaces
+// ==========================================
+
+export interface Escrow {
+  id: string;
+  bookingId: number;
+  amount: number;
+  status: 'pending' | 'held' | 'released' | 'refunded' | 'failed';
+  type: 'offchain' | 'onchain';
+  
+  // Off-chain fields (Stripe)
+  stripePaymentIntentId?: string;
+  stripeTransferId?: string;
+  
+  // On-chain fields (future)
+  blockchainTxHash?: string;
+  blockchainEscrowId?: string;
+  usdcAmount?: number;
+  
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PaymentResult {
+  success: boolean;
+  escrow?: Escrow;
+  error?: string;
+  clientSecret?: string; // For Stripe payment confirmation
+}
+
+export interface ReleaseResult {
+  success: boolean;
+  transferId?: string;
+  error?: string;
+}
+
+// ==========================================
+// Payment Service Class
+// ==========================================
 
 class PaymentService {
-  /**
-   * Process deposit (user adds funds via Stripe)
-   * This is the ONLY way money enters the CampusCuts ecosystem
-   */
-  async processDeposit(params: {
-    userId: string;
-    amountCents: number;
-    paymentMethodId: string;
-    description?: string;
-  }): Promise<{ success: boolean; ledgerEntryId: string; stripeChargeId: string }> {
-    const { userId, amountCents, paymentMethodId, description } = params;
-
-    try {
-      // 1. Create and confirm Stripe payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountCents,
-        currency: 'usd',
-        payment_method: paymentMethodId,
-        confirm: true,
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: 'never',
-        },
-        description: description || 'CampusCuts wallet deposit',
-        metadata: {
-          user_id: userId,
-          type: 'deposit',
-        },
-      });
-
-      if (paymentIntent.status !== 'succeeded') {
-        throw new ApiError(400, 'Payment failed');
-      }
-
-      // 2. Credit user's available balance in ledger
-      const ledgerEntry = await ledgerService.createLedgerEntry({
-        user_id: userId,
-        amount: amountCents,
-        type: TransactionType.DEPOSIT,
-        balance_type: BalanceType.AVAILABLE,
-        reference_type: 'stripe_payment_intent',
-        reference_id: paymentIntent.id,
-        description: `Deposit via payment method ${paymentMethodId.substring(0, 10)}...`,
-        metadata: {
-          stripe_payment_intent_id: paymentIntent.id,
-          payment_method_id: paymentMethodId,
-        },
-      });
-
-      logger.info('Deposit processed successfully', {
-        user_id: userId,
-        amount: centsToDollars(amountCents),
-        payment_intent_id: paymentIntent.id,
-        ledger_entry_id: ledgerEntry.id,
-      });
-
-      return {
-        success: true,
-        ledgerEntryId: ledgerEntry.id,
-        stripeChargeId: paymentIntent.id,
-      };
-    } catch (error: any) {
-      logger.error('Deposit processing failed', {
-        user_id: userId,
-        amount: centsToDollars(amountCents),
-        error: error.message,
-      });
-      throw error;
+  private stripe: Stripe;
+  private paymentMode: 'offchain' | 'onchain';
+  
+  constructor() {
+    // Initialize Stripe
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      throw new Error('STRIPE_SECRET_KEY not configured');
     }
-  }
-
-  /**
-   * Create payment intent for deposit (for use with Stripe Elements)
-   */
-  async createDepositIntent(params: {
-    userId: string;
-    amountCents: number;
-  }): Promise<{ clientSecret: string; paymentIntentId: string }> {
-    const { userId, amountCents } = params;
-
-    try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amountCents,
-        currency: 'usd',
-        automatic_payment_methods: { enabled: true },
-        metadata: {
-          user_id: userId,
-          type: 'deposit',
-        },
-        description: 'CampusCuts wallet deposit',
-      });
-
-      return {
-        clientSecret: paymentIntent.client_secret!,
-        paymentIntentId: paymentIntent.id,
-      };
-    } catch (error: any) {
-      logger.error('Failed to create deposit intent', {
-        user_id: userId,
-        error: error.message,
-      });
-      throw new ApiError(500, 'Failed to create payment intent');
-    }
-  }
-
-  /**
-   * Handle deposit confirmation from Stripe webhook
-   * Call this when receiving payment_intent.succeeded webhook
-   */
-  async confirmDeposit(paymentIntentId: string): Promise<void> {
-    try {
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-      if (paymentIntent.status !== 'succeeded') {
-        throw new ApiError(400, 'Payment not successful');
-      }
-
-      const userId = paymentIntent.metadata.user_id;
-      if (!userId) {
-        throw new ApiError(400, 'Missing user_id in payment metadata');
-      }
-
-      // Credit user's balance
-      await ledgerService.createLedgerEntry({
-        user_id: userId,
-        amount: paymentIntent.amount,
-        type: TransactionType.DEPOSIT,
-        balance_type: BalanceType.AVAILABLE,
-        reference_type: 'stripe_payment_intent',
-        reference_id: paymentIntentId,
-        description: 'Deposit confirmed',
-        metadata: {
-          stripe_payment_intent_id: paymentIntentId,
-        },
-      });
-
-      logger.info('Deposit confirmed via webhook', {
-        user_id: userId,
-        amount: centsToDollars(paymentIntent.amount),
-        payment_intent_id: paymentIntentId,
-      });
-    } catch (error: any) {
-      logger.error('Failed to confirm deposit', {
-        payment_intent_id: paymentIntentId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Process booking payment through USDC escrow
-   * 
-   * Full flow:
-   * 1. Stripe payment confirmed ($25 USD)
-   * 2. Convert $25 → 25 USDC via Circle
-   * 3. Create escrow on Aptos smart contract (locks 25 USDC)
-   * 4. Update booking status to "paid"
-   * 
-   * Gas: Paid by platform's APT wallet
-   */
-  async processBookingPayment(params: {
-    bookingId: string;
-    customerId: string;
-    barberId: string;
-    barberAptosAddress: string;
-    consumerAptosAddress: string;
-    totalAmountCents: number;
-    stripePaymentIntentId: string;
-  }): Promise<{ escrowTxHash: string; usdcAmount: number }> {
-    const {
-      bookingId,
-      customerId,
-      barberId,
-      barberAptosAddress,
-      consumerAptosAddress,
-      totalAmountCents,
-      stripePaymentIntentId,
-    } = params;
-
-    try {
-      const amountUsd = centsToDollars(totalAmountCents);
-
-      logger.info('💳 Starting USDC booking payment flow', {
-        booking_id: bookingId,
-        amount_usd: amountUsd,
-        barber_id: barberId,
-        consumer_id: customerId,
-      });
-
-      // Step 1: Convert USD to USDC via Circle
-      const usdcConversion = await usdcService.convertUsdToUsdc(
-        amountUsd,
-        process.env.APTOS_PLATFORM_ADDRESS!, // Platform's custodial wallet
-        {
-          bookingId,
-          userId: customerId,
-          description: `Booking payment for ${bookingId}`,
-        }
-      );
-
-      logger.info('✅ USD → USDC conversion successful', {
-        transfer_id: usdcConversion.transferId,
-        amount_usdc: usdcConversion.amountUsdc,
-      });
-
-      // Step 2: Wait for USDC to arrive on-chain (typically 1-5 minutes)
-      // In production, use webhook to detect arrival. For now, poll.
-      await this.waitForUsdcArrival(usdcConversion.transferId, 30000); // 30 sec timeout
-
-      // Step 3: Create escrow on smart contract
-      // This locks the USDC until service completion
-      const escrowTxHash = await aptosService.createUsdcEscrow({
-        bookingId,
-        amountUsdc: usdcConversion.amountUsdc,
-        barberAddress: barberAptosAddress,
-        consumerAddress: consumerAptosAddress,
-        stripePaymentId: stripePaymentIntentId,
-      });
-
-      logger.info('🔒 USDC locked in escrow', {
-        booking_id: bookingId,
-        tx_hash: escrowTxHash,
-        amount_usdc: usdcConversion.amountUsdc,
-      });
-
-      // Step 4: Log gas usage
-      await gasWalletService.logGasUsage({
-        transaction_hash: escrowTxHash,
-        transaction_type: 'create_escrow',
-        gas_used_apt: gasWalletService.estimateGasCost('create_escrow'),
-        booking_id: bookingId,
-      });
-
-      // Step 5: Update ledger for tracking (optional - blockchain is source of truth)
-      await ledgerService.processBookingPayment({
-        booking_id: bookingId,
-        customer_id: customerId,
-        barber_id: barberId,
-        total_amount: totalAmountCents,
-        platform_fee: Math.floor(totalAmountCents * 0.05),
-        tip_amount: 0,
-      });
-
-      return {
-        escrowTxHash,
-        usdcAmount: usdcConversion.amountUsdc,
-      };
-    } catch (error: any) {
-      logger.error('❌ USDC booking payment failed', {
-        booking_id: bookingId,
-        error: error.message,
-      });
-      throw new ApiError(500, `Payment processing failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Wait for USDC to arrive on-chain after Circle transfer
-   * Polls Circle API until status is 'complete'
-   */
-  private async waitForUsdcArrival(transferId: string, timeoutMs: number): Promise<void> {
-    const startTime = Date.now();
-    const pollInterval = 2000; // Check every 2 seconds
-
-    while (Date.now() - startTime < timeoutMs) {
-      const status = await usdcService.getTransferStatus(transferId);
-
-      if (status.status === 'complete') {
-        logger.info('✅ USDC transfer confirmed on-chain', { transfer_id: transferId });
-        return;
-      } else if (status.status === 'failed') {
-        throw new ApiError(500, 'USDC transfer failed');
-      }
-
-      // Wait before next poll
-      await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    }
-
-    throw new ApiError(504, 'USDC transfer timeout - payment may still be processing');
-  }
-
-  /**
-   * Process tip
-   */
-  async processTip(params: {
-    fromUserId: string;
-    toUserId: string;
-    amountCents: number;
-    bookingId?: string;
-  }): Promise<void> {
-    const { fromUserId, toUserId, amountCents, bookingId } = params;
-
-    await ledgerService.internalTransfer({
-      from_user_id: fromUserId,
-      to_user_id: toUserId,
-      amount: amountCents,
-      type: TransactionType.TIP,
-      reference_type: bookingId ? 'booking' : undefined,
-      reference_id: bookingId,
-      description: bookingId 
-        ? `Tip for booking ${bookingId}` 
-        : 'Tip',
+    
+    this.stripe = new Stripe(stripeKey, {
+      apiVersion: '2024-11-20.acacia',
     });
-
-    logger.info('Tip processed', {
-      from: fromUserId,
-      to: toUserId,
-      amount: centsToDollars(amountCents),
-      booking_id: bookingId,
-    });
+    
+    // Determine payment mode
+    this.paymentMode = (process.env.PAYMENT_MODE as 'offchain' | 'onchain') || 'offchain';
+    
+    logger.info(`Payment Service initialized in ${this.paymentMode.toUpperCase()} mode`);
   }
-
+  
+  // ==========================================
+  // Public API - Works for Both Modes
+  // ==========================================
+  
   /**
-   * Refund booking payment
+   * Create payment escrow
+   * Off-chain: Creates Stripe PaymentIntent with manual capture
+   * On-chain: Converts to USDC and creates blockchain escrow
    */
-  async refundBookingPayment(params: {
-    bookingId: string;
-    customerId: string;
-    barberId: string;
-    totalAmountCents: number;
-    partialAmountCents?: number;
-  }): Promise<void> {
-    const { bookingId, customerId, barberId, totalAmountCents, partialAmountCents } = params;
-
-    const refundAmount = partialAmountCents || totalAmountCents;
-
-    await ledgerService.internalTransfer({
-      from_user_id: barberId,
-      to_user_id: customerId,
-      amount: refundAmount,
-      type: TransactionType.BOOKING_REFUND,
-      reference_type: 'booking',
-      reference_id: bookingId,
-      description: `Refund for booking ${bookingId}`,
-    });
-
-    logger.info('Booking payment refunded', {
-      booking_id: bookingId,
-      customer_id: customerId,
-      barber_id: barberId,
-      refund_amount: centsToDollars(refundAmount),
-    });
-  }
-
-  /**
-   * Release USDC funds when service is completed
-   * 
-   * Flow:
-   * 1. Call smart contract to release escrow
-   * 2. USDC automatically splits: 95% barber, 5% platform
-   * 3. Barber can request payout (USDC → USD) anytime
-   * 
-   * Gas: Paid by platform's APT wallet
-   */
-  async releaseBookingFunds(params: {
-    bookingId: string;
-    barberId: string;
-    barberAptosAddress: string;
-    amountCents: number;
-  }): Promise<{ releaseTxHash: string }> {
-    const { bookingId, barberId, barberAptosAddress, amountCents } = params;
-
+  async createEscrow(
+    bookingId: number,
+    amount: number,
+    studentId: number,
+    barberId: number,
+    metadata?: Record<string, string>
+  ): Promise<PaymentResult> {
     try {
-      logger.info('💸 Releasing USDC escrow', {
-        booking_id: bookingId,
-        barber_id: barberId,
-        amount_usd: centsToDollars(amountCents),
-      });
-
-      // Call smart contract to release USDC
-      const releaseTxHash = await aptosService.releaseUsdcEscrow(bookingId);
-
-      logger.info('✅ USDC released from escrow', {
-        booking_id: bookingId,
-        tx_hash: releaseTxHash,
-        barber_payout_usd: centsToDollars(Math.floor(amountCents * 0.95)),
-        platform_fee_usd: centsToDollars(Math.floor(amountCents * 0.05)),
-      });
-
-      // Log gas usage
-      await gasWalletService.logGasUsage({
-        transaction_hash: releaseTxHash,
-        transaction_type: 'release_payment',
-        gas_used_apt: gasWalletService.estimateGasCost('release_payment'),
-        booking_id: bookingId,
-      });
-
-      // Update ledger (optional tracking)
-      await ledgerService.releaseBookingFunds(bookingId, barberId, amountCents);
-
-      return { releaseTxHash };
+      logger.info(`Creating ${this.paymentMode} escrow for booking ${bookingId}`);
+      
+      if (this.paymentMode === 'offchain') {
+        return await this.createOffChainEscrow(bookingId, amount, studentId, barberId, metadata);
+      } else {
+        return await this.createOnChainEscrow(bookingId, amount, studentId, barberId, metadata);
+      }
     } catch (error: any) {
-      logger.error('❌ Failed to release USDC escrow', {
-        booking_id: bookingId,
-        error: error.message,
-      });
-      throw new ApiError(500, `Failed to release funds: ${error.message}`);
-    }
-  }
-
-  /**
-   * Request barber payout (USDC → USD)
-   * Converts barber's USDC balance to USD and sends to bank account
-   * 
-   * Flow:
-   * 1. Check barber's USDC balance on Aptos
-   * 2. Call Circle to convert USDC → USD
-   * 3. Circle deposits USD to barber's linked bank account
-   * 4. Update barber's payout history
-   */
-  async requestBarberPayout(params: {
-    barberId: string;
-    barberAptosAddress: string;
-    circleBankAccountId: string;
-    amountUsdc: number;
-  }): Promise<{ payoutTransferId: string; amountUsd: number }> {
-    const { barberId, barberAptosAddress, circleBankAccountId, amountUsdc } = params;
-
-    try {
-      logger.info('💵 Processing barber payout', {
-        barber_id: barberId,
-        amount_usdc: amountUsdc,
-      });
-
-      // Convert USDC → USD via Circle
-      const payout = await usdcService.convertUsdcToUsd(
-        amountUsdc,
-        circleBankAccountId,
-        barberAptosAddress,
-        {
-          barberId,
-          description: `CampusCuts payout for barber ${barberId}`,
-        }
-      );
-
-      logger.info('✅ Barber payout initiated', {
-        barber_id: barberId,
-        transfer_id: payout.transferId,
-        amount_usd: payout.amountUsd,
-        eta: '1-2 business days',
-      });
-
+      logger.error('Failed to create escrow:', error);
       return {
-        payoutTransferId: payout.transferId,
-        amountUsd: payout.amountUsd,
+        success: false,
+        error: error.message
       };
-    } catch (error: any) {
-      logger.error('❌ Failed to process barber payout', {
-        barber_id: barberId,
-        error: error.message,
-      });
-      throw new ApiError(500, `Payout failed: ${error.message}`);
     }
   }
-
+  
   /**
-   * Issue promotional credit
+   * Release escrow to barber
+   * Off-chain: Captures Stripe payment and transfers to barber
+   * On-chain: Releases blockchain escrow
    */
-  async issuePromotionalCredit(params: {
-    userId: string;
-    amountCents: number;
-    description: string;
-    adminId?: string;
-  }): Promise<void> {
-    const { userId, amountCents, description, adminId } = params;
-
-    await ledgerService.createLedgerEntry({
-      user_id: userId,
-      amount: amountCents,
-      type: TransactionType.PROMOTIONAL_CREDIT,
-      balance_type: BalanceType.AVAILABLE,
-      description,
-      created_by: adminId,
+  async releaseEscrow(escrowId: string): Promise<ReleaseResult> {
+    try {
+      const escrow = await this.getEscrow(escrowId);
+      
+      if (!escrow) {
+        throw new Error('Escrow not found');
+      }
+      
+      if (escrow.status !== 'held') {
+        throw new Error(`Cannot release escrow in status: ${escrow.status}`);
+      }
+      
+      logger.info(`Releasing ${escrow.type} escrow ${escrowId}`);
+      
+      if (escrow.type === 'offchain') {
+        return await this.releaseOffChainEscrow(escrow);
+      } else {
+        return await this.releaseOnChainEscrow(escrow);
+      }
+    } catch (error: any) {
+      logger.error('Failed to release escrow:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Refund escrow to student
+   */
+  async refundEscrow(escrowId: string, reason?: string): Promise<ReleaseResult> {
+    try {
+      const escrow = await this.getEscrow(escrowId);
+      
+      if (!escrow) {
+        throw new Error('Escrow not found');
+      }
+      
+      if (escrow.status !== 'held') {
+        throw new Error(`Cannot refund escrow in status: ${escrow.status}`);
+      }
+      
+      logger.info(`Refunding ${escrow.type} escrow ${escrowId}`);
+      
+      if (escrow.type === 'offchain') {
+        return await this.refundOffChainEscrow(escrow, reason);
+      } else {
+        return await this.refundOnChainEscrow(escrow, reason);
+      }
+    } catch (error: any) {
+      logger.error('Failed to refund escrow:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+  
+  /**
+   * Get escrow status
+   */
+  async getEscrow(escrowId: string): Promise<Escrow | null> {
+    const result = await pool.query(
+      'SELECT * FROM escrows WHERE id = $1',
+      [escrowId]
+    );
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    return this.mapDbRowToEscrow(result.rows[0]);
+  }
+  
+  /**
+   * Get all escrows for a booking
+   */
+  async getEscrowsForBooking(bookingId: number): Promise<Escrow[]> {
+    const result = await pool.query(
+      'SELECT * FROM escrows WHERE booking_id = $1 ORDER BY created_at DESC',
+      [bookingId]
+    );
+    
+    return result.rows.map(row => this.mapDbRowToEscrow(row));
+  }
+  
+  // ==========================================
+  // Off-Chain Implementation (Stripe)
+  // ==========================================
+  
+  private async createOffChainEscrow(
+    bookingId: number,
+    amount: number,
+    studentId: number,
+    barberId: number,
+    metadata?: Record<string, string>
+  ): Promise<PaymentResult> {
+    // Create Stripe PaymentIntent with manual capture
+    // This holds the funds but doesn't charge until we capture
+    const paymentIntent = await this.stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe uses cents
+      currency: 'usd',
+      capture_method: 'manual', // Hold funds, don't charge yet
       metadata: {
-        promo_type: 'platform_credit',
+        bookingId: bookingId.toString(),
+        studentId: studentId.toString(),
+        barberId: barberId.toString(),
+        ...metadata
       },
+      description: `CampusCuts Booking #${bookingId}`,
     });
-
-    logger.info('Promotional credit issued', {
-      user_id: userId,
-      amount: centsToDollars(amountCents),
-      admin_id: adminId,
+    
+    // Store escrow in database
+    const result = await pool.query(
+      `INSERT INTO escrows (
+        booking_id, amount, status, type,
+        stripe_payment_intent_id,
+        created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      RETURNING *`,
+      [bookingId, amount, 'pending', 'offchain', paymentIntent.id]
+    );
+    
+    const escrow = this.mapDbRowToEscrow(result.rows[0]);
+    
+    logger.info(`Created off-chain escrow ${escrow.id} for booking ${bookingId}`);
+    
+    return {
+      success: true,
+      escrow,
+      clientSecret: paymentIntent.client_secret || undefined
+    };
+  }
+  
+  private async releaseOffChainEscrow(escrow: Escrow): Promise<ReleaseResult> {
+    if (!escrow.stripePaymentIntentId) {
+      throw new Error('Missing Stripe PaymentIntent ID');
+    }
+    
+    // 1. Capture the payment (charge the student)
+    const paymentIntent = await this.stripe.paymentIntents.capture(
+      escrow.stripePaymentIntentId
+    );
+    
+    logger.info(`Captured payment ${escrow.stripePaymentIntentId}`);
+    
+    // 2. Calculate platform fee
+    const platformFeePercent = parseFloat(process.env.STRIPE_PLATFORM_FEE_PERCENT || '5.0');
+    const platformFee = Math.round(escrow.amount * (platformFeePercent / 100) * 100);
+    const barberAmount = (escrow.amount * 100) - platformFee;
+    
+    // 3. Get barber's Stripe Connect account ID
+    const barberResult = await pool.query(
+      `SELECT u.stripe_account_id, b.user_id
+       FROM bookings b
+       JOIN users u ON u.id = b.barber_id
+       WHERE b.id = $1`,
+      [escrow.bookingId]
+    );
+    
+    if (barberResult.rows.length === 0) {
+      throw new Error('Barber not found for booking');
+    }
+    
+    const stripeAccountId = barberResult.rows[0].stripe_account_id;
+    
+    if (!stripeAccountId) {
+      throw new Error('Barber has not connected Stripe account');
+    }
+    
+    // 4. Transfer to barber via Stripe Connect
+    const transfer = await this.stripe.transfers.create({
+      amount: barberAmount,
+      currency: 'usd',
+      destination: stripeAccountId,
+      metadata: {
+        bookingId: escrow.bookingId.toString(),
+        escrowId: escrow.id
+      },
+      description: `Payout for Booking #${escrow.bookingId}`
     });
+    
+    // 5. Update escrow status
+    await pool.query(
+      `UPDATE escrows 
+       SET status = $1, stripe_transfer_id = $2, updated_at = NOW()
+       WHERE id = $3`,
+      ['released', transfer.id, escrow.id]
+    );
+    
+    // 6. Update booking status
+    await pool.query(
+      `UPDATE bookings 
+       SET payment_status = $1, updated_at = NOW()
+       WHERE id = $2`,
+      ['completed', escrow.bookingId]
+    );
+    
+    logger.info(`Released escrow ${escrow.id}, transferred ${barberAmount / 100} to barber`);
+    
+    return {
+      success: true,
+      transferId: transfer.id
+    };
   }
-
-  /**
-   * Get payment methods for a user
-   */
-  async getPaymentMethods(customerId: string): Promise<Stripe.PaymentMethod[]> {
-    try {
-      const paymentMethods = await stripe.paymentMethods.list({
-        customer: customerId,
-        type: 'card',
-      });
-
-      return paymentMethods.data;
-    } catch (error: any) {
-      logger.error('Failed to retrieve payment methods', {
-        customer_id: customerId,
-        error: error.message,
-      });
-      throw new ApiError(500, 'Failed to retrieve payment methods');
+  
+  private async refundOffChainEscrow(escrow: Escrow, reason?: string): Promise<ReleaseResult> {
+    if (!escrow.stripePaymentIntentId) {
+      throw new Error('Missing Stripe PaymentIntent ID');
     }
+    
+    // Cancel the payment intent (refund to student)
+    const paymentIntent = await this.stripe.paymentIntents.cancel(
+      escrow.stripePaymentIntentId
+    );
+    
+    // Update escrow status
+    await pool.query(
+      `UPDATE escrows 
+       SET status = $1, updated_at = NOW()
+       WHERE id = $2`,
+      ['refunded', escrow.id]
+    );
+    
+    // Update booking status
+    await pool.query(
+      `UPDATE bookings 
+       SET payment_status = $1, updated_at = NOW()
+       WHERE id = $2`,
+      ['refunded', escrow.bookingId]
+    );
+    
+    logger.info(`Refunded escrow ${escrow.id}. Reason: ${reason || 'Not provided'}`);
+    
+    return {
+      success: true,
+      transferId: paymentIntent.id
+    };
   }
-
-  /**
-   * Attach payment method to customer
-   */
-  async attachPaymentMethod(customerId: string, paymentMethodId: string): Promise<void> {
-    try {
-      await stripe.paymentMethods.attach(paymentMethodId, {
-        customer: customerId,
-      });
-
-      logger.info('Payment method attached', {
-        customer_id: customerId,
-        payment_method_id: paymentMethodId,
-      });
-    } catch (error: any) {
-      logger.error('Failed to attach payment method', {
-        customer_id: customerId,
-        error: error.message,
-      });
-      throw new ApiError(500, 'Failed to attach payment method');
-    }
+  
+  // ==========================================
+  // On-Chain Implementation (Future)
+  // ==========================================
+  
+  private async createOnChainEscrow(
+    bookingId: number,
+    amount: number,
+    studentId: number,
+    barberId: number,
+    metadata?: Record<string, string>
+  ): Promise<PaymentResult> {
+    // TODO: Implement when Circle + Blockchain are ready
+    // 1. Charge via Stripe
+    // 2. Convert USD to USDC via Circle
+    // 3. Create blockchain escrow via Aptos
+    // 4. Store in database
+    
+    throw new Error('On-chain escrow not yet implemented. Set PAYMENT_MODE=offchain');
+  }
+  
+  private async releaseOnChainEscrow(escrow: Escrow): Promise<ReleaseResult> {
+    // TODO: Implement when Circle + Blockchain are ready
+    // 1. Release blockchain escrow
+    // 2. Convert USDC to USD via Circle
+    // 3. Transfer to barber
+    
+    throw new Error('On-chain release not yet implemented. Set PAYMENT_MODE=offchain');
+  }
+  
+  private async refundOnChainEscrow(escrow: Escrow, reason?: string): Promise<ReleaseResult> {
+    // TODO: Implement when Circle + Blockchain are ready
+    
+    throw new Error('On-chain refund not yet implemented. Set PAYMENT_MODE=offchain');
+  }
+  
+  // ==========================================
+  // Utilities
+  // ==========================================
+  
+  private mapDbRowToEscrow(row: any): Escrow {
+    return {
+      id: row.id.toString(),
+      bookingId: row.booking_id,
+      amount: parseFloat(row.amount),
+      status: row.status,
+      type: row.type,
+      stripePaymentIntentId: row.stripe_payment_intent_id,
+      stripeTransferId: row.stripe_transfer_id,
+      blockchainTxHash: row.blockchain_tx_hash,
+      blockchainEscrowId: row.blockchain_escrow_id,
+      usdcAmount: row.usdc_amount ? parseFloat(row.usdc_amount) : undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
   }
 }
 
-export default new PaymentService();
-
+// Export singleton instance
+export const paymentService = new PaymentService();
+export default paymentService;
