@@ -67,9 +67,8 @@ export default function ScheduleServicePage() {
     try {
       // Get service price from barber's pricing
       const servicePrice = barber?.pricing?.find(
-        p => p.name?.toLowerCase() === serviceType.toLowerCase() || 
-             p.service?.toLowerCase() === serviceType.toLowerCase()
-      )?.price || barber?.base_price || 30;
+        p => p.name?.toLowerCase() === serviceType.toLowerCase()
+      )?.price || 30;
 
       // Combine date and time for scheduled datetime
       const scheduledAt = new Date(`${date}T${time}`).toISOString();
@@ -80,7 +79,7 @@ export default function ScheduleServicePage() {
           barberId: barberId,
           barberName: barber?.user?.first_name 
             ? `${barber.user.first_name} ${barber.user.last_name}` 
-            : barber?.name || 'Barber',
+            : 'Barber',
           serviceName: serviceType,
           servicePrice: servicePrice,
           scheduledAt: scheduledAt,
