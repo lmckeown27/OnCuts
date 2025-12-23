@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -12,6 +12,7 @@ import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Mock data for demo
 function getMockBarbers(): Barber[] {
@@ -151,9 +152,13 @@ function rankBarbers(barbers: Barber[]): Barber[] {
 
 export default function ConsumerPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Determine platform prefix based on current route
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
   // Mock consumer ID - in production this would come from auth
   const consumerId = 'consumer-1';
@@ -184,7 +189,7 @@ export default function ConsumerPage() {
             <div className="flex items-center gap-4">
               {/* Quick Switch to Barber (Testing) */}
               <button
-                onClick={() => navigate('/barber')}
+                onClick={() => navigate(`${platformPrefix}/barber`)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                 title="Switch to Barber view"
               >
@@ -219,13 +224,24 @@ export default function ConsumerPage() {
                     <div className="border-t border-gray-200 my-1"></div>
                     <button
                       onClick={() => {
-                        navigate('/web');
+                        navigate(`${platformPrefix}/admin-role-select`);
                         setShowProfileDropdown(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                     >
-                      <LogOut className="w-4 h-4 text-gray-500" />
+                      <ArrowLeft className="w-4 h-4 text-gray-500" />
                       Back to Roles
+                    </button>
+                    <button
+                      onClick={() => {
+                        useAuthStore.getState().logout();
+                        navigate(`${platformPrefix}`);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                    >
+                      <LogOut className="w-4 h-4 text-red-500" />
+                      Sign Out
                     </button>
                   </div>
                 )}

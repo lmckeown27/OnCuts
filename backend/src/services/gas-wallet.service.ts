@@ -35,9 +35,10 @@ interface GasWalletStatus {
 }
 
 class GasWalletService {
-  private client: AptosClient;
-  private gasWallet: AptosAccount;
-  private gasWalletAddress: string;
+  private client: AptosClient | null = null;
+  private gasWallet: AptosAccount | null = null;
+  private gasWalletAddress: string = '';
+  private isEnabled: boolean = false;
   
   // Thresholds for alerts
   private readonly MIN_BALANCE_APT = 10; // Alert when below 10 APT
@@ -45,24 +46,53 @@ class GasWalletService {
   private readonly AVG_GAS_PER_TX_APT = 0.0001; // Approximate gas cost per transaction
 
   constructor() {
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-    this.client = new AptosClient(nodeUrl);
+    try {
+      const privateKeyHex = process.env.PETRA_PRIVATE_KEY || process.env.GAS_WALLET_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
+      
+      if (!privateKeyHex) {
+        logger.warn('⚠️ Gas Wallet Service DISABLED: No private key configured');
+        return;
+      }
 
-    // Initialize gas wallet from env
-    const privateKeyHex = process.env.PETRA_PRIVATE_KEY || process.env.GAS_WALLET_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
-    
-    if (!privateKeyHex) {
-      logger.error('❌ PETRA_PRIVATE_KEY not configured');
-      throw new Error('PETRA_PRIVATE_KEY not configured. Please set PETRA_PRIVATE_KEY in your .env file');
+      // Validate hex string has even length
+      const cleanHex = privateKeyHex.startsWith('0x') ? privateKeyHex.slice(2) : privateKeyHex;
+      if (cleanHex.length % 2 !== 0) {
+        logger.warn(`⚠️ Gas Wallet Service DISABLED: Invalid private key format (odd length: ${cleanHex.length})`);
+        return;
+      }
+
+      const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+      this.client = new AptosClient(nodeUrl);
+
+      const privateKey = new HexString(privateKeyHex);
+      this.gasWallet = new AptosAccount(privateKey.toUint8Array());
+      this.gasWalletAddress = this.gasWallet.address().hex();
+      this.isEnabled = true;
+
+      logger.info('⛽ Gas Wallet Service initialized', {
+        address: this.gasWalletAddress,
+      });
+    } catch (error) {
+      logger.warn(`⚠️ Gas Wallet Service DISABLED: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.isEnabled = false;
     }
+  }
 
-    const privateKey = new HexString(privateKeyHex);
-    this.gasWallet = new AptosAccount(privateKey.toUint8Array());
-    this.gasWalletAddress = this.gasWallet.address().hex();
+  /**
+   * Check if gas wallet service is enabled
+   */
+  isConfigured(): boolean {
+    return this.isEnabled;
+  }
 
-    logger.info('⛽ Gas Wallet Service initialized', {
-      address: this.gasWalletAddress,
-    });
+  /**
+   * Ensure service is configured, throw if not
+   */
+  private ensureConfigured(): { client: AptosClient; wallet: AptosAccount } {
+    if (!this.isEnabled || !this.client || !this.gasWallet) {
+      throw new Error('Gas Wallet Service is not configured. On-chain features are disabled.');
+    }
+    return { client: this.client, wallet: this.gasWallet };
   }
 
   /**
@@ -70,6 +100,17 @@ class GasWalletService {
    * Called by admin dashboard to display gas meter
    */
   async getGasWalletStatus(): Promise<GasWalletStatus> {
+    if (!this.isEnabled) {
+      return {
+        address: 'Not configured',
+        balance_apt: 0,
+        balance_usd_estimate: 0,
+        estimated_transactions_remaining: 0,
+        needs_refill: false,
+        last_checked_at: new Date().toISOString(),
+      };
+    }
+
     try {
       const balance = await this.getBalance();
       const aptPrice = await this.getAptPrice();
@@ -95,8 +136,13 @@ class GasWalletService {
    * Get gas wallet APT balance
    */
   async getBalance(): Promise<number> {
+    if (!this.isEnabled) {
+      return 0;
+    }
+    
+    const { client } = this.ensureConfigured();
     try {
-      const resources = await this.client.getAccountResources(this.gasWalletAddress);
+      const resources = await client.getAccountResources(this.gasWalletAddress);
       const accountResource = resources.find(
         (r) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
       );
@@ -306,7 +352,8 @@ class GasWalletService {
    * ONLY used by aptos.service.ts - do not expose publicly
    */
   getGasWalletAccount(): AptosAccount {
-    return this.gasWallet;
+    const { wallet } = this.ensureConfigured();
+    return wallet;
   }
 }
 

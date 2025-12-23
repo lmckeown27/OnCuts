@@ -11,14 +11,13 @@
  */
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   TrendingUp,
   Users,
   DollarSign,
   AlertTriangle,
   ChevronRight,
-  MoreVertical,
   Home,
   BarChart2,
   Settings,
@@ -27,17 +26,18 @@ import {
   Activity,
   Eye,
   CheckCircle,
-  XCircle,
-  Clock
+  Clock,
+  CreditCard,
+  Percent
 } from 'lucide-react';
 
 interface Transaction {
   id: string;
-  type: 'booking' | 'payment' | 'dispute';
+  type: 'booking' | 'payment' | 'payout' | 'refund';
   customer: string;
   barber: string;
   amount: number;
-  status: 'completed' | 'pending' | 'flagged';
+  status: 'completed' | 'pending' | 'processing';
   time: string;
   campus: string;
 }
@@ -53,32 +53,42 @@ interface Metric {
 
 const MOCK_TRANSACTIONS: Transaction[] = [
   {
-    id: '1',
-    type: 'booking',
+    id: 'pi_1234',
+    type: 'payment',
     customer: 'John Davis',
     barber: 'Marcus Johnson',
-    amount: 28,
+    amount: 35,
     status: 'completed',
     time: '2 min ago',
     campus: 'Cal Poly SLO'
   },
   {
-    id: '2',
-    type: 'payment',
-    customer: 'Sarah Williams',
+    id: 'po_5678',
+    type: 'payout',
+    customer: '',
     barber: 'Jordan Smith',
-    amount: 35,
-    status: 'pending',
+    amount: 156.75,
+    status: 'processing',
     time: '15 min ago',
     campus: 'Cal Poly SLO'
   },
   {
-    id: '3',
-    type: 'dispute',
-    customer: 'Michael Chen',
+    id: 'pi_9012',
+    type: 'payment',
+    customer: 'Sarah Williams',
     barber: 'Alex Rivera',
-    amount: 20,
-    status: 'flagged',
+    amount: 45,
+    status: 'completed',
+    time: '32 min ago',
+    campus: 'Cal Poly SLO'
+  },
+  {
+    id: 'rf_3456',
+    type: 'refund',
+    customer: 'Michael Chen',
+    barber: 'Tyler M.',
+    amount: 28,
+    status: 'completed',
     time: '1 hour ago',
     campus: 'Cal Poly SLO'
   }
@@ -107,20 +117,20 @@ export default function MobileAdminPage() {
       color: 'green'
     },
     {
-      label: 'Active Barbers',
-      value: '89',
-      change: '+5',
-      trend: 'up',
-      icon: <Shield className="w-5 h-5" />,
+      label: 'Platform Fees',
+      value: '$2,145',
+      change: '5%',
+      trend: 'neutral',
+      icon: <Percent className="w-5 h-5" />,
       color: 'primary'
     },
     {
-      label: 'Pending Issues',
-      value: '3',
-      change: '-2',
-      trend: 'down',
-      icon: <AlertTriangle className="w-5 h-5" />,
-      color: 'red'
+      label: 'Pending Payouts',
+      value: '$1,890',
+      change: 'via Stripe',
+      trend: 'neutral',
+      icon: <CreditCard className="w-5 h-5" />,
+      color: 'blue'
     }
   ];
 
@@ -130,8 +140,10 @@ export default function MobileAdminPage() {
         return 'bg-green-100 text-green-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
-      case 'flagged':
-        return 'bg-red-100 text-red-700';
+      case 'processing':
+        return 'bg-blue-100 text-blue-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -141,8 +153,10 @@ export default function MobileAdminPage() {
         return <CheckCircle className="w-4 h-4" />;
       case 'pending':
         return <Clock className="w-4 h-4" />;
-      case 'flagged':
-        return <AlertTriangle className="w-4 h-4" />;
+      case 'processing':
+        return <Activity className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
     }
   };
 
@@ -205,49 +219,49 @@ export default function MobileAdminPage() {
             <div className="px-4">
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions</h2>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {/* Navigate to campus management */}}
+                <Link
+                  to="/app/admin/payments"
                   className="bg-primary-400 text-white rounded-xl p-4 text-left active:scale-98 transition-transform shadow-lg"
                 >
-                  <Users className="w-6 h-6 mb-2" />
-                  <div className="font-semibold">Manage</div>
-                  <div className="text-xs opacity-90">Campuses</div>
-                </button>
+                  <CreditCard className="w-6 h-6 mb-2" />
+                  <div className="font-semibold">Payments</div>
+                  <div className="text-xs opacity-90">& Payouts</div>
+                </Link>
                 
-                <button
-                  onClick={() => {/* Navigate to system health */}}
+                <Link
+                  to="/app/admin/system-health"
                   className="bg-green-500 text-white rounded-xl p-4 text-left active:scale-98 transition-transform shadow-lg"
                 >
                   <Activity className="w-6 h-6 mb-2" />
                   <div className="font-semibold">System</div>
                   <div className="text-xs opacity-90">Health</div>
-                </button>
+                </Link>
                 
-                <button
-                  onClick={() => {/* Navigate to fraud detection */}}
+                <Link
+                  to="/app/admin/fraud"
                   className="bg-red-500 text-white rounded-xl p-4 text-left active:scale-98 transition-transform shadow-lg"
                 >
                   <AlertTriangle className="w-6 h-6 mb-2" />
                   <div className="font-semibold">Fraud</div>
                   <div className="text-xs opacity-90">Detection</div>
-                </button>
+                </Link>
                 
-                <button
-                  onClick={() => {/* Navigate to marketplace */}}
+                <Link
+                  to="/app/admin/marketplace"
                   className="bg-blue-500 text-white rounded-xl p-4 text-left active:scale-98 transition-transform shadow-lg"
                 >
                   <BarChart2 className="w-6 h-6 mb-2" />
                   <div className="font-semibold">Market</div>
                   <div className="text-xs opacity-90">Analytics</div>
-                </button>
+                </Link>
               </div>
             </div>
 
             {/* Live Transactions */}
             <div className="px-4 pb-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-700">Live Transactions</h2>
-                <button className="text-primary-600 text-sm font-medium">View All</button>
+                <h2 className="text-sm font-semibold text-gray-700">Recent Transactions</h2>
+                <Link to="/app/admin/payments" className="text-primary-600 text-sm font-medium">View All</Link>
               </div>
               
               <div className="space-y-2">
@@ -255,17 +269,34 @@ export default function MobileAdminPage() {
                   <div
                     key={transaction.id}
                     className="bg-white rounded-xl p-4 border border-gray-200 active:scale-98 transition-transform"
-                    onClick={() => {/* Navigate to transaction detail */}}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="font-semibold text-gray-900 mb-1">
-                          {transaction.customer} → {transaction.barber}
+                          {transaction.type === 'payout' ? (
+                            `Payout to ${transaction.barber}`
+                          ) : transaction.type === 'refund' ? (
+                            `Refund to ${transaction.customer}`
+                          ) : (
+                            `${transaction.customer} → ${transaction.barber}`
+                          )}
                         </div>
-                        <div className="text-xs text-gray-500">{transaction.campus}</div>
+                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                          <span className={`capitalize ${
+                            transaction.type === 'payment' ? 'text-green-600' :
+                            transaction.type === 'payout' ? 'text-blue-600' :
+                            transaction.type === 'refund' ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {transaction.type}
+                          </span>
+                          <span>•</span>
+                          <span>{transaction.campus}</span>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-gray-900">${transaction.amount}</div>
+                        <div className={`font-bold ${transaction.type === 'refund' ? 'text-red-600' : 'text-gray-900'}`}>
+                          {transaction.type === 'refund' ? '-' : ''}${transaction.amount.toFixed(2)}
+                        </div>
                         <div className="text-xs text-gray-500">{transaction.time}</div>
                       </div>
                     </div>
@@ -289,7 +320,7 @@ export default function MobileAdminPage() {
 
         {activeTab === 'analytics' && (
           <div className="p-4 space-y-4">
-            <h2 className="text-xl font-bold text-gray-900">Analytics</h2>
+            <h2 className="text-xl font-bold text-gray-900">Payment Analytics</h2>
             
             <div className="bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl p-6 text-white">
               <div className="text-sm opacity-90 mb-1">Total Platform Revenue</div>
@@ -297,6 +328,18 @@ export default function MobileAdminPage() {
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="w-4 h-4" />
                 <span>+8.2% from last month</span>
+              </div>
+            </div>
+
+            {/* Payment Breakdown */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="text-xs text-gray-500 mb-1">Platform Fees (5%)</div>
+                <div className="text-xl font-bold text-primary-600">$2,145</div>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="text-xs text-gray-500 mb-1">Pending Payouts</div>
+                <div className="text-xl font-bold text-blue-600">$1,890</div>
               </div>
             </div>
 
@@ -320,6 +363,17 @@ export default function MobileAdminPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Stripe Info */}
+            <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="w-5 h-5 text-indigo-600" />
+                <span className="font-semibold text-indigo-900">Payment Provider</span>
+              </div>
+              <p className="text-sm text-indigo-700">
+                All payments processed via Stripe with PCI-DSS compliance. Barbers receive payouts through Stripe Connect.
+              </p>
             </div>
           </div>
         )}

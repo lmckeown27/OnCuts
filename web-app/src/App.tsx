@@ -4,16 +4,18 @@ import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AppStatus from './components/AppStatus';
 import PlatformGuard from './components/PlatformGuard';
 
-// Landing & Role Selection
+// Landing & Authentication
 import LandingPage from './pages/LandingPage';
-import RoleSelectionPage from './pages/RoleSelectionPage';
+import AuthPage from './pages/AuthPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
+import AdminRoleSelectPage from './pages/auth/AdminRoleSelectPage';
 import AppInstallPage from './pages/AppInstallPage';
 import MobileAppDownloadPage from './pages/MobileAppDownloadPage';
 
 // Desktop/Web Pages
 import AdminCampusesPage from './pages/admin/AdminCampusesPage';
 import AdminSystemHealthPage from './pages/admin/AdminSystemHealthPage';
-import AdminGasWalletPage from './pages/admin/AdminGasWalletPage';
+import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminMarketplacePage from './pages/admin/AdminMarketplacePage';
 import AdminFraudDetectionPage from './pages/admin/AdminFraudDetectionPage';
 import AdminPricingManagement from './pages/AdminPricingManagement';
@@ -34,6 +36,9 @@ import MobileAdminPage from './pages/mobile/MobileAdminPage';
 import MobileBarberPage from './pages/mobile/MobileBarberPage';
 import MobileConsumerPage from './pages/mobile/MobileConsumerPage';
 
+// Legal Pages
+import { TermsOfServicePage, PrivacyPolicyPage, GDPRPage, HelpCenterPage } from './pages/legal';
+
 function AppContent() {
   const location = useLocation();
   const isAppRoute = location.pathname.startsWith('/app');
@@ -53,6 +58,12 @@ function AppContent() {
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
         
+        {/* Legal Pages */}
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/gdpr" element={<GDPRPage />} />
+        <Route path="/help" element={<HelpCenterPage />} />
+        
         {/* Installation Instructions */}
         <Route path="/install" element={<AppInstallPage />} />
         
@@ -60,13 +71,15 @@ function AppContent() {
             WEB PLATFORM ROUTES (Browser Version)
             All routes under /web/* are isolated to web experience
         ═══════════════════════════════════════════════════════════ */}
-        <Route path="/web" element={<PlatformGuard requiredPlatform="web"><RoleSelectionPage platform="web" /></PlatformGuard>} />
+        <Route path="/web" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
+        <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><VerifyEmailPage /></PlatformGuard>} />
+        <Route path="/web/admin-role-select" element={<PlatformGuard requiredPlatform="web"><AdminRoleSelectPage /></PlatformGuard>} />
         <Route path="/web/install" element={<AppInstallPage />} />
         
         {/* Web - Admin Routes */}
         <Route path="/web/admin" element={<PlatformGuard requiredPlatform="web"><AdminCampusesPage /></PlatformGuard>} />
         <Route path="/web/admin/system-health" element={<PlatformGuard requiredPlatform="web"><AdminSystemHealthPage /></PlatformGuard>} />
-        <Route path="/web/admin/gas-wallet" element={<PlatformGuard requiredPlatform="web"><AdminGasWalletPage /></PlatformGuard>} />
+        <Route path="/web/admin/payments" element={<PlatformGuard requiredPlatform="web"><AdminPaymentsPage /></PlatformGuard>} />
         <Route path="/web/admin/marketplace" element={<PlatformGuard requiredPlatform="web"><AdminMarketplacePage /></PlatformGuard>} />
         <Route path="/web/admin/fraud" element={<PlatformGuard requiredPlatform="web"><AdminFraudDetectionPage /></PlatformGuard>} />
         <Route path="/web/admin/pricing" element={<PlatformGuard requiredPlatform="web"><AdminPricingManagement /></PlatformGuard>} />
@@ -94,14 +107,16 @@ function AppContent() {
             All routes under /app/* use touch-optimized mobile interfaces
             Perfect for iOS/Android handheld devices
         ═══════════════════════════════════════════════════════════ */}
-        <Route path="/app" element={<PlatformGuard requiredPlatform="app"><RoleSelectionPage platform="app" /></PlatformGuard>} />
+        <Route path="/app" element={<PlatformGuard requiredPlatform="app"><AuthPage /></PlatformGuard>} />
+        <Route path="/app/verify-email" element={<PlatformGuard requiredPlatform="app"><VerifyEmailPage /></PlatformGuard>} />
+        <Route path="/app/admin-role-select" element={<PlatformGuard requiredPlatform="app"><AdminRoleSelectPage /></PlatformGuard>} />
         <Route path="/app/install" element={<MobileAppDownloadPage />} />
         <Route path="/app/download" element={<MobileAppDownloadPage />} />
         
         {/* App - Admin Routes (Mobile-Optimized) */}
         <Route path="/app/admin" element={<PlatformGuard requiredPlatform="app"><MobileAdminPage /></PlatformGuard>} />
         <Route path="/app/admin/system-health" element={<PlatformGuard requiredPlatform="app"><AdminSystemHealthPage /></PlatformGuard>} />
-        <Route path="/app/admin/gas-wallet" element={<PlatformGuard requiredPlatform="app"><AdminGasWalletPage /></PlatformGuard>} />
+        <Route path="/app/admin/payments" element={<PlatformGuard requiredPlatform="app"><AdminPaymentsPage /></PlatformGuard>} />
         <Route path="/app/admin/marketplace" element={<PlatformGuard requiredPlatform="app"><AdminMarketplacePage /></PlatformGuard>} />
         <Route path="/app/admin/fraud" element={<PlatformGuard requiredPlatform="app"><AdminFraudDetectionPage /></PlatformGuard>} />
         <Route path="/app/admin/pricing" element={<PlatformGuard requiredPlatform="app"><AdminPricingManagement /></PlatformGuard>} />

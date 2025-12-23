@@ -3,8 +3,8 @@
  * Last updated: 2025-12-18 00:15:00
  */
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -15,20 +15,70 @@ import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import { CampusCutLogo } from '@assets';
+import { useAuthStore } from '../store/useAuthStore';
 
 const COMPONENT_VERSION = 'v4.0-modal-fix';
 
 export default function BarberPage() {
   console.log('🚀 BarberPage loaded -', COMPONENT_VERSION);
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  
+  // Modal states with visibility for animations
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
+  
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
+  const [isServiceSpecialtiesVisible, setIsServiceSpecialtiesVisible] = useState(false);
+  
   const [showPricingDashboard, setShowPricingDashboard] = useState(false);
+  const [isPricingDashboardVisible, setIsPricingDashboardVisible] = useState(false);
+  
   const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
+  const [isCampusManagerVisible, setIsCampusManagerVisible] = useState(false);
+  
+  const [showServiceHistory, setShowServiceHistory] = useState(false);
+  const [isServiceHistoryVisible, setIsServiceHistoryVisible] = useState(false);
+  
   const [showServiceDetails, setShowServiceDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Generic modal animation helpers
+  const openModal = (setShow: (v: boolean) => void, setVisible: (v: boolean) => void) => {
+    setShow(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setVisible(true);
+      });
+    });
+  };
+
+  const closeModal = (setShow: (v: boolean) => void, setVisible: (v: boolean) => void) => {
+    setVisible(false);
+    setTimeout(() => {
+      setShow(false);
+    }, 150);
+  };
+
+  // Modal open/close handlers
+  const openProfileEditor = () => openModal(setShowProfileEditor, setIsProfileEditorVisible);
+  const closeProfileEditor = () => closeModal(setShowProfileEditor, setIsProfileEditorVisible);
+  
+  const openServiceSpecialties = () => openModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
+  const closeServiceSpecialties = () => closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
+  
+  const openPricingDashboard = () => openModal(setShowPricingDashboard, setIsPricingDashboardVisible);
+  const closePricingDashboard = () => closeModal(setShowPricingDashboard, setIsPricingDashboardVisible);
+  
+  const openCampusManager = () => openModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
+  const closeCampusManager = () => closeModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
+  
+  const openServiceHistory = () => openModal(setShowServiceHistory, setIsServiceHistoryVisible);
+  const closeServiceHistory = () => closeModal(setShowServiceHistory, setIsServiceHistoryVisible);
   
   // Mock barber data - in production this would come from API
   const barberId = 'barber-1';
@@ -262,7 +312,7 @@ export default function BarberPage() {
             <div className="flex items-center gap-4">
               {/* Quick Switch to Consumer (Testing) */}
               <button
-                onClick={() => navigate('/consumer')}
+                onClick={() => navigate(`${platformPrefix}/consumer`)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                 title="Switch to Consumer view"
               >
@@ -289,7 +339,7 @@ export default function BarberPage() {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <button
                     onClick={() => {
-                      setShowProfileEditor(true);
+                      openProfileEditor();
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -299,7 +349,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
-                      setShowServiceSpecialties(true);
+                      openServiceSpecialties();
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -309,7 +359,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
-                      navigate('/barber/service-history');
+                      openServiceHistory();
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -319,7 +369,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
-                      setShowPricingDashboard(true);
+                      openPricingDashboard();
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -334,7 +384,7 @@ export default function BarberPage() {
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
                         onClick={() => {
-                          setShowCampusManagerDashboard(true);
+                          openCampusManager();
                           setShowProfileDropdown(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -348,13 +398,14 @@ export default function BarberPage() {
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
+                      useAuthStore.getState().logout();
                       navigate('/web');
                       setShowProfileDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
                   >
-                    <LogOut className="w-4 h-4 text-gray-500" />
-                    Back to Roles
+                    <LogOut className="w-4 h-4 text-red-500" />
+                    Sign Out
                   </button>
                 </div>
               )}
@@ -372,20 +423,21 @@ export default function BarberPage() {
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowProfileEditor(false)}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closeProfileEditor}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className={`bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+              ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
               <button
-                onClick={() => setShowProfileEditor(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                onClick={closeProfileEditor}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6">
@@ -398,20 +450,21 @@ export default function BarberPage() {
       {/* Service Specialties Modal */}
       {showServiceSpecialties && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowServiceSpecialties(false)}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closeServiceSpecialties}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+              ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-900">My Services & Pricing</h2>
               <button
-                onClick={() => setShowServiceSpecialties(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                onClick={closeServiceSpecialties}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6">
@@ -424,20 +477,21 @@ export default function BarberPage() {
       {/* Pricing Dashboard Modal */}
       {showPricingDashboard && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowPricingDashboard(false)}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isPricingDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closePricingDashboard}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+              ${isPricingDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <h2 className="text-xl font-bold text-gray-900">Performance & Pricing</h2>
               <button
-                onClick={() => setShowPricingDashboard(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                onClick={closePricingDashboard}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6">
@@ -450,23 +504,24 @@ export default function BarberPage() {
       {/* Campus Manager Dashboard Modal (conditional) */}
       {isCampusManager && showCampusManagerDashboard && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowCampusManagerDashboard(false)}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closeCampusManager}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+              ${isCampusManagerVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary-600" />
                 <h2 className="text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
               </div>
               <button
-                onClick={() => setShowCampusManagerDashboard(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                onClick={closeCampusManager}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
               >
-                ×
+                <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-6">
@@ -487,6 +542,14 @@ export default function BarberPage() {
           appointment={selectedAppointment}
         />
       )}
+
+      {/* Service History Modal */}
+      {showServiceHistory && (
+        <ServiceHistoryModal 
+          isVisible={isServiceHistoryVisible} 
+          onClose={closeServiceHistory} 
+        />
+      )}
     </div>
   );
 }
@@ -501,14 +564,33 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
+  const [isDayModalVisible, setIsDayModalVisible] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Day modal open/close handlers with animation
+  const openDayModal = (day: number) => {
+    setSelectedDay(day);
+    setShowDayModal(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDayModalVisible(true);
+      });
+    });
+  };
+
+  const closeDayModal = () => {
+    setIsDayModalVisible(false);
+    setTimeout(() => {
+      setShowDayModal(false);
+      setSelectedDay(null);
+    }, 150);
+  };
 
   // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setShowDayModal(false);
-        setSelectedDay(null);
+        closeDayModal();
       }
     };
 
@@ -550,8 +632,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
   };
 
   const handleDayClick = (day: number) => {
-    setSelectedDay(day);
-    setShowDayModal(true);
+    openDayModal(day);
   };
 
   return (
@@ -832,8 +913,21 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
 
       {/* Day Detail Modal */}
       {showDayModal && selectedDay !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div ref={modalRef} className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-scale-in">
+        <div 
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+            isDayModalVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeDayModal}
+        >
+          <div 
+            ref={modalRef} 
+            className={`bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden transition-all duration-150 ease-out ${
+              isDayModalVisible 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-0 scale-95 translate-y-4'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="bg-primary-400 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -843,10 +937,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                   </p>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowDayModal(false);
-                    setSelectedDay(null);
-                  }}
+                  onClick={closeDayModal}
                   className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -890,7 +981,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                           size="sm" 
                           variant="secondary"
                           onClick={() => {
-                            setShowDayModal(false);
+                            closeDayModal();
                             onViewDetails(apt.id);
                           }}
                         >
@@ -906,5 +997,258 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
         </div>
       )}
     </>
+  );
+}
+
+// Service History Modal Component
+function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'cancelled' | 'no-show'>('all');
+
+  // Mock service history data
+  const serviceHistory = [
+    {
+      id: 'service-1',
+      date: '2025-12-16',
+      time: '14:00',
+      customerName: 'Alex Rivera',
+      serviceType: 'Fade',
+      location: 'Student Union - Room 204',
+      price: 35.00,
+      status: 'completed' as const,
+      rating: 5,
+      review: 'Excellent fade! Marcus really knows what he\'s doing. Super clean lines!',
+    },
+    {
+      id: 'service-2',
+      date: '2025-12-15',
+      time: '16:30',
+      customerName: 'Jordan Lee',
+      serviceType: 'Haircut & Beard Trim',
+      location: 'Kennedy Library - Study Room 3B',
+      price: 45.00,
+      status: 'completed' as const,
+      rating: 5,
+      review: 'Best haircut I\'ve gotten on campus. Professional and skilled!',
+    },
+    {
+      id: 'service-3',
+      date: '2025-12-14',
+      time: '12:00',
+      customerName: 'Sam Chen',
+      serviceType: 'Lineup',
+      location: 'Cerro Vista Apartments',
+      price: 20.00,
+      status: 'completed' as const,
+      rating: 4,
+      review: 'Good lineup, came out clean.',
+    },
+    {
+      id: 'service-4',
+      date: '2025-12-13',
+      time: '18:00',
+      customerName: 'Marcus Williams',
+      serviceType: 'Full Service',
+      location: 'Poly Canyon Village',
+      price: 55.00,
+      status: 'completed' as const,
+      rating: 5,
+      review: 'Worth every penny! The hot towel shave was amazing.',
+    },
+    {
+      id: 'service-5',
+      date: '2025-12-12',
+      time: '15:00',
+      customerName: 'David Park',
+      serviceType: 'Fade',
+      location: 'Campus Market',
+      price: 32.00,
+      status: 'completed' as const,
+      rating: 4,
+    },
+    {
+      id: 'service-6',
+      date: '2025-12-11',
+      time: '13:30',
+      customerName: 'Tyler Johnson',
+      serviceType: 'Haircut',
+      location: 'Recreation Center',
+      price: 30.00,
+      status: 'cancelled' as const,
+    },
+    {
+      id: 'service-7',
+      date: '2025-12-10',
+      time: '17:00',
+      customerName: 'Chris Martinez',
+      serviceType: 'Beard Trim',
+      location: 'Engineering Plaza',
+      price: 25.00,
+      status: 'no-show' as const,
+    },
+  ];
+
+  const filteredServices = serviceHistory.filter((service) => {
+    const matchesSearch = service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         service.serviceType.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || service.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const stats = {
+    total: serviceHistory.length,
+    completed: serviceHistory.filter(s => s.status === 'completed').length,
+    avgRating: serviceHistory.filter(s => s.rating).reduce((sum, s) => sum + (s.rating || 0), 0) / serviceHistory.filter(s => s.rating).length,
+    totalEarned: serviceHistory.filter(s => s.status === 'completed').reduce((sum, s) => sum + s.price, 0),
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-700';
+      case 'cancelled': return 'bg-yellow-100 text-yellow-700';
+      case 'no-show': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  return (
+    <div 
+      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        isVisible ? 'bg-black/50' : 'bg-black/0'
+      }`}
+      onClick={onClose}
+    >
+      <div 
+        className={`bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+          isVisible 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 translate-y-4'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-2xl font-bold">Service History</h2>
+            <p className="text-white/80 text-sm">{stats.total} total services</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <p className="text-xs text-gray-600">Total</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+              <p className="text-xs text-gray-600">Completed</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-yellow-600">{stats.avgRating.toFixed(1)}</p>
+              <p className="text-xs text-gray-600">Avg Rating</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-primary-500">${stats.totalEarned.toFixed(0)}</p>
+              <p className="text-xs text-gray-600">Earned</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Search & Filters */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name or service..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="no-show">No-show</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Service List */}
+        <div className="overflow-y-auto max-h-[calc(90vh-280px)] p-6">
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-600">No services found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredServices.map((service) => (
+                <div key={service.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">{service.customerName}</h4>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(service.status)}`}>
+                          {service.status.replace('-', ' ')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {new Date(service.date).toLocaleDateString()} at {service.time}
+                        </span>
+                        <span>•</span>
+                        <span className="font-medium">{service.serviceType}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-green-600">${service.price.toFixed(2)}</p>
+                      {service.rating && (
+                        <div className="flex items-center gap-1 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-3.5 h-3.5 ${
+                                i < service.rating! ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                    <MapPin className="w-3 h-3" />
+                    <span>{service.location}</span>
+                  </div>
+
+                  {service.review && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-100">
+                      <p className="text-sm text-green-800 italic">"{service.review}"</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

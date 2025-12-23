@@ -118,7 +118,7 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `CampusCuts <${process.env.SMTP_USER}>`,
+      from: `CampusCut <${process.env.SMTP_USER}>`,
       to,
       subject,
       text: body,
@@ -159,9 +159,9 @@ export async function sendVerificationEmail(email: string, code: string): Promis
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const mailOptions = {
-      from: `CampusCuts <${process.env.SMTP_USER}>`,
+      from: `CampusCut <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Verify Your CampusCuts Account',
+      subject: 'Verify Your CampusCut Account - Code Inside',
       text: generateVerificationEmailText(code, frontendUrl),
       html: generateVerificationEmailHtml(code, frontendUrl)
     };
@@ -201,9 +201,9 @@ export async function sendPasswordResetEmail(email: string, resetLink: string): 
     const transporter = createTransporter();
 
     const mailOptions = {
-      from: `CampusCuts <${process.env.SMTP_USER}>`,
+      from: `CampusCut <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Reset Your CampusCuts Password',
+      subject: 'Reset Your CampusCut Password',
       text: generatePasswordResetEmailText(resetLink),
       html: generatePasswordResetEmailHtml(resetLink)
     };
@@ -251,19 +251,19 @@ export async function verifyEmailService(): Promise<boolean> {
  */
 function generateVerificationEmailText(code: string, frontendUrl: string): string {
   return `
-Welcome to CampusCuts!
+Welcome to CampusCut!
 
 Your verification code is: ${code}
 
 This code will expire in 10 minutes.
 
 To verify your account, enter this code on the verification page:
-${frontendUrl}/verify-email
+${frontendUrl}/web/verify-email
 
-If you didn't create an account with CampusCuts, please ignore this email.
+If you didn't create an account with CampusCut, please ignore this email.
 
 ---
-CampusCuts - Campus Haircuts Made Easy
+CampusCut - Campus Haircuts Made Easy
 `.trim();
 }
 
@@ -277,92 +277,52 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .container {
-      background-color: #f9fafb;
-      border-radius: 8px;
-      padding: 30px;
-      border: 1px solid #e5e7eb;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #2563eb;
-    }
-    .code-box {
-      background-color: #fff;
-      border: 2px solid #2563eb;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-      margin: 30px 0;
-    }
-    .code {
-      font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 8px;
-      color: #2563eb;
-      font-family: 'Courier New', monospace;
-    }
-    .button {
-      display: inline-block;
-      background-color: #2563eb;
-      color: white;
-      padding: 12px 30px;
-      text-decoration: none;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">✂️ CampusCuts</div>
-      <h1>Verify Your Account</h1>
-    </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Account Verification</p>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin-bottom: 20px;">Welcome to CampusCut!</h2>
     
-    <p>Welcome to CampusCuts! We're excited to have you join our campus community.</p>
+    <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+      We're excited to have you join our campus community. To complete your registration, 
+      please enter the verification code below.
+    </p>
     
-    <p>Your verification code is:</p>
-    
-    <div class="code-box">
-      <div class="code">${code}</div>
+    <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border: 2px dashed #22c55e;">
+      <p style="color: #166534; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+        Your Verification Code
+      </p>
+      <div style="font-size: 40px; font-weight: bold; color: #022b19; letter-spacing: 10px; font-family: 'Courier New', monospace;">
+        ${code}
+      </div>
+      <p style="color: #6b7280; margin: 15px 0 0 0; font-size: 13px;">
+        ⏱️ This code expires in <strong>10 minutes</strong>
+      </p>
     </div>
     
     <p style="text-align: center;">
-      <strong>This code expires in 10 minutes</strong>
+      <a href="${frontendUrl}/web/verify-email" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Verify My Account
+      </a>
     </p>
     
-    <p style="text-align: center;">
-      <a href="${frontendUrl}/verify-email" class="button">Verify My Account</a>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+    
+    <p style="color: #6b7280; font-size: 13px; text-align: center;">
+      If you didn't create an account with CampusCut, you can safely ignore this email.
     </p>
-    
-    <p>If the button doesn't work, copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; color: #2563eb;">${frontendUrl}/verify-email</p>
-    
-    <div class="footer">
-      <p>If you didn't create an account with CampusCuts, you can safely ignore this email.</p>
-      <p>© ${new Date().getFullYear()} CampusCuts - Campus Haircuts Made Easy</p>
-    </div>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 5px 0 0 0;">
+      <a href="${frontendUrl}/help" style="color: #22c55e; text-decoration: none;">Help Center</a> • 
+      <a href="${frontendUrl}/privacy" style="color: #22c55e; text-decoration: none;">Privacy Policy</a>
+    </p>
   </div>
 </body>
 </html>
@@ -374,9 +334,9 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
  */
 function generatePasswordResetEmailText(resetLink: string): string {
   return `
-Reset Your CampusCuts Password
+Reset Your CampusCut Password
 
-You requested to reset your password for your CampusCuts account.
+You requested to reset your password for your CampusCut account.
 
 Click the link below to reset your password:
 ${resetLink}
@@ -386,7 +346,7 @@ This link will expire in 1 hour.
 If you didn't request a password reset, please ignore this email or contact support if you have concerns.
 
 ---
-CampusCuts - Campus Haircuts Made Easy
+CampusCut - Campus Haircuts Made Easy
 `.trim();
 }
 
@@ -400,69 +360,45 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .container {
-      background-color: #f9fafb;
-      border-radius: 8px;
-      padding: 30px;
-      border: 1px solid #e5e7eb;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .logo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #2563eb;
-    }
-    .button {
-      display: inline-block;
-      background-color: #2563eb;
-      color: white;
-      padding: 12px 30px;
-      text-decoration: none;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #6b7280;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">✂️ CampusCuts</div>
-      <h1>Reset Your Password</h1>
-    </div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Password Reset</p>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin-bottom: 20px;">Reset Your Password</h2>
     
-    <p>You requested to reset your password for your CampusCuts account.</p>
-    
-    <p style="text-align: center;">
-      <a href="${resetLink}" class="button">Reset My Password</a>
+    <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+      You requested to reset your password for your CampusCut account. 
+      Click the button below to create a new password.
     </p>
     
-    <p><strong>This link expires in 1 hour.</strong></p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${resetLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Reset My Password
+      </a>
+    </p>
     
-    <p>If the button doesn't work, copy and paste this link into your browser:</p>
-    <p style="word-break: break-all; color: #2563eb;">${resetLink}</p>
+    <p style="color: #dc2626; font-size: 14px; text-align: center;">
+      ⏱️ This link expires in <strong>1 hour</strong>
+    </p>
     
-    <div class="footer">
-      <p>If you didn't request a password reset, you can safely ignore this email or contact support if you have concerns.</p>
-      <p>© ${new Date().getFullYear()} CampusCuts - Campus Haircuts Made Easy</p>
-    </div>
+    <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
+      If the button doesn't work, copy and paste this link into your browser:
+    </p>
+    <p style="word-break: break-all; color: #22c55e; font-size: 13px;">${resetLink}</p>
+    
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+    
+    <p style="color: #6b7280; font-size: 13px; text-align: center;">
+      If you didn't request a password reset, you can safely ignore this email.
+    </p>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
   </div>
 </body>
 </html>
@@ -488,11 +424,11 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const mailOptions = {
-      from: `CampusCuts <${process.env.SMTP_USER}>`,
+      from: `CampusCut <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Welcome to CampusCuts!',
+      subject: 'Welcome to CampusCut! ✂️',
       text: `
-Welcome to CampusCuts, ${firstName}!
+Welcome to CampusCut, ${firstName}!
 
 Your account has been successfully verified. You can now:
 - Book appointments with talented barbers on your campus
@@ -500,37 +436,56 @@ Your account has been successfully verified. You can now:
 - Manage your bookings and payment methods
 - Leave reviews and ratings
 
-Get started: ${frontendUrl}/discover
+Get started: ${frontendUrl}/web/discover
 
 We're excited to help you look your best!
 
 ---
-CampusCuts Team
+CampusCut Team
 `.trim(),
       html: `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-    .container { background-color: #f9fafb; border-radius: 8px; padding: 30px; border: 1px solid #e5e7eb; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-    .button { display: inline-block; background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">✂️ CampusCuts</div>
-      <h1>Welcome, ${firstName}!</h1>
-    </div>
-    <p>Your account has been successfully verified. You're all set to start booking appointments!</p>
-    <p style="text-align: center;">
-      <a href="${frontendUrl}/discover" class="button">Discover Barbers</a>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Welcome Aboard!</p>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin-bottom: 20px;">Hey ${firstName}! 👋</h2>
+    
+    <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+      Your account has been verified and you're all set! Welcome to the CampusCut community.
     </p>
-    <p>We're excited to help you look your best! 💈</p>
+    
+    <div style="background-color: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <p style="color: #166534; font-weight: 600; margin: 0 0 10px 0;">Here's what you can do now:</p>
+      <ul style="color: #555; margin: 0; padding-left: 20px;">
+        <li>📍 Discover talented barbers on your campus</li>
+        <li>📅 Book appointments that fit your schedule</li>
+        <li>💳 Pay securely through the app</li>
+        <li>⭐ Leave reviews and help others find great cuts</li>
+      </ul>
+    </div>
+    
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Find Your Barber
+      </a>
+    </p>
+    
+    <p style="color: #6b7280; font-size: 14px; text-align: center;">
+      We're excited to help you look your best! 💈
+    </p>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
   </div>
 </body>
 </html>

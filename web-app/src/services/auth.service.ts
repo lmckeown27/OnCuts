@@ -21,6 +21,18 @@ interface AuthResponse {
   refreshToken: string;
 }
 
+interface RegistrationPendingResponse {
+  email: string;
+  expiresIn: number;
+  verificationCode?: string; // Only in dev/auto-verify mode
+}
+
+interface VerifyEmailResponse {
+  user: User;
+  token: string;
+  aptosAddress?: string;
+}
+
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
@@ -28,14 +40,56 @@ class AuthService {
     return response;
   }
 
-  async signup(data: SignupData): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/register', data);
-    this.saveAuthData(response);
-    return response;
+  /**
+   * Register a new user - sends verification email
+   * Does NOT authenticate the user - they must verify email first
+   */
+  async signup(data: SignupData): Promise<RegistrationPendingResponse> {
+    const response = await api.post<{ data: RegistrationPendingResponse }>('/auth/register', {
+      email: data.email,
+      password: data.password,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      role: data.user_type,
+    });
+    
+    // Store email for verification page
+    localStorage.setItem('pendingVerificationEmail', data.email);
+    
+    return response.data;
   }
 
-  async verifyEmail(email: string, code: string): Promise<void> {
-    await api.post('/auth/verify-email', { email, code });
+  /**
+   * Verify email with 6-digit code - creates the user account
+   */
+  async verifyEmail(email: string, code: string): Promise<VerifyEmailResponse> {
+    const response = await api.post<{ data: VerifyEmailResponse }>('/auth/verify-email', { email, code });
+    
+    // Save auth data after successful verification
+    if (response.data.user && response.data.token) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.data.user));
+    }
+    
+    // Clear pending verification email
+    localStorage.removeItem('pendingVerificationEmail');
+    
+    return response.data;
+  }
+
+  /**
+   * Resend verification code to email
+   */
+  async resendVerificationCode(email: string): Promise<RegistrationPendingResponse> {
+    const response = await api.post<{ data: RegistrationPendingResponse }>('/auth/resend-verification', { email });
+    return response.data;
+  }
+
+  /**
+   * Get pending verification email from storage
+   */
+  getPendingVerificationEmail(): string | null {
+    return localStorage.getItem('pendingVerificationEmail');
   }
 
   async getCurrentUser(): Promise<User> {
@@ -43,11 +97,9 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
-    try {
-      await api.post('/auth/logout');
-    } finally {
-      this.clearAuthData();
-    }
+    // For JWT-based auth, we just clear local storage
+    // No server-side session to invalidate
+    this.clearAuthData();
   }
 
   async refreshToken(): Promise<string> {

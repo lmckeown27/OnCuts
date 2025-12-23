@@ -278,7 +278,7 @@ export default function PaymentForm({
             Terms of Service
           </a>{' '}
           and{' '}
-          <a href="/refund-policy" className="text-primary-400 hover:underline">
+          <a href="/help" className="text-primary-400 hover:underline">
             Refund Policy
           </a>
         </p>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, Clock, MapPin, DollarSign, CheckCircle, ArrowRight, ArrowLeft, CreditCard } from 'lucide-react';
 import type { Barber, Service } from '../../types';
 import barberService from '../../services/barber.service';
@@ -24,6 +24,8 @@ interface BookingData {
 export default function BookingPage() {
   const { barberId } = useParams<{ barberId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const [barber, setBarber] = useState<Barber | null>(null);
   const [currentStep, setCurrentStep] = useState<BookingStep>('service');
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +55,7 @@ export default function BookingPage() {
       setBarber(data);
     } catch (error) {
       toast.error('Failed to load barber information');
-      navigate('/consumer');
+      navigate(`${platformPrefix}/consumer`);
     } finally {
       setIsLoading(false);
     }
@@ -357,7 +359,7 @@ export default function BookingPage() {
         {/* Step 4: Payment */}
         {currentStep === 'payment' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Review & Confirm</h2>
+            <h2 className="text-2xl font-bold mb-6">Review & Pay</h2>
             
             <div className="bg-gray-50 rounded-lg p-6 mb-6">
               <h3 className="font-semibold text-lg mb-4">Booking Summary</h3>
@@ -395,10 +397,10 @@ export default function BookingPage() {
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-800">
-                <strong>Pay After Service:</strong> You'll only be charged after your appointment is completed. 
-                No upfront payment required!
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-primary-800">
+                <strong>Secure Payment:</strong> Your payment will be held in escrow until service completion. 
+                You can also add a tip for your barber on the next screen.
               </p>
             </div>
 
@@ -408,11 +410,28 @@ export default function BookingPage() {
                 Back
               </Button>
               <Button
-                onClick={handleSubmitBooking}
+                onClick={() => {
+                  // Navigate to payment page with booking details
+                  if (bookingData.service && bookingData.date && bookingData.time) {
+                    const [hours, minutes] = bookingData.time.split(':');
+                    const scheduledTime = setMinutes(setHours(bookingData.date, parseInt(hours)), parseInt(minutes));
+                    
+                    navigate('/web/student/booking/payment', {
+                      state: {
+                        barberId: barberId,
+                        barberName: `${barber?.user?.first_name} ${barber?.user?.last_name}`,
+                        serviceName: bookingData.service.name,
+                        servicePrice: bookingData.service.price,
+                        scheduledAt: scheduledTime.toISOString(),
+                        duration: bookingData.service.duration_minutes,
+                      }
+                    });
+                  }
+                }}
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : 'Confirm Booking'}
-                <CheckCircle className="w-4 h-4 ml-2" />
+                Proceed to Payment
+                <CreditCard className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>
@@ -433,7 +452,7 @@ export default function BookingPage() {
               <Button onClick={() => navigate('/student/bookings')} fullWidth>
                 View My Bookings
               </Button>
-              <Button variant="secondary" onClick={() => navigate('/consumer')} fullWidth>
+              <Button variant="secondary" onClick={() => navigate(`${platformPrefix}/consumer`)} fullWidth>
                 Back to Discovery
               </Button>
             </div>

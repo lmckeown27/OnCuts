@@ -2,6 +2,7 @@
  * Barber Booking Requests Dropdown Component
  * 
  * Compact dropdown inbox for booking requests in header
+ * Features smooth open/close animations
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -90,9 +91,11 @@ const MOCK_REQUESTS: BookingRequest[] = [
 
 export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const [requests, setRequests] = useState<BookingRequest[]>(MOCK_REQUESTS);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewingRequest, setViewingRequest] = useState<BookingRequest | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -103,7 +106,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        closeDropdown();
       }
     };
 
@@ -114,7 +117,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   useEffect(() => {
     const handleModalClickOutside = (event: MouseEvent) => {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        setViewingRequest(null);
+        closeModal();
       }
     };
 
@@ -123,6 +126,48 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
       return () => document.removeEventListener('mousedown', handleModalClickOutside);
     }
   }, [viewingRequest]);
+
+  // Dropdown open/close handlers
+  const openDropdown = () => {
+    setIsDropdownOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDropdownVisible(true);
+      });
+    });
+  };
+
+  const closeDropdown = () => {
+    setIsDropdownVisible(false);
+    setTimeout(() => {
+      setIsDropdownOpen(false);
+    }, 150);
+  };
+
+  const toggleDropdown = () => {
+    if (isDropdownOpen) {
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  };
+
+  // Modal open/close handlers
+  const openModal = (request: BookingRequest) => {
+    setViewingRequest(request);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsModalVisible(true);
+      });
+    });
+  };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setTimeout(() => {
+      setViewingRequest(null);
+    }, 150);
+  };
 
   const fetchRequests = async () => {
     try {
@@ -189,7 +234,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     <div className="relative" ref={dropdownRef}>
       {/* Inbox Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleDropdown}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
         <Inbox className="w-6 h-6 text-gray-600" />
@@ -201,8 +246,14 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-y-auto">
+      {isDropdownOpen && (
+        <div 
+          className={`absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out origin-top-right ${
+            isDropdownVisible 
+              ? 'opacity-100 scale-100 translate-y-0' 
+              : 'opacity-0 scale-95 -translate-y-2'
+          }`}
+        >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg">
             <h3 className="font-bold text-gray-900">Booking Requests ({requests.length})</h3>
@@ -260,7 +311,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   {/* Actions */}
                   <div className="space-y-2">
                     <button
-                      onClick={() => setViewingRequest(request)}
+                      onClick={() => openModal(request)}
                       className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
                     >
                       <Eye className="w-3 h-3" />
@@ -297,14 +348,25 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
 
       {/* Customer Details Modal */}
       {viewingRequest && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4 animate-fade-in">
-          <div ref={modalRef} className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-in">
+        <div 
+          className={`fixed inset-0 flex items-center justify-center z-[100] p-4 transition-all duration-150 ease-out ${
+            isModalVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+        >
+          <div 
+            ref={modalRef} 
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+              isModalVisible 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-0 scale-95 translate-y-4'
+            }`}
+          >
             {/* Header */}
             <div className="bg-gradient-to-r from-primary-500 to-primary-400 text-white p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Customer Details</h2>
                 <button
-                  onClick={() => setViewingRequest(null)}
+                  onClick={closeModal}
                   className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -399,7 +461,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                 <Button
                   onClick={() => {
                     handleAccept(viewingRequest.bookingId);
-                    setViewingRequest(null);
+                    closeModal();
                   }}
                   disabled={actionLoading === viewingRequest.bookingId}
                   className="flex-1 bg-green-600 hover:bg-green-700"
@@ -410,7 +472,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                 <Button
                   onClick={() => {
                     handleReject(viewingRequest.bookingId);
-                    setViewingRequest(null);
+                    closeModal();
                   }}
                   disabled={actionLoading === viewingRequest.bookingId}
                   variant="secondary"
@@ -427,4 +489,3 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     </div>
   );
 }
-

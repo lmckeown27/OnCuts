@@ -6,32 +6,65 @@ import gasCalculatorService from './gas-calculator.service';
 dotenv.config();
 
 class AptosService {
-  private client: AptosClient;
-  private faucetClient: FaucetClient | null;
-  private platformAccount: AptosAccount;
-  private moduleAddress: string;
+  private client: AptosClient | null = null;
+  private faucetClient: FaucetClient | null = null;
+  private platformAccount: AptosAccount | null = null;
+  private moduleAddress: string = '';
+  private isEnabled: boolean = false;
 
   constructor() {
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-    this.client = new AptosClient(nodeUrl);
+    try {
+      const privateKeyHex = process.env.PETRA_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
+      
+      // If no private key configured, disable the service gracefully
+      if (!privateKeyHex) {
+        logger.warn('⚠️ Aptos Service DISABLED: No PETRA_PRIVATE_KEY configured. On-chain features will not work.');
+        return;
+      }
 
-    // Initialize faucet client for devnet/testnet
-    const faucetUrl = process.env.APTOS_FAUCET_URL || 'https://faucet.devnet.aptoslabs.com';
-    this.faucetClient = process.env.APTOS_NETWORK !== 'mainnet' ? new FaucetClient(nodeUrl, faucetUrl) : null;
+      // Validate hex string has even length
+      const cleanHex = privateKeyHex.startsWith('0x') ? privateKeyHex.slice(2) : privateKeyHex;
+      if (cleanHex.length % 2 !== 0) {
+        logger.warn(`⚠️ Aptos Service DISABLED: Invalid private key format (odd length: ${cleanHex.length}). On-chain features will not work.`);
+        return;
+      }
 
-    // Initialize platform account from private key
-    const privateKeyHex = process.env.PETRA_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
-    if (!privateKeyHex) {
-      throw new Error('PETRA_PRIVATE_KEY not configured. Please set PETRA_PRIVATE_KEY in your .env file');
+      const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+      this.client = new AptosClient(nodeUrl);
+
+      // Initialize faucet client for devnet/testnet
+      const faucetUrl = process.env.APTOS_FAUCET_URL || 'https://faucet.devnet.aptoslabs.com';
+      this.faucetClient = process.env.APTOS_NETWORK !== 'mainnet' ? new FaucetClient(nodeUrl, faucetUrl) : null;
+
+      const privateKey = new HexString(privateKeyHex);
+      this.platformAccount = new AptosAccount(privateKey.toUint8Array());
+      
+      this.moduleAddress = process.env.APTOS_PLATFORM_ADDRESS || this.platformAccount.address().hex();
+      this.isEnabled = true;
+      
+      logger.info(`🔗 Aptos Service initialized: ${nodeUrl}`);
+      logger.info(`📍 Platform Address: ${this.moduleAddress}`);
+    } catch (error) {
+      logger.warn(`⚠️ Aptos Service DISABLED: ${error instanceof Error ? error.message : 'Unknown error'}. On-chain features will not work.`);
+      this.isEnabled = false;
     }
+  }
 
-    const privateKey = new HexString(privateKeyHex);
-    this.platformAccount = new AptosAccount(privateKey.toUint8Array());
-    
-    this.moduleAddress = process.env.APTOS_PLATFORM_ADDRESS || this.platformAccount.address().hex();
-    
-    logger.info(`🔗 Aptos Service initialized: ${nodeUrl}`);
-    logger.info(`📍 Platform Address: ${this.moduleAddress}`);
+  /**
+   * Check if Aptos service is enabled and configured
+   */
+  public isConfigured(): boolean {
+    return this.isEnabled;
+  }
+
+  /**
+   * Helper to ensure service is configured and return non-null client/account
+   */
+  private ensureConfigured(): { client: AptosClient; account: AptosAccount } {
+    if (!this.isEnabled || !this.client || !this.platformAccount) {
+      throw new Error('Aptos service is not configured. On-chain features are disabled.');
+    }
+    return { client: this.client, account: this.platformAccount };
   }
 
   /**
@@ -43,6 +76,8 @@ class AptosService {
     typeArguments: string[],
     functionArgs: any[]
   ): Promise<string> {
+    const { client, account } = this.ensureConfigured();
+
     try {
       const payload: Types.TransactionPayload = {
         type: 'entry_function_payload',
@@ -51,18 +86,18 @@ class AptosService {
         arguments: functionArgs,
       };
 
-      const txnRequest = await this.client.generateTransaction(
-        this.platformAccount.address(),
+      const txnRequest = await client.generateTransaction(
+        account.address(),
         payload
       );
 
-      const signedTxn = await this.client.signTransaction(
-        this.platformAccount,
+      const signedTxn = await client.signTransaction(
+        account,
         txnRequest
       );
 
-      const transactionRes = await this.client.submitTransaction(signedTxn);
-      await this.client.waitForTransaction(transactionRes.hash);
+      const transactionRes = await client.submitTransaction(signedTxn);
+      await client.waitForTransaction(transactionRes.hash);
 
       logger.info(`✅ Transaction submitted: ${transactionRes.hash}`);
       return transactionRes.hash;
@@ -252,8 +287,9 @@ class AptosService {
    * Get booking details from blockchain
    */
   async getBooking(bookingId: number): Promise<any> {
+    const { client } = this.ensureConfigured();
     try {
-      const resource = await this.client.view({
+      const resource = await client.view({
         function: `${this.moduleAddress}::booking_system::get_booking`,
         type_arguments: [],
         arguments: [this.moduleAddress, bookingId.toString()],
@@ -270,8 +306,9 @@ class AptosService {
    * Get barber's rating from blockchain
    */
   async getBarberRating(barberAddress: string): Promise<{ average: number; total: number }> {
+    const { client } = this.ensureConfigured();
     try {
-      const resource = await this.client.view({
+      const resource = await client.view({
         function: `${this.moduleAddress}::review_system::get_barber_rating`,
         type_arguments: [],
         arguments: [this.moduleAddress, barberAddress],
@@ -293,8 +330,9 @@ class AptosService {
    * Get account balance in APT
    */
   async getAccountBalance(address: string): Promise<number> {
+    const { client } = this.ensureConfigured();
     try {
-      const resources = await this.client.getAccountResources(address);
+      const resources = await client.getAccountResources(address);
       const accountResource = resources.find(
         (r) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
       );
@@ -453,10 +491,11 @@ class AptosService {
     barber_address: string;
     consumer_address: string;
   }> {
+    const { client } = this.ensureConfigured();
     try {
       const bookingIdBytes = Buffer.from(bookingId).toString('hex');
 
-      const result = await this.client.view({
+      const result = await client.view({
         function: `${this.moduleAddress}::usdc_escrow::get_escrow`,
         type_arguments: [],
         arguments: [this.moduleAddress, `0x${bookingIdBytes}`],
@@ -492,7 +531,8 @@ class AptosService {
    * Get platform address
    */
   getPlatformAddress(): string {
-    return this.platformAccount.address().hex();
+    const { account } = this.ensureConfigured();
+    return account.address().hex();
   }
 
   /**
@@ -530,6 +570,7 @@ class AptosService {
     recipients: (string | undefined)[],
     amounts: number[]
   ): Promise<string> {
+    const { client, account } = this.ensureConfigured();
     try {
       const validRecipients = recipients.filter((r): r is string => r !== undefined);
       
@@ -541,7 +582,7 @@ class AptosService {
         throw new Error('Recipients and amounts length mismatch');
       }
 
-      const platformBalance = await this.getAccountBalance(this.platformAccount.address().hex());
+      const platformBalance = await this.getAccountBalance(account.address().hex());
       const gasEstimate = gasCalculatorService.calculateBatchWithdrawalGas(validRecipients.length);
       
       logger.info('🔍 Batch withdrawal gas validation:', {
@@ -576,14 +617,14 @@ class AptosService {
         arguments: [validRecipients, amounts],
       };
 
-      const rawTxn = await this.client.generateTransaction(
-        this.platformAccount.address(),
+      const rawTxn = await client.generateTransaction(
+        account.address(),
         payload
       );
 
-      const signedTxn = await this.client.signTransaction(this.platformAccount, rawTxn);
-      const txResponse = await this.client.submitTransaction(signedTxn);
-      await this.client.waitForTransaction(txResponse.hash);
+      const signedTxn = await client.signTransaction(account, rawTxn);
+      const txResponse = await client.submitTransaction(signedTxn);
+      await client.waitForTransaction(txResponse.hash);
 
       logger.info('✅ Batch withdrawal completed successfully!', {
         recipient_count: validRecipients.length,
@@ -612,6 +653,7 @@ class AptosService {
     subjectId: string,
     dataHash: string
   ): Promise<string> {
+    const { client, account } = this.ensureConfigured();
     try {
       const payload: Types.TransactionPayload = {
         type: 'entry_function_payload',
@@ -620,14 +662,14 @@ class AptosService {
         arguments: [dataHash, recordType, subjectId],
       };
 
-      const rawTxn = await this.client.generateTransaction(
-        this.platformAccount.address(),
+      const rawTxn = await client.generateTransaction(
+        account.address(),
         payload
       );
 
-      const signedTxn = await this.client.signTransaction(this.platformAccount, rawTxn);
-      const txResponse = await this.client.submitTransaction(signedTxn);
-      await this.client.waitForTransaction(txResponse.hash);
+      const signedTxn = await client.signTransaction(account, rawTxn);
+      const txResponse = await client.submitTransaction(signedTxn);
+      await client.waitForTransaction(txResponse.hash);
 
       logger.info(`Hash proof submitted: ${txResponse.hash}`, {
         record_type: recordType,

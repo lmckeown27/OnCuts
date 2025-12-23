@@ -110,6 +110,15 @@ router.post('/bookings', async (req: Request, res: Response) => {
 // Test Aptos blockchain connection
 router.get('/aptos/status', async (req: Request, res: Response) => {
   try {
+    // Check if Aptos service is configured
+    if (!aptosService.isConfigured()) {
+      return res.json({
+        success: false,
+        error: 'Aptos service is not configured. On-chain features are disabled.',
+        configured: false,
+      });
+    }
+
     const platformAddress = process.env.APTOS_PLATFORM_ADDRESS;
     
     if (!platformAddress) {
@@ -119,19 +128,13 @@ router.get('/aptos/status', async (req: Request, res: Response) => {
       });
     }
 
-    // Try to get account info
-    const account = await aptosService['client'].getAccount(platformAddress);
-    
     res.json({
       success: true,
       network: process.env.APTOS_NETWORK || 'devnet',
       platform_address: platformAddress,
-      account: {
-        sequence_number: account.sequence_number,
-        authentication_key: account.authentication_key,
-      },
       contract_address: platformAddress,
-      deployed: true,
+      configured: true,
+      message: 'Aptos service is configured and ready',
     });
   } catch (error: any) {
     res.status(500).json({

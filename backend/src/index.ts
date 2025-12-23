@@ -363,28 +363,30 @@ httpServer.listen(PORT, async () => {
     });
   }
 
-  // Start Aptos blockchain monitor for live transaction feed
-  if (process.env.APTOS_PLATFORM_ADDRESS) {
-    const aptosMonitorService = (await import('./services/aptos-monitor.service')).default;
-    await aptosMonitorService.start();
-    logger.info(`Aptos blockchain monitor started`);
-  } else {
-    logger.warn('Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
-  }
+  // NOTE: Aptos blockchain monitor disabled - platform uses Stripe for payments
+  // To re-enable blockchain features, uncomment below:
+  // if (process.env.APTOS_PLATFORM_ADDRESS) {
+  //   const aptosMonitorService = (await import('./services/aptos-monitor.service')).default;
+  //   await aptosMonitorService.start();
+  //   logger.info(`Aptos blockchain monitor started`);
+  // } else {
+  //   logger.warn('Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
+  // }
 
-  // Start comprehensive gas wallet monitoring (every 15 min + alerts)
-  const { gasWalletCron } = await import('./services/gas-wallet-cron.service');
-  gasWalletCron.start();
-  logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
+  // NOTE: Gas wallet monitoring disabled - platform uses Stripe for payments
+  // To re-enable blockchain features, uncomment below:
+  // const { gasWalletCron } = await import('./services/gas-wallet-cron.service');
+  // gasWalletCron.start();
+  // logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
   await marketplaceCronService.startAllJobs();
 
-  // Start blockchain → PostgreSQL sync (hourly)
-  // This keeps PostgreSQL cache up-to-date with blockchain data
-  const blockchainSyncCronService = (await import('./services/blockchain-sync-cron.service')).default;
-  blockchainSyncCronService.start();
-  logger.info(`Blockchain sync cron job started (hourly sync)`);
+  // NOTE: Blockchain sync disabled - platform uses Stripe for payments
+  // To re-enable blockchain features, uncomment below:
+  // const blockchainSyncCronService = (await import('./services/blockchain-sync-cron.service')).default;
+  // blockchainSyncCronService.start();
+  // logger.info(`Blockchain sync cron job started (hourly sync)`);
 
   // Start pricing cron jobs (daily recompute, hourly metrics, weekly market update)
   // TEMPORARILY DISABLED: Requires PostgreSQL database to be properly configured

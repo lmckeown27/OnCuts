@@ -1,17 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
-import { DirectWalletProvider } from './contexts/DirectWalletContext.tsx';
-import WalletProvider from './providers/WalletProvider.tsx';
 import './index.css';
+
+// Note: Wallet providers removed - platform uses Stripe for payments
+// If blockchain integration is needed later, re-add:
+// import { DirectWalletProvider } from './contexts/DirectWalletContext.tsx';
+// import WalletProvider from './providers/WalletProvider.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <DirectWalletProvider>
-      <WalletProvider>
-        <App />
-      </WalletProvider>
-    </DirectWalletProvider>
+    <App />
   </StrictMode>,
 );
 

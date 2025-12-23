@@ -1,207 +1,370 @@
 /**
- * System Mode Meter
+ * System Health Dashboard Component
  * 
- * Visual gauge showing whether system is running in:
- * - Hybrid mode (PostgreSQL + Blockchain)
- * - Blockchain-only mode (PostgreSQL down)
+ * Visual dashboard showing:
+ * - PostgreSQL database status
+ * - API server status
+ * - Service connectivity (Stripe, Email)
+ * - System metrics (memory, uptime, connections)
  */
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { 
+  Database, 
+  Server, 
+  CreditCard, 
+  Mail, 
+  Activity,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  RefreshCw,
+  Clock,
+  HardDrive,
+  Zap
+} from 'lucide-react';
+
+interface ServiceStatus {
+  name: string;
+  status: 'operational' | 'degraded' | 'down' | 'not_configured';
+  responseTime?: number;
+  message?: string;
+  lastChecked: string;
+  details?: any;
+}
 
 interface SystemHealth {
-  mode: 'hybrid' | 'blockchain-only' | 'unknown';
-  postgres: {
-    status: string;
-    healthy: boolean;
+  status: 'operational' | 'degraded' | 'error';
+  services: {
+    database: ServiceStatus;
+    api: ServiceStatus;
+    stripe: ServiceStatus;
+    email: ServiceStatus;
   };
-  blockchain: {
-    status: string;
-    healthy: boolean;
+  metrics: {
+    uptime: number;
+    memoryUsage: {
+      used: number;
+      total: number;
+      percentage: number;
+    };
+    activeConnections: number;
+    nodeVersion: string;
+    environment: string;
   };
   timestamp: string;
 }
 
-// Mock data for testing
+// Mock data for testing when API is unavailable
 const MOCK_HEALTH: SystemHealth = {
-  mode: 'blockchain-only',
-  postgres: {
-    status: 'disconnected',
-    healthy: false,
+  status: 'operational',
+  services: {
+    database: {
+      name: 'PostgreSQL',
+      status: 'operational',
+      responseTime: 12,
+      message: 'Database connected and responding',
+      lastChecked: new Date().toISOString(),
+      details: { pool: { total: 3, idle: 2, waiting: 0 } },
+    },
+    api: {
+      name: 'API Server',
+      status: 'operational',
+      responseTime: 1,
+      message: 'API server is running',
+      lastChecked: new Date().toISOString(),
+    },
+    stripe: {
+      name: 'Stripe Payments',
+      status: 'operational',
+      message: 'Payment processing available',
+      lastChecked: new Date().toISOString(),
+    },
+    email: {
+      name: 'Email Service',
+      status: 'operational',
+      message: 'Email service configured',
+      lastChecked: new Date().toISOString(),
+    },
   },
-  blockchain: {
-    status: 'connected',
-    healthy: true,
+  metrics: {
+    uptime: 86400,
+    memoryUsage: { used: 128, total: 256, percentage: 50 },
+    activeConnections: 2,
+    nodeVersion: 'v18.17.0',
+    environment: 'development',
   },
   timestamp: new Date().toISOString(),
 };
 
 export const SystemModeMeter: React.FC = () => {
-  const [health, setHealth] = useState<SystemHealth | null>(MOCK_HEALTH);
+  const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 10000); // Refresh every 10s
+    const interval = setInterval(fetchHealth, 30000); // Refresh every 30s
     return () => clearInterval(interval);
   }, []);
 
   const fetchHealth = async () => {
     try {
+      setRefreshing(true);
       const response = await axios.get('http://localhost:3001/api/system/health');
-      // Validate response data has required structure
-      if (response.data && response.data.postgres && response.data.blockchain) {
+      if (response.data && response.data.services) {
         setHealth(response.data);
+        setError(null);
       } else {
         console.warn('Invalid health response, using mock data');
         setHealth(MOCK_HEALTH);
       }
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch system health:', error);
-      console.log('Using mock system health data for testing');
-      // Use mock data on API failure
+    } catch (err) {
+      console.error('Failed to fetch system health:', err);
+      setError('Unable to connect to backend');
       setHealth(MOCK_HEALTH);
+    } finally {
       setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const formatUptime = (seconds: number) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'operational':
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'degraded':
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case 'down':
+        return <XCircle className="w-5 h-5 text-red-500" />;
+      case 'not_configured':
+        return <AlertTriangle className="w-5 h-5 text-gray-400" />;
+      default:
+        return <AlertTriangle className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'operational':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'degraded':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'down':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'not_configured':
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+  };
+
+  const getServiceIcon = (serviceName: string) => {
+    switch (serviceName.toLowerCase()) {
+      case 'postgresql':
+        return <Database className="w-5 h-5" />;
+      case 'api server':
+        return <Server className="w-5 h-5" />;
+      case 'stripe payments':
+        return <CreditCard className="w-5 h-5" />;
+      case 'email service':
+        return <Mail className="w-5 h-5" />;
+      default:
+        return <Activity className="w-5 h-5" />;
     }
   };
 
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">System Mode</h3>
-        <div className="text-gray-500">Loading...</div>
+        <div className="flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 text-primary-500 animate-spin mr-2" />
+          <span className="text-gray-600">Loading system status...</span>
+        </div>
       </div>
     );
   }
 
-  // Safety check - ensure health has valid data
-  if (!health || !health.postgres || !health.blockchain) {
+  if (!health) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">System Mode</h3>
-        <div className="text-red-500">Unable to load system health data</div>
+        <div className="text-center text-red-600">
+          <XCircle className="w-8 h-8 mx-auto mb-2" />
+          Unable to load system health
+        </div>
       </div>
     );
   }
 
-  const isHybrid = health.mode === 'hybrid';
-  const meterPosition = isHybrid ? '10%' : '90%'; // Left for hybrid, right for blockchain-only
+  const overallHealthy = health.status === 'operational';
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4 flex items-center justify-between">
-        <span>System Mode</span>
-        <span
-          className={`text-sm font-normal px-3 py-1 rounded-full ${
-            isHybrid
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}
-        >
-          {isHybrid ? 'Hybrid Mode' : 'Blockchain Only'}
-        </span>
-      </h3>
-
-      {/* Meter Container */}
-      <div className="relative">
-        {/* Meter Track */}
-        <div className="h-12 bg-gradient-to-r from-green-100 via-yellow-100 to-orange-100 rounded-lg relative overflow-hidden">
-          {/* Labels */}
-          <div className="absolute inset-0 flex items-center justify-between px-4 text-sm font-medium">
-            <span className="text-green-800">Hybrid</span>
-            <span className="text-orange-800">Blockchain Only</span>
+    <div className="space-y-6">
+      {/* Overall Status Banner */}
+      <div className={`rounded-xl p-6 ${
+        overallHealthy 
+          ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+          : 'bg-gradient-to-r from-yellow-500 to-orange-500'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 rounded-full p-3">
+              {overallHealthy 
+                ? <CheckCircle className="w-8 h-8 text-white" />
+                : <AlertTriangle className="w-8 h-8 text-white" />
+              }
+            </div>
+            <div className="text-white">
+              <h3 className="text-xl font-bold">
+                {overallHealthy ? 'All Systems Operational' : 'System Issues Detected'}
+              </h3>
+              <p className="text-white/80 text-sm">
+                Last checked: {new Date(health.timestamp).toLocaleTimeString()}
+              </p>
+            </div>
           </div>
-
-          {/* Meter Indicator */}
-          <div
-            className="absolute top-0 h-full w-2 bg-gray-800 shadow-lg transition-all duration-500"
-            style={{ left: meterPosition }}
+          <button 
+            onClick={fetchHealth}
+            disabled={refreshing}
+            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
           >
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-gray-800 rounded-full" />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div>
+            <p className="font-medium text-yellow-800">{error}</p>
+            <p className="text-sm text-yellow-700">Showing cached/mock data. Check if backend is running.</p>
           </div>
         </div>
+      )}
 
-        {/* Status Details */}
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          {/* PostgreSQL Status */}
-          <div className="flex items-center space-x-2">
-            <div
-              className={`w-3 h-3 rounded-full ${
-                health.postgres.healthy ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            />
-            <div>
-              <div className="text-sm font-medium">PostgreSQL</div>
-              <div className="text-xs text-gray-500">
-                {health.postgres.healthy ? 'Connected' : 'Disconnected'}
+      {/* Services Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Object.entries(health.services).map(([key, service]) => (
+          <div 
+            key={key}
+            className="bg-white rounded-lg shadow p-5 border-l-4"
+            style={{ 
+              borderLeftColor: service.status === 'operational' ? '#22c55e' : 
+                              service.status === 'degraded' ? '#eab308' :
+                              service.status === 'down' ? '#ef4444' : '#9ca3af'
+            }}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${
+                  service.status === 'operational' ? 'bg-green-100 text-green-600' :
+                  service.status === 'degraded' ? 'bg-yellow-100 text-yellow-600' :
+                  service.status === 'down' ? 'bg-red-100 text-red-600' :
+                  'bg-gray-100 text-gray-500'
+                }`}>
+                  {getServiceIcon(service.name)}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{service.name}</h4>
+                  <p className="text-sm text-gray-500">{service.message}</p>
+                </div>
               </div>
+              {getStatusIcon(service.status)}
             </div>
-          </div>
 
-          {/* Blockchain Status */}
-          <div className="flex items-center space-x-2">
-            <div
-              className={`w-3 h-3 rounded-full ${
-                health.blockchain.healthy ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            />
-            <div>
-              <div className="text-sm font-medium">Blockchain</div>
-              <div className="text-xs text-gray-500">
-                {health.blockchain.healthy ? 'Connected' : 'Disconnected'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Performance Info */}
-        <div
-          className={`mt-4 p-3 rounded-lg ${
-            isHybrid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
-          }`}
-        >
-          <div className="flex items-start space-x-2">
-            <svg
-              className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                isHybrid ? 'text-green-600' : 'text-yellow-600'
-              }`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              {isHybrid ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
+            <div className="flex items-center justify-between">
+              <span className={`text-xs px-2 py-1 rounded-full border ${getStatusBadge(service.status)}`}>
+                {service.status === 'not_configured' ? 'Not Configured' : service.status.charAt(0).toUpperCase() + service.status.slice(1)}
+              </span>
+              {service.responseTime !== undefined && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  {service.responseTime}ms
+                </span>
               )}
-            </svg>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">
-                {isHybrid ? 'Optimal Performance' : 'Degraded Performance'}
-              </p>
-              <p className="text-xs text-gray-600 mt-1">
-                {isHybrid
-                  ? 'Fast queries using PostgreSQL cache with blockchain as source of truth'
-                  : 'Using blockchain fallback - queries may be slower. Consider fixing PostgreSQL for better performance.'}
-              </p>
+            </div>
+
+            {/* Pool Details for Database */}
+            {service.details?.pool && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span>Connection Pool</span>
+                  <span>{service.details.pool.total - service.details.pool.idle} active / {service.details.pool.total} total</span>
+                </div>
+                <div className="mt-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full transition-all"
+                    style={{ 
+                      width: `${((service.details.pool.total - service.details.pool.idle) / service.details.pool.total) * 100}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* System Metrics */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-primary-500" />
+          System Metrics
+        </h3>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Uptime */}
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <Clock className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">
+              {formatUptime(health.metrics.uptime)}
+            </div>
+            <div className="text-xs text-gray-500">Uptime</div>
+          </div>
+
+          {/* Memory */}
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <HardDrive className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">
+              {health.metrics.memoryUsage.percentage}%
+            </div>
+            <div className="text-xs text-gray-500">
+              {health.metrics.memoryUsage.used}MB / {health.metrics.memoryUsage.total}MB
             </div>
           </div>
-        </div>
 
-        {/* Last Updated */}
-        <div className="mt-3 text-xs text-gray-400 text-right">
-          Last checked: {new Date(health.timestamp).toLocaleTimeString()}
+          {/* Connections */}
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <Database className="w-6 h-6 text-green-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-900">
+              {health.metrics.activeConnections}
+            </div>
+            <div className="text-xs text-gray-500">Active Connections</div>
+          </div>
+
+          {/* Environment */}
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <Server className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+            <div className="text-lg font-bold text-gray-900 capitalize">
+              {health.metrics.environment}
+            </div>
+            <div className="text-xs text-gray-500">{health.metrics.nodeVersion}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -209,4 +372,3 @@ export const SystemModeMeter: React.FC = () => {
 };
 
 export default SystemModeMeter;
-

@@ -7,6 +7,7 @@ export interface User {
   user_type: 'student' | 'barber' | 'admin';
   campus_id?: string;
   is_verified: boolean;
+  is_admin?: boolean;
   profile_picture_url?: string;
   bio?: string;
   phone?: string;

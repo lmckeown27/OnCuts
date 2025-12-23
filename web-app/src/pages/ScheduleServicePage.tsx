@@ -65,22 +65,31 @@ export default function ScheduleServicePage() {
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement actual booking API call
-      // await bookingService.createBooking({
-      //   barberId,
-      //   serviceType,
-      //   date,
-      //   time,
-      //   location: location_,
-      //   locationDetails,
-      //   notes,
-      // });
+      // Get service price from barber's pricing
+      const servicePrice = barber?.pricing?.find(
+        p => p.name?.toLowerCase() === serviceType.toLowerCase() || 
+             p.service?.toLowerCase() === serviceType.toLowerCase()
+      )?.price || barber?.base_price || 30;
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Combine date and time for scheduled datetime
+      const scheduledAt = new Date(`${date}T${time}`).toISOString();
 
-      toast.success('Booking request sent! The barber will review your request.');
-      navigate('/web/consumer');
+      // Navigate to payment page with booking details
+      navigate('/web/student/booking/payment', {
+        state: {
+          barberId: barberId,
+          barberName: barber?.user?.first_name 
+            ? `${barber.user.first_name} ${barber.user.last_name}` 
+            : barber?.name || 'Barber',
+          serviceName: serviceType,
+          servicePrice: servicePrice,
+          scheduledAt: scheduledAt,
+          duration: 30, // Default 30 minutes
+          location: location_,
+          locationDetails: locationDetails,
+          notes: notes,
+        }
+      });
     } catch (error) {
       console.error('Failed to create booking:', error);
       toast.error('Failed to create booking. Please try again.');
@@ -313,7 +322,7 @@ export default function ScheduleServicePage() {
                     disabled={isSubmitting}
                     className="flex-1"
                   >
-                    {isSubmitting ? 'Sending Request...' : 'Send Booking Request'}
+                    {isSubmitting ? 'Processing...' : 'Continue to Payment'}
                   </Button>
                 </div>
 

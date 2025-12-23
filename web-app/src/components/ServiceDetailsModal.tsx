@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { X, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -43,7 +44,31 @@ interface ServiceDetailsModalProps {
 }
 
 export default function ServiceDetailsModal({ isOpen, onClose, appointment }: ServiceDetailsModalProps) {
-  if (!isOpen) return null;
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Handle open animation
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+    }
+  }, [isOpen]);
+
+  // Handle close with animation
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      setShouldRender(false);
+      onClose();
+    }, 150);
+  };
+
+  if (!shouldRender) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,11 +93,17 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in"
-      onClick={onClose}
+      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        isVisible ? 'bg-black/50' : 'bg-black/0'
+      }`}
+      onClick={handleClose}
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+        className={`bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out ${
+          isVisible 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 translate-y-4'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -86,7 +117,7 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
               {appointment.status}
             </div>
             <button 
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <X className="w-6 h-6 text-gray-600" />
@@ -281,13 +312,8 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
                   </span>
                 </div>
                 <p className="text-sm text-primary-600 mb-2">
-                  Funds are securely held in blockchain escrow. You'll receive payment after service completion.
+                  Funds are securely held in escrow via Stripe. You'll receive payment after service completion.
                 </p>
-                <div className="flex items-center gap-2 text-xs text-primary-500">
-                  <span className="font-mono bg-primary-100 px-2 py-1 rounded">
-                    TX: {appointment.blockchainTx}
-                  </span>
-                </div>
               </div>
             </div>
           </Card>
@@ -296,4 +322,3 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
     </div>
   );
 }
-

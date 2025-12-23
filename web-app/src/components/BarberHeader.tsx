@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Settings, Calendar, Scissors, Award, Shield, LogOut, ChevronDown, Inbox } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Settings, Calendar, Shield, LogOut, ChevronDown, Inbox, ArrowLeft } from 'lucide-react';
 import { CampusCutLogo } from '@assets';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface BarberHeaderProps {
   title: string;
@@ -10,6 +11,7 @@ interface BarberHeaderProps {
   campusName?: string;
   showBookingRequests?: boolean;
   bookingRequestsCount?: number;
+  onServiceHistoryClick?: () => void;
 }
 
 export default function BarberHeader({ 
@@ -18,11 +20,16 @@ export default function BarberHeader({
   isCampusManager = false,
   campusName = '',
   showBookingRequests = false,
-  bookingRequestsCount = 0
+  bookingRequestsCount = 0,
+  onServiceHistoryClick
 }: BarberHeaderProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Determine platform prefix based on current route
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,7 +67,7 @@ export default function BarberHeader({
           <div className="flex items-center gap-4">
             {/* Switch to Consumer */}
             <button
-              onClick={() => navigate('/consumer')}
+              onClick={() => navigate(`${platformPrefix}/consumer`)}
               className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-lg transition-colors"
             >
               Switch to Consumer
@@ -70,7 +77,7 @@ export default function BarberHeader({
             {showBookingRequests && (
               <div className="relative">
                 <button 
-                  onClick={() => navigate('/barber')}
+                  onClick={() => navigate(`${platformPrefix}/barber`)}
                   className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <Inbox className="w-6 h-6 text-gray-600" />
@@ -99,7 +106,7 @@ export default function BarberHeader({
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                   <button
                     onClick={() => {
-                      navigate('/barber');
+                      navigate(`${platformPrefix}/barber`);
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -109,7 +116,11 @@ export default function BarberHeader({
                   </button>
                   <button
                     onClick={() => {
-                      navigate('/barber/service-history');
+                      if (onServiceHistoryClick) {
+                        onServiceHistoryClick();
+                      } else {
+                        navigate(`${platformPrefix}/barber/service-history`);
+                      }
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -123,7 +134,7 @@ export default function BarberHeader({
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
                         onClick={() => {
-                          navigate('/barber');
+                          navigate(`${platformPrefix}/barber`);
                           setShowProfileDropdown(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -137,13 +148,24 @@ export default function BarberHeader({
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
-                      navigate('/web');
+                      navigate(`${platformPrefix}/admin-role-select`);
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
-                    <LogOut className="w-4 h-4 text-gray-500" />
+                    <ArrowLeft className="w-4 h-4 text-gray-500" />
                     Back to Roles
+                  </button>
+                  <button
+                    onClick={() => {
+                      useAuthStore.getState().logout();
+                      navigate(`${platformPrefix}`);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                  >
+                    <LogOut className="w-4 h-4 text-red-500" />
+                    Sign Out
                   </button>
                 </div>
               )}

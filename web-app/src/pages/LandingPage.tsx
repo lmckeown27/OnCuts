@@ -63,6 +63,10 @@ export default function LandingPage() {
 
   // Handle scroll for sticky navigation
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
@@ -784,8 +788,8 @@ export default function LandingPage() {
                   </button>
                 </li>
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    Help Center <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => navigate('/help')} className="text-gray-400 hover:text-white transition-colors">
+                    Help Center
                   </button>
                 </li>
               </ul>
@@ -813,8 +817,8 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-2">
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    Help Center <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => navigate('/help')} className="text-gray-400 hover:text-white transition-colors">
+                    Help Center
                   </button>
                 </li>
                 <li>
@@ -835,18 +839,18 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    Privacy Policy <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => navigate('/privacy')} className="text-gray-400 hover:text-white transition-colors">
+                    Privacy Policy
                   </button>
                 </li>
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    Terms of Service <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => navigate('/terms')} className="text-gray-400 hover:text-white transition-colors">
+                    Terms of Service
                   </button>
                 </li>
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    GDPR <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => navigate('/gdpr')} className="text-gray-400 hover:text-white transition-colors">
+                    GDPR
                   </button>
                 </li>
               </ul>
