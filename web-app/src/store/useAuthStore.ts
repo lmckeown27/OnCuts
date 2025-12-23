@@ -91,20 +91,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { isAdmin: true };
     }
     
-    try {
-      const response = await authService.login({ email, password });
-      set({ user: response.user, isAuthenticated: true, isLoading: false });
-      socketService.connect();
-      return { isAdmin: response.user.is_admin || false };
-    } catch (error: any) {
-      // Provide user-friendly error message for all login failures
-      const errorMessage = 'Username and/or password not found';
-      set({ 
-        error: errorMessage, 
-        isLoading: false 
-      });
-      throw error;
-    }
+    // For now, only admin accounts are supported (backend auth not yet configured)
+    // Show user-friendly error for non-admin login attempts
+    set({ 
+      error: 'Username and/or password not found', 
+      isLoading: false 
+    });
+    throw new Error('Invalid credentials');
   },
 
   signup: async (data) => {
