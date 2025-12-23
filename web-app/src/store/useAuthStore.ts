@@ -24,20 +24,36 @@ interface AuthState {
 }
 
 // Hardcoded admin credentials
-const ADMIN_CREDENTIALS = {
-  email: 'lmckeown@calpoly.edu',
-  password: 'Cr8zzy4R0GG$',
-  user: {
-    id: 'admin-liam-mckeown',
+const ADMIN_CREDENTIALS = [
+  {
     email: 'lmckeown@calpoly.edu',
-    first_name: 'Liam',
-    last_name: 'McKeown',
-    user_type: 'admin' as const,
-    is_verified: true,
-    is_admin: true,
-    created_at: new Date().toISOString()
+    password: 'Cr8zzy4R0GG$',
+    user: {
+      id: 'admin-liam-mckeown',
+      email: 'lmckeown@calpoly.edu',
+      first_name: 'Liam',
+      last_name: 'McKeown',
+      user_type: 'admin' as const,
+      is_verified: true,
+      is_admin: true,
+      created_at: new Date().toISOString()
+    }
+  },
+  {
+    email: 'schroete@calpoly.edu',
+    password: 'barberdrama@13',
+    user: {
+      id: 'admin-justin-schroeter',
+      email: 'schroete@calpoly.edu',
+      first_name: 'Justin',
+      last_name: 'Schroeter',
+      user_type: 'admin' as const,
+      is_verified: true,
+      is_admin: true,
+      created_at: new Date().toISOString()
+    }
   }
-};
+];
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: authService.getStoredUser(),
@@ -55,8 +71,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     
     // Check for hardcoded admin credentials
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      const adminUser = ADMIN_CREDENTIALS.user;
+    const adminMatch = ADMIN_CREDENTIALS.find(
+      admin => admin.email === email && admin.password === password
+    );
+    
+    if (adminMatch) {
+      const adminUser = adminMatch.user;
       // Store admin user in localStorage (using same keys as auth.service)
       localStorage.setItem('user', JSON.stringify(adminUser));
       localStorage.setItem('accessToken', 'admin-token-' + Date.now());
