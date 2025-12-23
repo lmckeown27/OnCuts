@@ -160,7 +160,6 @@ export default function MobileBarberPage() {
           <div className="flex items-center gap-3">
             <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Barber Dashboard</h1>
               <p className="text-xs text-gray-500">California Polytechnic State University</p>
             </div>
           </div>

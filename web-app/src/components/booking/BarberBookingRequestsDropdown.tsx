@@ -10,6 +10,7 @@ import { Inbox, CheckCircle, XCircle, Calendar, User, Eye, X } from 'lucide-reac
 import Button from '../Button';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { useViewport } from '../../hooks/useViewport';
 
 interface CustomerProfile {
   displayName: string;
@@ -98,6 +99,10 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Viewport detection for responsive backdrop
+  const { isMobile, isTablet } = useViewport();
+  const showBackdrop = isMobile || isTablet; // Show backdrop on mobile and tablet
 
   useEffect(() => {
     fetchRequests();
@@ -247,17 +252,36 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
 
       {/* Dropdown Menu */}
       {isDropdownOpen && (
-        <div 
-          className={`absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out origin-top-right ${
-            isDropdownVisible 
-              ? 'opacity-100 scale-100 translate-y-0' 
-              : 'opacity-0 scale-95 -translate-y-2'
-          }`}
-        >
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg">
-            <h3 className="font-bold text-gray-900">Booking Requests ({requests.length})</h3>
-          </div>
+        <>
+          {/* Backdrop for mobile/tablet */}
+          {showBackdrop && (
+            <div 
+              className={`fixed inset-0 bg-black/0 z-40 transition-all duration-150 ${
+                isDropdownVisible ? 'bg-black/50' : ''
+              }`}
+              onClick={closeDropdown}
+            />
+          )}
+          
+          <div 
+            className={`absolute right-0 mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out origin-top-right ${
+              isDropdownVisible 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-0 scale-95 -translate-y-2'
+            }`}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg flex items-center justify-between">
+              <h3 className="font-bold text-gray-900">Booking Requests ({requests.length})</h3>
+              {showBackdrop && (
+                <button 
+                  onClick={closeDropdown}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              )}
+            </div>
 
           {/* Requests List */}
           <div className="divide-y divide-gray-200">
@@ -344,6 +368,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             )}
           </div>
         </div>
+        </>
       )}
 
       {/* Customer Details Modal */}

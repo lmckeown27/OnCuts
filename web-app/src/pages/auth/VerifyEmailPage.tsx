@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Mail, AlertCircle, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import TabChairLogo from '../../assets/logos/Tab_Chair.png';
+import { useViewport } from '../../hooks/useViewport';
 
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
@@ -150,41 +151,44 @@ export default function VerifyEmailPage() {
     return null; // Will redirect in useEffect
   }
 
+  // Viewport detection
+  const { isMobile } = useViewport();
+  
   return (
     <div 
-      className="min-h-screen flex items-center justify-center py-12 px-4"
+      className="min-h-screen flex items-center justify-center py-6 sm:py-12 px-3 sm:px-4"
       style={{ backgroundColor: '#022b19' }}
     >
       <div className="max-w-md w-full">
         {/* Header - Logo */}
-        <div className="flex flex-col items-center justify-center mb-8">
+        <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TabChairLogo} 
               alt="CampusCut Logo" 
-              className="h-16 w-auto mb-4"
+              className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
           
           {/* Email Icon */}
-          <div className="w-16 h-16 bg-primary-400/20 rounded-full flex items-center justify-center mb-4">
-            <Mail className="w-8 h-8 text-primary-400" />
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary-400/20 rounded-full flex items-center justify-center mb-2 sm:mb-4">
+            <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-primary-400" />
           </div>
           
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
             Check Your Email
           </h1>
-          <p className="text-gray-300 text-center">
+          <p className="text-sm sm:text-base text-gray-300 text-center">
             We sent a 6-digit code to
           </p>
-          <p className="text-primary-400 font-semibold mt-1">
+          <p className="text-sm sm:text-base text-primary-400 font-semibold mt-1 break-all text-center px-4">
             {email}
           </p>
         </div>
 
         {/* Verification Card */}
         <div 
-          className="bg-white rounded-2xl shadow-2xl p-8"
+          className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-8"
           style={{ maxWidth: '400px', margin: '0 auto' }}
         >
           <form onSubmit={handleSubmit} className="space-y-6">

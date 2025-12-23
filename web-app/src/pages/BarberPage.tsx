@@ -16,6 +16,7 @@ import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import { useViewport } from '../hooks/useViewport';
 
 const COMPONENT_VERSION = 'v4.0-modal-fix';
 
@@ -24,6 +25,10 @@ export default function BarberPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  
+  // Viewport detection for responsive behavior
+  const { isMobile, isTablet, viewport } = useViewport();
+  
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
   // Modal states with visibility for animations
@@ -294,32 +299,30 @@ export default function BarberPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Barber Dashboard</h1>
-                {/* Campus Manager Badge (conditional) */}
-                {isCampusManager && (
-                  <CampusManagerBadge 
-                    campusName={campusName}
-                  />
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {/* Quick Switch to Consumer (Testing) */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between relative">
+            {/* Left section - Switch to Consumer on mobile, Logo + Switch on desktop */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Switch to Consumer - always on left */}
               <button
                 onClick={() => navigate(`${platformPrefix}/consumer`)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                 title="Switch to Consumer view"
               >
                 <Calendar className="w-4 h-4 text-primary-600" />
-                <span className="text-sm font-medium text-primary-700">Switch to Consumer</span>
+                <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
               </button>
-
+              {/* Logo - hidden on mobile (shown in center), visible on desktop */}
+              <img src={CampusCutLogo} alt="CampusCut" className="hidden sm:block h-10 w-auto" />
+            </div>
+            
+            {/* Center section - Logo on mobile only */}
+            <div className="sm:hidden absolute left-1/2 transform -translate-x-1/2">
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
+            </div>
+            
+            {/* Right section - Booking Requests + Profile */}
+            <div className="flex items-center gap-1.5 sm:gap-4">
               {/* Booking Requests Inbox */}
               <BarberBookingRequestsDropdown barberId={barberId} />
 
@@ -327,16 +330,16 @@ export default function BarberPage() {
               <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                   B
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
                   <button
                     onClick={() => {
                       openProfileEditor();
@@ -416,23 +419,23 @@ export default function BarberPage() {
       </div>
 
       {/* Content - Combined Dashboard & Requests */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openServiceDetails} />
       </div>
 
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeProfileEditor}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
               <button
                 onClick={closeProfileEditor}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
@@ -450,16 +453,16 @@ export default function BarberPage() {
       {/* Service Specialties Modal */}
       {showServiceSpecialties && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeServiceSpecialties}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-xl font-bold text-gray-900">My Services & Pricing</h2>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">My Services & Pricing</h2>
               <button
                 onClick={closeServiceSpecialties}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
@@ -477,16 +480,16 @@ export default function BarberPage() {
       {/* Pricing Dashboard Modal */}
       {showPricingDashboard && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isPricingDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isPricingDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closePricingDashboard}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isPricingDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-xl font-bold text-gray-900">Performance & Pricing</h2>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Performance & Pricing</h2>
               <button
                 onClick={closePricingDashboard}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
@@ -504,18 +507,18 @@ export default function BarberPage() {
       {/* Campus Manager Dashboard Modal (conditional) */}
       {isCampusManager && showCampusManagerDashboard && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeCampusManager}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isCampusManagerVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary-600" />
-                <h2 className="text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
               </div>
               <button
                 onClick={closeCampusManager}
@@ -566,6 +569,9 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Viewport detection for responsive layout
+  const { isMobile, isMobilePortrait, isTablet } = useViewport();
 
   // Day modal open/close handlers with animation
   const openDayModal = (day: number) => {
@@ -639,12 +645,12 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">My Schedule</h2>
-          <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">My Schedule</h2>
+          <div className="flex gap-1.5 sm:gap-2">
             <button
               onClick={() => setScheduleView('daily')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'daily'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -654,7 +660,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
             </button>
             <button
               onClick={() => setScheduleView('weekly')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'weekly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -664,7 +670,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
             </button>
             <button
               onClick={() => setScheduleView('monthly')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'monthly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -687,24 +693,24 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
 
           return (
             <div>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Today - Friday, January 12, 2025</h3>
-                <p className="text-sm text-gray-600">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Today - Friday, January 12, 2025</h3>
+                <p className="text-xs sm:text-sm text-gray-600">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
               </div>
               {dailyAppointments.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
-                  <p className="text-gray-600">You have no appointments scheduled for today.</p>
+                <div className="text-center py-8 sm:py-12">
+                  <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
+                  <p className="text-sm text-gray-600">You have no appointments scheduled for today.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {dailyAppointments.map((apt, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center min-w-[80px]">
-                          <p className="font-bold text-primary-400">{apt.time}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
+                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 active:scale-98 transition-all gap-3 sm:gap-0">
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="text-center min-w-[60px] sm:min-w-[80px]">
+                          <p className="font-bold text-primary-400 text-sm sm:text-base">{apt.time}</p>
+                          <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                             apt.status === 'confirmed' 
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-yellow-100 text-yellow-800'
@@ -712,20 +718,21 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                             {apt.status}
                           </span>
                         </div>
-                        <div className="h-12 w-px bg-gray-300"></div>
+                        <div className="h-10 sm:h-12 w-px bg-gray-300 hidden sm:block"></div>
                         <div>
-                          <p className="font-semibold text-gray-900">{apt.client}</p>
-                          <p className="text-sm text-gray-600">{apt.service}</p>
+                          <p className="font-semibold text-gray-900 text-sm sm:text-base">{apt.client}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">{apt.service}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600 mb-1">{apt.price}</p>
+                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-0">
+                        <p className="font-bold text-green-600 text-sm sm:text-base sm:mb-1">{apt.price}</p>
                         <Button 
                           size="sm" 
                           variant="secondary"
                           onClick={() => onViewDetails(apt.id)}
+                          className="text-xs sm:text-sm px-2 sm:px-3"
                         >
-                          View Details
+                          Details
                         </Button>
                       </div>
                     </div>
@@ -763,11 +770,44 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
 
           return (
             <div>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Week of January 8 - 14, 2025</h3>
-                <p className="text-sm text-gray-600">{totalWeekAppointments} appointments this week</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Week of January 8 - 14, 2025</h3>
+                <p className="text-xs sm:text-sm text-gray-600">{totalWeekAppointments} appointments this week</p>
               </div>
-              <div className="grid grid-cols-7 gap-3">
+              
+              {/* Mobile: List view */}
+              <div className="sm:hidden space-y-2">
+                {weekDays.map(day => {
+                  const appointments = weekAppointmentNames[day.date] || [];
+                  const isToday = day.date === 12;
+
+                  return (
+                    <div
+                      key={day.date}
+                      onClick={() => handleDayClick(day.date)}
+                      className={`flex items-center justify-between p-3 rounded-lg border active:scale-98 transition-all ${
+                        isToday
+                          ? 'bg-primary-400 text-white border-primary-500'
+                          : 'bg-gray-50 border-gray-200'
+                      } cursor-pointer`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`text-2xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
+                        <div>
+                          <div className={`font-medium text-sm ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
+                          <div className={`text-xs ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
+                            {appointments.length === 0 ? 'No appointments' : `${appointments.length} appointment${appointments.length > 1 ? 's' : ''}`}
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 -rotate-90 ${isToday ? 'text-white/70' : 'text-gray-400'}`} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Grid view */}
+              <div className="hidden sm:grid grid-cols-7 gap-3">
                 {/* Week day headers */}
                 {weekDays.map(day => (
                   <div key={day.date} className="text-center font-semibold text-gray-600 text-sm py-2">
@@ -825,15 +865,16 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
         {/* Monthly View */}
         {scheduleView === 'monthly' && (
           <div>
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">January 2025</h3>
-              <p className="text-sm text-gray-600">168 appointments this month</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900">January 2025</h3>
+              <p className="text-xs sm:text-sm text-gray-600">168 appointments this month</p>
             </div>
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Calendar header */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center font-semibold text-gray-600 text-sm py-2">
-                  {day}
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                <div key={i} className="text-center font-semibold text-gray-600 text-xs sm:text-sm py-1 sm:py-2">
+                  <span className="sm:hidden">{day}</span>
+                  <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
                 </div>
               ))}
               {/* Calendar days */}
@@ -876,19 +917,27 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                 return Array.from({ length: 31 }, (_, i) => {
                   const day = i + 1;
                   const appointments = monthAppointments[day] || [];
+                  const hasAppointments = appointments.length > 0;
                   
                   return (
                     <div
                       key={day}
                       onClick={() => handleDayClick(day)}
-                      className={`aspect-square p-2 rounded-lg border overflow-hidden ${
+                      className={`aspect-square p-1 sm:p-2 rounded-md sm:rounded-lg border overflow-hidden ${
                         day === 12 
                           ? 'bg-primary-400 text-white border-primary-500' 
                           : 'bg-gray-50 border-gray-200 hover:border-primary-300'
-                      } cursor-pointer transition-colors`}
+                      } cursor-pointer active:scale-95 transition-all`}
                     >
-                      <div className="text-sm font-semibold mb-1">{day}</div>
-                      <div className="text-xs space-y-0.5 overflow-hidden">
+                      <div className="text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1">{day}</div>
+                      {/* Mobile: Just show dot indicator */}
+                      <div className="sm:hidden flex justify-center">
+                        {hasAppointments && (
+                          <div className={`w-1.5 h-1.5 rounded-full ${day === 12 ? 'bg-white' : 'bg-primary-400'}`} />
+                        )}
+                      </div>
+                      {/* Desktop: Show names */}
+                      <div className="hidden sm:block text-xs space-y-0.5 overflow-hidden">
                         {appointments.length === 0 ? (
                           <div className="text-gray-400">No apts</div>
                         ) : appointments.length === 1 ? (

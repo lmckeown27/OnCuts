@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft } from 'lucide-react';
+import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -13,6 +13,7 @@ import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import { useViewport } from '../hooks/useViewport';
 
 // Mock data for demo
 function getMockBarbers(): Barber[] {
@@ -157,11 +158,21 @@ export default function ConsumerPage() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Viewport detection for responsive behavior
+  const { isMobile, isTablet, viewport } = useViewport();
+  
   // Determine platform prefix based on current route
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
   // Mock consumer ID - in production this would come from auth
   const consumerId = 'consumer-1';
+  
+  // Debug viewport in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📱 Viewport:', viewport, { isMobile, isTablet });
+    }
+  }, [viewport, isMobile, isTablet]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -179,38 +190,44 @@ export default function ConsumerPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
-              <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              {/* Quick Switch to Barber (Testing) */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between relative">
+            {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Switch to Barber - always on left */}
               <button
                 onClick={() => navigate(`${platformPrefix}/barber`)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                 title="Switch to Barber view"
               >
                 <Scissors className="w-4 h-4 text-primary-600" />
-                <span className="text-sm font-medium text-primary-700">Switch to Barber</span>
+                <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
               </button>
-
+              {/* Logo - hidden on mobile (shown in center), visible on desktop */}
+              <img src={CampusCutLogo} alt="CampusCut" className="hidden sm:block h-10 w-auto" />
+            </div>
+            
+            {/* Center section - Logo on mobile only */}
+            <div className="sm:hidden absolute left-1/2 transform -translate-x-1/2">
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
+            </div>
+            
+            {/* Right section - Profile only */}
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Profile Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     S
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
                     <button
                       onClick={() => {
                         setShowProfileEditor(true);
@@ -252,22 +269,22 @@ export default function ConsumerPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <DiscoveryView navigate={navigate} />
       </div>
 
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
           onClick={() => setShowProfileEditor(false)}
         >
           <div 
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
               <button
                 onClick={() => setShowProfileEditor(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
@@ -297,6 +314,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     location: null,
     locationDetails: null,
   });
+  
+  // Viewport detection for responsive grid
+  const { isMobile, isMobilePortrait, viewport } = useViewport();
 
   useEffect(() => {
     loadBarbers();
@@ -404,35 +424,102 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
       {/* Sort Info */}
       {filterCriteria.serviceType && filteredBarbers.length > 0 && (
-        <div className="mb-6 text-center text-sm text-gray-600">
+        <div className="mb-4 sm:mb-6 text-center text-xs sm:text-sm text-gray-600">
           Sorted by top performers first
         </div>
       )}
 
       {/* No Results */}
       {filteredBarbers.length === 0 && filterCriteria.serviceType && (
-        <Card className="text-center py-12">
-          <p className="text-gray-600 text-lg mb-2">No barbers match your criteria</p>
-          <p className="text-sm text-gray-500">Try adjusting your filters or check back later</p>
+        <Card className="text-center py-8 sm:py-12">
+          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers match your criteria</p>
+          <p className="text-xs sm:text-sm text-gray-500">Try adjusting your filters or check back later</p>
         </Card>
       )}
 
 
-      {/* Barbers Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {/* Barbers Grid - Responsive: 1 col portrait mobile, 2 col landscape/tablet, 3-5 col desktop */}
+      <div className={`grid gap-3 sm:gap-4 ${
+        isMobilePortrait 
+          ? 'grid-cols-1' 
+          : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+      }`}>
         {filteredBarbers.map((barber) => {
           const lowestPrice = barber.pricing && barber.pricing.length > 0
             ? Math.min(...barber.pricing.map(p => p.price))
             : undefined;
 
+          // Mobile portrait: Horizontal card layout
+          if (isMobilePortrait) {
+            return (
+              <Card
+                key={barber.id}
+                className="cursor-pointer active:scale-98 transition-all duration-200 flex flex-row rounded-xl overflow-hidden"
+                onClick={() => setSelectedBarber(barber)}
+              >
+                {/* Portfolio Image - Left Side */}
+                <div className="relative w-28 h-28 flex-shrink-0 bg-gray-200">
+                  {barber.portfolio && barber.portfolio.length > 0 ? (
+                    <img
+                      src={barber.portfolio[0].url}
+                      alt="Portfolio"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <UsersIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  {/* Price Badge */}
+                  {lowestPrice && (
+                    <div className="absolute bottom-0 left-0 bg-primary-400/90 px-2 py-1 rounded-tr-lg">
+                      <span className="text-white font-semibold text-xs">${lowestPrice}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Info - Right Side */}
+                <div className="flex-1 p-3 flex flex-col justify-center">
+                  <h3 className="font-bold text-gray-900 text-base">
+                    {barber.user?.first_name} {barber.user?.last_name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                      <span className="font-semibold text-sm">{barber.average_rating.toFixed(1)}</span>
+                    </div>
+                    <span className="text-gray-400 text-xs">•</span>
+                    <span className="text-xs text-gray-500">{barber.total_bookings} cuts</span>
+                    {barber.instagram_handle && (
+                      <>
+                        <span className="text-gray-400 text-xs">•</span>
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Instagram className="w-3 h-3 flex-shrink-0" />
+                          <span>@{barber.instagram_handle}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {barber.specialties?.slice(0, 2).map((s, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            );
+          }
+
+          // Default: Vertical card layout (tablet, desktop)
           return (
             <Card
               key={barber.id}
-              className="cursor-pointer hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden"
+              className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden"
               onClick={() => setSelectedBarber(barber)}
             >
               {/* Portfolio Image with Name & Price Overlays */}
-              <div className="relative mb-3 h-64 overflow-hidden rounded-lg bg-gray-200">
+              <div className="relative mb-2 sm:mb-3 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
                 {barber.portfolio && barber.portfolio.length > 0 ? (
                   <img
                     src={barber.portfolio[0].url}
@@ -441,21 +528,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <UsersIcon className="w-12 h-12 text-gray-400" />
+                    <UsersIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                   </div>
                 )}
                 {/* Name Overlay - Top */}
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-3">
-                  <h3 className="text-lg font-bold text-white">
+                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2 sm:p-3">
+                  <h3 className="text-sm sm:text-lg font-bold text-white">
                     {barber.user?.first_name} {barber.user?.last_name}
                   </h3>
                 </div>
                 {/* Price Overlay - Bottom Left */}
                 {lowestPrice && (
-                  <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 py-2 rounded-tr-lg rounded-bl-lg">
+                  <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-tr-lg rounded-bl-lg">
                     <div className="flex items-center text-white">
-                      <DollarSign className="w-4 h-4" />
-                      <span className="font-semibold text-sm">{lowestPrice}</span>
+                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="font-semibold text-xs sm:text-sm">{lowestPrice}</span>
                     </div>
                   </div>
                 )}
@@ -465,17 +552,17 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               <div className="flex-1 flex flex-col pb-2">
 
                 {/* Rating & Instagram */}
-                <div className="flex items-center gap-2 mt-1 mb-2">
+                <div className="flex items-center gap-1 sm:gap-2 mt-1 mb-2">
                   <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    <span className="font-semibold">{barber.average_rating.toFixed(1)}</span>
+                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
+                    <span className="font-semibold text-sm">{barber.average_rating.toFixed(1)}</span>
                   </div>
                   {barber.instagram_handle && (
                     <>
                       <span className="text-gray-400">•</span>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Instagram className="w-4 h-4" />
-                        <span>@{barber.instagram_handle}</span>
+                      <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
+                        <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
                       </div>
                     </>
                   )}

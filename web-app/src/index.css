@@ -8,6 +8,7 @@
   html, body {
     font-family: 'Source Serif 4', Georgia, Cambria, 'Times New Roman', serif;
     font-weight: 500;
+    background-color: #f9fafb; /* gray-50 - matches main content background */
   }
 
   :root {

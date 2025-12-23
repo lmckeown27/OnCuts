@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import TabChairLogo from '../assets/logos/Tab_Chair.png';
+import { useViewport } from '../hooks/useViewport';
 
 type AuthMode = 'login' | 'signup';
 
@@ -210,32 +211,35 @@ export default function AuthPage() {
     setShowConfirmPassword(false);
   };
 
+  // Viewport detection
+  const { isMobile, isMobilePortrait } = useViewport();
+  
   return (
     <div 
-      className="min-h-screen flex items-center justify-center py-12 px-4"
+      className="min-h-screen flex items-center justify-center py-6 sm:py-12 px-3 sm:px-4"
       style={{ backgroundColor: '#022b19' }}
     >
       <div className="max-w-md w-full">
         {/* Header - Logo & Title */}
-        <div className="flex flex-col items-center justify-center mb-8">
+        <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TabChairLogo} 
               alt="CampusCut Logo" 
-              className="h-16 w-auto mb-4"
+              className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />
           </Link>
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
             {mode === 'login' ? 'Welcome Back' : 'Create Account'}
           </h1>
-          <p className="text-gray-300">
+          <p className="text-sm sm:text-base text-gray-300">
             {mode === 'login' ? 'Sign in to your CampusCut account' : 'Join CampusCut today'}
           </p>
         </div>
 
         {/* Form Card */}
         <div 
-          className="bg-white rounded-2xl shadow-2xl p-8"
+          className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-8"
           style={{ maxWidth: '440px', margin: '0 auto' }}
         >
           {/* Tab Switcher */}

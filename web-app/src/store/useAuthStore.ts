@@ -24,21 +24,22 @@ interface AuthState {
 }
 
 // Hardcoded admin credentials
+// NOTE: lmckeown@calpoly.edu temporarily removed for email verification testing
 const ADMIN_CREDENTIALS = [
-  {
-    email: 'lmckeown@calpoly.edu',
-    password: 'Cr8zzy4R0GG$',
-    user: {
-      id: 'admin-liam-mckeown',
-      email: 'lmckeown@calpoly.edu',
-      first_name: 'Liam',
-      last_name: 'McKeown',
-      user_type: 'admin' as const,
-      is_verified: true,
-      is_admin: true,
-      created_at: new Date().toISOString()
-    }
-  },
+  // {
+  //   email: 'lmckeown@calpoly.edu',
+  //   password: 'Cr8zzy4R0GG$',
+  //   user: {
+  //     id: 'admin-liam-mckeown',
+  //     email: 'lmckeown@calpoly.edu',
+  //     first_name: 'Liam',
+  //     last_name: 'McKeown',
+  //     user_type: 'admin' as const,
+  //     is_verified: true,
+  //     is_admin: true,
+  //     created_at: new Date().toISOString()
+  //   }
+  // },
   {
     email: 'schroete@calpoly.edu',
     password: 'barberdrama@13',
@@ -103,13 +104,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authService.signup(data);
+      // TODO: Re-enable backend call when auth routes are configured
+      // const response = await authService.signup(data);
+      
+      // MOCK: Simulate successful registration for testing email verification UI
+      // In production, this would call the backend API
+      console.log('📧 [MOCK] Registration for:', data.email);
+      console.log('📧 [MOCK] Verification code would be sent to email');
+      
+      // Store pending verification email
+      localStorage.setItem('pendingVerificationEmail', data.email);
+      
       // Don't authenticate yet - user must verify email first
       set({ 
         isLoading: false, 
         pendingVerificationEmail: data.email 
       });
-      return { email: response.email, verificationCode: response.verificationCode };
+      
+      // Mock response - in production this comes from backend
+      return { email: data.email, verificationCode: '123456' }; // Mock code for testing
     } catch (error: any) {
       set({ 
         error: error.response?.data?.message || 'Signup failed', 
@@ -122,9 +135,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyEmail: async (email, code) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authService.verifyEmail(email, code);
+      // TODO: Re-enable backend call when auth routes are configured
+      // const response = await authService.verifyEmail(email, code);
+      
+      // MOCK: Simulate verification for testing
+      console.log('✅ [MOCK] Verifying email:', email, 'with code:', code);
+      
+      // Accept any 6-digit code for testing, or specifically "123456"
+      if (code.length !== 6) {
+        throw new Error('Invalid verification code');
+      }
+      
+      // Mock user response
+      const mockUser = {
+        id: 'mock-user-' + Date.now(),
+        email: email,
+        first_name: 'Test',
+        last_name: 'User',
+        user_type: 'student' as const,
+        is_verified: true,
+        is_admin: false,
+        created_at: new Date().toISOString()
+      };
+      
+      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('accessToken', 'mock-token-' + Date.now());
+      localStorage.removeItem('pendingVerificationEmail');
+      
       set({ 
-        user: response.user, 
+        user: mockUser, 
         isAuthenticated: true, 
         isLoading: false,
         pendingVerificationEmail: null 
@@ -142,7 +181,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resendVerificationCode: async (email) => {
     set({ isLoading: true, error: null });
     try {
-      await authService.resendVerificationCode(email);
+      // TODO: Re-enable backend call when auth routes are configured
+      // await authService.resendVerificationCode(email);
+      
+      // MOCK: Simulate resend for testing
+      console.log('📧 [MOCK] Resending verification code to:', email);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       set({ isLoading: false });
     } catch (error: any) {
       set({ 

@@ -222,32 +222,32 @@ export default function BarberFilterQuestionnaire({
   return (
     <>
       {/* Header Section - Scrolls away normally */}
-      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pt-4 pb-4">
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-4">
         <Card className="shadow-lg rounded-t-xl rounded-b-none">
-          <div className="text-center py-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Your Perfect Barber</h2>
-            <p className="text-sm text-gray-600 mb-4">Answer a few questions to see barbers who match your needs</p>
+          <div className="text-center py-4 sm:py-6 px-3 sm:px-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Find Your Perfect Barber</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Answer a few questions to see matching barbers</p>
             
             {/* Real-time Barber Count */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 text-primary-500 rounded-full font-semibold">
-              <span className="text-2xl">{availableCount}</span>
-              <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-100 text-primary-500 rounded-full font-semibold">
+              <span className="text-xl sm:text-2xl">{availableCount}</span>
+              <span className="text-sm sm:text-base">{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Questionnaire Section - Stays sticky at top */}
-      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-4 px-4 pb-6 mb-8">
+      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-4 sm:pb-6 mb-4 sm:mb-8">
         <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
           {/* Selected Filter Pills - Fully clickable for editing */}
           {(serviceType || (date && time && dateTimeConfirmed) || (location && locationConfirmed)) && (
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-4 pb-4 mb-4 border-b border-gray-200">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-3 sm:pt-4 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-gray-200 px-2 sm:px-4">
               {serviceType && (
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
+                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-400 text-white rounded-full text-xs sm:text-sm font-medium group">
                   <button
                     onClick={handleServiceTagClick}
-                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
+                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
                     <Scissors className="w-3 h-3" />
                     <span className="group-hover:underline">{serviceType}</span>
@@ -257,17 +257,17 @@ export default function BarberFilterQuestionnaire({
                       e.stopPropagation();
                       handleServiceDelete();
                     }}
-                    className="hover:bg-primary-500 rounded-full px-1 ml-1"
+                    className="hover:bg-primary-500 rounded-full px-1 ml-0.5 sm:ml-1"
                   >
                     ×
                   </button>
                 </div>
               )}
               {date && time && dateTimeConfirmed && (
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-full text-sm font-medium group">
+                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600 text-white rounded-full text-xs sm:text-sm font-medium group">
                   <button
                     onClick={handleDateTimeTagClick}
-                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
+                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
                     <Calendar className="w-3 h-3" />
                     <span className="group-hover:underline">
@@ -279,17 +279,17 @@ export default function BarberFilterQuestionnaire({
                       e.stopPropagation();
                       handleDateTimeDelete();
                     }}
-                    className="hover:bg-green-700 rounded-full px-1 ml-1"
+                    className="hover:bg-green-700 rounded-full px-1 ml-0.5 sm:ml-1"
                   >
                     ×
                   </button>
                 </div>
               )}
               {locationName && locationConfirmed && (
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-primary-400 text-white rounded-full text-sm font-medium group">
+                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-400 text-white rounded-full text-xs sm:text-sm font-medium group">
                   <button
                     onClick={handleLocationTagClick}
-                    className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity"
+                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
                   >
                     <MapPin className="w-3 h-3" />
                     <span className="group-hover:underline">{locationName}</span>
@@ -299,7 +299,7 @@ export default function BarberFilterQuestionnaire({
                       e.stopPropagation();
                       handleLocationDelete();
                     }}
-                    className="hover:bg-primary-500 rounded-full px-1 ml-1"
+                    className="hover:bg-primary-500 rounded-full px-1 ml-0.5 sm:ml-1"
                   >
                     ×
                   </button>
@@ -309,21 +309,21 @@ export default function BarberFilterQuestionnaire({
           )}
 
           {/* Active Question - Progressive flow */}
-          <div className="pt-6 pb-6">
+          <div className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-2 sm:px-4">
             {/* Question 1: Service Type */}
             {showServiceQuestion && (
               <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700">
-                  <Scissors className="w-5 h-5 text-primary-400" />
-                  <label className="font-semibold text-lg">What type of haircut are you looking for?</label>
+                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
+                  <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 flex-shrink-0" />
+                  <label className="font-semibold text-sm sm:text-lg text-center">What type of haircut are you looking for?</label>
                 </div>
                 
-                <div className="flex justify-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 px-1">
                   {availableServices.map((service) => (
                     <button
                       key={service}
                       onClick={() => handleServiceChange(service)}
-                      className="px-4 py-3 rounded-lg font-semibold text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-105 transition-all whitespace-nowrap flex-shrink-0 cursor-pointer"
+                      className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg active:scale-95 sm:hover:scale-105 transition-all cursor-pointer"
                     >
                       {service}
                     </button>
@@ -334,13 +334,13 @@ export default function BarberFilterQuestionnaire({
 
             {/* Question 2: Date & Time with Confirmation */}
             {showDateTimeQuestion && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700">
-                  <Calendar className="w-5 h-5 text-green-600" />
-                  <label className="font-semibold text-lg">When would you like your haircut?</label>
+              <div className="space-y-3 sm:space-y-4 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+                  <label className="font-semibold text-sm sm:text-lg text-center">When would you like your haircut?</label>
                 </div>
                 
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Enhanced Date Input */}
                   <div>
                     <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
@@ -433,10 +433,10 @@ export default function BarberFilterQuestionnaire({
 
             {/* Question 3: Location */}
             {showLocationQuestion && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700">
-                  <MapPin className="w-5 h-5 text-primary-400" />
-                  <label className="font-semibold text-lg">Where would you like to receive your haircut?</label>
+              <div className="space-y-3 sm:space-y-4 animate-fade-in">
+                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
+                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 flex-shrink-0" />
+                  <label className="font-semibold text-sm sm:text-lg text-center">Where would you like your haircut?</label>
                 </div>
                 
                 <div className="max-w-md mx-auto">
@@ -448,11 +448,11 @@ export default function BarberFilterQuestionnaire({
                   
                   {/* Location Confirmation Button */}
                   {locationId && locationName && (
-                    <div className="flex justify-center mt-4">
+                    <div className="flex justify-center mt-3 sm:mt-4">
                       <Button
                         onClick={handleLocationConfirm}
                         variant="primary"
-                        className="px-6 py-2"
+                        className="px-4 sm:px-6 py-2 text-sm sm:text-base"
                       >
                         <Check className="w-4 h-4 mr-2" />
                         Confirm Location
@@ -465,12 +465,12 @@ export default function BarberFilterQuestionnaire({
 
             {/* All Complete - Show summary */}
             {serviceType && dateTimeConfirmed && locationConfirmed && (
-              <div className="text-center animate-fade-in">
-                <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg font-semibold">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="text-center animate-fade-in px-2">
+                <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-green-100 text-green-700 rounded-lg font-semibold text-sm sm:text-base">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>All filters set! Scroll down to see matching barbers</span>
+                  <span>All filters set! Scroll to see barbers</span>
                 </div>
               </div>
             )}

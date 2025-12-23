@@ -14,6 +14,7 @@ import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.png';
 import MainChairLogo from '../assets/logos/Main_Chair.png';
 import FooterChairLogo from '../assets/logos/Footer_Chair.png';
+import { useViewport } from '../hooks/useViewport';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -28,6 +29,16 @@ export default function LandingPage() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  
+  // Viewport detection for responsive layout
+  const { isMobile, isMobilePortrait, viewport } = useViewport();
+  
+  // Close mobile menu when viewport changes to desktop
+  useEffect(() => {
+    if (!isMobile && mobileMenuOpen) {
+      setMobileMenuOpen(false);
+    }
+  }, [isMobile, mobileMenuOpen]);
 
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
