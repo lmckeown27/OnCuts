@@ -152,7 +152,7 @@ export default function MobileAdminPage() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 safe-area-inset-top">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/src/assets/logos/Logo1.png" alt="CampusCuts" className="h-8" />
+            <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
             <div>
               <h1 className="text-lg font-bold text-gray-900">Admin Dashboard</h1>
               <p className="text-xs text-gray-500">Platform Management</p>

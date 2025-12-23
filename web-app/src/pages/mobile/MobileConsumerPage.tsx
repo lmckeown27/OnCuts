@@ -168,7 +168,7 @@ export default function MobileConsumerPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between safe-area-inset-top">
         <div className="flex items-center gap-2">
-          <img src="/src/assets/logos/Logo1.png" alt="CampusCuts" className="h-8" />
+          <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
           <h1 className="text-lg font-bold text-gray-900">Discover</h1>
         </div>
         <div className="flex items-center gap-2">

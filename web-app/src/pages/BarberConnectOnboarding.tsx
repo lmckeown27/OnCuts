@@ -9,7 +9,7 @@
  * 2. Backend creates Stripe Connect account
  * 3. Redirect to Stripe onboarding
  * 4. Barber completes verification (legal name, SSN, bank account)
- * 5. Stripe redirects back to CampusCuts
+ * 5. Stripe redirects back to CampusCut
  * 6. Barber can now receive payouts
  */
 
@@ -291,7 +291,7 @@ export const BarberConnectOnboarding = () => {
             </div>
             <p className="ml-3">
               When a student pays for a completed booking, you receive 95% of the payment
-              (CampusCuts takes a 5% platform fee)
+              (CampusCut takes a 5% platform fee)
             </p>
           </div>
           <div className="flex items-start">

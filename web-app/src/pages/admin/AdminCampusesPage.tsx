@@ -293,7 +293,7 @@ export default function AdminCampusesPage() {
                   <DollarSign className="w-6 h-6 text-primary-400" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">How Payments Work on CampusCuts</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">How Payments Work on CampusCut</h3>
                   
                   <div className="space-y-4 text-sm text-gray-700">
                     <div>

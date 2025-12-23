@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle, Shield, Users, ArrowLeft } from 'lucide-react';
-import { CampusCutsLogo } from '@assets';
+import { CampusCutLogo } from '@assets';
 
 interface RoleSelectionPageProps {
   platform?: 'web' | 'app';
@@ -36,10 +36,10 @@ export default function RoleSelectionPage({ platform = 'web' }: RoleSelectionPag
 
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <img src={CampusCutsLogo} alt="CampusCuts" className="h-24 w-auto" />
+            <img src={CampusCutLogo} alt="CampusCut" className="h-24 w-auto" />
           </div>
           
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to CampusCuts</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to CampusCut</h1>
           <p className="text-xl text-gray-600">Select Your Role</p>
         </div>
 

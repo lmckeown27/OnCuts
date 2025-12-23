@@ -46,6 +46,7 @@ pm2 start backend/dist/index.js --name backend
 - React Query
 - Zustand (state management)
 - Petra Wallet integration
+- **Typography:** Source Serif 4 (Medium weight, 500) - Google Fonts
 
 ### **Blockchain**
 - Aptos (Move smart contracts)

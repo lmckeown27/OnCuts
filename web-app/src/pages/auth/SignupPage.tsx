@@ -59,7 +59,7 @@ export default function SignupPage() {
             <div className="flex items-center gap-2">
               <Scissors className="w-12 h-12 text-primary-600" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">CampusCuts</h1>
+                <h1 className="text-3xl font-bold text-gray-900">CampusCut</h1>
                 <p className="text-sm text-gray-600">Join the community</p>
               </div>
             </div>

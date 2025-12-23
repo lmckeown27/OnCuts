@@ -806,7 +806,7 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               <li>• Highlight positive customer experiences</li>
               <li>• Promote campus events and special offers</li>
               <li>• Tag barbers and customers (with permission)</li>
-              <li>• Use relevant hashtags (#CampusCuts, #YourCampusName)</li>
+              <li>• Use relevant hashtags (#CampusCut, #YourCampusName)</li>
               <li>• Maintain professional and inclusive content</li>
             </ul>
           </div>

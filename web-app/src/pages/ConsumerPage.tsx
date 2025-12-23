@@ -11,7 +11,7 @@ import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
-import { CampusCutsLogo } from '@assets';
+import { CampusCutLogo } from '@assets';
 
 // Mock data for demo
 function getMockBarbers(): Barber[] {
@@ -177,7 +177,7 @@ export default function ConsumerPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
             </div>
             

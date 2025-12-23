@@ -9,7 +9,7 @@ export const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fu
 export const APTOS_MODULE_ADDRESS = import.meta.env.VITE_APTOS_MODULE_ADDRESS || '';
 
 // App Metadata
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCuts';
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCut';
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';
 
 export const ROUTES = {

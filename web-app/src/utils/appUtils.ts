@@ -299,8 +299,8 @@ export async function activateUpdate(): Promise<void> {
 // ═══════════════════════════════════════════════════════════
 
 export async function shareApp(
-  title: string = 'CampusCuts',
-  text: string = 'Check out CampusCuts - Fair prices for students, great earnings for barbers!',
+  title: string = 'CampusCut',
+  text: string = 'Check out CampusCut - Fair prices for students, great earnings for barbers!',
   url: string = window.location.origin
 ): Promise<boolean> {
   if ('share' in navigator) {

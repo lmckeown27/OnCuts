@@ -1,5 +1,5 @@
 /**
- * CampusCuts Assets Barrel Export
+ * CampusCut Assets Barrel Export
  * 
  * This file provides centralized exports for all assets.
  * Import assets using: import { LogoIcon } from '@assets'
@@ -11,8 +11,8 @@ export { default as Logo2 } from './logos/Logo2.png';
 export { default as Logo3 } from './logos/Logo3.png';
 export { default as Logo4 } from './logos/Logo4.png';
 
-// Primary logo (default to Logo4 - Main Brand Logo)
-export { default as CampusCutsLogo } from './logos/Logo4.png';
+// Primary logo (Chair Logo - Main Brand Logo)
+export { default as CampusCutLogo } from './logos/Main_Chair.png';
 
 // ============ ICONS ============
 export { default as ScissorsIcon } from './icons/scissors.svg';

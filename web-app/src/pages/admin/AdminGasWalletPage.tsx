@@ -427,7 +427,7 @@ export default function AdminGasWalletPage() {
             <div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Recommended for Growing Platforms</h3>
               <p className="text-sm text-gray-700 mb-4">
-                As CampusCuts grows, consider upgrading to more advanced gas management solutions:
+                As CampusCut grows, consider upgrading to more advanced gas management solutions:
               </p>
             </div>
           </div>

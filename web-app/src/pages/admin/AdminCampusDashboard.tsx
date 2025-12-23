@@ -40,7 +40,7 @@ export const AdminCampusDashboard: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img
-                alt="CampusCuts"
+                alt="CampusCut"
                 className="h-10 w-auto"
                 src="/src/assets/logos/Logo1.png"
               />

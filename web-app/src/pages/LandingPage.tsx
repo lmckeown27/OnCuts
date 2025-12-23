@@ -1,5 +1,5 @@
 /**
- * CampusCuts Landing Page
+ * CampusCut Landing Page
  * 
  * Professional landing page with top navigation and comprehensive footer
  * Inspired by modern SaaS landing pages
@@ -7,18 +7,59 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, DollarSign, Zap, Users, Star, CheckCircle, TrendingUp, Menu, X, ExternalLink, Youtube, Twitter, Instagram, Mail, Download, ChevronDown } from 'lucide-react';
+import { Smartphone, CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, Download, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import { CampusCutsLogo } from '@assets';
+import { CampusCutLogo } from '@assets';
+import HeaderChairLogo from '../assets/logos/Header_Chair.png';
+import MainChairLogo from '../assets/logos/Main_Chair.png';
+import FooterChairLogo from '../assets/logos/Footer_Chair.png';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showInstructionsPopup, setShowInstructionsPopup] = useState(false);
+  const [instructionsVisible, setInstructionsVisible] = useState(false);
   const [iosOpen, setIosOpen] = useState(false);
   const [androidOpen, setAndroidOpen] = useState(false);
+  const [showContactPopup, setShowContactPopup] = useState(false);
+  const [contactVisible, setContactVisible] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+
+  const toggleFaq = (id: string) => {
+    setOpenFaq(openFaq === id ? null : id);
+  };
+
+  const openInstructionsPopup = () => {
+    setShowInstructionsPopup(true);
+    // Trigger animation after mount
+    setTimeout(() => setInstructionsVisible(true), 10);
+  };
+
+  const closeInstructionsPopup = () => {
+    setInstructionsVisible(false);
+    setTimeout(() => {
+      setShowInstructionsPopup(false);
+    }, 200);
+  };
+
+  const openContactPopup = () => {
+    setShowContactPopup(true);
+    // Trigger animation after mount
+    setTimeout(() => setContactVisible(true), 10);
+  };
+
+  const closeContactPopup = () => {
+    setContactVisible(false);
+    setTimeout(() => {
+      setShowContactPopup(false);
+      setContactSubmitted(false);
+      setContactForm({ name: '', email: '', message: '' });
+    }, 200);
+  };
 
   // Handle scroll for sticky navigation
   useEffect(() => {
@@ -43,14 +84,28 @@ export default function LandingPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-white shadow-md' : 'bg-transparent'
       }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <button 
-              onClick={() => navigate('/')}
-              className="flex items-center hover:opacity-80 transition-opacity"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
-              <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
+              <div className="relative">
+                <img 
+                  src={HeaderChairLogo} 
+                  alt="CampusCut" 
+                  className={`h-12 w-auto transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
+                />
+                <img 
+                  src={MainChairLogo} 
+                  alt="CampusCut" 
+                  className={`h-12 w-auto absolute top-0 left-0 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
+                />
+              </div>
+              <span className={`text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
+                CampusCut
+              </span>
             </button>
 
             {/* Desktop Navigation */}
@@ -61,11 +116,8 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 Pricing Explained
               </button>
-              <button onClick={() => scrollToSection('for-barbers')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                For Barbers
-              </button>
-              <button onClick={() => scrollToSection('for-students')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                For Students
+              <button onClick={() => scrollToSection('faq')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+                FAQ
               </button>
             </div>
 
@@ -100,11 +152,8 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 Pricing Explained
               </button>
-              <button onClick={() => scrollToSection('for-barbers')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                For Barbers
-              </button>
-              <button onClick={() => scrollToSection('for-students')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                For Students
+              <button onClick={() => scrollToSection('faq')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                FAQ
               </button>
               <div className="pt-3 border-t border-gray-200">
                 <button 
@@ -129,13 +178,6 @@ export default function LandingPage() {
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
             Earn More, Pay Less
           </h1>
-          <p className="text-2xl md:text-3xl text-gray-700 mb-4">
-            Barbers earn 50% more. Students save 20%. Everyone wins.
-          </p>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10">
-            We eliminated the expensive middleman. Barbers keep 95% instead of the typical 40-60% commission. 
-            Students get quality haircuts at fair prices.
-          </p>
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -147,7 +189,7 @@ export default function LandingPage() {
               Get Started
             </button>
             <button
-              onClick={() => setShowInstructionsPopup(true)}
+              onClick={openInstructionsPopup}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 border-2 border-primary-400 font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
               <Download className="w-6 h-6" />
@@ -159,16 +201,13 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Why CampusCuts Section - Video */}
+      {/* Why CampusCut Section - Video */}
       <div className="py-20 px-4 bg-white" id="how-it-works">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Why CampusCuts?
+              Why CampusCut?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Watch how we're transforming campus barbering
-            </p>
           </div>
           
           {/* Video Container */}
@@ -176,17 +215,13 @@ export default function LandingPage() {
             <iframe
               className="absolute top-0 left-0 w-full h-full rounded-2xl shadow-2xl"
               src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="CampusCuts Platform Overview"
+              title="CampusCut Platform Overview"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             ></iframe>
           </div>
 
-          {/* Optional: Video Caption */}
-          <p className="text-center text-gray-600 mt-6 text-sm">
-            See how CampusCuts helps barbers earn more while students pay less
-          </p>
         </div>
       </div>
 
@@ -197,9 +232,6 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               The Math Behind "Earn More, Pay Less"
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See how CampusCuts transforms traditional barber economics to benefit everyone
-            </p>
           </div>
 
           {/* The Numbers */}
@@ -241,19 +273,14 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 p-4 bg-red-100 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Reality:</strong> Traditional shops take 40-60% commission. Industry average is ~50% split.
-                    </p>
-                  </div>
                 </div>
               </Card>
 
-              {/* CampusCuts Model */}
+              {/* CampusCut Model */}
               <Card className="border-2 border-green-300 bg-green-50">
                 <div className="p-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCuts</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCut</h3>
                     <p className="text-gray-600">How we're different</p>
                   </div>
                   
@@ -266,7 +293,6 @@ export default function LandingPage() {
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                         <div className="h-full bg-green-500" style={{ width: '100%' }}></div>
                       </div>
-                      <p className="text-xs text-green-600 mt-1 font-medium">$7 less than traditional!</p>
                     </div>
 
                     <div className="bg-white rounded-lg p-4">
@@ -286,182 +312,171 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 p-4 bg-green-100 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Result:</strong> Barber earns $9.10 more per cut. Customer saves $7. Everyone wins!
-                    </p>
-                  </div>
                 </div>
               </Card>
             </div>
           </div>
 
-          {/* Key Insights */}
-          <div className="max-w-4xl mx-auto">
-            <Card className="bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-300">
-              <div className="p-8">
-                <h3 className="text-2xl font-bold text-center text-gray-900 mb-6">
-                  Why This Works
-                </h3>
-                
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-green-600 mb-2">+52%</div>
-                    <p className="text-gray-700 font-semibold mb-1">More Earnings</p>
-                    <p className="text-sm text-gray-600">Barbers earn $26.60 vs $17.50 traditional</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-blue-600 mb-2">-20%</div>
-                    <p className="text-gray-700 font-semibold mb-1">Lower Prices</p>
-                    <p className="text-sm text-gray-600">Students pay $28 vs $35 traditional</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-primary-400 mb-2">5%</div>
-                    <p className="text-gray-700 font-semibold mb-1">Platform Fee</p>
-                    <p className="text-sm text-gray-600">vs 40-60% traditional shop take</p>
-                  </div>
-                </div>
-
-                <div className="mt-8 p-4 bg-white rounded-lg border border-primary-200">
-                  <p className="text-center text-gray-700">
-                    <strong>The Secret:</strong> No physical shop = no rent, utilities, or reception staff. 
-                    We pass those savings directly to barbers and customers.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Real Data Source */}
-          <div className="max-w-3xl mx-auto mt-8">
-            <p className="text-center text-sm text-gray-500">
-              Data based on industry reports showing traditional barbers earn 40-60% commission (median 50%) 
-              and typical haircut prices of $25-$45 in U.S. markets.
-            </p>
-          </div>
         </div>
       </div>
 
-      {/* For Barbers Section */}
-      <div className="py-20 px-4 bg-white" id="for-barbers">
+      {/* FAQ Section */}
+      <div className="py-20 px-4 bg-white" id="faq">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              For Barbers
+              Frequently Asked Questions
             </h2>
-            <p className="text-xl text-gray-600">
-              Build your business on your terms. Keep what you earn.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Create Your Profile</h4>
-                  <p className="text-gray-600">Showcase your skills, set your prices, link your Instagram portfolio.</p>
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* For Consumers Column */}
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+                For Consumers
+              </h3>
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c1')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">How do I book a haircut?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c1' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Browse barber profiles, pick one you like, and send a booking request with your preferred date, time, and location. The barber will accept or suggest an alternative.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Review Requests</h4>
-                  <p className="text-gray-600">See customer reliability scores. Accept or decline requests on your terms.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c2')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">How do I pay?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c2' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Pay securely through the app—no cash needed. Payment is only released to the barber after they mark your booking as complete.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Complete Service</h4>
-                  <p className="text-gray-600">Provide quality service at your chosen location. Mark booking as complete.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c3')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Where do haircuts happen?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c3' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You and the barber agree on a location—usually on campus in dorms, apartments, or common areas. It's all coordinated through the booking.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-primary-400 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">4</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Get Paid Instantly</h4>
-                  <p className="text-gray-600">Receive 95% of the payment immediately. No waiting periods or hidden fees.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c4')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">What if I need to cancel?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c4' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You can cancel anytime before the barber confirms completion. Just be respectful of their time—frequent no-shows affect your reliability score.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <Card className="bg-gradient-to-br from-primary-50 to-primary-100 p-8">
-              <h3 className="text-3xl font-bold text-primary-400 mb-4">For Barbers</h3>
-              <p className="text-5xl font-bold text-gray-900 mb-4">Keep 95%</p>
-              <p className="text-gray-700 text-lg mb-6">
-                Most platforms take 20-30%. We only charge 5% so you can earn what you deserve while charging fair prices.
-              </p>
-              <button
-                onClick={() => navigate('/web')}
-                className="w-full px-6 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
-              >
-                Start Earning More
-              </button>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* For Students Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-amber-50 to-yellow-50" id="for-students">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              For Students
-            </h2>
-            <p className="text-xl text-gray-600">
-              Quality cuts, fair prices, campus convenience.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-12">
-            <Card className="bg-gradient-to-br from-amber-50 to-yellow-100 p-8">
-              <h3 className="text-3xl font-bold text-amber-600 mb-4">For Students</h3>
-              <p className="text-5xl font-bold text-gray-900 mb-4">Save 20%</p>
-              <p className="text-gray-700 text-lg mb-6">
-                Lower platform fees mean barbers can offer great prices. Quality cuts from talented barbers, right on campus.
-              </p>
-              <button
-                onClick={() => navigate('/web')}
-                className="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors"
-              >
-                Find Your Barber
-              </button>
-            </Card>
-
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">1</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Browse Barbers</h4>
-                  <p className="text-gray-600">Swipe through profiles, see ratings, portfolios, and Instagram.</p>
+            {/* For Barbers Column */}
+            <div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+                For Barbers
+              </h3>
+              <div className="space-y-3">
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b1')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">How do I start cutting on CampusCut?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b1' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Create your profile, add your services and prices, link your Instagram portfolio, and start accepting booking requests. You're in control.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">2</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Send Booking Request</h4>
-                  <p className="text-gray-600">Choose date, time, and location. Message the barber directly.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b2')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">How much do I keep?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b2' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 95% of every payment. We only take a 5% platform fee—way less than the 40-60% traditional shops take.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">3</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Get Your Cut</h4>
-                  <p className="text-gray-600">Meet at the agreed location. Payment processes automatically upon completion.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b3')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">When do I get paid?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b3' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Instantly. As soon as you mark a booking as complete, the payment is released to you. No waiting periods.</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="bg-amber-600 text-white rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0 font-bold text-lg">4</div>
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg mb-2">Leave a Review</h4>
-                  <p className="text-gray-600">Your verified review helps build the barber's reputation and helps other students.</p>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b4')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Can I decline requests?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b4' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Absolutely. You choose which requests to accept based on timing, location, and customer reliability scores. Your schedule, your rules.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* CTA below FAQ */}
+          <div className="mt-12 text-center">
+            <p className="text-gray-600 mb-4">Still have questions?</p>
+            <button 
+              onClick={openContactPopup}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+            >
+              <Mail className="w-5 h-5" />
+              Contact Support
+            </button>
           </div>
         </div>
       </div>
@@ -472,9 +487,6 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Ready to Get Started?
           </h2>
-          <p className="text-xl text-primary-50 mb-10">
-            Join the future of campus grooming. Fair prices, instant payments, direct connections.
-          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={() => navigate('/web')}
@@ -484,7 +496,7 @@ export default function LandingPage() {
               Get Started
             </button>
             <button 
-              onClick={() => setShowInstructionsPopup(true)}
+              onClick={openInstructionsPopup}
               className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white border-2 border-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
               <Download className="w-6 h-6" />
@@ -497,17 +509,17 @@ export default function LandingPage() {
       {/* Install Instructions Popup */}
       {showInstructionsPopup && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowInstructionsPopup(false)}
+          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${instructionsVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeInstructionsPopup}
         >
           <div 
-            className="bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto animate-fade-in"
+            className={`bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto transition-all duration-200 ${instructionsVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative mb-8">
               <h2 className="text-3xl font-bold text-gray-900 text-center">Installation Instructions</h2>
               <button
-                onClick={() => setShowInstructionsPopup(false)}
+                onClick={closeInstructionsPopup}
                 className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="w-6 h-6 text-gray-500" />
@@ -645,6 +657,114 @@ export default function LandingPage() {
         </div>
       )}
 
+      {/* Contact Support Popup */}
+      {showContactPopup && (
+        <div 
+          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${contactVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeContactPopup}
+        >
+          <div 
+            className={`bg-white rounded-3xl p-8 max-w-lg w-full transition-all duration-200 ${contactVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Contact Support</h2>
+              <button
+                onClick={closeContactPopup}
+                className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {contactSubmitted ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Message Sent!</h3>
+                <p className="text-gray-600 mb-6">We'll get back to you as soon as possible.</p>
+                <button
+                  onClick={closeContactPopup}
+                  className="px-6 py-2 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  // Open mailto with pre-filled content
+                  const subject = encodeURIComponent(`CampusCut Support Request from ${contactForm.name}`);
+                  const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
+                  window.location.href = `mailto:campuscuthelp@gmail.com?subject=${subject}&body=${body}`;
+                  setContactSubmitted(true);
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label htmlFor="contact-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    id="contact-name"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact-email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Email
+                  </label>
+                  <input
+                    type="email"
+                    id="contact-email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors"
+                    placeholder="john@university.edu"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact-message" className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    id="contact-message"
+                    required
+                    rows={4}
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 outline-none transition-colors resize-none"
+                    placeholder="How can we help you?"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full px-6 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-5 h-5" />
+                  Send Message
+                </button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  This will open your email client with the message pre-filled
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -681,13 +801,8 @@ export default function LandingPage() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('for-barbers')} className="text-gray-400 hover:text-white transition-colors">
-                    For Barbers
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('for-students')} className="text-gray-400 hover:text-white transition-colors">
-                    For Students
+                  <button onClick={() => scrollToSection('faq')} className="text-gray-400 hover:text-white transition-colors">
+                    FAQ
                   </button>
                 </li>
               </ul>
@@ -703,13 +818,13 @@ export default function LandingPage() {
                   </button>
                 </li>
                 <li>
-                  <a href="mailto:support@campuscuts.com" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-                    Contact Us <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <button onClick={openContactPopup} className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+                    Contact Us <Mail className="w-3 h-3" />
+                  </button>
                 </li>
                 <li>
-                  <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                    FAQ <span className="text-xs text-gray-600">(Coming Soon)</span>
+                  <button onClick={() => scrollToSection('faq')} className="text-gray-400 hover:text-white transition-colors">
+                    FAQ
                   </button>
                 </li>
               </ul>
@@ -743,10 +858,10 @@ export default function LandingPage() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               {/* Logo and Copyright */}
               <div className="flex items-center gap-3">
-                <img src={CampusCutsLogo} alt="CampusCuts" className="h-8 w-auto" />
+                <img src={FooterChairLogo} alt="CampusCut" className="h-8 w-auto" />
                 <div>
                   <p className="text-gray-400 text-sm">
-                    © 2025 CampusCuts. All rights reserved.
+                    © 2025 CampusCut. All rights reserved.
                   </p>
                 </div>
               </div>
@@ -757,7 +872,9 @@ export default function LandingPage() {
                   <Instagram className="w-5 h-5" />
                 </a>
                 <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
-                  <Twitter className="w-5 h-5" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
                 </button>
                 <a 
                   href="https://youtube.com/@campuscuts" 

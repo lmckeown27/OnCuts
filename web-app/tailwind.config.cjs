@@ -47,7 +47,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Source Serif 4"', 'Georgia', 'Cambria', '"Times New Roman"', 'serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'Cambria', '"Times New Roman"', 'serif'],
       },
       animation: {
         'slide-down': 'slideDown 0.5s ease-out',

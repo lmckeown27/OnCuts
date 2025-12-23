@@ -124,7 +124,7 @@ export default function CampusSelectPage() {
             disabled={!selectedCampus}
             size="lg"
           >
-            Continue to CampusCuts
+            Continue to CampusCut
           </Button>
         </div>
       </div>

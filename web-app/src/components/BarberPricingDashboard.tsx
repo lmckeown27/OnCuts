@@ -319,7 +319,7 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
         </div>
         <div className="mt-4 bg-gray-50 rounded-lg p-4">
           <p className="text-sm text-gray-700">
-            Track your daily revenue and booking volume over the past 30 days. Consistent bookings and positive reviews help grow your business on CampusCuts.
+            Track your daily revenue and booking volume over the past 30 days. Consistent bookings and positive reviews help grow your business on CampusCut.
           </p>
         </div>
       </Card>

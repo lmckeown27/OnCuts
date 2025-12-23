@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import toast from 'react-hot-toast';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
-import { CampusCutsLogo } from '@assets';
+import { CampusCutLogo } from '@assets';
 
 export default function ScheduleServicePage() {
   const navigate = useNavigate();
@@ -113,7 +113,7 @@ export default function ScheduleServicePage() {
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-gray-900">Schedule Service</h1>
           </div>
         </div>

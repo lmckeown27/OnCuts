@@ -14,7 +14,7 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Loading from '../components/Loading';
-import { CampusCutsLogo } from '@assets';
+import { CampusCutLogo } from '@assets';
 
 type TabType = 'overview' | 'anomalies' | 'config';
 
@@ -47,7 +47,7 @@ export default function AdminPricingManagement() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img src={CampusCutsLogo} alt="CampusCuts" className="h-10 w-auto" />
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
               <h1 className="text-2xl font-bold text-gray-900">Dynamic Pricing Management</h1>
             </div>
             <Button onClick={() => navigate('/admin')} variant="secondary" size="sm">
