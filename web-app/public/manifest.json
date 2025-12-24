@@ -1,6 +1,6 @@
 {
-  "name": "CampusCuts - Earn More, Pay Less",
-  "short_name": "CampusCuts",
+  "name": "CampusCut",
+  "short_name": "CampusCut",
   "description": "Fair prices for students, great earnings for barbers. Book haircuts on campus with transparent pricing and instant payments.",
   "start_url": "/app",
   "display": "fullscreen",
