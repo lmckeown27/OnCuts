@@ -141,36 +141,6 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Earnings Banner */}
-      <Card className="bg-green-50 border-green-200 mb-4">
-        <div className="flex items-start gap-3">
-          <TrendingUp className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">You Keep 95% of Every Dollar</h3>
-            <div className="text-sm text-gray-700 space-y-2">
-              <div className="grid grid-cols-3 gap-4 my-3">
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">$23 Service</p>
-                  <p className="text-lg font-bold text-green-600">You Earn: $21.85</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">$28 Service</p>
-                  <p className="text-lg font-bold text-green-600">You Earn: $26.60</p>
-                </div>
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-gray-500 mb-1">$35 Service</p>
-                  <p className="text-lg font-bold text-green-600">You Earn: $33.25</p>
-                </div>
-              </div>
-              <p className="text-xs text-gray-600">
-                At traditional shops, barbers earn 40-60% (typically $14-$21 per $35 haircut). 
-                On CampusCut, you keep more of what you earn. No overhead costs to subsidize!
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {/* Info Banner */}
       <Card className="bg-primary-50 border-primary-200">
         <div className="flex items-start gap-3">

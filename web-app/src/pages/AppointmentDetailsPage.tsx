@@ -260,10 +260,6 @@ export default function AppointmentDetailsPage() {
 
         {/* Customer Information */}
         <Card>
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-5 h-5 text-primary-400" />
-            Customer Information
-          </h3>
           
           <div className="space-y-4">
             {/* Customer Profile */}

@@ -26,16 +26,20 @@ export default function ScheduleServicePage() {
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Available services based on barber's specialties
+  // Available services based on barber's specialties (fallback to full list)
   const availableServices = barber?.specialties || [
-    'Haircut',
-    'Fade',
+    'Buzz Cut',
+    'Line Up',
     'Beard Trim',
-    'Full Service',
-    'Hot Towel Shave',
-    'Color',
-    'Styling',
-    'Lineup',
+    'Haircut',
+    'Taper',
+    'Hot Shave',
+    'Fade',
+    'Haircut & Fade',
+    'Design/Art',
+    "Women's Cut",
+    'Perm',
+    'Color Treatment',
   ];
 
   // Get minimum date (today)
@@ -134,7 +138,7 @@ export default function ScheduleServicePage() {
           <div className="md:col-span-1">
             <Card className="sticky top-4">
               <div className="p-6">
-                <div className="w-full h-48 rounded-lg overflow-hidden bg-gray-200 mb-4">
+                <div className="w-32 h-64 mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
                   {barber.portfolio && barber.portfolio.length > 0 ? (
                     <img
                       src={barber.portfolio[0].url}
@@ -143,7 +147,7 @@ export default function ScheduleServicePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Scissors className="w-12 h-12 text-gray-400" />
+                      <Scissors className="w-20 h-20 text-gray-400" />
                     </div>
                   )}
                 </div>
@@ -293,16 +297,11 @@ export default function ScheduleServicePage() {
 
                 {/* Pricing Info */}
                 {barber.pricing && barber.pricing.length > 0 && (
-                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-primary-700">
-                      <DollarSign className="w-5 h-5" />
-                      <span className="font-semibold">
-                        Starting at ${Math.min(...barber.pricing.map(p => p.price))}
-                      </span>
-                    </div>
-                    <p className="text-sm text-primary-600 mt-1">
-                      Final price may vary based on service complexity
-                    </p>
+                  <div className="flex items-center gap-2 text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-4 py-3">
+                    <DollarSign className="w-5 h-5" />
+                    <span className="font-bold text-lg">
+                      {Math.min(...barber.pricing.map(p => p.price))}
+                    </span>
                   </div>
                 )}
 

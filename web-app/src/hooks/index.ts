@@ -7,3 +7,5 @@
 export { useViewport, useIsMobile, useViewportType } from './useViewport';
 export type { ViewportType, ViewportInfo } from './useViewport';
 
+export { useBodyScrollLock } from './useBodyScrollLock';
+

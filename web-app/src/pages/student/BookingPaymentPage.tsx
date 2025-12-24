@@ -105,7 +105,8 @@ export default function BookingPaymentPage() {
   const location = useLocation();
   const bookingDetails = location.state as BookingDetails;
 
-  const [step, setStep] = useState<'payment' | 'processing' | 'success' | 'error'>('payment');
+  const [step, setStep] = useState<'payment-timing' | 'payment' | 'processing' | 'success' | 'error'>('payment-timing');
+  const [paymentTiming, setPaymentTiming] = useState<'now' | 'later' | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   
@@ -124,6 +125,16 @@ export default function BookingPaymentPage() {
     percentage: 20, // Default to 20% tip
   });
   const [customTipInput, setCustomTipInput] = useState('');
+
+  // Handle "Pay Later" booking confirmation
+  const handlePayLater = () => {
+    setStep('processing');
+    // Simulate booking confirmation without payment
+    setTimeout(() => {
+      setPaymentIntentId(`booking-pending-${Date.now()}`);
+      setStep('success');
+    }, 1500);
+  };
   // ============================================================================
 
   // Mock booking ID for demo
@@ -209,6 +220,7 @@ export default function BookingPaymentPage() {
 
   // Success Screen
   if (step === 'success') {
+    const isPaidNow = paymentTiming === 'now';
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
@@ -217,8 +229,11 @@ export default function BookingPaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
           <p className="text-gray-600 mb-6">
-            Your payment of ${totalCharge.toFixed(2)} has been received and
-            held in escrow. Funds will be released to {bookingDetails.barberName} upon service completion.
+            {isPaidNow ? (
+              <>Your payment of ${totalCharge.toFixed(2)} has been received and held in escrow. Funds will be released to {bookingDetails.barberName} upon service completion.</>
+            ) : (
+              <>Your appointment with {bookingDetails.barberName} is confirmed. You'll pay ${bookingDetails.servicePrice.toFixed(2)} after your service is completed.</>
+            )}
           </p>
 
           <div className="text-left bg-gray-50 p-4 rounded-lg mb-6">
@@ -242,28 +257,45 @@ export default function BookingPaymentPage() {
                 <span className="text-gray-600">Service Price:</span>
                 <span className="font-medium">${bookingDetails.servicePrice.toFixed(2)}</span>
               </div>
-              {tipAmount > 0 && (
+              {isPaidNow && tipAmount > 0 && (
                 <div className="flex justify-between text-primary-600">
                   <span>Tip:</span>
                   <span className="font-medium">${tipAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold border-t border-gray-200 pt-2 mt-2">
-                <span>Total Paid:</span>
-                <span>${totalCharge.toFixed(2)}</span>
+                <span>{isPaidNow ? 'Total Paid:' : 'Amount Due After Service:'}</span>
+                <span>${isPaidNow ? totalCharge.toFixed(2) : bookingDetails.servicePrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Payment Status:</span>
+                <span className={`font-medium ${isPaidNow ? 'text-green-600' : 'text-amber-600'}`}>
+                  {isPaidNow ? 'Paid' : 'Pay After Service'}
+                </span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-2">
-                <span>Payment ID:</span>
+                <span>Booking ID:</span>
                 <span className="font-mono">{paymentIntentId}</span>
               </div>
             </div>
           </div>
 
-          <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg mb-6 text-sm">
-            <p className="text-primary-700 font-medium mb-1">Payment Secured</p>
-            <p className="text-primary-600">
-              Your payment is held securely in escrow until your service is completed.
-            </p>
+          <div className={`p-3 rounded-lg mb-6 text-sm ${isPaidNow ? 'bg-primary-50 border border-primary-200' : 'bg-amber-50 border border-amber-200'}`}>
+            {isPaidNow ? (
+              <>
+                <p className="text-primary-700 font-medium mb-1">Payment Secured</p>
+                <p className="text-primary-600">
+                  Your payment is held securely in escrow until your service is completed.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-amber-700 font-medium mb-1">Payment Due After Service</p>
+                <p className="text-amber-600">
+                  Please be ready to pay when your service is complete. You can pay via card or other methods.
+                </p>
+              </>
+            )}
           </div>
 
           <Button onClick={() => navigate('/web/consumer')} className="w-full">
@@ -303,11 +335,153 @@ export default function BookingPaymentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Processing Payment...</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {paymentTiming === 'now' ? 'Processing Payment...' : 'Confirming Booking...'}
+          </h2>
           <p className="text-gray-600">
-            Securely processing your payment via Stripe.
+            {paymentTiming === 'now' ? 'Securely processing your payment via Stripe.' : 'Setting up your appointment.'}
           </p>
         </Card>
+      </div>
+    );
+  }
+
+  // Payment Timing Selection Screen
+  if (step === 'payment-timing') {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="mb-8 flex items-center gap-4">
+            <Button onClick={() => navigate(-1)} variant="secondary">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Choose Payment Option</h1>
+              <p className="text-gray-600 mt-1">When would you like to pay?</p>
+            </div>
+          </div>
+
+          {/* Booking Summary */}
+          <Card className="mb-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Booking Summary</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Barber:</span>
+                <span className="font-medium">{bookingDetails.barberName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Service:</span>
+                <span className="font-medium">{bookingDetails.serviceName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Scheduled:</span>
+                <span className="font-medium">
+                  {new Date(bookingDetails.scheduledAt).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-2 mt-2">
+                <span>Total:</span>
+                <span className="text-primary-600">${bookingDetails.servicePrice.toFixed(2)}</span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Payment Options */}
+          <div className="space-y-4">
+            {/* Pay Now Option */}
+            <Card 
+              className={`cursor-pointer transition-all border-2 ${
+                paymentTiming === 'now' 
+                  ? 'border-primary-500 bg-primary-50' 
+                  : 'border-gray-200 hover:border-primary-300'
+              }`}
+              onClick={() => setPaymentTiming('now')}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                  paymentTiming === 'now' ? 'border-primary-500 bg-primary-500' : 'border-gray-300'
+                }`}>
+                  {paymentTiming === 'now' && <CheckCircle className="w-4 h-4 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CreditCard className="w-5 h-5 text-primary-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Pay Now</h3>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Recommended</span>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Pay securely with your card. Your payment is held in escrow and released to the barber after your service.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="flex items-center gap-1 text-green-600">
+                      <Shield className="w-3 h-3" /> Protected by escrow
+                    </span>
+                    <span className="flex items-center gap-1 text-green-600">
+                      <Lock className="w-3 h-3" /> Secure payment
+                    </span>
+                    <span className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="w-3 h-3" /> Easy refunds
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Pay Later Option */}
+            <Card 
+              className={`cursor-pointer transition-all border-2 ${
+                paymentTiming === 'later' 
+                  ? 'border-primary-500 bg-primary-50' 
+                  : 'border-gray-200 hover:border-primary-300'
+              }`}
+              onClick={() => setPaymentTiming('later')}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
+                  paymentTiming === 'later' ? 'border-primary-500 bg-primary-500' : 'border-gray-300'
+                }`}>
+                  {paymentTiming === 'later' && <CheckCircle className="w-4 h-4 text-white" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Pay After Service</h3>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">
+                    Book now and pay after your haircut is complete. You can pay by card, cash, or other methods.
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="flex items-center gap-1 text-amber-600">
+                      <Clock className="w-3 h-3" /> Pay when satisfied
+                    </span>
+                    <span className="flex items-center gap-1 text-amber-600">
+                      <DollarSign className="w-3 h-3" /> Multiple payment options
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Continue Button */}
+          <div className="mt-8">
+            <Button 
+              onClick={() => {
+                if (paymentTiming === 'now') {
+                  setStep('payment');
+                } else if (paymentTiming === 'later') {
+                  handlePayLater();
+                }
+              }}
+              disabled={!paymentTiming}
+              className="w-full py-4 text-lg"
+            >
+              {paymentTiming === 'now' ? 'Continue to Payment' : paymentTiming === 'later' ? 'Confirm Booking' : 'Select an Option'}
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

@@ -10,7 +10,7 @@ import { Inbox, CheckCircle, XCircle, Calendar, User, Eye, X } from 'lucide-reac
 import Button from '../Button';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useViewport } from '../../hooks/useViewport';
+import { useViewport, useBodyScrollLock } from '../../hooks';
 
 interface CustomerProfile {
   displayName: string;
@@ -103,6 +103,9 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   // Viewport detection for responsive backdrop
   const { isMobile, isTablet } = useViewport();
   const showBackdrop = isMobile || isTablet; // Show backdrop on mobile and tablet
+  
+  // Lock body scroll when dropdown is open on mobile/tablet
+  useBodyScrollLock(isDropdownOpen && showBackdrop);
 
   useEffect(() => {
     fetchRequests();
@@ -230,9 +233,8 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
       return <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Reliable</span>;
     } else if (profile.stats.completionRate >= 80) {
       return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Good</span>;
-    } else {
-      return <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Caution</span>;
     }
+    return null;
   };
 
   return (
@@ -297,10 +299,14 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
               </div>
             ) : (
               requests.map((request) => (
-                <div key={request.bookingId} className="p-4 hover:bg-gray-50 transition-colors">
+                <div 
+                  key={request.bookingId} 
+                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => openModal(request)}
+                >
                   {/* Customer Info */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-400 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {request.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -312,12 +318,13 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       </div>
                       <p className="text-xs text-gray-500">{request.customerProfile.stats.completionRate}% completion</p>
                     </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0">Tap for details →</span>
                   </div>
 
                   {/* Booking Details */}
-                  <div className="space-y-1 mb-3 text-xs">
+                  <div className="space-y-1.5 mb-3 text-sm">
                     <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar className="w-3 h-3 text-gray-400" />
+                      <Calendar className="w-4 h-4 text-gray-400" />
                       <span>{new Date(request.requestedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                       <span className="text-gray-400">at</span>
                       <span>{request.requestedTime}</span>
@@ -338,35 +345,24 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   )}
 
                   {/* Actions */}
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => openModal(request)}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors"
+                  <div className="flex gap-3 justify-center" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      onClick={() => handleAccept(request.bookingId)}
+                      disabled={actionLoading === request.bookingId}
+                      className="flex-1 max-w-[140px] bg-green-600 hover:bg-green-700 text-sm py-2.5"
                     >
-                      <Eye className="w-3 h-3" />
-                      View Customer Details
-                    </button>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAccept(request.bookingId)}
-                        disabled={actionLoading === request.bookingId}
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-xs"
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleReject(request.bookingId)}
-                        disabled={actionLoading === request.bookingId}
-                        variant="secondary"
-                        className="flex-1 text-red-600 hover:bg-red-50 text-xs"
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Decline
-                      </Button>
-                    </div>
+                      <CheckCircle className="w-4 h-4 mr-1.5" />
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => handleReject(request.bookingId)}
+                      disabled={actionLoading === request.bookingId}
+                      variant="secondary"
+                      className="flex-1 max-w-[140px] text-red-600 hover:bg-red-50 text-sm py-2.5"
+                    >
+                      <XCircle className="w-4 h-4 mr-1.5" />
+                      Decline
+                    </Button>
                   </div>
                 </div>
               ))

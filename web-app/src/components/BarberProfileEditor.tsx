@@ -19,9 +19,10 @@ import type { Barber } from '../types';
 
 interface BarberProfileEditorProps {
   barberId: string;
+  onClose?: () => void;
 }
 
-export default function BarberProfileEditor({ barberId }: BarberProfileEditorProps) {
+export default function BarberProfileEditor({ barberId, onClose }: BarberProfileEditorProps) {
   const [barber, setBarber] = useState<Barber | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,18 +82,6 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Edit Your Profile</h2>
-          <p className="text-gray-600 mt-1">Customize how students see your barber profile</p>
-        </div>
-        <Button onClick={handleSaveProfile} disabled={isSaving}>
-          <Save className="w-4 h-4 mr-2" />
-          {isSaving ? 'Saving...' : 'Save Profile'}
-        </Button>
-      </div>
-
       {/* Profile Photo */}
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
@@ -147,11 +136,14 @@ export default function BarberProfileEditor({ barberId }: BarberProfileEditorPro
         <p className="text-xs text-gray-500 mt-2">Your Instagram handle without the @</p>
       </Card>
 
-      {/* Save Button (Bottom) */}
-      <div className="flex justify-end">
+      {/* Action Buttons (Bottom) */}
+      <div className="flex justify-between pt-4 border-t border-gray-200">
+        <Button variant="secondary" onClick={onClose} size="lg">
+          Cancel
+        </Button>
         <Button onClick={handleSaveProfile} disabled={isSaving} size="lg">
           <Save className="w-5 h-5 mr-2" />
-          {isSaving ? 'Saving Changes...' : 'Save All Changes'}
+          {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>
     </div>

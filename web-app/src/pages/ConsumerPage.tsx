@@ -13,7 +13,7 @@ import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
-import { useViewport } from '../hooks/useViewport';
+import { useViewport, useBodyScrollLock } from '../hooks';
 
 // Mock data for demo
 function getMockBarbers(): Barber[] {
@@ -161,6 +161,9 @@ export default function ConsumerPage() {
   
   // Viewport detection for responsive behavior
   const { isMobile, isTablet, viewport } = useViewport();
+  
+  // Lock body scroll when profile editor is open
+  useBodyScrollLock(showProfileEditor);
   
   // Profile editor open/close with animation
   const openProfileEditor = () => {
@@ -420,15 +423,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     });
   };
 
+  // Services that match what barbers can offer in BarberServiceSpecialties
   const availableServices = [
-    'Haircut',
-    'Fade',
+    'Buzz Cut',
+    'Line Up',
     'Beard Trim',
-    'Full Service',
-    'Hot Towel Shave',
-    'Color',
-    'Styling',
-    'Lineup',
+    'Haircut',
+    'Taper',
+    'Hot Shave',
+    'Fade',
+    'Haircut & Fade',
+    'Design/Art',
+    "Women's Cut",
+    'Perm',
+    'Color Treatment',
   ];
 
   if (loading) {
@@ -643,8 +651,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Profile Content */}
               <div className="space-y-6">
                 {/* Profile Header */}
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="w-full md:w-48 h-48 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row gap-6">
+                  <div className="w-full h-56 sm:w-48 sm:h-48 mx-auto sm:mx-0 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
                     {selectedBarber.portfolio && selectedBarber.portfolio.length > 0 ? (
                       <img
                         src={selectedBarber.portfolio[0].url}
@@ -653,17 +661,17 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <UsersIcon className="w-16 h-16 text-gray-400" />
+                        <UsersIcon className="w-16 h-16 sm:w-16 sm:h-16 text-gray-400" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 text-center sm:text-left">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
                       <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                       <span className="text-xl font-bold">{selectedBarber.average_rating.toFixed(1)}</span>
                     </div>
                     <p className="text-gray-700 mb-4">{selectedBarber.bio}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
                       {selectedBarber.specialties?.map((specialty, idx) => (
                         <span
                           key={idx}
@@ -674,7 +682,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       ))}
                     </div>
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
                         <Instagram className="w-5 h-5" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}

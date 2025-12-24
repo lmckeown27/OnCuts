@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import { useBodyScrollLock } from '../hooks';
 
 interface Props {
   title: string;
@@ -34,6 +35,9 @@ export default function AdminHeader({ title }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Lock body scroll when modal is open
+  useBodyScrollLock(isModalOpen);
 
   // Close dropdown when clicking outside
   useEffect(() => {

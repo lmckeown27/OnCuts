@@ -82,93 +82,93 @@ const IncidentDetailsModal: React.FC<{
 }> = ({ incident, onClose }) => {
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-2 sm:p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Incident Report Details</h2>
-            <p className="text-sm text-gray-500">Automatically generated from customer review patterns</p>
+            <h2 className="text-base sm:text-xl font-bold text-gray-900">Incident Report Details</h2>
+            <p className="text-xs sm:text-sm text-gray-500">Automatically generated from review patterns</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none p-1"
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Barber Info */}
-          <Card className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Barber Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <Card className="p-4 sm:p-6">
+            <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Barber Information</h3>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
-                <p className="text-sm text-gray-600">Name</p>
+                <p className="text-gray-600">Name</p>
                 <p className="font-medium text-gray-900">{incident.barberName}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="font-medium text-gray-900">{incident.barberEmail}</p>
+                <p className="text-gray-600">Email</p>
+                <p className="font-medium text-gray-900 truncate">{incident.barberEmail}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Issue Type</p>
+                <p className="text-gray-600">Issue Type</p>
                 <p className="font-medium text-gray-900 capitalize">{incident.type}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Severity</p>
+                <p className="text-gray-600">Severity</p>
                 <p className="font-medium text-gray-900 capitalize">{incident.severity}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Negative Reviews</p>
+                <p className="text-gray-600">Negative Reviews</p>
                 <p className="font-medium text-gray-900">{incident.negativeReviewCount}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Detected</p>
-                <p className="font-medium text-gray-900">{incident.detectedAt.toLocaleString()}</p>
+                <p className="text-gray-600">Detected</p>
+                <p className="font-medium text-gray-900">{incident.detectedAt.toLocaleDateString()}</p>
               </div>
             </div>
           </Card>
 
           {/* Pattern Analysis */}
-          <Card className="p-6 bg-blue-50 border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+          <Card className="p-4 sm:p-6 bg-blue-50 border-blue-200">
+            <h3 className="font-semibold text-blue-900 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
               Pattern Analysis
             </h3>
-            <p className="text-sm text-blue-800 leading-relaxed">{incident.summary}</p>
+            <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">{incident.summary}</p>
           </Card>
 
           {/* Recommendations */}
-          <Card className="p-6 bg-green-50 border-green-200">
-            <h3 className="font-semibold text-green-900 mb-3">Recommended Actions</h3>
-            <p className="text-sm text-green-800 leading-relaxed">{incident.recommendation}</p>
+          <Card className="p-4 sm:p-6 bg-green-50 border-green-200">
+            <h3 className="font-semibold text-green-900 mb-2 sm:mb-3 text-sm sm:text-base">Recommended Actions</h3>
+            <p className="text-xs sm:text-sm text-green-800 leading-relaxed">{incident.recommendation}</p>
           </Card>
 
           {/* Individual Reviews */}
           <div>
-            <h3 className="font-semibold text-gray-900 mb-4">Negative Reviews ({incident.negativeReviews.length})</h3>
-            <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Negative Reviews ({incident.negativeReviews.length})</h3>
+            <div className="space-y-3 sm:space-y-4">
               {incident.negativeReviews.map((review) => (
                 <Card 
                   key={review.reviewId} 
-                  className={`p-5 ${
+                  className={`p-3 sm:p-5 ${
                     review.sentiment === 'very_negative' 
                       ? 'border-2 border-red-300 bg-red-50' 
                       : 'border border-gray-200'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 sm:mb-3 gap-2">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="font-medium text-gray-900">{review.customerName}</span>
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5 sm:mb-2">
+                        <span className="font-medium text-gray-900 text-sm sm:text-base">{review.customerName}</span>
+                        <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                           review.sentiment === 'very_negative'
                             ? 'bg-red-100 text-red-700'
                             : 'bg-yellow-100 text-yellow-700'
@@ -176,29 +176,29 @@ const IncidentDetailsModal: React.FC<{
                           {review.sentiment.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 mb-2">
+                      <div className="flex items-center gap-1 mb-1.5 sm:mb-2">
                         {[...Array(5)].map((_, i) => (
                           <span
                             key={i}
-                            className={i < review.rating ? 'text-yellow-400' : 'text-gray-300'}
+                            className={`text-sm sm:text-base ${i < review.rating ? 'text-yellow-400' : 'text-gray-300'}`}
                           >
                             ★
                           </span>
                         ))}
-                        <span className="text-sm text-gray-600 ml-2">
+                        <span className="text-xs sm:text-sm text-gray-600 ml-2">
                           {review.createdAt.toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-700 italic">"{review.comment}"</p>
+                  <div className="mb-2 sm:mb-3">
+                    <p className="text-xs sm:text-sm text-gray-700 italic">"{review.comment}"</p>
                   </div>
 
-                  <div className="p-3 bg-white rounded-lg border border-gray-200">
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Analysis:</p>
-                    <p className="text-xs text-gray-600">{review.analysis}</p>
+                  <div className="p-2 sm:p-3 bg-white rounded-lg border border-gray-200">
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-700 mb-0.5 sm:mb-1">Analysis:</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">{review.analysis}</p>
                   </div>
                 </Card>
               ))}
@@ -206,11 +206,11 @@ const IncidentDetailsModal: React.FC<{
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end pt-4 border-t border-gray-200">
+            <Button variant="outline" onClick={onClose} className="text-sm sm:text-base order-2 sm:order-1">
               Close
             </Button>
-            <Button variant="primary">
+            <Button variant="primary" className="text-sm sm:text-base order-1 sm:order-2">
               <AlertTriangle className="w-4 h-4 mr-2" />
               Escalate to Admin
             </Button>
@@ -228,47 +228,47 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'content' | 'incidents'>('applications');
 
   return (
-    <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-8">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Tab Navigation - Scrollable on mobile */}
+      <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
+        <nav className="flex gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
           <button
             onClick={() => setActiveTab('applications')}
-            className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'applications'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Users className="w-4 h-4" />
-              Barber Applications
+              <span className="hidden sm:inline">Barber </span>Applications
             </div>
           </button>
           
           <button
             onClick={() => setActiveTab('barbers')}
-            className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'barbers'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Users className="w-4 h-4" />
-              Barber Management
+              <span className="hidden sm:inline">Barber </span>Management
             </div>
           </button>
           
           <button
             onClick={() => setActiveTab('content')}
-            className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'content'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <FileText className="w-4 h-4" />
               Content
             </div>
@@ -276,13 +276,13 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           
           <button
             onClick={() => setActiveTab('incidents')}
-            className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               activeTab === 'incidents'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <AlertTriangle className="w-4 h-4" />
               Incidents
             </div>
@@ -333,27 +333,27 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Pending Applications</h3>
-        <span className="text-sm text-gray-500">{applications.length} pending</span>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Pending Applications</h3>
+        <span className="text-xs sm:text-sm text-gray-500">{applications.length} pending</span>
       </div>
 
       {applications.length === 0 ? (
-        <Card className="text-center py-12">
-          <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No pending applications</p>
+        <Card className="text-center py-8 sm:py-12">
+          <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+          <p className="text-gray-500 text-sm sm:text-base">No pending applications</p>
         </Card>
       ) : (
         <div className="space-y-3">
           {applications.map((app) => (
-            <Card key={app.id} className="p-4">
-              <div className="flex items-start justify-between">
+            <Card key={app.id} className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{app.applicantName}</h4>
+                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg">{app.applicantName}</h4>
                   <p className="text-sm text-gray-600 mt-1">{app.email}</p>
                   {app.phoneNumber && (
                     <p className="text-sm text-gray-600">{app.phoneNumber}</p>
                   )}
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
                     <span className="text-xs text-gray-500">
                       Applied {app.appliedAt.toLocaleDateString()}
                     </span>
@@ -368,32 +368,35 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                   </div>
                 </div>
                 
-                <div className="flex gap-2 ml-4">
+                {/* Buttons - Grid on mobile, flex on desktop */}
+                <div className="grid grid-cols-2 sm:flex gap-2 sm:ml-4">
                   {app.status === 'pending' && (
                     <>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'interview')}
+                        className="text-xs sm:text-sm"
                       >
-                        <Calendar className="w-4 h-4 mr-1" />
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Interview
                       </Button>
                       <Button
                         variant="primary"
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
+                        className="text-xs sm:text-sm"
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
+                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Approve
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
-                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm col-span-2 sm:col-span-1"
                       >
-                        <XCircle className="w-4 h-4 mr-1" />
+                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Reject
                       </Button>
                     </>
@@ -404,17 +407,18 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         variant="primary"
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
+                        className="text-xs sm:text-sm"
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
+                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Approve
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
-                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm"
                       >
-                        <XCircle className="w-4 h-4 mr-1" />
+                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Reject
                       </Button>
                     </>
@@ -528,27 +532,27 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
-        <p className="text-sm text-gray-500">View and manage barbers working on your campus</p>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
+        <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
       </div>
 
       {/* Search and Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1 relative">
           <input
             type="text"
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            className="w-full pl-4 pr-4 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           <button
             onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               filterStatus === 'all'
                 ? 'bg-primary-500 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -558,7 +562,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
           </button>
           <button
             onClick={() => setFilterStatus('active')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               filterStatus === 'active'
                 ? 'bg-primary-500 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -568,7 +572,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
           </button>
           <button
             onClick={() => setFilterStatus('inactive')}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
               filterStatus === 'inactive'
                 ? 'bg-primary-500 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -581,20 +585,20 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
       {/* Barbers List */}
       {filteredBarbers.length === 0 ? (
-        <Card className="text-center py-12">
-          <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No barbers found matching your criteria</p>
+        <Card className="text-center py-8 sm:py-12">
+          <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+          <p className="text-gray-500 text-sm sm:text-base">No barbers found matching your criteria</p>
         </Card>
       ) : (
         <div className="space-y-3">
           {filteredBarbers.map((barber) => (
-            <Card key={barber.id} className="p-5">
-              <div className="flex items-start justify-between">
+            <Card key={barber.id} className="p-3 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1">
                   {/* Header Row */}
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="text-lg font-semibold text-gray-900">{barber.name}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
+                    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
                       barber.isActive
                         ? 'bg-green-100 text-green-700'
                         : 'bg-gray-100 text-gray-700'
@@ -602,29 +606,29 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                       {barber.isActive ? 'Active' : 'Inactive'}
                     </span>
                     {barber.avgRating >= 4.8 && (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                      <span className="px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
                         ⭐ Top Rated
                       </span>
                     )}
                   </div>
 
                   {/* Contact Info */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="space-y-1 sm:grid sm:grid-cols-2 sm:gap-2 sm:space-y-0 mb-3 text-xs sm:text-sm text-gray-600">
+                    <div className="flex items-center gap-1.5 sm:gap-2 truncate">
                       <span className="font-medium">Email:</span>
-                      <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline">
+                      <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline truncate">
                         {barber.email}
                       </a>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <span className="font-medium">Phone:</span>
                       <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
                         {barber.phoneNumber}
                       </a>
                     </div>
                     {barber.instagramHandle && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <span className="font-medium">Instagram:</span>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <span className="font-medium">IG:</span>
                         <a
                           href={`https://www.instagram.com/${barber.instagramHandle}/`}
                           target="_blank"
@@ -637,23 +641,23 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                     )}
                   </div>
 
-                  {/* Stats */}
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-1.5">
+                  {/* Stats - Grid on mobile */}
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-6 text-xs sm:text-sm">
+                    <div className="flex items-center gap-1">
                       <span className="font-medium text-gray-900">Rating:</span>
                       <span className="text-yellow-600 font-semibold">{barber.avgRating.toFixed(1)}</span>
                       <span className="text-gray-500">★</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-gray-900">Total Bookings:</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-900">Bookings:</span>
                       <span className="text-gray-700">{barber.totalBookings}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <span className="font-medium text-gray-900">Completed:</span>
                       <span className="text-green-600 font-semibold">{barber.completedBookings}</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-medium text-gray-900">Completion Rate:</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-900">Rate:</span>
                       <span className={`font-semibold ${
                         ((barber.completedBookings / barber.totalBookings) * 100) >= 76 
                           ? 'text-green-600' 
@@ -667,12 +671,13 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex flex-col gap-2 ml-4">
+                {/* Actions - Full width on mobile */}
+                <div className="flex sm:flex-col gap-2 sm:ml-4">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setSelectedBarberId(barber.id)}
+                    className="flex-1 sm:flex-none text-xs sm:text-sm"
                   >
                     View Profile
                   </Button>
@@ -680,6 +685,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                     variant="outline" 
                     size="sm"
                     onClick={() => window.location.href = `mailto:${barber.email}`}
+                    className="flex-1 sm:flex-none text-xs sm:text-sm"
                   >
                     Contact
                   </Button>
@@ -691,12 +697,12 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       )}
 
       {/* Info Card */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <div className="flex gap-3">
-          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <Card className="p-4 sm:p-6 bg-blue-50 border-blue-200">
+        <div className="flex gap-2 sm:gap-3">
+          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-semibold text-blue-900 mb-2">Campus Manager Responsibilities</h4>
-            <ul className="text-sm text-blue-800 space-y-1.5">
+            <h4 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">Campus Manager Responsibilities</h4>
+            <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-1.5">
               <li>• Monitor barber performance and assist with onboarding</li>
               <li>• Provide support and answer questions from barbers</li>
               <li>• Help resolve issues between barbers and customers</li>
@@ -743,41 +749,41 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Campus Content & Social Media</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Campus Content & Social Media</h3>
+        <p className="text-xs sm:text-sm text-gray-500">
           Manage your campus's Instagram presence and share barber content with the community.
         </p>
       </div>
 
       {/* Instagram Card */}
-      <Card className="p-8">
+      <Card className="p-5 sm:p-8">
         <div className="text-center">
           {/* Instagram Logo */}
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 flex items-center justify-center">
-            <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 flex items-center justify-center">
+            <svg className="w-9 h-9 sm:w-12 sm:h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
             </svg>
           </div>
 
           {/* Instagram Info */}
-          <h4 className="text-xl font-bold text-gray-900 mb-2">
+          <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
             Campus Instagram
           </h4>
-          <p className="text-lg text-gray-700 mb-1">
+          <p className="text-base sm:text-lg text-gray-700 mb-1">
             @{instagramHandle}
           </p>
-          <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 max-w-md mx-auto">
             Post barber showcases, campus events, promotions, and student success stories to your campus Instagram page.
           </p>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
             <Button
               variant="primary"
               onClick={openInstagram}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-sm sm:text-base"
             >
               <FileText className="w-4 h-4 mr-2" />
               Open Instagram
@@ -788,6 +794,7 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                 navigator.clipboard.writeText(instagramUrl);
                 alert('Instagram link copied to clipboard!');
               }}
+              className="text-sm sm:text-base"
             >
               Copy Link
             </Button>
@@ -796,12 +803,12 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       </Card>
 
       {/* Content Guidelines */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <div className="flex gap-3">
-          <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+      <Card className="p-4 sm:p-6 bg-blue-50 border-blue-200">
+        <div className="flex gap-2 sm:gap-3">
+          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <h4 className="font-semibold text-blue-900 mb-2">Content Guidelines</h4>
-            <ul className="text-sm text-blue-800 space-y-1.5">
+            <h4 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">Content Guidelines</h4>
+            <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-1.5">
               <li>• Showcase barber work and transformations</li>
               <li>• Highlight positive customer experiences</li>
               <li>• Promote campus events and special offers</li>
@@ -814,18 +821,18 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       </Card>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900">247</p>
-          <p className="text-xs text-gray-600 mt-1">Posts</p>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900">247</p>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Posts</p>
         </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900">1.2K</p>
-          <p className="text-xs text-gray-600 mt-1">Followers</p>
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900">1.2K</p>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Followers</p>
         </Card>
-        <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900">892</p>
-          <p className="text-xs text-gray-600 mt-1">Following</p>
+        <Card className="p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900">892</p>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Following</p>
         </Card>
       </div>
     </div>
@@ -960,46 +967,46 @@ const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Incident Reports</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Incident Reports</h3>
+        <p className="text-xs sm:text-sm text-gray-500">
           Automatically detected from customer review patterns
         </p>
       </div>
 
       {/* Incidents List */}
       {incidents.length === 0 ? (
-        <Card className="text-center py-12">
-          <CheckCircle className="w-12 h-12 text-green-300 mx-auto mb-4" />
-          <p className="text-gray-700 font-medium">No incidents detected</p>
-          <p className="text-sm text-gray-500 mt-1">All barbers are maintaining good review patterns</p>
+        <Card className="text-center py-8 sm:py-12">
+          <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-green-300 mx-auto mb-3 sm:mb-4" />
+          <p className="text-gray-700 font-medium text-sm sm:text-base">No incidents detected</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">All barbers are maintaining good review patterns</p>
         </Card>
       ) : (
         <div className="space-y-4">
           {incidents.map((incident) => (
             <Card 
               key={incident.id} 
-              className={`p-6 border-2 ${getSeverityColor(incident.severity)}`}
+              className={`p-3 sm:p-6 border-2 ${getSeverityColor(incident.severity)}`}
             >
               {/* Header */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <h4 className="text-lg font-bold text-gray-900">{incident.barberName}</h4>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getSeverityColor(incident.severity)}`}>
-                      {incident.severity.toUpperCase()} SEVERITY
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                    <h4 className="text-base sm:text-lg font-bold text-gray-900">{incident.barberName}</h4>
+                    <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:py-1 rounded-full ${getSeverityColor(incident.severity)}`}>
+                      {incident.severity.toUpperCase()}
                     </span>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStatusColor(incident.status)}`}>
+                    <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded-full ${getStatusColor(incident.status)}`}>
                       {incident.status.replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                     <span>{incident.negativeReviewCount} negative reviews</span>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span>Detected {incident.detectedAt.toLocaleDateString()}</span>
-                    <span>•</span>
+                    <span className="hidden sm:inline">•</span>
                     <span className="capitalize">{incident.type} issue</span>
                   </div>
                 </div>
@@ -1007,44 +1014,47 @@ const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedIncident(incident)}
+                  className="w-full sm:w-auto text-xs sm:text-sm"
                 >
                   View Details
                 </Button>
               </div>
 
               {/* Pattern Summary */}
-              <div className="mb-4 p-4 bg-white rounded-lg border border-gray-200">
-                <h5 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
+              <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-white rounded-lg border border-gray-200">
+                <h5 className="font-semibold text-gray-900 mb-1.5 sm:mb-2 flex items-center gap-2 text-sm sm:text-base">
+                  <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Pattern Summary
                 </h5>
-                <p className="text-sm text-gray-700">{incident.summary}</p>
+                <p className="text-xs sm:text-sm text-gray-700">{incident.summary}</p>
               </div>
 
               {/* Recommendations */}
-              <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                <h5 className="font-semibold text-green-900 mb-2">Recommended Actions</h5>
-                <p className="text-sm text-green-800">{incident.recommendation}</p>
+              <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-semibold text-green-900 mb-1.5 sm:mb-2 text-sm sm:text-base">Recommended Actions</h5>
+                <p className="text-xs sm:text-sm text-green-800">{incident.recommendation}</p>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3 justify-end">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
                 {incident.status === 'pending_review' && (
                   <>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleAcknowledge(incident.id)}
+                      className="text-xs sm:text-sm"
                     >
-                      <CheckCircle className="w-4 h-4 mr-1" />
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                       Acknowledge
                     </Button>
                     <Button
                       variant="primary"
                       size="sm"
                       onClick={() => handleEscalate(incident.id)}
+                      className="text-xs sm:text-sm"
                     >
-                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                       Escalate to Admin
                     </Button>
                   </>
@@ -1054,13 +1064,14 @@ const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     variant="primary"
                     size="sm"
                     onClick={() => handleEscalate(incident.id)}
+                    className="text-xs sm:text-sm"
                   >
-                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                     Escalate to Admin
                   </Button>
                 )}
                 {incident.status === 'escalated' && (
-                  <span className="text-sm text-gray-600 italic">
+                  <span className="text-xs sm:text-sm text-gray-600 italic text-center sm:text-right">
                     Escalated to admin - awaiting resolution
                   </span>
                 )}

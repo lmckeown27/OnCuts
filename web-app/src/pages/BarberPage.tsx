@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X, Clock, Zap } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -14,9 +14,10 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
+import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
-import { useViewport } from '../hooks/useViewport';
+import { useViewport, useBodyScrollLock } from '../hooks';
 
 const COMPONENT_VERSION = 'v4.0-modal-fix';
 
@@ -47,8 +48,17 @@ export default function BarberPage() {
   const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [isServiceHistoryVisible, setIsServiceHistoryVisible] = useState(false);
   
+  const [showAvailability, setShowAvailability] = useState(false);
+  
+  const [showWalkInPayment, setShowWalkInPayment] = useState(false);
+  const [isAvailabilityVisible, setIsAvailabilityVisible] = useState(false);
+  
   const [showServiceDetails, setShowServiceDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  
+  // Lock body scroll when any modal is open
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showPricingDashboard || showCampusManagerDashboard || showServiceHistory || showAvailability || showServiceDetails || showWalkInPayment;
+  useBodyScrollLock(isAnyModalOpen);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -84,6 +94,9 @@ export default function BarberPage() {
   
   const openServiceHistory = () => openModal(setShowServiceHistory, setIsServiceHistoryVisible);
   const closeServiceHistory = () => closeModal(setShowServiceHistory, setIsServiceHistoryVisible);
+  
+  const openAvailability = () => openModal(setShowAvailability, setIsAvailabilityVisible);
+  const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
   
   // Mock barber data - in production this would come from API
   const barberId = 'barber-1';
@@ -122,7 +135,8 @@ export default function BarberPage() {
         service: 35.00,
         platformFee: 1.75,
         total: 36.75,
-        paymentMethod: 'Escrow (Blockchain)',
+        paymentMethod: 'Escrow (Stripe)',
+        paymentStatus: 'paid' as const,
       },
       status: 'confirmed',
       bookedAt: '2 hours ago',
@@ -157,7 +171,8 @@ export default function BarberPage() {
         service: 23.00,
         platformFee: 1.15,
         total: 24.15,
-        paymentMethod: 'Escrow (Blockchain)',
+        paymentMethod: 'Escrow (Stripe)',
+        paymentStatus: 'paid' as const,
       },
       status: 'confirmed',
       bookedAt: '3 hours ago',
@@ -192,9 +207,10 @@ export default function BarberPage() {
         service: 45.00,
         platformFee: 2.25,
         total: 47.25,
-        paymentMethod: 'Escrow (Blockchain)',
+        paymentMethod: 'Pay After Service',
+        paymentStatus: 'pay_later' as const,
       },
-      status: 'pending',
+      status: 'confirmed',
       bookedAt: '30 minutes ago',
       blockchainTx: '0x3c4d...7g8h',
     },
@@ -227,7 +243,8 @@ export default function BarberPage() {
         service: 28.00,
         platformFee: 1.40,
         total: 29.40,
-        paymentMethod: 'Escrow (Blockchain)',
+        paymentMethod: 'Escrow (Stripe)',
+        paymentStatus: 'paid' as const,
       },
       status: 'confirmed',
       bookedAt: '1 day ago',
@@ -262,7 +279,8 @@ export default function BarberPage() {
         service: 28.00,
         platformFee: 1.40,
         total: 29.40,
-        paymentMethod: 'Escrow (Blockchain)',
+        paymentMethod: 'Escrow (Stripe)',
+        paymentStatus: 'paid' as const,
       },
       status: 'confirmed',
       bookedAt: '4 hours ago',
@@ -301,7 +319,7 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Switch to Consumer on mobile, Logo + Switch on desktop */}
+            {/* Left section - Switch to Consumer + Walk-in */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Switch to Consumer - always on left */}
               <button
@@ -312,12 +330,20 @@ export default function BarberPage() {
                 <Calendar className="w-4 h-4 text-primary-600" />
                 <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
               </button>
-              {/* Logo - hidden on mobile (shown in center), visible on desktop */}
-              <img src={CampusCutLogo} alt="CampusCut" className="hidden sm:block h-10 w-auto" />
+              
+              {/* Walk-in Payment Button */}
+              <button
+                onClick={() => setShowWalkInPayment(true)}
+                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
+                title="Quick payment for walk-in customers"
+              >
+                <Zap className="w-4 h-4" />
+                <span className="hidden sm:inline">Walk-in</span>
+              </button>
             </div>
             
-            {/* Center section - Logo on mobile only */}
-            <div className="sm:hidden absolute left-1/2 transform -translate-x-1/2">
+            {/* Center section - Logo always centered */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
               <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
             </div>
             
@@ -369,6 +395,16 @@ export default function BarberPage() {
                   >
                     <Calendar className="w-4 h-4 text-gray-500" />
                     Service History
+                  </button>
+                  <button
+                    onClick={() => {
+                      openAvailability();
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    Availability
                   </button>
                   <button
                     onClick={() => {
@@ -444,7 +480,7 @@ export default function BarberPage() {
               </button>
             </div>
             <div className="p-6">
-              <BarberProfileEditor barberId={barberId} />
+              <BarberProfileEditor barberId={barberId} onClose={closeProfileEditor} />
             </div>
           </div>
         </div>
@@ -516,10 +552,7 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary-600" />
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
-              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
               <button
                 onClick={closeCampusManager}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
@@ -553,6 +586,21 @@ export default function BarberPage() {
           onClose={closeServiceHistory} 
         />
       )}
+
+      {/* Availability Modal */}
+      {showAvailability && (
+        <AvailabilityModal 
+          isVisible={isAvailabilityVisible} 
+          onClose={closeAvailability} 
+        />
+      )}
+
+      {/* Walk-in Payment Modal */}
+      <WalkInPaymentModal
+        isOpen={showWalkInPayment}
+        onClose={() => setShowWalkInPayment(false)}
+        barberName="Marcus"
+      />
     </div>
   );
 }
@@ -569,9 +617,97 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+  const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
+
+  // Touch/swipe state for switching views
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const lastWheelTime = useRef<number>(0);
+
+  const views: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
+  
+  const switchToNextView = () => {
+    const currentIndex = views.indexOf(scheduleView);
+    if (currentIndex < views.length - 1) {
+      setScheduleView(views[currentIndex + 1]);
+    }
+  };
+
+  const switchToPrevView = () => {
+    const currentIndex = views.indexOf(scheduleView);
+    if (currentIndex > 0) {
+      setScheduleView(views[currentIndex - 1]);
+    }
+  };
+
+  // Touch handlers for mobile swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX.current;
+    const deltaY = touchEndY - touchStartY.current;
+    
+    // Only trigger if horizontal swipe is dominant and significant (>50px)
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) {
+        // Swipe left -> next view
+        switchToNextView();
+      } else {
+        // Swipe right -> previous view
+        switchToPrevView();
+      }
+    }
+    
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Use native wheel event listener to properly prevent browser back/forward navigation
+  useEffect(() => {
+    const container = scheduleContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only respond to horizontal scroll (deltaX) which is 2-finger swipe on trackpad
+      if (Math.abs(e.deltaX) > 30 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        // Prevent browser back/forward navigation
+        e.preventDefault();
+        
+        // Debounce to prevent rapid switching
+        const now = Date.now();
+        if (now - lastWheelTime.current < 300) return;
+        
+        lastWheelTime.current = now;
+        if (e.deltaX > 0) {
+          // Scroll right -> next view
+          setScheduleView(prev => {
+            const idx = views.indexOf(prev);
+            return idx < views.length - 1 ? views[idx + 1] : prev;
+          });
+        } else {
+          // Scroll left -> previous view
+          setScheduleView(prev => {
+            const idx = views.indexOf(prev);
+            return idx > 0 ? views[idx - 1] : prev;
+          });
+        }
+      }
+    };
+
+    // Add with passive: false to allow preventDefault
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // Day modal open/close handlers with animation
   const openDayModal = (day: number) => {
@@ -645,12 +781,17 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">My Schedule</h2>
-          <div className="flex gap-1.5 sm:gap-2">
+        <div 
+          ref={scheduleContainerRef}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="touch-pan-y"
+        >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 sm:gap-0 mb-4">
+          <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => setScheduleView('daily')}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'daily'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -660,7 +801,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
             </button>
             <button
               onClick={() => setScheduleView('weekly')}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'weekly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -670,7 +811,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
             </button>
             <button
               onClick={() => setScheduleView('monthly')}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
                 scheduleView === 'monthly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -693,47 +834,35 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
 
           return (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Today - Friday, January 12, 2025</h3>
-                <p className="text-xs sm:text-sm text-gray-600">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Today - Friday, January 12, 2025</h3>
+                <p className="text-sm sm:text-base text-gray-600 font-medium">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
               </div>
               {dailyAppointments.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
-                  <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
-                  <p className="text-sm text-gray-600">You have no appointments scheduled for today.</p>
+                  <Calendar className="w-14 h-14 sm:w-20 sm:h-20 text-gray-400 mx-auto mb-4 sm:mb-5" />
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No appointments scheduled</h3>
+                  <p className="text-base sm:text-lg text-gray-600">You have no appointments scheduled for today.</p>
                 </div>
               ) : (
-                <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-3 sm:space-y-4">
                   {dailyAppointments.map((apt, idx) => (
-                    <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 active:scale-98 transition-all gap-3 sm:gap-0">
-                      <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="text-center min-w-[60px] sm:min-w-[80px]">
-                          <p className="font-bold text-primary-400 text-sm sm:text-base">{apt.time}</p>
-                          <span className={`text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
-                            apt.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {apt.status}
-                          </span>
-                        </div>
-                        <div className="h-10 sm:h-12 w-px bg-gray-300 hidden sm:block"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm sm:text-base">{apt.client}</p>
-                          <p className="text-xs sm:text-sm text-gray-600">{apt.service}</p>
-                        </div>
+                    <div 
+                      key={idx} 
+                      onClick={() => onViewDetails(apt.id)}
+                      className="p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer"
+                    >
+                      {/* Top row: Client name + Price */}
+                      <div className="flex items-start justify-between mb-1.5">
+                        <p className="font-bold text-gray-900 text-lg sm:text-xl">{apt.client}</p>
+                        <p className="font-bold text-green-600 text-xl sm:text-2xl">{apt.price}</p>
                       </div>
-                      <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:gap-0">
-                        <p className="font-bold text-green-600 text-sm sm:text-base sm:mb-1">{apt.price}</p>
-                        <Button 
-                          size="sm" 
-                          variant="secondary"
-                          onClick={() => onViewDetails(apt.id)}
-                          className="text-xs sm:text-sm px-2 sm:px-3"
-                        >
-                          Details
-                        </Button>
+                      {/* Middle: Service */}
+                      <p className="text-base sm:text-lg text-gray-600 mb-3">{apt.service}</p>
+                      {/* Bottom row: Time */}
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-primary-400 text-base sm:text-lg">{apt.time}</p>
+                        <span className="text-sm sm:text-base text-gray-500">Tap for details →</span>
                       </div>
                     </div>
                   ))}
@@ -770,9 +899,9 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
 
           return (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">Week of January 8 - 14, 2025</h3>
-                <p className="text-xs sm:text-sm text-gray-600">{totalWeekAppointments} appointments this week</p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Week of January 8 - 14, 2025</h3>
+                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalWeekAppointments} appointments this week</p>
               </div>
               
               {/* Mobile: List view */}
@@ -785,32 +914,32 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                     <div
                       key={day.date}
                       onClick={() => handleDayClick(day.date)}
-                      className={`flex items-center justify-between p-3 rounded-lg border active:scale-98 transition-all ${
+                      className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
                           : 'bg-gray-50 border-gray-200'
                       } cursor-pointer`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`text-2xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
+                      <div className="flex items-center gap-4">
+                        <div className={`text-3xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
                         <div>
-                          <div className={`font-medium text-sm ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
-                          <div className={`text-xs ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
+                          <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
+                          <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
                             {appointments.length === 0 ? 'No appointments' : `${appointments.length} appointment${appointments.length > 1 ? 's' : ''}`}
                           </div>
                         </div>
                       </div>
-                      <ChevronDown className={`w-5 h-5 -rotate-90 ${isToday ? 'text-white/70' : 'text-gray-400'}`} />
+                      <ChevronDown className={`w-6 h-6 -rotate-90 ${isToday ? 'text-white/70' : 'text-gray-400'}`} />
                     </div>
                   );
                 })}
               </div>
 
               {/* Desktop: Grid view */}
-              <div className="hidden sm:grid grid-cols-7 gap-3">
+              <div className="hidden sm:grid grid-cols-7 gap-4">
                 {/* Week day headers */}
                 {weekDays.map(day => (
-                  <div key={day.date} className="text-center font-semibold text-gray-600 text-sm py-2">
+                  <div key={day.date} className="text-center font-bold text-gray-600 text-base py-2">
                     {day.shortName}
                   </div>
                 ))}
@@ -823,29 +952,29 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                     <div
                       key={day.date}
                       onClick={() => handleDayClick(day.date)}
-                      className={`p-4 rounded-lg border overflow-hidden min-h-[140px] flex flex-col ${
+                      className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
                           : 'bg-gray-50 border-gray-200 hover:border-primary-300'
                       } cursor-pointer transition-colors`}
                     >
-                      <div className="text-center mb-3">
-                        <div className="text-2xl font-bold mb-1">{day.date}</div>
-                        <div className={`text-xs ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
+                      <div className="text-center mb-4">
+                        <div className="text-3xl font-bold mb-1">{day.date}</div>
+                        <div className={`text-sm ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
                           {day.name}
                         </div>
                       </div>
-                      <div className="text-xs space-y-1 flex-1 overflow-hidden">
+                      <div className="text-sm space-y-1.5 flex-1 overflow-hidden">
                         {appointments.length === 0 ? (
                           <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                         ) : (
                           <>
-                            <div className="truncate font-medium">{appointments[0]}</div>
+                            <div className="truncate font-semibold">{appointments[0]}</div>
                             {appointments.length > 1 && (
                               <>
                                 <div className="truncate">{appointments[1]}</div>
                                 {appointments.length > 2 && (
-                                  <div className={isToday ? 'text-white/80 font-semibold' : 'text-gray-500 font-semibold'}>
+                                  <div className={isToday ? 'text-white/80 font-bold' : 'text-gray-500 font-bold'}>
                                     +{appointments.length - 2} more
                                   </div>
                                 )}
@@ -865,14 +994,14 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
         {/* Monthly View */}
         {scheduleView === 'monthly' && (
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-3 sm:mb-4 pb-3 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">January 2025</h3>
-              <p className="text-xs sm:text-sm text-gray-600">168 appointments this month</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900">January 2025</h3>
+              <p className="text-sm sm:text-base text-gray-600 font-medium">168 appointments this month</p>
             </div>
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
               {/* Calendar header */}
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                <div key={i} className="text-center font-semibold text-gray-600 text-xs sm:text-sm py-1 sm:py-2">
+                <div key={i} className="text-center font-bold text-gray-600 text-sm sm:text-base py-2 sm:py-3">
                   <span className="sm:hidden">{day}</span>
                   <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
                 </div>
@@ -923,31 +1052,31 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                     <div
                       key={day}
                       onClick={() => handleDayClick(day)}
-                      className={`aspect-square p-1 sm:p-2 rounded-md sm:rounded-lg border overflow-hidden ${
+                      className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         day === 12 
                           ? 'bg-primary-400 text-white border-primary-500' 
                           : 'bg-gray-50 border-gray-200 hover:border-primary-300'
                       } cursor-pointer active:scale-95 transition-all`}
                     >
-                      <div className="text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1">{day}</div>
+                      <div className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1">{day}</div>
                       {/* Mobile: Show +X bookings count */}
                       <div className="sm:hidden flex justify-center">
                         {hasAppointments && (
-                          <div className={`text-sm font-bold ${day === 12 ? 'text-white' : 'text-primary-500'}`}>
+                          <div className={`text-base font-bold ${day === 12 ? 'text-white' : 'text-primary-500'}`}>
                             +{appointments.length}
                           </div>
                         )}
                       </div>
                       {/* Desktop: Show names */}
-                      <div className="hidden sm:block text-xs space-y-0.5 overflow-hidden">
+                      <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
                         {appointments.length === 0 ? (
                           <div className="text-gray-400">No apts</div>
                         ) : appointments.length === 1 ? (
-                          <div className="truncate">{appointments[0]}</div>
+                          <div className="truncate font-medium">{appointments[0]}</div>
                         ) : (
                           <>
-                            <div className="truncate">{appointments[0]}</div>
-                            <div className={day === 12 ? 'text-white/80' : 'text-gray-500'}>
+                            <div className="truncate font-medium">{appointments[0]}</div>
+                            <div className={`font-semibold ${day === 12 ? 'text-white/80' : 'text-gray-500'}`}>
                               +{appointments.length - 1} more
                             </div>
                           </>
@@ -960,6 +1089,19 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
             </div>
           </div>
         )}
+
+        {/* View indicator dots at bottom for swipe hint - mobile only */}
+        <div className="flex justify-center gap-2 mt-4 sm:hidden">
+          {views.map((view) => (
+            <div
+              key={view}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                scheduleView === view ? 'bg-primary-400' : 'bg-gray-300'
+              }`}
+            />
+          ))}
+        </div>
+        </div>
       </Card>
 
       {/* Day Detail Modal */}
@@ -1008,36 +1150,25 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
               ) : (
                 <div className="space-y-3">
                   {getAppointmentsForDay(selectedDay).map((apt, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="text-center min-w-[80px]">
-                          <p className="font-bold text-primary-400">{apt.time}</p>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            apt.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {apt.status}
-                          </span>
-                        </div>
-                        <div className="h-12 w-px bg-gray-300"></div>
-                        <div>
-                          <p className="font-semibold text-gray-900">{apt.client}</p>
-                          <p className="text-sm text-gray-600">{apt.service}</p>
-                        </div>
+                    <div 
+                      key={idx} 
+                      onClick={() => {
+                        closeDayModal();
+                        onViewDetails(apt.id);
+                      }}
+                      className="p-5 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      {/* Top row: Client name + Price */}
+                      <div className="flex items-start justify-between mb-1.5">
+                        <p className="font-bold text-gray-900 text-lg">{apt.client}</p>
+                        <p className="font-bold text-green-600 text-xl">{apt.price}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-green-600 mb-1">{apt.price}</p>
-                        <Button 
-                          size="sm" 
-                          variant="secondary"
-                          onClick={() => {
-                            closeDayModal();
-                            onViewDetails(apt.id);
-                          }}
-                        >
-                          View Details
-                        </Button>
+                      {/* Middle: Service */}
+                      <p className="text-base text-gray-600 mb-3">{apt.service}</p>
+                      {/* Bottom row: Time */}
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-primary-400 text-base">{apt.time}</p>
+                        <span className="text-sm text-gray-500">Tap for details →</span>
                       </div>
                     </div>
                   ))}
@@ -1061,7 +1192,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-1',
       date: '2025-12-16',
-      time: '14:00',
+      time: '2:00 PM',
       customerName: 'Alex Rivera',
       serviceType: 'Fade',
       location: 'Student Union - Room 204',
@@ -1073,7 +1204,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-2',
       date: '2025-12-15',
-      time: '16:30',
+      time: '4:30 PM',
       customerName: 'Jordan Lee',
       serviceType: 'Haircut & Beard Trim',
       location: 'Kennedy Library - Study Room 3B',
@@ -1085,7 +1216,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-3',
       date: '2025-12-14',
-      time: '12:00',
+      time: '12:00 PM',
       customerName: 'Sam Chen',
       serviceType: 'Lineup',
       location: 'Cerro Vista Apartments',
@@ -1097,7 +1228,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-4',
       date: '2025-12-13',
-      time: '18:00',
+      time: '6:00 PM',
       customerName: 'Marcus Williams',
       serviceType: 'Full Service',
       location: 'Poly Canyon Village',
@@ -1109,7 +1240,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-5',
       date: '2025-12-12',
-      time: '15:00',
+      time: '3:00 PM',
       customerName: 'David Park',
       serviceType: 'Fade',
       location: 'Campus Market',
@@ -1120,7 +1251,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-6',
       date: '2025-12-11',
-      time: '13:30',
+      time: '1:30 PM',
       customerName: 'Tyler Johnson',
       serviceType: 'Haircut',
       location: 'Recreation Center',
@@ -1130,7 +1261,7 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
     {
       id: 'service-7',
       date: '2025-12-10',
-      time: '17:00',
+      time: '5:00 PM',
       customerName: 'Chris Martinez',
       serviceType: 'Beard Trim',
       location: 'Engineering Plaza',
@@ -1298,6 +1429,145 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Availability Modal Component
+function AvailabilityModal({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+  const [availability, setAvailability] = useState({
+    monday: { enabled: true, start: '09:00', end: '17:00' },
+    tuesday: { enabled: true, start: '09:00', end: '17:00' },
+    wednesday: { enabled: true, start: '09:00', end: '17:00' },
+    thursday: { enabled: true, start: '09:00', end: '17:00' },
+    friday: { enabled: true, start: '09:00', end: '17:00' },
+    saturday: { enabled: false, start: '10:00', end: '14:00' },
+    sunday: { enabled: false, start: '10:00', end: '14:00' },
+  });
+
+  const days = [
+    { key: 'monday', label: 'Monday' },
+    { key: 'tuesday', label: 'Tuesday' },
+    { key: 'wednesday', label: 'Wednesday' },
+    { key: 'thursday', label: 'Thursday' },
+    { key: 'friday', label: 'Friday' },
+    { key: 'saturday', label: 'Saturday' },
+    { key: 'sunday', label: 'Sunday' },
+  ] as const;
+
+  const handleToggleDay = (day: keyof typeof availability) => {
+    setAvailability(prev => ({
+      ...prev,
+      [day]: { ...prev[day], enabled: !prev[day].enabled }
+    }));
+  };
+
+  const handleTimeChange = (day: keyof typeof availability, field: 'start' | 'end', value: string) => {
+    setAvailability(prev => ({
+      ...prev,
+      [day]: { ...prev[day], [field]: value }
+    }));
+  };
+
+  const handleSave = () => {
+    // In production, save to backend
+    console.log('Saving availability:', availability);
+    onClose();
+  };
+
+  return (
+    <div 
+      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+      onClick={onClose}
+    >
+      <div 
+        className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+          isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-xl font-bold text-white">Availability</h2>
+            <p className="text-white/80 text-sm">Set your working hours</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+          <div className="space-y-4">
+            {days.map(({ key, label }) => (
+              <div 
+                key={key}
+                className={`p-4 rounded-xl border-2 transition-all ${
+                  availability[key].enabled 
+                    ? 'border-primary-200 bg-primary-50' 
+                    : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`font-semibold ${availability[key].enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+                    {label}
+                  </span>
+                  <button
+                    onClick={() => handleToggleDay(key)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      availability[key].enabled ? 'bg-primary-400' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span 
+                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        availability[key].enabled ? 'left-7' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                
+                {availability[key].enabled && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-600 mb-1">Start</label>
+                      <input
+                        type="time"
+                        value={availability[key].start}
+                        onChange={(e) => handleTimeChange(key, 'start', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                      />
+                    </div>
+                    <span className="text-gray-400 mt-5">to</span>
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-600 mb-1">End</label>
+                      <input
+                        type="time"
+                        value={availability[key].end}
+                        onChange={(e) => handleTimeChange(key, 'end', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save Availability
+          </Button>
         </div>
       </div>
     </div>

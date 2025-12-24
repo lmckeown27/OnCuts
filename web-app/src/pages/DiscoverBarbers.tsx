@@ -180,15 +180,20 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     );
   }
 
+  // Services that match what barbers can offer in BarberServiceSpecialties
   const availableServices = [
-    'Haircut',
-    'Fade',
+    'Buzz Cut',
+    'Line Up',
     'Beard Trim',
-    'Full Service',
-    'Hot Towel Shave',
-    'Color',
-    'Styling',
-    'Lineup',
+    'Haircut',
+    'Taper',
+    'Hot Shave',
+    'Fade',
+    'Haircut & Fade',
+    'Design/Art',
+    "Women's Cut",
+    'Perm',
+    'Color Treatment',
   ];
 
   return (

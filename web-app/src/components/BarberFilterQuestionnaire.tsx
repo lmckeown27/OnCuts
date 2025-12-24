@@ -1,23 +1,22 @@
 /**
  * Barber Filter Questionnaire Component
  * 
- * Progressive filtering system that asks:
+ * Progressive popup questionnaire that asks:
  * 1. What type of haircut?
  * 2. When do you want it?
  * 3. Where do you want it?
  * 
  * Features:
- * - Smart tag deletion (cascade resets)
- * - Clickable tags for editing
- * - Confirmation for date/time
- * - Progressive questionnaire flow
+ * - Popup modal that progresses through 3 steps
+ * - Auto-closes after completing all questions
+ * - Can be reopened to edit filters
  */
 
-import React, { useState } from 'react';
-import { Scissors, Calendar, MapPin, Check } from 'lucide-react';
-import Card from './Card';
+import React, { useState, useEffect } from 'react';
+import { Scissors, Calendar, MapPin, X, ChevronRight, ChevronLeft, Check, Filter } from 'lucide-react';
 import Button from './Button';
 import { LocationSelector } from './LocationSelector';
+import { useBodyScrollLock } from '../hooks';
 import type { FilterCriteria } from '../types/barber-filters';
 
 interface BarberFilterQuestionnaireProps {
@@ -31,31 +30,53 @@ export default function BarberFilterQuestionnaire({
   availableServices,
   availableCount 
 }: BarberFilterQuestionnaireProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Filter state
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [time, setTime] = useState<string | null>(null);
-  const [dateTimeConfirmed, setDateTimeConfirmed] = useState(false);
   const [locationId, setLocationId] = useState<string | null>(null);
   const [locationName, setLocationName] = useState<string | null>(null);
-  const [locationConfirmed, setLocationConfirmed] = useState(false);
-  
-  // Track which step we're editing (for clickable tags)
-  const [editingStep, setEditingStep] = useState<'service' | 'datetime' | 'location' | null>(null);
 
-  // Format date for display: "2025-12-30" → "Dec 30"
+  // Lock body scroll when popup is open
+  useBodyScrollLock(isOpen);
+
+  // Open popup with animation
+  const openPopup = () => {
+    setIsOpen(true);
+    setCurrentStep(1);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    });
+  };
+
+  // Close popup with animation
+  const closePopup = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      setIsOpen(false);
+    }, 150);
+  };
+
+  // Format date for display
   const formatDateDisplay = (dateString: string): string => {
-    const dateObj = new Date(dateString + 'T00:00:00'); // Add time to avoid timezone issues
+    const dateObj = new Date(dateString + 'T00:00:00');
     return dateObj.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric' 
     });
   };
 
-  // Format time for display: "18:30" → "6:30 PM"
+  // Format time for display
   const formatTimeDisplay = (timeString: string): string => {
     const [hours, minutes] = timeString.split(':').map(Number);
     const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12; // Convert 0 to 12 for midnight
+    const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
@@ -63,10 +84,9 @@ export default function BarberFilterQuestionnaire({
     onFilterChange(filters);
   };
 
-  // Handle service type change
-  const handleServiceChange = (service: string) => {
+  // Handle service selection
+  const handleServiceSelect = (service: string) => {
     setServiceType(service);
-    setEditingStep(null);
     notifyFilterChange({
       serviceType: service,
       date,
@@ -74,65 +94,51 @@ export default function BarberFilterQuestionnaire({
       location: locationName,
       locationDetails: locationName,
     });
-  };
-
-  // Handle service type deletion - CLEARS EVERYTHING
-  const handleServiceDelete = () => {
-    setServiceType(null);
-    setDate(null);
-    setTime(null);
-    setDateTimeConfirmed(false);
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    setEditingStep(null);
-    notifyFilterChange({
-      serviceType: null,
-      date: null,
-      time: null,
-      location: null,
-      locationDetails: null,
-    });
-  };
-
-  // Handle service tag click - return to service selection
-  const handleServiceTagClick = () => {
-    setEditingStep('service');
-    setServiceType(null);
-    setDate(null);
-    setTime(null);
-    setDateTimeConfirmed(false);
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    notifyFilterChange({
-      serviceType: null,
-      date,
-      time,
-      location: null,
-      locationDetails: null,
-    });
+    // Auto-advance to next step
+    setCurrentStep(2);
   };
 
   // Handle date/time confirmation
   const handleDateTimeConfirm = () => {
     if (date && time) {
-      setDateTimeConfirmed(true);
-      setEditingStep(null);
+      notifyFilterChange({
+        serviceType,
+        date,
+        time,
+        location: locationName,
+        locationDetails: locationName,
+      });
+      setCurrentStep(3);
     }
   };
 
-  // Handle date/time deletion - keeps service, clears location
-  const handleDateTimeDelete = () => {
-    setDate(null);
-    setTime(null);
-    setDateTimeConfirmed(false);
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    setEditingStep(null);
+  // Handle location selection
+  const handleLocationSelect = (newLocationId: string, newLocationName: string) => {
+    setLocationId(newLocationId);
+    setLocationName(newLocationName);
+  };
+
+  // Handle final confirmation
+  const handleComplete = () => {
     notifyFilterChange({
       serviceType,
+      date,
+      time,
+      location: locationName,
+      locationDetails: locationName,
+    });
+    closePopup();
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setServiceType(null);
+    setDate(null);
+    setTime(null);
+    setLocationId(null);
+    setLocationName(null);
+    notifyFilterChange({
+      serviceType: null,
       date: null,
       time: null,
       location: null,
@@ -140,354 +146,255 @@ export default function BarberFilterQuestionnaire({
     });
   };
 
-  // Handle date/time tag click - return to date/time with values prefilled
-  const handleDateTimeTagClick = () => {
-    setDateTimeConfirmed(false);
-    setEditingStep('datetime');
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    notifyFilterChange({
-      serviceType,
-      date,
-      time,
-      location: null,
-      locationDetails: null,
-    });
-  };
-
-  // Handle location selection from LocationSelector
-  const handleLocationSelect = (newLocationId: string, newLocationName: string) => {
-    setLocationId(newLocationId);
-    setLocationName(newLocationName);
-    setEditingStep(null);
-    notifyFilterChange({
-      serviceType,
-      date,
-      time,
-      location: newLocationName,
-      locationDetails: newLocationName,
-    });
-  };
-
-  // Handle location confirmation
-  const handleLocationConfirm = () => {
-    if (locationId && locationName) {
-      setLocationConfirmed(true);
-      setEditingStep(null);
+  // Skip current step
+  const handleSkip = () => {
+    if (currentStep === 2) {
+      setDate(null);
+      setTime(null);
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      setLocationId(null);
+      setLocationName(null);
+      handleComplete();
     }
   };
 
-  // Handle location deletion - keeps service and date/time
-  const handleLocationDelete = () => {
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    setEditingStep(null);
-    notifyFilterChange({
-      serviceType,
-      date,
-      time,
-      location: null,
-      locationDetails: null,
-    });
+  // Go back to previous step
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
-  // Handle location tag click - return to location selection
-  const handleLocationTagClick = () => {
-    setEditingStep('location');
-    setLocationId(null);
-    setLocationName(null);
-    setLocationConfirmed(false);
-    notifyFilterChange({
-      serviceType,
-      date,
-      time,
-      location: null,
-      locationDetails: null,
-    });
-  };
+  // Check if filters are active
+  const hasActiveFilters = serviceType || date || locationName;
 
-  const getMinDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  };
-
-  // Determine which question to show
-  const showServiceQuestion = !serviceType || editingStep === 'service';
-  const showDateTimeQuestion = serviceType && !dateTimeConfirmed && editingStep !== 'service';
-  const showLocationQuestion = serviceType && dateTimeConfirmed && !locationConfirmed && editingStep !== 'service';
+  // Get today's date for min date
+  const today = new Date().toISOString().split('T')[0];
 
   return (
     <>
-      {/* Questionnaire Section - Scrolls away normally */}
-      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-4 sm:pt-6 pb-4 sm:pb-6">
-        <Card className="shadow-lg rounded-xl">
-          {/* Selected Filter Pills - Fully clickable for editing */}
-          {(serviceType || (date && time && dateTimeConfirmed) || (location && locationConfirmed)) && (
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-3 sm:pt-4 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-gray-200 px-2 sm:px-4">
-              {serviceType && (
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-400 text-white rounded-full text-xs sm:text-sm font-medium group">
-                  <button
-                    onClick={handleServiceTagClick}
-                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
-                  >
-                    <Scissors className="w-3 h-3" />
-                    <span className="group-hover:underline">{serviceType}</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleServiceDelete();
-                    }}
-                    className="hover:bg-primary-500 rounded-full px-1 ml-0.5 sm:ml-1"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              {date && time && dateTimeConfirmed && (
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600 text-white rounded-full text-xs sm:text-sm font-medium group">
-                  <button
-                    onClick={handleDateTimeTagClick}
-                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
-                  >
-                    <Calendar className="w-3 h-3" />
-                    <span className="group-hover:underline">
-                      {formatDateDisplay(date)} at {formatTimeDisplay(time)}
-                    </span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDateTimeDelete();
-                    }}
-                    className="hover:bg-green-700 rounded-full px-1 ml-0.5 sm:ml-1"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              {locationName && locationConfirmed && (
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 sm:py-1.5 bg-primary-400 text-white rounded-full text-xs sm:text-sm font-medium group">
-                  <button
-                    onClick={handleLocationTagClick}
-                    className="flex items-center gap-1 sm:gap-2 hover:opacity-80 cursor-pointer transition-opacity"
-                  >
-                    <MapPin className="w-3 h-3" />
-                    <span className="group-hover:underline">{locationName}</span>
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLocationDelete();
-                    }}
-                    className="hover:bg-primary-500 rounded-full px-1 ml-0.5 sm:ml-1"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
+      {/* Filter Trigger Button & Active Filters Display */}
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex flex-col gap-4">
+          {/* Find Barber Button - Always Visible */}
+          {!hasActiveFilters && (
+            <div className="flex justify-center">
+            <Button onClick={openPopup} variant="primary" className="px-6 py-3 text-lg">
+              Find Barber
+            </Button>
             </div>
           )}
 
-          {/* Active Question - Progressive flow */}
-          <div className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-2 sm:px-4">
-            {/* Question 1: Service Type */}
-            {showServiceQuestion && (
-              <div className="space-y-3 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
-                  <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 flex-shrink-0" />
-                  <label className="font-semibold text-sm sm:text-lg text-center">What type of haircut are you looking for?</label>
-                </div>
-                
-                {/* Mobile: 2-column grid with vertical scroll */}
-                <div className="lg:hidden max-h-36 overflow-y-auto px-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    {availableServices.map((service) => (
-                      <button
-                        key={service}
-                        onClick={() => handleServiceChange(service)}
-                        className="px-3 py-4 rounded-xl font-semibold text-base bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer"
-                      >
-                        {service}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Desktop: Horizontal row with horizontal scroll */}
-                <div className="hidden lg:block overflow-x-auto px-4 pb-2">
-                  <div className="flex justify-center gap-3">
-                    {availableServices.map((service) => (
-                      <button
-                        key={service}
-                        onClick={() => handleServiceChange(service)}
-                        className="flex-shrink-0 px-6 py-4 rounded-xl font-semibold text-lg bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        {service}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Question 2: Date & Time with Confirmation */}
-            {showDateTimeQuestion && (
-              <div className="space-y-3 sm:space-y-4 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
-                  <label className="font-semibold text-sm sm:text-lg text-center">When would you like your haircut?</label>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Enhanced Date Input */}
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Preferred Date</label>
-                    <div 
-                      className="relative cursor-pointer group"
-                      onClick={() => {
-                        const input = document.getElementById('date-picker-input') as HTMLInputElement;
-                        if (input) {
-                          input.showPicker?.();
-                        }
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                      <div className="relative flex items-center">
-                        <Calendar className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" />
-                        <input
-                          id="date-picker-input"
-                          type="date"
-                          value={date || ''}
-                          onChange={(e) => setDate(e.target.value)}
-                          min={getMinDate()}
-                          className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                          style={{
-                            colorScheme: 'light',
-                            accentColor: '#708d81',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Enhanced Time Input */}
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Preferred Time</label>
-                    <div 
-                      className="relative cursor-pointer group"
-                      onClick={() => {
-                        const input = document.getElementById('time-picker-input') as HTMLInputElement;
-                        if (input) {
-                          input.showPicker?.();
-                        }
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                      <div className="relative flex items-center">
-                        <svg 
-                          className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
-                          />
-                        </svg>
-                        <input
-                          id="time-picker-input"
-                          type="time"
-                          value={time || ''}
-                          onChange={(e) => setTime(e.target.value)}
-                          className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                          style={{
-                            colorScheme: 'light',
-                            accentColor: '#708d81',
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Confirmation Button */}
-                {date && time && (
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      onClick={handleDateTimeConfirm}
-                      variant="primary"
-                      className="px-6 py-2"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Confirm Date & Time
-                    </Button>
-                  </div>
+          {/* Active Filters Row */}
+          {hasActiveFilters && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {serviceType && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                    <Scissors className="w-4 h-4" />
+                    {serviceType}
+                  </span>
                 )}
+                {date && time && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                    <Calendar className="w-4 h-4" />
+                    {formatDateDisplay(date)} at {formatTimeDisplay(time)}
+                  </span>
+                )}
+                {locationName && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                    <MapPin className="w-4 h-4" />
+                    {locationName}
+                  </span>
+                )}
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-gray-500 hover:text-red-600 transition-colors"
+                >
+                  Clear all
+                </button>
               </div>
-            )}
-
-            {/* Question 3: Location */}
-            {showLocationQuestion && (
-              <div className="space-y-3 sm:space-y-4 animate-fade-in">
-                <div className="flex items-center justify-center gap-2 text-gray-700 px-2">
-                  <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary-400 flex-shrink-0" />
-                  <label className="font-semibold text-sm sm:text-lg text-center">Where would you like your haircut?</label>
-                </div>
-                
-                <div className="max-w-md mx-auto">
-                  <LocationSelector
-                    universityId="00000000-0000-0000-0000-000000000001"
-                    selectedLocationId={locationId || undefined}
-                    onLocationSelect={handleLocationSelect}
-                  />
-                  
-                  {/* Location Confirmation Button */}
-                  {locationId && locationName && (
-                    <div className="flex justify-center mt-3 sm:mt-4">
-                      <Button
-                        onClick={handleLocationConfirm}
-                        variant="primary"
-                        className="px-4 sm:px-6 py-2 text-sm sm:text-base"
-                      >
-                        <Check className="w-4 h-4 mr-2" />
-                        Confirm Location
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* All Complete - Show summary */}
-            {serviceType && dateTimeConfirmed && locationConfirmed && (
-              <div className="text-center animate-fade-in px-2">
-                <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-green-100 text-green-700 rounded-lg font-semibold text-sm sm:text-base">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>All filters set! Scroll to see barbers</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      {/* Barber Count Section - Stays sticky at top */}
-      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 sm:py-4 mb-4 sm:mb-6 shadow-md">
-        <div className="text-center">
-          <div className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-primary-100 text-primary-500 rounded-full font-bold text-xl sm:text-2xl">
-            <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available: {availableCount}</span>
-          </div>
+              <Button onClick={openPopup} variant="secondary" className="px-4 py-2">
+                <Filter className="w-4 h-4 mr-2" />
+                Edit Filters
+              </Button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Barbers Available Count - Sticky */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3">
+        <div className="flex items-center justify-center">
+          <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 border border-primary-200 rounded-full">
+            <span className="text-sm sm:text-base font-medium text-primary-700">
+              Barbers Available:
+            </span>
+            <span className="text-base sm:text-lg font-bold text-primary-600">{availableCount}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Popup Modal */}
+      {isOpen && (
+        <div 
+          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+            isVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closePopup}
+        >
+          <div 
+            className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden transition-all duration-150 ease-out ${
+              isVisible 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-0 scale-95 translate-y-4'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Find Your Barber</h2>
+                <p className="text-white/80 text-sm">Step {currentStep} of 3</p>
+              </div>
+              <button 
+                onClick={closePopup}
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="h-1 bg-gray-200">
+              <div 
+                className="h-full bg-primary-400 transition-all duration-300"
+                style={{ width: `${(currentStep / 3) * 100}%` }}
+              />
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-180px)]">
+              {/* Step 1: Service Type */}
+              {currentStep === 1 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Scissors className="w-8 h-8 text-primary-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">What type of haircut?</h3>
+                    <p className="text-gray-600 mt-1">Select the service you're looking for</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {availableServices.map((service) => (
+                      <button
+                        key={service}
+                        onClick={() => handleServiceSelect(service)}
+                        className={`px-4 py-4 rounded-xl font-semibold text-base transition-all ${
+                          serviceType === service
+                            ? 'bg-primary-400 text-white shadow-lg'
+                            : 'bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg'
+                        }`}
+                      >
+                        {service}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Date & Time */}
+              {currentStep === 2 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="w-8 h-8 text-primary-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">When do you want it?</h3>
+                    <p className="text-gray-600 mt-1">Select your preferred date and time</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                      <input
+                        type="date"
+                        value={date || ''}
+                        onChange={(e) => setDate(e.target.value)}
+                        min={today}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-400 focus:border-transparent text-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                      <input
+                        type="time"
+                        value={time || ''}
+                        onChange={(e) => setTime(e.target.value)}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-400 focus:border-transparent text-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Location */}
+              {currentStep === 3 && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MapPin className="w-8 h-8 text-primary-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">Where do you want it?</h3>
+                    <p className="text-gray-600 mt-1">Select your preferred location</p>
+                  </div>
+                  
+                  <LocationSelector
+                    selectedLocationId={locationId}
+                    selectedLocationName={locationName}
+                    onLocationSelect={handleLocationSelect}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                {currentStep > 1 && (
+                  <Button variant="secondary" onClick={handleBack}>
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Back
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                {currentStep > 1 && (
+                  <Button variant="secondary" onClick={handleSkip}>
+                    Skip
+                  </Button>
+                )}
+                {currentStep === 2 && (
+                  <Button 
+                    onClick={handleDateTimeConfirm}
+                    disabled={!date || !time}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
+                {currentStep === 3 && (
+                  <Button onClick={handleComplete}>
+                    <Check className="w-4 h-4 mr-1" />
+                    Done
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

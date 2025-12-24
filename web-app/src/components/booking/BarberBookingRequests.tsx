@@ -122,9 +122,8 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
       return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Reliable</span>;
     } else if (completionRate >= 70 && noShowCount < 3) {
       return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Good</span>;
-    } else {
-      return <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Caution</span>;
     }
+    return null;
   };
 
   if (loading) {
