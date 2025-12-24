@@ -352,7 +352,6 @@ export default function BarberFilterQuestionnaire({
                   
                   <LocationSelector
                     selectedLocationId={locationId}
-                    selectedLocationName={locationName}
                     onLocationSelect={handleLocationSelect}
                   />
                 </div>
