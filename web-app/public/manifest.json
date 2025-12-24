@@ -3,7 +3,7 @@
   "short_name": "CampusCuts",
   "description": "Fair prices for students, great earnings for barbers. Book haircuts on campus with transparent pricing and instant payments.",
   "start_url": "/app",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#ffffff",
   "theme_color": "#7C3AED",
   "orientation": "portrait-primary",
