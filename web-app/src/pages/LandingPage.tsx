@@ -13,12 +13,14 @@ import Card from '../components/Card';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.png';
 import MainChairLogo from '../assets/logos/Main_Chair.png';
+import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.png';
 import FooterChairLogo from '../assets/logos/Footer_Chair.png';
 import { useViewport } from '../hooks/useViewport';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showInstructionsPopup, setShowInstructionsPopup] = useState(false);
   const [instructionsVisible, setInstructionsVisible] = useState(false);
@@ -33,10 +35,35 @@ export default function LandingPage() {
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
+  // Mobile menu open/close with animation
+  const openMobileMenu = () => {
+    setMobileMenuOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMobileMenuVisible(true);
+      });
+    });
+  };
+  
+  const closeMobileMenu = () => {
+    setMobileMenuVisible(false);
+    setTimeout(() => {
+      setMobileMenuOpen(false);
+    }, 200);
+  };
+  
+  const toggleMobileMenu = () => {
+    if (mobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  };
+  
   // Close mobile menu when viewport changes to desktop
   useEffect(() => {
     if (!isMobile && mobileMenuOpen) {
-      setMobileMenuOpen(false);
+      closeMobileMenu();
     }
   }, [isMobile, mobileMenuOpen]);
 
@@ -100,13 +127,35 @@ export default function LandingPage() {
         scrolled ? 'bg-white shadow-md' : 'bg-transparent'
       }`}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+          <div className="flex items-center justify-between h-16 relative">
+            {/* Mobile Menu Button - Left on mobile */}
+            <button
+              onClick={toggleMobileMenu}
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors relative w-10 h-10 flex items-center justify-center"
+            >
+              <Menu 
+                className={`w-6 h-6 absolute transition-all duration-200 ease-out ${
+                  mobileMenuVisible 
+                    ? 'opacity-0 rotate-90 scale-50' 
+                    : 'opacity-100 rotate-0 scale-100'
+                }`} 
+              />
+              <X 
+                className={`w-6 h-6 absolute transition-all duration-200 ease-out ${
+                  mobileMenuVisible 
+                    ? 'opacity-100 rotate-0 scale-100' 
+                    : 'opacity-0 -rotate-90 scale-50'
+                }`} 
+              />
+            </button>
+            
+            {/* Logo - centered on mobile, left on desktop */}
             <button 
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity md:relative absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0"
             >
-              <div className="relative">
+              {/* Desktop logo with scroll effect */}
+              <div className="relative hidden md:block">
                 <img 
                   src={HeaderChairLogo} 
                   alt="CampusCut" 
@@ -118,7 +167,20 @@ export default function LandingPage() {
                   className={`h-12 w-auto absolute top-0 left-0 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
                 />
               </div>
-              <span className={`text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
+              {/* Mobile logo with instant swap on scroll */}
+              <div className="relative md:hidden">
+                <img 
+                  src={MobileHeaderChairLogo} 
+                  alt="CampusCut" 
+                  className={`h-12 w-auto ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
+                />
+                <img 
+                  src={MainChairLogo} 
+                  alt="CampusCut" 
+                  className={`h-12 w-auto absolute top-0 left-0 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
+                />
+              </div>
+              <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
                 CampusCut
               </span>
             </button>
@@ -147,20 +209,23 @@ export default function LandingPage() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {/* Right spacer for mobile to balance the menu button */}
+            <div className="w-10 md:hidden" />
           </div>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
-            <div className="px-4 py-4 space-y-3">
+          <div 
+            className={`md:hidden bg-white border-t border-gray-200 shadow-lg overflow-hidden transition-all duration-200 ease-out ${
+              mobileMenuVisible 
+                ? 'max-h-96 opacity-100' 
+                : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className={`px-4 py-4 space-y-3 transition-all duration-200 ${
+              mobileMenuVisible ? 'translate-y-0' : '-translate-y-2'
+            }`}>
               <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 How It Works
               </button>
@@ -174,7 +239,7 @@ export default function LandingPage() {
                 <button 
                   onClick={() => {
                     navigate('/web');
-                    setMobileMenuOpen(false);
+                    closeMobileMenu();
                   }} 
                   className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
@@ -195,20 +260,22 @@ export default function LandingPage() {
           </h1>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <div className="flex flex-row gap-3 sm:gap-4 justify-center mb-8">
             <button
               onClick={() => navigate('/web')}
-              className="px-8 py-4 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
+              className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
               <Smartphone className="w-6 h-6" />
-              Get Started
+              <span className="hidden sm:inline">Get Started</span>
+              <span className="sm:hidden">Start</span>
             </button>
             <button
               onClick={openInstructionsPopup}
-              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 border-2 border-primary-400 font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
+              className="px-8 py-4 sm:py-5 bg-white hover:bg-gray-50 text-primary-600 border-2 border-primary-400 font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
             >
               <Download className="w-6 h-6" />
-              Install Instructions
+              <span className="hidden sm:inline">Install Instructions</span>
+              <span className="sm:hidden">Install</span>
             </button>
           </div>
 

@@ -101,7 +101,7 @@ export default function HelpCenterPage() {
         },
         {
           question: 'Is CampusCut free to use?',
-          answer: 'Yes! Creating an account and browsing is free. Consumers only pay for the services they book. Barbers keep 95% of each payment with a 5% platform fee.'
+          answer: 'Yes! Creating an account and browsing is completely free. Consumers only pay for the services they book.'
         }
       ]
     },
@@ -154,8 +154,8 @@ export default function HelpCenterPage() {
           answer: 'Yes. We use Stripe, a PCI-DSS compliant payment processor. Your full card details are never stored on our servers. All transactions are encrypted.'
         },
         {
-          question: 'What is the platform fee?',
-          answer: 'CampusCut charges a 5% platform fee on each completed transaction. This is deducted from the barber payout, not charged extra to consumers.'
+          question: 'How are payments processed?',
+          answer: 'Payments are processed securely through Stripe. Funds are held in escrow until service completion, then released to the barber.'
         }
       ]
     },
@@ -172,7 +172,7 @@ export default function HelpCenterPage() {
         },
         {
           question: 'How much do I earn per cut?',
-          answer: 'You keep 95% of every payment. We only take a 5% platform fee, which is significantly lower than traditional barbershop commissions (40-60%).'
+          answer: 'You keep the majority of every payment, which is significantly better than traditional barbershop commissions (40-60%).'
         },
         {
           question: 'When do I get paid?',

@@ -127,19 +127,14 @@ export default function TermsOfServicePage() {
             {/* Payments and Fees */}
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Payments and Fees</h2>
-              <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">6.1 Platform Fee</h3>
-              <p className="text-gray-700 leading-relaxed">
-                CampusCut charges a 5% platform fee on each completed transaction. This fee is deducted from the payment before funds are transferred to the Barber.
-              </p>
-              
-              <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">6.2 Payment Processing</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">6.1 Payment Processing</h3>
               <p className="text-gray-700 leading-relaxed">
                 All payments are processed securely through Stripe, our third-party payment processor. By using the Service, you agree to Stripe's terms of service. We do not store your full credit card information on our servers.
               </p>
 
-              <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">6.3 Payouts to Barbers</h3>
+              <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">6.2 Payouts to Barbers</h3>
               <p className="text-gray-700 leading-relaxed">
-                Barbers receive 95% of each completed booking payment. Payments are released after the service is marked as complete. Payout timing may vary based on payment processor policies.
+                Barbers receive payments for each completed booking. Payments are released after the service is marked as complete. Payout timing may vary based on payment processor policies.
               </p>
             </section>
 

@@ -401,10 +401,6 @@ export default function AppointmentDetailsPage() {
               <span className="text-gray-600">Service Fee</span>
               <span className="font-semibold text-gray-900">${appointment.price.service.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Platform Fee (5%)</span>
-              <span className="font-semibold text-gray-900">${appointment.price.platformFee.toFixed(2)}</span>
-            </div>
             <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
               <span className="font-bold text-gray-900">Total Amount</span>
               <span className="font-bold text-2xl text-green-600">${appointment.price.total.toFixed(2)}</span>

@@ -121,10 +121,6 @@ export default function PaymentForm({
           <span className="font-semibold">${amount.toFixed(2)}</span>
         </div>
         <div className="flex justify-between mb-2 text-sm">
-          <span className="text-gray-500">Platform Fee (5%)</span>
-          <span className="text-gray-500">-${platformFee.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between mb-2 text-sm">
           <span className="text-gray-500">Barber Receives</span>
           <span className="text-green-600 font-medium">${barberAmount.toFixed(2)}</span>
         </div>

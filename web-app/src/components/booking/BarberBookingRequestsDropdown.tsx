@@ -264,11 +264,16 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
           )}
           
           <div 
-            className={`absolute right-0 mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out origin-top-right ${
+            className={`${showBackdrop 
+              ? 'fixed inset-0 m-auto w-[calc(100vw-2rem)] max-w-md h-fit max-h-[80vh]' 
+              : 'absolute right-0 mt-2 w-96 max-h-[80vh]'
+            } bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-y-auto transition-all duration-150 ease-out ${
+              showBackdrop ? 'origin-center' : 'origin-top-right'
+            } ${
               isDropdownVisible 
-                ? 'opacity-100 scale-100 translate-y-0' 
-                : 'opacity-0 scale-95 -translate-y-2'
-            }`}
+                ? 'opacity-100 scale-100' 
+                : 'opacity-0 scale-95'
+            } ${!showBackdrop && !isDropdownVisible ? '-translate-y-2' : ''}`}
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg flex items-center justify-between">

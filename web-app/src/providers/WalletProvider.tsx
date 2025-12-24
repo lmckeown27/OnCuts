@@ -2,23 +2,33 @@
 /**
  * Aptos Wallet Provider
  * 
- * Wraps the app with Aptos wallet adapter for wallet connection
- * Supports Petra and other Aptos wallets (auto-detected)
- * Network: Devnet by default (configurable via env)
+ * DISABLED - Wallet/blockchain functionality not currently in use.
+ * Platform uses Stripe for payments.
  * 
- * Note: Uses Wallet Adapter v7+ which auto-detects installed wallets
- * No need for explicit wallet plugins (deprecated approach)
+ * This file is kept for future blockchain integration.
+ * All wallet adapter imports and detection code are commented out
+ * to prevent MetaMask/Petra detection errors.
  */
 
-import React, { useEffect } from 'react';
-import { AptosWalletAdapterProvider } from '@aptos-labs/wallet-adapter-react';
+import React from 'react';
 
 interface WalletProviderProps {
   children: React.ReactNode;
 }
 
+// Disabled provider - just passes through children, no wallet detection
 export default function WalletProvider({ children }: WalletProviderProps) {
-  // Get network from env or default to devnet
+  // Wallet functionality disabled - no detection, no errors
+  return <>{children}</>;
+}
+
+/*
+// ORIGINAL WALLET PROVIDER CODE - COMMENTED OUT
+// Uncomment when ready to re-enable blockchain functionality
+
+import { AptosWalletAdapterProvider } from '@aptos-labs/wallet-adapter-react';
+
+export default function WalletProvider({ children }: WalletProviderProps) {
   const network = import.meta.env.VITE_APTOS_NETWORK || 'devnet';
   
   useEffect(() => {
@@ -26,7 +36,6 @@ export default function WalletProvider({ children }: WalletProviderProps) {
     console.log('🌐 Checking for window.petra...', typeof (window as any).petra);
     console.log('🌐 Checking for window.aptos...', typeof (window as any).aptos);
     
-    // Check again after delay to see if extensions loaded
     const timer = setTimeout(() => {
       console.log('✅ Wallet provider ready after delay');
       console.log('🌐 After delay - window.petra:', typeof (window as any).petra);
@@ -48,4 +57,4 @@ export default function WalletProvider({ children }: WalletProviderProps) {
     </AptosWalletAdapterProvider>
   );
 }
-
+*/

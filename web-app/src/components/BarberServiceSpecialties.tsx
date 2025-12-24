@@ -164,7 +164,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
               </div>
               <p className="text-xs text-gray-600">
                 At traditional shops, barbers earn 40-60% (typically $14-$21 per $35 haircut). 
-                On CampusCut, you keep 95% with just a 5% platform fee. No overhead costs to subsidize!
+                On CampusCut, you keep more of what you earn. No overhead costs to subsidize!
               </p>
             </div>
           </div>

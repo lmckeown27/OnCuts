@@ -1,31 +1,7 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Award, Star, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, ChevronDown, Star } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 type BarberPricingDashboardProps = {
   barberId: string;
@@ -49,6 +25,8 @@ type PerformanceData = {
 
 export default function BarberPricingDashboard({ barberId }: BarberPricingDashboardProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'performance' | 'pricing'>('performance');
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
   const [prices, setPrices] = useState<PriceData[]>([]);
   const [revenueHistory, setRevenueHistory] = useState<any[]>([]);
@@ -108,6 +86,10 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
     }, 800);
   };
 
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -124,206 +106,296 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
     );
   }
 
-  const chartData = {
-    labels: revenueHistory.map(h => h.date),
-    datasets: [
-      {
-        label: 'Daily Revenue ($)',
-        data: revenueHistory.map(h => h.revenue),
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        tension: 0.4,
-        fill: true,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Daily Bookings',
-        data: revenueHistory.map(h => h.bookings),
-        borderColor: 'rgb(99, 102, 241)',
-        backgroundColor: 'rgba(99, 102, 241, 0.05)',
-        tension: 0.4,
-        borderDash: [5, 5],
-        yAxisID: 'y1',
-      },
-    ],
-  };
+  // Calculate summary stats from history
+  const totalRevenue30Day = revenueHistory.reduce((sum, h) => sum + h.revenue, 0);
+  const totalBookings30Day = revenueHistory.reduce((sum, h) => sum + h.bookings, 0);
+  const avgDailyRevenue = totalRevenue30Day / revenueHistory.length;
+  const avgDailyBookings = totalBookings30Day / revenueHistory.length;
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index' as const,
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: '30-Day Revenue & Booking Trends',
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: any) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.parsed.y !== null) {
-              if (context.datasetIndex === 0) {
-                label += '$' + context.parsed.y.toFixed(0);
-              } else {
-                label += context.parsed.y.toFixed(0);
-              }
-            }
-            return label;
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: {
-          display: true,
-          text: 'Revenue ($)',
-        },
-      },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'right' as const,
-        title: {
-          display: true,
-          text: 'Bookings',
-        },
-        grid: {
-          drawOnChartArea: false,
-        },
-      },
-    },
-  };
+  // Mock review data
+  const recentReviews = [
+    { name: 'Alex R.', rating: 5, comment: 'Great fade, very professional!', date: 'Dec 22', service: 'Fade' },
+    { name: 'Jordan L.', rating: 5, comment: 'Best haircut I\'ve had on campus.', date: 'Dec 20', service: 'Haircut' },
+    { name: 'Sam M.', rating: 4, comment: 'Good work, bit of a wait though.', date: 'Dec 18', service: 'Haircut & Fade' },
+    { name: 'Chris T.', rating: 5, comment: 'Super clean lineup!', date: 'Dec 16', service: 'Lineup' },
+    { name: 'Mike P.', rating: 5, comment: 'Always delivers quality.', date: 'Dec 14', service: 'Fade' },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Performance Overview - Public Stats Only */}
-      <Card>
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Performance & Earnings</h3>
+    <div className="space-y-4">
+      {/* Tab Navigation */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('performance')}
+          className={`flex-1 py-3 px-4 text-center font-semibold transition-colors ${
+            activeTab === 'performance'
+              ? 'text-gray-900 border-b-2 border-gray-900'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Performance
+        </button>
+        <button
+          onClick={() => setActiveTab('pricing')}
+          className={`flex-1 py-3 px-4 text-center font-semibold transition-colors ${
+            activeTab === 'pricing'
+              ? 'text-gray-900 border-b-2 border-gray-900'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Pricing
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {/* Total Bookings */}
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Calendar className="w-6 h-6 text-blue-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Bookings</p>
-                <p className="text-3xl font-bold text-gray-900">{performanceData.totalBookings}</p>
+      {/* Performance Tab */}
+      {activeTab === 'performance' && (
+        <div className="space-y-2">
+          {/* Bookings Section */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection('bookings')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-900">Bookings</span>
+                <span className="text-gray-500">{performanceData.totalBookings} all-time</span>
               </div>
-            </div>
-          </div>
-
-          {/* Total Revenue */}
-          <div className="p-4 bg-green-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <DollarSign className="w-6 h-6 text-green-600" />
-              <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-3xl font-bold text-gray-900">${performanceData.totalRevenue.toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Average Rating */}
-          <div className="p-4 bg-yellow-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Star className="w-6 h-6 text-yellow-600" />
-              <div>
-                <p className="text-sm text-gray-600">Average Rating</p>
-                <p className="text-3xl font-bold text-gray-900">{performanceData.avgRating.toFixed(1)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Reviews */}
-          <div className="p-4 bg-primary-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Award className="w-6 h-6 text-primary-400" />
-              <div>
-                <p className="text-sm text-gray-600">Total Reviews</p>
-                <p className="text-3xl font-bold text-gray-900">{performanceData.totalReviews}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-700">
-            These are your public-facing statistics that customers can see. Keep providing excellent service to maintain and improve your ratings!
-          </p>
-        </div>
-      </Card>
-
-      {/* Current Prices */}
-      <Card>
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Current Prices</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {prices.map((price) => (
-            <div key={price.serviceId} className="border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">{price.serviceName}</p>
-              <div className="flex items-baseline gap-2">
-                <p className="text-3xl font-bold text-gray-900">${price.currentPrice.toFixed(2)}</p>
-                {price.priceChangePct !== 0 && (
-                  <div className={`flex items-center gap-1 text-sm font-medium ${
-                    price.priceChangePct > 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {price.priceChangePct > 0 ? (
-                      <TrendingUp className="w-4 h-4" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4" />
-                    )}
-                    {Math.abs(price.priceChangePct).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-              {price.previousPrice !== price.currentPrice && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Previous: ${price.previousPrice.toFixed(2)} ({price.priceChange > 0 ? '+' : ''}${price.priceChange.toFixed(2)})
-                </p>
+              {expandedSection === 'bookings' ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
               )}
-            </div>
-          ))}
-        </div>
+            </button>
+            {expandedSection === 'bookings' && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{performanceData.totalBookings}</p>
+                    <p className="text-xs text-gray-500">All-Time</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{totalBookings30Day}</p>
+                    <p className="text-xs text-gray-500">Last 30 Days</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{avgDailyBookings.toFixed(1)}</p>
+                    <p className="text-xs text-gray-500">Daily Avg</p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Recent Days</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {revenueHistory.slice(-10).reverse().map((day, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded text-sm">
+                      <span className="text-gray-600">{day.date}</span>
+                      <span className="font-medium text-gray-900">{day.bookings} bookings</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-blue-900">Dynamic Pricing</p>
-              <p className="text-xs text-blue-700 mt-1">
-                Your prices are automatically optimized based on market conditions and customer demand.
-                Continue providing excellent service to maximize your earnings.
-              </p>
-            </div>
+          {/* Revenue Section */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection('revenue')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-900">Revenue</span>
+                <span className="text-gray-500">${performanceData.totalRevenue.toLocaleString()} all-time</span>
+              </div>
+              {expandedSection === 'revenue' ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            {expandedSection === 'revenue' && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">${performanceData.totalRevenue.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">All-Time</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">${totalRevenue30Day.toFixed(0)}</p>
+                    <p className="text-xs text-gray-500">Last 30 Days</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">${avgDailyRevenue.toFixed(0)}</p>
+                    <p className="text-xs text-gray-500">Daily Avg</p>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Recent Days</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {revenueHistory.slice(-10).reverse().map((day, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded text-sm">
+                      <span className="text-gray-600">{day.date}</span>
+                      <span className="font-medium text-gray-900">+${day.revenue.toFixed(0)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Rating Section */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection('rating')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-900">Rating</span>
+                <span className="text-gray-500">{performanceData.avgRating.toFixed(1)} out of 5.0</span>
+              </div>
+              {expandedSection === 'rating' ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            {expandedSection === 'rating' && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="flex items-center justify-center gap-8 mb-4">
+                  <div className="text-center">
+                    <p className="text-4xl font-bold text-gray-900">{performanceData.avgRating.toFixed(1)}</p>
+                    <div className="flex items-center justify-center gap-0.5 mt-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= Math.round(performanceData.avgRating)
+                              ? 'text-gray-900 fill-gray-900'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {[5, 4, 3, 2, 1].map((rating) => {
+                    const count = rating === 5 ? 98 : rating === 4 ? 22 : rating === 3 ? 5 : rating === 2 ? 2 : 0;
+                    const percentage = (count / performanceData.totalReviews) * 100;
+                    return (
+                      <div key={rating} className="flex items-center gap-2 text-sm">
+                        <span className="w-8 text-gray-600">{rating} star</span>
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gray-700 rounded-full"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="w-8 text-right text-gray-500">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Reviews Section */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleSection('reviews')}
+              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-gray-900">Reviews</span>
+                <span className="text-gray-500">{performanceData.totalReviews} total</span>
+              </div>
+              {expandedSection === 'reviews' ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            {expandedSection === 'reviews' && (
+              <div className="border-t border-gray-200 p-4 bg-gray-50">
+                <div className="space-y-3 max-h-64 overflow-y-auto">
+                  {recentReviews.map((review, idx) => (
+                    <div key={idx} className="p-3 bg-white rounded-lg border border-gray-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{review.name}</span>
+                          <span className="text-xs text-gray-400">•</span>
+                          <span className="text-xs text-gray-500">{review.service}</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-3 h-3 ${
+                                star <= review.rating ? 'text-gray-700 fill-gray-700' : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600">"{review.comment}"</p>
+                      <p className="text-xs text-gray-400 mt-1">{review.date}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </Card>
+      )}
 
-      {/* Revenue & Booking Trends Chart */}
-      <Card>
-        <h3 className="text-xl font-bold text-gray-900 mb-4">Revenue & Booking Trends</h3>
-        <div className="h-[300px]">
-          <Line data={chartData} options={chartOptions} />
+      {/* Pricing Tab */}
+      {activeTab === 'pricing' && (
+        <div className="space-y-4">
+          {/* Current Prices */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Your Service Prices</p>
+            {prices.map((price) => (
+              <div key={price.serviceId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">{price.serviceName}</p>
+                  {price.previousPrice !== price.currentPrice && (
+                    <p className="text-xs text-gray-500">
+                      Was ${price.previousPrice.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-gray-900">${price.currentPrice.toFixed(2)}</p>
+                  {price.priceChangePct !== 0 && (
+                    <div className={`flex items-center justify-end gap-1 text-xs ${
+                      price.priceChangePct > 0 ? 'text-gray-600' : 'text-gray-600'
+                    }`}>
+                      {price.priceChangePct > 0 ? (
+                        <TrendingUp className="w-3 h-3" />
+                      ) : (
+                        <TrendingDown className="w-3 h-3" />
+                      )}
+                      {price.priceChangePct > 0 ? '+' : ''}{price.priceChangePct.toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Dynamic Pricing Info */}
+          <div className="p-4 border border-gray-200 rounded-lg">
+            <p className="font-medium text-gray-900 mb-2">Dynamic Pricing</p>
+            <p className="text-sm text-gray-600 mb-3">
+              Your prices are automatically optimized based on:
+            </p>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Market demand and competition</li>
+              <li>• Your ratings and reviews</li>
+              <li>• Time of day and week</li>
+              <li>• Your booking availability</li>
+            </ul>
+          </div>
         </div>
-        <div className="mt-4 bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-700">
-            Track your daily revenue and booking volume over the past 30 days. Consistent bookings and positive reviews help grow your business on CampusCut.
-          </p>
-        </div>
-      </Card>
+      )}
     </div>
   );
 }
-

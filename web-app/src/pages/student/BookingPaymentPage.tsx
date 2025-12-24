@@ -588,23 +588,6 @@ export default function BookingPaymentPage() {
                 </div>
               </div>
 
-              {/* Fee Transparency */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  Fee Breakdown
-                </h4>
-                <div className="space-y-1 text-xs text-gray-600">
-                  <div className="flex justify-between">
-                    <span>Platform Fee (5%)</span>
-                    <span>-${platformFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium text-green-600">
-                    <span>Barber Receives</span>
-                    <span>${barberEarnings.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
             </Card>
 
             {/* How Payment Works */}

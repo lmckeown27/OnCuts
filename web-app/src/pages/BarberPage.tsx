@@ -430,7 +430,7 @@ export default function BarberPage() {
           onClick={closeProfileEditor}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out
               ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -930,10 +930,12 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
                       } cursor-pointer active:scale-95 transition-all`}
                     >
                       <div className="text-xs sm:text-sm font-semibold mb-0.5 sm:mb-1">{day}</div>
-                      {/* Mobile: Just show dot indicator */}
+                      {/* Mobile: Show +X bookings count */}
                       <div className="sm:hidden flex justify-center">
                         {hasAppointments && (
-                          <div className={`w-1.5 h-1.5 rounded-full ${day === 12 ? 'bg-white' : 'bg-primary-400'}`} />
+                          <div className={`text-sm font-bold ${day === 12 ? 'text-white' : 'text-primary-500'}`}>
+                            +{appointments.length}
+                          </div>
                         )}
                       </div>
                       {/* Desktop: Show names */}

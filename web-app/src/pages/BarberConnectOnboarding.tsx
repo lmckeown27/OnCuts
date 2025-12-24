@@ -290,8 +290,8 @@ export const BarberConnectOnboarding = () => {
               </svg>
             </div>
             <p className="ml-3">
-              When a student pays for a completed booking, you receive 95% of the payment
-              (CampusCut takes a 5% platform fee)
+              When a student pays for a completed booking, funds are securely transferred
+              to your connected Stripe account
             </p>
           </div>
           <div className="flex items-start">

@@ -221,25 +221,9 @@ export default function BarberFilterQuestionnaire({
 
   return (
     <>
-      {/* Header Section - Scrolls away normally */}
-      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-3 sm:pt-4 pb-3 sm:pb-4">
-        <Card className="shadow-lg rounded-t-xl rounded-b-none">
-          <div className="text-center py-4 sm:py-6 px-3 sm:px-4">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">Find Your Perfect Barber</h2>
-            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">Answer a few questions to see matching barbers</p>
-            
-            {/* Real-time Barber Count */}
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-100 text-primary-500 rounded-full font-semibold">
-              <span className="text-xl sm:text-2xl">{availableCount}</span>
-              <span className="text-sm sm:text-base">{availableCount === 1 ? 'Barber' : 'Barbers'} Available</span>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Questionnaire Section - Stays sticky at top */}
-      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-4 sm:pb-6 mb-4 sm:mb-8">
-        <Card className="shadow-lg rounded-t-none rounded-b-xl border-t-2 border-gray-200">
+      {/* Questionnaire Section - Scrolls away normally */}
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 pt-4 sm:pt-6 pb-4 sm:pb-6">
+        <Card className="shadow-lg rounded-xl">
           {/* Selected Filter Pills - Fully clickable for editing */}
           {(serviceType || (date && time && dateTimeConfirmed) || (location && locationConfirmed)) && (
             <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-3 sm:pt-4 pb-3 sm:pb-4 mb-3 sm:mb-4 border-b border-gray-200 px-2 sm:px-4">
@@ -318,16 +302,34 @@ export default function BarberFilterQuestionnaire({
                   <label className="font-semibold text-sm sm:text-lg text-center">What type of haircut are you looking for?</label>
                 </div>
                 
-                <div className="flex flex-wrap justify-center gap-2 sm:gap-3 px-1">
-                  {availableServices.map((service) => (
-                    <button
-                      key={service}
-                      onClick={() => handleServiceChange(service)}
-                      className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg active:scale-95 sm:hover:scale-105 transition-all cursor-pointer"
-                    >
-                      {service}
-                    </button>
-                  ))}
+                {/* Mobile: 2-column grid with vertical scroll */}
+                <div className="lg:hidden max-h-36 overflow-y-auto px-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    {availableServices.map((service) => (
+                      <button
+                        key={service}
+                        onClick={() => handleServiceChange(service)}
+                        className="px-3 py-4 rounded-xl font-semibold text-base bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        {service}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Desktop: Horizontal row with horizontal scroll */}
+                <div className="hidden lg:block overflow-x-auto px-4 pb-2">
+                  <div className="flex justify-center gap-3">
+                    {availableServices.map((service) => (
+                      <button
+                        key={service}
+                        onClick={() => handleServiceChange(service)}
+                        className="flex-shrink-0 px-6 py-4 rounded-xl font-semibold text-lg bg-white text-primary-400 border-2 border-primary-400 hover:bg-primary-400 hover:text-white hover:shadow-lg hover:scale-[1.02] transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        {service}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -476,6 +478,15 @@ export default function BarberFilterQuestionnaire({
             )}
           </div>
         </Card>
+      </div>
+
+      {/* Barber Count Section - Stays sticky at top */}
+      <div className="sticky top-0 z-20 bg-gradient-to-br from-primary-50 to-primary-50 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 sm:py-4 mb-4 sm:mb-6 shadow-md">
+        <div className="text-center">
+          <div className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-primary-100 text-primary-500 rounded-full font-bold text-xl sm:text-2xl">
+            <span>{availableCount === 1 ? 'Barber' : 'Barbers'} Available: {availableCount}</span>
+          </div>
+        </div>
       </div>
     </>
   );
