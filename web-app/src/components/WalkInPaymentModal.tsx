@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, DollarSign, User, Scissors, CreditCard, Banknote, QrCode, CheckCircle, Copy, Send, Smartphone } from 'lucide-react';
+import { X, DollarSign, User, Scissors, CreditCard, Banknote, QrCode, CheckCircle, Copy } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 
@@ -40,8 +40,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName }: Walk
   const [customPrice, setCustomPrice] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
   const [paymentLinkCopied, setPaymentLinkCopied] = useState(false);
-  const [paymentSent, setPaymentSent] = useState(false);
-  const [customerPhone, setCustomerPhone] = useState('');
   
   useEffect(() => {
     if (isOpen) {
@@ -62,8 +60,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName }: Walk
         setCustomPrice('');
         setPaymentMethod(null);
         setPaymentLinkCopied(false);
-        setPaymentSent(false);
-        setCustomerPhone('');
       }, 150);
       return () => clearTimeout(timer);
     }
@@ -97,15 +93,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName }: Walk
     navigator.clipboard.writeText(paymentLink);
     setPaymentLinkCopied(true);
     setTimeout(() => setPaymentLinkCopied(false), 2000);
-  };
-
-  const handleSendLink = () => {
-    // Mock sending via SMS
-    setPaymentSent(true);
-    // Simulate payment completion after 3 seconds
-    setTimeout(() => {
-      setStep('success');
-    }, 3000);
   };
 
   const handleCashPayment = () => {
@@ -334,40 +321,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName }: Walk
                 <Copy className="w-4 h-4 mr-2" />
                 {paymentLinkCopied ? 'Copied!' : 'Copy Payment Link'}
               </Button>
-
-              {/* Send via Text */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  <Smartphone className="w-4 h-4 inline mr-2" />
-                  Or send via text message
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="(555) 123-4567"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                  <Button
-                    onClick={handleSendLink}
-                    disabled={!customerPhone || paymentSent}
-                    className="px-6"
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    {paymentSent ? 'Sent!' : 'Send'}
-                  </Button>
-                </div>
-              </div>
-
-              {paymentSent && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
-                  <div className="animate-pulse">
-                    <p className="font-medium text-amber-800">Waiting for payment...</p>
-                    <p className="text-sm text-amber-600">The customer is completing their payment</p>
-                  </div>
-                </div>
-              )}
 
               {/* Back Button */}
               <Button

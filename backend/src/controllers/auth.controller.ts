@@ -139,8 +139,7 @@ import educationalDomainService from '../services/educationalDomain.service';
  *   "firstName": "John",
  *   "lastName": "Doe",
  *   "campusId": 1,
- *   "role": "student",
- *   "phone": "+1234567890"
+ *   "role": "student"
  * }
  * ```
  * 
@@ -165,7 +164,7 @@ import educationalDomainService from '../services/educationalDomain.service';
  */
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, role, phone } = req.body;
+    const { email, password, firstName, lastName, role } = req.body;
 
     // Validate input (campusId is now auto-detected from email domain)
     if (!email || !password || !firstName || !lastName || !role) {
@@ -224,19 +223,18 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 
     // Check if there's already a pending registration
     if (hasPendingRegistration(email)) {
-      throw new ApiError(400, 'Verification email already sent. Please check your inbox or wait 10 minutes to try again.');
+      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 10 minutes to try again.');
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create pending registration with verification code
+    // Create pending registration with email verification code
     const verificationCode = createPendingRegistration({
       email,
       password: passwordHash,
       firstName,
       lastName,
-      phone: phone || '',
       campusId,
       role
     });
@@ -251,18 +249,18 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       if (isAutoVerifyEnabled()) {
         return res.status(200).json({
           success: true,
-          message: 'Registration pending verification (AUTO-VERIFY MODE)',
+          message: 'Registration pending email verification (AUTO-VERIFY MODE)',
           data: {
             email,
             expiresIn: 600, // 10 minutes
-            verificationCode // Only in dev mode!
+            verificationCode: verificationCode // Only in dev mode!
           }
         });
       }
       
       res.status(200).json({
         success: true,
-        message: 'Verification email sent. Please check your inbox and enter the 6-digit code.',
+        message: 'Verification email sent. Please check your inbox.',
         data: {
           email,
           expiresIn: 600 // 10 minutes
@@ -278,9 +276,9 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 /**
- * Verify Email - Step 2: Complete Registration
+ * Verify Email - Complete Registration
  * 
- * Verifies the 6-digit code and creates the user account.
+ * Verifies the 6-digit email code and creates the user account.
  * Generates Aptos wallet and issues JWT token.
  * 
  * ## Request:
@@ -324,7 +322,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       throw new ApiError(400, 'Email and verification code are required');
     }
 
-    // Verify code and get pending registration
+    // Verify email code
     const pendingReg = verifyCode(email, code);
 
     if (!pendingReg) {
@@ -343,15 +341,14 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     // Create user in database
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, phone, campus_id, role, aptos_address, email_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, aptos_address, email_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
        RETURNING id, email, first_name, last_name, campus_id, role, aptos_address, created_at`,
       [
         pendingReg.email,
         pendingReg.password,
         pendingReg.firstName,
         pendingReg.lastName,
-        pendingReg.phone,
         pendingReg.campusId,
         pendingReg.role,
         aptosAccount.address
@@ -462,19 +459,18 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
     }
 
     // Create new verification code (overwrites previous)
-    const newCode = createPendingRegistration({
+    const verificationCode = createPendingRegistration({
       email: pendingReg.email,
       password: pendingReg.password,
       firstName: pendingReg.firstName,
       lastName: pendingReg.lastName,
-      phone: pendingReg.phone,
       campusId: pendingReg.campusId,
       role: pendingReg.role
     });
 
-    // Send new verification email
+    // Send verification email
     try {
-      await sendVerificationEmail(email, newCode);
+      await sendVerificationEmail(email, verificationCode);
       
       logger.info(`Verification code resent to ${email}`);
       
@@ -486,7 +482,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
           data: {
             email,
             expiresIn: 600,
-            verificationCode: newCode // Only in dev mode!
+            verificationCode: verificationCode // Only in dev mode!
           }
         });
       }

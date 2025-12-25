@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   User,
   Mail,
-  Phone,
   Calendar,
   Shield,
   ShieldAlert,
@@ -37,7 +36,6 @@ type UserAccount = {
   id: string;
   name: string;
   email: string;
-  phone: string;
   role: UserRole;
   wallet_address?: string; // Not used in v1 (off-chain)
   status: UserStatus;
@@ -70,131 +68,8 @@ type Transaction = {
   counterparty: string;
 };
 
-// Mock data for users
-const mockUsers: Record<string, UserAccount> = {
-  'barber-1': {
-    id: 'barber-1',
-    name: 'Marcus Thompson',
-    email: 'marcus.thompson@calpoly.edu',
-    phone: '(805) 555-0123',
-    role: 'barber',
-    wallet_address: '0x1234...5678',
-    status: 'active',
-    is_verified: true,
-    created_at: '2024-01-15T10:00:00Z',
-    last_login: '2024-12-24T14:30:00Z',
-    total_bookings: 156,
-    total_earned: 4850,
-    average_rating: 4.9,
-    specialties: ['Fades', 'Curly Hair', 'Beard Grooming'],
-    campus: 'California Polytechnic State University',
-    admin_notes: ['Top performer on campus', 'No complaints'],
-    flags: [],
-  },
-  'barber-2': {
-    id: 'barber-2',
-    name: 'Jordan Williams',
-    email: 'jordan.w@calpoly.edu',
-    phone: '(805) 555-0456',
-    role: 'barber',
-    wallet_address: '0x2345...6789',
-    status: 'active',
-    is_verified: true,
-    created_at: '2024-02-20T10:00:00Z',
-    last_login: '2024-12-23T16:00:00Z',
-    total_bookings: 98,
-    total_earned: 2940,
-    average_rating: 4.7,
-    specialties: ['Line Ups', 'Designs', 'Buzz Cuts'],
-    campus: 'California Polytechnic State University',
-    admin_notes: [],
-    flags: [],
-  },
-  'barber-3': {
-    id: 'barber-3',
-    name: 'Alex Chen',
-    email: 'alex.chen@ucsb.edu',
-    phone: '(805) 555-0789',
-    role: 'barber',
-    wallet_address: '0x3456...7890',
-    status: 'active',
-    is_verified: true,
-    created_at: '2024-03-10T10:00:00Z',
-    last_login: '2024-12-24T09:00:00Z',
-    total_bookings: 203,
-    total_earned: 6495,
-    average_rating: 4.8,
-    specialties: ['Asian Hair', 'Textured Cuts', 'Modern Styles'],
-    campus: 'University of California, Santa Barbara',
-    admin_notes: ['Excellent customer service'],
-    flags: [],
-  },
-  'student-1': {
-    id: 'student-1',
-    name: 'John Doe',
-    email: 'jdoe@calpoly.edu',
-    phone: '(805) 555-1001',
-    role: 'student',
-    wallet_address: '0x4567...8901',
-    status: 'active',
-    is_verified: true,
-    created_at: '2024-01-20T10:00:00Z',
-    last_login: '2024-12-24T11:00:00Z',
-    total_bookings: 12,
-    total_spent: 420,
-    campus: 'California Polytechnic State University',
-    admin_notes: [],
-    flags: [],
-  },
-  'student-2': {
-    id: 'student-2',
-    name: 'Jane Smith',
-    email: 'jsmith@calpoly.edu',
-    phone: '(805) 555-1002',
-    role: 'student',
-    wallet_address: '0x5678...9012',
-    status: 'active',
-    is_verified: true,
-    created_at: '2024-02-15T10:00:00Z',
-    last_login: '2024-12-23T15:00:00Z',
-    total_bookings: 8,
-    total_spent: 280,
-    campus: 'California Polytechnic State University',
-    admin_notes: [],
-    flags: [],
-  },
-  'student-3': {
-    id: 'student-3',
-    name: 'Mike Johnson',
-    email: 'mjohnson@calpoly.edu',
-    phone: '(805) 555-1003',
-    role: 'student',
-    wallet_address: '0x6789...0123',
-    status: 'active',
-    is_verified: false,
-    created_at: '2024-03-01T10:00:00Z',
-    last_login: '2024-12-22T10:00:00Z',
-    total_bookings: 5,
-    total_spent: 175,
-    campus: 'California Polytechnic State University',
-    admin_notes: [],
-    flags: [],
-  },
-};
-
-const mockActivityLogs: ActivityLog[] = [
-  { id: '1', timestamp: '2024-12-24T14:30:00Z', action: 'Login', details: 'User logged in from iOS app' },
-  { id: '2', timestamp: '2024-12-24T10:00:00Z', action: 'Booking Completed', details: 'Completed booking #1234' },
-  { id: '3', timestamp: '2024-12-23T16:00:00Z', action: 'Profile Updated', details: 'Updated availability schedule' },
-  { id: '4', timestamp: '2024-12-22T12:00:00Z', action: 'Payment Received', details: 'Received $35 for fade haircut' },
-];
-
-const mockTransactions: Transaction[] = [
-  { id: 'tx-1', type: 'Payment Received', amount: 35, date: '2024-12-24T10:00:00Z', status: 'completed', counterparty: 'John Doe' },
-  { id: 'tx-2', type: 'Payment Received', amount: 45, date: '2024-12-23T14:00:00Z', status: 'completed', counterparty: 'Jane Smith' },
-  { id: 'tx-3', type: 'Payout', amount: -75, date: '2024-12-22T09:00:00Z', status: 'completed', counterparty: 'Bank Account' },
-  { id: 'tx-4', type: 'Payment Received', amount: 30, date: '2024-12-21T11:00:00Z', status: 'completed', counterparty: 'Mike Johnson' },
-];
+// TODO: Replace with real API calls to fetch user data
+// For now, we'll show a "not found" state when no user is in the database
 
 export default function AdminUserView() {
   const { userId } = useParams<{ userId: string }>();
@@ -208,19 +83,33 @@ export default function AdminUserView() {
   const [adminNote, setAdminNote] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
 
-  // Load user data from mock data (will be replaced with API call later)
+  // Load user data from API
   useEffect(() => {
-    setIsLoading(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      if (userId && mockUsers[userId]) {
-        setUser(mockUsers[userId]);
-        setActivityLogs(mockActivityLogs);
-        setTransactions(mockTransactions);
+    const fetchUser = async () => {
+      setIsLoading(true);
+      
+      try {
+        // TODO: Replace with actual API call
+        // const response = await adminService.getUserById(userId);
+        // setUser(response.data);
+        // setActivityLogs(response.activityLogs || []);
+        // setTransactions(response.transactions || []);
+        
+        // For now, show not found since mock data is removed
+        setUser(null);
+        setActivityLogs([]);
+        setTransactions([]);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        setUser(null);
       }
+      
       setIsLoading(false);
-    }, 300);
+    };
+    
+    if (userId) {
+      fetchUser();
+    }
   }, [userId]);
 
   const handleStatusChange = (newStatus: UserStatus) => {
@@ -412,13 +301,6 @@ export default function AdminUserView() {
                   <div>
                     <p className="text-gray-600">Email</p>
                     <p className="font-semibold text-gray-900">{user.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-gray-600">Phone</p>
-                    <p className="font-semibold text-gray-900">{user.phone}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

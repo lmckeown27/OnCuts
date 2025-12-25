@@ -1,7 +1,7 @@
 /**
  * Verification Service - In-Memory Verification Code Management
  * 
- * Manages pending user registrations and verification codes.
+ * Manages pending user registrations and email verification codes.
  * Codes expire after 10 minutes.
  * 
  * @module verification.service
@@ -17,13 +17,15 @@ export interface PendingRegistration {
   password: string;
   firstName: string;
   lastName: string;
-  phone: string;
   campusId: number;
   role: 'student' | 'barber';
-  code: string;
+  verificationCode: string;
   expiresAt: Date;
   createdAt: Date;
 }
+
+// Legacy alias for backwards compatibility
+export type { PendingRegistration as PendingRegistrationData };
 
 /**
  * In-Memory Storage for Pending Registrations
@@ -52,11 +54,11 @@ export function generateVerificationCode(): string {
 /**
  * Create Pending Registration
  * 
- * Stores user registration data with verification code.
+ * Stores user registration data with email verification code.
  * Overwrites existing pending registration for the same email.
  * 
  * @param registrationData - User registration data
- * @returns Verification code
+ * @returns Email verification code
  * 
  * @example
  * const code = createPendingRegistration({
@@ -64,15 +66,14 @@ export function generateVerificationCode(): string {
  *   password: 'hashed_password',
  *   firstName: 'John',
  *   lastName: 'Doe',
- *   phone: '+1234567890',
  *   campusId: 1,
  *   role: 'student'
  * });
  */
 export function createPendingRegistration(
-  registrationData: Omit<PendingRegistration, 'code' | 'expiresAt' | 'createdAt'>
+  registrationData: Omit<PendingRegistration, 'verificationCode' | 'expiresAt' | 'createdAt'>
 ): string {
-  const code = generateVerificationCode();
+  const verificationCode = generateVerificationCode();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + VERIFICATION_CODE_EXPIRY_MS);
   
@@ -81,7 +82,7 @@ export function createPendingRegistration(
   const pendingReg: PendingRegistration = {
     ...registrationData,
     email: emailKey,
-    code,
+    verificationCode,
     expiresAt,
     createdAt: now
   };
@@ -94,33 +95,25 @@ export function createPendingRegistration(
   setTimeout(() => {
     if (pendingRegistrations.has(emailKey)) {
       const reg = pendingRegistrations.get(emailKey);
-      if (reg && reg.code === code) {
+      if (reg && reg.verificationCode === verificationCode) {
         pendingRegistrations.delete(emailKey);
         logger.info(`Expired verification code for ${emailKey}`);
       }
     }
   }, VERIFICATION_CODE_EXPIRY_MS);
   
-  return code;
+  return verificationCode;
 }
 
 /**
- * Verify Code and Get Pending Registration
+ * Verify Email Code and Complete Registration
  * 
- * Validates verification code and returns registration data if valid.
- * Removes the pending registration after successful verification.
+ * Validates email verification code and returns registration data if valid.
+ * Removes the pending registration after success.
  * 
  * @param email - User's email address
  * @param code - 6-digit verification code
  * @returns PendingRegistration if valid, null if invalid/expired
- * 
- * @example
- * const registration = verifyCode('student@university.edu', '123456');
- * if (registration) {
- *   // Create user account
- * } else {
- *   // Invalid or expired code
- * }
  */
 export function verifyCode(email: string, code: string): PendingRegistration | null {
   const emailKey = email.toLowerCase();
@@ -139,14 +132,14 @@ export function verifyCode(email: string, code: string): PendingRegistration | n
   }
   
   // Check if code matches
-  if (pendingReg.code !== code) {
+  if (pendingReg.verificationCode !== code) {
     logger.warn(`Invalid verification code for ${emailKey}`);
     return null;
   }
   
   // Valid! Remove from pending
   pendingRegistrations.delete(emailKey);
-  logger.info(`Verified code for ${emailKey}`);
+  logger.info(`Email verified for ${emailKey}, registration complete`);
   
   return pendingReg;
 }
@@ -291,4 +284,3 @@ export function cleanupExpiredRegistrations(): void {
 setInterval(cleanupExpiredRegistrations, 5 * 60 * 1000);
 
 logger.info('Verification service initialized');
-

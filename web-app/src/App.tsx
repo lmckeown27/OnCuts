@@ -30,6 +30,7 @@ import BarberServiceHistoryPage from './pages/barber/BarberServiceHistoryPage';
 import AppointmentDetailsPage from './pages/AppointmentDetailsPage';
 import BookingPaymentPage from './pages/student/BookingPaymentPage';
 import WalletPage from './pages/WalletPage';
+import MessagesPage from './pages/MessagesPage';
 
 // Mobile/App Pages (Touch-Optimized)
 import MobileAdminPage from './pages/mobile/MobileAdminPage';
@@ -102,6 +103,14 @@ function AppContent() {
         {/* Web - Wallet */}
         <Route path="/web/wallet" element={<PlatformGuard requiredPlatform="web"><WalletPage /></PlatformGuard>} />
         
+        {/* Web - Messages (Barber) */}
+        <Route path="/web/barber/messages" element={<PlatformGuard requiredPlatform="web"><MessagesPage /></PlatformGuard>} />
+        <Route path="/web/barber/messages/:conversationId" element={<PlatformGuard requiredPlatform="web"><MessagesPage /></PlatformGuard>} />
+        
+        {/* Web - Messages (Consumer) */}
+        <Route path="/web/consumer/messages" element={<PlatformGuard requiredPlatform="web"><MessagesPage /></PlatformGuard>} />
+        <Route path="/web/consumer/messages/:conversationId" element={<PlatformGuard requiredPlatform="web"><MessagesPage /></PlatformGuard>} />
+        
         {/* ═══════════════════════════════════════════════════════════
             APP PLATFORM ROUTES (PWA/dApp Version - Mobile Optimized)
             All routes under /app/* use touch-optimized mobile interfaces
@@ -137,6 +146,14 @@ function AppContent() {
         
         {/* App - Wallet */}
         <Route path="/app/wallet" element={<PlatformGuard requiredPlatform="app"><WalletPage /></PlatformGuard>} />
+        
+        {/* App - Messages (Barber) */}
+        <Route path="/app/barber/messages" element={<PlatformGuard requiredPlatform="app"><MessagesPage /></PlatformGuard>} />
+        <Route path="/app/barber/messages/:conversationId" element={<PlatformGuard requiredPlatform="app"><MessagesPage /></PlatformGuard>} />
+        
+        {/* App - Messages (Consumer) */}
+        <Route path="/app/consumer/messages" element={<PlatformGuard requiredPlatform="app"><MessagesPage /></PlatformGuard>} />
+        <Route path="/app/consumer/messages/:conversationId" element={<PlatformGuard requiredPlatform="app"><MessagesPage /></PlatformGuard>} />
         
         {/* ═══════════════════════════════════════════════════════════
             LEGACY REDIRECTS (For backwards compatibility)

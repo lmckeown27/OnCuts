@@ -37,7 +37,7 @@ export const createConnectAccount = async (
 
     // 1. Check if barber already has Connect account
     const userResult = await pool.query(
-      `SELECT stripe_account_id, email, first_name, last_name, phone FROM users WHERE id = $1`,
+      `SELECT stripe_account_id, email, first_name, last_name FROM users WHERE id = $1`,
       [userId]
     );
 
@@ -70,7 +70,6 @@ export const createConnectAccount = async (
       email: user.email,
       firstName: user.first_name,
       lastName: user.last_name,
-      phone: user.phone || '',
     });
 
     // 3. Save account ID to database

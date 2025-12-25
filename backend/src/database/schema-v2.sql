@@ -18,7 +18,6 @@ CREATE TABLE users (
   password_hash TEXT NOT NULL,
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
-  phone TEXT,
   role TEXT CHECK (role IN ('student','barber','admin')) NOT NULL,
   campus_id UUID,
   aptos_address TEXT UNIQUE,

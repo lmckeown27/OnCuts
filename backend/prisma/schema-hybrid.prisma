@@ -28,7 +28,6 @@ model User {
   
   // Profile data (Postgres authoritative)
   email             String?  @unique
-  phoneNumber       String?
   username          String?  @unique
   displayName       String?
   bio               String?
@@ -45,7 +44,6 @@ model User {
   
   // Verification
   emailVerified     Boolean  @default(false)
-  phoneVerified     Boolean  @default(false)
   identityVerified  Boolean  @default(false)
   
   // Session management (Postgres authoritative)

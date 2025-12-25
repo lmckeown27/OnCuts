@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, MapPin, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -98,195 +98,15 @@ export default function BarberPage() {
   const openAvailability = () => openModal(setShowAvailability, setIsAvailabilityVisible);
   const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
   
-  // Mock barber data - in production this would come from API
-  const barberId = 'barber-1';
-  const isCampusManager = true; // TODO: Fetch from API
-  const campusId = 'campus-1';
-  const campusName = 'California Polytechnic State University';
+  // Get barber data from auth - in production this would come from API
+  const { user } = useAuthStore();
+  const barberId = user?.id || '';
+  const isCampusManager = false; // TODO: Fetch from API based on user role
+  const campusId = user?.campus_id || '';
+  const campusName = ''; // TODO: Fetch campus name from API
 
-  // Mock appointment details data
-  const appointmentDetailsData: Record<string, any> = {
-    '1': {
-      id: '1',
-      time: '10:00 AM',
-      date: 'Today, Friday, January 12, 2025',
-      client: {
-        name: 'John Doe',
-        email: 'john.doe@college.edu',
-        phone: '(555) 123-4567',
-        studentId: 'STU-2024-001',
-        totalBookings: 12,
-        completedBookings: 11,
-        cancelledBookings: 1,
-        reliabilityScore: 92,
-        avgRating: 4.7,
-      },
-      service: {
-        name: 'Haircut & Fade',
-        duration: '45 min',
-        notes: 'Looking for a mid-fade with texture on top, similar to last time',
-      },
-      location: {
-        type: 'My Dorm',
-        address: 'Yosemite Hall, Room 304',
-        instructions: 'Third floor, take elevator. Will meet you in lobby.',
-      },
-      price: {
-        service: 35.00,
-        platformFee: 1.75,
-        total: 36.75,
-        paymentMethod: 'Escrow (Stripe)',
-        paymentStatus: 'paid' as const,
-      },
-      status: 'confirmed',
-      bookedAt: '2 hours ago',
-      blockchainTx: '0x7f8a...3d2c',
-    },
-    '2': {
-      id: '2',
-      time: '11:30 AM',
-      date: 'Today, Friday, January 12, 2025',
-      client: {
-        name: 'Mike Smith',
-        email: 'mike.smith@college.edu',
-        phone: '(555) 234-5678',
-        studentId: 'STU-2024-002',
-        totalBookings: 8,
-        completedBookings: 8,
-        cancelledBookings: 0,
-        reliabilityScore: 100,
-        avgRating: 5.0,
-      },
-      service: {
-        name: 'Beard Trim',
-        duration: '20 min',
-        notes: 'Clean up the edges, keep it natural looking',
-      },
-      location: {
-        type: 'Student Union',
-        address: 'UU Plaza, 2nd Floor Lounge',
-        instructions: 'Near the food court, will be at the corner table.',
-      },
-      price: {
-        service: 23.00,
-        platformFee: 1.15,
-        total: 24.15,
-        paymentMethod: 'Escrow (Stripe)',
-        paymentStatus: 'paid' as const,
-      },
-      status: 'confirmed',
-      bookedAt: '3 hours ago',
-      blockchainTx: '0x9a2b...4e5f',
-    },
-    '3': {
-      id: '3',
-      time: '2:00 PM',
-      date: 'Today, Friday, January 12, 2025',
-      client: {
-        name: 'Chris Lee',
-        email: 'chris.lee@college.edu',
-        phone: '(555) 345-6789',
-        studentId: 'STU-2024-003',
-        totalBookings: 5,
-        completedBookings: 4,
-        cancelledBookings: 1,
-        reliabilityScore: 80,
-        avgRating: 4.5,
-      },
-      service: {
-        name: 'Full Service',
-        duration: '60 min',
-        notes: 'Haircut, beard trim, and hot towel shave. First time here!',
-      },
-      location: {
-        type: 'Off-Campus Apartment',
-        address: 'The Grove Apartments, Unit 204B',
-        instructions: 'Use the west entrance, building 2. Parking available.',
-      },
-      price: {
-        service: 45.00,
-        platformFee: 2.25,
-        total: 47.25,
-        paymentMethod: 'Pay After Service',
-        paymentStatus: 'pay_later' as const,
-      },
-      status: 'confirmed',
-      bookedAt: '30 minutes ago',
-      blockchainTx: '0x3c4d...7g8h',
-    },
-    '4': {
-      id: '4',
-      time: '3:30 PM',
-      date: 'Today, Friday, January 12, 2025',
-      client: {
-        name: 'David Brown',
-        email: 'david.brown@college.edu',
-        phone: '(555) 456-7890',
-        studentId: 'STU-2024-004',
-        totalBookings: 15,
-        completedBookings: 14,
-        cancelledBookings: 1,
-        reliabilityScore: 93,
-        avgRating: 4.8,
-      },
-      service: {
-        name: 'Haircut',
-        duration: '30 min',
-        notes: 'Regular trim, same as last 3 times',
-      },
-      location: {
-        type: 'My Dorm',
-        address: 'Sierra Madre Hall, Room 512',
-        instructions: 'Fifth floor, room at the end of the hall.',
-      },
-      price: {
-        service: 28.00,
-        platformFee: 1.40,
-        total: 29.40,
-        paymentMethod: 'Escrow (Stripe)',
-        paymentStatus: 'paid' as const,
-      },
-      status: 'confirmed',
-      bookedAt: '1 day ago',
-      blockchainTx: '0x5e6f...9i0j',
-    },
-    '5': {
-      id: '5',
-      time: '5:00 PM',
-      date: 'Today, Friday, January 12, 2025',
-      client: {
-        name: 'James Wilson',
-        email: 'james.wilson@college.edu',
-        phone: '(555) 567-8901',
-        studentId: 'STU-2024-005',
-        totalBookings: 3,
-        completedBookings: 3,
-        cancelledBookings: 0,
-        reliabilityScore: 100,
-        avgRating: 5.0,
-      },
-      service: {
-        name: 'Haircut',
-        duration: '30 min',
-        notes: 'Keep it short on the sides, blend the top. Military style.',
-      },
-      location: {
-        type: 'Recreation Center',
-        address: 'Campus Rec Center, Main Lobby',
-        instructions: 'Meet near the front desk after my workout.',
-      },
-      price: {
-        service: 28.00,
-        platformFee: 1.40,
-        total: 29.40,
-        paymentMethod: 'Escrow (Stripe)',
-        paymentStatus: 'paid' as const,
-      },
-      status: 'confirmed',
-      bookedAt: '4 hours ago',
-      blockchainTx: '0x7k8l...1m2n',
-    },
-  };
+  // Appointment details will be fetched from API
+  const appointmentDetailsData: Record<string, any> = {};
 
   // Function to open service details modal [v3.0]
   const openServiceDetails = (appointmentId: string) => {
@@ -337,8 +157,17 @@ export default function BarberPage() {
               <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
             </div>
             
-            {/* Right section - Booking Requests + Profile */}
+            {/* Right section - Messages, Booking Requests + Profile */}
             <div className="flex items-center gap-1.5 sm:gap-4">
+              {/* Messages Button */}
+              <button
+                onClick={() => navigate(`${platformPrefix}/barber/messages`)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                title="Messages"
+              >
+                <MessageCircle className="w-5 h-5 text-gray-600" />
+              </button>
+              
               {/* Booking Requests Inbox */}
               <BarberBookingRequestsDropdown barberId={barberId} />
 
@@ -349,7 +178,7 @@ export default function BarberPage() {
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  B
+                  {user?.first_name?.charAt(0)?.toUpperCase() || 'B'}
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
               </button>
@@ -743,35 +572,10 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
     }
   }, [showDayModal]);
 
-  // Mock detailed appointment data by day
-  const getAppointmentsForDay = (day: number) => {
-    const appointments: { [day: number]: Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> } = {
-      1: [
-        { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { id: '2', time: '2:00 PM', client: 'Sarah Miller', service: 'Full Service', price: '$45', status: 'confirmed' },
-      ],
-      2: [{ id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' }],
-      3: [{ id: '3', time: '3:00 PM', client: 'Chris Lee', service: 'Haircut', price: '$28', status: 'pending' }],
-      5: [
-        { id: '4', time: '9:00 AM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { id: '5', time: '10:00 AM', client: 'James Wilson', service: 'Fade', price: '$30', status: 'confirmed' },
-        { id: '1', time: '11:00 AM', client: 'Robert Taylor', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { id: '3', time: '1:00 PM', client: 'Michael Davis', service: 'Full Service', price: '$45', status: 'confirmed' },
-        { id: '2', time: '2:30 PM', client: 'William Anderson', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-        { id: '4', time: '3:30 PM', client: 'Richard Thomas', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { id: '5', time: '4:30 PM', client: 'Joseph Jackson', service: 'Fade', price: '$30', status: 'confirmed' },
-        { id: '1', time: '5:30 PM', client: 'Thomas White', service: 'Lineup', price: '$15', status: 'confirmed' },
-      ],
-      12: [
-        { id: '1', time: '10:00 AM', client: 'Edward Evans', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-        { id: '2', time: '11:30 AM', client: 'Ronald Edwards', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-        { id: '3', time: '1:00 PM', client: 'Timothy Collins', service: 'Full Service', price: '$45', status: 'pending' },
-        { id: '4', time: '2:30 PM', client: 'Jason Stewart', service: 'Haircut', price: '$28', status: 'confirmed' },
-        { id: '5', time: '4:00 PM', client: 'Jeffrey Morris', service: 'Fade', price: '$30', status: 'confirmed' },
-        { id: '1', time: '5:00 PM', client: 'Ryan Rogers', service: 'Haircut', price: '$28', status: 'confirmed' },
-      ],
-    };
-    return appointments[day] || [];
+  // Appointments will be fetched from API - for now return empty
+  const getAppointmentsForDay = (_day: number): Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> => {
+    // TODO: Fetch from API based on barberId and date
+    return [];
   };
 
   const handleDayClick = (day: number) => {
@@ -788,21 +592,21 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
           onTouchEnd={handleTouchEnd}
           className="touch-pan-y"
         >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          {/* Walk-in Button - top on mobile, left on desktop */}
+        <div className="flex flex-col items-center gap-3 mb-4">
+          {/* Walk-in Button - always on top, matches view toggle button widths */}
           <button
             onClick={onWalkInClick}
-            className="px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold"
+            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold min-w-[5rem] sm:min-w-[6rem] text-center"
             title="Quick payment for walk-in customers"
           >
             Walk-in
           </button>
           
-          {/* View Toggle Buttons */}
-          <div className="flex gap-2 sm:gap-3">
+          {/* View Toggle Buttons - centered, all same min-width */}
+          <div className="flex gap-2 sm:gap-3 justify-center">
             <button
               onClick={() => setScheduleView('daily')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
                 scheduleView === 'daily'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -812,7 +616,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             </button>
             <button
               onClick={() => setScheduleView('weekly')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
                 scheduleView === 'weekly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -822,7 +626,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             </button>
             <button
               onClick={() => setScheduleView('monthly')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors flex-1 sm:flex-none ${
+              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
                 scheduleView === 'monthly'
                   ? 'bg-primary-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -835,13 +639,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Daily View */}
         {scheduleView === 'daily' && (() => {
-          const dailyAppointments = [
-            { id: '1', time: '10:00 AM', client: 'John Doe', service: 'Haircut & Fade', price: '$35', status: 'confirmed' },
-            { id: '2', time: '11:30 AM', client: 'Mike Smith', service: 'Beard Trim', price: '$23', status: 'confirmed' },
-            { id: '3', time: '2:00 PM', client: 'Chris Lee', service: 'Full Service', price: '$45', status: 'pending' },
-            { id: '4', time: '3:30 PM', client: 'David Brown', service: 'Haircut', price: '$28', status: 'confirmed' },
-            { id: '5', time: '5:00 PM', client: 'James Wilson', service: 'Haircut', price: '$28', status: 'confirmed' },
-          ];
+          // TODO: Fetch daily appointments from API
+          const dailyAppointments: Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> = [];
 
           return (
             <div>
@@ -885,7 +684,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Weekly View */}
         {scheduleView === 'weekly' && (() => {
-          // Week appointment data (January 8-14, 2025) - maps to days 8-14 from monthly calendar
+          // Week days structure
           const weekDays = [
             { name: 'Monday', date: 8, shortName: 'Mon' },
             { name: 'Tuesday', date: 9, shortName: 'Tue' },
@@ -896,15 +695,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             { name: 'Sunday', date: 14, shortName: 'Sun' },
           ];
 
-          const weekAppointmentNames: { [date: number]: string[] } = {
-            8: ['Nancy Lee', 'Lisa Walker', 'Betty Hall', 'Margaret Allen', 'Sandra Young', 'Ashley Hernandez', 'Donna King', 'Carol Wright'],
-            9: ['Michelle Lopez', 'Emily Hill'],
-            10: ['Daniel Scott', 'Matthew Green', 'Anthony Adams', 'Mark Baker'],
-            11: ['Donald Nelson', 'Steven Carter', 'Paul Mitchell', 'Andrew Perez', 'Joshua Roberts', 'Kenneth Turner', 'Kevin Phillips', 'Brian Campbell', 'George Parker'],
-            12: ['Edward Evans', 'Ronald Edwards', 'Timothy Collins', 'Jason Stewart', 'Jeffrey Morris', 'Ryan Rogers'],
-            13: ['Jacob Reed', 'Gary Cook', 'Nicholas Morgan', 'Eric Bell', 'Jonathan Murphy', 'Stephen Bailey', 'Larry Rivera', 'Justin Cooper', 'Scott Richardson'],
-            14: ['Brandon Cox', 'Benjamin Howard', 'Samuel Ward', 'Frank Torres'],
-          };
+          // TODO: Fetch weekly appointments from API
+          const weekAppointmentNames: { [date: number]: string[] } = {};
 
           const totalWeekAppointments = Object.values(weekAppointmentNames).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -1007,7 +799,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
               <h3 className="text-lg sm:text-xl font-bold text-gray-900">January 2025</h3>
-              <p className="text-sm sm:text-base text-gray-600 font-medium">168 appointments this month</p>
+              <p className="text-sm sm:text-base text-gray-600 font-medium">0 appointments this month</p>
             </div>
             <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
               {/* Calendar header */}
@@ -1019,40 +811,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               ))}
               {/* Calendar days */}
               {(() => {
-                // Mock appointment data for each day
-                const monthAppointments: { [day: number]: string[] } = {
-                  1: ['John Doe', 'Sarah Miller'],
-                  2: ['Mike Smith'],
-                  3: ['Chris Lee'],
-                  4: [],
-                  5: ['David Brown', 'James Wilson', 'Robert Taylor', 'Michael Davis', 'William Anderson', 'Richard Thomas', 'Joseph Jackson', 'Thomas White'],
-                  6: ['Jennifer Harris', 'Linda Martin', 'Patricia Thompson'],
-                  7: ['Mary Garcia', 'Barbara Martinez', 'Elizabeth Robinson', 'Susan Clark', 'Jessica Rodriguez', 'Karen Lewis'],
-                  8: ['Nancy Lee', 'Lisa Walker', 'Betty Hall', 'Margaret Allen', 'Sandra Young', 'Ashley Hernandez', 'Donna King', 'Carol Wright'],
-                  9: ['Michelle Lopez', 'Emily Hill'],
-                  10: ['Daniel Scott', 'Matthew Green', 'Anthony Adams', 'Mark Baker'],
-                  11: ['Donald Nelson', 'Steven Carter', 'Paul Mitchell', 'Andrew Perez', 'Joshua Roberts', 'Kenneth Turner', 'Kevin Phillips', 'Brian Campbell', 'George Parker'],
-                  12: ['Edward Evans', 'Ronald Edwards', 'Timothy Collins', 'Jason Stewart', 'Jeffrey Morris', 'Ryan Rogers'],
-                  13: ['Jacob Reed', 'Gary Cook', 'Nicholas Morgan', 'Eric Bell', 'Jonathan Murphy', 'Stephen Bailey', 'Larry Rivera', 'Justin Cooper', 'Scott Richardson'],
-                  14: ['Brandon Cox', 'Benjamin Howard', 'Samuel Ward', 'Frank Torres'],
-                  15: ['Raymond Peterson', 'Gregory Gray', 'Alexander Ramirez', 'Patrick James', 'Jack Watson', 'Dennis Brooks', 'Jerry Kelly', 'Tyler Sanders', 'Aaron Price'],
-                  16: ['Jose Bennett', 'Adam Wood', 'Henry Barnes', 'Nathan Ross', 'Douglas Henderson', 'Zachary Coleman', 'Peter Jenkins', 'Kyle Perry'],
-                  17: [],
-                  18: ['Walter Powell', 'Ethan Long', 'Jeremy Patterson', 'Harold Hughes', 'Keith Flores', 'Christian Washington'],
-                  19: ['Roger Butler', 'Noah Simmons', 'Gerald Foster', 'Carl Gonzales'],
-                  20: ['Terry Bryant', 'Sean Alexander', 'Austin Russell', 'Arthur Griffin', 'Lawrence Diaz', 'Jesse Hayes', 'Dylan Myers', 'Bryan Ford', 'Joe Hamilton'],
-                  21: ['Jordan Graham'],
-                  22: ['Billy Sullivan', 'Albert Wallace', 'Bruce Woods', 'Willie Cole', 'Gabriel West', 'Logan Jordan', 'Alan Owens', 'Juan Reynolds'],
-                  23: ['Wayne Fisher', 'Roy Ellis', 'Ralph Gibson', 'Randy Hunt'],
-                  24: ['Eugene Crawford', 'Vincent Black', 'Russell Daniels', 'Louis Palmer', 'Philip Mills', 'Bobby Nichols', 'Johnny Grant', 'Bradley Knight', 'Howard Ferguson'],
-                  25: ['Shawn Boyd', 'Harry Rose'],
-                  26: ['Carlos Stone', 'Jimmy Hawkins', 'Antonio Dunn', 'Bryan Perkins', 'Albert Hudson', 'Jonathan Spencer'],
-                  27: ['Craig Gardner', 'Philip Webb', 'Fred Gibson', 'Ernest Walsh', 'Todd Larson', 'Jesse Ramos'],
-                  28: ['Eddie Burton', 'Leonard Hicks', 'Danny Crawford', 'Sean Henry', 'Ronnie Boyd', 'Francis Mason', 'Curtis Dixon', 'Tony Fox'],
-                  29: ['Vernon Burns', 'Joel Gordon', 'Melvin Wagner'],
-                  30: [],
-                  31: ['Stanley Fields', 'Leslie Berry'],
-                };
+                // TODO: Fetch monthly appointments from API
+                const monthAppointments: { [day: number]: string[] } = {};
 
                 return Array.from({ length: 31 }, (_, i) => {
                   const day = i + 1;
@@ -1198,88 +958,19 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'cancelled' | 'no-show'>('all');
 
-  // Mock service history data
-  const serviceHistory = [
-    {
-      id: 'service-1',
-      date: '2025-12-16',
-      time: '2:00 PM',
-      customerName: 'Alex Rivera',
-      serviceType: 'Fade',
-      location: 'Student Union - Room 204',
-      price: 35.00,
-      status: 'completed' as const,
-      rating: 5,
-      review: 'Excellent fade! Marcus really knows what he\'s doing. Super clean lines!',
-    },
-    {
-      id: 'service-2',
-      date: '2025-12-15',
-      time: '4:30 PM',
-      customerName: 'Jordan Lee',
-      serviceType: 'Haircut & Beard Trim',
-      location: 'Kennedy Library - Study Room 3B',
-      price: 45.00,
-      status: 'completed' as const,
-      rating: 5,
-      review: 'Best haircut I\'ve gotten on campus. Professional and skilled!',
-    },
-    {
-      id: 'service-3',
-      date: '2025-12-14',
-      time: '12:00 PM',
-      customerName: 'Sam Chen',
-      serviceType: 'Lineup',
-      location: 'Cerro Vista Apartments',
-      price: 20.00,
-      status: 'completed' as const,
-      rating: 4,
-      review: 'Good lineup, came out clean.',
-    },
-    {
-      id: 'service-4',
-      date: '2025-12-13',
-      time: '6:00 PM',
-      customerName: 'Marcus Williams',
-      serviceType: 'Full Service',
-      location: 'Poly Canyon Village',
-      price: 55.00,
-      status: 'completed' as const,
-      rating: 5,
-      review: 'Worth every penny! The hot towel shave was amazing.',
-    },
-    {
-      id: 'service-5',
-      date: '2025-12-12',
-      time: '3:00 PM',
-      customerName: 'David Park',
-      serviceType: 'Fade',
-      location: 'Campus Market',
-      price: 32.00,
-      status: 'completed' as const,
-      rating: 4,
-    },
-    {
-      id: 'service-6',
-      date: '2025-12-11',
-      time: '1:30 PM',
-      customerName: 'Tyler Johnson',
-      serviceType: 'Haircut',
-      location: 'Recreation Center',
-      price: 30.00,
-      status: 'cancelled' as const,
-    },
-    {
-      id: 'service-7',
-      date: '2025-12-10',
-      time: '5:00 PM',
-      customerName: 'Chris Martinez',
-      serviceType: 'Beard Trim',
-      location: 'Engineering Plaza',
-      price: 25.00,
-      status: 'no-show' as const,
-    },
-  ];
+  // TODO: Fetch service history from API
+  const serviceHistory: Array<{
+    id: string;
+    date: string;
+    time: string;
+    customerName: string;
+    serviceType: string;
+    location: string;
+    price: number;
+    status: 'completed' | 'cancelled' | 'no-show';
+    rating?: number;
+    review?: string;
+  }> = [];
 
   const filteredServices = serviceHistory.filter((service) => {
     const matchesSearch = service.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||

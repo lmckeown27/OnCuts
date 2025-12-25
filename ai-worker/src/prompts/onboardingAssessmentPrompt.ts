@@ -10,7 +10,6 @@ export interface OnboardingAssessmentInput {
   applicationData: {
     name: string;
     email: string;
-    phone: string;
     campus: string;
     profilePhoto?: string;
   };
@@ -27,7 +26,6 @@ export interface OnboardingAssessmentInput {
   };
   verificationData: {
     emailVerified: boolean;
-    phoneVerified: boolean;
     studentIdVerified: boolean;
     backgroundCheckStatus?: string;
   };
@@ -38,7 +36,6 @@ export interface OnboardingAssessmentInput {
   };
   externalSignals?: {
     emailDomainAge?: number;
-    phonePreviouslyUsed?: boolean;
     similarAccounts?: number;
     socialMediaPresence?: boolean;
   };
@@ -65,7 +62,6 @@ USER APPLICATION:
 - Type: ${input.userType}
 - Name: ${input.applicationData.name}
 - Email: ${input.applicationData.email}
-- Phone: ${input.applicationData.phone}
 - Campus: ${input.applicationData.campus}
 ${input.applicationData.profilePhoto ? `- Profile Photo: Provided` : '- Profile Photo: Not provided'}
 
@@ -79,7 +75,6 @@ ${input.barberSpecificData ? `BARBER QUALIFICATIONS:
 
 VERIFICATION STATUS:
 - Email Verified: ${input.verificationData.emailVerified ? '✓' : '✗'}
-- Phone Verified: ${input.verificationData.phoneVerified ? '✓' : '✗'}
 - Student ID Verified: ${input.verificationData.studentIdVerified ? '✓' : '✗'}
 ${input.verificationData.backgroundCheckStatus ? `- Background Check: ${input.verificationData.backgroundCheckStatus}` : ''}
 
@@ -90,14 +85,13 @@ DEVICE & LOCATION:
 
 ${input.externalSignals ? `EXTERNAL SIGNALS:
 ${input.externalSignals.emailDomainAge ? `- Email Domain Age: ${input.externalSignals.emailDomainAge} days` : ''}
-${input.externalSignals.phonePreviouslyUsed !== undefined ? `- Phone Previously Used: ${input.externalSignals.phonePreviouslyUsed ? 'Yes' : 'No'}` : ''}
 ${input.externalSignals.similarAccounts ? `- Similar Accounts: ${input.externalSignals.similarAccounts}` : ''}
 ${input.externalSignals.socialMediaPresence !== undefined ? `- Social Media Presence: ${input.externalSignals.socialMediaPresence ? 'Found' : 'Not found'}` : ''}` : ''}
 
 EVALUATION CRITERIA:
 
 1. Fraud Risk Assessment (0-100)
-   - Email/phone reuse or suspicious patterns
+   - Email reuse or suspicious patterns
    - Multiple accounts from same device/location
    - Temporary/disposable email services
    - Missing or inconsistent information
@@ -132,7 +126,6 @@ QUALITY PREDICTION (Barbers):
 
 COMMON FLAGS:
 - "DISPOSABLE_EMAIL" - Using temporary email service
-- "PHONE_REUSE" - Phone number associated with multiple accounts
 - "NO_VERIFICATION" - Missing critical verifications
 - "SUSPICIOUS_LOCATION" - Location doesn't match campus
 - "INCOMPLETE_PROFILE" - Missing required information

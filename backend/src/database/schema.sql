@@ -12,7 +12,6 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20),
     campus_id INTEGER NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'barber')),
     aptos_address VARCHAR(66) UNIQUE,

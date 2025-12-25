@@ -4,105 +4,10 @@ import { ArrowLeft, Calendar, Clock, MapPin, Scissors, DollarSign, Instagram } f
 import Card from '../components/Card';
 import Button from '../components/Button';
 import toast from 'react-hot-toast';
+import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
 import { CampusCutLogo } from '@assets';
-
-// Mock barber data for fallback lookup (matches ConsumerPage)
-function getMockBarbers(): Barber[] {
-  return [
-    {
-      id: 'barber-1',
-      user_id: 'user-1',
-      campus_id: 'campus-1',
-      bio: 'Specializing in modern fades and classic cuts. 5+ years experience.',
-      specialties: ['Haircut', 'Fade', 'Beard Trim'],
-      years_experience: 5,
-      average_rating: 4.8,
-      total_bookings: 156,
-      instagram_handle: 'cutsbymark',
-      portfolio: [{ id: 'p1', barber_id: 'barber-1', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+1' }],
-      is_active: true,
-      user: { id: 'user-1', email: 'mark@example.com', first_name: 'Mark', last_name: 'Johnson', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Haircut', price: 25, duration_minutes: 30 }],
-    },
-    {
-      id: 'barber-2',
-      user_id: 'user-2',
-      campus_id: 'campus-1',
-      bio: 'Expert in hot towel shaves and beard grooming.',
-      specialties: ['Beard Trim', 'Hot Towel Shave', 'Full Service'],
-      years_experience: 7,
-      average_rating: 4.9,
-      total_bookings: 203,
-      instagram_handle: 'shavemaster',
-      portfolio: [{ id: 'p2', barber_id: 'barber-2', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+2' }],
-      is_active: true,
-      user: { id: 'user-2', email: 'david@example.com', first_name: 'David', last_name: 'Chen', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Beard Trim', price: 30, duration_minutes: 20 }],
-    },
-    {
-      id: 'barber-3',
-      user_id: 'user-3',
-      campus_id: 'campus-1',
-      bio: 'Creative stylist with expertise in color and modern cuts.',
-      specialties: ['Haircut', 'Color', 'Styling'],
-      years_experience: 4,
-      average_rating: 4.7,
-      total_bookings: 98,
-      instagram_handle: 'stylebyalex',
-      portfolio: [{ id: 'p3', barber_id: 'barber-3', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+3' }],
-      is_active: true,
-      user: { id: 'user-3', email: 'alex@example.com', first_name: 'Alex', last_name: 'Rodriguez', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Haircut', price: 28, duration_minutes: 30 }],
-    },
-    {
-      id: 'barber-4',
-      user_id: 'user-4',
-      campus_id: 'campus-1',
-      bio: 'Traditional barbering with a modern twist. Precision cuts guaranteed.',
-      specialties: ['Haircut', 'Fade', 'Lineup'],
-      years_experience: 6,
-      average_rating: 4.6,
-      total_bookings: 134,
-      instagram_handle: 'precision_cuts',
-      portfolio: [{ id: 'p4', barber_id: 'barber-4', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+4' }],
-      is_active: true,
-      user: { id: 'user-4', email: 'jordan@example.com', first_name: 'Jordan', last_name: 'Smith', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Haircut', price: 26, duration_minutes: 30 }],
-    },
-    {
-      id: 'barber-5',
-      user_id: 'user-5',
-      campus_id: 'campus-1',
-      bio: 'Specializing in textured hair and ethnic styles.',
-      specialties: ['Haircut', 'Styling', 'Fade'],
-      years_experience: 3,
-      average_rating: 4.9,
-      total_bookings: 76,
-      instagram_handle: 'texturekingz',
-      portfolio: [{ id: 'p5', barber_id: 'barber-5', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+5' }],
-      is_active: true,
-      user: { id: 'user-5', email: 'marcus@example.com', first_name: 'Marcus', last_name: 'Williams', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Haircut', price: 27, duration_minutes: 30 }],
-    },
-    {
-      id: 'barber-6',
-      user_id: 'user-6',
-      campus_id: 'campus-1',
-      bio: 'Full service barbering with a focus on customer experience.',
-      specialties: ['Full Service', 'Haircut', 'Beard Trim', 'Hot Towel Shave'],
-      years_experience: 8,
-      average_rating: 4.8,
-      total_bookings: 187,
-      instagram_handle: 'fullservice_barber',
-      portfolio: [{ id: 'p6', barber_id: 'barber-6', url: 'https://placehold.co/400x400/708d81/white?text=Portfolio+6' }],
-      is_active: true,
-      user: { id: 'user-6', email: 'tyler@example.com', first_name: 'Tyler', last_name: 'Anderson', user_type: 'barber' as const, is_verified: true, created_at: new Date().toISOString() },
-      pricing: [{ name: 'Full Service', price: 32, duration_minutes: 45 }],
-    },
-  ];
-}
 
 export default function ScheduleServicePage() {
   const navigate = useNavigate();
@@ -119,15 +24,20 @@ export default function ScheduleServicePage() {
 
   // Fetch barber by ID if not passed in state (e.g., when navigating back)
   useEffect(() => {
-    if (!passedBarber && barberId) {
-      // Try to find barber in mock data
-      const mockBarbers = getMockBarbers();
-      const foundBarber = mockBarbers.find(b => b.id === barberId);
-      if (foundBarber) {
-        setBarber(foundBarber);
+    const fetchBarber = async () => {
+      if (!passedBarber && barberId) {
+        try {
+          const response = await barberService.getBarberById(barberId);
+          if (response.data) {
+            setBarber(response.data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch barber:', error);
+        }
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }
+    };
+    fetchBarber();
   }, [barberId, passedBarber]);
   const [serviceType, setServiceType] = useState<string>(
     preservedFormData?.serviceType || passedFilters?.serviceType || ''

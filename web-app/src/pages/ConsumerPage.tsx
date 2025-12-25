@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -15,119 +15,6 @@ import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock } from '../hooks';
 
-// Mock data for demo
-function getMockBarbers(): Barber[] {
-  return [
-    {
-      id: 'barber-1',
-      user_id: 'user-1',
-      campus_id: 'campus-1',
-      bio: 'Specializing in modern fades and classic cuts. 5+ years experience.',
-      specialties: ['Haircut', 'Fade', 'Beard Trim'],
-      years_experience: 5,
-      average_rating: 4.8,
-      total_bookings: 156,
-      instagram_handle: 'cutsbymark',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+1'],
-      is_active: true,
-      base_price: 25,
-      max_price: 35,
-      name: 'Mark Johnson',
-      user: { first_name: 'Mark', last_name: 'Johnson' },
-      pricing: [{ service: 'Haircut', price: 25 }],
-    },
-    {
-      id: 'barber-2',
-      user_id: 'user-2',
-      campus_id: 'campus-1',
-      bio: 'Expert in hot towel shaves and beard grooming.',
-      specialties: ['Beard Trim', 'Hot Towel Shave', 'Full Service'],
-      years_experience: 7,
-      average_rating: 4.9,
-      total_bookings: 203,
-      instagram_handle: 'shavemaster',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+2'],
-      is_active: true,
-      base_price: 30,
-      max_price: 45,
-      name: 'David Chen',
-      user: { first_name: 'David', last_name: 'Chen' },
-      pricing: [{ service: 'Beard Trim', price: 30 }],
-    },
-    {
-      id: 'barber-3',
-      user_id: 'user-3',
-      campus_id: 'campus-1',
-      bio: 'Creative stylist with expertise in color and modern cuts.',
-      specialties: ['Haircut', 'Color', 'Styling'],
-      years_experience: 4,
-      average_rating: 4.7,
-      total_bookings: 98,
-      instagram_handle: 'stylebyalex',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+3'],
-      is_active: true,
-      base_price: 28,
-      max_price: 40,
-      name: 'Alex Rodriguez',
-      user: { first_name: 'Alex', last_name: 'Rodriguez' },
-      pricing: [{ service: 'Haircut', price: 28 }],
-    },
-    {
-      id: 'barber-4',
-      user_id: 'user-4',
-      campus_id: 'campus-1',
-      bio: 'Traditional barbering with a modern twist. Precision cuts guaranteed.',
-      specialties: ['Haircut', 'Fade', 'Lineup'],
-      years_experience: 6,
-      average_rating: 4.6,
-      total_bookings: 134,
-      instagram_handle: 'precision_cuts',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+4'],
-      is_active: true,
-      base_price: 26,
-      max_price: 36,
-      name: 'Jordan Smith',
-      user: { first_name: 'Jordan', last_name: 'Smith' },
-      pricing: [{ service: 'Haircut', price: 26 }],
-    },
-    {
-      id: 'barber-5',
-      user_id: 'user-5',
-      campus_id: 'campus-1',
-      bio: 'Specializing in textured hair and ethnic styles.',
-      specialties: ['Haircut', 'Styling', 'Fade'],
-      years_experience: 3,
-      average_rating: 4.9,
-      total_bookings: 76,
-      instagram_handle: 'texturekingz',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+5'],
-      is_active: true,
-      base_price: 27,
-      max_price: 38,
-      name: 'Marcus Williams',
-      user: { first_name: 'Marcus', last_name: 'Williams' },
-      pricing: [{ service: 'Haircut', price: 27 }],
-    },
-    {
-      id: 'barber-6',
-      user_id: 'user-6',
-      campus_id: 'campus-1',
-      bio: 'Full service barbering with a focus on customer experience.',
-      specialties: ['Full Service', 'Haircut', 'Beard Trim', 'Hot Towel Shave'],
-      years_experience: 8,
-      average_rating: 4.8,
-      total_bookings: 187,
-      instagram_handle: 'fullservice_barber',
-      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+6'],
-      is_active: true,
-      base_price: 32,
-      max_price: 48,
-      name: 'Tyler Anderson',
-      user: { first_name: 'Tyler', last_name: 'Anderson' },
-      pricing: [{ service: 'Full Service', price: 32 }],
-    },
-  ];
-}
 
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
@@ -188,8 +75,9 @@ export default function ConsumerPage() {
   // Determine platform prefix based on current route
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
-  // Mock consumer ID - in production this would come from auth
-  const consumerId = 'consumer-1';
+  // Get consumer ID from auth
+  const { user } = useAuthStore();
+  const consumerId = user?.id || '';
   
   // Debug viewport in development
   useEffect(() => {
@@ -234,8 +122,17 @@ export default function ConsumerPage() {
               <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
             </div>
             
-            {/* Right section - Profile only */}
+            {/* Right section - Messages & Profile */}
             <div className="flex items-center gap-2 sm:gap-4">
+              {/* Messages Button */}
+              <button
+                onClick={() => navigate(`${platformPrefix}/consumer/messages`)}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                title="Messages"
+              >
+                <MessageCircle className="w-5 h-5 text-gray-600" />
+              </button>
+              
               {/* Profile Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -243,7 +140,7 @@ export default function ConsumerPage() {
                   className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    S
+                    {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                 </button>
@@ -358,22 +255,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       const response = await barberService.getBarbers();
       const barbersData = response.data || [];
       
-      // If no data from API, use mock data
-      const finalData = barbersData.length > 0 ? barbersData : getMockBarbers();
-      
       // Apply algorithmic ranking
-      const rankedBarbers = rankBarbers(finalData);
+      const rankedBarbers = rankBarbers(barbersData);
       setBarbers(rankedBarbers);
       setFilteredBarbers(rankedBarbers);
       
       setLoading(false);
     } catch (error) {
       console.error('Failed to load barbers:', error);
-      // Use mock data on error
-      const mockData = getMockBarbers();
-      const rankedBarbers = rankBarbers(mockData);
-      setBarbers(rankedBarbers);
-      setFilteredBarbers(rankedBarbers);
+      setBarbers([]);
+      setFilteredBarbers([]);
       setLoading(false);
     }
   };

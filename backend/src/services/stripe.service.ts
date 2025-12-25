@@ -162,10 +162,9 @@ class StripeService {
     email: string;
     firstName: string;
     lastName: string;
-    phone: string;
   }): Promise<string> {
     try {
-      const { email, firstName, lastName, phone } = params;
+      const { email, firstName, lastName } = params;
 
       const account = await this.stripe.accounts.create({
         type: 'express',
@@ -179,7 +178,6 @@ class StripeService {
           first_name: firstName,
           last_name: lastName,
           email,
-          phone,
         },
       });
 

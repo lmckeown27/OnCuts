@@ -125,7 +125,6 @@ CREATE TABLE "users" (
   -- Profile
   "display_name" VARCHAR(100),
   "avatar_url" TEXT,
-  "phone_number" VARCHAR(20),
   "instagram_handle" VARCHAR(50),
   
   -- Status flags

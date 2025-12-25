@@ -29,51 +29,13 @@ interface RealtimeTransactionFeedProps {
   maxItems?: number;
 }
 
-// Mock transaction data for testing - updated to match payments page style
-const generateMockTransactions = (campusId?: string): Transaction[] => {
-  const services = ['Fade', 'Haircut', 'Taper', 'Beard Trim', 'Line Up', 'Haircut & Fade', 'Buzz Cut', 'Color Treatment'];
-  const barbers = [
-    { name: 'Marcus T.', id: 'barber-marcus' },
-    { name: 'Alex C.', id: 'barber-alex' },
-    { name: 'Jordan W.', id: 'barber-jordan' },
-    { name: 'Tyler M.', id: 'barber-tyler' },
-    { name: 'Carlos R.', id: 'barber-carlos' },
-  ];
-  const customers = [
-    { name: 'John D.', id: 'student-john' },
-    { name: 'Mike S.', id: 'student-mike' },
-    { name: 'Sarah L.', id: 'student-sarah' },
-    { name: 'Emily R.', id: 'student-emily' },
-    { name: 'David K.', id: 'student-david' },
-  ];
-  const statuses: Transaction['status'][] = ['completed', 'completed', 'completed', 'pending', 'processing', 'failed'];
-  const types: Transaction['type'][] = ['payment', 'payment', 'payment', 'payout', 'fee', 'refund'];
-
-  const transactions: Transaction[] = [];
-  for (let i = 0; i < 20; i++) {
-    const service = services[Math.floor(Math.random() * services.length)];
-    const barber = barbers[Math.floor(Math.random() * barbers.length)];
-    const customer = customers[Math.floor(Math.random() * customers.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const type = types[Math.floor(Math.random() * types.length)];
-    const amount = type === 'fee' ? 2.25 : type === 'refund' ? -(20 + Math.floor(Math.random() * 20)) : 25 + Math.floor(Math.random() * 30);
-    
-    transactions.push({
-      id: `tx-${i}`,
-      type,
-      timestamp: new Date(Date.now() - (i * 15 + Math.random() * 30) * 60 * 1000).toISOString(),
-      amount,
-      serviceName: service,
-      barberName: barber.name,
-      barberId: barber.id,
-      customerName: customer.name,
-      customerId: customer.id,
-      status,
-      campus: campusId || 'Cal Poly SLO',
-      stripeId: `pi_${Math.random().toString(36).substr(2, 9)}`,
-    });
-  }
-  return transactions;
+// TODO: Fetch transactions from API
+// For now, returns empty array - will be populated by real data
+const fetchTransactions = async (_campusId?: string): Promise<Transaction[]> => {
+  // TODO: Replace with actual API call
+  // const response = await transactionService.getTransactions(campusId);
+  // return response.data;
+  return [];
 };
 
 // Time filter options
@@ -123,8 +85,12 @@ export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = (
   const itemsPerPage = 7;
 
   useEffect(() => {
-    // Load mock data
-    setTransactions(generateMockTransactions(campusId));
+    // Load transactions from API
+    const loadTransactions = async () => {
+      const data = await fetchTransactions(campusId);
+      setTransactions(data);
+    };
+    loadTransactions();
   }, [campusId]);
 
   // Filter transactions by time and service

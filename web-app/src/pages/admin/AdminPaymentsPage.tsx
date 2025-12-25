@@ -48,39 +48,9 @@ const daysAgo = (days: number, hours: number = 0) => {
   return date;
 };
 
-// Mock data with dates for filtering
-const MOCK_TRANSACTIONS: Transaction[] = [
-  // Today
-  { id: 'pi_1N7abc123', type: 'payment', amount: 35.00, status: 'completed', description: 'Fade', customer: 'John D.', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: '2 min ago', date: daysAgo(0, 0), stripeId: 'pi_1N7abc123' },
-  { id: 'po_2M8def456', type: 'payout', amount: 475.25, status: 'processing', description: 'Weekly payout', barber: 'Jordan W.', campus: 'Cal Poly SLO', timestamp: '15 min ago', date: daysAgo(0, 0), stripeId: 'po_2M8def456' },
-  { id: 'pi_3L9ghi789', type: 'payment', amount: 45.00, status: 'completed', description: 'Haircut & Fade', customer: 'Mike S.', barber: 'Alex C.', campus: 'UCSB', timestamp: '32 min ago', date: daysAgo(0, 1), stripeId: 'pi_3L9ghi789' },
-  { id: 'fee_4K0jkl012', type: 'fee', amount: 2.25, status: 'completed', description: 'Platform fee (5%)', barber: 'Alex C.', campus: 'UCSB', timestamp: '32 min ago', date: daysAgo(0, 1) },
-  { id: 'rf_5J1mno345', type: 'refund', amount: 28.00, status: 'completed', description: 'Taper', customer: 'Sarah L.', barber: 'Tyler M.', campus: 'UCLA', timestamp: '1 hour ago', date: daysAgo(0, 1), stripeId: 'rf_5J1mno345' },
-  { id: 'pi_6I2pqr678', type: 'payment', amount: 30.00, status: 'pending', description: 'Haircut', customer: 'Emily R.', barber: 'Carlos R.', campus: 'UCLA', timestamp: '1 hour ago', date: daysAgo(0, 1), stripeId: 'pi_6I2pqr678' },
-  { id: 'pi_7H3stu901', type: 'payment', amount: 55.00, status: 'failed', description: 'Color Treatment', customer: 'David K.', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: '2 hours ago', date: daysAgo(0, 2), stripeId: 'pi_7H3stu901' },
-  { id: 'pi_8G4vwx234', type: 'payment', amount: 40.00, status: 'completed', description: 'Women\'s Cut', customer: 'Tom H.', barber: 'Jordan W.', campus: 'Cal Poly SLO', timestamp: '3 hours ago', date: daysAgo(0, 3), stripeId: 'pi_8G4vwx234' },
-  // Yesterday
-  { id: 'pi_9F5yza567', type: 'payment', amount: 38.00, status: 'completed', description: 'Taper', customer: 'Chris M.', barber: 'Alex C.', campus: 'UCSB', timestamp: 'Yesterday', date: daysAgo(1, 2), stripeId: 'pi_9F5yza567' },
-  { id: 'pi_10E6bcd890', type: 'payment', amount: 42.00, status: 'completed', description: 'Buzz Cut', customer: 'Jake P.', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: 'Yesterday', date: daysAgo(1, 5), stripeId: 'pi_10E6bcd890' },
-  // 3 days ago
-  { id: 'pi_11D7efg123', type: 'payment', amount: 50.00, status: 'completed', description: 'Perm', customer: 'Ryan K.', barber: 'Tyler M.', campus: 'UCLA', timestamp: '3 days ago', date: daysAgo(3, 4), stripeId: 'pi_11D7efg123' },
-  { id: 'rf_12C8hij456', type: 'refund', amount: 35.00, status: 'completed', description: 'Fade', customer: 'Lisa W.', barber: 'Carlos R.', campus: 'UCLA', timestamp: '3 days ago', date: daysAgo(3, 6), stripeId: 'rf_12C8hij456' },
-  // 5 days ago
-  { id: 'pi_13B9klm789', type: 'payment', amount: 28.00, status: 'completed', description: 'Haircut', customer: 'Anna B.', barber: 'Jordan W.', campus: 'Cal Poly SLO', timestamp: '5 days ago', date: daysAgo(5, 3), stripeId: 'pi_13B9klm789' },
-  { id: 'po_14A0nop012', type: 'payout', amount: 320.50, status: 'completed', description: 'Weekly payout', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: '5 days ago', date: daysAgo(5, 8), stripeId: 'po_14A0nop012' },
-  // 10 days ago
-  { id: 'pi_15Z1qrs345', type: 'payment', amount: 45.00, status: 'completed', description: 'Beard Trim', customer: 'Mark T.', barber: 'Alex C.', campus: 'UCSB', timestamp: '10 days ago', date: daysAgo(10, 2), stripeId: 'pi_15Z1qrs345' },
-  { id: 'pi_16Y2tuv678', type: 'payment', amount: 32.00, status: 'completed', description: 'Line Up', customer: 'Paul R.', barber: 'Tyler M.', campus: 'UCLA', timestamp: '10 days ago', date: daysAgo(10, 5), stripeId: 'pi_16Y2tuv678' },
-  // 15 days ago
-  { id: 'pi_17X3wxy901', type: 'payment', amount: 55.00, status: 'completed', description: 'Design/Art', customer: 'Steve L.', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: '15 days ago', date: daysAgo(15, 3), stripeId: 'pi_17X3wxy901' },
-  { id: 'fee_18W4zab234', type: 'fee', amount: 2.75, status: 'completed', description: 'Platform fee (5%)', barber: 'Marcus T.', campus: 'Cal Poly SLO', timestamp: '15 days ago', date: daysAgo(15, 3) },
-  // 25 days ago
-  { id: 'pi_19V5cde567', type: 'payment', amount: 38.00, status: 'completed', description: 'Fade', customer: 'Kevin N.', barber: 'Jordan W.', campus: 'Cal Poly SLO', timestamp: '25 days ago', date: daysAgo(25, 4), stripeId: 'pi_19V5cde567' },
-  { id: 'pi_20U6fgh890', type: 'payment', amount: 42.00, status: 'completed', description: 'Hot Shave', customer: 'Brian O.', barber: 'Carlos R.', campus: 'UCLA', timestamp: '25 days ago', date: daysAgo(25, 7), stripeId: 'pi_20U6fgh890' },
-  // 45 days ago
-  { id: 'pi_21T7ijk123', type: 'payment', amount: 35.00, status: 'completed', description: 'Haircut', customer: 'Dan Q.', barber: 'Alex C.', campus: 'UCSB', timestamp: '45 days ago', date: daysAgo(45, 2), stripeId: 'pi_21T7ijk123' },
-  { id: 'po_22S8lmn456', type: 'payout', amount: 445.00, status: 'completed', description: 'Monthly payout', barber: 'Tyler M.', campus: 'UCLA', timestamp: '45 days ago', date: daysAgo(45, 6), stripeId: 'po_22S8lmn456' },
-];
+// TODO: Fetch transactions from API
+// For now, use empty array - will be populated by real data
+const MOCK_TRANSACTIONS: Transaction[] = [];
 
 const TRANSACTIONS_PER_PAGE = 7;
 

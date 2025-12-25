@@ -10,7 +10,6 @@ export interface User {
   is_admin?: boolean;
   profile_picture_url?: string;
   bio?: string;
-  phone?: string;
   created_at: string;
 }
 

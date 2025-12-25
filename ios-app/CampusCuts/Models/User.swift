@@ -10,7 +10,6 @@ struct User: Identifiable, Codable {
     let email: String
     let firstName: String
     let lastName: String
-    let phone: String?
     let campusId: Int
     let role: UserRole
     let aptosAddress: String
@@ -24,7 +23,7 @@ struct User: Identifiable, Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, email, phone, role
+        case id, email, role
         case firstName = "first_name"
         case lastName = "last_name"
         case campusId = "campus_id"

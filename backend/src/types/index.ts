@@ -3,7 +3,6 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  phone?: string;
   campusId: number;
   role: 'student' | 'barber' | 'admin';
   aptosAddress: string;

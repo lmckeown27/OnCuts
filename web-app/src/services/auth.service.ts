@@ -51,11 +51,10 @@ class AuthService {
   }
 
   /**
-   * Register a new user - sends verification email
+   * Register a new user - sends email verification code
    * Does NOT authenticate the user - they must verify email first
    */
   async signup(data: SignupData): Promise<RegistrationPendingResponse> {
-    // api.post already extracts the data field from the response
     const response = await api.post<RegistrationPendingResponse>('/auth/register', {
       email: data.email,
       password: data.password,

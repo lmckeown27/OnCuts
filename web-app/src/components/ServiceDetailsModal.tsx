@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle, Scissors } from 'lucide-react';
+import { X, Clock, MapPin, DollarSign, User, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle, Scissors } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import { useBodyScrollLock } from '../hooks';
@@ -17,7 +17,6 @@ interface ServiceDetailsModalProps {
     client: {
       name: string;
       email: string;
-      phone: string;
       studentId: string;
       totalBookings: number;
       completedBookings: number;
@@ -294,13 +293,6 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
                       <p className="font-medium text-sm sm:text-base truncate">{appointment.client.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 sm:gap-3 text-gray-700">
-                    <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-                    <div>
-                      <p className="text-[10px] sm:text-xs text-gray-500">Phone</p>
-                      <p className="font-medium text-sm sm:text-base">{appointment.client.phone}</p>
-                    </div>
-                  </div>
                 </div>
               </Card>
 
@@ -450,10 +442,6 @@ export default function ServiceDetailsModal({ isOpen, onClose, appointment }: Se
             <Button variant="primary" className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
               <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
               Message
-            </Button>
-            <Button variant="secondary" className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
-              <Phone className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
-              Call
             </Button>
             <Button variant="primary" className="text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">
               <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />

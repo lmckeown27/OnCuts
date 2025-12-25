@@ -145,7 +145,6 @@ model User {
   // Profile (optional)
   displayName     String?  @db.VarChar(100)
   avatarUrl       String?  @db.Text
-  phoneNumber     String?  @db.VarChar(20)
   instagramHandle String?  @db.VarChar(50)
   
   // Status flags (admin-controlled)

@@ -28,7 +28,6 @@ interface BarberApplication {
   appliedAt: Date;
   status: 'pending' | 'interviewed' | 'approved' | 'rejected';
   email: string;
-  phoneNumber?: string;
 }
 
 interface Incident {
@@ -314,7 +313,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
       appliedAt: new Date('2025-01-10'),
       status: 'pending',
       email: 'john.smith@example.com',
-      phoneNumber: '(555) 123-4567',
     },
     {
       id: '2',
@@ -350,9 +348,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 text-base sm:text-lg">{app.applicantName}</h4>
                   <p className="text-sm text-gray-600 mt-1">{app.email}</p>
-                  {app.phoneNumber && (
-                    <p className="text-sm text-gray-600">{app.phoneNumber}</p>
-                  )}
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
                     <span className="text-xs text-gray-500">
                       Applied {app.appliedAt.toLocaleDateString()}
@@ -441,7 +436,6 @@ interface CampusBarber {
   id: string;
   name: string;
   email: string; // Required
-  phoneNumber: string; // Required
   instagramHandle?: string; // Optional
   avgRating: number;
   totalBookings: number;
@@ -456,7 +450,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '1',
       name: 'Marcus Johnson',
       email: 'marcus.j@example.com',
-      phoneNumber: '(555) 123-4567',
       instagramHandle: 'marcuscuts_slo',
       avgRating: 4.8,
       totalBookings: 127,
@@ -467,7 +460,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '2',
       name: 'David Kim',
       email: 'david.kim@example.com',
-      phoneNumber: '(555) 234-5678',
       instagramHandle: 'davidkim_fades',
       avgRating: 4.7,
       totalBookings: 89,
@@ -478,7 +470,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '3',
       name: 'Carlos Martinez',
       email: 'carlos.m@example.com',
-      phoneNumber: '(555) 987-6543',
       avgRating: 4.6,
       totalBookings: 56,
       completedBookings: 52,
@@ -488,7 +479,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '4',
       name: 'Tyler Brooks',
       email: 'tyler.brooks@example.com',
-      phoneNumber: '(555) 456-7890',
       avgRating: 4.9,
       totalBookings: 8,
       completedBookings: 7,
@@ -498,7 +488,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '5',
       name: 'James Wilson',
       email: 'james.wilson@example.com',
-      phoneNumber: '(555) 321-9876',
       instagramHandle: 'jameswilson_cuts',
       avgRating: 4.3,
       totalBookings: 45,
@@ -509,7 +498,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       id: '6',
       name: 'Mike Anderson',
       email: 'mike.anderson@example.com',
-      phoneNumber: '(555) 654-3210',
       avgRating: 3.8,
       totalBookings: 32,
       completedBookings: 14,
@@ -618,12 +606,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                       <span className="font-medium">Email:</span>
                       <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline truncate">
                         {barber.email}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="font-medium">Phone:</span>
-                      <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
-                        {barber.phoneNumber}
                       </a>
                     </div>
                     {barber.instagramHandle && (

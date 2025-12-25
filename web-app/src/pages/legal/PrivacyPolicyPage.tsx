@@ -58,7 +58,7 @@ export default function PrivacyPolicyPage() {
               
               <h3 className="text-xl font-semibold text-gray-800 mt-6 mb-3">2.1 Information You Provide</h3>
               <ul className="list-disc pl-6 mt-4 space-y-2 text-gray-700">
-                <li><strong>Account Information:</strong> Name, email address, phone number, password (encrypted)</li>
+                <li><strong>Account Information:</strong> Name, email address, password (encrypted)</li>
                 <li><strong>Profile Information:</strong> Profile photo, bio, campus affiliation</li>
                 <li><strong>Barber-Specific Information:</strong> Services offered, pricing, availability, portfolio images, business location</li>
                 <li><strong>Booking Information:</strong> Appointment dates, times, services requested, special instructions</li>

@@ -77,7 +77,6 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         email: `${id}@demo.com`,
         role: 'barber',
         campus_id: 'campus-1',
-        phone: '+1 (555) 123-4567',
         profile_picture_url: null,
         bio: 'Professional barber with years of experience.',
         specialties: ['Fades', 'Line-ups', 'Beard Grooming'],

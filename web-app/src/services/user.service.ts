@@ -7,7 +7,6 @@ interface UpdateUserProfile {
   username?: string;
   profile_picture_url?: string;
   bio?: string;
-  phone?: string;
 }
 
 interface NotificationPreferences {

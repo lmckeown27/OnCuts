@@ -17,7 +17,6 @@ import {
   Flag,
   Instagram,
   Mail,
-  Phone,
   Award,
   Clock,
   CheckCircle,
@@ -30,7 +29,6 @@ interface BarberProfileData {
   id: string;
   name: string;
   email: string; // Required
-  phoneNumber: string; // Required
   instagramHandle?: string; // Optional
   bio?: string;
   
@@ -72,7 +70,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     id: barberId,
     name: 'Marcus Johnson',
     email: 'marcus.j@example.com',
-    phoneNumber: '(555) 123-4567',
     instagramHandle: 'marcuscuts_slo',
     bio: 'Professional barber with 8 years experience. Specializing in modern fades and classic cuts.',
     
@@ -175,12 +172,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 <Mail className="w-4 h-4 text-gray-500" />
                 <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline">
                   {barber.email}
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <a href={`tel:${barber.phoneNumber}`} className="text-primary-600 hover:underline">
-                  {barber.phoneNumber}
                 </a>
               </div>
               {barber.instagramHandle && (

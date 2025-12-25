@@ -24,22 +24,21 @@ interface AuthState {
 }
 
 // Hardcoded admin credentials
-// NOTE: lmckeown@calpoly.edu commented out for email verification testing
 const ADMIN_CREDENTIALS = [
-  // {
-  //   email: 'lmckeown@calpoly.edu',
-  //   password: 'Cr8zzy4R0GG$',
-  //   user: {
-  //     id: 'admin-liam-mckeown',
-  //     email: 'lmckeown@calpoly.edu',
-  //     first_name: 'Liam',
-  //     last_name: 'McKeown',
-  //     user_type: 'admin' as const,
-  //     is_verified: true,
-  //     is_admin: true,
-  //     created_at: new Date().toISOString()
-  //   }
-  // },
+  {
+    email: 'lmckeown@calpoly.edu',
+    password: 'Cr8zzy4R0GG$',
+    user: {
+      id: 'admin-liam-mckeown',
+      email: 'lmckeown@calpoly.edu',
+      first_name: 'Liam',
+      last_name: 'McKeown',
+      user_type: 'admin' as const,
+      is_verified: true,
+      is_admin: true,
+      created_at: new Date().toISOString()
+    }
+  },
   {
     email: 'schroete@calpoly.edu',
     password: 'barberdrama@13',
@@ -174,13 +173,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       };
       
       // Auth data is already saved by authService.verifyEmail
+      // Clear pending verification data
       localStorage.removeItem('pendingVerificationEmail');
       
       set({ 
         user: user, 
         isAuthenticated: true, 
         isLoading: false,
-        pendingVerificationEmail: null 
+        pendingVerificationEmail: null
       });
       socketService.connect();
     } catch (error: any) {

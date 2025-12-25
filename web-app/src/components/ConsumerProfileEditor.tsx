@@ -5,14 +5,13 @@
  * - Profile photo
  * - Name (first, last)
  * - Bio/About
- * - Phone number
  * - Campus (read-only, set during registration)
  * - Notification preferences
  * - Privacy settings
  */
 
 import { useState, useEffect } from 'react';
-import { Upload, Save, Mail, Phone, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -34,7 +33,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
-  const [phone, setPhone] = useState('');
   const [profilePhoto, setProfilePhoto] = useState('');
   
   // Notification preferences
@@ -63,7 +61,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       setFirstName(data.first_name || '');
       setLastName(data.last_name || '');
       setBio(data.bio || '');
-      setPhone(data.phone || '');
       setProfilePhoto(data.profile_picture_url || '');
       
       setIsLoading(false);
@@ -94,7 +91,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
         first_name: firstName,
         last_name: lastName,
         bio,
-        phone,
       };
 
       await userService.updateUserProfile(userId, updateData);
@@ -304,19 +300,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">For booking updates and reminders</p>
-              </div>
             </div>
           </Card>
 

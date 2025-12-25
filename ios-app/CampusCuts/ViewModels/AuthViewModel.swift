@@ -28,8 +28,7 @@ class AuthViewModel: ObservableObject {
         firstName: String,
         lastName: String,
         campusId: Int,
-        role: UserRole,
-        phone: String? = nil
+        role: UserRole
     ) async {
         isLoading = true
         errorMessage = nil
@@ -42,7 +41,6 @@ class AuthViewModel: ObservableObject {
                 let lastName: String
                 let campusId: Int
                 let role: String
-                let phone: String?
             }
             
             let request = RegisterRequest(
@@ -51,8 +49,7 @@ class AuthViewModel: ObservableObject {
                 firstName: firstName,
                 lastName: lastName,
                 campusId: campusId,
-                role: role.rawValue,
-                phone: phone
+                role: role.rawValue
             )
             
             let response: AuthResponse = try await networkManager.request(

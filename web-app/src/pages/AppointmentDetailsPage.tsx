@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, DollarSign, User, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import BarberHeader from '../components/BarberHeader';
@@ -18,7 +18,6 @@ export default function AppointmentDetailsPage() {
       client: {
         name: 'John Doe',
         email: 'john.doe@college.edu',
-        phone: '(555) 123-4567',
         avatar: null,
         studentId: 'STU-2024-001',
         totalBookings: 12,
@@ -54,7 +53,6 @@ export default function AppointmentDetailsPage() {
       client: {
         name: 'Mike Smith',
         email: 'mike.smith@college.edu',
-        phone: '(555) 234-5678',
         avatar: null,
         studentId: 'STU-2024-002',
         totalBookings: 8,
@@ -90,7 +88,6 @@ export default function AppointmentDetailsPage() {
       client: {
         name: 'Chris Lee',
         email: 'chris.lee@college.edu',
-        phone: '(555) 345-6789',
         avatar: null,
         studentId: 'STU-2024-003',
         totalBookings: 5,
@@ -126,7 +123,6 @@ export default function AppointmentDetailsPage() {
       client: {
         name: 'David Brown',
         email: 'david.brown@college.edu',
-        phone: '(555) 456-7890',
         avatar: null,
         studentId: 'STU-2024-004',
         totalBookings: 15,
@@ -162,7 +158,6 @@ export default function AppointmentDetailsPage() {
       client: {
         name: 'James Wilson',
         email: 'james.wilson@college.edu',
-        phone: '(555) 567-8901',
         avatar: null,
         studentId: 'STU-2024-005',
         totalBookings: 3,
@@ -243,10 +238,6 @@ export default function AppointmentDetailsPage() {
               <MessageCircle className="w-4 h-4 mr-2" />
               Message
             </Button>
-            <Button variant="secondary" className="w-full">
-              <Phone className="w-4 h-4 mr-2" />
-              Call
-            </Button>
             <Button variant="primary" className="w-full">
               <CheckCircle className="w-4 h-4 mr-2" />
               Complete
@@ -280,13 +271,6 @@ export default function AppointmentDetailsPage() {
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
                   <p className="font-medium">{appointment.client.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <Phone className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <p className="font-medium">{appointment.client.phone}</p>
                 </div>
               </div>
             </div>

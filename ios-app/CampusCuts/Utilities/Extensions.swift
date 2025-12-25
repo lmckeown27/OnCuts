@@ -39,12 +39,6 @@ extension String {
         return emailPredicate.evaluate(with: self)
     }
     
-    var isValidPhone: Bool {
-        let phoneRegex = "^[0-9]{10,15}$"
-        let phonePredicate = NSPredicate(format: "SELF MATCHES %@", phoneRegex)
-        return phonePredicate.evaluate(with: self.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression))
-    }
-    
     func truncated(to length: Int, trailing: String = "...") -> String {
         if self.count > length {
             return String(self.prefix(length)) + trailing

@@ -75,10 +75,8 @@ export default function SignupPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
     // Clear specific validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => {
@@ -301,6 +299,7 @@ export default function SignupPage() {
               {validationErrors.email && (
                 <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
               )}
+              <p className="text-gray-500 text-xs mt-1">We'll send a verification code to this email</p>
             </div>
 
             {/* Password Field */}

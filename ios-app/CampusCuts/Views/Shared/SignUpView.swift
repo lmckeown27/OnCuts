@@ -9,7 +9,6 @@ struct SignUpView: View {
     @State private var confirmPassword = ""
     @State private var firstName = ""
     @State private var lastName = ""
-    @State private var phone = ""
     @State private var selectedCampus: Campus?
     @State private var selectedRole: UserRole = .student
     @State private var campuses: [Campus] = []
@@ -21,8 +20,6 @@ struct SignUpView: View {
                 Section("Personal Information") {
                     TextField("First Name", text: $firstName)
                     TextField("Last Name", text: $lastName)
-                    TextField("Phone (optional)", text: $phone)
-                        .keyboardType(.phonePad)
                 }
                 
                 Section("Account Details") {
@@ -139,8 +136,7 @@ struct SignUpView: View {
             firstName: firstName,
             lastName: lastName,
             campusId: campusId,
-            role: selectedRole,
-            phone: phone.isEmpty ? nil : phone
+            role: selectedRole
         )
         
         if authViewModel.isAuthenticated {

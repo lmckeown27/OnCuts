@@ -55,181 +55,41 @@ export default function AdminCampusesPage() {
   const [managerSubTab, setManagerSubTab] = useState<'applications' | 'management' | 'content' | 'incidents'>('applications');
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
 
-  // Mock data for campuses
-  const campuses: Campus[] = [
-    {
-      id: 'campus-1',
-      name: 'California Polytechnic State University',
-      city: 'San Luis Obispo',
-      state: 'CA',
-      domain: 'calpoly.edu',
-      student_count: 21000,
-      active_barbers: 12,
-      total_bookings: 450,
-    },
-    {
-      id: 'campus-2',
-      name: 'University of California, Santa Barbara',
-      city: 'Santa Barbara',
-      state: 'CA',
-      domain: 'ucsb.edu',
-      student_count: 26000,
-      active_barbers: 15,
-      total_bookings: 680,
-    },
-    {
-      id: 'campus-3',
-      name: 'University of California, Los Angeles',
-      city: 'Los Angeles',
-      state: 'CA',
-      domain: 'ucla.edu',
-      student_count: 45000,
-      active_barbers: 28,
-      total_bookings: 1250,
-    },
-  ];
+  // TODO: Fetch campuses from API
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  
+  // Load campuses from API
+  useEffect(() => {
+    // TODO: Replace with actual API call
+    // const fetchCampuses = async () => {
+    //   const response = await adminService.getCampuses();
+    //   setCampuses(response.data);
+    // };
+    // fetchCampuses();
+    setCampuses([]);
+  }, []);
 
-  // Mock barbers with performance scores
-  const mockBarbers: Record<string, Barber[]> = {
-    'campus-1': [
-      {
-        id: 'barber-1',
-        name: 'Marcus Thompson',
-        email: 'marcus.thompson@calpoly.edu',
-        specialties: ['Fades', 'Curly Hair', 'Beard Grooming'],
-        average_rating: 4.9,
-        total_bookings: 156,
-        years_experience: 5,
-        performance_score: 92,
-        quality_score: 95,
-        reliability_score: 88,
-        demand_score: 85,
-        current_price_range: '$30-$50',
-        is_active: true,
-      },
-      {
-        id: 'barber-2',
-        name: 'Jordan Williams',
-        email: 'jordan.w@calpoly.edu',
-        specialties: ['Modern Cuts', 'Line-ups'],
-        average_rating: 4.7,
-        total_bookings: 98,
-        years_experience: 3,
-        performance_score: 85,
-        quality_score: 88,
-        reliability_score: 82,
-        demand_score: 78,
-        current_price_range: '$28-$45',
-        is_active: true,
-      },
-      {
-        id: 'barber-3',
-        name: 'Alex Chen',
-        email: 'alex.chen@calpoly.edu',
-        specialties: ['Asian Hair', 'Perms'],
-        average_rating: 4.8,
-        total_bookings: 45,
-        years_experience: 2,
-        performance_score: 78,
-        quality_score: 92,
-        reliability_score: 75,
-        demand_score: 65,
-        current_price_range: '$25-$40',
-        is_active: true,
-      },
-    ],
-    'campus-2': [
-      {
-        id: 'barber-4',
-        name: 'Tyler Martinez',
-        email: 'tyler.m@ucsb.edu',
-        specialties: ['Fades', 'Tapers'],
-        average_rating: 4.9,
-        total_bookings: 203,
-        years_experience: 6,
-        performance_score: 94,
-        quality_score: 96,
-        reliability_score: 92,
-        demand_score: 88,
-        current_price_range: '$32-$55',
-        is_active: true,
-      },
-      {
-        id: 'barber-5',
-        name: 'Sarah Johnson',
-        email: 'sarah.j@ucsb.edu',
-        specialties: ['Women\'s Cuts', 'Color'],
-        average_rating: 4.8,
-        total_bookings: 124,
-        years_experience: 4,
-        performance_score: 87,
-        quality_score: 90,
-        reliability_score: 85,
-        demand_score: 80,
-        current_price_range: '$30-$48',
-        is_active: true,
-      },
-    ],
-    'campus-3': [
-      {
-        id: 'barber-6',
-        name: 'Carlos Rodriguez',
-        email: 'carlos.r@ucla.edu',
-        specialties: ['Fades', 'Modern Styles'],
-        average_rating: 4.9,
-        total_bookings: 287,
-        years_experience: 7,
-        performance_score: 96,
-        quality_score: 98,
-        reliability_score: 95,
-        demand_score: 92,
-        current_price_range: '$35-$60',
-        is_active: true,
-      },
-    ],
-  };
+  // TODO: Fetch barbers and students from API when a campus is selected
+  const [campusBarbers, setCampusBarbers] = useState<Barber[]>([]);
+  const [campusStudents, setCampusStudents] = useState<Student[]>([]);
 
-  // Mock students
-  const mockStudents: Record<string, Student[]> = {
-    'campus-1': [
-      {
-        id: 'student-1',
-        name: 'John Doe',
-        email: 'jdoe@calpoly.edu',
-        total_bookings: 12,
-        total_spent: 380,
-        is_active: true,
-      },
-      {
-        id: 'student-2',
-        name: 'Jane Smith',
-        email: 'jsmith@calpoly.edu',
-        total_bookings: 8,
-        total_spent: 240,
-        is_active: true,
-      },
-    ],
-    'campus-2': [
-      {
-        id: 'student-3',
-        name: 'Mike Wilson',
-        email: 'mwilson@ucsb.edu',
-        total_bookings: 15,
-        total_spent: 450,
-        is_active: true,
-      },
-    ],
-    'campus-3': [
-      {
-        id: 'student-4',
-        name: 'Emily Brown',
-        email: 'ebrown@ucla.edu',
-        total_bookings: 20,
-        total_spent: 600,
-        is_active: true,
-      },
-    ],
-  };
+  // Load barbers and students when campus is selected
+  useEffect(() => {
+    if (selectedCampus) {
+      // TODO: Replace with actual API calls
+      // const fetchCampusData = async () => {
+      //   const [barbers, students] = await Promise.all([
+      //     adminService.getBarbersByCampus(selectedCampus.id),
+      //     adminService.getStudentsByCampus(selectedCampus.id)
+      //   ]);
+      //   setCampusBarbers(barbers.data);
+      //   setCampusStudents(students.data);
+      // };
+      // fetchCampusData();
+      setCampusBarbers([]);
+      setCampusStudents([]);
+    }
+  }, [selectedCampus]);
 
   const handleSelectCampus = (campus: Campus) => {
     setSelectedCampus(campus);
@@ -408,7 +268,7 @@ export default function AdminCampusesPage() {
 
             {campusTab === 'barbers' && (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {(mockBarbers[selectedCampus.id] || []).map((barber) => (
+                {campusBarbers.map((barber) => (
                   <Card 
                     key={barber.id} 
                     className="hover:shadow-md hover:border-primary-300 transition-all cursor-pointer active:scale-[0.98] p-3"
@@ -426,7 +286,7 @@ export default function AdminCampusesPage() {
                   </Card>
                 ))}
 
-                {(!mockBarbers[selectedCampus.id] || mockBarbers[selectedCampus.id].length === 0) && (
+                {campusBarbers.length === 0 && (
                   <Card>
                     <p className="text-center text-gray-600 py-8">No barbers found for this campus</p>
                   </Card>
@@ -553,7 +413,7 @@ export default function AdminCampusesPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {(mockStudents[selectedCampus.id] || []).map((student) => (
+                      {campusStudents.map((student) => (
                         <tr key={student.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Link
@@ -586,7 +446,7 @@ export default function AdminCampusesPage() {
                     </tbody>
                   </table>
 
-                  {(!mockStudents[selectedCampus.id] || mockStudents[selectedCampus.id].length === 0) && (
+                  {campusStudents.length === 0 && (
                     <div className="text-center py-8 text-gray-600">
                       No students found for this campus
                     </div>

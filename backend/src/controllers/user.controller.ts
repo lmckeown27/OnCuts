@@ -20,7 +20,6 @@ export const getUserProfile = async (req: Request, res: Response) => {
         email: `${id}@demo.com`,
         role: 'student',
         campus_id: 'campus-1',
-        phone: '+1 (555) 123-4567',
         profile_picture_url: null,
         wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
         is_verified: true,

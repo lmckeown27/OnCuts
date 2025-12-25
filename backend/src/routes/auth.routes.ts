@@ -17,7 +17,7 @@ const router: Router = express.Router();
 
 /**
  * @route   POST /api/auth/register
- * @desc    Register new user (creates pending registration, sends verification email)
+ * @desc    Register new user (creates pending registration, sends email verification)
  * @access  Public
  */
 router.post(
@@ -27,7 +27,6 @@ router.post(
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').notEmpty().withMessage('First name required'),
     body('lastName').notEmpty().withMessage('Last name required'),
-    body('campusId').isInt().withMessage('Campus ID required'),
     body('role').isIn(['student', 'barber']).withMessage('Role must be student or barber'),
     validate,
   ],
@@ -36,7 +35,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/verify-email
- * @desc    Verify email with 6-digit code (completes registration, creates user account)
+ * @desc    Verify email with 6-digit code (completes registration)
  * @access  Public
  */
 router.post(
@@ -51,7 +50,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/resend-verification
- * @desc    Resend verification code email
+ * @desc    Resend email verification code
  * @access  Public
  */
 router.post(
@@ -119,4 +118,3 @@ router.post(
 router.post('/refresh-token', refreshToken);
 
 export default router;
-

@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   Info,
   Heart,
-  Percent
+  Percent,
+  MessageCircle
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -301,9 +302,28 @@ export default function BookingPaymentPage() {
             )}
           </div>
 
-          <Button onClick={() => navigate('/web/consumer')} className="w-full">
-            Back to Dashboard
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                // Navigate to messages and start/open conversation with barber
+                navigate('/web/messages', { 
+                  state: { 
+                    startConversation: true,
+                    otherUserId: bookingDetails.barberId,
+                    bookingId: paymentIntentId
+                  }
+                });
+              }} 
+              variant="secondary"
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Message {bookingDetails.barberName.split(' ')[0]}
+            </Button>
+            <Button onClick={() => navigate('/web/consumer')} className="w-full">
+              Back to Dashboard
+            </Button>
+          </div>
         </Card>
       </div>
     );

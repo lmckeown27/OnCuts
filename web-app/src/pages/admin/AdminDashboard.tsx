@@ -65,42 +65,38 @@ export const AdminDashboard: React.FC = () => {
       const response = await fetch('http://localhost:3001/health');
       const data = await response.json();
       
-      // Mock stats with USD values
+      // Use real stats from API, defaulting to 0 if not available
       setStats({
-        total_users: data.stats?.total_users || 156,
-        total_barbers: Math.floor((data.stats?.total_users || 156) * 0.3),
-        total_students: Math.floor((data.stats?.total_users || 156) * 0.7),
-        total_bookings: data.stats?.total_bookings || 847,
-        total_completed: Math.floor((data.stats?.total_bookings || 847) * 0.85),
-        total_pending: Math.floor((data.stats?.total_bookings || 847) * 0.15),
-        total_volume_usd: 28945.00,
-        platform_fees_accumulated: 1447.25,
-        pending_payouts: 2156.80,
-        active_escrow: 845.00,
+        total_users: data.stats?.total_users || 0,
+        total_barbers: data.stats?.total_barbers || 0,
+        total_students: data.stats?.total_students || 0,
+        total_bookings: data.stats?.total_bookings || 0,
+        total_completed: data.stats?.total_completed || 0,
+        total_pending: data.stats?.total_pending || 0,
+        total_volume_usd: data.stats?.total_volume_usd || 0,
+        platform_fees_accumulated: data.stats?.platform_fees_accumulated || 0,
+        pending_payouts: data.stats?.pending_payouts || 0,
+        active_escrow: data.stats?.active_escrow || 0,
       });
 
-      // Mock recent transactions
-      setRecentTransactions([
-        { id: 'pi_1234', type: 'payment', amount: 35.00, status: 'completed', description: 'Fade haircut - Marcus T.', timestamp: '2 min ago' },
-        { id: 'po_5678', type: 'payout', amount: 156.75, status: 'processing', description: 'Weekly payout - Jordan W.', timestamp: '15 min ago' },
-        { id: 'pi_9012', type: 'payment', amount: 45.00, status: 'completed', description: 'Cut + Beard - Alex C.', timestamp: '32 min ago' },
-        { id: 'rf_3456', type: 'refund', amount: 28.00, status: 'completed', description: 'Cancelled booking refund', timestamp: '1 hour ago' },
-        { id: 'pi_7890', type: 'payment', amount: 30.00, status: 'pending', description: 'Basic cut - Tyler M.', timestamp: '1 hour ago' },
-      ]);
+      // TODO: Fetch recent transactions from API
+      // const transactionsResponse = await transactionService.getRecentTransactions();
+      // setRecentTransactions(transactionsResponse.data);
+      setRecentTransactions([]);
     } catch (err) {
       console.error('Failed to fetch stats:', err);
-      // Set mock data on error
+      // Set empty data on error
       setStats({
-        total_users: 156,
-        total_barbers: 47,
-        total_students: 109,
-        total_bookings: 847,
-        total_completed: 720,
-        total_pending: 127,
-        total_volume_usd: 28945.00,
-        platform_fees_accumulated: 1447.25,
-        pending_payouts: 2156.80,
-        active_escrow: 845.00,
+        total_users: 0,
+        total_barbers: 0,
+        total_students: 0,
+        total_bookings: 0,
+        total_completed: 0,
+        total_pending: 0,
+        total_volume_usd: 0,
+        platform_fees_accumulated: 0,
+        pending_payouts: 0,
+        active_escrow: 0,
       });
     } finally {
       setLoading(false);

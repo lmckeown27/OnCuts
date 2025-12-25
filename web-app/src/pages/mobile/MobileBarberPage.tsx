@@ -24,7 +24,6 @@ import {
   X,
   ChevronRight,
   MapPin,
-  Phone,
   MoreVertical
 } from 'lucide-react';
 
