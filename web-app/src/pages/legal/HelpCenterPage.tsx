@@ -14,7 +14,8 @@ import {
   HelpCircle,
   FileText,
   Globe,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 import FooterChairLogo from '../../assets/logos/Footer_Chair.png';
 import HeaderChairLogo from '../../assets/logos/Header_Chair.png';
