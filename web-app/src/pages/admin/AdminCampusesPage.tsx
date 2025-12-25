@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePlatform } from '../../utils/platform';
 import { School, Users, UserCheck, TrendingUp, Award, ArrowLeft, Search, FileText, AlertTriangle, Calendar, CheckCircle, XCircle, X, Mail, Eye, Ban, MessageSquare } from 'lucide-react';

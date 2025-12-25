@@ -63,7 +63,15 @@ interface ConversationWithDetails extends Conversation {
   unreadCount: number;
 }
 
-interface MessageWithSender extends Message {
+interface MessageWithSender {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  message_type: 'text' | 'image' | 'system';
+  media_url?: string;
+  is_read: boolean;
+  created_at: string;
   sender?: {
     id: string;
     username?: string;
@@ -143,7 +151,8 @@ export default function MessagesPage() {
     try {
       const response = await messageService.getMessages(convId);
       if (response.data) {
-        setMessages(response.data.messages || response.data as unknown as MessageWithSender[]);
+        const messagesData = Array.isArray(response.data) ? response.data : (response.data as any).messages || [];
+        setMessages(messagesData as MessageWithSender[]);
         // Mark as read
         await messageService.markConversationAsRead(convId);
         // Update unread count in conversations list
@@ -280,7 +289,7 @@ export default function MessagesPage() {
       
       // Replace optimistic message with real one
       setMessages(prev => prev.map(m => 
-        m.id === optimisticMessage.id ? { ...response, isOwn: true } : m
+        m.id === optimisticMessage.id ? { ...response, isOwn: true } as MessageWithSender : m
       ));
       
       // Update conversations list

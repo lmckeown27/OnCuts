@@ -27,9 +27,9 @@ export default function ScheduleServicePage() {
     const fetchBarber = async () => {
       if (!passedBarber && barberId) {
         try {
-          const response = await barberService.getBarberById(barberId);
-          if (response.data) {
-            setBarber(response.data);
+          const barberData = await barberService.getBarberById(barberId);
+          if (barberData) {
+            setBarber(barberData);
           }
         } catch (error) {
           console.error('Failed to fetch barber:', error);
