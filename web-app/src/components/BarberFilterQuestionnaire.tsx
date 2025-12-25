@@ -180,7 +180,7 @@ export default function BarberFilterQuestionnaire({
           {/* Find Barber Button - Always Visible */}
           {!hasActiveFilters && (
             <div className="flex justify-center">
-            <Button onClick={openPopup} variant="primary" className="px-6 py-3 text-lg">
+            <Button onClick={openPopup} variant="primary" className="px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-bold">
               Find Barber
             </Button>
             </div>

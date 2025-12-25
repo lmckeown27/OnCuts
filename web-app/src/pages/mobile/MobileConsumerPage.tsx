@@ -16,7 +16,6 @@ import {
   Heart,
   X,
   MapPin,
-  Star,
   Calendar,
   Instagram,
   ChevronUp,
@@ -229,9 +228,7 @@ export default function MobileConsumerPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{currentBarber.name}</h2>
                   <div className="flex items-center gap-2 mt-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold text-gray-900">{currentBarber.rating}</span>
-                    <span className="text-gray-500">({currentBarber.reviewCount} reviews)</span>
+                    <span className="text-gray-500">{currentBarber.reviewCount} reviews</span>
                   </div>
                 </div>
               </div>
@@ -355,10 +352,6 @@ export default function MobileConsumerPage() {
               />
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{currentBarber.name}</h3>
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-semibold">{currentBarber.rating}</span>
-                </div>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-import { Calendar, DollarSign, Star, TrendingUp, Users, Award, Clock, CheckCircle, XCircle, MessageCircle, Heart } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Users, Award, Clock, CheckCircle, XCircle, MessageCircle, Heart } from 'lucide-react';
 import type { Booking, EarningsReport, Review } from '../../types';
 import bookingService from '../../services/booking.service';
 import paymentService from '../../services/payment.service';
@@ -277,7 +277,7 @@ export default function BarberDashboardPage() {
 
             <div className="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <Star className="w-8 h-8 text-yellow-600" />
+                <MessageCircle className="w-8 h-8 text-yellow-600" />
                 <div>
                   <p className="font-semibold text-gray-900">Recent Reviews</p>
                   <p className="text-sm text-gray-600">Last 7 days</p>

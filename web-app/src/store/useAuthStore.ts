@@ -24,22 +24,22 @@ interface AuthState {
 }
 
 // Hardcoded admin credentials
-// NOTE: lmckeown@calpoly.edu temporarily removed for email verification testing
+// NOTE: lmckeown@calpoly.edu commented out for email verification testing
 const ADMIN_CREDENTIALS = [
-  {
-    email: 'lmckeown@calpoly.edu',
-    password: 'Cr8zzy4R0GG$',
-    user: {
-      id: 'admin-liam-mckeown',
-      email: 'lmckeown@calpoly.edu',
-      first_name: 'Liam',
-      last_name: 'McKeown',
-      user_type: 'admin' as const,
-      is_verified: true,
-      is_admin: true,
-      created_at: new Date().toISOString()
-    }
-  },
+  // {
+  //   email: 'lmckeown@calpoly.edu',
+  //   password: 'Cr8zzy4R0GG$',
+  //   user: {
+  //     id: 'admin-liam-mckeown',
+  //     email: 'lmckeown@calpoly.edu',
+  //     first_name: 'Liam',
+  //     last_name: 'McKeown',
+  //     user_type: 'admin' as const,
+  //     is_verified: true,
+  //     is_admin: true,
+  //     created_at: new Date().toISOString()
+  //   }
+  // },
   {
     email: 'schroete@calpoly.edu',
     password: 'barberdrama@13',
@@ -92,25 +92,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { isAdmin: true };
     }
     
-    // For now, only admin accounts are supported (backend auth not yet configured)
-    // Show user-friendly error for non-admin login attempts
-    set({ 
-      error: 'Username and/or password not found', 
-      isLoading: false 
-    });
-    throw new Error('Invalid credentials');
+    // Call real backend API for non-admin login
+    try {
+      const response = await authService.login({ email, password });
+      
+      // Map backend response to frontend User type
+      const user = {
+        id: response.user.id || (response as any).user.userId,
+        email: response.user.email,
+        first_name: (response.user as any).firstName || response.user.first_name,
+        last_name: (response.user as any).lastName || response.user.last_name,
+        user_type: ((response.user as any).role || response.user.user_type) as 'student' | 'barber' | 'admin',
+        is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
+        is_admin: ((response.user as any).role || response.user.user_type) === 'admin',
+        created_at: response.user.created_at || new Date().toISOString(),
+        campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString()
+      };
+      
+      set({ 
+        user: user, 
+        isAuthenticated: true, 
+        isLoading: false,
+        activeRole: null
+      });
+      socketService.connect();
+      return { isAdmin: user.is_admin };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials';
+      set({ 
+        error: errorMessage, 
+        isLoading: false 
+      });
+      throw error;
+    }
   },
 
   signup: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      // TODO: Re-enable backend call when auth routes are configured
-      // const response = await authService.signup(data);
-      
-      // MOCK: Simulate successful registration for testing email verification UI
-      // In production, this would call the backend API
-      console.log('📧 [MOCK] Registration for:', data.email);
-      console.log('📧 [MOCK] Verification code would be sent to email');
+      // Call real backend API for registration
+      const response = await authService.signup(data);
       
       // Store pending verification email
       localStorage.setItem('pendingVerificationEmail', data.email);
@@ -121,11 +142,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         pendingVerificationEmail: data.email 
       });
       
-      // Mock response - in production this comes from backend
-      return { email: data.email, verificationCode: '123456' }; // Mock code for testing
+      // Return response from backend (includes verificationCode in dev mode)
+      return { email: response.email, verificationCode: response.verificationCode };
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Signup failed';
       set({ 
-        error: error.response?.data?.message || 'Signup failed', 
+        error: errorMessage, 
         isLoading: false 
       });
       throw error;
@@ -135,43 +157,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifyEmail: async (email, code) => {
     set({ isLoading: true, error: null });
     try {
-      // TODO: Re-enable backend call when auth routes are configured
-      // const response = await authService.verifyEmail(email, code);
+      // Call real backend API for email verification
+      const response = await authService.verifyEmail(email, code);
       
-      // MOCK: Simulate verification for testing
-      console.log('✅ [MOCK] Verifying email:', email, 'with code:', code);
-      
-      // Accept any 6-digit code for testing, or specifically "123456"
-      if (code.length !== 6) {
-        throw new Error('Invalid verification code');
-      }
-      
-      // Mock user response
-      const mockUser = {
-        id: 'mock-user-' + Date.now(),
-        email: email,
-        first_name: 'Test',
-        last_name: 'User',
-        user_type: 'student' as const,
-        is_verified: true,
-        is_admin: false,
-        created_at: new Date().toISOString()
+      // Map backend response to frontend User type
+      const user = {
+        id: response.user.id,
+        email: response.user.email,
+        first_name: response.user.firstName,
+        last_name: response.user.lastName,
+        user_type: response.user.role as 'student' | 'barber' | 'admin',
+        is_verified: response.user.emailVerified,
+        is_admin: response.user.role === 'admin',
+        created_at: new Date().toISOString(),
+        campus_id: response.user.campusId?.toString()
       };
       
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('accessToken', 'mock-token-' + Date.now());
+      // Auth data is already saved by authService.verifyEmail
       localStorage.removeItem('pendingVerificationEmail');
       
       set({ 
-        user: mockUser, 
+        user: user, 
         isAuthenticated: true, 
         isLoading: false,
         pendingVerificationEmail: null 
       });
       socketService.connect();
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Verification failed';
       set({ 
-        error: error.response?.data?.message || error.message || 'Verification failed', 
+        error: errorMessage, 
         isLoading: false 
       });
       throw error;
@@ -181,19 +196,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resendVerificationCode: async (email) => {
     set({ isLoading: true, error: null });
     try {
-      // TODO: Re-enable backend call when auth routes are configured
-      // await authService.resendVerificationCode(email);
-      
-      // MOCK: Simulate resend for testing
-      console.log('📧 [MOCK] Resending verification code to:', email);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Call real backend API to resend verification code
+      await authService.resendVerificationCode(email);
       
       set({ isLoading: false });
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to resend code';
       set({ 
-        error: error.response?.data?.message || 'Failed to resend code', 
+        error: errorMessage, 
         isLoading: false 
       });
       throw error;

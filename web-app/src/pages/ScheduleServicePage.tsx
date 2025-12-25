@@ -1,12 +1,126 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, Scissors, DollarSign, Star, Instagram } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import toast from 'react-hot-toast';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
 import { CampusCutLogo } from '@assets';
+
+// Mock barber data for fallback lookup (matches ConsumerPage)
+function getMockBarbers(): Barber[] {
+  return [
+    {
+      id: 'barber-1',
+      user_id: 'user-1',
+      campus_id: 'campus-1',
+      bio: 'Specializing in modern fades and classic cuts. 5+ years experience.',
+      specialties: ['Haircut', 'Fade', 'Beard Trim'],
+      years_experience: 5,
+      average_rating: 4.8,
+      total_bookings: 156,
+      instagram_handle: 'cutsbymark',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+1'],
+      is_active: true,
+      base_price: 25,
+      max_price: 35,
+      name: 'Mark Johnson',
+      user: { first_name: 'Mark', last_name: 'Johnson' },
+      pricing: [{ service: 'Haircut', price: 25 }],
+    },
+    {
+      id: 'barber-2',
+      user_id: 'user-2',
+      campus_id: 'campus-1',
+      bio: 'Expert in hot towel shaves and beard grooming.',
+      specialties: ['Beard Trim', 'Hot Towel Shave', 'Full Service'],
+      years_experience: 7,
+      average_rating: 4.9,
+      total_bookings: 203,
+      instagram_handle: 'shavemaster',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+2'],
+      is_active: true,
+      base_price: 30,
+      max_price: 45,
+      name: 'David Chen',
+      user: { first_name: 'David', last_name: 'Chen' },
+      pricing: [{ service: 'Beard Trim', price: 30 }],
+    },
+    {
+      id: 'barber-3',
+      user_id: 'user-3',
+      campus_id: 'campus-1',
+      bio: 'Creative stylist with expertise in color and modern cuts.',
+      specialties: ['Haircut', 'Color', 'Styling'],
+      years_experience: 4,
+      average_rating: 4.7,
+      total_bookings: 98,
+      instagram_handle: 'stylebyalex',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+3'],
+      is_active: true,
+      base_price: 28,
+      max_price: 40,
+      name: 'Alex Rodriguez',
+      user: { first_name: 'Alex', last_name: 'Rodriguez' },
+      pricing: [{ service: 'Haircut', price: 28 }],
+    },
+    {
+      id: 'barber-4',
+      user_id: 'user-4',
+      campus_id: 'campus-1',
+      bio: 'Traditional barbering with a modern twist. Precision cuts guaranteed.',
+      specialties: ['Haircut', 'Fade', 'Lineup'],
+      years_experience: 6,
+      average_rating: 4.6,
+      total_bookings: 134,
+      instagram_handle: 'precision_cuts',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+4'],
+      is_active: true,
+      base_price: 26,
+      max_price: 36,
+      name: 'Jordan Smith',
+      user: { first_name: 'Jordan', last_name: 'Smith' },
+      pricing: [{ service: 'Haircut', price: 26 }],
+    },
+    {
+      id: 'barber-5',
+      user_id: 'user-5',
+      campus_id: 'campus-1',
+      bio: 'Specializing in textured hair and ethnic styles.',
+      specialties: ['Haircut', 'Styling', 'Fade'],
+      years_experience: 3,
+      average_rating: 4.9,
+      total_bookings: 76,
+      instagram_handle: 'texturekingz',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+5'],
+      is_active: true,
+      base_price: 27,
+      max_price: 38,
+      name: 'Marcus Williams',
+      user: { first_name: 'Marcus', last_name: 'Williams' },
+      pricing: [{ service: 'Haircut', price: 27 }],
+    },
+    {
+      id: 'barber-6',
+      user_id: 'user-6',
+      campus_id: 'campus-1',
+      bio: 'Full service barbering with a focus on customer experience.',
+      specialties: ['Full Service', 'Haircut', 'Beard Trim', 'Hot Towel Shave'],
+      years_experience: 8,
+      average_rating: 4.8,
+      total_bookings: 187,
+      instagram_handle: 'fullservice_barber',
+      portfolio_images: ['https://placehold.co/400x400/708d81/white?text=Portfolio+6'],
+      is_active: true,
+      base_price: 32,
+      max_price: 48,
+      name: 'Tyler Anderson',
+      user: { first_name: 'Tyler', last_name: 'Anderson' },
+      pricing: [{ service: 'Full Service', price: 32 }],
+    },
+  ];
+}
 
 export default function ScheduleServicePage() {
   const navigate = useNavigate();
@@ -16,14 +130,39 @@ export default function ScheduleServicePage() {
   // Get passed data from state
   const passedBarber = location.state?.barber as Barber | undefined;
   const passedFilters = location.state?.filters as FilterCriteria | undefined;
+  const preservedFormData = location.state?.preservedFormData;
 
   const [barber, setBarber] = useState<Barber | null>(passedBarber || null);
-  const [serviceType, setServiceType] = useState<string>(passedFilters?.serviceType || '');
-  const [date, setDate] = useState<string>(passedFilters?.date || '');
-  const [time, setTime] = useState<string>(passedFilters?.time || '');
-  const [location_, setLocation] = useState<string>(passedFilters?.location || '');
-  const [locationDetails, setLocationDetails] = useState<string>(passedFilters?.locationDetails || '');
-  const [notes, setNotes] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(!passedBarber);
+
+  // Fetch barber by ID if not passed in state (e.g., when navigating back)
+  useEffect(() => {
+    if (!passedBarber && barberId) {
+      // Try to find barber in mock data
+      const mockBarbers = getMockBarbers();
+      const foundBarber = mockBarbers.find(b => b.id === barberId);
+      if (foundBarber) {
+        setBarber(foundBarber);
+      }
+      setIsLoading(false);
+    }
+  }, [barberId, passedBarber]);
+  const [serviceType, setServiceType] = useState<string>(
+    preservedFormData?.serviceType || passedFilters?.serviceType || ''
+  );
+  const [date, setDate] = useState<string>(
+    preservedFormData?.date || passedFilters?.date || ''
+  );
+  const [time, setTime] = useState<string>(
+    preservedFormData?.time || passedFilters?.time || ''
+  );
+  const [location_, setLocation] = useState<string>(
+    preservedFormData?.location || passedFilters?.location || ''
+  );
+  const [locationDetails, setLocationDetails] = useState<string>(
+    preservedFormData?.locationDetails || passedFilters?.locationDetails || ''
+  );
+  const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Available services based on barber's specialties (fallback to full list)
@@ -100,6 +239,16 @@ export default function ScheduleServicePage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Loading barber info...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!barber) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -120,7 +269,19 @@ export default function ScheduleServicePage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/web/consumer')}
+              onClick={() => navigate('/web/consumer', {
+                state: {
+                  preservedFormData: {
+                    barberId,
+                    serviceType,
+                    date,
+                    time,
+                    location: location_,
+                    locationDetails,
+                    notes
+                  }
+                }
+              })}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -138,7 +299,7 @@ export default function ScheduleServicePage() {
           <div className="md:col-span-1">
             <Card className="sticky top-4">
               <div className="p-6">
-                <div className="w-32 h-64 mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
+                <div className="w-48 h-64 mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
                   {barber.portfolio && barber.portfolio.length > 0 ? (
                     <img
                       src={barber.portfolio[0].url}
@@ -147,7 +308,7 @@ export default function ScheduleServicePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Scissors className="w-20 h-20 text-gray-400" />
+                      <Scissors className="w-24 h-24 text-gray-400" />
                     </div>
                   )}
                 </div>
@@ -156,10 +317,6 @@ export default function ScheduleServicePage() {
                   {barber.user?.first_name} {barber.user?.last_name}
                 </h2>
 
-                <div className="flex items-center gap-1 mb-3">
-                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  <span className="font-semibold">{barber.average_rating.toFixed(1)}</span>
-                </div>
 
                 {barber.instagram_handle && (
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">

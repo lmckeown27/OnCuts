@@ -37,6 +37,9 @@ interface BookingDetails {
   servicePrice: number;
   scheduledAt: string;
   duration: number;
+  location?: string;
+  locationDetails?: string;
+  notes?: string;
 }
 
 /**
@@ -353,7 +356,29 @@ export default function BookingPaymentPage() {
         <div className="max-w-2xl mx-auto">
           {/* Header */}
           <div className="mb-8 flex items-center gap-4">
-            <Button onClick={() => navigate(-1)} variant="secondary">
+            <Button 
+              onClick={() => {
+                // Parse the scheduled date and time from scheduledAt
+                const scheduledDate = new Date(bookingDetails.scheduledAt);
+                const date = scheduledDate.toISOString().split('T')[0];
+                const time = scheduledDate.toTimeString().slice(0, 5);
+                
+                navigate(`/web/consumer/book/${bookingDetails.barberId}`, {
+                  state: {
+                    preservedFormData: {
+                      barberId: bookingDetails.barberId,
+                      serviceType: bookingDetails.serviceName,
+                      date: date,
+                      time: time,
+                      location: bookingDetails.location || '',
+                      locationDetails: bookingDetails.locationDetails || '',
+                      notes: bookingDetails.notes || '',
+                    }
+                  }
+                });
+              }} 
+              variant="secondary"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>

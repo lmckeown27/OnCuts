@@ -19,7 +19,6 @@ import {
   X,
   Zap,
   Shield,
-  Star,
   ArrowRight,
   Share2,
   Plus
@@ -190,20 +189,15 @@ export default function MobileAppDownloadPage() {
             </div>
           </div>
 
-          {/* Rating (Mock) */}
+          {/* User Stats (Mock) */}
           <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 mb-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-1 mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-600">4.9 rating from 2,847 users</p>
+                <p className="text-sm text-gray-600">Trusted by 2,847+ users</p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-gray-900">4.9</div>
-                <p className="text-xs text-gray-500">out of 5</p>
+                <div className="text-2xl font-bold text-primary-600">2.8k+</div>
+                <p className="text-xs text-gray-500">users</p>
               </div>
             </div>
           </div>

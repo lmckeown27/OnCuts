@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Clock, User, Star, CheckCircle, XCircle, MessageSquare, Calendar } from 'lucide-react';
+import { Clock, User, CheckCircle, XCircle, MessageSquare, Calendar } from 'lucide-react';
 import Button from '../Button';
 import Card from '../Card';
 import axios from 'axios';
@@ -187,13 +187,6 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                   <p className="font-semibold text-gray-900">{request.customerProfile.stats.completionRate}%</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Rating</p>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                    <p className="font-semibold text-gray-900">{request.customerProfile.stats.avgRating.toFixed(1)}</p>
-                  </div>
-                </div>
-                <div>
                   <p className="text-xs text-gray-500">No-shows</p>
                   <p className="font-semibold text-gray-900">{request.customerProfile.stats.noShowCount}</p>
                 </div>
@@ -326,35 +319,6 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 </div>
               </div>
 
-              {/* Rating */}
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Average Rating</p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-5 h-5 ${
-                              i < Math.floor(selectedRequest.customerProfile.stats.avgRating)
-                                ? 'text-yellow-500 fill-current'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-lg font-bold text-gray-900">
-                        {selectedRequest.customerProfile.stats.avgRating.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">Reviews</p>
-                    <p className="text-2xl font-bold text-gray-900">{selectedRequest.customerProfile.stats.totalReviews}</p>
-                  </div>
-                </div>
-              </div>
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t">

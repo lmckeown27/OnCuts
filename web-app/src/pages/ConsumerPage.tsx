@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Star, DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -158,6 +158,9 @@ export default function ConsumerPage() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Preserve form data from ScheduleServicePage when user clicks back
+  const preservedFormData = location.state?.preservedFormData;
   
   // Viewport detection for responsive behavior
   const { isMobile, isTablet, viewport } = useViewport();
@@ -467,7 +470,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
 
       {/* Barbers Grid - Responsive: 1 col portrait mobile, 2 col landscape/tablet, 3-5 col desktop */}
-      <div className={`grid gap-3 sm:gap-4 ${
+      <div className={`grid gap-3 sm:gap-4 mt-8 sm:mt-10 ${
         isMobilePortrait 
           ? 'grid-cols-1' 
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -510,11 +513,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                      <span className="font-semibold text-base">{barber.average_rating.toFixed(1)}</span>
-                    </div>
-                    <span className="text-gray-400 text-sm">•</span>
                     <span className="text-sm text-gray-500">{barber.total_bookings} cuts</span>
                     {barber.instagram_handle && (
                       <>
@@ -578,22 +576,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Info */}
               <div className="flex-1 flex flex-col pb-2">
 
-                {/* Rating & Instagram */}
-                <div className="flex items-center gap-1 sm:gap-2 mt-1 mb-2">
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400" />
-                    <span className="font-semibold text-sm">{barber.average_rating.toFixed(1)}</span>
+                {/* Instagram */}
+                {barber.instagram_handle && (
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mt-1 mb-2">
+                    <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
                   </div>
-                  {barber.instagram_handle && (
-                    <>
-                      <span className="text-gray-400">•</span>
-                      <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600">
-                        <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
+                )}
 
                 {/* Specialties */}
                 <div className="flex flex-wrap gap-1 mb-3">
@@ -631,11 +620,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           onClick={() => setSelectedBarber(null)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[90vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {selectedBarber.user?.first_name} {selectedBarber.user?.last_name}
               </h2>
               <button
@@ -648,9 +637,10 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             <div className="p-6">
               {/* Barber Profile Content */}
               <div className="space-y-6">
-                {/* Profile Header */}
-                <div className="flex flex-col sm:flex-row gap-6">
-                  <div className="w-full h-56 sm:w-48 sm:h-48 mx-auto sm:mx-0 rounded-xl overflow-hidden bg-gray-200 flex-shrink-0">
+                {/* Profile Header - Image on top, info below */}
+                <div className="flex flex-col gap-4">
+                  {/* Barber Image - same size as cards */}
+                  <div className="relative h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
                     {selectedBarber.portfolio && selectedBarber.portfolio.length > 0 ? (
                       <img
                         src={selectedBarber.portfolio[0].url}
@@ -659,17 +649,34 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <UsersIcon className="w-16 h-16 sm:w-16 sm:h-16 text-gray-400" />
+                        <UsersIcon className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 text-center sm:text-left">
-                    <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                      <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-xl font-bold">{selectedBarber.average_rating.toFixed(1)}</span>
-                    </div>
+                  
+                  {/* Schedule Button */}
+                  <div className="flex justify-center">
+                    <Button
+                      onClick={() => {
+                        const formData = location.state?.preservedFormData;
+                        navigate(`/web/consumer/book/${selectedBarber.id}`, {
+                          state: {
+                            barber: selectedBarber,
+                            filters: filterCriteria,
+                            preservedFormData: formData?.barberId === selectedBarber.id ? formData : undefined,
+                          },
+                        });
+                      }}
+                      className="px-6 py-2 text-base"
+                    >
+                      Schedule Service
+                    </Button>
+                  </div>
+                  
+                  {/* Barber Info */}
+                  <div className="text-center">
                     <p className="text-gray-700 mb-4">{selectedBarber.bio}</p>
-                    <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
+                    <div className="flex flex-wrap justify-center gap-2 mb-4">
                       {selectedBarber.specialties?.map((specialty, idx) => (
                         <span
                           key={idx}
@@ -680,7 +687,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       ))}
                     </div>
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
+                      <div className="flex items-center justify-center gap-2 text-gray-600">
                         <Instagram className="w-5 h-5" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}
@@ -693,24 +700,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       </div>
                     )}
                   </div>
-                </div>
-
-                {/* Schedule Button */}
-                <div className="flex justify-center pt-4 border-t border-gray-200">
-                  <Button
-                    onClick={() => {
-                      // Navigate to booking page with barber and filter data
-                      navigate(`/web/consumer/book/${selectedBarber.id}`, {
-                        state: {
-                          barber: selectedBarber,
-                          filters: filterCriteria,
-                        },
-                      });
-                    }}
-                    className="px-8 py-3 text-lg"
-                  >
-                    Schedule Service
-                  </Button>
                 </div>
               </div>
             </div>

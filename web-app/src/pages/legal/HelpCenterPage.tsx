@@ -10,7 +10,6 @@ import {
   Calendar, 
   Shield,
   Mail,
-  Star,
   Smartphone,
   HelpCircle,
   FileText,
@@ -191,8 +190,8 @@ export default function HelpCenterPage() {
     {
       id: 'reviews',
       title: 'Reviews',
-      description: 'Ratings and reputation.',
-      icon: <Star className="w-5 h-5" />,
+      description: 'Feedback and reputation.',
+      icon: <MessageSquare className="w-5 h-5" />,
       color: 'bg-amber-500',
       items: [
         {

@@ -27,8 +27,18 @@ interface RegistrationPendingResponse {
   verificationCode?: string; // Only in dev/auto-verify mode
 }
 
+interface VerifyEmailUserData {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  campusId: number;
+  emailVerified: boolean;
+}
+
 interface VerifyEmailResponse {
-  user: User;
+  user: VerifyEmailUserData;
   token: string;
   aptosAddress?: string;
 }
@@ -45,7 +55,8 @@ class AuthService {
    * Does NOT authenticate the user - they must verify email first
    */
   async signup(data: SignupData): Promise<RegistrationPendingResponse> {
-    const response = await api.post<{ data: RegistrationPendingResponse }>('/auth/register', {
+    // api.post already extracts the data field from the response
+    const response = await api.post<RegistrationPendingResponse>('/auth/register', {
       email: data.email,
       password: data.password,
       firstName: data.first_name,
@@ -56,33 +67,35 @@ class AuthService {
     // Store email for verification page
     localStorage.setItem('pendingVerificationEmail', data.email);
     
-    return response.data;
+    return response;
   }
 
   /**
    * Verify email with 6-digit code - creates the user account
    */
   async verifyEmail(email: string, code: string): Promise<VerifyEmailResponse> {
-    const response = await api.post<{ data: VerifyEmailResponse }>('/auth/verify-email', { email, code });
+    // api.post already extracts the data field from the response
+    const response = await api.post<VerifyEmailResponse>('/auth/verify-email', { email, code });
     
     // Save auth data after successful verification
-    if (response.data.user && response.data.token) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.data.token);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.data.user));
+    if (response.user && response.token) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
     }
     
     // Clear pending verification email
     localStorage.removeItem('pendingVerificationEmail');
     
-    return response.data;
+    return response;
   }
 
   /**
    * Resend verification code to email
    */
   async resendVerificationCode(email: string): Promise<RegistrationPendingResponse> {
-    const response = await api.post<{ data: RegistrationPendingResponse }>('/auth/resend-verification', { email });
-    return response.data;
+    // api.post already extracts the data field from the response
+    const response = await api.post<RegistrationPendingResponse>('/auth/resend-verification', { email });
+    return response;
   }
 
   /**

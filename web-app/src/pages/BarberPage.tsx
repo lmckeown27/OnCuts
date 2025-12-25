@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, MapPin, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -1411,18 +1411,6 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-green-600">${service.price.toFixed(2)}</p>
-                      {service.rating && (
-                        <div className="flex items-center gap-1 mt-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3.5 h-3.5 ${
-                                i < service.rating! ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                   

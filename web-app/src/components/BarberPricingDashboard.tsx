@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, ChevronRight, ChevronDown, Star } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, ChevronDown } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
 
@@ -240,62 +240,6 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
             )}
           </div>
 
-          {/* Rating Section */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              onClick={() => toggleSection('rating')}
-              className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <span className="font-semibold text-gray-900">Rating</span>
-                <span className="text-gray-500">{performanceData.avgRating.toFixed(1)} out of 5.0</span>
-              </div>
-              {expandedSection === 'rating' ? (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            {expandedSection === 'rating' && (
-              <div className="border-t border-gray-200 p-4 bg-gray-50">
-                <div className="flex items-center justify-center gap-8 mb-4">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-gray-900">{performanceData.avgRating.toFixed(1)}</p>
-                    <div className="flex items-center justify-center gap-0.5 mt-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-4 h-4 ${
-                            star <= Math.round(performanceData.avgRating)
-                              ? 'text-gray-900 fill-gray-900'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {[5, 4, 3, 2, 1].map((rating) => {
-                    const count = rating === 5 ? 98 : rating === 4 ? 22 : rating === 3 ? 5 : rating === 2 ? 2 : 0;
-                    const percentage = (count / performanceData.totalReviews) * 100;
-                    return (
-                      <div key={rating} className="flex items-center gap-2 text-sm">
-                        <span className="w-8 text-gray-600">{rating} star</span>
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gray-700 rounded-full"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="w-8 text-right text-gray-500">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Reviews Section */}
           <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -323,16 +267,6 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
                           <span className="font-medium text-gray-900">{review.name}</span>
                           <span className="text-xs text-gray-400">•</span>
                           <span className="text-xs text-gray-500">{review.service}</span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-3 h-3 ${
-                                star <= review.rating ? 'text-gray-700 fill-gray-700' : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
                         </div>
                       </div>
                       <p className="text-sm text-gray-600">"{review.comment}"</p>

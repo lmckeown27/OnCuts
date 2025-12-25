@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, DollarSign, Star, MessageSquare, User, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, DollarSign, MessageSquare, User, Search, Filter } from 'lucide-react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import BarberHeader from '../../components/BarberHeader';
@@ -298,24 +298,6 @@ export default function BarberServiceHistoryPage() {
                     </div>
                   </div>
 
-                  {/* Rating (if completed with review) */}
-                  {service.rating && (
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-5 h-5 ${
-                            i < service.rating!
-                              ? 'text-yellow-500 fill-current'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      ))}
-                      <span className={`ml-2 text-lg font-bold ${getRatingColor(service.rating)}`}>
-                        {service.rating.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Location */}
@@ -339,7 +321,7 @@ export default function BarberServiceHistoryPage() {
                 {service.review && (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Star className="w-4 h-4 text-green-600 fill-current" />
+                      <MessageSquare className="w-4 h-4 text-green-600" />
                       <span className="text-sm font-semibold text-green-900">Customer Review</span>
                     </div>
                     <p className="text-sm text-green-800">{service.review}</p>

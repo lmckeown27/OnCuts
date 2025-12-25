@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Star, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, DollarSign, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, Calendar, AlertCircle } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import BarberHeader from '../components/BarberHeader';

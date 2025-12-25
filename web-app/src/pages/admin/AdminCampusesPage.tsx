@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { usePlatform } from '../../utils/platform';
-import { School, Users, UserCheck, TrendingUp, Award, ArrowLeft, Search, FileText, AlertTriangle, Calendar, CheckCircle, XCircle, X, Star, Mail, Eye, Ban, MessageSquare } from 'lucide-react';
+import { School, Users, UserCheck, TrendingUp, Award, ArrowLeft, Search, FileText, AlertTriangle, Calendar, CheckCircle, XCircle, X, Mail, Eye, Ban, MessageSquare } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import Loading from '../../components/Loading';
@@ -463,11 +463,7 @@ export default function AdminCampusesPage() {
 
                       {/* Stats */}
                       <div className="px-5 py-4 border-b border-gray-200">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <p className="text-2xl font-bold text-gray-900">{selectedBarber.average_rating}</p>
-                            <p className="text-xs text-gray-500">Rating</p>
-                          </div>
+                        <div className="grid grid-cols-2 gap-4 text-center">
                           <div>
                             <p className="text-2xl font-bold text-gray-900">{selectedBarber.total_bookings}</p>
                             <p className="text-xs text-gray-500">Bookings</p>

@@ -11,7 +11,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Star, 
   Calendar, 
   DollarSign, 
   TrendingUp, 
@@ -205,16 +204,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
           </Card>
 
           {/* Performance Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Star className="w-5 h-5 text-yellow-500" />
-                <span className="text-sm text-gray-600">Rating</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{barber.avgRating.toFixed(1)}</p>
-              <p className="text-xs text-gray-500 mt-1">{barber.totalReviews} reviews</p>
-            </Card>
-
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="w-5 h-5 text-blue-500" />

@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, Star, Award, Clock, MessageSquare, Calendar, ArrowLeft, Instagram } from 'lucide-react';
+import { MapPin, Award, Clock, MessageSquare, Calendar, ArrowLeft, Instagram } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { LocationSelector } from '../components/LocationSelector';
@@ -175,10 +175,6 @@ export default function BarberProfilePage() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-2 mb-1">
-                  <Star className="w-6 h-6 text-yellow-500 fill-current" />
-                  <span className="text-2xl font-bold text-gray-900">{barber.avgRating}</span>
-                </div>
                 <p className="text-sm text-gray-500">{barber.totalReviews} reviews</p>
               </div>
             </div>

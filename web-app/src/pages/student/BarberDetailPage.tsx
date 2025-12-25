@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, MapPin, Clock, DollarSign, Heart, MessageCircle, Award, TrendingUp } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Heart, MessageCircle, Award, TrendingUp } from 'lucide-react';
 import type { Barber, Review } from '../../types';
 import barberService from '../../services/barber.service';
 import Loading from '../../components/Loading';
@@ -95,11 +95,7 @@ export default function BarberDetailPage() {
               </h1>
               
               <div className="flex flex-wrap items-center gap-4 mb-4">
-                <div className="flex items-center gap-1">
-                  <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                  <span className="font-semibold">{barber.average_rating.toFixed(1)}</span>
-                  <span className="text-gray-600">({barber.total_bookings} bookings)</span>
-                </div>
+                <span className="text-gray-600">{barber.total_bookings} bookings</span>
                 <div className="flex items-center gap-1 text-gray-600">
                   <Award className="w-5 h-5" />
                   <span>{barber.years_of_experience} years exp.</span>
@@ -157,10 +153,6 @@ export default function BarberDetailPage() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-lg">Reviews ({reviews.length})</h2>
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-bold text-lg">{barber.average_rating.toFixed(1)}</span>
-              </div>
             </div>
             
             {reviews.length > 0 ? (
@@ -180,18 +172,6 @@ export default function BarberDetailPage() {
                             {format(new Date(review.created_at), 'MMM d, yyyy')}
                           </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < review.rating
-                                ? 'fill-yellow-400 text-yellow-400'
-                                : 'text-gray-300'
-                            }`}
-                          />
-                        ))}
                       </div>
                     </div>
                     {review.review_text && (

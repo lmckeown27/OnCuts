@@ -23,7 +23,6 @@ import {
   Check,
   X,
   ChevronRight,
-  Star,
   MapPin,
   Phone,
   MoreVertical
@@ -262,10 +261,6 @@ export default function MobileBarberPage() {
                         />
                         <div className="flex-1">
                           <h3 className="font-semibold text-gray-900">{request.customerName}</h3>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{request.customerRating}</span>
-                          </div>
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-primary-600">${request.price}</div>
@@ -349,11 +344,7 @@ export default function MobileBarberPage() {
                 <UserIcon className="w-12 h-12 text-primary-600" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Marcus Johnson</h2>
-              <div className="flex items-center justify-center gap-1 mt-2">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold">4.8</span>
-                <span className="text-gray-500 text-sm">(127 reviews)</span>
-              </div>
+              <p className="text-gray-500 text-sm mt-2">127 reviews</p>
             </div>
 
             <div className="space-y-2">
@@ -458,11 +449,6 @@ export default function MobileBarberPage() {
               />
               <div className="flex-1">
                 <h3 className="text-2xl font-bold text-gray-900">{showRequestDetail.customerName}</h3>
-                <div className="flex items-center gap-1 mt-1">
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{showRequestDetail.customerRating}</span>
-                  <span className="text-gray-500 text-sm">Customer Rating</span>
-                </div>
               </div>
             </div>
 

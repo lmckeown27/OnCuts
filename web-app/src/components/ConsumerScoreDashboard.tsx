@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Award, AlertCircle, Star, Calendar, DollarSign, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Award, AlertCircle, Calendar, DollarSign, Target } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 
@@ -152,19 +152,18 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
 
       {/* Score Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Review Fairness Score */}
+        {/* Review Activity Score */}
         <Card>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" />
-              <span className="font-semibold">Review Fairness</span>
+              <Target className="w-5 h-5 text-yellow-500" />
+              <span className="font-semibold">Review Activity</span>
             </div>
             <span className="text-2xl font-bold text-yellow-600">
               {score.review_fairness_score}
             </span>
           </div>
           <div className="text-sm text-gray-600 space-y-1">
-            <div>Avg Rating Given: {score.metrics.avg_rating_given.toFixed(1)} stars</div>
             <div>Reviews Left: {score.metrics.total_reviews_left}</div>
             <div>Review Rate: {score.metrics.review_rate.toFixed(0)}%</div>
           </div>
@@ -333,7 +332,7 @@ export const ConsumerScoreDashboard: React.FC<ConsumerScoreDashboardProps> = ({ 
       {/* Review Weight Info */}
       <Card className="bg-blue-50 border-blue-200">
         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Star className="w-5 h-5 text-blue-600" />
+          <Target className="w-5 h-5 text-blue-600" />
           Your Review Impact
         </h3>
         <div className="space-y-3">

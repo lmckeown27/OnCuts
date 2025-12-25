@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Award, Clock, MessageSquare, Calendar, Instagram, Users, DollarSign, TrendingDown } from 'lucide-react';
+import { MapPin, Award, Clock, MessageSquare, Calendar, Instagram, Users, DollarSign, TrendingDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
@@ -298,10 +298,6 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                      <span className="font-bold text-gray-900">{barber.avgRating}</span>
-                    </div>
                     <p className="text-xs text-gray-500">{barber.totalReviews} reviews</p>
                   </div>
                 </div>
@@ -415,10 +411,6 @@ function BarberProfileView({ barber, customerId, customerName, onBack, onSchedul
               </div>
             </div>
             <div className="text-right">
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="w-6 h-6 text-yellow-500 fill-current" />
-                <span className="text-2xl font-bold text-gray-900">{barber.avgRating}</span>
-              </div>
               <p className="text-sm text-gray-500">{barber.totalReviews} reviews</p>
             </div>
           </div>
