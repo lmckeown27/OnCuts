@@ -25,20 +25,20 @@ interface AuthState {
 
 // Hardcoded admin credentials
 const ADMIN_CREDENTIALS = [
-  {
-    email: 'lmckeown@calpoly.edu',
-    password: 'Cr8zzy4R0GG$',
-    user: {
-      id: 'admin-liam-mckeown',
-      email: 'lmckeown@calpoly.edu',
-      first_name: 'Liam',
-      last_name: 'McKeown',
-      user_type: 'admin' as const,
-      is_verified: true,
-      is_admin: true,
-      created_at: new Date().toISOString()
-    }
-  },
+  // {
+  //   email: 'lmckeown@calpoly.edu',
+  //   password: 'Cr8zzy4R0GG$',
+  //   user: {
+  //     id: 'admin-liam-mckeown',
+  //     email: 'lmckeown@calpoly.edu',
+  //     first_name: 'Liam',
+  //     last_name: 'McKeown',
+  //     user_type: 'admin' as const,
+  //     is_verified: true,
+  //     is_admin: true,
+  //     created_at: new Date().toISOString()
+  //   }
+  // },
   {
     email: 'schroete@calpoly.edu',
     password: 'barberdrama@13',
