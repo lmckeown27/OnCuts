@@ -225,7 +225,7 @@ export default function MessagesPage() {
     const handleNewMessage = (message: Message) => {
       // Add to messages if in current conversation
       if (selectedConversation && message.conversation_id === selectedConversation.id) {
-        setMessages(prev => [...prev, message as MessageWithSender]);
+        setMessages(prev => [...prev, message as unknown as MessageWithSender]);
         scrollToBottom();
         // Mark as read since we're viewing
         messageService.markConversationAsRead(message.conversation_id);
@@ -289,7 +289,7 @@ export default function MessagesPage() {
       
       // Replace optimistic message with real one
       setMessages(prev => prev.map(m => 
-        m.id === optimisticMessage.id ? { ...response, isOwn: true } as MessageWithSender : m
+        m.id === optimisticMessage.id ? { ...response, isOwn: true } as unknown as MessageWithSender : m
       ));
       
       // Update conversations list
