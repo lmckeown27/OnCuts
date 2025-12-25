@@ -2,27 +2,26 @@
  * Real-Time Transaction Feed
  * 
  * Shows live transactions for a specific campus
- * Connects to Socket.IO for real-time updates
+ * Styled to match the Admin Payments page transactions view
  */
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { io, Socket } from 'socket.io-client';
+import { CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Calendar, Scissors, User } from 'lucide-react';
 
 interface Transaction {
   id: string;
-  type: 'booking' | 'payment' | 'completion' | 'withdrawal' | 'deposit';
+  type: 'payment' | 'payout' | 'refund' | 'fee';
   timestamp: string;
-  amount?: number;
-  from?: string;
-  to?: string;
-  fromName?: string;
-  toName?: string;
-  fromId?: string;
-  toId?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'failed';
-  description: string;
-  txHash?: string;
+  amount: number;
+  serviceName: string;
+  barberName: string;
+  barberId: string;
+  customerName: string;
+  customerId: string;
+  status: 'pending' | 'completed' | 'processing' | 'failed';
+  campus: string;
+  stripeId?: string;
 }
 
 interface RealtimeTransactionFeedProps {
@@ -30,450 +29,447 @@ interface RealtimeTransactionFeedProps {
   maxItems?: number;
 }
 
-// Mock transaction data for testing
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: '1',
-    type: 'booking',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    amount: 25.00,
-    from: '0x1234567890abcdef1234567890abcdef',
-    to: '0xabcdef1234567890abcdef1234567890',
-    fromName: 'Sarah Johnson',
-    toName: 'Mike Williams',
-    fromId: 'student-1',
-    toId: 'barber-1',
-    status: 'confirmed',
-    description: 'New booking: Fade Haircut',
-    txHash: '0xabc123def456...',
-  },
-  {
-    id: '2',
-    type: 'payment',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    amount: 30.00,
-    from: '0x9876543210fedcba9876543210fedcba',
-    to: '0xfedcba9876543210fedcba9876543210',
-    fromName: 'James Chen',
-    toName: 'Alex Rodriguez',
-    fromId: 'student-2',
-    toId: 'barber-2',
-    status: 'completed',
-    description: 'Payment completed via Stripe',
-    txHash: '0xdef789ghi012...',
-  },
-  {
-    id: '3',
-    type: 'completion',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    amount: 22.50,
-    from: '0x1111222233334444555566667777888',
-    to: '0x8888777766665555444433332222111',
-    fromName: 'Emily Davis',
-    toName: 'Jordan Taylor',
-    fromId: 'student-3',
-    toId: 'barber-3',
-    status: 'completed',
-    description: 'Service completed: Beard Trim',
-    txHash: '0xghi345jkl678...',
-  },
-  {
-    id: '4',
-    type: 'deposit',
-    timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    amount: 50.00,
-    status: 'completed',
-    description: 'Stripe deposit: $50.00',
-  },
-  {
-    id: '5',
-    type: 'withdrawal',
-    timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    amount: 180.00,
-    from: '0x5555666677778888999900001111222',
-    fromName: 'Chris Martinez',
-    fromId: 'barber-4',
-    status: 'confirmed',
-    description: 'Barber withdrawal',
-    txHash: '0xjkl901mno234...',
-  },
-  {
-    id: '6',
-    type: 'booking',
-    timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    amount: 28.00,
-    from: '0x2222333344445555666677778888999',
-    to: '0x9999888877776666555544443333222',
-    fromName: 'David Lee',
-    toName: 'Taylor Anderson',
-    fromId: 'student-4',
-    toId: 'barber-5',
-    status: 'confirmed',
-    description: 'New booking: Full Service',
-    txHash: '0xmno567pqr890...',
-  },
-  {
-    id: '7',
-    type: 'payment',
-    timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-    amount: 35.00,
-    from: '0x3333444455556666777788889999000',
-    to: '0x0000999988887777666655554444333',
-    fromName: 'Jessica Brown',
-    toName: 'Morgan Smith',
-    fromId: 'student-5',
-    toId: 'barber-6',
-    status: 'completed',
-    description: 'Payment completed via blockchain',
-    txHash: '0xpqr123stu456...',
-  },
-  {
-    id: '8',
-    type: 'booking',
-    timestamp: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
-    amount: 20.00,
-    from: '0x4444555566667777888899990000111',
-    to: '0x1111000099998888777766665555444',
-    fromName: 'Ryan Wilson',
-    toName: 'Casey Johnson',
-    fromId: 'student-6',
-    toId: 'barber-7',
-    status: 'pending',
-    description: 'New booking: Haircut',
-    txHash: '0xstu789vwx012...',
-  },
+// Mock transaction data for testing - updated to match payments page style
+const generateMockTransactions = (campusId?: string): Transaction[] => {
+  const services = ['Fade', 'Haircut', 'Taper', 'Beard Trim', 'Line Up', 'Haircut & Fade', 'Buzz Cut', 'Color Treatment'];
+  const barbers = [
+    { name: 'Marcus T.', id: 'barber-marcus' },
+    { name: 'Alex C.', id: 'barber-alex' },
+    { name: 'Jordan W.', id: 'barber-jordan' },
+    { name: 'Tyler M.', id: 'barber-tyler' },
+    { name: 'Carlos R.', id: 'barber-carlos' },
+  ];
+  const customers = [
+    { name: 'John D.', id: 'student-john' },
+    { name: 'Mike S.', id: 'student-mike' },
+    { name: 'Sarah L.', id: 'student-sarah' },
+    { name: 'Emily R.', id: 'student-emily' },
+    { name: 'David K.', id: 'student-david' },
+  ];
+  const statuses: Transaction['status'][] = ['completed', 'completed', 'completed', 'pending', 'processing', 'failed'];
+  const types: Transaction['type'][] = ['payment', 'payment', 'payment', 'payout', 'fee', 'refund'];
+
+  const transactions: Transaction[] = [];
+  for (let i = 0; i < 20; i++) {
+    const service = services[Math.floor(Math.random() * services.length)];
+    const barber = barbers[Math.floor(Math.random() * barbers.length)];
+    const customer = customers[Math.floor(Math.random() * customers.length)];
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const amount = type === 'fee' ? 2.25 : type === 'refund' ? -(20 + Math.floor(Math.random() * 20)) : 25 + Math.floor(Math.random() * 30);
+    
+    transactions.push({
+      id: `tx-${i}`,
+      type,
+      timestamp: new Date(Date.now() - (i * 15 + Math.random() * 30) * 60 * 1000).toISOString(),
+      amount,
+      serviceName: service,
+      barberName: barber.name,
+      barberId: barber.id,
+      customerName: customer.name,
+      customerId: customer.id,
+      status,
+      campus: campusId || 'Cal Poly SLO',
+      stripeId: `pi_${Math.random().toString(36).substr(2, 9)}`,
+    });
+  }
+  return transactions;
+};
+
+// Time filter options
+const TIME_OPTIONS = [
+  { value: 'today', label: 'Today' },
+  { value: '7days', label: 'Last 7 days' },
+  { value: '30days', label: 'Last 30 days' },
+  { value: 'all', label: 'All time' },
+];
+
+// Service filter options
+const SERVICE_OPTIONS = [
+  { value: 'all', label: 'All Services' },
+  { value: 'Fade', label: 'Fade' },
+  { value: 'Haircut', label: 'Haircut' },
+  { value: 'Taper', label: 'Taper' },
+  { value: 'Beard Trim', label: 'Beard Trim' },
+  { value: 'Line Up', label: 'Line Up' },
+  { value: 'Haircut & Fade', label: 'Haircut & Fade' },
+  { value: 'Buzz Cut', label: 'Buzz Cut' },
+  { value: 'Color Treatment', label: 'Color Treatment' },
+];
+
+// Barber filter options
+const BARBER_OPTIONS = [
+  { value: 'all', label: 'All Barbers' },
+  { value: 'Marcus T.', label: 'Marcus T.' },
+  { value: 'Alex C.', label: 'Alex C.' },
+  { value: 'Jordan W.', label: 'Jordan W.' },
+  { value: 'Tyler M.', label: 'Tyler M.' },
+  { value: 'Carlos R.', label: 'Carlos R.' },
 ];
 
 export const RealtimeTransactionFeed: React.FC<RealtimeTransactionFeedProps> = ({
   campusId,
   maxItems = 20,
 }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [isConnected, setIsConnected] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [expandedTransaction, setExpandedTransaction] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
+  const [barberFilter, setBarberFilter] = useState('all');
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [showBarberDropdown, setShowBarberDropdown] = useState(false);
+  const itemsPerPage = 7;
 
   useEffect(() => {
-    // For testing: Skip Socket.IO connection when backend is not available
-    // Uncomment this section when backend is running
-    
-    /*
-    // Connect to Socket.IO
-    const newSocket = io('http://localhost:3001', {
-      transports: ['polling', 'websocket'],
-    });
-
-    newSocket.on('connect', () => {
-      console.log('Connected to transaction feed');
-      setIsConnected(true);
-      
-      // Join campus-specific room if provided
-      if (campusId) {
-        newSocket.emit('join-campus', campusId);
-      }
-    });
-
-    newSocket.on('disconnect', () => {
-      console.log('❌ Disconnected from transaction feed');
-      setIsConnected(false);
-    });
-
-    // Listen for blockchain transactions
-    newSocket.on('blockchain-transaction', (tx: any) => {
-      const transaction: Transaction = {
-        id: tx.hash || tx.id,
-        type: mapTransactionType(tx.type),
-        timestamp: tx.timestamp || new Date().toISOString(),
-        amount: tx.amount,
-        from: tx.from || tx.student_addr,
-        to: tx.to || tx.barber_addr,
-        status: tx.success ? 'confirmed' : 'pending',
-        description: tx.description || getTransactionDescription(tx),
-        txHash: tx.hash,
-      };
-
-      setTransactions((prev) => [transaction, ...prev].slice(0, maxItems));
-    });
-
-    // Listen for booking events
-    newSocket.on('booking-created', (booking: any) => {
-      const transaction: Transaction = {
-        id: booking.id,
-        type: 'booking',
-        timestamp: booking.created_at || new Date().toISOString(),
-        amount: booking.amount_total,
-        from: booking.student_addr,
-        to: booking.barber_addr,
-        status: 'confirmed',
-        description: `New booking: ${booking.service_name}`,
-      };
-
-      setTransactions((prev) => [transaction, ...prev].slice(0, maxItems));
-    });
-
-    // Listen for payment events
-    newSocket.on('payment-completed', (payment: any) => {
-      const transaction: Transaction = {
-        id: payment.id,
-        type: 'payment',
-        timestamp: payment.timestamp || new Date().toISOString(),
-        amount: payment.amount,
-        status: 'completed',
-        description: `Payment completed via ${payment.method}`,
-      };
-
-      setTransactions((prev) => [transaction, ...prev].slice(0, maxItems));
-    });
-
-    // Listen for Stripe events
-    newSocket.on('stripe-event', (event: any) => {
-      if (event.type === 'payment_intent.succeeded') {
-        const transaction: Transaction = {
-          id: event.data.id,
-          type: 'deposit',
-          timestamp: new Date().toISOString(),
-          amount: event.data.amount / 100,
-          status: 'completed',
-          description: `Stripe deposit: $${(event.data.amount / 100).toFixed(2)}`,
-        };
-
-        setTransactions((prev) => [transaction, ...prev].slice(0, maxItems));
-      }
-    });
-
-    setSocket(newSocket);
-
-    // Cleanup on unmount
-    return () => {
-      newSocket.close();
-    };
-    */
-    
-    // Mock mode: simulate disconnected state
-    console.log('📝 Using mock transaction data (Socket.IO disabled for testing)');
-    setIsConnected(false);
-  }, [campusId, maxItems]);
-
-  // Fetch initial transactions
-  useEffect(() => {
-    fetchRecentTransactions();
+    // Load mock data
+    setTransactions(generateMockTransactions(campusId));
   }, [campusId]);
 
-  const fetchRecentTransactions = async () => {
-    try {
-      const endpoint = campusId
-        ? `/api/admin/transactions?campus=${campusId}&limit=${maxItems}`
-        : `/api/admin/transactions?limit=${maxItems}`;
-      
-      const response = await fetch(`http://localhost:3001${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.transactions) {
-          setTransactions(data.transactions);
-        }
-      } else {
-        // Use mock data on API failure
-        console.log('Using mock transaction data for testing');
-        // Randomize the order to simulate "reloading"
-        const shuffled = [...MOCK_TRANSACTIONS].sort(() => Math.random() - 0.5);
-        setTransactions(shuffled.slice(0, maxItems));
+  // Filter transactions by time and service
+  const filteredTransactions = transactions.filter(tx => {
+    // Time filter
+    if (timeFilter !== 'all') {
+      const txDate = new Date(tx.timestamp);
+      const now = new Date();
+      if (timeFilter === 'today') {
+        if (txDate.toDateString() !== now.toDateString()) return false;
       }
-    } catch (error) {
-      console.error('Failed to fetch recent transactions:', error);
-      console.log('Using mock transaction data for testing');
-      // Randomize the order to simulate "reloading"
-      const shuffled = [...MOCK_TRANSACTIONS].sort(() => Math.random() - 0.5);
-      setTransactions(shuffled.slice(0, maxItems));
+      if (timeFilter === '7days') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (txDate < weekAgo) return false;
+      }
+      if (timeFilter === '30days') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (txDate < monthAgo) return false;
+      }
     }
-  };
-
-  const mapTransactionType = (type: string): Transaction['type'] => {
-    if (type.includes('booking')) return 'booking';
-    if (type.includes('payment')) return 'payment';
-    if (type.includes('complete')) return 'completion';
-    if (type.includes('withdraw')) return 'withdrawal';
-    if (type.includes('deposit')) return 'deposit';
-    return 'payment';
-  };
-
-  const getTransactionDescription = (tx: any): string => {
-    if (tx.service_name) return `Booking: ${tx.service_name}`;
-    if (tx.type === 'deposit') return 'Funds deposited';
-    if (tx.type === 'withdrawal') return 'Barber withdrawal';
-    if (tx.type === 'completion') return 'Service completed';
-    return 'Transaction';
-  };
-
-  const getTransactionIcon = (type: Transaction['type']) => {
-    switch (type) {
-      case 'booking':
-        return 'BOOK';
-      case 'payment':
-        return 'PAY';
-      case 'completion':
-        return 'DONE';
-      case 'withdrawal':
-        return 'OUT';
-      case 'deposit':
-        return 'IN';
-      default:
-        return 'TXN';
+    
+    // Service filter
+    if (serviceFilter !== 'all') {
+      if (tx.serviceName !== serviceFilter) return false;
     }
+    
+    // Barber filter
+    if (barberFilter !== 'all') {
+      if (tx.barberName !== barberFilter) return false;
+    }
+    
+    return true;
+  });
+
+  const getServiceFilterLabel = () => {
+    return SERVICE_OPTIONS.find(o => o.value === serviceFilter)?.label || 'All Services';
   };
 
-  const getStatusColor = (status: Transaction['status']) => {
-    switch (status) {
-      case 'completed':
-      case 'confirmed':
-        return 'text-green-600 bg-green-50';
-      case 'pending':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'failed':
-        return 'text-red-600 bg-red-50';
-      default:
-        return 'text-gray-600 bg-gray-50';
-    }
+  const getBarberFilterLabel = () => {
+    return BARBER_OPTIONS.find(o => o.value === barberFilter)?.label || 'All Barbers';
   };
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, startIndex + itemsPerPage);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
+    const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
 
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     return date.toLocaleDateString();
   };
 
-  const formatAddress = (address?: string) => {
-    if (!address) return 'Unknown';
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const getStatusIcon = (status: Transaction['status']) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-green-100 text-green-700">
+            <CheckCircle className="w-4 h-4" />
+          </div>
+        );
+      case 'pending':
+        return (
+          <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-yellow-100 text-yellow-700">
+            <Clock className="w-4 h-4" />
+          </div>
+        );
+      case 'processing':
+        return (
+          <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-blue-100 text-blue-700">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+          </div>
+        );
+      case 'failed':
+        return (
+          <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-100 text-red-700">
+            <XCircle className="w-4 h-4" />
+          </div>
+        );
+    }
   };
+
+  const getTimeFilterLabel = () => {
+    return TIME_OPTIONS.find(o => o.value === timeFilter)?.label || 'All time';
+  };
+
+  const PaginationControls = () => (
+    <div className="flex items-center justify-between py-3">
+      <p className="text-sm text-gray-600">
+        Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length}
+      </p>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: Math.min(4, totalPages) }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                currentPage === page
+                  ? 'bg-primary-500 text-white'
+                  : 'hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-xl font-bold text-gray-900">Live Transactions</h3>
-          <p className="text-sm text-gray-600">Real-time blockchain activity</p>
-        </div>
-        <div className="flex items-center gap-3">
+      {/* Header */}
+      <h3 className="text-lg font-bold text-gray-900 text-center mb-4">Transactions</h3>
+      
+      {/* Filters */}
+      <div className="flex flex-row items-center justify-between sm:justify-center gap-2 sm:gap-3 mb-4">
+        {/* Time Filter */}
+        <div className="relative">
           <button
-            onClick={fetchRecentTransactions}
-            className="px-3 py-1.5 text-sm font-medium text-primary-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5"
-            title="Reload transactions"
+            onClick={() => {
+              setShowTimeDropdown(!showTimeDropdown);
+              setShowServiceDropdown(false);
+              setShowBarberDropdown(false);
+            }}
+            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reload
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span>{getTimeFilterLabel()}</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showTimeDropdown ? 'rotate-180' : ''}`} />
           </button>
-          <div className="flex items-center gap-2">
-            <div
-              className={`w-3 h-3 rounded-full ${
-                isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-              }`}
-            />
-            <span className="text-sm text-gray-600">
-              {isConnected ? 'Live' : 'Disconnected'}
-            </span>
-          </div>
+          
+          {showTimeDropdown && (
+            <div className="absolute top-full left-0 mt-2 min-w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              {TIME_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setTimeFilter(option.value);
+                    setShowTimeDropdown(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 ${
+                    timeFilter === option.value ? 'text-primary-600 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Service Filter */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowServiceDropdown(!showServiceDropdown);
+              setShowTimeDropdown(false);
+              setShowBarberDropdown(false);
+            }}
+            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            <Scissors className="w-4 h-4 text-gray-500" />
+            <span>{getServiceFilterLabel()}</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showServiceDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showServiceDropdown && (
+            <div className="absolute top-full left-0 mt-2 min-w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              {SERVICE_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setServiceFilter(option.value);
+                    setShowServiceDropdown(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 ${
+                    serviceFilter === option.value ? 'text-primary-600 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Barber Filter */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowBarberDropdown(!showBarberDropdown);
+              setShowTimeDropdown(false);
+              setShowServiceDropdown(false);
+            }}
+            className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            <User className="w-4 h-4 text-gray-500" />
+            <span>{getBarberFilterLabel()}</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showBarberDropdown ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {showBarberDropdown && (
+            <div className="absolute top-full left-0 mt-2 min-w-full bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              {BARBER_OPTIONS.map(option => (
+                <button
+                  key={option.value}
+                  onClick={() => {
+                    setBarberFilter(option.value);
+                    setShowBarberDropdown(false);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 ${
+                    barberFilter === option.value ? 'text-primary-600 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {/* Pagination Top */}
+      {filteredTransactions.length > 0 && <PaginationControls />}
+
+      {/* Transaction List */}
+      {filteredTransactions.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <div className="text-4xl mb-2 font-bold text-gray-400">TXN</div>
-          <p>No transactions yet</p>
-          <p className="text-sm mt-1">Transactions will appear here in real-time</p>
+          <Scissors className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+          <p className="font-medium">No transactions found</p>
+          <p className="text-sm mt-1">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="space-y-3 max-h-[600px] overflow-y-auto">
-          {transactions.map((tx) => (
+        <div className="space-y-3">
+          {paginatedTransactions.map((tx) => (
             <div
               key={tx.id}
-              className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:border-gray-300 transition-colors"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-gray-900 truncate">
-                    {tx.description}
-                  </span>
-                </div>
-                
-                {tx.amount && (
-                  <div className="text-sm font-medium text-primary-400 mb-1">
-                    ${tx.amount.toFixed(2)}
+              <button
+                onClick={() => setExpandedTransaction(expandedTransaction === tx.id ? null : tx.id)}
+                className="w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {getStatusIcon(tx.status)}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 truncate">{tx.serviceName}</span>
+                      <span className="text-xs text-gray-600">• {tx.barberName}</span>
+                    </div>
+                    <div className="text-xs text-gray-500">{formatTimestamp(tx.timestamp)}</div>
                   </div>
-                )}
-                
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  {tx.fromName && tx.fromId ? (
-                    <span>
-                      From:{' '}
-                      <Link
-                        to={`/admin/user/${tx.fromId}`}
-                        className="text-primary-400 hover:text-primary-600 hover:underline font-semibold"
-                      >
-                        {tx.fromName}
-                      </Link>
-                    </span>
-                  ) : tx.from ? (
-                    <span>From: {formatAddress(tx.from)}</span>
-                  ) : null}
-                  {tx.toName && tx.toId ? (
-                    <span>
-                      To:{' '}
-                      <Link
-                        to={`/admin/user/${tx.toId}`}
-                        className="text-primary-400 hover:text-primary-600 hover:underline font-semibold"
-                      >
-                        {tx.toName}
-                      </Link>
-                    </span>
-                  ) : tx.to ? (
-                    <span>To: {formatAddress(tx.to)}</span>
-                  ) : null}
-                  <span>{formatTimestamp(tx.timestamp)}</span>
                 </div>
-                
-                {tx.txHash && (
-                  <a
-                    href={`https://explorer.aptoslabs.com/txn/${tx.txHash}?network=devnet`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline mt-1 inline-block"
-                  >
-                    View on Explorer →
-                  </a>
-                )}
-              </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={`font-semibold ${tx.amount < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    ${Math.abs(tx.amount).toFixed(2)}
+                  </span>
+                  {expandedTransaction === tx.id ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </div>
+              </button>
+
+              {/* Expanded Details */}
+              {expandedTransaction === tx.id && (
+                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Customer</p>
+                      <Link
+                        to={`/admin/user/${tx.customerId}`}
+                        className="font-medium text-primary-600 hover:underline"
+                      >
+                        {tx.customerName}
+                      </Link>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Barber</p>
+                      <Link
+                        to={`/admin/user/${tx.barberId}`}
+                        className="font-medium text-primary-600 hover:underline"
+                      >
+                        {tx.barberName}
+                      </Link>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Type</p>
+                      <p className="font-medium capitalize">{tx.type}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Status</p>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tx.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        tx.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        tx.status === 'processing' ? 'bg-blue-100 text-blue-700' :
+                        'bg-red-100 text-red-700'
+                      }`}>
+                        {tx.status}
+                      </span>
+                    </div>
+                    {tx.stripeId && (
+                      <div className="col-span-2">
+                        <p className="text-gray-500">Stripe ID</p>
+                        <p className="font-mono text-xs text-gray-600">{tx.stripeId}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {transactions.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <button
-            onClick={fetchRecentTransactions}
-            className="text-sm text-primary-400 hover:text-primary-500 font-medium"
-          >
-            Refresh Transactions
-          </button>
-        </div>
-      )}
+      {/* Pagination Bottom */}
+      {filteredTransactions.length > 0 && <PaginationControls />}
     </div>
   );
 };
 
 export default RealtimeTransactionFeed;
-

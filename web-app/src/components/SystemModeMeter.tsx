@@ -212,40 +212,6 @@ export const SystemModeMeter: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Overall Status Banner */}
-      <div className={`rounded-xl p-6 ${
-        overallHealthy 
-          ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
-          : 'bg-gradient-to-r from-yellow-500 to-orange-500'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/20 rounded-full p-3">
-              {overallHealthy 
-                ? <CheckCircle className="w-8 h-8 text-white" />
-                : <AlertTriangle className="w-8 h-8 text-white" />
-              }
-            </div>
-            <div className="text-white">
-              <h3 className="text-xl font-bold">
-                {overallHealthy ? 'All Systems Operational' : 'System Issues Detected'}
-              </h3>
-              <p className="text-white/80 text-sm">
-                Last checked: {new Date(health.timestamp).toLocaleTimeString()}
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={fetchHealth}
-            disabled={refreshing}
-            className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-      </div>
-
       {/* Error Banner */}
       {error && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
@@ -320,54 +286,7 @@ export const SystemModeMeter: React.FC = () => {
         ))}
       </div>
 
-      {/* System Metrics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-primary-500" />
-          System Metrics
-        </h3>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Uptime */}
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <Clock className="w-6 h-6 text-blue-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900">
-              {formatUptime(health.metrics.uptime)}
-            </div>
-            <div className="text-xs text-gray-500">Uptime</div>
-          </div>
-
-          {/* Memory */}
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <HardDrive className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900">
-              {health.metrics.memoryUsage.percentage}%
-            </div>
-            <div className="text-xs text-gray-500">
-              {health.metrics.memoryUsage.used}MB / {health.metrics.memoryUsage.total}MB
-            </div>
-          </div>
-
-          {/* Connections */}
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <Database className="w-6 h-6 text-green-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-900">
-              {health.metrics.activeConnections}
-            </div>
-            <div className="text-xs text-gray-500">Active Connections</div>
-          </div>
-
-          {/* Environment */}
-          <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <Server className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <div className="text-lg font-bold text-gray-900 capitalize">
-              {health.metrics.environment}
-            </div>
-            <div className="text-xs text-gray-500">{health.metrics.nodeVersion}</div>
-          </div>
-        </div>
       </div>
-    </div>
   );
 };
 

@@ -211,57 +211,6 @@ export default function AdminFraudDetectionPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending Flags</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.pendingFlags}</p>
-              </div>
-              <div className="bg-orange-100 rounded-lg p-3">
-                <Clock className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">High Risk</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.highRiskUsers}</p>
-              </div>
-              <div className="bg-red-100 rounded-lg p-3">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Resolved</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.resolvedFlags}</p>
-              </div>
-              <div className="bg-green-100 rounded-lg p-3">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Avg Response</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.avgResponseTime}m</p>
-              </div>
-              <div className="bg-blue-100 rounded-lg p-3">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
         {/* Filters */}
         <Card className="p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">

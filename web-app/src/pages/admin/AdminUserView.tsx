@@ -39,7 +39,7 @@ type UserAccount = {
   email: string;
   phone: string;
   role: UserRole;
-  wallet_address: string;
+  wallet_address?: string; // Not used in v1 (off-chain)
   status: UserStatus;
   is_verified: boolean;
   created_at: string;
@@ -70,6 +70,132 @@ type Transaction = {
   counterparty: string;
 };
 
+// Mock data for users
+const mockUsers: Record<string, UserAccount> = {
+  'barber-1': {
+    id: 'barber-1',
+    name: 'Marcus Thompson',
+    email: 'marcus.thompson@calpoly.edu',
+    phone: '(805) 555-0123',
+    role: 'barber',
+    wallet_address: '0x1234...5678',
+    status: 'active',
+    is_verified: true,
+    created_at: '2024-01-15T10:00:00Z',
+    last_login: '2024-12-24T14:30:00Z',
+    total_bookings: 156,
+    total_earned: 4850,
+    average_rating: 4.9,
+    specialties: ['Fades', 'Curly Hair', 'Beard Grooming'],
+    campus: 'California Polytechnic State University',
+    admin_notes: ['Top performer on campus', 'No complaints'],
+    flags: [],
+  },
+  'barber-2': {
+    id: 'barber-2',
+    name: 'Jordan Williams',
+    email: 'jordan.w@calpoly.edu',
+    phone: '(805) 555-0456',
+    role: 'barber',
+    wallet_address: '0x2345...6789',
+    status: 'active',
+    is_verified: true,
+    created_at: '2024-02-20T10:00:00Z',
+    last_login: '2024-12-23T16:00:00Z',
+    total_bookings: 98,
+    total_earned: 2940,
+    average_rating: 4.7,
+    specialties: ['Line Ups', 'Designs', 'Buzz Cuts'],
+    campus: 'California Polytechnic State University',
+    admin_notes: [],
+    flags: [],
+  },
+  'barber-3': {
+    id: 'barber-3',
+    name: 'Alex Chen',
+    email: 'alex.chen@ucsb.edu',
+    phone: '(805) 555-0789',
+    role: 'barber',
+    wallet_address: '0x3456...7890',
+    status: 'active',
+    is_verified: true,
+    created_at: '2024-03-10T10:00:00Z',
+    last_login: '2024-12-24T09:00:00Z',
+    total_bookings: 203,
+    total_earned: 6495,
+    average_rating: 4.8,
+    specialties: ['Asian Hair', 'Textured Cuts', 'Modern Styles'],
+    campus: 'University of California, Santa Barbara',
+    admin_notes: ['Excellent customer service'],
+    flags: [],
+  },
+  'student-1': {
+    id: 'student-1',
+    name: 'John Doe',
+    email: 'jdoe@calpoly.edu',
+    phone: '(805) 555-1001',
+    role: 'student',
+    wallet_address: '0x4567...8901',
+    status: 'active',
+    is_verified: true,
+    created_at: '2024-01-20T10:00:00Z',
+    last_login: '2024-12-24T11:00:00Z',
+    total_bookings: 12,
+    total_spent: 420,
+    campus: 'California Polytechnic State University',
+    admin_notes: [],
+    flags: [],
+  },
+  'student-2': {
+    id: 'student-2',
+    name: 'Jane Smith',
+    email: 'jsmith@calpoly.edu',
+    phone: '(805) 555-1002',
+    role: 'student',
+    wallet_address: '0x5678...9012',
+    status: 'active',
+    is_verified: true,
+    created_at: '2024-02-15T10:00:00Z',
+    last_login: '2024-12-23T15:00:00Z',
+    total_bookings: 8,
+    total_spent: 280,
+    campus: 'California Polytechnic State University',
+    admin_notes: [],
+    flags: [],
+  },
+  'student-3': {
+    id: 'student-3',
+    name: 'Mike Johnson',
+    email: 'mjohnson@calpoly.edu',
+    phone: '(805) 555-1003',
+    role: 'student',
+    wallet_address: '0x6789...0123',
+    status: 'active',
+    is_verified: false,
+    created_at: '2024-03-01T10:00:00Z',
+    last_login: '2024-12-22T10:00:00Z',
+    total_bookings: 5,
+    total_spent: 175,
+    campus: 'California Polytechnic State University',
+    admin_notes: [],
+    flags: [],
+  },
+};
+
+const mockActivityLogs: ActivityLog[] = [
+  { id: '1', timestamp: '2024-12-24T14:30:00Z', action: 'Login', details: 'User logged in from iOS app' },
+  { id: '2', timestamp: '2024-12-24T10:00:00Z', action: 'Booking Completed', details: 'Completed booking #1234' },
+  { id: '3', timestamp: '2024-12-23T16:00:00Z', action: 'Profile Updated', details: 'Updated availability schedule' },
+  { id: '4', timestamp: '2024-12-22T12:00:00Z', action: 'Payment Received', details: 'Received $35 for fade haircut' },
+];
+
+const mockTransactions: Transaction[] = [
+  { id: 'tx-1', type: 'Payment Received', amount: 35, date: '2024-12-24T10:00:00Z', status: 'completed', counterparty: 'John Doe' },
+  { id: 'tx-2', type: 'Payment Received', amount: 45, date: '2024-12-23T14:00:00Z', status: 'completed', counterparty: 'Jane Smith' },
+  { id: 'tx-3', type: 'Payout', amount: -75, date: '2024-12-22T09:00:00Z', status: 'completed', counterparty: 'Bank Account' },
+  { id: 'tx-4', type: 'Payment Received', amount: 30, date: '2024-12-21T11:00:00Z', status: 'completed', counterparty: 'Mike Johnson' },
+];
+
 export default function AdminUserView() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -82,168 +208,86 @@ export default function AdminUserView() {
   const [adminNote, setAdminNote] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
 
-  // Fetch user data from API
+  // Load user data from mock data (will be replaced with API call later)
   useEffect(() => {
-    const fetchUserData = async () => {
-      setIsLoading(true);
-      
-      try {
-        const response = await fetch(`http://localhost:3001/api/admin/users/${userId}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          setUser(data.user);
-          setActivityLogs(data.activityLogs);
-          setTransactions(data.transactions);
-        } else {
-          console.error('Failed to fetch user data:', data.message);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    setIsLoading(true);
     
-    if (userId) {
-      fetchUserData();
-    }
+    // Simulate API delay
+    setTimeout(() => {
+      if (userId && mockUsers[userId]) {
+        setUser(mockUsers[userId]);
+        setActivityLogs(mockActivityLogs);
+        setTransactions(mockTransactions);
+      }
+      setIsLoading(false);
+    }, 300);
   }, [userId]);
 
-  const handleStatusChange = async (newStatus: UserStatus) => {
+  const handleStatusChange = (newStatus: UserStatus) => {
     if (!user) return;
     
     setIsActioning(true);
     
-    try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setUser(data.user);
-        alert(`User status updated to ${newStatus}`);
-      } else {
-        alert(`Failed to update status: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      alert('Error updating status');
-    } finally {
+    // Mock status update (will be replaced with API call)
+    setTimeout(() => {
+      setUser({ ...user, status: newStatus });
       setIsActioning(false);
-    }
+      alert(`User status updated to ${newStatus}`);
+    }, 300);
   };
 
-  const handleVerificationToggle = async () => {
+  const handleVerificationToggle = () => {
     if (!user) return;
     
     setIsActioning(true);
     
-    try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${userId}/verification`, {
-        method: 'PUT',
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setUser(data.user);
-        alert(`Verification ${data.user.is_verified ? 'granted' : 'revoked'}`);
-      } else {
-        alert(`Failed to toggle verification: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Error toggling verification:', error);
-      alert('Error toggling verification');
-    } finally {
+    // Mock verification toggle (will be replaced with API call)
+    setTimeout(() => {
+      const newVerified = !user.is_verified;
+      setUser({ ...user, is_verified: newVerified });
       setIsActioning(false);
-    }
+      alert(`Verification ${newVerified ? 'granted' : 'revoked'}`);
+    }, 300);
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPassword = () => {
     if (!user) return;
     if (!window.confirm(`Send password reset email to ${user.email}?`)) return;
     
     setIsActioning(true);
     
-    try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        alert(data.message);
-      } else {
-        alert(`Failed to reset password: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      alert('Error resetting password');
-    } finally {
+    // Mock password reset (will be replaced with API call)
+    setTimeout(() => {
       setIsActioning(false);
-    }
+      alert(`Password reset email sent to ${user.email}`);
+    }, 300);
   };
 
-  const handleDeleteAccount = async () => {
+  const handleDeleteAccount = () => {
     if (!user) return;
     
     setIsActioning(true);
     
-    try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${userId}`, {
-        method: 'DELETE',
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        alert('Account deleted successfully. Redirecting...');
-        setTimeout(() => navigate('/admin'), 1000);
-      } else {
-        alert(`Failed to delete account: ${data.message}`);
-        setIsActioning(false);
-      }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Error deleting account');
-      setIsActioning(false);
-    }
+    // Mock delete (will be replaced with API call)
+    setTimeout(() => {
+      alert('Account deleted successfully. Redirecting...');
+      navigate(-1);
+    }, 300);
   };
 
-  const handleAddNote = async () => {
+  const handleAddNote = () => {
     if (!user || !adminNote.trim()) return;
     
     setIsActioning(true);
     
-    try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${userId}/notes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note: adminNote }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setUser(data.user);
-        setAdminNote('');
-        setShowAddNote(false);
-        alert('Note added successfully');
-      } else {
-        alert(`Failed to add note: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Error adding note:', error);
-      alert('Error adding note');
-    } finally {
+    // Mock add note (will be replaced with API call)
+    setTimeout(() => {
+      setUser({ ...user, admin_notes: [...user.admin_notes, adminNote] });
+      setAdminNote('');
+      setShowAddNote(false);
       setIsActioning(false);
-    }
+      alert('Note added successfully');
+    }, 300);
   };
 
   const getStatusColor = (status: UserStatus) => {
@@ -387,113 +431,28 @@ export default function AdminUserView() {
               </div>
 
               <div className="mt-4 pt-4 border-t">
-                <p className="text-xs text-gray-600 mb-1">Wallet Address</p>
-                <p className="font-mono text-sm text-gray-900 break-all">{user.wallet_address}</p>
-              </div>
-
-              <div className="mt-4 pt-4 border-t">
                 <p className="text-xs text-gray-600 mb-1">Campus</p>
                 <p className="font-semibold text-gray-900">{user.campus}</p>
               </div>
             </Card>
 
-            {/* Stats */}
+            {/* Campus Manager Comments */}
             <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Performance Stats</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-gray-900">{user.total_bookings}</p>
-                  <p className="text-xs text-gray-600">Total Bookings</p>
-                </div>
-                {user.total_earned !== undefined && (
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">${user.total_earned.toLocaleString()}</p>
-                    <p className="text-xs text-gray-600">Total Earned</p>
-                  </div>
-                )}
-                {user.total_spent !== undefined && (
-                  <div className="text-center p-4 bg-primary-50 rounded-lg">
-                    <DollarSign className="w-6 h-6 text-primary-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">${user.total_spent.toLocaleString()}</p>
-                    <p className="text-xs text-gray-600">Total Spent</p>
-                  </div>
-                )}
-                {user.average_rating !== undefined && (
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <Award className="w-6 h-6 text-yellow-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">{user.average_rating.toFixed(1)}</p>
-                    <p className="text-xs text-gray-600">Avg Rating</p>
-                  </div>
-                )}
-              </div>
-              {user.specialties && user.specialties.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-gray-600 mb-2">Specialties</p>
-                  <div className="flex flex-wrap gap-2">
-                    {user.specialties.map((specialty) => (
-                      <span
-                        key={specialty}
-                        className="px-3 py-1 bg-primary-100 text-primary-600 text-sm font-medium rounded-full"
-                      >
-                        {specialty}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            {/* Activity Logs */}
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Recent Activity</h3>
-                <Eye className="w-5 h-5 text-gray-400" />
-              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Campus Manager Comments</h3>
               <div className="space-y-3">
-                {activityLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-gray-900">{log.action}</span>
-                        <span className="text-xs text-gray-500">{formatDate(log.timestamp)}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">{log.details}</p>
+                {user.admin_notes && user.admin_notes.length > 0 ? (
+                  user.admin_notes.map((note, idx) => (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-700">{note}</p>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic">None</p>
+                )}
               </div>
             </Card>
 
-            {/* Transactions */}
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Transaction History</h3>
-                <DollarSign className="w-5 h-5 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                {transactions.map((tx) => (
-                  <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">{tx.type}</p>
-                      <p className="text-xs text-gray-600">{tx.counterparty}</p>
-                      <p className="text-xs text-gray-500 mt-1">{formatDate(tx.date)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-lg font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {tx.amount > 0 ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
-                      </p>
-                      <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded">
-                        {tx.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+            </div>
 
           {/* Right Column - Admin Controls */}
           <div className="space-y-6">
@@ -537,90 +496,6 @@ export default function AdminUserView() {
                   <Ban className="w-4 h-4 mr-2" />
                   Ban Permanently
                 </Button>
-              </div>
-            </Card>
-
-            {/* Verification */}
-            <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5" />
-                Verification
-              </h3>
-              <Button
-                className="w-full"
-                variant={user.is_verified ? 'secondary' : 'primary'}
-                onClick={handleVerificationToggle}
-                disabled={isActioning}
-              >
-                {user.is_verified ? (
-                  <>
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Revoke Verification
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Verify Account
-                  </>
-                )}
-              </Button>
-            </Card>
-
-            {/* Admin Notes */}
-            <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Admin Notes
-              </h3>
-              
-              {!showAddNote ? (
-                <Button
-                  className="w-full mb-4"
-                  variant="secondary"
-                  onClick={() => setShowAddNote(true)}
-                >
-                  Add Note
-                </Button>
-              ) : (
-                <div className="mb-4 space-y-2">
-                  <textarea
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                    rows={3}
-                    placeholder="Enter admin note..."
-                    value={adminNote}
-                    onChange={(e) => setAdminNote(e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={handleAddNote}
-                      disabled={!adminNote.trim() || isActioning}
-                    >
-                      Save Note
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        setShowAddNote(false);
-                        setAdminNote('');
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {user.admin_notes.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">No admin notes</p>
-                ) : (
-                  user.admin_notes.map((note, idx) => (
-                    <div key={idx} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                      {note}
-                    </div>
-                  ))
-                )}
               </div>
             </Card>
 

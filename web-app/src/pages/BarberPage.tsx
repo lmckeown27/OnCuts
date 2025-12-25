@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X, Clock, Zap } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, Star, MapPin, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberProfileEditor from '../components/BarberProfileEditor';
@@ -425,6 +425,16 @@ export default function BarberPage() {
                   )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
+                  <button
+                    onClick={() => {
+                      navigate(`${platformPrefix}/admin-role-select`);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-gray-500" />
+                    Back to Roles
+                  </button>
                   <button
                     onClick={() => {
                       useAuthStore.getState().logout();
