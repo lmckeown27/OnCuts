@@ -446,7 +446,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openServiceDetails} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openServiceDetails} onWalkInClick={() => setShowWalkInPayment(true)} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -599,9 +599,10 @@ interface DashboardViewProps {
   navigate: any;
   barberId: string;
   onViewDetails: (appointmentId: string) => void;
+  onWalkInClick: () => void;
 }
 
-function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
@@ -780,7 +781,7 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           {/* Walk-in Button - top on mobile, left on desktop */}
           <button
-            onClick={() => setShowWalkInPayment(true)}
+            onClick={onWalkInClick}
             className="px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold"
             title="Quick payment for walk-in customers"
           >
