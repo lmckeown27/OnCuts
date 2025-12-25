@@ -121,15 +121,9 @@ export default function AdminHeader({ title }: Props) {
     <>
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo - centered on mobile, left on desktop */}
-            <div className="flex-1 sm:flex-none flex items-center justify-center sm:justify-start gap-2 sm:gap-4">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-8 sm:h-10 w-auto" />
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 hidden sm:block">{title}</h1>
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* How Payments Work Button */}
+          <div className="flex items-center justify-between relative">
+            {/* Left section - How Payments Work Button */}
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={openModal}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
@@ -138,7 +132,14 @@ export default function AdminHeader({ title }: Props) {
                 <HelpCircle className="w-4 h-4 text-primary-600" />
                 <span className="text-sm font-medium text-primary-700 hidden sm:inline">How Payments Work</span>
               </button>
-
+            </div>
+            
+            {/* Center section - Logo */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
+            </div>
+            
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Admin Profile Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <button

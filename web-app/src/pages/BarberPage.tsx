@@ -319,7 +319,7 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Switch to Consumer + Walk-in */}
+            {/* Left section - Switch to Consumer */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Switch to Consumer - always on left */}
               <button
@@ -330,21 +330,11 @@ export default function BarberPage() {
                 <Calendar className="w-4 h-4 text-primary-600" />
                 <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
               </button>
-              
-              {/* Walk-in Payment Button */}
-              <button
-                onClick={() => setShowWalkInPayment(true)}
-                className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium"
-                title="Quick payment for walk-in customers"
-              >
-                <Zap className="w-4 h-4" />
-                <span className="hidden sm:inline">Walk-in</span>
-              </button>
             </div>
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Booking Requests + Profile */}
@@ -787,7 +777,17 @@ function DashboardView({ navigate, barberId, onViewDetails }: DashboardViewProps
           onTouchEnd={handleTouchEnd}
           className="touch-pan-y"
         >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3 sm:gap-0 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          {/* Walk-in Button - top on mobile, left on desktop */}
+          <button
+            onClick={() => setShowWalkInPayment(true)}
+            className="px-4 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold"
+            title="Quick payment for walk-in customers"
+          >
+            Walk-in
+          </button>
+          
+          {/* View Toggle Buttons */}
           <div className="flex gap-2 sm:gap-3">
             <button
               onClick={() => setScheduleView('daily')}

@@ -224,13 +224,11 @@ export default function ConsumerPage() {
                 <Scissors className="w-4 h-4 text-primary-600" />
                 <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
               </button>
-              {/* Logo - hidden on mobile (shown in center), visible on desktop */}
-              <img src={CampusCutLogo} alt="CampusCut" className="hidden sm:block h-10 w-auto" />
             </div>
             
-            {/* Center section - Logo on mobile only */}
-            <div className="sm:hidden absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
+            {/* Center section - Logo (centered on all screen sizes) */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Profile only */}
