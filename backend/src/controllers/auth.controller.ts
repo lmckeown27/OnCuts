@@ -512,7 +512,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, is_active, email_verified
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified
        FROM users WHERE email = $1`,
       [email]
     );
@@ -523,7 +523,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     const user = result.rows[0];
 
-    if (!user.is_active) {
+    if (user.isBlocked || user.isBanned) {
       throw new ApiError(403, 'Account is deactivated');
     }
 
