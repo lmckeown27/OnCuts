@@ -1,8 +1,11 @@
+// Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -85,8 +88,7 @@ import fiatBridgeRoutes from './routes/fiat-bridge.routes';
 // Circle USDC Integration
 import circleWebhookRoutes from './routes/circle-webhook.routes';
 
-// Load environment variables
-dotenv.config();
+// Environment variables already loaded at top of file
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
