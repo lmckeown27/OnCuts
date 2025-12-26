@@ -277,30 +277,32 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Account Verification</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <h2 style="color: #022b19; margin-bottom: 20px;">Welcome to CampusCut!</h2>
     
-    <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+    <p style="color: #555555; line-height: 1.6; margin-bottom: 25px;">
       We're excited to have you join our campus community. To complete your registration, 
       please enter the verification code below.
     </p>
     
-    <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border: 2px dashed #22c55e;">
+    <div style="text-align: center; margin: 30px 0; padding: 25px; background-color: #dcfce7; border-radius: 12px; border: 2px dashed #22c55e;">
       <p style="color: #166534; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
         Your Verification Code
       </p>
-      <div style="font-size: 40px; font-weight: bold; color: #022b19; letter-spacing: 10px; font-family: 'Courier New', monospace;">
+      <div style="font-size: 40px; font-weight: bold; color: #000000; letter-spacing: 10px; font-family: 'Courier New', monospace;">
         ${code}
       </div>
-      <p style="color: #6b7280; margin: 15px 0 0 0; font-size: 13px;">
-        ⏱️ This code expires in <strong>10 minutes</strong>
+      <p style="color: #374151; margin: 15px 0 0 0; font-size: 13px;">
+        This code expires in <strong>10 minutes</strong>
       </p>
     </div>
     
@@ -363,14 +365,14 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Password Reset</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <h2 style="color: #022b19; margin-bottom: 20px;">Reset Your Password</h2>
     
-    <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+    <p style="color: #555555; line-height: 1.6; margin-bottom: 25px;">
       You requested to reset your password for your CampusCut account. 
       Click the button below to create a new password.
     </p>
@@ -382,7 +384,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
     </p>
     
     <p style="color: #dc2626; font-size: 14px; text-align: center;">
-      ⏱️ This link expires in <strong>1 hour</strong>
+      This link expires in <strong>1 hour</strong>
     </p>
     
     <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
@@ -426,7 +428,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Welcome to CampusCut! ✂️',
+      subject: 'Welcome to CampusCut!',
       text: `
 Welcome to CampusCut, ${firstName}!
 
@@ -452,24 +454,24 @@ CampusCut Team
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">✂️ CampusCut</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
     <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Welcome Aboard!</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-    <h2 style="color: #022b19; margin-bottom: 20px;">Hey ${firstName}! 👋</h2>
+    <h2 style="color: #022b19; margin-bottom: 20px;">Hey ${firstName}!</h2>
     
-    <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
+    <p style="color: #555555; line-height: 1.6; margin-bottom: 20px;">
       Your account has been verified and you're all set! Welcome to the CampusCut community.
     </p>
     
     <div style="background-color: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0;">
       <p style="color: #166534; font-weight: 600; margin: 0 0 10px 0;">Here's what you can do now:</p>
-      <ul style="color: #555; margin: 0; padding-left: 20px;">
-        <li>📍 Discover talented barbers on your campus</li>
-        <li>📅 Book appointments that fit your schedule</li>
-        <li>💳 Pay securely through the app</li>
-        <li>⭐ Leave reviews and help others find great cuts</li>
+      <ul style="color: #555555; margin: 0; padding-left: 20px;">
+        <li>Discover talented barbers on your campus</li>
+        <li>Book appointments that fit your schedule</li>
+        <li>Pay securely through the app</li>
+        <li>Leave reviews and help others find great cuts</li>
       </ul>
     </div>
     
