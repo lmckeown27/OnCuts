@@ -93,6 +93,10 @@ import circleWebhookRoutes from './routes/circle-webhook.routes';
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - required when running behind Nginx reverse proxy
+// This ensures rate limiting and IP detection work correctly
+app.set('trust proxy', 1);
+
 // Create HTTP server for Socket.IO
 const httpServer = createServer(app);
 
