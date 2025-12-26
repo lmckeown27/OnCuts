@@ -1,6 +1,7 @@
 // API Configuration - Uses environment variables from .env
-export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
-export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+// Production fallback uses EC2 public IP; for local dev, set VITE_API_URL in .env
+export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://13.57.219.149:3001/api/v1';
+export const WS_URL = import.meta.env.VITE_WS_URL || 'ws://13.57.219.149:3001';
 export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
 
 // Aptos Blockchain Configuration
