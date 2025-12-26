@@ -193,7 +193,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     }
 
     // Step 3: Look up or create campus based on email domain
-    let campusId: number;
+    let campusId: string;
     const existingCampus = await pool.query(
       'SELECT id, name FROM campuses WHERE domain = $1',
       [emailDomain]
@@ -204,11 +204,15 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       logger.info(`Found existing campus: ${existingCampus.rows[0].name} (ID: ${campusId})`);
     } else {
       // Create new campus entry for this domain
+      // Generate slug from domain (e.g., "calpoly.edu" -> "calpoly")
+      const slug = emailDomain.replace('.edu', '').replace(/\./g, '-');
+      const universityName = domainValidation.university || emailDomain.replace('.edu', '').toUpperCase();
+      
       const newCampus = await pool.query(
-        `INSERT INTO campuses (name, domain, country, is_active)
-         VALUES ($1, $2, $3, TRUE)
+        `INSERT INTO campuses (id, slug, name, city, state, country, timezone, domain, "isActive", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, 'Unknown', 'XX', 'US', 'America/Los_Angeles', $3, TRUE, NOW())
          RETURNING id`,
-        [domainValidation.university || emailDomain, emailDomain, domainValidation.country || 'USA']
+        [slug, universityName, emailDomain]
       );
       campusId = newCampus.rows[0].id;
       logger.info(`Created new campus: ${emailDomain} (ID: ${campusId})`);
