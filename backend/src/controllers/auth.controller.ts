@@ -535,7 +535,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     // Update last login
-    await pool.query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+    await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
     // Generate JWT access token
     const token = generateAccessToken({
