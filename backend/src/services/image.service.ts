@@ -264,12 +264,16 @@ export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail
   
   // If BASE_URL is explicitly set, use it
   if (process.env.BASE_URL) {
-    return `${process.env.BASE_URL}/uploads/${prefix}${filename}`;
+    const url = `${process.env.BASE_URL}/uploads/${prefix}${filename}`;
+    console.log(`[generateImageUrl] Using BASE_URL: "${process.env.BASE_URL}" -> "${url}"`);
+    return url;
   }
   
   // Use /api/uploads/ path - this goes through Nginx's /api/ proxy
   // which routes to the backend where the files are stored
-  return `/api/uploads/${prefix}${filename}`;
+  const url = `/api/uploads/${prefix}${filename}`;
+  console.log(`[generateImageUrl] Generated URL: "${url}"`);
+  return url;
 };
 
 /**
