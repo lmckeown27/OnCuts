@@ -54,7 +54,7 @@ export default function LoginPage() {
 
     try {
       const result = await login(formData.email, formData.password);
-      toast.success('Welcome back!');
+      toast.success('Login successful!');
       
       // Redirect admin to role selection page
       if (result.isAdmin) {
@@ -87,9 +87,9 @@ export default function LoginPage() {
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome Back
+            Sign In
           </h1>
-          <p className="text-gray-300">Sign in to your CampusCut account</p>
+          <p className="text-gray-300">Access your CampusCut account</p>
         </div>
 
         {/* Form Card */}

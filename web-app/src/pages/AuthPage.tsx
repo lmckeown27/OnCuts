@@ -136,7 +136,7 @@ export default function AuthPage() {
 
     try {
       const result = await login(loginData.email, loginData.password);
-      toast.success('Welcome back!');
+      toast.success('Login successful!');
       
       // Redirect admin to role selection page
       if (result.isAdmin) {
@@ -226,10 +226,10 @@ export default function AuthPage() {
             />
           </Link>
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
-            {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+            {mode === 'login' ? 'Sign In' : 'Create Account'}
           </h1>
           <p className="text-sm sm:text-base text-gray-300">
-            {mode === 'login' ? 'Sign in to your CampusCut account' : 'Join CampusCut today'}
+            {mode === 'login' ? 'Access your CampusCut account' : 'Join CampusCut today'}
           </p>
         </div>
 

@@ -42,7 +42,7 @@ export default function LoginPageBlockchain() {
       {
         onSuccess: (response) => {
           if (response.success) {
-            toast.success('Welcome back!');
+            toast.success('Login successful!');
             // Navigation happens automatically in the hook
           } else {
             toast.error(response.message || 'Invalid email or password');
@@ -70,9 +70,9 @@ export default function LoginPageBlockchain() {
         {/* Login Form */}
         <div className="bg-white rounded-lg shadow-xl p-8 space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Sign in to your account
+              Access your account
             </p>
           </div>
 
