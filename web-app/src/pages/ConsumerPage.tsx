@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
+import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
@@ -44,6 +45,7 @@ export default function ConsumerPage() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
+  const [showBarberApplication, setShowBarberApplication] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -106,14 +108,14 @@ export default function ConsumerPage() {
           <div className="flex items-center justify-between relative">
             {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Switch to Barber - always on left */}
+              {/* Apply to be a Barber - always on left */}
               <button
-                onClick={() => navigate(`${platformPrefix}/barber`)}
+                onClick={() => setShowBarberApplication(true)}
                 className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                title="Switch to Barber view"
+                title="Apply to become a barber"
               >
                 <Scissors className="w-4 h-4 text-primary-600" />
-                <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
+                <span className="hidden sm:inline text-sm font-medium text-primary-700">Become a Barber</span>
               </button>
             </div>
             
@@ -221,6 +223,12 @@ export default function ConsumerPage() {
           </div>
         </div>
       )}
+
+      {/* Barber Application Modal */}
+      <BarberApplicationModal
+        isOpen={showBarberApplication}
+        onClose={() => setShowBarberApplication(false)}
+      />
     </div>
   );
 }
