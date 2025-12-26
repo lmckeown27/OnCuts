@@ -107,6 +107,8 @@ const httpServer = createServer(app);
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
+  'https://campuscut.com',
+  'https://www.campuscut.com',
   'https://campuscuts.app',
   'https://www.campuscuts.app',
   'https://api.campuscuts.app',
