@@ -204,13 +204,28 @@ app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoute
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-  message: 'Too many requests from this IP, please try again later.',
+// Rate limiting - Production-ready settings
+// General API: 1000 requests per 15 minutes (generous for normal usage)
+const generalLimiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'), // 1000 requests per window
+  message: { error: 'Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use('/api', limiter);
+
+// Auth endpoints: Stricter limits to prevent brute force (20 per 15 min)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 auth attempts per window
+  message: { error: 'Too many authentication attempts, please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiters
+app.use('/api/v1/auth', authLimiter);
+app.use('/api', generalLimiter);
 
 // Health check (Hybrid Architecture - checks Blockchain + PostgreSQL cache)
 app.get('/health', async (req: Request, res: Response) => {
