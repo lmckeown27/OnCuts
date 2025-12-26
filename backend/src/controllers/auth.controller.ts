@@ -350,9 +350,10 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     // Create user in database (off-chain for v1 - no blockchain wallets)
     // Note: Column names use camelCase in the database schema
+    // id uses gen_random_uuid() since the column has no default
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, "campusId", role, email_verified)
-       VALUES ($1, $2, $3, $4, $5, $6::\"UserRole\", TRUE)
+      `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, email_verified, "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NOW())
        RETURNING id, email, first_name, last_name, "campusId", role, "createdAt"`,
       [
         pendingReg.email,
