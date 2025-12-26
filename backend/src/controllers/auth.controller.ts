@@ -370,8 +370,15 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     const user = result.rows[0];
 
-    // Generate JWT access token
+    // Generate JWT tokens
     const token = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      campusId: user.campusId,
+    });
+
+    const refreshToken = generateRefreshToken({
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -398,7 +405,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
           campusId: user.campusId,
           emailVerified: true
         },
-        token
+        accessToken: token,
+        refreshToken
       }
     });
   } catch (error) {
@@ -537,8 +545,15 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     // Update last login
     await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
-    // Generate JWT access token
+    // Generate JWT tokens
     const token = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      campusId: user.campusId,
+    });
+
+    const refreshToken = generateRefreshToken({
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -559,7 +574,8 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           campusId: user.campusId,
           emailVerified: user.email_verified,
         },
-        token,
+        accessToken: token,
+        refreshToken,
       },
     });
   } catch (error) {
