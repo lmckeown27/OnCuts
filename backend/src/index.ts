@@ -28,7 +28,6 @@ import messageRoutes from './routes/message.routes';
 import notificationRoutes from './routes/notification.routes';
 import uploadRoutes from './routes/upload.routes';
 import walletRoutes from './routes/wallet.routes';
-import devRoutes from './routes/dev.routes';
 
 // V2 Routes (Production custodial wallet system)
 import bookingV2Routes from './routes/booking-v2.routes';
@@ -355,11 +354,6 @@ logger.info('   - /api/bookings-blockchain (smart contract escrow)');
 logger.info('   - /api/reviews-blockchain (immutable reviews + IPFS text)');
 logger.info('   - /api/fiat-bridge (Stripe → Blockchain deposits & withdrawals)');
 
-// Development routes (mock database testing)
-if (process.env.NODE_ENV === 'development') {
-  app.use('/api/dev', devRoutes);
-  logger.info('🧪 Development routes enabled at /api/dev');
-}
 
 // 404 handler
 app.use((req: Request, res: Response) => {

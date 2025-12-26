@@ -48,80 +48,19 @@ interface Appointment {
   status: 'upcoming' | 'completed';
 }
 
-const MOCK_REQUESTS: BookingRequest[] = [
-  {
-    id: '1',
-    customerName: 'John Davis',
-    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=John',
-    service: 'Fade + Beard Trim',
-    date: 'Today',
-    time: '2:00 PM',
-    location: 'Poly Canyon Dorms',
-    price: 28,
-    customerRating: 4.8
-  },
-  {
-    id: '2',
-    customerName: 'Michael Chen',
-    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
-    service: 'Haircut',
-    date: 'Tomorrow',
-    time: '10:30 AM',
-    location: 'Cerro Vista Apartments',
-    price: 20,
-    customerRating: 4.9
-  },
-  {
-    id: '3',
-    customerName: 'Sarah Williams',
-    customerImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-    service: 'Full Service',
-    date: 'Dec 20',
-    time: '3:00 PM',
-    location: 'Campus Market',
-    price: 35,
-    customerRating: 5.0
-  }
-];
-
-const MOCK_APPOINTMENTS: Appointment[] = [
-  {
-    id: '1',
-    customerName: 'Alex Johnson',
-    service: 'Fade',
-    time: '11:00 AM',
-    price: 22,
-    status: 'upcoming'
-  },
-  {
-    id: '2',
-    customerName: 'Chris Taylor',
-    service: 'Beard Trim',
-    time: '1:30 PM',
-    price: 15,
-    status: 'upcoming'
-  },
-  {
-    id: '3',
-    customerName: 'Jamie Lee',
-    service: 'Haircut + Color',
-    time: '4:00 PM',
-    price: 45,
-    status: 'upcoming'
-  }
-];
 
 export default function MobileBarberPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'schedule' | 'requests' | 'earnings' | 'profile'>('schedule');
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<BookingRequest[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showRequestDetail, setShowRequestDetail] = useState<BookingRequest | null>(null);
   const [swipingRequest, setSwipingRequest] = useState<string | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
-  const todayEarnings = 87;
-  const weekEarnings = 412;
-  const todayAppointments = 3;
+  const todayEarnings = 0;
+  const weekEarnings = 0;
+  const todayAppointments = appointments.length;
 
   const handleAcceptRequest = (requestId: string) => {
     setRequests(requests.filter(r => r.id !== requestId));
@@ -192,7 +131,7 @@ export default function MobileBarberPage() {
               <button className="text-primary-600 text-sm font-medium">View Calendar</button>
             </div>
 
-            {MOCK_APPOINTMENTS.map((appointment) => (
+            {appointments.map((appointment) => (
               <div
                 key={appointment.id}
                 className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 active:scale-98 transition-transform"

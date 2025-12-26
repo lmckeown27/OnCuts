@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { pool } from '../database/connection';
-import mockDatabaseService from '../services/mock.database.service';
 import { logger } from '../utils/logger';
 
 /**
@@ -63,27 +62,54 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
 
-    const user = await mockDatabaseService.findUserById(id);
-
-    if (!user) {
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Filter out fields that shouldn't be updated
-    const { id: _id, email, role, password_hash, ...allowedUpdates } = updates;
+    // Build update query dynamically
+    const allowedFields = ['first_name', 'last_name', 'displayName', 'bio', 'avatarUrl', 'phoneNumber', 'instagramHandle'];
+    const updateFields: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
 
-    // Update user using the service method
-    const updatedUser = await mockDatabaseService.updateUser(id, allowedUpdates);
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        updateFields.push(`"${field}" = $${paramIndex}`);
+        values.push(updates[field]);
+        paramIndex++;
+      }
+    }
 
-    const { password_hash: _pwd, ...userWithoutPassword } = updatedUser;
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update',
+      });
+    }
+
+    // Add updatedAt
+    updateFields.push(`"updatedAt" = NOW()`);
+    values.push(id);
+
+    const query = `
+      UPDATE users 
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, email, first_name, last_name, role, "campusId", "avatarUrl" as profile_picture_url, bio, "createdAt"
+    `;
+
+    const result = await pool.query(query, values);
 
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: userWithoutPassword,
+      data: result.rows[0],
     });
   } catch (error) {
     logger.error('Error updating user profile:', error);
@@ -102,9 +128,10 @@ export const uploadProfilePhoto = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { photoUrl } = req.body;
 
-    const user = await mockDatabaseService.findUserById(id);
-
-    if (!user) {
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
@@ -112,7 +139,10 @@ export const uploadProfilePhoto = async (req: Request, res: Response) => {
     }
 
     // Update profile picture
-    await mockDatabaseService.updateUser(id, { profile_picture_url: photoUrl });
+    await pool.query(
+      'UPDATE users SET "avatarUrl" = $1, "updatedAt" = NOW() WHERE id = $2',
+      [photoUrl, id]
+    );
 
     res.json({
       success: true,
@@ -137,10 +167,13 @@ export const getNotificationPreferences = async (req: Request, res: Response) =>
   try {
     const { id } = req.params;
 
-    const user = await mockDatabaseService.findUserById(id);
+    const result = await pool.query(
+      'SELECT notification_preferences FROM users WHERE id = $1',
+      [id]
+    );
 
-    // Return notification preferences (or defaults for demo users)
-    const preferences = user?.notification_preferences || {
+    // Return notification preferences (or defaults if not set)
+    const preferences = result.rows[0]?.notification_preferences || {
       email_notifications: true,
       push_notifications: true,
       sms_notifications: false,
@@ -169,22 +202,30 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
     const { id } = req.params;
     const preferences = req.body;
 
-    const user = await mockDatabaseService.findUserById(id);
-
-    if (!user) {
+    // Check if user exists and get current preferences
+    const userCheck = await pool.query(
+      'SELECT notification_preferences FROM users WHERE id = $1',
+      [id]
+    );
+    
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Update notification preferences
+    // Merge with existing preferences
+    const currentPreferences = userCheck.rows[0].notification_preferences || {};
     const updatedPreferences = {
-      ...user.notification_preferences,
+      ...currentPreferences,
       ...preferences,
     };
 
-    await mockDatabaseService.updateUser(id, { notification_preferences: updatedPreferences });
+    await pool.query(
+      'UPDATE users SET notification_preferences = $1, "updatedAt" = NOW() WHERE id = $2',
+      [JSON.stringify(updatedPreferences), id]
+    );
 
     res.json({
       success: true,
@@ -215,14 +256,19 @@ export const changePassword = async (req: Request, res: Response) => {
       });
     }
 
-    const user = await mockDatabaseService.findUserById(id);
+    const result = await pool.query(
+      'SELECT password_hash FROM users WHERE id = $1',
+      [id]
+    );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
+
+    const user = result.rows[0];
 
     // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash || '');
@@ -238,7 +284,10 @@ export const changePassword = async (req: Request, res: Response) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password
-    await mockDatabaseService.updateUser(id, { password_hash: hashedPassword });
+    await pool.query(
+      'UPDATE users SET password_hash = $1, "updatedAt" = NOW() WHERE id = $2',
+      [hashedPassword, id]
+    );
 
     res.json({
       success: true,
@@ -260,17 +309,21 @@ export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const user = await mockDatabaseService.findUserById(id);
-
-    if (!user) {
+    // Check if user exists
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    
+    if (userCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // In mock database, just mark as inactive
-    await mockDatabaseService.updateUser(id, { is_active: false });
+    // Mark as blocked (soft delete)
+    await pool.query(
+      'UPDATE users SET "isBlocked" = true, "updatedAt" = NOW() WHERE id = $1',
+      [id]
+    );
 
     res.json({
       success: true,
@@ -284,4 +337,3 @@ export const deleteAccount = async (req: Request, res: Response) => {
     });
   }
 };
-

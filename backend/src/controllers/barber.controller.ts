@@ -5,45 +5,98 @@ import { AuthRequest } from '../middleware/auth';
 import aptosService from '../services/aptos.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
-import mockDatabase from '../services/mock.database.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId, minRating, maxPrice, specialty } = req.query;
 
-    // Use mock database (PostgreSQL not required for MVP)
-    const filter: any = {
-      is_active: true,
-    };
+    // Build dynamic query for barbers from PostgreSQL
+    let query = `
+      SELECT 
+        b.id,
+        b."userId" as user_id,
+        b.bio,
+        b.specialties,
+        b."yearsExperience" as years_experience,
+        b."averageRating" as average_rating,
+        b."totalReviews" as total_reviews,
+        b."totalBookings" as total_bookings,
+        b."isActive" as is_active,
+        b."createdAt" as created_at,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u."displayName" as display_name,
+        u."avatarUrl" as profile_picture_url,
+        u."campusId" as campus_id
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."isActive" = true
+    `;
+    
+    const params: any[] = [];
+    let paramIndex = 1;
 
     if (campusId) {
-      filter.campus_id = campusId;
+      query += ` AND u."campusId" = $${paramIndex}`;
+      params.push(campusId);
+      paramIndex++;
     }
-
-    const barbers = await mockDatabase.findBarbersByFilter(filter);
-    
-    // Apply additional filters in-memory
-    let filteredBarbers = barbers;
 
     if (minRating) {
-      filteredBarbers = filteredBarbers.filter(b => b.average_rating >= Number(minRating));
-    }
-
-    if (maxPrice) {
-      filteredBarbers = filteredBarbers.filter(b => {
-        const minPrice = Math.min(...(b.pricing || []).map((p: any) => p.price));
-        return minPrice <= Number(maxPrice);
-      });
+      query += ` AND b."averageRating" >= $${paramIndex}`;
+      params.push(Number(minRating));
+      paramIndex++;
     }
 
     if (specialty) {
-      filteredBarbers = filteredBarbers.filter(b => 
-        b.specialties.some((s: string) => s.toLowerCase().includes(String(specialty).toLowerCase()))
-      );
+      query += ` AND $${paramIndex} = ANY(b.specialties)`;
+      params.push(String(specialty));
+      paramIndex++;
     }
 
-    // Sort by rating
-    filteredBarbers.sort((a, b) => b.average_rating - a.average_rating);
+    query += ` ORDER BY b."averageRating" DESC NULLS LAST`;
+
+    const result = await pool.query(query, params);
+    
+    // Get services/pricing for each barber
+    const barbers = await Promise.all(result.rows.map(async (barber) => {
+      const servicesResult = await pool.query(
+        `SELECT id, name, description, "priceUsdCents" as price, "durationMinutes" as duration_minutes
+         FROM barber_services 
+         WHERE "barberId" = $1 AND "isActive" = true`,
+        [barber.id]
+      );
+      
+      // Get portfolio images
+      const portfolioResult = await pool.query(
+        `SELECT id, "imageUrl" as image_url, caption, "orderIndex" as order_index
+         FROM portfolio_images 
+         WHERE "barberId" = $1 
+         ORDER BY "orderIndex"`,
+        [barber.id]
+      );
+      
+      return {
+        ...barber,
+        name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
+        pricing: servicesResult.rows.map(s => ({
+          ...s,
+          price: s.price / 100 // Convert cents to dollars for frontend
+        })),
+        portfolio_images: portfolioResult.rows,
+      };
+    }));
+
+    // Apply maxPrice filter in-memory (since it requires pricing data)
+    let filteredBarbers = barbers;
+    if (maxPrice) {
+      filteredBarbers = barbers.filter(b => {
+        if (!b.pricing || b.pricing.length === 0) return true;
+        const minPrice = Math.min(...b.pricing.map((p: any) => p.price));
+        return minPrice <= Number(maxPrice);
+      });
+    }
 
     res.json({
       success: true,
@@ -65,55 +118,84 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
   try {
     const { id } = req.params;
 
-    // Use mock database
-    let barber = await mockDatabase.findBarberById(id);
+    // Get barber from PostgreSQL
+    const barberResult = await pool.query(
+      `SELECT 
+        b.id,
+        b."userId" as user_id,
+        b.bio,
+        b.specialties,
+        b."yearsExperience" as years_experience,
+        b."averageRating" as average_rating,
+        b."totalReviews" as total_reviews,
+        b."totalBookings" as total_bookings,
+        b."isActive" as is_active,
+        b."createdAt" as created_at,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u."displayName" as display_name,
+        u."avatarUrl" as profile_picture_url,
+        u."campusId" as campus_id,
+        u."isVerified" as is_verified
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b.id = $1`,
+      [id]
+    );
 
-    // For demo: create mock barber if doesn't exist
-    if (!barber) {
-      barber = {
-        id,
-        user_id: id,
-        name: 'Demo Barber',
-        email: `${id}@demo.com`,
-        role: 'barber',
-        campus_id: 'campus-1',
-        profile_picture_url: null,
-        bio: 'Professional barber with years of experience.',
-        specialties: ['Fades', 'Line-ups', 'Beard Grooming'],
-        years_experience: 5,
-        average_rating: 4.8,
-        total_reviews: 25,
-        total_bookings: 150,
-        pricing: [
-          { service_name: 'Haircut', price: 35, duration_minutes: 30 },
-          { service_name: 'Haircut + Beard', price: 50, duration_minutes: 45 },
-        ],
-        availability: {},
-        is_active: true,
-        is_verified: true,
-        wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
-        created_at: new Date().toISOString(),
-      };
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
     }
 
-    // Get reviews for this barber
-    const reviews = await mockDatabase.findReviewsByBarber(id);
+    const barber = barberResult.rows[0];
 
-    // Optionally get on-chain rating (if Aptos address exists)
-    let aptosRating = null;
-    if (barber.aptos_address) {
-      try {
-        aptosRating = await aptosService.getBarberRating(barber.aptos_address);
-      } catch (error) {
-        logger.warn('Failed to fetch Aptos rating:', error);
-      }
-    }
+    // Get services/pricing
+    const servicesResult = await pool.query(
+      `SELECT id, name, description, "priceUsdCents" as price, "durationMinutes" as duration_minutes
+       FROM barber_services 
+       WHERE "barberId" = $1 AND "isActive" = true`,
+      [id]
+    );
+
+    // Get portfolio images
+    const portfolioResult = await pool.query(
+      `SELECT id, "imageUrl" as image_url, caption, "orderIndex" as order_index
+       FROM portfolio_images 
+       WHERE "barberId" = $1 
+       ORDER BY "orderIndex"`,
+      [id]
+    );
+
+    // Get reviews
+    const reviewsResult = await pool.query(
+      `SELECT 
+        r.id,
+        r.rating,
+        r.comment as review_text,
+        r."createdAt" as created_at,
+        u.first_name,
+        u.last_name,
+        u."avatarUrl" as profile_picture_url
+      FROM reviews r
+      JOIN users u ON r."consumerId" = u.id
+      WHERE r."barberId" = $1
+      ORDER BY r."createdAt" DESC
+      LIMIT 10`,
+      [id]
+    );
 
     res.json({
       success: true,
       data: {
         ...barber,
-        blockchain_rating: aptosRating,
+        name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
+        pricing: servicesResult.rows.map(s => ({
+          ...s,
+          price: s.price / 100 // Convert cents to dollars
+        })),
+        portfolio_images: portfolioResult.rows,
+        reviews: reviewsResult.rows,
       },
     });
   } catch (error) {

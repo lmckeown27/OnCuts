@@ -13,7 +13,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import type { FilterCriteria } from '../types/barber-filters';
-import axios from 'axios';
+import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
 
 interface Barber {
@@ -58,64 +58,37 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
 
   const fetchBarbers = async () => {
     try {
-      // For now, using mock data - replace with actual API call
-      const mockBarbers: Barber[] = [
-        {
-          barberId: 'barber-1',
-          name: 'Marcus Johnson',
-          bio: 'Specializing in fades and modern cuts. 10+ years experience. Your hair, your style, perfected.',
-          instagramHandle: 'marcuscuts_slo',
-          profileImageUrl: null,
-          avgRating: 4.9,
-          totalReviews: 127,
-          totalBookings: 450,
-          verified: true,
-          specialties: ['Fades', 'Tapers', 'Beard Trim'],
-          priceRange: '$28-$35',
-          location: 'Cal Poly SLO',
-          availability: 'Available this week',
-          responseTime: 'Usually responds in 2 hours',
-        },
-        {
-          barberId: 'barber-2',
-          name: 'Alex Rivera',
-          bio: 'Creative cuts and classic styles. I listen to what you want and deliver excellence every time.',
-          instagramHandle: 'alexthebarber',
-          profileImageUrl: null,
-          avgRating: 4.8,
-          totalReviews: 95,
-          totalBookings: 320,
-          verified: true,
-          specialties: ['Creative Cuts', 'Color', 'Styling'],
-          priceRange: '$35-$45',
-          location: 'Cal Poly SLO',
-          availability: 'Available today',
-          responseTime: 'Usually responds in 1 hour',
-        },
-        {
-          barberId: 'barber-3',
-          name: 'Jordan Lee',
-          bio: 'Traditional barber with a modern twist. Clean cuts, great conversations, and affordable prices.',
-          instagramHandle: undefined,
-          profileImageUrl: null,
-          avgRating: 4.7,
-          totalReviews: 78,
-          totalBookings: 250,
-          verified: false,
-          specialties: ['Classic Cuts', 'Hot Towel Shave', 'Lineup'],
-          priceRange: '$23-$28',
-          location: 'Cal Poly SLO',
-          availability: 'Available tomorrow',
-          responseTime: 'Usually responds in 3 hours',
-        },
-      ];
+      // Fetch real barbers from the API
+      const response = await barberService.getBarbers({});
+      
+      // Map API response to component's Barber interface
+      const barbers: Barber[] = (response.data || []).map((b: any) => ({
+        barberId: b.id,
+        name: b.name || `${b.first_name} ${b.last_name}`,
+        bio: b.bio,
+        instagramHandle: b.instagram_handle,
+        profileImageUrl: b.profile_picture_url,
+        avgRating: b.average_rating || 0,
+        totalReviews: b.total_reviews || 0,
+        totalBookings: b.total_bookings || 0,
+        verified: b.is_verified || false,
+        specialties: b.specialties || [],
+        priceRange: b.pricing?.length 
+          ? `$${Math.min(...b.pricing.map((p: any) => p.price))}-$${Math.max(...b.pricing.map((p: any) => p.price))}`
+          : 'Contact for pricing',
+        location: 'Campus',
+        availability: 'Contact barber',
+        responseTime: 'Varies',
+      }));
 
-      setAllBarbers(mockBarbers);
-      setFilteredBarbers(mockBarbers); // Initially show all
+      setAllBarbers(barbers);
+      setFilteredBarbers(barbers);
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch barbers:', error);
       toast.error('Failed to load barbers');
+      setAllBarbers([]);
+      setFilteredBarbers([]);
       setLoading(false);
     }
   };

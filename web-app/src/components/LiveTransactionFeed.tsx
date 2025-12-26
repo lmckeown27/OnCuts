@@ -48,106 +48,9 @@ interface PlatformStats {
   failed_count: number;
 }
 
-// Mock transaction data for testing
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    platform: 'aptos',
-    transaction_id: '0x7f8a4b2c9e1d3a5f6b8c0d2e4f6a8b0c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a',
-    transaction_type: 'escrow_deposit',
-    description: 'Haircut & Fade - Escrow Deposit',
-    timestamp: new Date(Date.now() - 300000).toISOString(), // 5 mins ago
-    status_success: true,
-    tx_hash: '0x7f8a4b2c9e1d3a5f',
-    sender: '0x1234567890abcdef1234567890abcdef',
-    recipient: '0xabcdef1234567890abcdef1234567890',
-    amount_apt: 2.5,
-    amount_usd: 35.00,
-    gas_used: 1250,
-  },
-  {
-    platform: 'stripe',
-    transaction_id: 'pi_3OxYZ123456789ABC',
-    transaction_type: 'payment_intent.succeeded',
-    description: 'Beard Trim - Fiat Payment',
-    timestamp: new Date(Date.now() - 600000).toISOString(), // 10 mins ago
-    status_success: true,
-    event_id: 'evt_123456789',
-    event_type: 'payment_intent.succeeded',
-    payment_intent_id: 'pi_3OxYZ123456789ABC',
-    student_email: 'mike.smith@college.edu',
-    barber_email: 'barber@campuscuts.com',
-    booking_id: 'booking-002',
-    amount_cents: 2300,
-    amount_usd: 23.00,
-    status: 'succeeded',
-  },
-  {
-    platform: 'aptos',
-    transaction_id: '0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d',
-    transaction_type: 'escrow_release',
-    description: 'Full Service - Payment Released',
-    timestamp: new Date(Date.now() - 900000).toISOString(), // 15 mins ago
-    status_success: true,
-    tx_hash: '0x3c4d5e6f7a8b9c0d',
-    sender: '0xabcdef1234567890abcdef1234567890',
-    recipient: '0x9876543210fedcba9876543210fedcba',
-    amount_apt: 3.2,
-    amount_usd: 45.00,
-    gas_used: 1800,
-  },
-  {
-    platform: 'stripe',
-    transaction_id: 'pi_3PqRS987654321XYZ',
-    transaction_type: 'payment_intent.created',
-    description: 'Haircut - Payment Processing',
-    timestamp: new Date(Date.now() - 1200000).toISOString(), // 20 mins ago
-    status_success: true,
-    event_id: 'evt_987654321',
-    event_type: 'payment_intent.created',
-    payment_intent_id: 'pi_3PqRS987654321XYZ',
-    student_email: 'chris.lee@college.edu',
-    barber_email: 'barber@campuscuts.com',
-    booking_id: 'booking-003',
-    amount_cents: 2800,
-    amount_usd: 28.00,
-    status: 'created',
-  },
-  {
-    platform: 'aptos',
-    transaction_id: '0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f',
-    transaction_type: 'platform_fee',
-    description: 'Platform Fee Collection',
-    timestamp: new Date(Date.now() - 1800000).toISOString(), // 30 mins ago
-    status_success: true,
-    tx_hash: '0x5e6f7a8b9c0d1e2f',
-    sender: '0xfedcba9876543210fedcba9876543210',
-    recipient: '0x1111222233334444555566667777888',
-    amount_apt: 0.2,
-    amount_usd: 2.80,
-    gas_used: 950,
-  },
-];
-
-const MOCK_STATS: PlatformStats[] = [
-  {
-    platform: 'aptos',
-    transaction_count: 12,
-    successful_volume_usd: 156.50,
-    successful_count: 11,
-    failed_count: 1,
-  },
-  {
-    platform: 'stripe',
-    transaction_count: 8,
-    successful_volume_usd: 98.00,
-    successful_count: 7,
-    failed_count: 1,
-  },
-];
-
 export default function LiveTransactionFeed() {
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [stats, setStats] = useState<PlatformStats[]>(MOCK_STATS);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [stats, setStats] = useState<PlatformStats[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [filter, setFilter] = useState<'all' | 'aptos' | 'stripe'>('all');
@@ -230,10 +133,9 @@ export default function LiveTransactionFeed() {
       setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
-      console.log('Using mock transaction data for testing');
-      // Keep mock data on API failure
-      setTransactions(MOCK_TRANSACTIONS);
-      setStats(MOCK_STATS);
+      // Keep empty arrays on API failure
+      setTransactions([]);
+      setStats([]);
       setIsLoading(false);
     }
   };

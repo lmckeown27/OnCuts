@@ -44,65 +44,9 @@ interface Barber {
   portfolioImages: string[];
 }
 
-const MOCK_BARBERS: Barber[] = [
-  {
-    id: '1',
-    name: 'Marcus Johnson',
-    rating: 4.8,
-    reviewCount: 127,
-    minPrice: 18,
-    maxPrice: 35,
-    yearsExperience: 5,
-    specialties: ['Fade', 'Beard Trim', 'Lineup'],
-    instagram: '@marcuscuts',
-    distance: '0.3 miles',
-    availability: 'Available today',
-    profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
-    portfolioImages: [
-      'https://source.unsplash.com/400x400/?barber,haircut,1',
-      'https://source.unsplash.com/400x400/?barber,haircut,2',
-    ]
-  },
-  {
-    id: '2',
-    name: 'Jordan Smith',
-    rating: 4.9,
-    reviewCount: 203,
-    minPrice: 20,
-    maxPrice: 40,
-    yearsExperience: 7,
-    specialties: ['Haircut', 'Color', 'Styling'],
-    instagram: '@jordanbarber',
-    distance: '0.5 miles',
-    availability: 'Available tomorrow',
-    profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan',
-    portfolioImages: [
-      'https://source.unsplash.com/400x400/?barber,haircut,3',
-      'https://source.unsplash.com/400x400/?barber,haircut,4',
-    ]
-  },
-  {
-    id: '3',
-    name: 'Alex Rivera',
-    rating: 4.7,
-    reviewCount: 89,
-    minPrice: 15,
-    maxPrice: 30,
-    yearsExperience: 3,
-    specialties: ['Fade', 'Hot Towel Shave', 'Full Service'],
-    instagram: '@alexcuts',
-    distance: '0.8 miles',
-    availability: 'Available now',
-    profileImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-    portfolioImages: [
-      'https://source.unsplash.com/400x400/?barber,haircut,5',
-      'https://source.unsplash.com/400x400/?barber,haircut,6',
-    ]
-  }
-];
-
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
+  const [barbers, setBarbers] = useState<Barber[]>([]);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -111,7 +55,7 @@ export default function MobileConsumerPage() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
-  const currentBarber = MOCK_BARBERS[currentBarberIndex];
+  const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -149,7 +93,7 @@ export default function MobileConsumerPage() {
   const handlePass = () => {
     setSwipeDirection('left');
     setTimeout(() => {
-      if (currentBarberIndex < MOCK_BARBERS.length - 1) {
+      if (currentBarberIndex < barbers.length - 1) {
         setCurrentBarberIndex(currentBarberIndex + 1);
       } else {
         setCurrentBarberIndex(0); // Loop back

@@ -6,8 +6,8 @@
 
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import mockDatabase from '../services/mock.database.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
   apiVersion: '2023-10-16',
@@ -184,8 +184,11 @@ async function handleAccountUpdated(account: Stripe.Account) {
 
     if (isOnboarded) {
       logger.info(`Barber ${userId} fully onboarded to Stripe Connect`);
-      // TODO: Update database
-      // await mockDatabase.updateUser(userId, { stripe_connect_onboarded: true });
+      // Update database with Stripe onboarding status
+      await pool.query(
+        'UPDATE users SET stripe_connect_onboarded = true, "updatedAt" = NOW() WHERE id = $1',
+        [userId]
+      );
     }
 
   } catch (error: any) {

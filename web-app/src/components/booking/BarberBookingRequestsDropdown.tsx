@@ -36,62 +36,9 @@ interface Props {
   barberId: string;
 }
 
-// Mock data for testing
-const MOCK_REQUESTS: BookingRequest[] = [
-  {
-    bookingId: 'req-001',
-    customerId: 'cust-001',
-    customerName: 'Alex Johnson',
-    customerProfile: {
-      displayName: 'Alex Johnson',
-      stats: {
-        completionRate: 98,
-        isReliable: true,
-      },
-    },
-    serviceType: 'Haircut & Fade',
-    requestedDate: new Date(Date.now() + 86400000 * 2).toISOString(), // 2 days from now
-    requestedTime: '2:00 PM',
-    price: 35,
-    message: 'Looking for a mid-fade, same style as last time if possible!',
-  },
-  {
-    bookingId: 'req-002',
-    customerId: 'cust-002',
-    customerName: 'Sarah Martinez',
-    customerProfile: {
-      displayName: 'Sarah Martinez',
-      stats: {
-        completionRate: 85,
-        isReliable: true,
-      },
-    },
-    serviceType: 'Beard Trim',
-    requestedDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-    requestedTime: '4:30 PM',
-    price: 23,
-    message: 'Clean up and shape, keep it professional',
-  },
-  {
-    bookingId: 'req-003',
-    customerId: 'cust-003',
-    customerName: 'Marcus Williams',
-    customerProfile: {
-      displayName: 'Marcus Williams',
-      stats: {
-        completionRate: 100,
-        isReliable: true,
-      },
-    },
-    serviceType: 'Full Service',
-    requestedDate: new Date(Date.now() + 86400000 * 3).toISOString(), // 3 days from now
-    requestedTime: '10:00 AM',
-    price: 45,
-  },
-];
 
 export default function BarberBookingRequestsDropdown({ barberId }: Props) {
-  const [requests, setRequests] = useState<BookingRequest[]>(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -182,11 +129,11 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
       const response = await axios.get(
         `http://localhost:3001/api/booking-requests/barber/${barberId}/pending`
       );
-      setRequests(response.data.requests || MOCK_REQUESTS);
+      setRequests(response.data.requests || []);
     } catch (error) {
       console.error('Failed to fetch booking requests:', error);
-      // Use mock data on API failure
-      setRequests(MOCK_REQUESTS);
+      // Start with empty array on API failure
+      setRequests([]);
     }
   };
 

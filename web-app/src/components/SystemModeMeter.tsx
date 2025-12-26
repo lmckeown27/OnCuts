@@ -56,44 +56,41 @@ interface SystemHealth {
   timestamp: string;
 }
 
-// Mock data for testing when API is unavailable
-const MOCK_HEALTH: SystemHealth = {
-  status: 'operational',
+// Fallback health data when API is unavailable
+const FALLBACK_HEALTH: SystemHealth = {
+  status: 'degraded',
   services: {
     database: {
       name: 'PostgreSQL',
-      status: 'operational',
-      responseTime: 12,
-      message: 'Database connected and responding',
+      status: 'not_configured',
+      message: 'Unable to connect',
       lastChecked: new Date().toISOString(),
-      details: { pool: { total: 3, idle: 2, waiting: 0 } },
     },
     api: {
       name: 'API Server',
-      status: 'operational',
-      responseTime: 1,
-      message: 'API server is running',
+      status: 'not_configured',
+      message: 'Unable to connect',
       lastChecked: new Date().toISOString(),
     },
     stripe: {
       name: 'Stripe Payments',
-      status: 'operational',
-      message: 'Payment processing available',
+      status: 'not_configured',
+      message: 'Status unknown',
       lastChecked: new Date().toISOString(),
     },
     email: {
       name: 'Email Service',
-      status: 'operational',
-      message: 'Email service configured',
+      status: 'not_configured',
+      message: 'Status unknown',
       lastChecked: new Date().toISOString(),
     },
   },
   metrics: {
-    uptime: 86400,
-    memoryUsage: { used: 128, total: 256, percentage: 50 },
-    activeConnections: 2,
-    nodeVersion: 'v18.17.0',
-    environment: 'development',
+    uptime: 0,
+    memoryUsage: { used: 0, total: 0, percentage: 0 },
+    activeConnections: 0,
+    nodeVersion: 'unknown',
+    environment: 'unknown',
   },
   timestamp: new Date().toISOString(),
 };
@@ -118,13 +115,13 @@ export const SystemModeMeter: React.FC = () => {
         setHealth(response.data);
         setError(null);
       } else {
-        console.warn('Invalid health response, using mock data');
-        setHealth(MOCK_HEALTH);
+        console.warn('Invalid health response, using fallback data');
+        setHealth(FALLBACK_HEALTH);
       }
     } catch (err) {
       console.error('Failed to fetch system health:', err);
       setError('Unable to connect to backend');
-      setHealth(MOCK_HEALTH);
+      setHealth(FALLBACK_HEALTH);
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -5,10 +5,10 @@
  */
 
 import { Request, Response } from 'express';
+import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import stripePaymentService from '../services/stripe-payment.service';
 import stripeConnectService from '../services/stripe-connect.service';
-import mockDatabase from '../services/mock.database.service';
 
 /**
  * POST /api/payments/create-intent
@@ -25,20 +25,26 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       });
     }
 
-    // Get student details
-    const student = await mockDatabase.findUserById(studentId);
-    if (!student) {
+    // Get student details from PostgreSQL
+    const studentResult = await pool.query(
+      'SELECT id, email, first_name, last_name FROM users WHERE id = $1',
+      [studentId]
+    );
+    
+    if (studentResult.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Student not found',
       });
     }
+    
+    const student = studentResult.rows[0];
 
     // Create or get Stripe customer
     const customerId = await stripePaymentService.createOrGetCustomer(
       student.email,
       studentId,
-      student.name
+      `${student.first_name} ${student.last_name}`
     );
 
     // Create payment intent
