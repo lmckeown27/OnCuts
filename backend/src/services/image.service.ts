@@ -16,6 +16,15 @@ import path from 'path';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
 
+// Get uploads directory - use absolute path for production
+const getUploadsDir = (): string => {
+  if (process.env.UPLOAD_PATH) {
+    return process.env.UPLOAD_PATH;
+  }
+  // Default to uploads folder in backend root (one level up from dist/src)
+  return path.join(__dirname, '..', '..', 'uploads');
+};
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 
@@ -87,7 +96,7 @@ export const processAndSaveImage = async (
 
     // Generate unique filename
     const uniqueFilename = `${uuidv4()}-${Date.now()}.${format}`;
-    const uploadPath = process.env.UPLOAD_PATH || './uploads';
+    const uploadPath = getUploadsDir();
     const fullPath = path.join(uploadPath, uniqueFilename);
 
     // Ensure upload directory exists
@@ -163,7 +172,7 @@ export const uploadMultipleImages = upload.array('images', 8);
  */
 export const deleteImageFile = async (filename: string): Promise<boolean> => {
   try {
-    const uploadPath = process.env.UPLOAD_PATH || './uploads';
+    const uploadPath = getUploadsDir();
     const imagePath = path.join(uploadPath, filename);
     const thumbnailPath = path.join(uploadPath, `thumb-${filename}`);
 
@@ -263,7 +272,7 @@ export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail
  */
 export const cleanupOrphanedImages = async (): Promise<void> => {
   try {
-    const uploadPath = process.env.UPLOAD_PATH || './uploads';
+    const uploadPath = getUploadsDir();
     const files = await fs.readdir(uploadPath);
 
     for (const file of files) {

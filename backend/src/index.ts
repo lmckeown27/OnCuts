@@ -5,6 +5,7 @@ dotenv.config();
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import morgan from 'morgan';
 import compression from 'compression';
 import { createServer } from 'http';
@@ -367,8 +368,11 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Static files for uploads (serve via both paths for compatibility)
-app.use('/uploads', express.static('uploads'));
-app.use('/api/uploads', express.static('uploads'));  // For Nginx API proxy
+// Use absolute path to ensure it works in production when running from dist/
+const uploadsDir = process.env.UPLOAD_PATH || path.join(__dirname, '..', 'uploads');
+app.use('/uploads', express.static(uploadsDir));
+app.use('/api/uploads', express.static(uploadsDir));  // For Nginx API proxy
+logger.info(`📁 Serving uploads from: ${uploadsDir}`);
 
 // Start server
 httpServer.listen(PORT, async () => {
