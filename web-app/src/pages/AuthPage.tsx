@@ -111,22 +111,21 @@ export default function AuthPage() {
     return emailRegex.test(email);
   };
 
-  // Check if email is from a .edu domain (university email)
+  // Check if email is valid (any email allowed for testing)
   const isUniversityEmail = (email: string): boolean => {
-    const domain = email.split('@')[1];
-    return domain ? domain.toLowerCase().endsWith('.edu') : false;
+    // Allow any email domain for testing purposes
+    return isValidEmail(email);
   };
 
   const isLoginFormValid = loginData.email.trim() !== '' && 
     loginData.password.trim() !== '' &&
-    isUniversityEmail(loginData.email);
+    isValidEmail(loginData.email);
 
   const isSignupFormValid = 
     signupData.firstName.trim() !== '' &&
     signupData.lastName.trim() !== '' &&
     signupData.email.trim() !== '' &&
     isValidEmail(signupData.email) &&
-    isUniversityEmail(signupData.email) &&
     signupData.password.length >= 8 &&
     signupData.password === signupData.confirmPassword;
 
@@ -162,7 +161,6 @@ export default function AuthPage() {
     if (!signupData.lastName.trim()) errors.lastName = 'Last name is required';
     if (!signupData.email.trim()) errors.email = 'Email is required';
     else if (!isValidEmail(signupData.email)) errors.email = 'Invalid email address';
-    else if (!isUniversityEmail(signupData.email)) errors.email = 'Please use your university email (.edu)';
     if (!signupData.password) errors.password = 'Password is required';
     else if (signupData.password.length < 8) errors.password = 'Password must be at least 8 characters';
     if (signupData.password !== signupData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
@@ -275,7 +273,7 @@ export default function AuthPage() {
                   htmlFor="login-email" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  University Email
+                  Email Address
                 </label>
                 <div className="relative">
                   <input
@@ -285,29 +283,23 @@ export default function AuthPage() {
                     value={loginData.email}
                     onChange={handleLoginChange}
                     className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                      loginData.email && isUniversityEmail(loginData.email) 
+                      loginData.email && isValidEmail(loginData.email) 
                         ? 'border-green-400 focus:border-green-500' 
                         : 'border-primary-400 focus:border-primary-500'
                     }`}
-                    placeholder="you@university.edu"
+                    placeholder="you@example.com"
                     autoComplete="email"
                   />
                   {loginData.email && (
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      {isUniversityEmail(loginData.email) ? (
+                      {isValidEmail(loginData.email) ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : isValidEmail(loginData.email) ? (
+                      ) : (
                         <XCircle className="w-5 h-5 text-red-500" />
-                      ) : null}
+                      )}
                     </div>
                   )}
                 </div>
-                {loginData.email && isValidEmail(loginData.email) && !isUniversityEmail(loginData.email) && (
-                  <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    Please use your university email (.edu)
-                  </p>
-                )}
               </div>
 
               {/* Password Field */}
@@ -431,7 +423,7 @@ export default function AuthPage() {
                   htmlFor="signup-email" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  University Email
+                  Email Address
                 </label>
                 <div className="relative">
                   <input
@@ -442,28 +434,22 @@ export default function AuthPage() {
                     onChange={handleSignupChange}
                     className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
                       validationErrors.email ? 'border-red-400' : 
-                      (signupData.email && isUniversityEmail(signupData.email)) ? 'border-green-400 focus:border-green-500' :
+                      (signupData.email && isValidEmail(signupData.email)) ? 'border-green-400 focus:border-green-500' :
                       'border-primary-400 focus:border-primary-500'
                     }`}
-                    placeholder="you@university.edu"
+                    placeholder="you@example.com"
                     autoComplete="email"
                   />
                   {signupData.email && (
                     <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      {isUniversityEmail(signupData.email) ? (
+                      {isValidEmail(signupData.email) ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : isValidEmail(signupData.email) ? (
+                      ) : (
                         <XCircle className="w-5 h-5 text-red-500" />
-                      ) : null}
+                      )}
                     </div>
                   )}
                 </div>
-                {signupData.email && isValidEmail(signupData.email) && !isUniversityEmail(signupData.email) && !validationErrors.email && (
-                  <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    Please use your university email (.edu)
-                  </p>
-                )}
                 {validationErrors.email && (
                   <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
                 )}
