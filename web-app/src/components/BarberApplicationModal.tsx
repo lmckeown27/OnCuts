@@ -68,7 +68,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setIsSubmitting(true);
     
     try {
-      const response = await barberApplicationService.submit({
+      const result = await barberApplicationService.submit({
         yearsExperience: form.yearsExperience,
         hasLicense: form.hasLicense,
         licenseNumber: form.licenseNumber || undefined,
@@ -81,7 +81,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         additionalNotes: form.additionalNotes || undefined
       });
       
-      if (response.success) {
+      // API returns { applicationId, status, submittedAt } on success
+      if (result && result.applicationId) {
         setSubmitted(true);
         toast.success('Application submitted successfully!');
         

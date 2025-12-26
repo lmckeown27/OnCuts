@@ -44,15 +44,17 @@ class BarberApplicationService {
   /**
    * Submit a new barber application
    */
-  async submit(form: BarberApplicationForm): Promise<SubmitApplicationResponse> {
-    return api.post<SubmitApplicationResponse>('/barber-applications', form);
+  async submit(form: BarberApplicationForm): Promise<{ applicationId: string; status: string; submittedAt: string }> {
+    // api.post extracts response.data.data, so we get the inner data object directly
+    return api.post<{ applicationId: string; status: string; submittedAt: string }>('/barber-applications', form);
   }
 
   /**
    * Get current user's application status
    */
-  async getMyApplication(): Promise<MyApplicationResponse> {
-    return api.get<MyApplicationResponse>('/barber-applications/my-application');
+  async getMyApplication(): Promise<BarberApplication | null> {
+    // api.get extracts response.data.data
+    return api.get<BarberApplication | null>('/barber-applications/my-application');
   }
 }
 
