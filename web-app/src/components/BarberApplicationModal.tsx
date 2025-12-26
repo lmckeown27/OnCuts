@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Scissors, Camera, Clock, Award, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { barberApplicationService } from '../services/barber-application.service';
 import toast from 'react-hot-toast';
 
 interface BarberApplicationModalProps {
@@ -67,23 +68,32 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setIsSubmitting(true);
     
     try {
-      // TODO: Submit to backend API
-      // await barberApplicationService.submit({
-      //   userId: user?.id,
-      //   ...form
-      // });
+      const response = await barberApplicationService.submit({
+        yearsExperience: form.yearsExperience,
+        hasLicense: form.hasLicense,
+        licenseNumber: form.licenseNumber || undefined,
+        specialties: form.specialties,
+        hasOwnTools: form.hasOwnTools,
+        availableHours: form.availableHours,
+        whyBeBarber: form.whyBeBarber,
+        portfolioDescription: form.portfolioDescription || undefined,
+        socialMedia: form.socialMedia || undefined,
+        additionalNotes: form.additionalNotes || undefined
+      });
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setSubmitted(true);
-      toast.success('Application submitted successfully!');
-      
-      if (onSubmitSuccess) {
-        onSubmitSuccess();
+      if (response.success) {
+        setSubmitted(true);
+        toast.success('Application submitted successfully!');
+        
+        if (onSubmitSuccess) {
+          onSubmitSuccess();
+        }
+      } else {
+        throw new Error('Submission failed');
       }
-    } catch (error) {
-      toast.error('Failed to submit application. Please try again.');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to submit application. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

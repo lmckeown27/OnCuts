@@ -88,6 +88,9 @@ import fiatBridgeRoutes from './routes/fiat-bridge.routes';
 // Circle USDC Integration
 import circleWebhookRoutes from './routes/circle-webhook.routes';
 
+// Barber Applications
+import barberApplicationRoutes from './routes/barber-application.routes';
+
 // Environment variables already loaded at top of file
 
 const app: Application = express();
@@ -330,6 +333,10 @@ app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (S
 
 // Circle USDC Integration
 app.use('/api/circle', circleWebhookRoutes);  // Circle webhook handler for USDC transfers
+
+// Barber Applications (Consumer -> Barber flow)
+app.use('/api/v1/barber-applications', barberApplicationRoutes);  // Submit and track barber applications
+app.use('/api/barber-applications', barberApplicationRoutes);  // Legacy route
 
 logger.info('✅ V2 routes enabled:');
 logger.info('   - /api/v2/bookings (escrow-based)');
