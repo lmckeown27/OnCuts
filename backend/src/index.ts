@@ -370,9 +370,25 @@ app.use(errorHandler);
 // Static files for uploads (serve via both paths for compatibility)
 // Use absolute path to ensure it works in production when running from dist/
 const uploadsDir = process.env.UPLOAD_PATH || path.join(__dirname, '..', 'uploads');
+
+// Debug: Log the resolved path
+logger.info(`📁 Static uploads directory: ${uploadsDir}`);
+logger.info(`📁 __dirname is: ${__dirname}`);
+
+// Check if directory exists
+const fsSync = require('fs');
+if (fsSync.existsSync(uploadsDir)) {
+  const files = fsSync.readdirSync(uploadsDir);
+  logger.info(`📁 Uploads directory exists with ${files.length} files`);
+} else {
+  logger.warn(`⚠️ Uploads directory does NOT exist: ${uploadsDir}`);
+  // Create it
+  fsSync.mkdirSync(uploadsDir, { recursive: true });
+  logger.info(`📁 Created uploads directory: ${uploadsDir}`);
+}
+
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/uploads', express.static(uploadsDir));  // For Nginx API proxy
-logger.info(`📁 Serving uploads from: ${uploadsDir}`);
 
 // Start server
 httpServer.listen(PORT, async () => {

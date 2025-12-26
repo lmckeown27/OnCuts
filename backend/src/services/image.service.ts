@@ -99,11 +99,16 @@ export const processAndSaveImage = async (
     const uploadPath = getUploadsDir();
     const fullPath = path.join(uploadPath, uniqueFilename);
 
+    console.log(`[Image Service] Saving to uploadPath: ${uploadPath}`);
+    console.log(`[Image Service] Full path: ${fullPath}`);
+
     // Ensure upload directory exists
     await fs.mkdir(uploadPath, { recursive: true });
+    console.log(`[Image Service] Upload directory ensured`);
 
     // Save processed image
     await processedImage.toFile(fullPath);
+    console.log(`[Image Service] File saved successfully: ${uniqueFilename}`);
 
     // Generate thumbnail
     const thumbnailFilename = `thumb-${uniqueFilename}`;
