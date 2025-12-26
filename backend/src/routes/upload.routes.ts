@@ -54,7 +54,7 @@ router.post(
         
         const imageData: any = {
           url: imageService.generateImageUrl(result.original),
-          thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
+          thumbnailUrl: imageService.generateImageUrl(result.thumbnail),  // thumbnail filename already has thumb- prefix
           filename: result.original,
         };
 
@@ -138,7 +138,7 @@ router.post(
 
       const responseData: any = {
         url: imageService.generateImageUrl(result.original),
-        thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail),  // thumbnail filename already has thumb- prefix
         filename: result.original,
       };
 
@@ -209,7 +209,7 @@ router.post(
 
       const responseData: any = {
         url: imageService.generateImageUrl(result.original),
-        thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail),  // thumbnail filename already has thumb- prefix
         filename: result.original,
       };
 
