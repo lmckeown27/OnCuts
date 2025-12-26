@@ -344,10 +344,11 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     const aptosAccount = aptosService.generateAccount();
 
     // Create user in database
+    // Note: Column names use camelCase in the database schema
     const result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, aptos_address, email_verified)
+      `INSERT INTO users (email, password_hash, first_name, last_name, "campusId", role, aptos_address, email_verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
-       RETURNING id, email, first_name, last_name, campus_id, role, aptos_address, created_at`,
+       RETURNING id, email, first_name, last_name, "campusId", role, aptos_address, "createdAt"`,
       [
         pendingReg.email,
         pendingReg.password,
