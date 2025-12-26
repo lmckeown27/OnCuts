@@ -73,15 +73,26 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     }
 
     // Build update query dynamically
-    const allowedFields = ['first_name', 'last_name', 'displayName', 'bio', 'avatarUrl', 'phoneNumber', 'instagramHandle'];
+    // Map frontend field names to database column names
+    const fieldMapping: { [key: string]: string } = {
+      first_name: 'first_name',
+      last_name: 'last_name',
+      displayName: 'displayName',
+      bio: 'bio',
+      avatarUrl: 'avatarUrl',
+      profile_picture_url: 'avatarUrl', // Frontend sends profile_picture_url, maps to avatarUrl
+      phoneNumber: 'phoneNumber',
+      instagramHandle: 'instagramHandle',
+    };
+    
     const updateFields: string[] = [];
     const values: any[] = [];
     let paramIndex = 1;
 
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        updateFields.push(`"${field}" = $${paramIndex}`);
-        values.push(updates[field]);
+    for (const [inputField, dbField] of Object.entries(fieldMapping)) {
+      if (updates[inputField] !== undefined) {
+        updateFields.push(`"${dbField}" = $${paramIndex}`);
+        values.push(updates[inputField]);
         paramIndex++;
       }
     }

@@ -243,11 +243,20 @@ export const validateImageDimensions = (
 
 /**
  * Generate image URL
+ * Uses relative URLs for production (works with Nginx proxy)
+ * Falls back to localhost for development
  */
 export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail' = 'original'): string => {
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const prefix = type === 'thumbnail' ? 'thumb-' : '';
-  return `${baseUrl}/uploads/${prefix}${filename}`;
+  
+  // In production, use relative URL so it works with HTTPS through Nginx
+  if (process.env.NODE_ENV === 'production' || process.env.BASE_URL) {
+    const baseUrl = process.env.BASE_URL || '';
+    return `${baseUrl}/uploads/${prefix}${filename}`;
+  }
+  
+  // Development fallback
+  return `http://localhost:3001/uploads/${prefix}${filename}`;
 };
 
 /**
