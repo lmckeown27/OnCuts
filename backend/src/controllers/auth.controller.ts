@@ -340,11 +340,19 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       throw new ApiError(400, 'User already exists. Please log in.');
     }
 
+    // Map frontend role to database enum (student -> CONSUMER, barber -> BARBER)
+    const roleMap: { [key: string]: string } = {
+      'student': 'CONSUMER',
+      'barber': 'BARBER',
+      'admin': 'ADMIN'
+    };
+    const dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
+
     // Create user in database (off-chain for v1 - no blockchain wallets)
     // Note: Column names use camelCase in the database schema
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, first_name, last_name, "campusId", role, email_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+       VALUES ($1, $2, $3, $4, $5, $6::\"UserRole\", TRUE)
        RETURNING id, email, first_name, last_name, "campusId", role, "createdAt"`,
       [
         pendingReg.email,
@@ -352,7 +360,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         pendingReg.firstName,
         pendingReg.lastName,
         pendingReg.campusId,
-        pendingReg.role
+        dbRole
       ]
     );
 
