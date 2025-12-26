@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+// Toaster removed - no popup notifications
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AppStatus from './components/AppStatus';
 import PlatformGuard from './components/PlatformGuard';
@@ -47,7 +47,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Toaster position="top-right" />
+      {/* Toaster removed - no popup notifications */}
       
       {/* PWA Install Prompt - Only on /app routes */}
       {isAppRoute && <PWAInstallPrompt />}
