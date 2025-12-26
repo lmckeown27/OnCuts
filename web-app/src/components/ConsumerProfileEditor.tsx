@@ -17,6 +17,7 @@ import Card from './Card';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
 import userService from '../services/user.service';
+import { useAuthStore } from '../store/useAuthStore';
 import type { User } from '../types';
 
 interface ConsumerProfileEditorProps {
@@ -24,6 +25,7 @@ interface ConsumerProfileEditorProps {
 }
 
 export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorProps) {
+  const { user: authUser, setUser: setAuthUser } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -175,6 +177,14 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       
       // Update user profile with new photo URL
       await userService.updateUserProfile(userId, { profile_picture_url: result.url });
+      
+      // Update auth store so the avatar updates immediately everywhere
+      if (authUser) {
+        const updatedUser = { ...authUser, profile_picture_url: result.url };
+        setAuthUser(updatedUser);
+        // Also persist to localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
       
       toast.success('Profile photo updated!');
       await loadUserProfile();

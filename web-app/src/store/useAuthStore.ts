@@ -105,7 +105,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
         is_admin: ((response.user as any).role || response.user.user_type) === 'admin',
         created_at: response.user.created_at || new Date().toISOString(),
-        campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString()
+        campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
+        profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
       };
       
       set({ 
@@ -169,7 +170,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         is_verified: response.user.emailVerified,
         is_admin: response.user.role === 'admin',
         created_at: new Date().toISOString(),
-        campus_id: response.user.campusId?.toString()
+        campus_id: response.user.campusId?.toString(),
+        profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
       };
       
       // Auth data is already saved by authService.verifyEmail
