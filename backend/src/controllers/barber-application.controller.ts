@@ -1,16 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import { ApiError } from '../utils/ApiError';
-
-interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role: string;
-    campusId?: string;
-  };
-}
+import { ApiError } from '../middleware/errorHandler';
+import { AuthRequest } from '../middleware/auth.middleware';
 
 interface BarberApplicationBody {
   yearsExperience: string;

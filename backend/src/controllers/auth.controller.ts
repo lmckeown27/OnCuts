@@ -179,12 +179,13 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     }
 
     // Step 2: For .edu emails, validate educational domain; for others, skip validation
-    let domainValidation = { isValid: true, university: null as string | null };
+    let domainValidation: { isValid: boolean; university?: string; isUnsupportedUniversity?: boolean } = { isValid: true };
     if (emailDomain.endsWith('.edu')) {
-      domainValidation = await educationalDomainService.validateEducationalDomain(email);
+      const validationResult = await educationalDomainService.validateEducationalDomain(email);
+      domainValidation = validationResult;
       
-      if (!domainValidation.isValid) {
-        if (domainValidation.isUnsupportedUniversity) {
+      if (!validationResult.isValid) {
+        if (validationResult.isUnsupportedUniversity) {
           throw new ApiError(400, 
             `Your university (${emailDomain}) is not currently supported on CampusCut. ` +
             `Please email campuscuthelp@gmail.com to request that your university be added.`
