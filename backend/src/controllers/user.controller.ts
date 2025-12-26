@@ -1,46 +1,50 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
+import { pool } from '../database/connection';
 import mockDatabaseService from '../services/mock.database.service';
 import { logger } from '../utils/logger';
 
 /**
- * Get user profile
+ * Get user profile from PostgreSQL database
  */
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    let user = await mockDatabaseService.findUserById(id);
+    // Query real PostgreSQL database
+    const result = await pool.query(
+      `SELECT id, email, first_name, last_name, role, "campusId", 
+              "avatarUrl" as profile_picture_url, bio, email_verified, "createdAt"
+       FROM users WHERE id = $1`,
+      [id]
+    );
 
-    // For demo: create mock user if doesn't exist
-    if (!user) {
-      user = {
-        id,
-        name: 'Demo User',
-        email: `${id}@demo.com`,
-        role: 'student',
-        campus_id: 'campus-1',
-        profile_picture_url: null,
-        wallet_address: `0x${Math.random().toString(16).slice(2, 42)}`,
-        is_verified: true,
-        is_active: true,
-        notification_preferences: {
-          email_notifications: true,
-          push_notifications: true,
-          sms_notifications: false,
-          booking_reminders: true,
-          promotional_emails: false,
-        },
-        created_at: new Date().toISOString(),
-      };
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
-    // Remove sensitive data
-    const { password_hash, ...userWithoutPassword } = user;
+    const user = result.rows[0];
+
+    // Map database columns to expected frontend format
+    const userData = {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+      campus_id: user.campusId,
+      profile_picture_url: user.profile_picture_url,
+      bio: user.bio,
+      is_verified: user.email_verified,
+      created_at: user.createdAt,
+    };
 
     res.json({
       success: true,
-      data: userWithoutPassword,
+      data: userData,
     });
   } catch (error) {
     logger.error('Error getting user profile:', error);
