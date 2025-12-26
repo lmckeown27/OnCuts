@@ -12,7 +12,6 @@ interface SignupForm {
   email: string;
   password: string;
   confirmPassword: string;
-  userType: 'student' | 'barber';
 }
 
 export default function SignupPage() {
@@ -28,8 +27,7 @@ export default function SignupPage() {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: '',
-    userType: 'student'
+    confirmPassword: ''
   });
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
@@ -157,7 +155,7 @@ export default function SignupPage() {
         last_name: formData.lastName,
         email: formData.email,
         password: formData.password,
-        user_type: formData.userType,
+        user_type: 'student', // All users start as consumers; barber applications are separate
       });
       
       toast.success('Verification email sent! Please check your inbox.');
@@ -404,49 +402,6 @@ export default function SignupPage() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* User Type Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                I am a
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label 
-                  className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                    formData.userType === 'student'
-                      ? 'border-primary-400 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="student"
-                    checked={formData.userType === 'student'}
-                    onChange={handleInputChange}
-                    className="sr-only"
-                  />
-                  <span className="font-medium">Consumer</span>
-                </label>
-                <label 
-                  className={`flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                    formData.userType === 'barber'
-                      ? 'border-primary-400 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="userType"
-                    value="barber"
-                    checked={formData.userType === 'barber'}
-                    onChange={handleInputChange}
-                    className="sr-only"
-                  />
-                  <span className="font-medium">Barber</span>
-                </label>
-              </div>
             </div>
 
             {/* Error Message */}
