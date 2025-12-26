@@ -375,7 +375,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       userId: user.id,
       email: user.email,
       role: user.role,
-      campusId: user.campus_id,
+      campusId: user.campusId,
     });
 
     // Send welcome email (non-blocking)
@@ -512,7 +512,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, campus_id, role, is_active, email_verified
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, is_active, email_verified
        FROM users WHERE email = $1`,
       [email]
     );
@@ -542,7 +542,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
       userId: user.id,
       email: user.email,
       role: user.role,
-      campusId: user.campus_id,
+      campusId: user.campusId,
     });
 
     logger.info(`User logged in: ${user.email}`);
@@ -556,7 +556,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
-          campusId: user.campus_id,
+          campusId: user.campusId,
           emailVerified: user.email_verified,
         },
         token,
