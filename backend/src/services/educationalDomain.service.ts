@@ -62,15 +62,21 @@ class EducationalDomainService {
         };
       }
 
-      // Special case: .edu domain but not in supported list
+      // Special case: .edu domains are verified US educational institutions
+      // Auto-accept and let the registration process add them to the database
       if (domain.endsWith('.edu')) {
+        // Extract university name from domain (e.g., "calpoly.edu" -> "Cal Poly")
+        const domainParts = domain.replace('.edu', '').split('.');
+        const universitySlug = domainParts[domainParts.length - 1];
+        
         return {
-          isValid: false,
-          isUnsupportedUniversity: true,
+          isValid: true,
           country: 'US',
+          university: universitySlug.charAt(0).toUpperCase() + universitySlug.slice(1),
           domain: domain,
           confidence: 'high',
-          source: 'none',
+          source: 'pattern',
+          needsVerification: false,
         };
       }
 
