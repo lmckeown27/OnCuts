@@ -243,8 +243,7 @@ export const validateImageDimensions = (
 
 /**
  * Generate image URL
- * Always uses relative URLs (works with any domain/HTTPS through Nginx)
- * Only uses absolute localhost URL if explicitly in development mode
+ * Uses /api/uploads/ path so it goes through Nginx API proxy
  */
 export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail' = 'original'): string => {
   const prefix = type === 'thumbnail' ? 'thumb-' : '';
@@ -254,9 +253,9 @@ export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail
     return `${process.env.BASE_URL}/uploads/${prefix}${filename}`;
   }
   
-  // Default to relative URLs - works with any domain through Nginx proxy
-  // This is the safest option for production
-  return `/uploads/${prefix}${filename}`;
+  // Use /api/uploads/ path - this goes through Nginx's /api/ proxy
+  // which routes to the backend where the files are stored
+  return `/api/uploads/${prefix}${filename}`;
 };
 
 /**

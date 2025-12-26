@@ -366,8 +366,9 @@ app.use((req: Request, res: Response) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Static files for uploads
+// Static files for uploads (serve via both paths for compatibility)
 app.use('/uploads', express.static('uploads'));
+app.use('/api/uploads', express.static('uploads'));  // For Nginx API proxy
 
 // Start server
 httpServer.listen(PORT, async () => {
