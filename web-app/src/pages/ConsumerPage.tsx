@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle } from 'lucide-react';
+import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
@@ -141,9 +142,7 @@ export default function ConsumerPage() {
                   onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                   className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                 >
-                  <div className="w-8 h-8 bg-primary-400 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                    {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
+                  <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="md" />
                   <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                 </button>
 
