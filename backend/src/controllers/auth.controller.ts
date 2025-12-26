@@ -383,11 +383,10 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
           firstName: user.first_name,
           lastName: user.last_name,
           role: user.role,
-          campusId: user.campus_id,
+          campusId: user.campusId,
           emailVerified: true
         },
-        token,
-        aptosAddress: aptosAccount.address,
+        token
       }
     });
   } catch (error) {
