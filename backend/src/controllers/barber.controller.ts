@@ -11,14 +11,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     const { campusId, minRating, maxPrice, specialty } = req.query;
 
     // Build dynamic query for barbers from PostgreSQL
+    // Column names match Prisma schema: avgRating, totalReviews, totalBookings, isActive
     let query = `
       SELECT 
         b.id,
         b."userId" as user_id,
         b.bio,
         b.specialties,
-        b."yearsExperience" as years_experience,
-        b."averageRating" as average_rating,
+        b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
@@ -38,13 +38,13 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     let paramIndex = 1;
 
     if (campusId) {
-      query += ` AND u."campusId" = $${paramIndex}`;
+      query += ` AND b."campusId" = $${paramIndex}`;
       params.push(campusId);
       paramIndex++;
     }
 
     if (minRating) {
-      query += ` AND b."averageRating" >= $${paramIndex}`;
+      query += ` AND b."avgRating" >= $${paramIndex}`;
       params.push(Number(minRating));
       paramIndex++;
     }
@@ -55,7 +55,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex++;
     }
 
-    query += ` ORDER BY b."averageRating" DESC NULLS LAST`;
+    query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
 
     const result = await pool.query(query, params);
     
@@ -119,14 +119,14 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
     const { id } = req.params;
 
     // Get barber from PostgreSQL
+    // Column names match Prisma schema
     const barberResult = await pool.query(
       `SELECT 
         b.id,
         b."userId" as user_id,
         b.bio,
         b.specialties,
-        b."yearsExperience" as years_experience,
-        b."averageRating" as average_rating,
+        b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,

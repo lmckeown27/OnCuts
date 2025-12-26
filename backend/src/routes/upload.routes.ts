@@ -187,6 +187,43 @@ router.post(
   }
 );
 
+// Alias route for profile-photo (frontend compatibility)
+router.post(
+  '/profile-photo',
+  authenticate,
+  imageService.uploadSingleImage,
+  async (req, res, next) => {
+    try {
+      const userId = (req as any).user.id;
+      const file = (req as any).file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'No image provided' },
+        });
+      }
+
+      // Process image locally
+      const result = await imageService.processProfilePicture(file.buffer);
+
+      const responseData: any = {
+        url: imageService.generateImageUrl(result.original),
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'thumbnail'),
+        filename: result.original,
+      };
+
+      res.json({
+        success: true,
+        message: 'Profile photo uploaded successfully',
+        data: responseData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 /**
  * POST /api/upload/chat-image
  * Upload image in chat conversation
