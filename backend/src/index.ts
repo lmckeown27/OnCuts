@@ -357,17 +357,7 @@ logger.info('   - /api/fiat-bridge (Stripe → Blockchain deposits & withdrawals
 
 
 // 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    error: 'Not Found',
-    message: `Route ${req.method} ${req.path} not found`,
-  });
-});
-
-// Error handler (must be last)
-app.use(errorHandler);
-
-// Static files for uploads (serve via both paths for compatibility)
+// Static files for uploads (MUST be before 404 handler)
 // Use absolute path to ensure it works in production when running from dist/
 const uploadsDir = process.env.UPLOAD_PATH || path.join(__dirname, '..', 'uploads');
 
@@ -389,6 +379,17 @@ if (fsSync.existsSync(uploadsDir)) {
 
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/uploads', express.static(uploadsDir));  // For Nginx API proxy
+
+// 404 handler (must be after all routes and static files)
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    error: 'Not Found',
+    message: `Route ${req.method} ${req.path} not found`,
+  });
+});
+
+// Error handler (must be last)
+app.use(errorHandler);
 
 // Start server
 httpServer.listen(PORT, async () => {
