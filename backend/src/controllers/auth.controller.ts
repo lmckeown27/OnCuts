@@ -520,7 +520,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl"
        FROM users WHERE email = $1`,
       [email]
     );
@@ -573,6 +573,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           role: user.role,
           campusId: user.campusId,
           emailVerified: user.email_verified,
+          profile_picture_url: user.avatarUrl,
         },
         accessToken: token,
         refreshToken,
