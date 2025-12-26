@@ -254,18 +254,31 @@ app.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// API Routes (V1 - kept for backward compatibility)
+// API Routes (V1 - versioned routes)
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/barbers', barberRoutes);
+app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
+app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
+app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
+app.use('/api/v1/campus', campusRoutes);
+app.use('/api/v1/messages', messageRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/wallet', walletRoutes);
+
+// Legacy routes (backward compatibility - no /v1 prefix)
 app.use('/api/auth', authRoutes);
 app.use('/api/barbers', barberRoutes);
-app.use('/api/barber', barberConnectRoutes);  // Stripe Connect for barbers
-app.use('/api/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
+app.use('/api/barber', barberConnectRoutes);
+app.use('/api/bookings', bookingPaymentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/campus', campusRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/wallet', walletRoutes);  // V1
+app.use('/api/wallet', walletRoutes);
 
 // V2 Routes (Production custodial wallet system)
 app.use('/api/v2/bookings', bookingV2Routes);
@@ -280,7 +293,8 @@ app.use('/api/gas', gasWalletRoutes);  // Gas wallet management
 app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 
 // User Management Routes
-app.use('/api/users', userRoutes);  // User profile management
+app.use('/api/v1/users', userRoutes);  // User profile management (versioned)
+app.use('/api/users', userRoutes);  // User profile management (legacy)
 
 // Analytics features (integrated worker)
 app.use('/api/ai', aiRoutes);  // Pricing, quality scores, fraud detection, disputes
