@@ -91,10 +91,10 @@ export default function SignupPage() {
     return emailRegex.test(email);
   };
 
-  // Check if email is from a .edu domain (university email)
+  // Check if email has a valid domain (any email allowed for testing)
   const isUniversityEmail = (email: string): boolean => {
-    const domain = email.split('@')[1];
-    return domain ? domain.toLowerCase().endsWith('.edu') : false;
+    // Allow any email domain for testing purposes
+    return isValidEmail(email);
   };
 
   const validateForm = (): boolean => {
@@ -112,8 +112,6 @@ export default function SignupPage() {
       errors.email = 'Email address is required';
     } else if (!isValidEmail(formData.email)) {
       errors.email = 'Please enter a valid email address';
-    } else if (!isUniversityEmail(formData.email)) {
-      errors.email = 'Please use your university email address (.edu)';
     }
 
     if (!formData.password) {
@@ -260,7 +258,7 @@ export default function SignupPage() {
                 htmlFor="email" 
                 className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
               >
-                University Email
+                Email Address
               </label>
               <div className="relative">
                 <input
@@ -274,26 +272,20 @@ export default function SignupPage() {
                     (formData.email && isUniversityEmail(formData.email)) ? 'border-green-400 focus:border-green-500' :
                     'border-primary-400 focus:border-primary-500'
                   }`}
-                  placeholder="you@university.edu"
+                  placeholder="you@example.com"
                   autoComplete="email"
                 />
                 {/* Email validation indicator */}
                 {formData.email && (
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    {isUniversityEmail(formData.email) ? (
+                    {isValidEmail(formData.email) ? (
                       <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : isValidEmail(formData.email) ? (
+                    ) : (
                       <XCircle className="w-5 h-5 text-red-500" />
-                    ) : null}
+                    )}
                   </div>
                 )}
               </div>
-              {formData.email && isValidEmail(formData.email) && !isUniversityEmail(formData.email) && !validationErrors.email && (
-                <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Please use your university email (.edu)
-                </p>
-              )}
               {validationErrors.email && (
                 <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
               )}

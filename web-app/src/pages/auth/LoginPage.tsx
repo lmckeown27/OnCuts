@@ -37,15 +37,15 @@ export default function LoginPage() {
     return emailRegex.test(email);
   };
 
-  // Check if email is from a .edu domain (university email)
+  // Check if email is valid (any email allowed for testing)
   const isUniversityEmail = (email: string): boolean => {
-    const domain = email.split('@')[1];
-    return domain ? domain.toLowerCase().endsWith('.edu') : false;
+    // Allow any email domain for testing purposes
+    return isValidEmail(email);
   };
 
   const isFormValid = formData.email.trim() !== '' && 
     formData.password.trim() !== '' &&
-    isUniversityEmail(formData.email);
+    isValidEmail(formData.email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 htmlFor="email" 
                 className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
               >
-                University Email
+                Email Address
               </label>
               <div className="relative">
                 <input
@@ -114,30 +114,24 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    formData.email && isUniversityEmail(formData.email) 
+                    formData.email && isValidEmail(formData.email) 
                       ? 'border-green-400 focus:border-green-500' 
                       : 'border-primary-400 focus:border-primary-500'
                   }`}
-                  placeholder="you@university.edu"
+                  placeholder="you@example.com"
                   autoComplete="email"
                 />
                 {/* Email validation indicator */}
                 {formData.email && (
                   <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                    {isUniversityEmail(formData.email) ? (
+                    {isValidEmail(formData.email) ? (
                       <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : isValidEmail(formData.email) ? (
+                    ) : (
                       <XCircle className="w-5 h-5 text-red-500" />
-                    ) : null}
+                    )}
                   </div>
                 )}
               </div>
-              {formData.email && isValidEmail(formData.email) && !isUniversityEmail(formData.email) && (
-                <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Please use your university email (.edu)
-                </p>
-              )}
             </div>
 
             {/* Password Field */}

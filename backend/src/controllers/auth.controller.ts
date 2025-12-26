@@ -171,25 +171,27 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, 'All fields are required');
     }
 
-    // Step 1: Validate educational domain (.edu restriction for now)
+    // Step 1: Extract email domain (allow any email for testing)
     const emailDomain = email.split('@')[1];
     
-    // For now, only allow .edu emails
-    if (!emailDomain || !emailDomain.endsWith('.edu')) {
-      throw new ApiError(400, 'Please use your university email address (.edu)');
+    if (!emailDomain) {
+      throw new ApiError(400, 'Please provide a valid email address');
     }
 
-    // Step 2: Check if it's a valid educational domain
-    const domainValidation = await educationalDomainService.validateEducationalDomain(email);
-    
-    if (!domainValidation.isValid) {
-      if (domainValidation.isUnsupportedUniversity) {
-        throw new ApiError(400, 
-          `Your university (${emailDomain}) is not currently supported on CampusCut. ` +
-          `Please email campuscuthelp@gmail.com to request that your university be added.`
-        );
+    // Step 2: For .edu emails, validate educational domain; for others, skip validation
+    let domainValidation = { isValid: true, university: null as string | null };
+    if (emailDomain.endsWith('.edu')) {
+      domainValidation = await educationalDomainService.validateEducationalDomain(email);
+      
+      if (!domainValidation.isValid) {
+        if (domainValidation.isUnsupportedUniversity) {
+          throw new ApiError(400, 
+            `Your university (${emailDomain}) is not currently supported on CampusCut. ` +
+            `Please email campuscuthelp@gmail.com to request that your university be added.`
+          );
+        }
+        throw new ApiError(400, 'Please use a valid university email address (.edu)');
       }
-      throw new ApiError(400, 'Please use a valid university email address (.edu)');
     }
 
     // Step 3: Look up or create campus based on email domain
@@ -204,9 +206,9 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       logger.info(`Found existing campus: ${existingCampus.rows[0].name} (ID: ${campusId})`);
     } else {
       // Create new campus entry for this domain
-      // Generate slug from domain (e.g., "calpoly.edu" -> "calpoly")
-      const slug = emailDomain.replace('.edu', '').replace(/\./g, '-');
-      const universityName = domainValidation.university || emailDomain.replace('.edu', '').toUpperCase();
+      // Generate slug from domain (e.g., "calpoly.edu" -> "calpoly", "gmail.com" -> "gmail")
+      const slug = emailDomain.replace('.edu', '').replace('.com', '').replace('.org', '').replace(/\./g, '-');
+      const universityName = domainValidation.university || emailDomain.split('.')[0].toUpperCase();
       
       const newCampus = await pool.query(
         `INSERT INTO campuses (id, slug, name, city, state, country, timezone, domain, "isActive", "updatedAt")
@@ -506,12 +508,6 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
 export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
-
-    // Validate .edu email domain
-    const emailDomain = email.split('@')[1];
-    if (!emailDomain || !emailDomain.endsWith('.edu')) {
-      throw new ApiError(400, 'Please use your university email address (.edu)');
-    }
 
     // Find user
     const result = await pool.query(
