@@ -145,7 +145,7 @@ export default function AuthPage() {
         navigate('/web/consumer');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -192,7 +192,7 @@ export default function AuthPage() {
       // Redirect to email verification page
       navigate('/web/verify-email');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Signup failed. Please try again.';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Signup failed. Please try again.';
       setError(errorMessage);
     } finally {
       setIsLoading(false);
