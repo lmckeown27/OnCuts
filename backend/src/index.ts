@@ -340,7 +340,8 @@ app.use('/api/admin/gas-wallet', adminGasWalletRoutes);  // Admin gas wallet man
 app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankings, surge
 
 // Booking Requests (AirBnb-style)
-app.use('/api/booking-requests', bookingRequestRoutes);  // Accept/reject, messaging, profiles
+app.use('/api/v1/booking-requests', bookingRequestRoutes);  // Accept/reject, messaging, profiles
+app.use('/api/booking-requests', bookingRequestRoutes);  // Legacy route
 
 // Blockchain-First Routes (Decentralized - NEW!)
 app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
