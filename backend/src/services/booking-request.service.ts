@@ -201,7 +201,7 @@ export class BookingRequestService {
       logger.error('Error getting pending requests (using mock data):', error);
       
       // Return mock data when PostgreSQL is unavailable
-      return this.getMockPendingRequests(barberId);
+      return this.getMockPendingRequests(barberIdOrUserId);
     }
   }
 
