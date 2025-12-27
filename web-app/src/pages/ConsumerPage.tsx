@@ -402,15 +402,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 className="cursor-pointer active:scale-98 transition-all duration-200 flex flex-row rounded-xl overflow-hidden"
                 onClick={() => setSelectedBarber(barber)}
               >
-                {/* Barber Image - Left Side */}
+                {/* Barber Profile Picture - Left Side */}
                 <div className="relative w-28 h-28 flex-shrink-0 bg-gray-200">
-                  {barber.portfolio && barber.portfolio.length > 0 ? (
-                    <img
-                      src={barber.portfolio[0].url}
-                      alt="Portfolio"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : barber.profile_picture_url ? (
+                  {barber.profile_picture_url ? (
                     <img
                       src={barber.profile_picture_url}
                       alt={`${barber.user?.first_name || 'Barber'}`}
@@ -463,15 +457,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden"
               onClick={() => setSelectedBarber(barber)}
             >
-              {/* Barber Image with Name & Price Overlays */}
+              {/* Barber Profile Picture with Name & Price Overlays */}
               <div className="relative mb-2 sm:mb-3 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
-                {barber.portfolio && barber.portfolio.length > 0 ? (
-                  <img
-                    src={barber.portfolio[0].url}
-                    alt="Portfolio"
-                    className="w-full h-full object-cover"
-                  />
-                ) : barber.profile_picture_url ? (
+                {barber.profile_picture_url ? (
                   <img
                     src={barber.profile_picture_url}
                     alt={`${barber.user?.first_name || 'Barber'}`}
@@ -565,15 +553,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               <div className="space-y-6">
                 {/* Profile Header - Image on top, info below */}
                 <div className="flex flex-col gap-4">
-                  {/* Barber Image - same size as cards */}
+                  {/* Barber Profile Picture - same size as cards */}
                   <div className="relative h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
-                    {selectedBarber.portfolio && selectedBarber.portfolio.length > 0 ? (
-                      <img
-                        src={selectedBarber.portfolio[0].url}
-                        alt="Portfolio"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : selectedBarber.profile_picture_url ? (
+                    {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
                         alt={`${selectedBarber.user?.first_name || 'Barber'}`}
