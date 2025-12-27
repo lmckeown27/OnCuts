@@ -130,7 +130,6 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."userId" as user_id,
         b.bio,
         b.specialties,
-        b."instagramHandle" as instagram_handle,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -141,6 +140,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
+        u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id
       FROM barbers b
       JOIN users u ON b."userId" = u.id
@@ -195,7 +195,6 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."userId" as user_id,
         b.bio,
         b.specialties,
-        b."instagramHandle" as instagram_handle,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -206,6 +205,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
+        u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id
       FROM barbers b
       JOIN users u ON b."userId" = u.id
@@ -392,48 +392,66 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       throw new ApiError(403, 'Not authorized to update this profile');
     }
 
-    // Build dynamic update query
-    const updateFields: string[] = [];
-    const values: any[] = [];
+    // Build dynamic update query for barbers table
+    const barberUpdateFields: string[] = [];
+    const barberValues: any[] = [];
     let paramIndex = 1;
 
     if (bio !== undefined) {
-      updateFields.push(`bio = $${paramIndex}`);
-      values.push(bio);
-      paramIndex++;
-    }
-    if (instagram_handle !== undefined) {
-      updateFields.push(`"instagramHandle" = $${paramIndex}`);
-      values.push(instagram_handle);
+      barberUpdateFields.push(`bio = $${paramIndex}`);
+      barberValues.push(bio);
       paramIndex++;
     }
     if (specialties !== undefined) {
-      updateFields.push(`specialties = $${paramIndex}`);
-      values.push(specialties);
+      barberUpdateFields.push(`specialties = $${paramIndex}`);
+      barberValues.push(specialties);
       paramIndex++;
     }
     if (yearsExperience !== undefined) {
-      updateFields.push(`"yearsExperience" = $${paramIndex}`);
-      values.push(yearsExperience);
+      barberUpdateFields.push(`"yearsExperience" = $${paramIndex}`);
+      barberValues.push(yearsExperience);
       paramIndex++;
     }
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No valid fields to update',
-      });
+    // Update barbers table if there are fields to update
+    if (barberUpdateFields.length > 0) {
+      barberUpdateFields.push(`"updatedAt" = NOW()`);
+      barberValues.push(id);
+
+      await pool.query(
+        `UPDATE barbers 
+         SET ${barberUpdateFields.join(', ')}
+         WHERE id = $${paramIndex}`,
+        barberValues
+      );
     }
 
-    updateFields.push(`"updatedAt" = NOW()`);
-    values.push(id);
+    // Update instagram_handle on users table (it's a user profile field)
+    if (instagram_handle !== undefined) {
+      await pool.query(
+        `UPDATE users SET "instagramHandle" = $1, "updatedAt" = NOW() WHERE id = $2`,
+        [instagram_handle, userId]
+      );
+    }
 
+    // Fetch updated barber profile
     const result = await pool.query(
-      `UPDATE barbers 
-       SET ${updateFields.join(', ')}
-       WHERE id = $${paramIndex}
-       RETURNING *`,
-      values
+      `SELECT 
+        b.id,
+        b."userId" as user_id,
+        b.bio,
+        b.specialties,
+        b."avgRating" as average_rating,
+        b."totalReviews" as total_reviews,
+        b."totalBookings" as total_bookings,
+        b."isActive" as is_active,
+        u."displayName" as display_name,
+        u."avatarUrl" as profile_picture_url,
+        u."instagramHandle" as instagram_handle
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b.id = $1`,
+      [id]
     );
 
     res.json({
