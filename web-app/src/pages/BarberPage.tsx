@@ -308,7 +308,7 @@ export default function BarberPage() {
               </button>
             </div>
             <div className="p-6">
-              <BarberProfileEditor barberId={barberId} onClose={closeProfileEditor} />
+              <BarberProfileEditor userId={barberId} onClose={closeProfileEditor} />
             </div>
           </div>
         </div>
