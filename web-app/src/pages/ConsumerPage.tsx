@@ -109,15 +109,26 @@ export default function ConsumerPage() {
           <div className="flex items-center justify-between relative">
             {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Apply to be a Barber - always on left */}
-              <button
-                onClick={() => setShowBarberApplication(true)}
-                className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                title="Apply to become a barber"
-              >
-                <Scissors className="w-4 h-4 text-primary-600" />
-                <span className="hidden sm:inline text-sm font-medium text-primary-700">Become a Barber</span>
-              </button>
+              {/* Barber button - different behavior based on user role */}
+              {user?.user_type === 'barber' || user?.user_type === 'admin' ? (
+                <button
+                  onClick={() => navigate('/web/barber')}
+                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  title="Switch to barber view"
+                >
+                  <Scissors className="w-4 h-4 text-primary-600" />
+                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowBarberApplication(true)}
+                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  title="Apply to become a barber"
+                >
+                  <Scissors className="w-4 h-4 text-primary-600" />
+                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Become a Barber</span>
+                </button>
+              )}
             </div>
             
             {/* Center section - Logo (centered on all screen sizes) */}
