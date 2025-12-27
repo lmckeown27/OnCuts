@@ -38,6 +38,7 @@ export interface Barber {
   total_bookings: number;
   is_active: boolean;
   profile_photo_url?: string;
+  profile_picture_url?: string; // Alias from users table join
   portfolio?: PortfolioImage[];
   portfolio_images?: PortfolioImage[]; // Alias for backwards compatibility
   availability?: AvailabilityTemplate[];
