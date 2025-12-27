@@ -3,6 +3,8 @@ import { body, param, query } from 'express-validator';
 import {
   getAllBarbers,
   getBarberById,
+  getBarberByUserId,
+  getMyBarberProfile,
   createBarberProfile,
   updateBarberProfile,
   deleteBarberProfile,
@@ -36,6 +38,20 @@ router.get(
   ],
   getAllBarbers
 );
+
+/**
+ * @route   GET /api/barbers/me
+ * @desc    Get current user's barber profile
+ * @access  Private (Barbers only)
+ */
+router.get('/me', authenticate, getMyBarberProfile);
+
+/**
+ * @route   GET /api/barbers/user/:userId
+ * @desc    Get barber by user ID
+ * @access  Public
+ */
+router.get('/user/:userId', getBarberByUserId);
 
 /**
  * @route   GET /api/barbers/:id

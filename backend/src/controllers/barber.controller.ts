@@ -114,6 +114,127 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
   }
 };
 
+/**
+ * Get current user's barber profile (for authenticated barbers)
+ */
+export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new ApiError(401, 'Unauthorized');
+    }
+
+    const barberResult = await pool.query(
+      `SELECT 
+        b.id,
+        b."userId" as user_id,
+        b.bio,
+        b.specialties,
+        b."instagramHandle" as instagram_handle,
+        b."avgRating" as average_rating,
+        b."totalReviews" as total_reviews,
+        b."totalBookings" as total_bookings,
+        b."isActive" as is_active,
+        b."createdAt" as created_at,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u."displayName" as display_name,
+        u."avatarUrl" as profile_picture_url,
+        u."campusId" as campus_id
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."userId" = $1`,
+      [userId]
+    );
+
+    if (barberResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No barber profile found for this user',
+      });
+    }
+
+    const barber = barberResult.rows[0];
+
+    // Get services/pricing
+    const servicesResult = await pool.query(
+      `SELECT id, name, description, "priceUsdCents" as price, "durationMinutes" as duration_minutes
+       FROM barber_services 
+       WHERE "barberId" = $1 AND "isActive" = true`,
+      [barber.id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...barber,
+        name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
+        pricing: servicesResult.rows.map(s => ({
+          ...s,
+          price: s.price / 100
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error('Error in getMyBarberProfile:', error);
+    next(error);
+  }
+};
+
+/**
+ * Get barber by user ID
+ */
+export const getBarberByUserId = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+
+    const barberResult = await pool.query(
+      `SELECT 
+        b.id,
+        b."userId" as user_id,
+        b.bio,
+        b.specialties,
+        b."instagramHandle" as instagram_handle,
+        b."avgRating" as average_rating,
+        b."totalReviews" as total_reviews,
+        b."totalBookings" as total_bookings,
+        b."isActive" as is_active,
+        b."createdAt" as created_at,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u."displayName" as display_name,
+        u."avatarUrl" as profile_picture_url,
+        u."campusId" as campus_id
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."userId" = $1`,
+      [userId]
+    );
+
+    if (barberResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Barber not found for this user',
+      });
+    }
+
+    const barber = barberResult.rows[0];
+
+    res.json({
+      success: true,
+      data: {
+        ...barber,
+        name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
+      },
+    });
+  } catch (error) {
+    logger.error('Error in getBarberByUserId:', error);
+    next(error);
+  }
+};
+
 export const getBarberById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
@@ -261,25 +382,58 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, pricing, yearsExperience } = req.body;
+    const { bio, instagram_handle, specialties, yearsExperience } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
-    const ownership = await pool.query('SELECT id FROM barbers WHERE id = $1 AND user_id = $2', [id, userId]);
+    const ownership = await pool.query('SELECT id FROM barbers WHERE id = $1 AND "userId" = $2', [id, userId]);
     
     if (ownership.rows.length === 0) {
       throw new ApiError(403, 'Not authorized to update this profile');
     }
 
-    // Update profile
+    // Build dynamic update query
+    const updateFields: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (bio !== undefined) {
+      updateFields.push(`bio = $${paramIndex}`);
+      values.push(bio);
+      paramIndex++;
+    }
+    if (instagram_handle !== undefined) {
+      updateFields.push(`"instagramHandle" = $${paramIndex}`);
+      values.push(instagram_handle);
+      paramIndex++;
+    }
+    if (specialties !== undefined) {
+      updateFields.push(`specialties = $${paramIndex}`);
+      values.push(specialties);
+      paramIndex++;
+    }
+    if (yearsExperience !== undefined) {
+      updateFields.push(`"yearsExperience" = $${paramIndex}`);
+      values.push(yearsExperience);
+      paramIndex++;
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update',
+      });
+    }
+
+    updateFields.push(`"updatedAt" = NOW()`);
+    values.push(id);
+
     const result = await pool.query(
       `UPDATE barbers 
-       SET bio = COALESCE($1, bio),
-           pricing = COALESCE($2, pricing),
-           years_experience = COALESCE($3, years_experience)
-       WHERE id = $4
+       SET ${updateFields.join(', ')}
+       WHERE id = $${paramIndex}
        RETURNING *`,
-      [bio, pricing ? JSON.stringify(pricing) : null, yearsExperience, id]
+      values
     );
 
     res.json({

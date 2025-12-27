@@ -20,6 +20,22 @@ class BarberService {
     return await api.get<Barber>(`/barbers/${id}`);
   }
 
+  async getBarberByUserId(userId: string): Promise<Barber | null> {
+    try {
+      return await api.get<Barber>(`/barbers/user/${userId}`);
+    } catch {
+      return null;
+    }
+  }
+
+  async getMyBarberProfile(): Promise<Barber | null> {
+    try {
+      return await api.get<Barber>('/barbers/me');
+    } catch {
+      return null;
+    }
+  }
+
   async createBarberProfile(data: Partial<Barber>): Promise<Barber> {
     return await api.post<Barber>('/barbers', data);
   }

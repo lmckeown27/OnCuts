@@ -7,6 +7,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
+import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
@@ -224,7 +225,9 @@ export default function ConsumerPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                {isBarberOrAdmin ? 'Edit Barber Profile' : 'Edit Profile'}
+              </h2>
               <button
                 onClick={closeProfileEditor}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
@@ -233,7 +236,11 @@ export default function ConsumerPage() {
               </button>
             </div>
             <div className="p-6">
-              <ConsumerProfileEditor userId={consumerId} />
+              {isBarberOrAdmin ? (
+                <BarberProfileEditor userId={consumerId} onClose={closeProfileEditor} />
+              ) : (
+                <ConsumerProfileEditor userId={consumerId} />
+              )}
             </div>
           </div>
         </div>
