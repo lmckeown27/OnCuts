@@ -121,25 +121,25 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
 
   return (
     <div className="space-y-6">
-      {/* Profile Photo */}
+      {/* Profile Photo - matches barber card dimensions */}
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
-        <div className="flex items-center gap-6">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-            {profilePhoto ? (
-              <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
+        <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
+        <div className="relative h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mb-4">
+          {profilePhoto ? (
+            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
               <ImageIcon className="w-12 h-12 text-gray-400" />
-            )}
-          </div>
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Upload a professional profile photo</p>
-            <Button variant="secondary" size="sm">
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Photo
-            </Button>
-            <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPG, PNG</p>
-          </div>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="secondary" size="sm">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Photo
+          </Button>
+          <p className="text-xs text-gray-500">Max size: 5MB. Formats: JPG, PNG</p>
         </div>
       </Card>
 
