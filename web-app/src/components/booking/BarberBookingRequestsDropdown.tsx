@@ -8,8 +8,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Inbox, CheckCircle, XCircle, Calendar, User, Eye, X } from 'lucide-react';
 import Button from '../Button';
-import axios from 'axios';
 import toast from 'react-hot-toast';
+import api from '../../services/api.service';
 import { useViewport, useBodyScrollLock } from '../../hooks';
 
 interface CustomerProfile {
@@ -126,10 +126,10 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
 
   const fetchRequests = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:3001/api/booking-requests/barber/${barberId}/pending`
+      const response = await api.get<{ requests: BookingRequest[] }>(
+        `/booking-requests/barber/${barberId}/pending`
       );
-      setRequests(response.data.requests || []);
+      setRequests(response.requests || []);
     } catch (error) {
       console.error('Failed to fetch booking requests:', error);
       // Start with empty array on API failure
@@ -140,7 +140,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const handleAccept = async (bookingId: string) => {
     setActionLoading(bookingId);
     try {
-      await axios.post(`http://localhost:3001/api/booking-requests/${bookingId}/accept`, {
+      await api.post(`/booking-requests/${bookingId}/accept`, {
         barberId,
         message: 'Looking forward to seeing you!',
       });
@@ -159,7 +159,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const handleReject = async (bookingId: string) => {
     setActionLoading(bookingId);
     try {
-      await axios.post(`http://localhost:3001/api/booking-requests/${bookingId}/reject`, {
+      await api.post(`/booking-requests/${bookingId}/reject`, {
         barberId,
         reason: 'Schedule conflict',
       });
