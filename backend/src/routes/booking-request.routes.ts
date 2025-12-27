@@ -26,6 +26,7 @@ const router = Router();
 router.post('/', createBookingRequest);
 
 // GET /api/booking-requests/barber/:barberId/pending - Get pending requests for barber
+// Note: barberId here can be either the barber table ID or user ID - controller handles both
 router.get('/barber/:barberId/pending', getBarberPendingRequests);
 
 // POST /api/booking-requests/:bookingId/accept - Accept booking request

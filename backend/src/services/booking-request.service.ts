@@ -116,10 +116,23 @@ export class BookingRequestService {
   /**
    * Get pending booking requests for a barber
    */
-  async getBarberPendingRequests(barberId: string): Promise<BookingRequest[]> {
+  async getBarberPendingRequests(barberIdOrUserId: string): Promise<BookingRequest[]> {
     try {
       // Check if PostgreSQL is available
       await pool.query('SELECT 1');
+      
+      // First, try to find the barber ID - the input could be either barber ID or user ID
+      let barberId = barberIdOrUserId;
+      
+      // Check if this is a user ID by looking up the barbers table
+      const barberCheck = await pool.query(
+        'SELECT id FROM barbers WHERE id = $1 OR "userId" = $1',
+        [barberIdOrUserId]
+      );
+      
+      if (barberCheck.rows.length > 0) {
+        barberId = barberCheck.rows[0].id;
+      }
       
       const result = await pool.query(`
         SELECT 
