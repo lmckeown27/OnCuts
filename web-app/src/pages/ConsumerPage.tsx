@@ -79,8 +79,28 @@ export default function ConsumerPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
   // Get consumer ID from auth
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const consumerId = user?.id || '';
+  
+  // Check for barber profile if not already known
+  useEffect(() => {
+    const checkBarberProfile = async () => {
+      if (user && user.has_barber_profile === undefined) {
+        try {
+          const barberProfile = await barberService.getBarberByUserId(user.id);
+          if (barberProfile) {
+            setUser({ ...user, has_barber_profile: true });
+          } else {
+            setUser({ ...user, has_barber_profile: false });
+          }
+        } catch {
+          // No barber profile found
+          setUser({ ...user, has_barber_profile: false });
+        }
+      }
+    };
+    checkBarberProfile();
+  }, [user?.id]);
   
   // Debug viewport in development
   useEffect(() => {
