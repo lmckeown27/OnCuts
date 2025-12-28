@@ -34,6 +34,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
+  const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
@@ -72,6 +73,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       setBarber(data);
       
       // Populate form fields
+      setDisplayName(data.name || data.display_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || '');
       setBio(data.bio || '');
       setInstagramHandle(data.instagram_handle || '');
       setProfilePhoto(data.profile_photo_url || data.profile_picture_url || '');
@@ -95,6 +97,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       setIsSaving(true);
 
       const updateData: Partial<Barber> = {
+        display_name: displayName,
         bio,
         instagram_handle: instagramHandle,
         specialties,
@@ -207,6 +210,20 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           </Button>
           <p className="text-xs text-gray-500">Max size: 5MB. Formats: JPG, PNG</p>
         </div>
+      </Card>
+
+      {/* Display Name */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-2">Display Name</h3>
+        <p className="text-sm text-gray-600 mb-4">This is the name shown on your barber card</p>
+        <input
+          type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder="Your name"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          maxLength={50}
+        />
       </Card>
 
       {/* Bio */}

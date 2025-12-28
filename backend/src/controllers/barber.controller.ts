@@ -382,7 +382,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, instagram_handle, specialties, yearsExperience } = req.body;
+    const { bio, instagram_handle, display_name, specialties, yearsExperience } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
@@ -426,11 +426,29 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       );
     }
 
-    // Update instagram_handle on users table (it's a user profile field)
+    // Update user profile fields (display_name, instagram_handle) on users table
+    const userUpdateFields: string[] = [];
+    const userValues: any[] = [];
+    let userParamIndex = 1;
+
+    if (display_name !== undefined) {
+      userUpdateFields.push(`"displayName" = $${userParamIndex}`);
+      userValues.push(display_name);
+      userParamIndex++;
+    }
     if (instagram_handle !== undefined) {
+      userUpdateFields.push(`"instagramHandle" = $${userParamIndex}`);
+      userValues.push(instagram_handle);
+      userParamIndex++;
+    }
+
+    if (userUpdateFields.length > 0) {
+      userUpdateFields.push(`"updatedAt" = NOW()`);
+      userValues.push(userId);
+
       await pool.query(
-        `UPDATE users SET "instagramHandle" = $1, "updatedAt" = NOW() WHERE id = $2`,
-        [instagram_handle, userId]
+        `UPDATE users SET ${userUpdateFields.join(', ')} WHERE id = $${userParamIndex}`,
+        userValues
       );
     }
 
@@ -445,6 +463,8 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
+        u.first_name,
+        u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle
@@ -454,9 +474,14 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       [id]
     );
 
+    const barber = result.rows[0];
+
     res.json({
       success: true,
-      data: result.rows[0],
+      data: {
+        ...barber,
+        name: barber.display_name || `${barber.first_name} ${barber.last_name}`.trim(),
+      },
       message: 'Profile updated successfully',
     });
   } catch (error) {

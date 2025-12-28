@@ -29,6 +29,10 @@ export interface Barber {
   id: string;
   user_id: string;
   user?: User;
+  name?: string; // Computed: display_name or first_name + last_name
+  display_name?: string;
+  first_name?: string;
+  last_name?: string;
   bio: string;
   instagram_handle?: string;
   specialties: string[];
@@ -37,6 +41,7 @@ export interface Barber {
   pricing: Service[];
   average_rating: number;
   total_bookings: number;
+  total_reviews?: number;
   is_active: boolean;
   profile_photo_url?: string;
   profile_picture_url?: string; // Alias from users table join
