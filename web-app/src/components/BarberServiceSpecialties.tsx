@@ -229,29 +229,28 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
             return (
               <div
                 key={service.serviceId}
-                className={`p-4 rounded-lg border-2 transition-all ${
+                onClick={() => !saving && toggleService(service.serviceId)}
+                className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
                   service.isOffered
                     ? 'border-primary-400 bg-primary-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   {/* Service Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <button
-                        onClick={() => toggleService(service.serviceId)}
-                        disabled={saving}
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
+                      <div
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                           service.isOffered
                             ? 'bg-primary-400 border-primary-400'
-                            : 'border-gray-300 hover:border-primary-300'
+                            : 'border-gray-300'
                         }`}
                       >
                         {service.isOffered && (
                           <Check className="w-4 h-4 text-white" />
                         )}
-                      </button>
+                      </div>
                       <div>
                         <h4 className="font-semibold text-gray-900">{service.serviceName}</h4>
                         <p className="text-xs text-gray-500">{serviceInfo?.description}</p>
