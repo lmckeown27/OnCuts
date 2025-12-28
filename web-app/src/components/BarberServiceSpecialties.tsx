@@ -12,6 +12,7 @@ import Button from './Button';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
 import { SERVICE_TYPES, ServiceType } from '../config/services';
+import barberService from '../services/barber.service';
 
 interface BarberService {
   serviceId: string;
@@ -46,16 +47,27 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
   const fetchBarberServices = async () => {
     setLoading(true);
     
-    // Mock data - in production, fetch from API
-    setTimeout(() => {
-      const mockServices: BarberService[] = AVAILABLE_SERVICES.map((service, idx) => {
-        const isOffered = idx < 5; // First 5 services offered by default
-        const qualityFactor = isOffered ? 0.85 + Math.random() * 0.3 : 1.0; // 0.85 - 1.15
+    try {
+      // Fetch real barber data from API
+      const barberData = await barberService.getBarberByUserId(barberId);
+      
+      // Get the barber's current specialties from the database
+      const currentSpecialties: string[] = barberData?.specialties || [];
+      
+      // Map all available services with real data where available
+      const services: BarberService[] = AVAILABLE_SERVICES.map((service) => {
+        // Check if this service is offered by matching service name
+        const isOffered = currentSpecialties.some(
+          s => s.toLowerCase() === service.name.toLowerCase()
+        );
+        
+        // For now, use base values for pricing (algorithmic pricing will be implemented later)
+        // When we have real booking/rating data per service, this will use that
+        const qualityFactor = 1.0; // Default to standard tier
         const priceMultiplier = qualityFactor;
         const algorithmicPrice = service.basePrice * priceMultiplier;
-        const previousPrice = service.basePrice;
-        const priceChange = algorithmicPrice - previousPrice;
-        const priceChangePct = (priceChange / previousPrice) * 100;
+        const priceChange = 0;
+        const priceChangePct = 0;
 
         return {
           serviceId: service.id,
@@ -65,36 +77,92 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           basePrice: service.basePrice,
           priceMultiplier,
           qualityFactor,
-          recentBookings: isOffered ? Math.floor(Math.random() * 50) + 10 : 0,
-          avgRating: isOffered ? 4.5 + Math.random() * 0.5 : 0,
+          recentBookings: 0, // Will be populated from real booking data
+          avgRating: 0, // Will be populated from real rating data
           priceChange,
           priceChangePct,
         };
       });
 
-      setBarberServices(mockServices);
+      setBarberServices(services);
+    } catch (error) {
+      console.error('Failed to fetch barber services:', error);
+      toast.error('Failed to load services');
+      
+      // Initialize with empty services on error
+      const emptyServices: BarberService[] = AVAILABLE_SERVICES.map((service) => ({
+        serviceId: service.id,
+        serviceName: service.name,
+        isOffered: false,
+        algorithmicPrice: service.basePrice,
+        basePrice: service.basePrice,
+        priceMultiplier: 1.0,
+        qualityFactor: 1.0,
+        recentBookings: 0,
+        avgRating: 0,
+        priceChange: 0,
+        priceChangePct: 0,
+      }));
+      setBarberServices(emptyServices);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   const toggleService = async (serviceId: string) => {
     setSaving(true);
     
+    // Find the service being toggled
+    const serviceToToggle = barberServices.find(s => s.serviceId === serviceId);
+    if (!serviceToToggle) {
+      setSaving(false);
+      return;
+    }
+    
+    // Calculate new specialties array
+    const newIsOffered = !serviceToToggle.isOffered;
+    const newSpecialties = newIsOffered
+      ? [...barberServices.filter(s => s.isOffered).map(s => s.serviceName), serviceToToggle.serviceName]
+      : barberServices.filter(s => s.isOffered && s.serviceId !== serviceId).map(s => s.serviceName);
+    
     // Optimistically update UI
     setBarberServices(prev =>
       prev.map(service =>
         service.serviceId === serviceId
-          ? { ...service, isOffered: !service.isOffered }
+          ? { ...service, isOffered: newIsOffered }
           : service
       )
     );
 
-    // Mock API call
-    setTimeout(() => {
+    try {
+      // Get barber profile to get the barber ID
+      const barberData = await barberService.getBarberByUserId(barberId);
+      
+      if (!barberData?.id) {
+        throw new Error('Barber profile not found');
+      }
+      
+      // Save to database
+      await barberService.updateBarberProfile(barberData.id, {
+        specialties: newSpecialties,
+      });
+      
       toast.success('Services updated successfully');
+    } catch (error) {
+      console.error('Failed to update services:', error);
+      toast.error('Failed to update services');
+      
+      // Revert on error
+      setBarberServices(prev =>
+        prev.map(service =>
+          service.serviceId === serviceId
+            ? { ...service, isOffered: !newIsOffered }
+            : service
+        )
+      );
+    } finally {
       setSaving(false);
-      // In production, would refetch to get updated algorithmic prices
-    }, 500);
+    }
   };
 
   const getQualityBadge = (qualityFactor: number) => {
