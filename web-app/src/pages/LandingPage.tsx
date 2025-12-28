@@ -249,8 +249,6 @@ export default function LandingPage() {
               Book Here
             </button>
           </div>
-
-          <p className="text-sm text-gray-500">Free to use • No App Store or Google Play Store required • Get started in seconds</p>
         </div>
       </div>
 
