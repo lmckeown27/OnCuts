@@ -429,6 +429,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       src={barber.profile_picture_url}
                       alt={`${barber.user?.first_name || 'Barber'}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -484,6 +485,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     src={barber.profile_picture_url}
                     alt={`${barber.user?.first_name || 'Barber'}`}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

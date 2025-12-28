@@ -205,7 +205,7 @@ router.post(
         });
       }
 
-      // Process image locally
+      // Process image locally - now generates original, medium, and thumbnail
       const result = await imageService.processProfilePicture(file.buffer);
       const imageUrl = imageService.generateImageUrl(result.original);
 
@@ -215,9 +215,11 @@ router.post(
         [imageUrl, userId]
       );
 
+      // Return all sizes for frontend flexibility
       const responseData: any = {
         url: imageUrl,
-        thumbnailUrl: imageService.generateImageUrl(result.thumbnail),
+        mediumUrl: result.medium ? imageService.generateImageUrl(result.medium, 'original') : imageUrl,
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail, 'original'),
         filename: result.original,
       };
 

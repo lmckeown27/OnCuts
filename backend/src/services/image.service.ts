@@ -61,12 +61,23 @@ interface ProcessImageOptions {
 interface ProcessedImageResult {
   original: string;
   thumbnail: string;
+  medium?: string;
   path: string;
   thumbnailPath: string;
+  mediumPath?: string;
 }
+
+// Image size presets
+const IMAGE_SIZES = {
+  thumbnail: { width: 150, height: 150, quality: 70 },
+  small: { width: 300, height: 300, quality: 75 },
+  medium: { width: 600, height: 600, quality: 80 },
+  large: { width: 1200, height: 1200, quality: 85 },
+};
 
 /**
  * Process and save image with optimization
+ * Now defaults to WebP format for 70-80% smaller files
  */
 export const processAndSaveImage = async (
   buffer: Buffer,
@@ -74,58 +85,72 @@ export const processAndSaveImage = async (
   options: ProcessImageOptions = {}
 ): Promise<ProcessedImageResult> => {
   try {
-    const { width = 1200, height = 900, quality = 85, format = 'jpeg' } = options;
+    // Default to WebP for best compression
+    const { width = 1200, height = 1200, quality = 85, format = 'webp' } = options;
 
-    // Process image with sharp - maintain aspect ratio
-    let processedImage = sharp(buffer)
-      .resize(width, height, {
-        fit: 'inside', // Maintains aspect ratio
-        withoutEnlargement: true,
-      })
-      .jpeg({
-        quality,
-        progressive: true,
-        mozjpeg: true,
-      });
-
-    if (format === 'png') {
-      processedImage = processedImage.png();
-    } else if (format === 'webp') {
-      processedImage = processedImage.webp({ quality });
-    }
-
-    // Generate unique filename
-    const uniqueFilename = `${uuidv4()}-${Date.now()}.${format}`;
     const uploadPath = getUploadsDir();
+    await fs.mkdir(uploadPath, { recursive: true });
+
+    // Generate unique base filename
+    const baseId = `${uuidv4()}-${Date.now()}`;
+    const ext = format === 'webp' ? 'webp' : format;
+
+    // Process and save the main image (large size)
+    const uniqueFilename = `${baseId}.${ext}`;
     const fullPath = path.join(uploadPath, uniqueFilename);
 
-    console.log(`[Image Service] Saving to uploadPath: ${uploadPath}`);
-    console.log(`[Image Service] Full path: ${fullPath}`);
+    await sharp(buffer)
+      .resize(width, height, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality, effort: 4 }) // effort 4 = good balance of speed/compression
+      .toFile(fullPath);
 
-    // Ensure upload directory exists
-    await fs.mkdir(uploadPath, { recursive: true });
-    console.log(`[Image Service] Upload directory ensured`);
+    console.log(`[Image Service] Saved original: ${uniqueFilename}`);
 
-    // Save processed image
-    await processedImage.toFile(fullPath);
-    console.log(`[Image Service] File saved successfully: ${uniqueFilename}`);
+    // Generate medium size (for cards/lists)
+    const mediumFilename = `med-${baseId}.${ext}`;
+    const mediumPath = path.join(uploadPath, mediumFilename);
 
-    // Generate thumbnail
-    const thumbnailFilename = `thumb-${uniqueFilename}`;
+    await sharp(buffer)
+      .resize(IMAGE_SIZES.medium.width, IMAGE_SIZES.medium.height, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: IMAGE_SIZES.medium.quality, effort: 4 })
+      .toFile(mediumPath);
+
+    console.log(`[Image Service] Saved medium: ${mediumFilename}`);
+
+    // Generate thumbnail (for avatars/small displays)
+    const thumbnailFilename = `thumb-${baseId}.${ext}`;
     const thumbnailPath = path.join(uploadPath, thumbnailFilename);
 
     await sharp(buffer)
-      .resize(300, 300, {
-        fit: 'cover',
+      .resize(IMAGE_SIZES.thumbnail.width, IMAGE_SIZES.thumbnail.height, {
+        fit: 'cover', // Cover for thumbnails to ensure square
         withoutEnlargement: true,
       })
-      .jpeg({ quality: 70 })
+      .webp({ quality: IMAGE_SIZES.thumbnail.quality, effort: 4 })
       .toFile(thumbnailPath);
+
+    console.log(`[Image Service] Saved thumbnail: ${thumbnailFilename}`);
+
+    // Log file sizes for monitoring
+    const [origStats, medStats, thumbStats] = await Promise.all([
+      fs.stat(fullPath),
+      fs.stat(mediumPath),
+      fs.stat(thumbnailPath),
+    ]);
+    console.log(`[Image Service] Sizes - Original: ${(origStats.size / 1024).toFixed(1)}KB, Medium: ${(medStats.size / 1024).toFixed(1)}KB, Thumb: ${(thumbStats.size / 1024).toFixed(1)}KB`);
 
     return {
       original: uniqueFilename,
+      medium: mediumFilename,
       thumbnail: thumbnailFilename,
       path: fullPath,
+      mediumPath: mediumPath,
       thumbnailPath: thumbnailPath,
     };
   } catch (error) {
@@ -136,6 +161,7 @@ export const processAndSaveImage = async (
 
 /**
  * Process barber portfolio image (larger dimensions)
+ * Uses WebP for ~70% smaller files than JPEG
  */
 export const processPortfolioImage = async (
   buffer: Buffer
@@ -143,22 +169,26 @@ export const processPortfolioImage = async (
   return processAndSaveImage(buffer, 'portfolio', {
     width: 1200,
     height: 1200,
-    quality: 90,
-    format: 'jpeg',
+    quality: 85,
+    format: 'webp',
   });
 };
 
 /**
- * Process profile picture (square, smaller)
+ * Process profile picture
+ * Generates multiple sizes for different UI contexts:
+ * - Original (up to 800px) for full profile view
+ * - Medium (400px) for barber cards
+ * - Thumbnail (150px) for avatars in dropdowns/lists
  */
 export const processProfilePicture = async (
   buffer: Buffer
 ): Promise<ProcessedImageResult> => {
   return processAndSaveImage(buffer, 'profile', {
-    width: 600,
-    height: 600,
+    width: 800,
+    height: 800,
     quality: 85,
-    format: 'jpeg',
+    format: 'webp',
   });
 };
 
@@ -256,24 +286,36 @@ export const validateImageDimensions = (
 };
 
 /**
- * Generate image URL
+ * Generate image URL for a specific size
  * Uses /api/uploads/ path so it goes through Nginx API proxy
  */
-export const generateImageUrl = (filename: string, type: 'original' | 'thumbnail' = 'original'): string => {
-  const prefix = type === 'thumbnail' ? 'thumb-' : '';
+export const generateImageUrl = (filename: string, type: 'original' | 'medium' | 'thumbnail' = 'original'): string => {
+  if (!filename) return '';
   
-  // If BASE_URL is explicitly set, use it
+  // Determine prefix based on type
+  let prefix = '';
+  if (type === 'thumbnail') prefix = 'thumb-';
+  else if (type === 'medium') prefix = 'med-';
+  
+  // If BASE_URL is explicitly set (for CDN), use it
   if (process.env.BASE_URL) {
-    const url = `${process.env.BASE_URL}/uploads/${prefix}${filename}`;
-    console.log(`[generateImageUrl] Using BASE_URL: "${process.env.BASE_URL}" -> "${url}"`);
-    return url;
+    return `${process.env.BASE_URL}/uploads/${prefix}${filename}`;
   }
   
   // Use /api/uploads/ path - this goes through Nginx's /api/ proxy
-  // which routes to the backend where the files are stored
-  const url = `/api/uploads/${prefix}${filename}`;
-  console.log(`[generateImageUrl] Generated URL: "${url}"`);
-  return url;
+  return `/api/uploads/${prefix}${filename}`;
+};
+
+/**
+ * Generate all image URLs from a base filename
+ * Useful for returning complete image data to frontend
+ */
+export const generateAllImageUrls = (filename: string): { original: string; medium: string; thumbnail: string } => {
+  return {
+    original: generateImageUrl(filename, 'original'),
+    medium: generateImageUrl(filename, 'medium'),
+    thumbnail: generateImageUrl(filename, 'thumbnail'),
+  };
 };
 
 /**
@@ -315,6 +357,8 @@ export default {
   getImageInfo,
   validateImageDimensions,
   generateImageUrl,
+  generateAllImageUrls,
   cleanupOrphanedImages,
+  IMAGE_SIZES,
 };
 
