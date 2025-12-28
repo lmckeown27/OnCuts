@@ -63,7 +63,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   pendingVerificationEmail: authService.getPendingVerificationEmail(),
   activeRole: null,
 
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
+  setUser: (user) => {
+    // Persist to localStorage so changes survive page refresh
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('user');
+    }
+    set({ user, isAuthenticated: !!user });
+  },
   
   setActiveRole: (role) => set({ activeRole: role }),
 
