@@ -606,10 +606,10 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             <div className="p-6">
               {/* Barber Profile Content */}
               <div className="space-y-6">
-                {/* Profile Header - Image on top, info below */}
-                <div className="flex flex-col gap-4">
-                  {/* Barber Profile Picture - same size as cards */}
-                  <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mx-auto">
+                {/* Profile Header - Image left, info right */}
+                <div className="flex flex-col sm:flex-row gap-6">
+                  {/* Barber Profile Picture */}
+                  <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
@@ -623,40 +623,27 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     )}
                   </div>
                   
-                  {/* Schedule Button */}
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={() => {
-                        const formData = location.state?.preservedFormData;
-                        navigate(`/web/consumer/book/${selectedBarber.id}`, {
-                          state: {
-                            barber: selectedBarber,
-                            filters: filterCriteria,
-                            preservedFormData: formData?.barberId === selectedBarber.id ? formData : undefined,
-                          },
-                        });
-                      }}
-                      className="px-6 py-2 text-base"
-                    >
-                      Schedule Service
-                    </Button>
-                  </div>
-                  
-                  {/* Barber Info */}
-                  <div className="text-center">
-                    <p className="text-gray-700 mb-4">{selectedBarber.bio}</p>
-                    <div className="flex flex-wrap justify-center gap-2 mb-4">
-                      {(Array.isArray(selectedBarber.specialties) ? selectedBarber.specialties : []).map((specialty, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
-                        >
-                          {specialty}
-                        </span>
-                      ))}
-                    </div>
+                  {/* Bio, Instagram, Specialties - Right side */}
+                  <div className="flex-1 flex flex-col justify-center text-center sm:text-left">
+                    <p className="text-gray-700 mb-4">{selectedBarber.bio || 'Professional barber'}</p>
+                    
+                    {/* Specialties */}
+                    {(Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 0) && (
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
+                        {selectedBarber.specialties.map((specialty, idx) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
+                          >
+                            {specialty}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Instagram */}
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600 mb-4">
                         <Instagram className="w-5 h-5" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}
@@ -669,25 +656,44 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       </div>
                     )}
                     
-                    {/* Schedule with times */}
-                    {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-3">
-                          <Clock className="w-5 h-5" />
-                          <span>Availability</span>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
-                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
-                              <div className="font-semibold text-gray-800">{day}</div>
-                              <div className="text-sm text-gray-600">{times}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {/* Schedule Button */}
+                    <div className="flex justify-center sm:justify-start">
+                      <Button
+                        onClick={() => {
+                          const formData = location.state?.preservedFormData;
+                          navigate(`/web/consumer/book/${selectedBarber.id}`, {
+                            state: {
+                              barber: selectedBarber,
+                              filters: filterCriteria,
+                              preservedFormData: formData?.barberId === selectedBarber.id ? formData : undefined,
+                            },
+                          });
+                        }}
+                        className="px-6 py-2 text-base"
+                      >
+                        Schedule Service
+                      </Button>
+                    </div>
                   </div>
                 </div>
+                
+                {/* Availability Section - Full width below */}
+                {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-3">
+                      <Clock className="w-5 h-5" />
+                      <span>Availability</span>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
+                        <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
+                          <div className="font-semibold text-gray-800">{day}</div>
+                          <div className="text-sm text-gray-600">{times}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
