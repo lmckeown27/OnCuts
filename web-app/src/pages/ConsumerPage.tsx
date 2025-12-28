@@ -479,7 +479,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               onClick={() => setSelectedBarber(barber)}
             >
               {/* Barber Profile Picture with Name & Price Overlays */}
-              <div className="relative mb-2 sm:mb-3 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
+              <div className="relative mb-2 sm:mb-3 w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mx-auto">
                 {barber.profile_picture_url ? (
                   <img
                     src={barber.profile_picture_url}
@@ -576,7 +576,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {/* Profile Header - Image on top, info below */}
                 <div className="flex flex-col gap-4">
                   {/* Barber Profile Picture - same size as cards */}
-                  <div className="relative h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
+                  <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mx-auto">
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
