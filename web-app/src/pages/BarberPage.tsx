@@ -1023,28 +1023,6 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
           </button>
         </div>
 
-        {/* Stats Bar */}
-        <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-xs text-gray-600">Total</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-              <p className="text-xs text-gray-600">Completed</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-yellow-600">{stats.avgRating.toFixed(1)}</p>
-              <p className="text-xs text-gray-600">Avg Rating</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-primary-500">${stats.totalEarned.toFixed(0)}</p>
-              <p className="text-xs text-gray-600">Earned</p>
-            </div>
-          </div>
-        </div>
-
         {/* Search & Filters */}
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex gap-3">
