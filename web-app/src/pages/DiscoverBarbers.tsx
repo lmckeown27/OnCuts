@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Award, Clock, MessageSquare, Calendar, Instagram, Users, DollarSign, TrendingDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import TimePickerDropdown from '../components/TimePickerDropdown';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
@@ -594,44 +595,10 @@ function BookingScheduleModal({ barber, customerId, customerName, onClose, onSuc
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Preferred Time
             </label>
-            <div 
-              className="relative cursor-pointer group"
-              onClick={() => {
-                const input = document.getElementById('discover-time-picker') as HTMLInputElement;
-                if (input) {
-                  input.showPicker?.();
-                }
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-50 to-green-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              <div className="relative flex items-center">
-                <svg 
-                  className="absolute left-3 w-5 h-5 text-primary-400 pointer-events-none z-10" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
-                  />
-                </svg>
-                <input
-                  id="discover-time-picker"
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 hover:border-primary-300 transition-all bg-white cursor-pointer text-gray-700 font-medium"
-                  style={{
-                    colorScheme: 'light',
-                    accentColor: '#708d81',
-                  }}
-                  required
-                />
-              </div>
-            </div>
+            <TimePickerDropdown
+              value={formData.time}
+              onChange={(value) => setFormData({ ...formData, time: value })}
+            />
           </div>
 
           {/* Location */}

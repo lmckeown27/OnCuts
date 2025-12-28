@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
+import TimePickerDropdown from '../components/TimePickerDropdown';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
@@ -286,12 +287,9 @@ export default function ScheduleServicePage() {
                         Time *
                       </div>
                     </label>
-                    <input
-                      type="time"
+                    <TimePickerDropdown
                       value={time}
-                      onChange={(e) => setTime(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      required
+                      onChange={(value) => setTime(value)}
                     />
                   </div>
 

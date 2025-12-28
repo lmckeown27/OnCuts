@@ -15,6 +15,7 @@
 import React, { useState, useEffect } from 'react';
 import { Scissors, Calendar, MapPin, X, ChevronRight, ChevronLeft, Check, Filter } from 'lucide-react';
 import Button from './Button';
+import TimePickerDropdown from './TimePickerDropdown';
 import { LocationSelector } from './LocationSelector';
 import { useBodyScrollLock } from '../hooks';
 import type { FilterCriteria } from '../types/barber-filters';
@@ -328,11 +329,9 @@ export default function BarberFilterQuestionnaire({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                      <input
-                        type="time"
+                      <TimePickerDropdown
                         value={time || ''}
-                        onChange={(e) => setTime(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-400 focus:border-transparent text-lg"
+                        onChange={(value) => setTime(value)}
                       />
                     </div>
                   </div>

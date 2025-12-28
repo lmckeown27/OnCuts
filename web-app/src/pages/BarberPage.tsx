@@ -8,6 +8,7 @@ import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award,
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import TimePickerDropdown from '../components/TimePickerDropdown';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberPricingDashboard from '../components/BarberPricingDashboard';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
@@ -1201,25 +1202,21 @@ function AvailabilityModal({ isVisible, onClose }: { isVisible: boolean; onClose
                 
                 {availability[key].enabled && (
                   <div className="flex items-center gap-3">
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">Start</label>
-                      <input
-                        type="time"
-                        value={availability[key].start}
-                        onChange={(e) => handleTimeChange(key, 'start', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
-                      />
-                    </div>
+                    <TimePickerDropdown
+                      label="Start"
+                      value={availability[key].start}
+                      onChange={(value) => handleTimeChange(key, 'start', value)}
+                      maxTime={availability[key].end}
+                      className="flex-1"
+                    />
                     <span className="text-gray-400 mt-5">to</span>
-                    <div className="flex-1">
-                      <label className="block text-xs text-gray-600 mb-1">End</label>
-                      <input
-                        type="time"
-                        value={availability[key].end}
-                        onChange={(e) => handleTimeChange(key, 'end', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
-                      />
-                    </div>
+                    <TimePickerDropdown
+                      label="End"
+                      value={availability[key].end}
+                      onChange={(value) => handleTimeChange(key, 'end', value)}
+                      minTime={availability[key].start}
+                      className="flex-1"
+                    />
                   </div>
                 )}
               </div>
