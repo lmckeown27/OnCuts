@@ -9,6 +9,7 @@ import {
   requestPasswordReset,
   resetPassword,
   refreshToken,
+  getCurrentUser,
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
@@ -116,5 +117,12 @@ router.post(
  * @access  Public
  */
 router.post('/refresh-token', refreshToken);
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current authenticated user profile
+ * @access  Private
+ */
+router.get('/me', authenticate, getCurrentUser);
 
 export default router;

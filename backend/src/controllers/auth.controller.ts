@@ -720,6 +720,83 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
 };
 
 /**
+ * Get current user profile
+ * Returns the authenticated user's data including role information
+ */
+export const getCurrentUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      throw new ApiError(401, 'Not authenticated');
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        id, email, first_name, last_name, role, "campusId", 
+        email_verified, "avatarUrl", "displayName", bio,
+        "isBlocked", "isBanned", "createdAt"
+       FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const user = result.rows[0];
+
+    // Check if user has a barber profile
+    const barberCheck = await pool.query(
+      'SELECT id FROM barbers WHERE "userId" = $1',
+      [userId]
+    );
+    const hasBarberProfile = barberCheck.rows.length > 0;
+
+    // Map database role to frontend role
+    let frontendRole: 'student' | 'barber' | 'campus_manager' | 'admin';
+    switch (user.role) {
+      case 'CONSUMER':
+        frontendRole = 'student';
+        break;
+      case 'BARBER':
+        frontendRole = 'barber';
+        break;
+      case 'CAMPUS_MANAGER':
+        frontendRole = 'campus_manager';
+        break;
+      case 'ADMIN':
+        frontendRole = 'admin';
+        break;
+      default:
+        frontendRole = 'student';
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        user_type: frontendRole,
+        is_admin: frontendRole === 'admin',
+        is_campus_manager: frontendRole === 'campus_manager',
+        has_barber_profile: hasBarberProfile,
+        is_verified: user.email_verified,
+        profile_picture_url: user.avatarUrl,
+        display_name: user.displayName,
+        bio: user.bio,
+        campus_id: user.campusId,
+        created_at: user.createdAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * JWT token generation and verification is now handled by utils/jwt.utils.ts
  * See that file for comprehensive JWT documentation and helper functions.
  */
