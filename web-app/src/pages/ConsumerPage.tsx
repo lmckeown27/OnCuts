@@ -17,7 +17,35 @@ import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock } from '../hooks';
 import { SPECIALTY_OPTIONS } from '../config/services';
+import type { WeeklySchedule } from '../types';
 
+// Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
+function formatTime(time24: string): string {
+  const [hourStr, minuteStr] = time24.split(':');
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+  const ampm = hour >= 12 ? 'pm' : 'am';
+  hour = hour % 12 || 12;
+  return minute === 0 ? `${hour}${ampm}` : `${hour}:${minuteStr}${ampm}`;
+}
+
+// Format schedule for display - returns array of { day, times } objects
+function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; times: string }[] {
+  if (!schedule) return [];
+  
+  const dayOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+  const dayAbbrev: Record<string, string> = {
+    monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
+    friday: 'Fri', saturday: 'Sat', sunday: 'Sun'
+  };
+  
+  return dayOrder
+    .filter(day => schedule[day]?.enabled)
+    .map(day => ({
+      day: dayAbbrev[day],
+      times: `${formatTime(schedule[day].start)}-${formatTime(schedule[day].end)}`
+    }));
+}
 
 // Algorithmic ranking function (capitalistic-but-fair)
 function rankBarbers(barbers: Barber[]): Barber[] {
@@ -521,15 +549,19 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 </div>
 
                 {/* Availability */}
-                {barber.weekly_schedule && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                    <Clock className="w-3 h-3" />
-                    <span>
-                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                        .filter(day => barber.weekly_schedule?.[day as keyof typeof barber.weekly_schedule]?.enabled)
-                        .map(day => day.charAt(0).toUpperCase() + day.slice(1, 3))
-                        .join(', ') || 'No schedule set'}
-                    </span>
+                {barber.weekly_schedule && formatSchedule(barber.weekly_schedule).length > 0 && (
+                  <div className="mt-2 space-y-0.5">
+                    <div className="flex items-center gap-1 text-xs text-gray-600 font-medium">
+                      <Clock className="w-3 h-3" />
+                      <span>Availability</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {formatSchedule(barber.weekly_schedule).map(({ day, times }) => (
+                        <span key={day} className="text-xs text-gray-500">
+                          <span className="font-medium">{day}</span> {times}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -624,7 +656,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       ))}
                     </div>
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center gap-2 text-gray-600">
+                      <div className="flex items-center justify-center gap-2 text-gray-600 mb-4">
                         <Instagram className="w-5 h-5" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}
@@ -634,6 +666,24 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                         >
                           @{selectedBarber.instagram_handle}
                         </a>
+                      </div>
+                    )}
+                    
+                    {/* Schedule with times */}
+                    {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-3">
+                          <Clock className="w-5 h-5" />
+                          <span>Availability</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
+                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
+                              <div className="font-semibold text-gray-800">{day}</div>
+                              <div className="text-sm text-gray-600">{times}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
