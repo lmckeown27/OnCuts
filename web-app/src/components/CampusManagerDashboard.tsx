@@ -5,7 +5,7 @@
  * Reuses 100% of existing Barber page styles and layout
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -15,20 +15,14 @@ import {
   XCircle,
   Clock,
   Calendar,
-  Flag
+  Flag,
+  RefreshCw
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
 import { CampusManagerBarberView } from './CampusManagerBarberView';
-
-// Types
-interface BarberApplication {
-  id: string;
-  applicantName: string;
-  appliedAt: Date;
-  status: 'pending' | 'interviewed' | 'approved' | 'rejected';
-  email: string;
-}
+import barberApplicationService, { BarberApplication } from '../services/barber-application.service';
+import toast from 'react-hot-toast';
 
 interface Incident {
   id: string;
@@ -305,40 +299,96 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
 // ═══════════════════════════════════════════════════════════════
 
 const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
-  // TODO: Fetch applications from API
-  const [applications] = useState<BarberApplication[]>([
-    {
-      id: '1',
-      applicantName: 'John Smith',
-      appliedAt: new Date('2025-01-10'),
-      status: 'pending',
-      email: 'john.smith@example.com',
-    },
-    {
-      id: '2',
-      applicantName: 'Maria Garcia',
-      appliedAt: new Date('2025-01-12'),
-      status: 'interviewed',
-      email: 'maria.garcia@example.com',
-    },
-  ]);
+  const [applications, setApplications] = useState<BarberApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const handleAction = (applicationId: string, action: 'approve' | 'reject' | 'interview') => {
-    console.log(`Action ${action} on application ${applicationId}`);
-    // TODO: Implement API call
+  const fetchApplications = async () => {
+    try {
+      setLoading(true);
+      const data = await barberApplicationService.getAllApplications();
+      setApplications(data);
+    } catch (error) {
+      console.error('Failed to fetch applications:', error);
+      toast.error('Failed to load barber applications');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  const handleAction = async (applicationId: string, action: 'approve' | 'reject' | 'interview') => {
+    try {
+      setActionLoading(applicationId);
+      const statusMap = {
+        'approve': 'approved' as const,
+        'reject': 'rejected' as const,
+        'interview': 'interview_scheduled' as const,
+      };
+      
+      await barberApplicationService.updateApplicationStatus(applicationId, statusMap[action]);
+      toast.success(`Application ${action === 'interview' ? 'scheduled for interview' : action + 'd'} successfully`);
+      fetchApplications(); // Refresh the list
+    } catch (error) {
+      console.error(`Failed to ${action} application:`, error);
+      toast.error(`Failed to ${action} application`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'under_review': return 'bg-blue-100 text-blue-700';
+      case 'interview_scheduled': return 'bg-purple-100 text-purple-700';
+      case 'approved': return 'bg-green-100 text-green-700';
+      case 'rejected': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Barber Applications</h3>
+        </div>
+        <Card className="text-center py-8 sm:py-12">
+          <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
+          <p className="text-gray-500 text-sm sm:text-base">Loading applications...</p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Pending Applications</h3>
-        <span className="text-xs sm:text-sm text-gray-500">{applications.length} pending</span>
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Barber Applications</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm text-gray-500">{applications.length} total</span>
+          <button 
+            onClick={fetchApplications}
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
       </div>
 
       {applications.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
           <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-          <p className="text-gray-500 text-sm sm:text-base">No pending applications</p>
+          <p className="text-gray-500 text-sm sm:text-base">No barber applications yet</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -346,21 +396,28 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
             <Card key={app.id} className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg">{app.applicantName}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{app.email}</p>
+                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
+                    {app.user_first_name} {app.user_last_name}
+                  </h4>
+                  <p className="text-sm text-gray-600 mt-1">{app.user_email}</p>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
                     <span className="text-xs text-gray-500">
-                      Applied {app.appliedAt.toLocaleDateString()}
+                      Applied {new Date(app.created_at).toLocaleDateString()}
                     </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      app.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      app.status === 'interviewed' ? 'bg-blue-100 text-blue-700' :
-                      app.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusStyle(app.status)}`}>
+                      {formatStatus(app.status)}
                     </span>
+                    {app.years_experience && (
+                      <span className="text-xs text-gray-500">
+                        {app.years_experience} years exp.
+                      </span>
+                    )}
                   </div>
+                  {app.why_be_barber && (
+                    <p className="text-xs text-gray-600 mt-2 line-clamp-2">
+                      "{app.why_be_barber}"
+                    </p>
+                  )}
                 </div>
                 
                 {/* Buttons - Grid on mobile, flex on desktop */}
@@ -371,6 +428,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'interview')}
+                        disabled={actionLoading === app.id}
                         className="text-xs sm:text-sm"
                       >
                         <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
@@ -380,6 +438,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         variant="primary"
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
+                        disabled={actionLoading === app.id}
                         className="text-xs sm:text-sm"
                       >
                         <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
@@ -389,6 +448,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
+                        disabled={actionLoading === app.id}
                         className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm col-span-2 sm:col-span-1"
                       >
                         <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
@@ -396,12 +456,13 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                       </Button>
                     </>
                   )}
-                  {app.status === 'interviewed' && (
+                  {(app.status === 'under_review' || app.status === 'interview_scheduled') && (
                     <>
                       <Button
                         variant="primary"
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
+                        disabled={actionLoading === app.id}
                         className="text-xs sm:text-sm"
                       >
                         <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
@@ -411,12 +472,25 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         variant="outline"
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
+                        disabled={actionLoading === app.id}
                         className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm"
                       >
                         <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
                         Reject
                       </Button>
                     </>
+                  )}
+                  {app.status === 'approved' && (
+                    <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Approved
+                    </span>
+                  )}
+                  {app.status === 'rejected' && (
+                    <span className="text-xs text-red-600 font-medium flex items-center gap-1">
+                      <XCircle className="w-4 h-4" />
+                      Rejected
+                    </span>
                   )}
                 </div>
               </div>

@@ -34,7 +34,7 @@ const roleOptions: RoleOption[] = [
     color: 'text-blue-600',
     bgColor: 'bg-blue-50 hover:bg-blue-100',
     borderColor: 'border-blue-200 hover:border-blue-400',
-    route: '/web/campus-manager'
+    route: '/web/barber' // Routes to BarberPage which has embedded campus manager features
   },
   {
     id: 'barber',

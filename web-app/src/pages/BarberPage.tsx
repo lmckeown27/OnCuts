@@ -104,7 +104,7 @@ export default function BarberPage() {
   // Get barber data from auth - in production this would come from API
   const { user } = useAuthStore();
   const barberId = user?.id || '';
-  const isCampusManager = false; // TODO: Fetch from API based on user role
+  const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
   const campusId = user?.campus_id || '';
   const campusName = ''; // TODO: Fetch campus name from API
 
