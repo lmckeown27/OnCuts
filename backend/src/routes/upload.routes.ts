@@ -15,6 +15,7 @@ import imageService from '../services/image.service';
 import { authenticate } from '../middleware/auth';
 import { uploadToIPFS, IPFSUploadResult } from '../services/ipfs.service';
 import { logger } from '../utils/logger';
+import { pool } from '../database/connection';
 
 const router = express.Router();
 
@@ -194,7 +195,7 @@ router.post(
   imageService.uploadSingleImage,
   async (req, res, next) => {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
       const file = (req as any).file;
 
       if (!file) {
@@ -206,10 +207,17 @@ router.post(
 
       // Process image locally
       const result = await imageService.processProfilePicture(file.buffer);
+      const imageUrl = imageService.generateImageUrl(result.original);
+
+      // Update user's avatarUrl in database
+      await pool.query(
+        'UPDATE users SET "avatarUrl" = $1, "updatedAt" = NOW() WHERE id = $2',
+        [imageUrl, userId]
+      );
 
       const responseData: any = {
-        url: imageService.generateImageUrl(result.original),
-        thumbnailUrl: imageService.generateImageUrl(result.thumbnail),  // thumbnail filename already has thumb- prefix
+        url: imageUrl,
+        thumbnailUrl: imageService.generateImageUrl(result.thumbnail),
         filename: result.original,
       };
 
