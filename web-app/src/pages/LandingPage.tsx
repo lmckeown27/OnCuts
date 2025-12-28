@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, Download, ChevronDown } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { CampusCutLogo } from '@assets';
@@ -22,10 +22,6 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [showInstructionsPopup, setShowInstructionsPopup] = useState(false);
-  const [instructionsVisible, setInstructionsVisible] = useState(false);
-  const [iosOpen, setIosOpen] = useState(false);
-  const [androidOpen, setAndroidOpen] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
@@ -69,19 +65,6 @@ export default function LandingPage() {
 
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
-  };
-
-  const openInstructionsPopup = () => {
-    setShowInstructionsPopup(true);
-    // Trigger animation after mount
-    setTimeout(() => setInstructionsVisible(true), 10);
-  };
-
-  const closeInstructionsPopup = () => {
-    setInstructionsVisible(false);
-    setTimeout(() => {
-      setShowInstructionsPopup(false);
-    }, 200);
   };
 
   const openContactPopup = () => {
@@ -202,10 +185,9 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-4">
               <button
                 onClick={() => navigate('/web')}
-                className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
-                <Smartphone className="w-4 h-4" />
-                Get Started
+                Book Here
               </button>
             </div>
 
@@ -241,10 +223,9 @@ export default function LandingPage() {
                     navigate('/web');
                     closeMobileMenu();
                   }} 
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+                  className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
-                  <Smartphone className="w-4 h-4" />
-                  Get Started
+                  Book Here
                 </button>
               </div>
             </div>
@@ -259,23 +240,13 @@ export default function LandingPage() {
             Earn More, Pay Less
           </h1>
           
-          {/* CTA Buttons */}
-          <div className="flex flex-row gap-3 sm:gap-4 justify-center mb-8">
+          {/* CTA Button */}
+          <div className="flex justify-center mb-8">
             <button
               onClick={() => navigate('/web')}
-              className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
+              className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
-              <Smartphone className="w-6 h-6" />
-              <span className="hidden sm:inline">Get Started</span>
-              <span className="sm:hidden">Start</span>
-            </button>
-            <button
-              onClick={openInstructionsPopup}
-              className="px-8 py-4 sm:py-5 bg-white hover:bg-gray-50 text-primary-600 border-2 border-primary-400 font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
-            >
-              <Download className="w-6 h-6" />
-              <span className="hidden sm:inline">Install Instructions</span>
-              <span className="sm:hidden">Install</span>
+              Book Here
             </button>
           </div>
 
@@ -567,177 +538,18 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Ready to Get Started?
+            Ready to Book?
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <button 
               onClick={() => navigate('/web')}
-              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
+              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
-              <Smartphone className="w-6 h-6" />
-              Get Started
-            </button>
-            <button 
-              onClick={openInstructionsPopup}
-              className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white border-2 border-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 active:scale-95"
-            >
-              <Download className="w-6 h-6" />
-              Install Instructions
+              Book Here
             </button>
           </div>
         </div>
       </div>
-
-      {/* Install Instructions Popup */}
-      {showInstructionsPopup && (
-        <div 
-          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${instructionsVisible ? 'opacity-100' : 'opacity-0'}`}
-          onClick={closeInstructionsPopup}
-        >
-          <div 
-            className={`bg-white rounded-3xl p-8 max-w-4xl w-full max-h-[85vh] overflow-y-auto transition-all duration-200 ${instructionsVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 text-center">Installation Instructions</h2>
-              <button
-                onClick={closeInstructionsPopup}
-                className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-              {/* iOS Dropdown */}
-              <div className="border-2 border-gray-200 rounded-xl overflow-hidden self-start transition-all duration-500">
-                <button
-                  onClick={() => setIosOpen(!iosOpen)}
-                  className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-colors min-h-[100px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="w-6 h-6 text-blue-600" />
-                    <div className="text-left">
-                      <h3 className="text-xl font-bold text-gray-900">iOS</h3>
-                      <p className="text-sm text-gray-600">iPhone & iPad</p>
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-6 h-6 text-gray-600 transition-transform duration-500 ${iosOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                <div className={`transition-all duration-500 ease-in-out border-t border-gray-200 ${
-                  iosOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
-                }`}>
-                  <div className="p-6 space-y-4 bg-white min-h-[360px]">
-                    {/* Important Note */}
-                    <div className="bg-blue-50 border-l-4 border-blue-600 p-4 mb-2 min-h-[88px] flex items-center">
-                      <p className="text-sm text-blue-900">
-                        <strong>Important:</strong> First, tap the <strong>"Get Started"</strong> button on the landing page to access the platform, then follow these steps while on the platform.
-                      </p>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        1
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Tap the <strong>Share</strong> icon at the bottom of Safari
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        2
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Scroll down and tap <strong>"Add to Home Screen"</strong>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        3
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Tap <strong>"Add"</strong> in the top right corner
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Android Dropdown */}
-              <div className="border-2 border-gray-200 rounded-xl overflow-hidden self-start transition-all duration-500">
-                <button
-                  onClick={() => setAndroidOpen(!androidOpen)}
-                  className="w-full flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-colors min-h-[100px]"
-                >
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="w-6 h-6 text-green-600" />
-                    <div className="text-left">
-                      <h3 className="text-xl font-bold text-gray-900">Android</h3>
-                      <p className="text-sm text-gray-600">All Android devices</p>
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-6 h-6 text-gray-600 transition-transform duration-500 ${androidOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                <div className={`transition-all duration-500 ease-in-out border-t border-gray-200 ${
-                  androidOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 border-t-0'
-                }`}>
-                  <div className="p-6 space-y-4 bg-white min-h-[360px]">
-                    {/* Important Note */}
-                    <div className="bg-green-50 border-l-4 border-green-600 p-4 mb-2 min-h-[88px] flex items-center">
-                      <p className="text-sm text-green-900">
-                        <strong>Important:</strong> First, tap the <strong>"Get Started"</strong> button on the landing page to access the platform, then follow these steps while on the platform.
-                      </p>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        1
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Tap the <strong>three dots</strong> menu in Chrome
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        2
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 min-h-[56px]">
-                      <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold text-sm">
-                        3
-                      </div>
-                      <div className="flex-1 pt-1">
-                        <p className="text-gray-700">
-                          Tap <strong>"Add"</strong> or <strong>"Install"</strong> to confirm
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Contact Support Popup */}
       {showContactPopup && (
