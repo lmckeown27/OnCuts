@@ -306,8 +306,8 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const response = await barberApplicationService.getAllApplications();
-      setApplications(response.data || []);
+      const applications = await barberApplicationService.getAllApplications();
+      setApplications(applications);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
       toast.error('Failed to load barber applications');
@@ -397,9 +397,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
-                    {app.user?.first_name || 'Unknown'} {app.user?.last_name || 'User'}
+                    {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">{app.user?.email || 'No email'}</p>
+                  <p className="text-sm text-gray-600 mt-1">{app.email || app.user?.email || 'No email'}</p>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
                     <span className="text-xs text-gray-500">
                       Applied {new Date(app.created_at).toLocaleDateString()}

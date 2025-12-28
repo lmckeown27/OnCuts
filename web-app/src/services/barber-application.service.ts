@@ -28,9 +28,15 @@ export interface BarberApplication {
   social_media?: string;
   additional_notes?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   reviewed_at?: string;
   interview_scheduled_at?: string;
+  // User fields returned flat from the backend JOIN
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  campus_name?: string;
+  // Nested user object (for alternate response formats)
   user?: {
     id: string;
     email: string;
@@ -76,9 +82,19 @@ class BarberApplicationService {
   /**
    * Get all barber applications (admin/campus manager only)
    */
-  async getAllApplications(): Promise<{ data: BarberApplication[] }> {
-    const response = await api.get<BarberApplication[]>('/barber-applications');
-    return { data: response || [] };
+  async getAllApplications(): Promise<BarberApplication[]> {
+    // Backend returns { applications: [...], pagination: {...} }
+    // api.get returns response.data when pagination is present
+    const response = await api.get<{ applications: BarberApplication[]; pagination: any }>('/barber-applications');
+    
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (response && Array.isArray(response.applications)) {
+      return response.applications;
+    }
+    return [];
   }
 
   /**
