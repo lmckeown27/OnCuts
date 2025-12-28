@@ -25,6 +25,7 @@ export default function BarberHeader({
 }: BarberHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuthStore();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -146,7 +147,7 @@ export default function BarberHeader({
                   )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
-                  {user?.role?.toLowerCase() === 'admin' && (
+                  {(user?.user_type === 'admin' || user?.is_admin) && (
                     <button
                       onClick={() => {
                         navigate(`${platformPrefix}/admin-role-select`);

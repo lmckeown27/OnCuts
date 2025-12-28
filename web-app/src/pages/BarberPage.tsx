@@ -255,7 +255,7 @@ export default function BarberPage() {
                   )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
-                  {user?.role?.toLowerCase() === 'admin' && (
+                  {(user?.user_type === 'admin' || user?.is_admin) && (
                     <button
                       onClick={() => {
                         navigate(`${platformPrefix}/admin-role-select`);
