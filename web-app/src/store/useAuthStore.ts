@@ -108,6 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user_type: mappedRole as 'student' | 'barber' | 'admin',
         is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
         is_admin: mappedRole === 'admin',
+        has_barber_profile: (response.user as any).hasBarberProfile ?? false,
         created_at: response.user.created_at || new Date().toISOString(),
         campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,

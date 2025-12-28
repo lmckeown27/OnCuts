@@ -8,6 +8,7 @@ export interface User {
   campus_id?: string;
   is_verified: boolean;
   is_admin?: boolean;
+  has_barber_profile?: boolean;
   profile_picture_url?: string;
   bio?: string;
   created_at: string;

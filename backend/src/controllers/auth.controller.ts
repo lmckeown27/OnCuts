@@ -545,6 +545,13 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     // Update last login
     await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
+    // Check if user has a barber profile
+    const barberCheck = await pool.query(
+      'SELECT id FROM barbers WHERE "userId" = $1',
+      [user.id]
+    );
+    const hasBarberProfile = barberCheck.rows.length > 0;
+
     // Generate JWT tokens
     const token = generateAccessToken({
       userId: user.id,
@@ -574,6 +581,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           campusId: user.campusId,
           emailVerified: user.email_verified,
           profile_picture_url: user.avatarUrl,
+          hasBarberProfile,
         },
         accessToken: token,
         refreshToken,

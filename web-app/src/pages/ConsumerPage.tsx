@@ -110,7 +110,7 @@ export default function ConsumerPage() {
             {/* Left section - Switch button on mobile, Logo + Switch on desktop */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Barber button - different behavior based on user role */}
-              {user?.user_type === 'barber' || user?.user_type === 'admin' ? (
+              {user?.user_type === 'barber' || user?.user_type === 'admin' || user?.has_barber_profile ? (
                 <button
                   onClick={() => navigate('/web/barber')}
                   className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
