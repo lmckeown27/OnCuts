@@ -531,8 +531,11 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       const barberService = barberServiceModule.default;
       const response = await barberService.getBarbers({});
       
+      // Extract barbers array from response - handle both paginated and direct array responses
+      const barbersArray = Array.isArray(response) ? response : (response?.data || []);
+      
       // Map API response to CampusBarber format
-      const mappedBarbers: CampusBarber[] = (response.data || response || []).map((barber: any) => ({
+      const mappedBarbers: CampusBarber[] = barbersArray.map((barber: any) => ({
         id: barber.id,
         name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
         email: barber.email || barber.user?.email || '',
