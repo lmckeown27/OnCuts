@@ -142,7 +142,7 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Switch to Consumer */}
+            {/* Left section - Switch to Consumer + Campus Manager Badge */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Switch to Consumer - always on left */}
               <button
@@ -153,6 +153,14 @@ export default function BarberPage() {
                 <Calendar className="w-4 h-4 text-primary-600" />
                 <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
               </button>
+              
+              {/* Campus Manager Badge */}
+              {isCampusManager && (
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 border border-blue-200">
+                  <Shield className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="text-xs font-semibold text-blue-700">Campus Manager</span>
+                </div>
+              )}
             </div>
             
             {/* Center section - Logo always centered */}
