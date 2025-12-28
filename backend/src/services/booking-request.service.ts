@@ -137,36 +137,23 @@ export class BookingRequestService {
       const result = await pool.query(`
         SELECT 
           b.id as booking_id,
-          b.customer_id,
-          u.name as customer_name,
-          b.barber_id,
-          b.service_type,
-          b.booking_date as requested_date,
-          b.booking_time as requested_time,
-          b.price_charged as price,
+          b."consumerId" as customer_id,
+          u.first_name || ' ' || u.last_name as customer_name,
+          b."barberId" as barber_id,
+          b."serviceName" as service_type,
+          b."scheduledStart" as requested_date,
+          b."scheduledStart" as requested_time,
+          b."totalAmountCents" / 100.0 as price,
           b.status,
-          b.requested_at,
-          cp.display_name,
-          cp.bio,
-          cp.profile_image_url,
-          cp.total_bookings,
-          cp.completed_bookings,
-          cp.cancelled_bookings,
-          cp.no_show_count,
-          cp.avg_rating,
-          cp.total_reviews,
-          cp.is_reliable,
-          cp.response_rate,
-          (SELECT message FROM booking_messages 
-           WHERE booking_id = b.id 
-           AND sender_type = 'customer'
-           ORDER BY created_at DESC LIMIT 1) as initial_message
+          b."createdAt" as requested_at,
+          u."displayName" as display_name,
+          u.bio,
+          u."avatarUrl" as profile_image_url
         FROM bookings b
-        JOIN users u ON b.customer_id = u.id
-        LEFT JOIN customer_profiles cp ON b.customer_id = cp.user_id
-        WHERE b.barber_id = $1 
-          AND b.status = 'pending'
-        ORDER BY b.requested_at DESC
+        JOIN users u ON b."consumerId" = u.id
+        WHERE b."barberId" = $1 
+          AND b.status = 'PENDING'
+        ORDER BY b."createdAt" DESC
       `, [barberId]);
 
       return result.rows.map(row => ({
@@ -178,22 +165,22 @@ export class BookingRequestService {
           bio: row.bio,
           profileImageUrl: row.profile_image_url,
           stats: {
-            totalBookings: parseInt(row.total_bookings) || 0,
-            completedBookings: parseInt(row.completed_bookings) || 0,
-            cancelledBookings: parseInt(row.cancelled_bookings) || 0,
-            noShowCount: parseInt(row.no_show_count) || 0,
-            avgRating: parseFloat(row.avg_rating) || 0,
-            totalReviews: parseInt(row.total_reviews) || 0,
-            isReliable: row.is_reliable !== false,
-            responseRate: parseFloat(row.response_rate) || 100,
+            totalBookings: 0,
+            completedBookings: 0,
+            cancelledBookings: 0,
+            noShowCount: 0,
+            avgRating: 0,
+            totalReviews: 0,
+            isReliable: true,
+            responseRate: 100,
           },
         },
         barberId: row.barber_id,
-        serviceType: row.service_type,
+        serviceType: row.service_type || 'Haircut',
         requestedDate: row.requested_date,
         requestedTime: row.requested_time,
-        price: parseFloat(row.price),
-        message: row.initial_message,
+        price: parseFloat(row.price) || 0,
+        message: '',
         status: row.status,
         requestedAt: row.requested_at,
       }));
