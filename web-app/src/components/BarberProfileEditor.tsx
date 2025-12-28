@@ -113,11 +113,26 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     }
   };
   
-  const toggleSpecialty = (specialty: string) => {
-    if (specialties.includes(specialty)) {
-      setSpecialties(specialties.filter(s => s !== specialty));
-    } else {
-      setSpecialties([...specialties, specialty]);
+  const toggleSpecialty = async (specialty: string) => {
+    if (!barber) return;
+    
+    const newSpecialties = specialties.includes(specialty)
+      ? specialties.filter(s => s !== specialty)
+      : [...specialties, specialty];
+    
+    // Optimistically update UI
+    setSpecialties(newSpecialties);
+    
+    try {
+      // Save immediately to keep in sync with BarberServiceSpecialties
+      await barberService.updateBarberProfile(barber.id, {
+        specialties: newSpecialties,
+      });
+    } catch (error) {
+      console.error('Failed to update specialties:', error);
+      toast.error('Failed to update specialty');
+      // Revert on error
+      setSpecialties(specialties);
     }
   };
 
