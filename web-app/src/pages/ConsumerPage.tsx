@@ -441,7 +441,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 <div className="flex-1 p-3 flex flex-col justify-center">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="font-bold text-gray-900 text-lg">
-                      {barber.user?.first_name} {barber.user?.last_name}
+                      {barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Barber'}
                     </h3>
                     {lowestPrice && (
                       <span className="text-primary-500 font-bold text-2xl flex-shrink-0 mr-2">${lowestPrice}</span>
@@ -495,7 +495,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {/* Name Overlay - Top */}
                 <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2 sm:p-3">
                   <h3 className="text-sm sm:text-lg font-bold text-white">
-                    {barber.user?.first_name} {barber.user?.last_name}
+                    {barber.name || barber.display_name || `${barber.first_name || barber.user?.first_name || ''} ${barber.last_name || barber.user?.last_name || ''}`.trim() || 'Barber'}
                   </h3>
                 </div>
                 {/* Price Overlay - Bottom Left */}
@@ -561,7 +561,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                {selectedBarber.user?.first_name} {selectedBarber.user?.last_name}
+                {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
               </h2>
               <button
                 onClick={() => setSelectedBarber(null)}
