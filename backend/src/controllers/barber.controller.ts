@@ -28,6 +28,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
+        u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id
       FROM barbers b
       JOIN users u ON b."userId" = u.id
