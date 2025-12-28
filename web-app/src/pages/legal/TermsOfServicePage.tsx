@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
-import MainChairLogo from '../../assets/logos/Main_Chair.png';
+import MainChairLogo from '../../assets/logos/Main_Chair.webp';
 
 export default function TermsOfServicePage() {
   const lastUpdated = "December 23, 2024";

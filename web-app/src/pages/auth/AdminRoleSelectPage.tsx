@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Scissors, User, ArrowRight, Crown } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
-import TabChairLogo from '../../assets/logos/Tab_Chair.png';
+import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
 
 interface RoleOption {
   id: 'admin' | 'barber' | 'consumer';

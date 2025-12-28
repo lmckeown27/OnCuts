@@ -17,8 +17,8 @@ import {
   ExternalLink,
   MessageSquare
 } from 'lucide-react';
-import FooterChairLogo from '../../assets/logos/Footer_Chair.png';
-import HeaderChairLogo from '../../assets/logos/Header_Chair.png';
+import FooterChairLogo from '../../assets/logos/Footer_Chair.webp';
+import HeaderChairLogo from '../../assets/logos/Header_Chair.webp';
 
 interface FAQItem {
   question: string;

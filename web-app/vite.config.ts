@@ -42,26 +42,48 @@ export default defineConfig({
     // Code splitting for better performance
     rollupOptions: {
       output: {
-        // Split vendor chunks
-        manualChunks: {
-          // React core
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        // Split vendor chunks for optimal caching and loading
+        manualChunks(id) {
+          // React core - changes rarely, cache long-term
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react-router')) {
+            return 'react-vendor';
+          }
           
-          // React Query (blockchain data layer)
-          'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
+          // UI libraries
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
           
-          // Blockchain services (critical path)
-          'blockchain': [
-            './src/services/blockchain-auth.service.ts',
-            './src/services/blockchain-booking.service.ts',
-          ],
+          if (id.includes('node_modules/react-hot-toast')) {
+            return 'toast';
+          }
           
-          // UI components (lazy load)
-          'ui-components': [
-            './src/components/Skeleton.tsx',
-            './src/components/Toast.tsx',
-            './src/components/ErrorBoundary.tsx',
-          ],
+          // React Query
+          if (id.includes('node_modules/@tanstack')) {
+            return 'query-vendor';
+          }
+          
+          // Socket.io for real-time messaging
+          if (id.includes('node_modules/socket.io')) {
+            return 'socket';
+          }
+          
+          // Date/time utilities
+          if (id.includes('node_modules/date-fns') || id.includes('node_modules/dayjs')) {
+            return 'date-utils';
+          }
+          
+          // AWS SDK (if used for S3)
+          if (id.includes('node_modules/@aws-sdk')) {
+            return 'aws-sdk';
+          }
+          
+          // Admin pages - lazy loaded, separate chunk
+          if (id.includes('/pages/admin/')) {
+            return 'admin-pages';
+          }
         },
       },
     },

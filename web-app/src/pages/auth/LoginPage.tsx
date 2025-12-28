@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
-import TabChairLogo from '../../assets/logos/Tab_Chair.png';
+import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
 
 interface LoginForm {
   email: string;

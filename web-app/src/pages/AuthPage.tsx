@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import TabChairLogo from '../assets/logos/Tab_Chair.png';
+import TabChairLogo from '../assets/logos/Tab_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
 
 type AuthMode = 'login' | 'signup';

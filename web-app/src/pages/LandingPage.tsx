@@ -11,10 +11,10 @@ import { Smartphone, CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mai
 import Button from '../components/Button';
 import Card from '../components/Card';
 import { CampusCutLogo } from '@assets';
-import HeaderChairLogo from '../assets/logos/Header_Chair.png';
-import MainChairLogo from '../assets/logos/Main_Chair.png';
-import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.png';
-import FooterChairLogo from '../assets/logos/Footer_Chair.png';
+import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
+import MainChairLogo from '../assets/logos/Main_Chair.webp';
+import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.webp';
+import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
 
 export default function LandingPage() {
