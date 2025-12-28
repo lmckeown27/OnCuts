@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, ChevronRight, ChevronDown } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
+import barberService from '../services/barber.service';
 
 type BarberPricingDashboardProps = {
   barberId: string;
@@ -38,52 +39,56 @@ export default function BarberPricingDashboard({ barberId }: BarberPricingDashbo
   const loadPricingData = async () => {
     setIsLoading(true);
 
-    // Mock data for development
-    setTimeout(() => {
-      setPerformanceData({
-        totalBookings: 156,
-        totalRevenue: 6240,
-        avgRating: 4.8,
-        totalReviews: 127,
-      });
+    try {
+      // Fetch real barber data from API
+      const barberData = await barberService.getBarberByUserId(barberId);
+      
+      if (barberData) {
+        // Use real data from barber profile
+        setPerformanceData({
+          totalBookings: barberData.total_bookings || 0,
+          totalRevenue: 0, // Revenue tracking not yet implemented
+          avgRating: barberData.average_rating || 0,
+          totalReviews: barberData.total_reviews || 0,
+        });
 
-      setPrices([
-        {
-          serviceId: 1,
-          serviceName: 'Haircut',
-          currentPrice: 32.50,
-          previousPrice: 30.00,
-          priceChange: 2.50,
-          priceChangePct: 8.3,
-        },
-        {
-          serviceId: 2,
-          serviceName: 'Haircut & Fade',
-          currentPrice: 45.00,
-          previousPrice: 42.00,
-          priceChange: 3.00,
-          priceChangePct: 7.1,
-        },
-        {
-          serviceId: 3,
-          serviceName: 'Beard Trim',
-          currentPrice: 18.00,
-          previousPrice: 18.00,
+        // Convert barber services to pricing data
+        const servicePrices: PriceData[] = (barberData.pricing || []).map((service: any, idx: number) => ({
+          serviceId: idx + 1,
+          serviceName: service.name,
+          currentPrice: service.price,
+          previousPrice: service.price, // No historical data yet
           priceChange: 0,
           priceChangePct: 0,
-        },
-      ]);
+        }));
 
-      // Generate mock revenue history (30 days)
-      const history = Array.from({ length: 30 }, (_, i) => ({
-        date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        revenue: 150 + Math.random() * 100,
-        bookings: 4 + Math.floor(Math.random() * 4),
-      }));
-
-      setRevenueHistory(history);
+        setPrices(servicePrices);
+        setRevenueHistory([]); // Revenue history not yet implemented
+      } else {
+        // No barber data - show empty state
+        setPerformanceData({
+          totalBookings: 0,
+          totalRevenue: 0,
+          avgRating: 0,
+          totalReviews: 0,
+        });
+        setPrices([]);
+        setRevenueHistory([]);
+      }
+    } catch (error) {
+      console.error('Failed to load pricing data:', error);
+      // Show empty state on error
+      setPerformanceData({
+        totalBookings: 0,
+        totalRevenue: 0,
+        avgRating: 0,
+        totalReviews: 0,
+      });
+      setPrices([]);
+      setRevenueHistory([]);
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const toggleSection = (section: string) => {
