@@ -16,6 +16,7 @@ import Loading from './Loading';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import userService from '../services/user.service';
+import { useAuthStore } from '../store/useAuthStore';
 import type { Barber } from '../types';
 
 interface BarberProfileEditorProps {
@@ -25,6 +26,7 @@ interface BarberProfileEditorProps {
 }
 
 export default function BarberProfileEditor({ barberId, userId, onClose }: BarberProfileEditorProps) {
+  const { user, setUser } = useAuthStore();
   const [barber, setBarber] = useState<Barber | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -142,6 +144,15 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       
       if (response.url) {
         setProfilePhoto(response.url);
+        
+        // Update the auth store so all components get the new profile picture
+        if (user) {
+          setUser({
+            ...user,
+            profile_picture_url: response.url,
+          });
+        }
+        
         toast.success('Photo uploaded successfully!');
       }
     } catch (error: any) {
