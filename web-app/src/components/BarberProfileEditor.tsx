@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Save, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -298,8 +298,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         <Button variant="secondary" onClick={onClose} size="lg">
           Cancel
         </Button>
-        <Button onClick={handleSaveProfile} disabled={isSaving} size="lg">
-          <Save className="w-5 h-5 mr-2" />
+        <Button onClick={handleSaveProfile} disabled={isSaving} size="lg" className="min-w-[100px]">
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
       </div>
