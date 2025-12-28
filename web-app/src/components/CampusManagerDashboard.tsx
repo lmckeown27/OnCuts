@@ -527,7 +527,8 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const fetchBarbers = async () => {
     try {
       setLoading(true);
-      const { barberService } = await import('../services/barber.service');
+      const barberServiceModule = await import('../services/barber.service');
+      const barberService = barberServiceModule.default;
       const response = await barberService.getBarbers({});
       
       // Map API response to CampusBarber format
