@@ -56,9 +56,12 @@ export default function LoginPage() {
       const result = await login(formData.email, formData.password);
       toast.success('Login successful!');
       
-      // Redirect admin/campus_manager to role selection page
-      if (result.isAdmin || result.isCampusManager) {
+      // Only true admins go to role selection page
+      // Campus managers go directly to barber page (which has CM features)
+      if (result.isAdmin) {
         navigate('/web/admin-role-select');
+      } else if (result.isCampusManager) {
+        navigate('/web/barber');
       } else {
         navigate('/web/consumer');
       }

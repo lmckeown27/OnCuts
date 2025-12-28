@@ -62,16 +62,24 @@ export default function AdminRoleSelectPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, setActiveRole } = useAuthStore();
 
-  // Redirect if not authenticated or not admin/campus_manager
+  // Redirect if not authenticated or not a true admin
+  // Campus managers should never see this page - they go directly to /web/barber
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/web');
       return;
     }
     
-    if (user && !user.is_admin && !user.is_campus_manager) {
-      // Regular users go directly to their dashboard
-      navigate(user.user_type === 'barber' ? '/web/barber' : '/web/consumer');
+    // Only true admins can access this page
+    if (user && !user.is_admin) {
+      // Campus managers go to barber page, others go to their respective dashboards
+      if (user.is_campus_manager || user.user_type === 'campus_manager') {
+        navigate('/web/barber');
+      } else if (user.user_type === 'barber') {
+        navigate('/web/barber');
+      } else {
+        navigate('/web/consumer');
+      }
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -88,15 +96,13 @@ export default function AdminRoleSelectPage() {
     navigate(role.route);
   };
 
-  if (!user?.is_admin && !user?.is_campus_manager) {
+  // Only true admins should see this page
+  if (!user?.is_admin) {
     return null; // Will redirect in useEffect
   }
 
-  // Filter role options based on user type
-  // Campus managers can only see campus_manager, barber, and consumer roles
-  const availableRoles = user.is_admin 
-    ? roleOptions 
-    : roleOptions.filter(role => ['campus_manager', 'barber', 'consumer'].includes(role.id));
+  // Admins see all roles
+  const availableRoles = roleOptions;
 
   return (
     <div 
@@ -115,13 +121,9 @@ export default function AdminRoleSelectPage() {
           </Link>
           
           {/* Role Badge */}
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full mb-4 ${
-            user.is_admin ? 'bg-purple-500/20' : 'bg-blue-500/20'
-          }`}>
-            <Crown className={`w-5 h-5 ${user.is_admin ? 'text-purple-400' : 'text-blue-400'}`} />
-            <span className={`font-semibold ${user.is_admin ? 'text-purple-300' : 'text-blue-300'}`}>
-              {user.is_admin ? 'Administrator Access' : 'Campus Manager Access'}
-            </span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full mb-4 bg-purple-500/20">
+            <Crown className="w-5 h-5 text-purple-400" />
+            <span className="font-semibold text-purple-300">Administrator Access</span>
           </div>
           
           <h1 className="text-3xl font-bold text-white mb-2 text-center">
