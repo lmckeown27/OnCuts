@@ -8,6 +8,7 @@ import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
 import { CampusCutLogo } from '@assets';
+import { SPECIALTY_OPTIONS } from '../config/services';
 
 export default function ScheduleServicePage() {
   const navigate = useNavigate();
@@ -57,21 +58,10 @@ export default function ScheduleServicePage() {
   const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Available services based on barber's specialties (fallback to full list)
-  const availableServices = barber?.specialties || [
-    'Buzz Cut',
-    'Line Up',
-    'Beard Trim',
-    'Haircut',
-    'Taper',
-    'Hot Shave',
-    'Fade',
-    'Haircut & Fade',
-    'Design/Art',
-    "Women's Cut",
-    'Perm',
-    'Color Treatment',
-  ];
+  // Available services based on barber's specialties (fallback to shared config)
+  const availableServices = (Array.isArray(barber?.specialties) && barber.specialties.length > 0)
+    ? barber.specialties 
+    : SPECIALTY_OPTIONS;
 
   // Get minimum date (today)
   const today = new Date().toISOString().split('T')[0];

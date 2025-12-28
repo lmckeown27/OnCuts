@@ -15,6 +15,7 @@ import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
+import { SPECIALTY_OPTIONS } from '../config/services';
 
 interface Barber {
   barberId: string;
@@ -153,21 +154,8 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
     );
   }
 
-  // Services that match what barbers can offer in BarberServiceSpecialties
-  const availableServices = [
-    'Buzz Cut',
-    'Line Up',
-    'Beard Trim',
-    'Haircut',
-    'Taper',
-    'Hot Shave',
-    'Fade',
-    'Haircut & Fade',
-    'Design/Art',
-    "Women's Cut",
-    'Perm',
-    'Color Treatment',
-  ];
+  // Services from shared config
+  const availableServices = SPECIALTY_OPTIONS;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-50">

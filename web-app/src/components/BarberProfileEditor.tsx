@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import userService from '../services/user.service';
 import { useAuthStore } from '../store/useAuthStore';
+import { SPECIALTY_OPTIONS } from '../config/services';
 import type { Barber } from '../types';
 
 interface BarberProfileEditorProps {
@@ -40,11 +41,8 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [specialties, setSpecialties] = useState<string[]>([]);
   
-  // Available specialty options
-  const availableSpecialties = [
-    'Fades', 'Tapers', 'Lineups', 'Beard Trims', 'Shaves',
-    'Long Hair', 'Kids Cuts', 'Coloring', 'Designs', 'Afro Textures'
-  ];
+  // Available specialty options from shared config
+  const availableSpecialties = SPECIALTY_OPTIONS;
 
   useEffect(() => {
     loadBarberProfile();

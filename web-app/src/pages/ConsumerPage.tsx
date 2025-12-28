@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock } from '../hooks';
+import { SPECIALTY_OPTIONS } from '../config/services';
 
 
 // Algorithmic ranking function (capitalistic-but-fair)
@@ -358,21 +359,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     });
   };
 
-  // Services that match what barbers can offer in BarberServiceSpecialties
-  const availableServices = [
-    'Buzz Cut',
-    'Line Up',
-    'Beard Trim',
-    'Haircut',
-    'Taper',
-    'Hot Shave',
-    'Fade',
-    'Haircut & Fade',
-    'Design/Art',
-    "Women's Cut",
-    'Perm',
-    'Color Treatment',
-  ];
+  // Services from shared config
+  const availableServices = SPECIALTY_OPTIONS;
 
   if (loading) {
     return <Loading />;
