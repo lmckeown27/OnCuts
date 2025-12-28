@@ -509,8 +509,8 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 interface CampusBarber {
   id: string;
   name: string;
-  email: string; // Required
-  instagramHandle?: string; // Optional
+  email: string;
+  instagramHandle?: string;
   avgRating: number;
   totalBookings: number;
   completedBookings: number;
@@ -518,70 +518,42 @@ interface CampusBarber {
 }
 
 const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
-  // TODO: Fetch barbers from API
-  const [barbers] = useState<CampusBarber[]>([
-    {
-      id: '1',
-      name: 'Marcus Johnson',
-      email: 'marcus.j@example.com',
-      instagramHandle: 'marcuscuts_slo',
-      avgRating: 4.8,
-      totalBookings: 127,
-      completedBookings: 119,
-      isActive: true,
-    },
-    {
-      id: '2',
-      name: 'David Kim',
-      email: 'david.kim@example.com',
-      instagramHandle: 'davidkim_fades',
-      avgRating: 4.7,
-      totalBookings: 89,
-      completedBookings: 84,
-      isActive: true,
-    },
-    {
-      id: '3',
-      name: 'Carlos Martinez',
-      email: 'carlos.m@example.com',
-      avgRating: 4.6,
-      totalBookings: 56,
-      completedBookings: 52,
-      isActive: true,
-    },
-    {
-      id: '4',
-      name: 'Tyler Brooks',
-      email: 'tyler.brooks@example.com',
-      avgRating: 4.9,
-      totalBookings: 8,
-      completedBookings: 7,
-      isActive: false,
-    },
-    {
-      id: '5',
-      name: 'James Wilson',
-      email: 'james.wilson@example.com',
-      instagramHandle: 'jameswilson_cuts',
-      avgRating: 4.3,
-      totalBookings: 45,
-      completedBookings: 30,
-      isActive: true,
-    },
-    {
-      id: '6',
-      name: 'Mike Anderson',
-      email: 'mike.anderson@example.com',
-      avgRating: 3.8,
-      totalBookings: 32,
-      completedBookings: 14,
-      isActive: true,
-    },
-  ]);
-
+  const [barbers, setBarbers] = useState<CampusBarber[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
+
+  const fetchBarbers = async () => {
+    try {
+      setLoading(true);
+      const { barberService } = await import('../services/barber.service');
+      const response = await barberService.getBarbers({});
+      
+      // Map API response to CampusBarber format
+      const mappedBarbers: CampusBarber[] = (response.data || response || []).map((barber: any) => ({
+        id: barber.id,
+        name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
+        email: barber.email || barber.user?.email || '',
+        instagramHandle: barber.instagram_handle,
+        avgRating: barber.average_rating || 0,
+        totalBookings: barber.total_bookings || 0,
+        completedBookings: barber.completed_bookings || barber.total_bookings || 0,
+        isActive: barber.is_active !== false,
+      }));
+      
+      setBarbers(mappedBarbers);
+    } catch (error) {
+      console.error('Failed to fetch barbers:', error);
+      toast.error('Failed to load barbers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBarbers();
+  }, [campusId]);
 
   // Filter barbers based on search and status
   const filteredBarbers = barbers.filter((barber) => {
@@ -593,11 +565,35 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
     return matchesSearch && matchesStatus;
   });
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
+          <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
+        </div>
+        <Card className="text-center py-8 sm:py-12">
+          <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
+          <p className="text-gray-500 text-sm sm:text-base">Loading barbers...</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
-        <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
+          <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
+        </div>
+        <button 
+          onClick={fetchBarbers}
+          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Refresh"
+        >
+          <RefreshCw className="w-4 h-4 text-gray-500" />
+        </button>
       </div>
 
       {/* Search and Filter */}
@@ -876,21 +872,8 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
       </Card>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">247</p>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Posts</p>
-        </Card>
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">1.2K</p>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Followers</p>
-        </Card>
-        <Card className="p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">892</p>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">Following</p>
-        </Card>
-      </div>
+      {/* Quick Stats - Will be populated with real Instagram API data */}
+      {/* Stats section temporarily hidden until Instagram API integration */}
     </div>
   );
 };
@@ -900,94 +883,8 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 // ═══════════════════════════════════════════════════════════════
 
 const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
-  // TODO: Fetch auto-generated incidents from API
-  const [incidents] = useState<AutoGeneratedIncident[]>([
-    {
-      id: 'ai-1',
-      barberId: '2',
-      barberName: 'David Kim',
-      barberEmail: 'david.kim@example.com',
-      type: 'quality',
-      severity: 'medium',
-      negativeReviewCount: 4,
-      negativeReviews: [
-        {
-          reviewId: 'r1',
-          customerName: 'Student A',
-          rating: 2,
-          comment: 'The fade was uneven and he seemed rushed. Had to get it fixed elsewhere.',
-          createdAt: new Date('2025-01-10'),
-          sentiment: 'negative',
-          analysis: 'Customer dissatisfied with quality of fade and perceived lack of attention.',
-        },
-        {
-          reviewId: 'r2',
-          customerName: 'Student B',
-          rating: 2,
-          comment: 'Not happy with the result. Very rushed job and didn\'t listen to what I wanted.',
-          createdAt: new Date('2025-01-12'),
-          sentiment: 'negative',
-          analysis: 'Customer reports poor communication and rushed service.',
-        },
-        {
-          reviewId: 'r3',
-          customerName: 'Student C',
-          rating: 1,
-          comment: 'Worst haircut I\'ve had. He was on his phone the whole time and completely messed up my hair.',
-          createdAt: new Date('2025-01-14'),
-          sentiment: 'very_negative',
-          analysis: 'Customer extremely dissatisfied. Reports unprofessional behavior (phone use) and poor quality.',
-        },
-        {
-          reviewId: 'r4',
-          customerName: 'Student D',
-          rating: 2,
-          comment: 'Haircut was okay but he was clearly distracted. Not worth the price.',
-          createdAt: new Date('2025-01-15'),
-          sentiment: 'negative',
-          analysis: 'Customer reports lack of focus and perceived low value.',
-        },
-      ],
-      summary: 'System detected a pattern of 4 negative reviews for David Kim over the past 7 days. Common themes include: rushed service (75%), poor quality results (75%), lack of attention/distraction (50%), and unprofessional behavior (25%). This represents a significant quality decline from his historical 4.7 rating.',
-      recommendation: 'Recommend immediate intervention by Campus Manager. Suggested actions: (1) Have 1-on-1 conversation with barber to identify root cause, (2) Review recent bookings for overload, (3) Provide feedback on time management and customer attention, (4) Monitor next 5 appointments closely. If pattern continues, escalate to admin for possible temporary suspension.',
-      detectedAt: new Date('2025-01-16'),
-      status: 'pending_review',
-    },
-    {
-      id: 'ai-2',
-      barberId: '5',
-      barberName: 'Alex Thompson',
-      barberEmail: 'alex.t@example.com',
-      type: 'professionalism',
-      severity: 'low',
-      negativeReviewCount: 2,
-      negativeReviews: [
-        {
-          reviewId: 'r5',
-          customerName: 'Student E',
-          rating: 3,
-          comment: 'Showed up 10 minutes late. Haircut was fine though.',
-          createdAt: new Date('2025-01-13'),
-          sentiment: 'negative',
-          analysis: 'Customer notes punctuality issue but acceptable service quality.',
-        },
-        {
-          reviewId: 'r6',
-          customerName: 'Student F',
-          rating: 3,
-          comment: 'He was late again. Good barber but needs to work on being on time.',
-          createdAt: new Date('2025-01-15'),
-          sentiment: 'negative',
-          analysis: 'Repeat punctuality issue noted. Quality acknowledged.',
-        },
-      ],
-      summary: 'System detected 2 reviews mentioning late arrivals for Alex Thompson in the past 5 days. While service quality is maintained, punctuality issues may impact customer satisfaction and platform reliability.',
-      recommendation: 'Low severity issue. Recommend informal reminder to barber about punctuality expectations. Monitor for additional instances over next 2 weeks. If pattern continues, escalate for formal warning.',
-      detectedAt: new Date('2025-01-16'),
-      status: 'pending_review',
-    },
-  ]);
-
+  // Incidents will be populated when the review aggregation system is implemented
+  const [incidents] = useState<AutoGeneratedIncident[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<AutoGeneratedIncident | null>(null);
 
   const getSeverityColor = (severity: string) => {
