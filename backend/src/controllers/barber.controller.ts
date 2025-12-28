@@ -547,7 +547,12 @@ export const addPortfolioImage = async (req: AuthRequest, res: Response, next: N
     }
 
     // Upload to S3
-    const imageUrl = await uploadToS3(req.file, 'portfolio');
+    const file = req.file as Express.Multer.File;
+    const s3Result = await uploadToS3(file.buffer, `portfolio/${id}/${Date.now()}.webp`);
+
+    if (!s3Result.success || !s3Result.url) {
+      throw new ApiError(500, 'Failed to upload image');
+    }
 
     // Get max order index
     const maxOrder = await pool.query(
@@ -562,7 +567,7 @@ export const addPortfolioImage = async (req: AuthRequest, res: Response, next: N
       `INSERT INTO portfolio_images (barber_id, image_url, caption, order_index)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [id, imageUrl, caption, nextOrder]
+      [id, s3Result.url, caption, nextOrder]
     );
 
     res.status(201).json({
