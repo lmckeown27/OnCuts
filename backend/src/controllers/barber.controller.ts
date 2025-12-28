@@ -23,6 +23,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b."createdAt" as created_at,
+        b."weeklySchedule" as weekly_schedule,
         u.email,
         u.first_name,
         u.last_name,
@@ -201,6 +202,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b."createdAt" as created_at,
+        b."weeklySchedule" as weekly_schedule,
         u.email,
         u.first_name,
         u.last_name,
@@ -253,6 +255,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b."createdAt" as created_at,
+        b."weeklySchedule" as weekly_schedule,
         u.email,
         u.first_name,
         u.last_name,
@@ -383,7 +386,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, instagram_handle, display_name, specialties, yearsExperience } = req.body;
+    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
@@ -411,6 +414,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (yearsExperience !== undefined) {
       barberUpdateFields.push(`"yearsExperience" = $${paramIndex}`);
       barberValues.push(yearsExperience);
+      paramIndex++;
+    }
+    if (weekly_schedule !== undefined) {
+      barberUpdateFields.push(`"weeklySchedule" = $${paramIndex}`);
+      barberValues.push(JSON.stringify(weekly_schedule));
       paramIndex++;
     }
 

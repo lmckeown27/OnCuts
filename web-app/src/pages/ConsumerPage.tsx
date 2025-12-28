@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -509,7 +509,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 )}
 
                 {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty, idx) => (
                     <span
                       key={idx}
@@ -519,6 +519,19 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </span>
                   ))}
                 </div>
+
+                {/* Availability */}
+                {barber.weekly_schedule && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                    <Clock className="w-3 h-3" />
+                    <span>
+                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                        .filter(day => barber.weekly_schedule?.[day as keyof typeof barber.weekly_schedule]?.enabled)
+                        .map(day => day.charAt(0).toUpperCase() + day.slice(1, 3))
+                        .join(', ') || 'No schedule set'}
+                    </span>
+                  </div>
+                )}
               </div>
             </Card>
           );

@@ -420,7 +420,8 @@ export default function BarberPage() {
       {showAvailability && (
         <AvailabilityModal 
           isVisible={isAvailabilityVisible} 
-          onClose={closeAvailability} 
+          onClose={closeAvailability}
+          userId={user?.id}
         />
       )}
 
@@ -1104,16 +1105,53 @@ function ServiceHistoryModal({ isVisible, onClose }: { isVisible: boolean; onClo
 }
 
 // Availability Modal Component
-function AvailabilityModal({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) {
+function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean; onClose: () => void; userId?: string }) {
   const [availability, setAvailability] = useState({
     monday: { enabled: true, start: '09:00', end: '17:00' },
     tuesday: { enabled: true, start: '09:00', end: '17:00' },
     wednesday: { enabled: true, start: '09:00', end: '17:00' },
     thursday: { enabled: true, start: '09:00', end: '17:00' },
     friday: { enabled: true, start: '09:00', end: '17:00' },
-    saturday: { enabled: false, start: '10:00', end: '14:00' },
-    sunday: { enabled: false, start: '10:00', end: '14:00' },
+    saturday: { enabled: false, start: '10:00', end: '16:00' },
+    sunday: { enabled: false, start: '10:00', end: '16:00' },
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [barberId, setBarberId] = useState<string | null>(null);
+
+  // Load barber's current weekly schedule when modal opens
+  useEffect(() => {
+    if (isVisible && userId) {
+      loadSchedule();
+    }
+  }, [isVisible, userId]);
+
+  const loadSchedule = async () => {
+    if (!userId) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/v1/barbers/user/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data) {
+          setBarberId(data.data.id);
+          if (data.data.weekly_schedule) {
+            setAvailability(data.data.weekly_schedule);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load schedule:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const days = [
     { key: 'monday', label: 'Monday' },
@@ -1139,10 +1177,42 @@ function AvailabilityModal({ isVisible, onClose }: { isVisible: boolean; onClose
     }));
   };
 
-  const handleSave = () => {
-    // In production, save to backend
-    console.log('Saving availability:', availability);
-    onClose();
+  const handleSave = async () => {
+    if (!barberId) {
+      console.error('No barber ID found');
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/v1/barbers/${barberId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ weekly_schedule: availability }),
+      });
+      
+      if (response.ok) {
+        import('react-hot-toast').then(({ default: toast }) => {
+          toast.success('Availability saved!');
+        });
+        onClose();
+      } else {
+        const errorData = await response.json();
+        import('react-hot-toast').then(({ default: toast }) => {
+          toast.error(errorData.error?.message || 'Failed to save availability');
+        });
+      }
+    } catch (error) {
+      console.error('Failed to save availability:', error);
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.error('Failed to save availability');
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -1226,11 +1296,11 @@ function AvailabilityModal({ isVisible, onClose }: { isVisible: boolean; onClose
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save Availability
+          <Button onClick={handleSave} disabled={isSaving || isLoading}>
+            {isSaving ? 'Saving...' : 'Save Availability'}
           </Button>
         </div>
       </div>

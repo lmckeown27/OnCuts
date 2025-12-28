@@ -25,6 +25,22 @@ export interface Campus {
   is_active: boolean;
 }
 
+export interface DaySchedule {
+  enabled: boolean;
+  start: string; // "09:00" (24-hour format)
+  end: string; // "17:00" (24-hour format)
+}
+
+export interface WeeklySchedule {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 export interface Barber {
   id: string;
   user_id: string;
@@ -48,6 +64,7 @@ export interface Barber {
   portfolio?: PortfolioImage[];
   portfolio_images?: PortfolioImage[]; // Alias for backwards compatibility
   availability?: AvailabilityTemplate[];
+  weekly_schedule?: WeeklySchedule; // Recurring weekly availability
   aptos_address?: string;
   campus_id?: string;
 }
