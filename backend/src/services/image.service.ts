@@ -15,6 +15,7 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
+import s3Service from './s3.service';
 
 // Get uploads directory - use absolute path for production
 const getUploadsDir = (): string => {
@@ -144,6 +145,54 @@ export const processAndSaveImage = async (
       fs.stat(thumbnailPath),
     ]);
     console.log(`[Image Service] Sizes - Original: ${(origStats.size / 1024).toFixed(1)}KB, Medium: ${(medStats.size / 1024).toFixed(1)}KB, Thumb: ${(thumbStats.size / 1024).toFixed(1)}KB`);
+
+    // Upload to S3 if enabled
+    if (s3Service.isS3Enabled()) {
+      try {
+        // Read the processed files
+        const [origBuffer, medBuffer, thumbBuffer] = await Promise.all([
+          fs.readFile(fullPath),
+          fs.readFile(mediumPath),
+          fs.readFile(thumbnailPath),
+        ]);
+
+        const s3Result = await s3Service.uploadImageWithSizes(
+          origBuffer,
+          medBuffer,
+          thumbBuffer,
+          baseId
+        );
+
+        if (s3Result.success && s3Result.urls) {
+          console.log(`[Image Service] Uploaded to S3: ${baseId}`);
+          
+          // Optionally delete local files after S3 upload
+          if (process.env.S3_DELETE_LOCAL === 'true') {
+            await Promise.all([
+              fs.unlink(fullPath).catch(() => {}),
+              fs.unlink(mediumPath).catch(() => {}),
+              fs.unlink(thumbnailPath).catch(() => {}),
+            ]);
+            console.log(`[Image Service] Deleted local files after S3 upload`);
+          }
+
+          // Return S3 URLs instead of local paths
+          return {
+            original: uniqueFilename,
+            medium: mediumFilename,
+            thumbnail: thumbnailFilename,
+            path: s3Result.urls.original,
+            mediumPath: s3Result.urls.medium,
+            thumbnailPath: s3Result.urls.thumbnail,
+            // Store S3 URLs for generateImageUrl to use
+            s3Urls: s3Result.urls,
+          } as ProcessedImageResult & { s3Urls?: { original: string; medium: string; thumbnail: string } };
+        }
+      } catch (s3Error) {
+        console.error('[Image Service] S3 upload failed, using local storage:', s3Error);
+        // Continue with local storage as fallback
+      }
+    }
 
     return {
       original: uniqueFilename,
@@ -296,6 +345,11 @@ export const generateImageUrl = (filename: string, type: 'original' | 'medium' |
   let prefix = '';
   if (type === 'thumbnail') prefix = 'thumb-';
   else if (type === 'medium') prefix = 'med-';
+  
+  // If S3 is enabled, generate S3 URL
+  if (s3Service.isS3Enabled()) {
+    return s3Service.getS3PublicUrl(`${prefix}${filename}`);
+  }
   
   // If BASE_URL is explicitly set (for CDN), use it
   if (process.env.BASE_URL) {
