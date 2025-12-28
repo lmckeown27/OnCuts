@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 export interface AppError extends Error {
   statusCode?: number;
   isOperational?: boolean;
+  code?: string;
 }
 
 export const errorHandler = (
@@ -30,6 +31,7 @@ export const errorHandler = (
     success: false,
     error: {
       message,
+      code: (err as ApiError).code,
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     },
   });
@@ -38,10 +40,12 @@ export const errorHandler = (
 export class ApiError extends Error implements AppError {
   statusCode: number;
   isOperational: boolean;
+  code?: string;
 
-  constructor(statusCode: number, message: string, isOperational = true) {
+  constructor(statusCode: number, message: string, code?: string, isOperational = true) {
     super(message);
     this.statusCode = statusCode;
+    this.code = code;
     this.isOperational = isOperational;
     Error.captureStackTrace(this, this.constructor);
   }

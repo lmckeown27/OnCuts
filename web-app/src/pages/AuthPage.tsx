@@ -145,7 +145,16 @@ export default function AuthPage() {
         navigate('/web/consumer');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      const errorCode = err.response?.data?.error?.code;
+      let errorMessage: string;
+      
+      if (errorCode === 'ACCOUNT_NOT_FOUND') {
+        errorMessage = 'Account not in the system. Please sign up first.';
+      } else if (errorCode === 'INVALID_PASSWORD') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else {
+        errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed. Please try again.';
+      }
       setError(errorMessage);
     } finally {
       setIsLoading(false);

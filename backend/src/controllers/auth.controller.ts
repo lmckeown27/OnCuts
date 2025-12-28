@@ -526,7 +526,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     );
 
     if (result.rows.length === 0) {
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, 'Account not found', 'ACCOUNT_NOT_FOUND');
     }
 
     const user = result.rows[0];
@@ -539,7 +539,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
-      throw new ApiError(401, 'Invalid credentials');
+      throw new ApiError(401, 'Invalid password', 'INVALID_PASSWORD');
     }
 
     // Update last login
