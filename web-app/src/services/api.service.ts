@@ -31,7 +31,14 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
+        const requestUrl = error.config?.url || '';
+        
+        // Don't redirect for auth endpoints (login, register, etc.) - let the UI handle those errors
+        const isAuthEndpoint = requestUrl.includes('/auth/login') || 
+                               requestUrl.includes('/auth/register') ||
+                               requestUrl.includes('/auth/verify');
+        
+        if (error.response?.status === 401 && !isAuthEndpoint) {
           // Token expired, try to refresh
           const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
           if (refreshToken) {
