@@ -137,6 +137,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."totalBookings" as total_bookings,
         b."isActive" as is_active,
         b."createdAt" as created_at,
+        b."weeklySchedule" as weekly_schedule,
         u.email,
         u.first_name,
         u.last_name,
