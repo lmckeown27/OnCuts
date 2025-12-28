@@ -125,16 +125,18 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
         <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
-        <div className="relative h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mb-4">
-          {profilePhoto ? (
-            <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <ImageIcon className="w-12 h-12 text-gray-400" />
-            </div>
-          )}
+        <div className="flex justify-center mb-4">
+          <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
+            {profilePhoto ? (
+              <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center gap-4">
           <Button variant="secondary" size="sm">
             <Upload className="w-4 h-4 mr-2" />
             Upload Photo
