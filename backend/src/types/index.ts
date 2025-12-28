@@ -4,7 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   campusId: number;
-  role: 'student' | 'barber' | 'admin';
+  role: 'student' | 'barber' | 'campus_manager' | 'admin';
   aptosAddress: string;
   emailVerified: boolean;
   studentIdVerified: boolean;
@@ -131,7 +131,7 @@ declare global {
       user?: {
         userId: string;
         email: string;
-        role: 'student' | 'barber' | 'admin';
+        role: 'student' | 'barber' | 'campus_manager' | 'admin';
         campusId: number;
       };
     }

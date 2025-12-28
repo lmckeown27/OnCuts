@@ -138,8 +138,8 @@ export default function AuthPage() {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
       
-      // Redirect admin to role selection page
-      if (result.isAdmin) {
+      // Redirect admin/campus_manager to role selection page
+      if (result.isAdmin || result.isCampusManager) {
         navigate('/web/admin-role-select');
       } else {
         navigate('/web/consumer');

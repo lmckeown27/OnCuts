@@ -9,11 +9,11 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   pendingVerificationEmail: string | null;
-  activeRole: 'admin' | 'barber' | 'consumer' | null;
+  activeRole: 'admin' | 'campus_manager' | 'barber' | 'consumer' | null;
   
   setUser: (user: User | null) => void;
-  setActiveRole: (role: 'admin' | 'barber' | 'consumer') => void;
-  login: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
+  setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
+  login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         activeRole: null // Will be selected on role page
       });
       socketService.connect();
-      return { isAdmin: true };
+      return { isAdmin: true, isCampusManager: false };
     }
     
     // Call real backend API for non-admin login
@@ -75,7 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authService.login({ email, password });
       
       // Map backend response to frontend User type
-      // Backend uses uppercase roles (CONSUMER, BARBER, ADMIN), frontend uses lowercase
+      // Backend uses uppercase roles (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN), frontend uses lowercase
       const rawRole = ((response.user as any).role || response.user.user_type || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole; // Map CONSUMER to student for frontend
       
@@ -84,9 +84,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email: response.user.email,
         first_name: (response.user as any).firstName || response.user.first_name,
         last_name: (response.user as any).lastName || response.user.last_name,
-        user_type: mappedRole as 'student' | 'barber' | 'admin',
+        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
         is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
         is_admin: mappedRole === 'admin',
+        is_campus_manager: mappedRole === 'campus_manager',
         has_barber_profile: (response.user as any).hasBarberProfile ?? false,
         created_at: response.user.created_at || new Date().toISOString(),
         campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
@@ -100,7 +101,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         activeRole: null
       });
       socketService.connect();
-      return { isAdmin: user.is_admin };
+      return { isAdmin: user.is_admin || false, isCampusManager: user.is_campus_manager || false };
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials';
       set({ 
@@ -145,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authService.verifyEmail(email, code);
       
       // Map backend response to frontend User type
-      // Backend uses uppercase roles (CONSUMER, BARBER, ADMIN), frontend uses lowercase
+      // Backend uses uppercase roles (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN), frontend uses lowercase
       const rawRole = (response.user.role || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
       
@@ -154,9 +155,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         email: response.user.email,
         first_name: response.user.firstName,
         last_name: response.user.lastName,
-        user_type: mappedRole as 'student' | 'barber' | 'admin',
+        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
         is_verified: response.user.emailVerified,
         is_admin: mappedRole === 'admin',
+        is_campus_manager: mappedRole === 'campus_manager',
         created_at: new Date().toISOString(),
         campus_id: response.user.campusId?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,

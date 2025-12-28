@@ -38,6 +38,9 @@ const BarberEarningsPage = lazy(() => import('./pages/barber/BarberEarningsPage'
 const BarberServiceHistoryPage = lazy(() => import('./pages/barber/BarberServiceHistoryPage'));
 const AppointmentDetailsPage = lazy(() => import('./pages/AppointmentDetailsPage'));
 
+// Campus Manager Pages - Lazy loaded
+const CampusManagerPage = lazy(() => import('./pages/CampusManagerPage'));
+
 // Shared Pages - Lazy loaded
 const WalletPage = lazy(() => import('./pages/WalletPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
@@ -119,6 +122,9 @@ function AppContent() {
         <Route path="/web/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/student/booking/payment" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BookingPaymentPage /></LazyRoute></PlatformGuard>} />
+        
+        {/* Web - Campus Manager Routes */}
+        <Route path="/web/campus-manager" element={<PlatformGuard requiredPlatform="web"><LazyRoute><CampusManagerPage /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Barber Routes */}
         <Route path="/web/barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberPage /></LazyRoute></PlatformGuard>} />

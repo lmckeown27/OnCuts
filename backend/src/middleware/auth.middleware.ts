@@ -61,19 +61,22 @@ import { verifyToken, extractTokenFromHeader } from '../utils/jwt.utils';
  */
 
 /**
- * JWT Payload Interface
+ * Token Payload Interface
  * 
  * Defines the structure of decoded JWT tokens.
  * This data is available in req.user after authentication.
  */
-export interface JwtPayload {
+export interface TokenPayload {
   userId: string;      // Unique user identifier (UUID)
   email: string;       // User's email address
-  role: 'student' | 'barber' | 'admin';  // User role for authorization
+  role: 'student' | 'barber' | 'campus_manager' | 'admin';  // User role for authorization
   campusId: number;    // Campus the user belongs to
   iat?: number;        // Issued at timestamp (added by jwt.sign)
   exp?: number;        // Expiration timestamp (added by jwt.sign)
 }
+
+// Alias for backward compatibility
+export type JwtPayload = TokenPayload;
 
 /**
  * Extended Express Request with User
@@ -183,7 +186,7 @@ export const authenticate = (
      * 5. Checks exp claim (must be in future)
      * 6. Returns decoded payload if all checks pass
      */
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const decoded = jwt.verify(token, secret) as TokenPayload;
 
     // Step 5: Attach user data to request object
     (req as AuthRequest).user = decoded;
@@ -268,7 +271,7 @@ export const optionalAuthenticate = (
 
     try {
       // Try to verify and decode token
-      const decoded = jwt.verify(token, secret) as JwtPayload;
+      const decoded = jwt.verify(token, secret) as TokenPayload;
       (req as AuthRequest).user = decoded;
     } catch (error) {
       // Invalid token - just log and continue without authentication
@@ -304,8 +307,14 @@ export const optionalAuthenticate = (
  * 
  * // All authenticated users (any role)
  * router.get('/profile', authenticate, getProfile);
+ * 
+ * ## Role Hierarchy:
+ * - ADMIN: Has access to all roles (admin, campus_manager, barber, student)
+ * - CAMPUS_MANAGER: Has access to campus_manager, barber, and student routes
+ * - BARBER: Has access to barber and student routes
+ * - STUDENT/CONSUMER: Has access to student routes only
  */
-export const requireRole = (...roles: Array<'student' | 'barber' | 'admin'>) => {
+export const requireRole = (...roles: Array<'student' | 'barber' | 'campus_manager' | 'admin'>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const authReq = req as AuthRequest;
 
@@ -314,11 +323,26 @@ export const requireRole = (...roles: Array<'student' | 'barber' | 'admin'>) => 
       return next(new ApiError(401, 'Not authenticated'));
     }
 
-    // Check if user's role is in allowed roles (case-insensitive)
+    // Get user's role (case-insensitive)
     const userRole = authReq.user.role?.toLowerCase();
     const allowedRoles = roles.map(r => r.toLowerCase());
     
-    if (!allowedRoles.includes(userRole)) {
+    // Role hierarchy: higher roles include access to lower roles
+    const roleHierarchy: Record<string, string[]> = {
+      'admin': ['admin', 'campus_manager', 'barber', 'student', 'consumer'],
+      'campus_manager': ['campus_manager', 'barber', 'student', 'consumer'],
+      'barber': ['barber', 'student', 'consumer'],
+      'student': ['student', 'consumer'],
+      'consumer': ['student', 'consumer'],
+    };
+    
+    // Get all roles the user has access to based on hierarchy
+    const userAccessibleRoles = roleHierarchy[userRole] || [userRole];
+    
+    // Check if any of the required roles are in the user's accessible roles
+    const hasAccess = allowedRoles.some(role => userAccessibleRoles.includes(role));
+    
+    if (!hasAccess) {
       return next(
         new ApiError(
           403, 
@@ -392,8 +416,40 @@ export const requireAdmin = (
     return next(new ApiError(401, 'Not authenticated'));
   }
 
-  if (authReq.user.role !== 'admin') {
+  if (authReq.user.role?.toLowerCase() !== 'admin') {
     return next(new ApiError(403, 'Admin access required'));
+  }
+
+  next();
+};
+
+/**
+ * Campus Manager Middleware
+ * 
+ * Convenience middleware to require campus_manager or admin role.
+ * Campus managers have all barber + consumer functionality plus management capabilities.
+ * 
+ * @param req - Express request object
+ * @param res - Express response object
+ * @param next - Express next function
+ * 
+ * @example
+ * router.post('/barber-applications/:id/review', authenticate, requireCampusManager, reviewApplication);
+ */
+export const requireCampusManager = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const authReq = req as AuthRequest;
+
+  if (!authReq.user) {
+    return next(new ApiError(401, 'Not authenticated'));
+  }
+
+  const userRole = authReq.user.role?.toLowerCase();
+  if (userRole !== 'campus_manager' && userRole !== 'admin') {
+    return next(new ApiError(403, 'Campus Manager access required'));
   }
 
   next();

@@ -4,10 +4,11 @@ export interface User {
   first_name: string;
   last_name: string;
   username?: string;
-  user_type: 'student' | 'barber' | 'admin';
+  user_type: 'student' | 'barber' | 'campus_manager' | 'admin';
   campus_id?: string;
   is_verified: boolean;
   is_admin?: boolean;
+  is_campus_manager?: boolean;
   has_barber_profile?: boolean;
   profile_picture_url?: string;
   bio?: string;
