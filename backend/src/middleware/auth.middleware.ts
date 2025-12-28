@@ -314,8 +314,11 @@ export const requireRole = (...roles: Array<'student' | 'barber' | 'admin'>) => 
       return next(new ApiError(401, 'Not authenticated'));
     }
 
-    // Check if user's role is in allowed roles
-    if (!roles.includes(authReq.user.role)) {
+    // Check if user's role is in allowed roles (case-insensitive)
+    const userRole = authReq.user.role?.toLowerCase();
+    const allowedRoles = roles.map(r => r.toLowerCase());
+    
+    if (!allowedRoles.includes(userRole)) {
       return next(
         new ApiError(
           403, 
