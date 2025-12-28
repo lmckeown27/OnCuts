@@ -613,7 +613,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   <div className="text-center">
                     <p className="text-gray-700 mb-4">{selectedBarber.bio}</p>
                     <div className="flex flex-wrap justify-center gap-2 mb-4">
-                      {selectedBarber.specialties?.map((specialty, idx) => (
+                      {(Array.isArray(selectedBarber.specialties) ? selectedBarber.specialties : []).map((specialty, idx) => (
                         <span
                           key={idx}
                           className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
