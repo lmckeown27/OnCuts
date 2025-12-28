@@ -20,6 +20,7 @@ import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock } from '../hooks';
+import toast from 'react-hot-toast';
 
 const COMPONENT_VERSION = 'v4.0-modal-fix';
 
@@ -1195,21 +1196,15 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
       });
       
       if (response.ok) {
-        import('react-hot-toast').then(({ default: toast }) => {
-          toast.success('Availability saved!');
-        });
+        toast.success('Availability saved!');
         onClose();
       } else {
         const errorData = await response.json();
-        import('react-hot-toast').then(({ default: toast }) => {
-          toast.error(errorData.error?.message || 'Failed to save availability');
-        });
+        toast.error(errorData.error?.message || 'Failed to save availability');
       }
     } catch (error) {
       console.error('Failed to save availability:', error);
-      import('react-hot-toast').then(({ default: toast }) => {
-        toast.error('Failed to save availability');
-      });
+      toast.error('Failed to save availability');
     } finally {
       setIsSaving(false);
     }
