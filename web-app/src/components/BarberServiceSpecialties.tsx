@@ -11,13 +11,7 @@ import Card from './Card';
 import Button from './Button';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
-
-interface ServiceType {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-}
+import { SERVICE_TYPES, ServiceType } from '../config/services';
 
 interface BarberService {
   serviceId: string;
@@ -37,24 +31,8 @@ interface Props {
   barberId: string;
 }
 
-// Available service types aligned with "Earn More, Pay Less" model
-// Budget tier ($23): Basic services (barber earns $21.85, beating traditional $21 max)
-// Standard tier (~$28): Most haircuts
-// Premium tier ($35-$45): Specialized services
-const AVAILABLE_SERVICES: ServiceType[] = [
-  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Simple buzz cut', basePrice: 23 },
-  { id: 'line-up', name: 'Line Up', description: 'Hairline and edge cleanup', basePrice: 23 },
-  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 23 },
-  { id: 'haircut', name: 'Haircut', description: 'Basic haircut service', basePrice: 28 },
-  { id: 'taper', name: 'Taper', description: 'Tapered haircut', basePrice: 28 },
-  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28 },
-  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35 },
-  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Complete haircut with fade', basePrice: 35 },
-  { id: 'design', name: 'Design/Art', description: 'Custom hair designs', basePrice: 38 },
-  { id: 'womens-cut', name: "Women's Cut", description: 'Womens haircut service', basePrice: 40 },
-  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45 },
-  { id: 'color', name: 'Color Treatment', description: 'Hair coloring service', basePrice: 45 },
-];
+// Use shared service types from config - ensures consistency across platform
+const AVAILABLE_SERVICES = SERVICE_TYPES;
 
 export default function BarberServiceSpecialties({ barberId }: Props) {
   const [loading, setLoading] = useState(true);

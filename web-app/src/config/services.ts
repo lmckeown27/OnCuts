@@ -16,27 +16,33 @@ export interface ServiceType {
   name: string;
   description?: string;
   icon?: string;
+  basePrice?: number; // Base price in dollars for pricing algorithm
 }
 
 /**
  * Master list of all service types
  * These are the standardized services across the platform
+ * 
+ * Price Tiers (aligned with "Earn More, Pay Less" model):
+ * - Budget ($23): Basic quick services
+ * - Standard ($28): Standard haircuts
+ * - Premium ($35-45): Specialized services
  */
 export const SERVICE_TYPES: ServiceType[] = [
-  { id: 'haircut', name: 'Haircut', description: 'Standard haircut' },
-  { id: 'fade', name: 'Fade', description: 'Fade haircut' },
-  { id: 'taper', name: 'Taper', description: 'Taper cut' },
-  { id: 'lineup', name: 'Line Up', description: 'Edge up / line up' },
-  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Clipper cut all over' },
-  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim' },
-  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave' },
-  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Full haircut with fade' },
-  { id: 'design', name: 'Design/Art', description: 'Hair designs and artwork' },
-  { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women' },
-  { id: 'kids-cut', name: 'Kids Cut', description: 'Haircuts for children' },
-  { id: 'color', name: 'Color Treatment', description: 'Hair coloring services' },
-  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment' },
-  { id: 'afro', name: 'Afro Textures', description: 'Afro and textured hair styling' },
+  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Clipper cut all over', basePrice: 23 },
+  { id: 'lineup', name: 'Line Up', description: 'Edge up / line up', basePrice: 23 },
+  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 23 },
+  { id: 'haircut', name: 'Haircut', description: 'Standard haircut', basePrice: 28 },
+  { id: 'taper', name: 'Taper', description: 'Taper cut', basePrice: 28 },
+  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28 },
+  { id: 'kids-cut', name: 'Kids Cut', description: 'Haircuts for children', basePrice: 28 },
+  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35 },
+  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Full haircut with fade', basePrice: 35 },
+  { id: 'design', name: 'Design/Art', description: 'Hair designs and artwork', basePrice: 38 },
+  { id: 'afro', name: 'Afro Textures', description: 'Afro and textured hair styling', basePrice: 38 },
+  { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women', basePrice: 40 },
+  { id: 'color', name: 'Color Treatment', description: 'Hair coloring services', basePrice: 45 },
+  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45 },
 ];
 
 /**
