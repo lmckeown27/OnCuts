@@ -460,7 +460,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    {barber.specialties?.slice(0, 2).map((s, i) => (
+                    {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 2).map((s, i) => (
                       <span key={i} className="px-2.5 py-1 bg-primary-50 text-primary-700 text-sm rounded-full">
                         {s}
                       </span>
@@ -522,7 +522,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
                 {/* Specialties */}
                 <div className="flex flex-wrap gap-1 mb-3">
-                  {barber.specialties?.slice(0, 3).map((specialty, idx) => (
+                  {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty, idx) => (
                     <span
                       key={idx}
                       className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"

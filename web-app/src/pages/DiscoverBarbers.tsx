@@ -281,7 +281,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
                 {/* Specialties */}
                 <div className="mb-3">
                   <div className="flex flex-wrap gap-1">
-                    {barber.specialties.slice(0, 3).map((specialty) => (
+                    {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty) => (
                       <span
                         key={specialty}
                         className="px-2 py-1 bg-primary-100 text-primary-500 rounded text-xs font-medium"
