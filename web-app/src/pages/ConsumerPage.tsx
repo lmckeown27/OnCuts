@@ -272,7 +272,7 @@ export default function ConsumerPage() {
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
               <button
                 onClick={closeProfileEditor}

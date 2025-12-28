@@ -225,7 +225,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             } ${!showBackdrop && !isDropdownVisible ? '-translate-y-2' : ''}`}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 rounded-t-lg flex items-center justify-between z-10">
               <h3 className="font-bold text-gray-900">Booking Requests ({requests.length})</h3>
               {showBackdrop && (
                 <button 
