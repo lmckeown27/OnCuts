@@ -8,13 +8,14 @@
  * - Instant booking toggle
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Upload, Save, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
+import userService from '../services/user.service';
 import type { Barber } from '../types';
 
 interface BarberProfileEditorProps {
@@ -27,6 +28,8 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [barber, setBarber] = useState<Barber | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [bio, setBio] = useState('');
@@ -115,6 +118,44 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     }
   };
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      
+      // Upload the file
+      const response = await userService.uploadProfilePhoto(userId || barber?.user_id || '', file);
+      
+      if (response.url) {
+        setProfilePhoto(response.url);
+        toast.success('Photo uploaded successfully!');
+      }
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploading(false);
+      // Reset the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (isLoading) {
     return <Loading />;
   }
@@ -137,9 +178,21 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           </div>
         </div>
         <div className="flex items-center justify-center gap-4">
-          <Button variant="secondary" size="sm">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
             <Upload className="w-4 h-4 mr-2" />
-            Upload Photo
+            {isUploading ? 'Uploading...' : 'Upload Photo'}
           </Button>
           <p className="text-xs text-gray-500">Max size: 5MB. Formats: JPG, PNG</p>
         </div>
