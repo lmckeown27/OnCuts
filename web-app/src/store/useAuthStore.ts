@@ -23,37 +23,8 @@ interface AuthState {
   getPendingVerificationEmail: () => string | null;
 }
 
-// Hardcoded admin credentials
-const ADMIN_CREDENTIALS = [
-  // {
-  //   email: 'lmckeown@calpoly.edu',
-  //   password: 'Cr8zzy4R0GG$',
-  //   user: {
-  //     id: 'admin-liam-mckeown',
-  //     email: 'lmckeown@calpoly.edu',
-  //     first_name: 'Liam',
-  //     last_name: 'McKeown',
-  //     user_type: 'admin' as const,
-  //     is_verified: true,
-  //     is_admin: true,
-  //     created_at: new Date().toISOString()
-  //   }
-  // },
-  {
-    email: 'schroete@calpoly.edu',
-    password: 'barberdrama@13',
-    user: {
-      id: 'admin-justin-schroeter',
-      email: 'schroete@calpoly.edu',
-      first_name: 'Justin',
-      last_name: 'Schroeter',
-      user_type: 'admin' as const,
-      is_verified: true,
-      is_admin: true,
-      created_at: new Date().toISOString()
-    }
-  }
-];
+// Hardcoded admin credentials (empty - all auth goes through real API)
+const ADMIN_CREDENTIALS: Array<{ email: string; password: string; user: User }> = [];
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: authService.getStoredUser(),
