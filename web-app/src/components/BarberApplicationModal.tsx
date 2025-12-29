@@ -155,44 +155,21 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
+        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative">
+          <div className="flex flex-col items-center text-center">
+            <div className="p-2 bg-white/20 rounded-lg mb-2">
               <Scissors className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">Become a CampusCut Barber</h2>
-              <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
-            </div>
+            <h2 className="text-xl font-bold text-white">Become a CampusCut Barber</h2>
+            <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-white" />
           </button>
         </div>
-
-        {/* Progress Steps */}
-        {!submitted && (
-          <div className="px-6 py-3 bg-gray-50 border-b">
-            <div className="flex items-center justify-between">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
-                    step >= s ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {step > s ? <CheckCircle className="w-5 h-5" /> : s}
-                  </div>
-                  <span className={`ml-2 text-sm hidden sm:inline ${step >= s ? 'text-primary-600 font-medium' : 'text-gray-500'}`}>
-                    {s === 1 ? 'Experience' : s === 2 ? 'About You' : 'Review'}
-                  </span>
-                  {s < 3 && <div className={`w-12 sm:w-24 h-1 mx-2 rounded ${step > s ? 'bg-primary-500' : 'bg-gray-200'}`} />}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
