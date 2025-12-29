@@ -293,12 +293,19 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
                   const schedule = (barber.weekly_schedule as any)?.[day];
+                  // Convert 24-hour time to 12-hour format
+                  const formatTime = (time: string) => {
+                    const [hours, minutes] = time.split(':').map(Number);
+                    const period = hours >= 12 ? 'PM' : 'AM';
+                    const hour12 = hours % 12 || 12;
+                    return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+                  };
                   return (
                     <div key={day} className="text-sm">
                       <span className="font-medium text-gray-900 capitalize">{day}</span>
                       <p className="text-gray-600">
                         {schedule?.enabled 
-                          ? `${schedule.start} - ${schedule.end}`
+                          ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
                           : 'Unavailable'
                         }
                       </p>
