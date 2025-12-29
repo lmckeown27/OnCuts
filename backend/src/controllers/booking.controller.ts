@@ -24,11 +24,11 @@ import { dollarsToCents } from '../types/wallet.types';
 
 // Stub for aptosService to prevent errors when blockchain is disabled
 const aptosService = {
-  createBooking: async () => { throw new Error('Blockchain disabled - use Stripe payments'); },
-  getBooking: async () => { throw new Error('Blockchain disabled'); },
-  confirmBooking: async () => { throw new Error('Blockchain disabled'); },
-  completeBooking: async () => { throw new Error('Blockchain disabled'); },
-  cancelBooking: async () => { throw new Error('Blockchain disabled'); },
+  createBooking: async (_params: any): Promise<string> => { throw new Error('Blockchain disabled - use Stripe payments'); },
+  getBooking: async (_id: number): Promise<any> => { throw new Error('Blockchain disabled'); },
+  confirmBooking: async (_address: string, _id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
+  completeBooking: async (_id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
+  cancelBooking: async (_id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
 };
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
