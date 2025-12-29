@@ -20,9 +20,13 @@ import {
   Check,
   CheckCheck,
   Scissors,
-  Settings,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  Info,
+  X,
+  DollarSign,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
@@ -38,10 +42,16 @@ import toast from 'react-hot-toast';
 
 interface ConversationWithDetails extends Conversation {
   booking?: {
+    id?: string;
     serviceName: string;
+    servicePrice?: number;
     scheduledTime: string;
     location: string;
-    status: string;
+    locationDetails?: string;
+    status: 'pending' | 'accepted' | 'confirmed' | 'completed' | 'cancelled' | 'rejected';
+    notes?: string;
+    barberName?: string;
+    consumerName?: string;
   };
   otherUser: {
     id: string;
@@ -62,6 +72,8 @@ interface ConversationWithDetails extends Conversation {
     time: string;
   };
   unreadCount: number;
+  // Whether the barber has accepted this conversation/booking
+  isAccepted?: boolean;
 }
 
 interface MessageWithSender {
@@ -100,6 +112,7 @@ export default function MessagesPage() {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showServiceDetails, setShowServiceDetails] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -507,16 +520,40 @@ export default function MessagesPage() {
               )}
             </div>
 
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-gray-600" />
+            {/* Service Details Button */}
+            <button 
+              onClick={() => setShowServiceDetails(true)}
+              className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
+              title="View Service Details"
+            >
+              <Info className="w-5 h-5 text-primary-600" />
             </button>
           </div>
 
-          {/* Booking context banner */}
+          {/* Pending Status Banner - Show when barber hasn't accepted yet */}
+          {selectedConversation.booking?.status === 'pending' && !isBarberView && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-700">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <p className="text-sm">
+                  <span className="font-medium">Request Pending</span> - Your messages will be delivered once the barber accepts your booking request.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Compact Booking Context Bar */}
           {selectedConversation.booking && (
-            <div className="mt-3 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+            <button 
+              onClick={() => setShowServiceDetails(true)}
+              className="mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors text-left"
+            >
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1 text-primary-700">
+                    <Scissors className="w-4 h-4" />
+                    <span className="font-medium">{selectedConversation.booking.serviceName}</span>
+                  </div>
                   <div className="flex items-center gap-1 text-primary-700">
                     <Calendar className="w-4 h-4" />
                     <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
@@ -525,21 +562,21 @@ export default function MessagesPage() {
                     <Clock className="w-4 h-4" />
                     <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-primary-700">
-                    <MapPin className="w-4 h-4" />
-                    <span className="truncate max-w-[100px]">{selectedConversation.booking.location}</span>
-                  </div>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                  selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {selectedConversation.booking.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                    selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                    selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                    selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {selectedConversation.booking.status}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-primary-600" />
+                </div>
               </div>
-            </div>
+            </button>
           )}
         </div>
 
@@ -761,6 +798,167 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      {/* Service Details Modal */}
+      {showServiceDetails && selectedConversation?.booking && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowServiceDetails(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Service Details</h2>
+                <p className="text-white/80 text-sm">Booking Information</p>
+              </div>
+              <button 
+                onClick={() => setShowServiceDetails(false)}
+                className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Service Name & Price */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                    <Scissors className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{selectedConversation.booking.serviceName}</h3>
+                    <p className="text-sm text-gray-500">Service</p>
+                  </div>
+                </div>
+                {selectedConversation.booking.servicePrice && (
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900">${selectedConversation.booking.servicePrice}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-xs">Date</span>
+                  </div>
+                  <p className="font-medium text-gray-900">
+                    {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                      weekday: 'short',
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-xs">Time</span>
+                  </div>
+                  <p className="font-medium text-gray-900">
+                    {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-2 text-gray-500 mb-1">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-xs">Location</span>
+                </div>
+                <p className="font-medium text-gray-900">{selectedConversation.booking.location || 'TBD'}</p>
+                {selectedConversation.booking.locationDetails && (
+                  <p className="text-sm text-gray-600 mt-1">{selectedConversation.booking.locationDetails}</p>
+                )}
+              </div>
+
+              {/* Status */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                      selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedConversation.booking.status === 'pending' ? 'Awaiting Acceptance' :
+                       selectedConversation.booking.status === 'accepted' ? 'Accepted' :
+                       selectedConversation.booking.status === 'confirmed' ? 'Confirmed' :
+                       selectedConversation.booking.status === 'completed' ? 'Completed' :
+                       selectedConversation.booking.status === 'cancelled' ? 'Cancelled' :
+                       selectedConversation.booking.status === 'rejected' ? 'Rejected' :
+                       selectedConversation.booking.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedConversation.booking.notes && (
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <FileText className="w-4 h-4" />
+                    <span className="text-xs">Notes</span>
+                  </div>
+                  <p className="text-gray-900">{selectedConversation.booking.notes}</p>
+                </div>
+              )}
+
+              {/* Barber/Consumer Info */}
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                    {selectedConversation.otherUser?.profilePicture ? (
+                      <img 
+                        src={selectedConversation.otherUser.profilePicture} 
+                        alt=""
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {isBarberView ? 'Customer' : 'Barber'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <Button
+                onClick={() => setShowServiceDetails(false)}
+                variant="primary"
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
