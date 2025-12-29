@@ -127,7 +127,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (loading) {
     return (
       <div 
-        className={`absolute inset-0 flex items-center justify-center z-20 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
+        className={`absolute inset-0 flex items-center justify-center z-20 p-2 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
         onClick={handleClose}
       >
         <div 
@@ -144,7 +144,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (error || !barber) {
     return (
       <div 
-        className={`absolute inset-0 flex items-center justify-center z-20 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
+        className={`absolute inset-0 flex items-center justify-center z-20 p-2 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
         onClick={handleClose}
       >
         <div 
@@ -168,7 +168,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
       onClick={handleClose}
     >
       <div 
-        className={`bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[85%] overflow-y-auto border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
+        className={`bg-white rounded-lg shadow-xl w-full max-w-md h-[90%] overflow-y-auto border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

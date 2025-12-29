@@ -386,7 +386,7 @@ export default function BarberPage() {
           onClick={closeCampusManager}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full h-[95vh] sm:h-[92vh] overflow-y-auto transition-all duration-150 ease-out
               ${isCampusManagerVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -399,7 +399,7 @@ export default function BarberPage() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <CampusManagerDashboard campusId={campusId} campusName={campusName} />
             </div>
           </div>
