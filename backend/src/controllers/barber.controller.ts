@@ -435,7 +435,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule } = req.body;
+    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule, is_active } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
@@ -468,6 +468,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (weekly_schedule !== undefined) {
       barberUpdateFields.push(`"weeklySchedule" = $${paramIndex}`);
       barberValues.push(JSON.stringify(weekly_schedule));
+      paramIndex++;
+    }
+    if (is_active !== undefined) {
+      barberUpdateFields.push(`"isActive" = $${paramIndex}`);
+      barberValues.push(is_active);
       paramIndex++;
     }
 
