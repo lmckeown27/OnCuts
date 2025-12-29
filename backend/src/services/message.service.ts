@@ -23,26 +23,14 @@ class MessageService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get conversations with BOOKING-CENTRIC context (cached + live data)
+      // Get conversations - use simpler query that works with existing schema
+      // Will work whether or not booking-centric columns exist
       const result = await pool.query(
         `SELECT 
           c.id as conversation_id,
           c.booking_id,
           c.created_at as conversation_created,
           c.last_message_at,
-          
-          -- CACHED BOOKING CONTEXT (primary - for performance)
-          COALESCE(c.service_name, b.service_name) as service_name,
-          COALESCE(c.service_price, b.service_price) as service_price,
-          COALESCE(c.scheduled_time, b.scheduled_time) as scheduled_time,
-          COALESCE(c.location, b.location) as location,
-          c.location_details,
-          COALESCE(c.booking_status, b.status, 'pending') as booking_status,
-          c.notes as booking_notes,
-          c.barber_name as cached_barber_name,
-          c.consumer_name as cached_consumer_name,
-          c.barber_profile_picture as cached_barber_picture,
-          c.consumer_profile_picture as cached_consumer_picture,
           
           -- OTHER USER INFO
           CASE 
@@ -95,7 +83,6 @@ class MessageService {
             ELSE c.user1_id
           END = u.id
         )
-        LEFT JOIN booking_requests b ON c.booking_id = b.id
         LEFT JOIN barbers br ON u.id = br.user_id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
@@ -111,29 +98,17 @@ class MessageService {
 
       const total = parseInt(countResult.rows[0].total);
 
-      // Format conversations with BOOKING-CENTRIC emphasis
+      // Format conversations
       const conversations = result.rows.map((conv) => ({
         id: conv.conversation_id,
         bookingId: conv.booking_id,
-        // BOOKING CONTEXT - Primary focus for CampusCuts
-        booking: {
-          serviceName: conv.service_name || 'Haircut Service',
-          servicePrice: conv.service_price ? parseFloat(conv.service_price) : null,
-          scheduledTime: conv.scheduled_time,
-          location: conv.location,
-          locationDetails: conv.location_details,
-          status: conv.booking_status || 'pending',
-          notes: conv.booking_notes,
-          barberName: conv.cached_barber_name || (conv.barber_display_name || `${conv.other_user_first_name} ${conv.other_user_last_name}`),
-          consumerName: conv.cached_consumer_name,
-        },
-        // Other user info (secondary)
+        // Other user info
         otherUser: {
           id: conv.other_user_id,
           firstName: conv.other_user_first_name,
           lastName: conv.other_user_last_name,
           displayName: conv.barber_display_name || `${conv.other_user_first_name} ${conv.other_user_last_name}`,
-          profilePicture: conv.other_user_profile_picture || conv.cached_barber_picture,
+          profilePicture: conv.other_user_profile_picture,
           userType: conv.other_user_type?.toLowerCase() || 'consumer',
           barberInfo: (conv.other_user_type === 'BARBER' || conv.other_user_type === 'barber')
             ? {
@@ -332,39 +307,12 @@ class MessageService {
         return await this.getConversationById(conv.id, userId);
       }
 
-      // Get user info for caching
-      const usersResult = await pool.query(
-        `SELECT id, first_name, last_name, "avatarUrl" as profile_picture FROM users WHERE id IN ($1, $2)`,
-        [userId, otherUserId]
-      );
-      
-      const currentUser = usersResult.rows.find(u => String(u.id) === String(userId));
-      const otherUser = usersResult.rows.find(u => String(u.id) === String(otherUserId));
-
-      // Create new BOOKING-CENTRIC conversation with cached service data
+      // Create new conversation with base columns only (works with existing schema)
       const result = await pool.query(
-        `INSERT INTO conversations (
-          user1_id, user2_id, booking_id,
-          service_name, service_price, scheduled_time, location, location_details,
-          barber_name, consumer_name, barber_profile_picture, consumer_profile_picture, notes
-        )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        `INSERT INTO conversations (user1_id, user2_id, booking_id)
+         VALUES ($1, $2, $3)
          RETURNING id, created_at`,
-        [
-          userId, 
-          otherUserId, 
-          bookingId || null,
-          bookingContext?.serviceName || null,
-          bookingContext?.servicePrice || null,
-          bookingContext?.scheduledTime || null,
-          bookingContext?.location || null,
-          bookingContext?.locationDetails || null,
-          bookingContext?.barberName || otherUser?.first_name + ' ' + otherUser?.last_name || null,
-          bookingContext?.consumerName || currentUser?.first_name + ' ' + currentUser?.last_name || null,
-          bookingContext?.barberProfilePicture || otherUser?.profile_picture || null,
-          bookingContext?.consumerProfilePicture || currentUser?.profile_picture || null,
-          bookingContext?.notes || null
-        ]
+        [userId, otherUserId, bookingId || null]
       );
 
       const conversation = result.rows[0];

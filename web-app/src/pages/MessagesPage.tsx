@@ -187,10 +187,20 @@ export default function MessagesPage() {
     loadData();
   }, [fetchConversations]);
 
+  // Track if we've already attempted to start a conversation to prevent retry loops
+  const hasAttemptedConversation = useRef(false);
+
   // Handle starting a new BOOKING-CENTRIC conversation from navigation state
   useEffect(() => {
     const startNewConversation = async () => {
-      if (startConversationData?.startConversation && startConversationData.otherUserId && !isCreatingConversation) {
+      // Only attempt once per page load to prevent retry loops
+      if (
+        startConversationData?.startConversation && 
+        startConversationData.otherUserId && 
+        !isCreatingConversation &&
+        !hasAttemptedConversation.current
+      ) {
+        hasAttemptedConversation.current = true;
         setIsCreatingConversation(true);
         try {
           // Create BOOKING-CENTRIC conversation with full service context
@@ -221,7 +231,10 @@ export default function MessagesPage() {
           }
         } catch (error) {
           console.error('Failed to create conversation:', error);
-          toast.error('Failed to start conversation');
+          toast.error('Failed to start conversation. Please try again later.');
+          // Clear the state to prevent showing a loading state forever
+          const messagesPath = isBarberView ? 'barber/messages' : 'consumer/messages';
+          navigate(`${platformPrefix}/${messagesPath}`, { replace: true, state: null });
         } finally {
           setIsCreatingConversation(false);
         }
