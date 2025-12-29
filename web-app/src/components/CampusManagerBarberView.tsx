@@ -16,7 +16,8 @@ import {
   Mail,
   Award,
   Clock,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
