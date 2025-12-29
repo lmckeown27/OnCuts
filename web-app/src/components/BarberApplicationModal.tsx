@@ -404,9 +404,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                      form.yearsExperience === '1-2' ? '1-2 years' :
                      form.yearsExperience === '3-5' ? '3-5 years' : '5+ years'}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {form.hasLicense ? `Licensed barber${form.licenseNumber ? ` (#${form.licenseNumber})` : ''}` : 'Not yet licensed'}
-                  </p>
                 </div>
 
                 <div className="border-t pt-4">
