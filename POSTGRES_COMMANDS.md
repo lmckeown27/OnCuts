@@ -332,7 +332,7 @@ ORDER BY location_updated_at DESC;
 "
 ```
 
-### View Users Grouped by Approximate Location
+### View Users Grouped by Approximate Location (Summary)
 ```bash
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
@@ -345,6 +345,40 @@ FROM users
 WHERE latitude IS NOT NULL
 GROUP BY lat_zone, lng_zone
 ORDER BY user_count DESC;
+"
+```
+
+### View Users with Names/Emails Grouped by Location
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    email,
+    first_name,
+    last_name,
+    role,
+    ROUND(latitude::numeric, 4) as latitude,
+    ROUND(longitude::numeric, 4) as longitude,
+    ROUND(latitude::numeric, 2) as location_zone
+FROM users
+WHERE latitude IS NOT NULL
+ORDER BY ROUND(latitude::numeric, 2), ROUND(longitude::numeric, 2), email;
+"
+```
+
+### View All Users in a Specific Location Zone
+```bash
+# Replace lat_zone and lng_zone with values from the summary query above
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    email,
+    first_name,
+    last_name,
+    role,
+    latitude,
+    longitude
+FROM users
+WHERE ROUND(latitude::numeric, 2) = 35.31 
+  AND ROUND(longitude::numeric, 2) = -120.66;
 "
 ```
 

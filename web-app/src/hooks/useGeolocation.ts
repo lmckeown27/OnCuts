@@ -4,9 +4,14 @@
  * Provides browser-based geolocation with permission handling.
  * Used to determine closest barbers to the user.
  * Automatically syncs location to backend for authenticated users.
+ * 
+ * LOCATION UPDATE POLICY:
+ * - Fresh location is fetched every time the app is opened
+ * - Location is synced to backend on every update
+ * - This ensures users who move (e.g., between universities) always see nearby barbers
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import locationService from '../services/location.service';
 
@@ -23,9 +28,11 @@ export interface UseGeolocationReturn extends GeolocationState {
   requestLocation: () => void;
   clearLocation: () => void;
   syncToBackend: () => Promise<void>;
+  refreshLocation: () => void; // Force refresh location
 }
 
 const STORAGE_KEY = 'campuscut_user_location';
+const PERMISSION_KEY = 'campuscut_location_permission';
 
 // Calculate distance between two points using Haversine formula (returns km)
 export function calculateDistance(
@@ -65,6 +72,7 @@ export function useGeolocation(): UseGeolocationReturn {
   });
   
   const { isAuthenticated } = useAuthStore();
+  const hasAutoRequestedRef = useRef(false);
 
   // Sync location to backend for authenticated users
   const syncToBackend = useCallback(async () => {
@@ -82,60 +90,19 @@ export function useGeolocation(): UseGeolocationReturn {
     }
   }, [isAuthenticated, state.latitude, state.longitude, state.permissionStatus]);
 
-  // Check permission status on mount
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setState(prev => ({ ...prev, permissionStatus: 'unavailable' }));
-      return;
-    }
-
-    // Check if we have stored location
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const { latitude, longitude, accuracy, timestamp } = JSON.parse(stored);
-        // Use stored location if less than 1 hour old
-        if (Date.now() - timestamp < 60 * 60 * 1000) {
-          setState(prev => ({
-            ...prev,
-            latitude,
-            longitude,
-            accuracy,
-            permissionStatus: 'granted',
-          }));
-        }
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-
-    // Check permission status if available
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        setState(prev => ({ ...prev, permissionStatus: result.state as any }));
-        
-        result.onchange = () => {
-          setState(prev => ({ ...prev, permissionStatus: result.state as any }));
-        };
-      }).catch(() => {
-        // Permissions API not fully supported
-      });
-    }
-  }, []);
-
-  const requestLocation = useCallback(() => {
+  // Internal function to fetch fresh location
+  const fetchFreshLocation = useCallback((isAutoRequest = false) => {
     if (!navigator.geolocation) {
       const newState = {
-        ...state,
+        latitude: null,
+        longitude: null,
+        accuracy: null,
         error: 'Geolocation is not supported by your browser',
+        loading: false,
         permissionStatus: 'unavailable' as const,
       };
       setState(newState);
-      
-      // Sync unavailable status to backend
-      if (isAuthenticated) {
-        locationService.updateLocation({ permission: 'unavailable' }).catch(() => {});
-      }
+      localStorage.setItem(PERMISSION_KEY, 'unavailable');
       return;
     }
 
@@ -145,13 +112,14 @@ export function useGeolocation(): UseGeolocationReturn {
       async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         
-        // Store location for later use
+        // Store location and permission status
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           latitude,
           longitude,
           accuracy,
           timestamp: Date.now(),
         }));
+        localStorage.setItem(PERMISSION_KEY, 'granted');
 
         setState({
           latitude,
@@ -162,7 +130,7 @@ export function useGeolocation(): UseGeolocationReturn {
           permissionStatus: 'granted',
         });
 
-        // Sync to backend for authenticated users
+        // Always sync to backend for authenticated users
         if (isAuthenticated) {
           try {
             await locationService.updateLocation({
@@ -170,6 +138,7 @@ export function useGeolocation(): UseGeolocationReturn {
               longitude,
               permission: 'granted',
             });
+            console.log('[Geolocation] Location synced to backend:', { latitude, longitude });
           } catch (error) {
             console.warn('Failed to sync location to backend:', error);
           }
@@ -183,6 +152,7 @@ export function useGeolocation(): UseGeolocationReturn {
           case error.PERMISSION_DENIED:
             errorMessage = 'Location permission denied';
             permissionStatus = 'denied';
+            localStorage.setItem(PERMISSION_KEY, 'denied');
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = 'Location information unavailable';
@@ -201,7 +171,7 @@ export function useGeolocation(): UseGeolocationReturn {
           permissionStatus,
         }));
 
-        // Sync denied/unavailable status to backend
+        // Sync denied status to backend
         if (isAuthenticated && permissionStatus === 'denied') {
           try {
             await locationService.updateLocation({ permission: 'denied' });
@@ -213,13 +183,67 @@ export function useGeolocation(): UseGeolocationReturn {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000, // 5 minutes
+        maximumAge: 0, // Always get fresh location, no caching
       }
     );
-  }, [isAuthenticated, state]);
+  }, [isAuthenticated]);
+
+  // Check permission status on mount and auto-request if previously granted
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setState(prev => ({ ...prev, permissionStatus: 'unavailable' }));
+      return;
+    }
+
+    // Check stored permission status
+    const storedPermission = localStorage.getItem(PERMISSION_KEY);
+    
+    // Check permission status via Permissions API
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+        const currentPermission = result.state as 'prompt' | 'granted' | 'denied';
+        setState(prev => ({ ...prev, permissionStatus: currentPermission }));
+        
+        // Auto-request fresh location if permission was previously granted
+        // This ensures we always have fresh location on app open
+        if (currentPermission === 'granted' && !hasAutoRequestedRef.current) {
+          hasAutoRequestedRef.current = true;
+          console.log('[Geolocation] Auto-requesting fresh location (permission already granted)');
+          fetchFreshLocation(true);
+        }
+        
+        result.onchange = () => {
+          setState(prev => ({ ...prev, permissionStatus: result.state as any }));
+        };
+      }).catch(() => {
+        // Permissions API not fully supported, check localStorage
+        if (storedPermission === 'granted' && !hasAutoRequestedRef.current) {
+          hasAutoRequestedRef.current = true;
+          fetchFreshLocation(true);
+        }
+      });
+    } else if (storedPermission === 'granted' && !hasAutoRequestedRef.current) {
+      // Fallback: use stored permission status
+      hasAutoRequestedRef.current = true;
+      fetchFreshLocation(true);
+    }
+  }, [fetchFreshLocation]);
+
+  // Public method to request location (for initial permission prompt)
+  const requestLocation = useCallback(() => {
+    fetchFreshLocation(false);
+  }, [fetchFreshLocation]);
+
+  // Force refresh location (e.g., when user wants to update)
+  const refreshLocation = useCallback(() => {
+    console.log('[Geolocation] Manual refresh requested');
+    fetchFreshLocation(false);
+  }, [fetchFreshLocation]);
 
   const clearLocation = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PERMISSION_KEY);
+    hasAutoRequestedRef.current = false;
     setState({
       latitude: null,
       longitude: null,
@@ -235,6 +259,7 @@ export function useGeolocation(): UseGeolocationReturn {
     requestLocation,
     clearLocation,
     syncToBackend,
+    refreshLocation,
   };
 }
 
