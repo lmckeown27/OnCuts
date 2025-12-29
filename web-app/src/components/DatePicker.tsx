@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import type { WeeklySchedule } from '../types';
 
 interface DatePickerProps {
   value: string; // ISO date string (YYYY-MM-DD)
@@ -8,6 +9,7 @@ interface DatePickerProps {
   maxDate?: string; // ISO date string
   label?: string;
   required?: boolean;
+  weeklySchedule?: WeeklySchedule; // Barber's availability schedule
 }
 
 // Helper to get today at midnight
@@ -17,6 +19,9 @@ const getTodayAtMidnight = () => {
   return now;
 };
 
+// Map day index (0=Sunday) to weeklySchedule key
+const dayIndexToKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+
 export default function DatePicker({
   value,
   onChange,
@@ -24,6 +29,7 @@ export default function DatePicker({
   maxDate,
   label = 'Select Date',
   required = false,
+  weeklySchedule,
 }: DatePickerProps) {
   // State for today that updates at midnight
   const [today, setToday] = useState(getTodayAtMidnight);
@@ -105,6 +111,7 @@ export default function DatePicker({
   };
 
   const isDateDisabled = (date: Date): boolean => {
+    // Check min/max date constraints
     if (minDate) {
       const min = new Date(minDate + 'T00:00:00');
       if (date < min) return true;
@@ -113,6 +120,19 @@ export default function DatePicker({
       const max = new Date(maxDate + 'T00:00:00');
       if (date > max) return true;
     }
+    
+    // Check if barber is available on this day of the week
+    if (weeklySchedule) {
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayKey = dayIndexToKey[dayOfWeek];
+      const daySchedule = weeklySchedule[dayKey];
+      
+      // If the day is not enabled in the barber's schedule, disable it
+      if (!daySchedule?.enabled) {
+        return true;
+      }
+    }
+    
     return false;
   };
 

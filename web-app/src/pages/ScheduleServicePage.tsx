@@ -273,9 +273,14 @@ export default function ScheduleServicePage() {
                     <DatePicker
                       label="Date"
                       value={date}
-                      onChange={setDate}
+                      onChange={(newDate) => {
+                        setDate(newDate);
+                        // Reset time when date changes
+                        setTime('');
+                      }}
                       minDate={today}
                       required
+                      weeklySchedule={barber.weekly_schedule}
                     />
                   </div>
 
@@ -290,6 +295,22 @@ export default function ScheduleServicePage() {
                     <TimePickerDropdown
                       value={time}
                       onChange={(value) => setTime(value)}
+                      minTime={(() => {
+                        if (!date || !barber.weekly_schedule) return undefined;
+                        const selectedDate = new Date(date + 'T00:00:00');
+                        const dayOfWeek = selectedDate.getDay();
+                        const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+                        const daySchedule = barber.weekly_schedule[dayKeys[dayOfWeek]];
+                        return daySchedule?.enabled ? daySchedule.start : undefined;
+                      })()}
+                      maxTime={(() => {
+                        if (!date || !barber.weekly_schedule) return undefined;
+                        const selectedDate = new Date(date + 'T00:00:00');
+                        const dayOfWeek = selectedDate.getDay();
+                        const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+                        const daySchedule = barber.weekly_schedule[dayKeys[dayOfWeek]];
+                        return daySchedule?.enabled ? daySchedule.end : undefined;
+                      })()}
                     />
                   </div>
 
