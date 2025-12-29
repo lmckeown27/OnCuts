@@ -127,19 +127,15 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
   if (loading) {
     return (
-      <div 
-        className={`absolute inset-0 flex flex-col z-20 bg-white transition-all duration-150 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-2">
-          <button
-            onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h2 className="text-lg font-bold text-gray-900">Barber Profile</h2>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
+      <div className="space-y-4">
+        <button
+          onClick={handleClose}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Barbers</span>
+        </button>
+        <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
           <span className="ml-3 text-gray-600">Loading barber profile...</span>
         </div>
@@ -149,23 +145,17 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
   if (error || !barber) {
     return (
-      <div 
-        className={`absolute inset-0 flex flex-col z-20 bg-white transition-all duration-150 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-2">
-          <button
-            onClick={handleClose}
-            className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h2 className="text-lg font-bold text-gray-900">Barber Profile</h2>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">{error || 'Barber not found'}</p>
-            <Button variant="outline" onClick={handleClose}>Go Back</Button>
-          </div>
+      <div className="space-y-4">
+        <button
+          onClick={handleClose}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Barbers</span>
+        </button>
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">{error || 'Barber not found'}</p>
+          <Button variant="outline" onClick={handleClose}>Go Back</Button>
         </div>
       </div>
     );
@@ -174,179 +164,165 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   const priceRange = getPriceRange();
 
   return (
-    <div 
-      className={`absolute inset-0 flex flex-col z-20 transition-all duration-150 ease-out ${isVisible ? 'bg-white' : 'bg-white/0'}`}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div 
-        className={`flex-1 flex flex-col overflow-hidden transition-all duration-150 ease-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+    <div className="space-y-4">
+      {/* Back Button */}
+      <button
+        onClick={handleClose}
+        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleClose}
-              className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-bold text-gray-900">Barber Profile</h2>
+        <ChevronLeft className="w-5 h-5" />
+        <span className="text-sm font-medium">Back to Barbers</span>
+      </button>
+
+      {/* Basic Info */}
+      <Card className="p-4">
+        <div className="flex items-start gap-4 mb-4">
+          {/* Profile Photo */}
+          {(barber.profile_photo_url || barber.profile_picture_url) && (
+            <img
+              src={barber.profile_photo_url || barber.profile_picture_url}
+              alt={getBarberName()}
+              className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-lg font-bold text-gray-900">{getBarberName()}</h3>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
+                barber.is_active
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-100 text-gray-700'
+              }`}>
+                {barber.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            {barber.bio && (
+              <p className="text-sm text-gray-600">{barber.bio}</p>
+            )}
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Basic Info */}
-          <Card className="p-4">
-            <div className="flex items-start gap-4 mb-4">
-              {/* Profile Photo */}
-              {(barber.profile_photo_url || barber.profile_picture_url) && (
-                <img
-                  src={barber.profile_photo_url || barber.profile_picture_url}
-                  alt={getBarberName()}
-                  className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-gray-900">{getBarberName()}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                    barber.is_active
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {barber.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                {barber.bio && (
-                  <p className="text-sm text-gray-600">{barber.bio}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-700">
-                <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                {getEmail() !== 'Not available' ? (
-                  <a href={`mailto:${getEmail()}`} className="text-primary-600 hover:underline">
-                    {getEmail()}
-                  </a>
-                ) : (
-                  <span className="text-gray-500">Email not available</span>
-                )}
-              </div>
-              {barber.instagram_handle && (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Instagram className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                  <a
-                    href={`https://www.instagram.com/${barber.instagram_handle.replace('@', '')}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-600 hover:underline"
-                  >
-                    @{barber.instagram_handle.replace('@', '')}
-                  </a>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Pricing Info */}
-          {priceRange.max > 0 && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                <DollarSign className="w-4 h-4 text-primary-600" />
-                Pricing
-              </h4>
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="text-xs text-gray-600">Price Range</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    ${priceRange.min} - ${priceRange.max}
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {barber.pricing?.length || 0} services offered
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Specialties */}
-          {barber.specialties && barber.specialties.length > 0 && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                <Award className="w-4 h-4 text-primary-600" />
-                Specialties
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {barber.specialties.map((specialty) => (
-                  <span
-                    key={specialty}
-                    className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
-                  >
-                    {specialty}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Weekly Schedule */}
-          {barber.weekly_schedule && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-primary-600" />
-                Weekly Schedule
-              </h4>
-              <div className="grid grid-cols-7 gap-2">
-                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                  const schedule = (barber.weekly_schedule as any)?.[day];
-                  const formatTime = (time: string) => {
-                    const [hours, minutes] = time.split(':').map(Number);
-                    const period = hours >= 12 ? 'PM' : 'AM';
-                    const hour12 = hours % 12 || 12;
-                    return `${hour12}${period}`;
-                  };
-                  return (
-                    <div key={day} className="text-center">
-                      <span className="font-medium text-gray-900 text-xs uppercase">{day.slice(0, 3)}</span>
-                      <p className={`text-xs mt-1 ${schedule?.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
-                        {schedule?.enabled 
-                          ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
-                          : 'Off'
-                        }
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          )}
-
-          {/* Campus Manager Actions */}
-          <Card className="p-4 bg-yellow-50 border-yellow-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Flag className="w-5 h-5 text-yellow-600" />
-                <div>
-                  <h4 className="font-semibold text-yellow-900 text-sm">Report Issues</h4>
-                  <p className="text-xs text-yellow-700">Flag concerns to platform administrators</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowReportModal(true)}
-                className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-gray-700">
+            <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            {getEmail() !== 'Not available' ? (
+              <a href={`mailto:${getEmail()}`} className="text-primary-600 hover:underline">
+                {getEmail()}
+              </a>
+            ) : (
+              <span className="text-gray-500">Email not available</span>
+            )}
+          </div>
+          {barber.instagram_handle && (
+            <div className="flex items-center gap-2 text-gray-700">
+              <Instagram className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              <a
+                href={`https://www.instagram.com/${barber.instagram_handle.replace('@', '')}/`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:underline"
               >
-                <Flag className="w-4 h-4 mr-1" />
-                Report
-              </Button>
+                @{barber.instagram_handle.replace('@', '')}
+              </a>
+            </div>
+          )}
+        </div>
+      </Card>
+
+        {/* Pricing Info */}
+        {priceRange.max > 0 && (
+          <Card className="p-4">
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
+              <DollarSign className="w-4 h-4 text-primary-600" />
+              Pricing
+            </h4>
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-xs text-gray-600">Price Range</p>
+                <p className="text-lg font-bold text-gray-900">
+                  ${priceRange.min} - ${priceRange.max}
+                </p>
+              </div>
+              <div className="text-sm text-gray-500">
+                {barber.pricing?.length || 0} services offered
+              </div>
             </div>
           </Card>
+        )}
+
+        {/* Specialties */}
+        {barber.specialties && barber.specialties.length > 0 && (
+          <Card className="p-4">
+            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
+              <Award className="w-4 h-4 text-primary-600" />
+              Specialties
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {barber.specialties.map((specialty) => (
+                <span
+                  key={specialty}
+                  className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
+                >
+                  {specialty}
+                </span>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Weekly Schedule */}
+        {barber.weekly_schedule && (
+          <Card className="p-4">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+              <Clock className="w-4 h-4 text-primary-600" />
+              Weekly Schedule
+            </h4>
+            <div className="grid grid-cols-7 gap-2">
+              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                const schedule = (barber.weekly_schedule as any)?.[day];
+                const formatTime = (time: string) => {
+                  const [hours, minutes] = time.split(':').map(Number);
+                  const period = hours >= 12 ? 'PM' : 'AM';
+                  const hour12 = hours % 12 || 12;
+                  return `${hour12}${period}`;
+                };
+                return (
+                  <div key={day} className="text-center">
+                    <span className="font-medium text-gray-900 text-xs uppercase">{day.slice(0, 3)}</span>
+                    <p className={`text-xs mt-1 ${schedule?.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {schedule?.enabled 
+                        ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
+                        : 'Off'
+                      }
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+      {/* Campus Manager Actions */}
+      <Card className="p-4 bg-yellow-50 border-yellow-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Flag className="w-5 h-5 text-yellow-600" />
+            <div>
+              <h4 className="font-semibold text-yellow-900 text-sm">Report Issues</h4>
+              <p className="text-xs text-yellow-700">Flag concerns to platform administrators</p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowReportModal(true)}
+            className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+          >
+            <Flag className="w-4 h-4 mr-1" />
+            Report
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Report Modal */}
       {showReportModal && (
