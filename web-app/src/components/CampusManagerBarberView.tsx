@@ -10,15 +10,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
-  Calendar, 
   DollarSign, 
-  TrendingUp, 
   Flag,
   Instagram,
   Mail,
   Award,
   Clock,
-  CheckCircle,
   Loader2
 } from 'lucide-react';
 import Card from './Card';
@@ -108,14 +105,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
       min: Math.min(...prices),
       max: Math.max(...prices)
     };
-  };
-
-  // Calculate completion rate
-  const getCompletionRate = () => {
-    if (!barber?.total_bookings || barber.total_bookings === 0) return 0;
-    // Since we don't have completed_bookings directly, estimate based on is_active
-    // In a real scenario, this would come from the backend
-    return barber.is_active ? 85 : 0; // Placeholder - backend should provide this
   };
 
   if (loading) {
@@ -241,42 +230,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
               )}
             </div>
           </Card>
-
-          {/* Performance Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-5 h-5 text-blue-500" />
-                <span className="text-sm text-gray-600">Bookings</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{barber.total_bookings || 0}</p>
-              <p className="text-xs text-gray-500 mt-1">Total bookings</p>
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-yellow-500" />
-                <span className="text-sm text-gray-600">Rating</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {barber.average_rating ? barber.average_rating.toFixed(1) : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {barber.total_reviews || 0} reviews
-              </p>
-            </Card>
-
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                <span className="text-sm text-gray-600">Status</span>
-              </div>
-              <p className={`text-2xl font-bold ${barber.is_active ? 'text-green-600' : 'text-gray-500'}`}>
-                {barber.is_active ? 'Active' : 'Inactive'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Current status</p>
-            </Card>
-          </div>
 
           {/* Pricing Info */}
           {priceRange.max > 0 && (
