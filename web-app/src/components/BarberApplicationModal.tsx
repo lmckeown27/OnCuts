@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, AlertCircle, Check } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
@@ -29,9 +29,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successPopupVisible, setSuccessPopupVisible] = useState(false);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -109,8 +110,15 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       
       // API returns { applicationId, status, submittedAt } on success
       if (result && result.applicationId) {
-        setSubmitted(true);
-        toast.success('Application submitted successfully!');
+        // Close the application modal smoothly
+        setIsVisible(false);
+        
+        // After close animation, show success popup
+        setTimeout(() => {
+          setShouldRender(false);
+          setShowSuccessPopup(true);
+          setTimeout(() => setSuccessPopupVisible(true), 10);
+        }, 150);
         
         if (onSubmitSuccess) {
           onSubmitSuccess();
@@ -129,6 +137,45 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const canProceedStep1 = form.yearsExperience && form.specialties.length > 0;
   const canProceedStep2 = form.whyBeBarber.trim().length > 0 && form.availableHours;
   const canSubmit = canProceedStep1 && canProceedStep2;
+
+  const handleCloseSuccessPopup = () => {
+    setSuccessPopupVisible(false);
+    setTimeout(() => {
+      setShowSuccessPopup(false);
+      document.body.style.overflow = '';
+      onClose();
+    }, 150);
+  };
+
+  // Success popup
+  if (showSuccessPopup) {
+    return (
+      <div 
+        className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${successPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleCloseSuccessPopup}
+      >
+        <div 
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transition-all duration-150 ease-out
+            ${successPopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-3">Application Submitted!</h3>
+          <p className="text-gray-600 mb-6">
+            Your application has been submitted. A campus manager will be in touch with you shortly.
+          </p>
+          <button
+            onClick={handleCloseSuccessPopup}
+            className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!shouldRender) return null;
 
@@ -164,38 +211,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {submitted ? (
-            /* Success State */
-            <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Application Submitted!</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Thank you for applying to become a CampusCut barber. Our campus manager will review your application and reach out to schedule an interview within 2-3 business days.
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div className="text-left">
-                    <p className="font-medium text-blue-800">What's Next?</p>
-                    <ul className="text-sm text-blue-700 mt-2 space-y-1">
-                      <li>• Campus manager reviews your application</li>
-                      <li>• You'll receive an email to schedule an interview</li>
-                      <li>• Complete a brief skills demonstration</li>
-                      <li>• Get onboarded as an official CampusCut barber!</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={handleClose}
-                className="mt-8 px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          ) : step === 1 ? (
+          {step === 1 ? (
             /* Step 1: Experience & Skills */
             <div className="space-y-6">
               {/* Experience and Tools - Side by side */}
@@ -424,8 +440,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         </div>
 
         {/* Footer */}
-        {!submitted && (
-          <div className="px-6 py-4 bg-gray-50 border-t flex justify-between">
+        <div className="px-6 py-4 bg-gray-50 border-t flex justify-between">
             {step > 1 ? (
               <button
                 onClick={() => setStep(step - 1)}
@@ -470,7 +485,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </button>
             )}
           </div>
-        )}
       </div>
     </div>
   );
