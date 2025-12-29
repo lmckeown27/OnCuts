@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Scissors, Camera, Clock, Award, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService } from '../services/barber-application.service';
@@ -41,7 +41,38 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
   
+  // Handle open/close animations and body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      document.body.style.overflow = 'hidden';
+      // Trigger animation after render
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    } else {
+      setIsVisible(false);
+      document.body.style.overflow = '';
+      // Wait for animation to complete before unmounting
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 150);
+  };
+
   const [form, setForm] = useState<ApplicationForm>({
     yearsExperience: '',
     hasLicense: false,
@@ -104,11 +135,21 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const canProceedStep2 = form.whyBeBarber.length >= 50 && form.availableHours;
   const canSubmit = canProceedStep1 && canProceedStep2;
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div 
+      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+        isVisible ? 'bg-black/50' : 'bg-black/0'
+      }`}
+      onClick={handleClose}
+    >
+      <div 
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+          isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -121,7 +162,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-white/20 rounded-lg transition-colors"
           >
             <X className="w-5 h-5 text-white" />
@@ -176,7 +217,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
               </div>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="mt-8 px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
               >
                 Close
@@ -418,7 +459,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </button>
             ) : (
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-6 py-2.5 text-gray-700 font-medium hover:bg-gray-200 rounded-lg transition-colors"
               >
                 Cancel
