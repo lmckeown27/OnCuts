@@ -79,14 +79,17 @@ import bookingRequestRoutes from './routes/booking-request.routes';
 import locationRoutes from './routes/location.routes';
 import locationAdminRoutes from './routes/admin/location-admin.routes';
 
-// Blockchain-First Routes (Decentralized)
-import authBlockchainRoutes from './routes/auth-blockchain.routes';
-import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
-import reviewBlockchainRoutes from './routes/review-blockchain.routes';
-import fiatBridgeRoutes from './routes/fiat-bridge.routes';
+// =============================================================================
+// BLOCKCHAIN ROUTES - DISABLED (Platform uses Stripe for off-chain payments)
+// =============================================================================
+// To re-enable blockchain features, uncomment the following imports:
+// import authBlockchainRoutes from './routes/auth-blockchain.routes';
+// import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
+// import reviewBlockchainRoutes from './routes/review-blockchain.routes';
+// import fiatBridgeRoutes from './routes/fiat-bridge.routes';
 
-// Circle USDC Integration
-import circleWebhookRoutes from './routes/circle-webhook.routes';
+// Circle USDC Integration - DISABLED (Platform uses Stripe)
+// import circleWebhookRoutes from './routes/circle-webhook.routes';
 
 // Barber Applications
 import barberApplicationRoutes from './routes/barber-application.routes';
@@ -227,49 +230,38 @@ const authLimiter = rateLimit({
 app.use('/api/v1/auth', authLimiter);
 app.use('/api', generalLimiter);
 
-// Health check (Hybrid Architecture - checks Blockchain + PostgreSQL cache)
+// Health check (PostgreSQL + Stripe - Off-chain architecture)
 app.get('/health', async (req: Request, res: Response) => {
   try {
-    // Check PostgreSQL cache layer
+    // Check PostgreSQL database
     const pgHealth = await checkPostgresHealth();
     
-    // Check Aptos blockchain connection
-    const blockchainQuery = await import('./services/blockchain-query.service');
-    let blockchainStatus = 'connected';
+    // Get basic stats from PostgreSQL
     let stats = null;
-    
     try {
-      stats = await blockchainQuery.default.getPlatformStats();
+      const usersResult = await pool.query('SELECT COUNT(*) FROM users');
+      const bookingsResult = await pool.query('SELECT COUNT(*) FROM bookings');
+      stats = {
+        total_users: parseInt(usersResult.rows[0].count),
+        total_bookings: parseInt(bookingsResult.rows[0].count),
+      };
     } catch {
-      blockchainStatus = 'degraded';
+      // Stats query failed, but system can still be healthy
     }
     
-    const overallStatus = pgHealth.healthy && blockchainStatus === 'connected' 
-      ? 'healthy' 
-      : pgHealth.healthy 
-        ? 'degraded' 
-        : 'unhealthy';
+    const overallStatus = pgHealth.healthy ? 'healthy' : 'unhealthy';
     
     res.json({
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      architecture: 'hybrid',
-      layers: {
-        blockchain: {
-          status: blockchainStatus,
-          provider: 'aptos',
-          storage: 'ipfs',
-        },
-        cache: {
-          status: pgHealth.healthy ? 'connected' : 'disconnected',
-          provider: 'postgresql',
-          pool: pgHealth.pool,
-        },
+      architecture: 'off-chain',
+      payment_provider: 'stripe',
+      database: {
+        status: pgHealth.healthy ? 'connected' : 'disconnected',
+        provider: 'postgresql',
+        pool: pgHealth.pool,
       },
-      stats: stats ? {
-        total_users: stats.totalUsers,
-        total_bookings: stats.totalBookings,
-      } : null,
+      stats,
     });
   } catch (error: any) {
     res.status(503).json({
@@ -343,14 +335,17 @@ app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankin
 app.use('/api/v1/booking-requests', bookingRequestRoutes);  // Accept/reject, messaging, profiles
 app.use('/api/booking-requests', bookingRequestRoutes);  // Legacy route
 
-// Blockchain-First Routes (Decentralized - NEW!)
-app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
-app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
-app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
-app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (Stripe integration)
+// =============================================================================
+// BLOCKCHAIN ROUTES - DISABLED (Platform uses Stripe for off-chain payments)
+// =============================================================================
+// To re-enable blockchain features, uncomment the following:
+// app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
+// app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
+// app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
+// app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (Stripe integration)
 
-// Circle USDC Integration
-app.use('/api/circle', circleWebhookRoutes);  // Circle webhook handler for USDC transfers
+// Circle USDC Integration - DISABLED (Platform uses Stripe)
+// app.use('/api/circle', circleWebhookRoutes);  // Circle webhook handler for USDC transfers
 
 // Barber Applications (Consumer -> Barber flow)
 app.use('/api/v1/barber-applications', barberApplicationRoutes);  // Submit and track barber applications
@@ -365,11 +360,11 @@ logger.info('   - /api/admin/transactions (transaction history)');
 logger.info('   - /api/gas (gas wallet & top-up management)');
 logger.info('   - /api/pricing (dynamic pricing engine)');
 
-logger.info('🌐 Blockchain-first routes enabled:');
-logger.info('   - /api/auth-blockchain (custodial auth + IPFS profiles)');
-logger.info('   - /api/bookings-blockchain (smart contract escrow)');
-logger.info('   - /api/reviews-blockchain (immutable reviews + IPFS text)');
-logger.info('   - /api/fiat-bridge (Stripe → Blockchain deposits & withdrawals)');
+// Blockchain routes are disabled - platform uses Stripe for off-chain payments
+logger.info('💳 Payment system: Stripe (off-chain only)');
+logger.info('   - Blockchain routes disabled');
+logger.info('   - All payments processed via Stripe');
+logger.info('   - No cryptocurrency or smart contract escrow');
 
 
 // 404 handler
@@ -411,7 +406,7 @@ app.use(errorHandler);
 httpServer.listen(PORT, async () => {
   logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔗 Aptos Network: ${process.env.APTOS_NETWORK || 'devnet'}`);
+  logger.info(`💳 Payment Provider: Stripe (off-chain)`);
   logger.info(`💬 Socket.IO ready for real-time messaging`);
 
   // Initialize PostgreSQL cache connection

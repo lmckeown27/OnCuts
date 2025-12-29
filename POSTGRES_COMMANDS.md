@@ -482,22 +482,106 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 
 ---
 
-## PAYMENT TRANSACTIONS
+## PAYMENTS (Stripe Off-Chain)
 
-### View All Transactions
+> **Note:** CampusCuts uses Stripe for all payments. Blockchain payment columns are deprecated.
+
+### View All Payment Transactions (Stripe)
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions ORDER BY created_at DESC LIMIT 20;"
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    id,
+    stripe_payment_intent_id,
+    stripe_transfer_id,
+    u_c.email AS consumer_email,
+    u_b.email AS barber_email,
+    amount,
+    platform_fee,
+    barber_payout,
+    tip_amount,
+    status,
+    created_at
+FROM payment_transactions pt
+LEFT JOIN users u_c ON pt.client_id = u_c.id
+LEFT JOIN barbers b ON pt.barber_id = b.id
+LEFT JOIN users u_b ON b.\"userId\" = u_b.id
+ORDER BY created_at DESC 
+LIMIT 20;
+"
 ```
 
 ### View Transactions by Status
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'succeeded';"
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'pending';"
+# Succeeded transactions
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'succeeded' ORDER BY created_at DESC;"
+
+# Pending transactions
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'pending' ORDER BY created_at DESC;"
+
+# Failed transactions
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM payment_transactions WHERE status = 'failed' ORDER BY created_at DESC;"
+```
+
+### View Payment Summary
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    status,
+    COUNT(*) as count,
+    SUM(amount) as total_amount,
+    SUM(platform_fee) as total_fees,
+    SUM(barber_payout) as total_payouts
+FROM payment_transactions 
+GROUP BY status;
+"
+```
+
+### View Barber Earnings
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email AS barber_email,
+    u.first_name,
+    u.last_name,
+    SUM(pt.barber_payout) AS total_earned,
+    SUM(pt.tip_amount) AS total_tips,
+    COUNT(*) AS transaction_count
+FROM payment_transactions pt
+JOIN barbers b ON pt.barber_id = b.id
+JOIN users u ON b.\"userId\" = u.id
+WHERE pt.status = 'succeeded'
+GROUP BY u.email, u.first_name, u.last_name
+ORDER BY total_earned DESC;
+"
 ```
 
 ### Describe Payment Transactions Table
 ```bash
 sudo -u postgres psql -d campuscuts -c "\d payment_transactions"
+```
+
+---
+
+## ESCROWS (Stripe PaymentIntent Holds)
+
+### View All Escrows
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows ORDER BY created_at DESC LIMIT 20;"
+```
+
+### View Active (Held) Escrows
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows WHERE status = 'held' ORDER BY created_at DESC;"
+```
+
+### View Escrow by Booking
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM escrows WHERE booking_id = 'BOOKING_ID_HERE';"
+```
+
+### Describe Escrows Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d escrows"
 ```
 
 ---
@@ -574,6 +658,59 @@ sudo -u postgres psql -d campuscuts -c "SELECT * FROM referrals;"
 ### Describe Referrals Table
 ```bash
 sudo -u postgres psql -d campuscuts -c "\d referrals"
+```
+
+---
+
+## STRIPE EVENTS (Webhook Logs)
+
+### View Recent Stripe Events
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    event_id,
+    event_type,
+    payment_intent_id,
+    amount_usd,
+    status,
+    student_email,
+    barber_email,
+    timestamp
+FROM stripe_events 
+ORDER BY timestamp DESC 
+LIMIT 20;
+"
+```
+
+### View Stripe Events by Type
+```bash
+# Payment succeeded events
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.succeeded' ORDER BY timestamp DESC LIMIT 10;"
+
+# Payment failed events
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type = 'payment_intent.payment_failed' ORDER BY timestamp DESC LIMIT 10;"
+
+# Payout events
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM stripe_events WHERE event_type LIKE 'payout.%' ORDER BY timestamp DESC LIMIT 10;"
+```
+
+### View Stripe Event Summary
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    event_type,
+    COUNT(*) as count,
+    SUM(amount_usd) as total_amount
+FROM stripe_events 
+WHERE timestamp > NOW() - INTERVAL '30 days'
+GROUP BY event_type
+ORDER BY count DESC;
+"
+```
+
+### Describe Stripe Events Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d stripe_events"
 ```
 
 ---

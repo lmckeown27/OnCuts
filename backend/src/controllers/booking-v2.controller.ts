@@ -1,20 +1,23 @@
 /**
  * Booking Controller V2
  * 
- * Implements production escrow-based payment flow:
- * 1. Create booking → Create escrow hold
+ * Implements production escrow-based payment flow (Stripe off-chain):
+ * 1. Create booking → Create escrow hold via Stripe
  * 2. Complete booking → Release escrow to barber
  * 3. Cancel booking → Refund escrow to consumer
+ * 
+ * NOTE: Blockchain features disabled - platform uses Stripe for payments
  */
 
 import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import aptosService from '../services/aptos.service';
+// BLOCKCHAIN DISABLED - Platform uses Stripe for off-chain payments
+// import aptosService from '../services/aptos.service';
+// import onchainAnchorService, { RecordType } from '../services/onchain-anchor.service';
 import paymentServiceV2 from '../services/payment-v2.service';
 import escrowService, { EscrowStatus } from '../services/escrow.service';
-import onchainAnchorService, { RecordType } from '../services/onchain-anchor.service';
 import auditService from '../services/audit.service';
 import { logger } from '../utils/logger';
 
@@ -46,7 +49,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 
     // 1. Verify barber exists and is active
     const barberResult = await pool.query(
-      `SELECT u.id, u.role, u.aptos_address
+      `SELECT u.id, u.role
        FROM users u
        WHERE u.id = $1 AND u.role = 'barber' AND u.is_active = true`,
       [barberId]
@@ -56,19 +59,15 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Barber not found or inactive');
     }
 
-    const barber = barberResult.rows[0];
-
-    // 2. Get consumer info
+    // 2. Verify consumer exists (current user)
     const consumerResult = await pool.query(
-      `SELECT aptos_address FROM users WHERE id = $1`,
+      `SELECT id FROM users WHERE id = $1`,
       [consumerId]
     );
 
     if (consumerResult.rows.length === 0) {
       throw new ApiError(404, 'Consumer not found');
     }
-
-    const consumer = consumerResult.rows[0];
 
     // 3. Create booking record
     const bookingResult = await pool.query(
@@ -92,26 +91,24 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       expiresHours: 48,
     });
 
-    // 5. Optional: Create on-chain booking hash (lightweight proof)
-    try {
-      await onchainAnchorService.anchorProof({
-        record_type: RecordType.BOOKING_HASH,
-        subject_id: booking.id,
-        data: {
-          booking_id: booking.id,
-          consumer_address: consumer.aptos_address,
-          barber_address: barber.aptos_address,
-          price_cents: priceCents,
-          created_at: new Date().toISOString(),
-        },
-      });
-    } catch (anchorError) {
-      // Don't fail the booking if on-chain anchoring fails
-      logger.warn('Failed to anchor booking on-chain', {
-        booking_id: booking.id,
-        error: anchorError,
-      });
-    }
+    // BLOCKCHAIN DISABLED - On-chain anchoring removed
+    // Platform uses Stripe for off-chain payments only
+    // To re-enable blockchain proof anchoring, uncomment below:
+    // try {
+    //   await onchainAnchorService.anchorProof({
+    //     record_type: RecordType.BOOKING_HASH,
+    //     subject_id: booking.id,
+    //     data: {
+    //       booking_id: booking.id,
+    //       consumer_address: consumer.aptos_address,
+    //       barber_address: barber.aptos_address,
+    //       price_cents: priceCents,
+    //       created_at: new Date().toISOString(),
+    //     },
+    //   });
+    // } catch (anchorError) {
+    //   logger.warn('Failed to anchor booking on-chain', { booking_id: booking.id, error: anchorError });
+    // }
 
     // 6. Audit log
     await auditService.log({

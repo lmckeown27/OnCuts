@@ -1,13 +1,35 @@
+/**
+ * DEPRECATED: Legacy Booking Controller
+ * 
+ * This controller contains blockchain (Aptos) integration code.
+ * Platform now uses Stripe for off-chain payments only.
+ * 
+ * Use booking-v2.controller.ts for production booking flows.
+ * This controller is kept for reference and backward compatibility.
+ * 
+ * To migrate: Update routes to use /api/v2/bookings endpoints
+ */
+
 import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import aptosService from '../services/aptos.service';
+// BLOCKCHAIN DISABLED - Platform uses Stripe for off-chain payments
+// import aptosService from '../services/aptos.service';
 import stripeService from '../services/stripe.service';
 import paymentService from '../services/payment.service';
 import ledgerService from '../services/ledger.service';
 import { logger } from '../utils/logger';
 import { dollarsToCents } from '../types/wallet.types';
+
+// Stub for aptosService to prevent errors when blockchain is disabled
+const aptosService = {
+  createBooking: async () => { throw new Error('Blockchain disabled - use Stripe payments'); },
+  getBooking: async () => { throw new Error('Blockchain disabled'); },
+  confirmBooking: async () => { throw new Error('Blockchain disabled'); },
+  completeBooking: async () => { throw new Error('Blockchain disabled'); },
+  cancelBooking: async () => { throw new Error('Blockchain disabled'); },
+};
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
