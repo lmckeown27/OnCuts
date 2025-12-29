@@ -147,44 +147,44 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-300"
+        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[75vh] overflow-y-auto border border-gray-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-900">Barber Profile</h2>
-            <span className="text-sm text-gray-500">(Campus Manager View)</span>
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-900">Barber Profile</h2>
+            <span className="text-xs text-gray-500">(Campus Manager View)</span>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           {/* Basic Info */}
-          <Card className="p-6">
-            <div className="flex items-start gap-4 mb-4">
+          <Card className="p-4">
+            <div className="flex items-start gap-3 mb-3">
               {/* Profile Photo */}
               {(barber.profile_photo_url || barber.profile_picture_url) && (
                 <img
                   src={barber.profile_photo_url || barber.profile_picture_url}
                   alt={getBarberName()}
-                  className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                  className="w-14 h-14 rounded-full object-cover flex-shrink-0"
                 />
               )}
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-bold text-gray-900">{getBarberName()}</h3>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-gray-900">{getBarberName()}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                     barber.is_active
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-700'
@@ -193,12 +193,12 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                   </span>
                 </div>
                 {barber.bio && (
-                  <p className="text-gray-600 mb-4">{barber.bio}</p>
+                  <p className="text-sm text-gray-600">{barber.bio}</p>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-gray-700">
                 <Mail className="w-4 h-4 text-gray-500" />
                 {getEmail() !== 'Not available' ? (
@@ -233,27 +233,27 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
           {/* Pricing Info */}
           {priceRange.max > 0 && (
-            <Card className="p-6">
-              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary-600" />
+            <Card className="p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
+                <DollarSign className="w-4 h-4 text-primary-600" />
                 Pricing
               </h4>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div>
-                  <p className="text-sm text-gray-600">Price Range</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-xs text-gray-600">Price Range</p>
+                  <p className="text-base font-bold text-gray-900">
                     ${priceRange.min} - ${priceRange.max}
                   </p>
                 </div>
-                <div className="text-sm text-gray-500">
-                  Based on {barber.pricing?.length || 0} services offered
+                <div className="text-xs text-gray-500">
+                  {barber.pricing?.length || 0} services
                 </div>
               </div>
               {/* Service List */}
               {barber.pricing && barber.pricing.length > 0 && (
-                <div className="mt-4 space-y-2">
+                <div className="mt-2 space-y-1">
                   {barber.pricing.map((service, index) => (
-                    <div key={service.id || index} className="flex justify-between text-sm">
+                    <div key={service.id || index} className="flex justify-between text-xs">
                       <span className="text-gray-600">{service.name}</span>
                       <span className="font-medium text-gray-900">${service.price}</span>
                     </div>
@@ -265,16 +265,16 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
           {/* Specialties */}
           {barber.specialties && barber.specialties.length > 0 && (
-            <Card className="p-6">
-              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Award className="w-5 h-5 text-primary-600" />
+            <Card className="p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
+                <Award className="w-4 h-4 text-primary-600" />
                 Specialties
               </h4>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {barber.specialties.map((specialty) => (
                   <span
                     key={specialty}
-                    className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
+                    className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full text-xs font-medium"
                   >
                     {specialty}
                   </span>
@@ -285,12 +285,12 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
           {/* Weekly Schedule */}
           {barber.weekly_schedule && (
-            <Card className="p-6">
-              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary-600" />
+            <Card className="p-4">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
+                <Clock className="w-4 h-4 text-primary-600" />
                 Weekly Schedule
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
                   const schedule = (barber.weekly_schedule as any)?.[day];
                   // Convert 24-hour time to 12-hour format
@@ -301,12 +301,12 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                     return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
                   };
                   return (
-                    <div key={day} className="text-sm">
-                      <span className="font-medium text-gray-900 capitalize">{day}</span>
+                    <div key={day} className="text-xs">
+                      <span className="font-medium text-gray-900 capitalize">{day.slice(0, 3)}</span>
                       <p className="text-gray-600">
                         {schedule?.enabled 
                           ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
-                          : 'Unavailable'
+                          : 'Off'
                         }
                       </p>
                     </div>
@@ -317,21 +317,21 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
           )}
 
           {/* Campus Manager Actions */}
-          <Card className="p-6 bg-yellow-50 border-yellow-200">
-            <div className="flex items-start gap-3">
-              <Flag className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+          <Card className="p-3 bg-yellow-50 border-yellow-200">
+            <div className="flex items-start gap-2">
+              <Flag className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-yellow-900 mb-2">Campus Manager Actions</h4>
-                <p className="text-sm text-yellow-800 mb-4">
-                  As a Campus Manager, you can report issues or concerns about this barber to platform administrators.
-                  You cannot directly modify their account or take administrative actions.
+                <h4 className="font-semibold text-yellow-900 mb-1 text-sm">Campus Manager Actions</h4>
+                <p className="text-xs text-yellow-800 mb-2">
+                  Report issues or concerns about this barber to platform administrators.
                 </p>
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={() => setShowReportModal(true)}
-                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-100 text-xs"
                 >
-                  <Flag className="w-4 h-4 mr-2" />
+                  <Flag className="w-3 h-3 mr-1" />
                   Report to Admin
                 </Button>
               </div>
