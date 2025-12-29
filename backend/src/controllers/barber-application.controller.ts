@@ -296,16 +296,24 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
         [updatedApplication.user_id]
       );
 
-      // Create barber profile
+      // Get the full application data including specialties
+      const fullApp = await pool.query(
+        'SELECT specialties FROM barber_applications WHERE id = $1',
+        [id]
+      );
+      const specialties = fullApp.rows[0]?.specialties || [];
+
+      // Create barber profile with specialties
       await pool.query(
-        `INSERT INTO barbers (user_id, years_experience, created_at, updated_at)
-         VALUES ($1, $2, NOW(), NOW())
-         ON CONFLICT (user_id) DO NOTHING`,
+        `INSERT INTO barbers ("userId", specialties, "isActive", "createdAt", "updatedAt")
+         VALUES ($1, $2, true, NOW(), NOW())
+         ON CONFLICT ("userId") DO UPDATE SET 
+           specialties = EXCLUDED.specialties,
+           "isActive" = true,
+           "updatedAt" = NOW()`,
         [
           updatedApplication.user_id,
-          updatedApplication.years_experience === 'less-than-1' ? 0 :
-          updatedApplication.years_experience === '1-2' ? 1 :
-          updatedApplication.years_experience === '3-5' ? 3 : 5
+          JSON.stringify(specialties)
         ]
       );
 
