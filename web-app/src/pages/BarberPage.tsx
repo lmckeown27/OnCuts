@@ -559,17 +559,22 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
           className="touch-pan-y"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
-          {/* Walk-in Button - always on top, matches view toggle button widths */}
-          <button
-            onClick={onWalkInClick}
-            className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold min-w-[5rem] sm:min-w-[6rem] text-center"
-            title="Quick payment for walk-in customers"
-          >
-            Walk-in
-          </button>
-          
-          {/* View Toggle Buttons - centered, all same min-width */}
-          <div className="flex gap-2 sm:gap-3 justify-center">
+          {/* View Toggle Buttons with Walk-in aligned above Weekly */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {/* Empty cell above Daily */}
+            <div></div>
+            {/* Walk-in Button - aligned above Weekly */}
+            <button
+              onClick={onWalkInClick}
+              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold min-w-[5rem] sm:min-w-[6rem] text-center"
+              title="Quick payment for walk-in customers"
+            >
+              Walk-in
+            </button>
+            {/* Empty cell above Monthly */}
+            <div></div>
+            
+            {/* Daily Button */}
             <button
               onClick={() => setScheduleView('daily')}
               className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
@@ -580,6 +585,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             >
               Daily
             </button>
+            {/* Weekly Button */}
             <button
               onClick={() => setScheduleView('weekly')}
               className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
@@ -590,6 +596,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             >
               Weekly
             </button>
+            {/* Monthly Button */}
             <button
               onClick={() => setScheduleView('monthly')}
               className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
