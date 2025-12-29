@@ -524,7 +524,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const [barbers, setBarbers] = useState<CampusBarber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
 
   const fetchBarbers = async () => {
@@ -562,14 +561,10 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
     fetchBarbers();
   }, [campusId]);
 
-  // Filter barbers based on search and status
+  // Filter barbers based on search
   const filteredBarbers = barbers.filter((barber) => {
-    const matchesSearch = barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         barber.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && barber.isActive) ||
-                         (filterStatus === 'inactive' && !barber.isActive);
-    return matchesSearch && matchesStatus;
+    return barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           barber.email.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   if (loading) {
@@ -595,49 +590,15 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Search and Filter */}
-      <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-4 pr-4 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-              filterStatus === 'all'
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All ({barbers.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('active')}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-              filterStatus === 'active'
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Active ({barbers.filter(b => b.isActive).length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('inactive')}
-            className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
-              filterStatus === 'inactive'
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Inactive ({barbers.filter(b => !b.isActive).length})
-          </button>
-        </div>
+      {/* Search */}
+      <div>
+        <input
+          type="text"
+          placeholder="Search by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-4 pr-4 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+        />
       </div>
 
       {/* Barbers List */}
