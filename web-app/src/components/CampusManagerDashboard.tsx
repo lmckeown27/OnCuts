@@ -696,35 +696,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                       </div>
                     )}
                   </div>
-
-                  {/* Stats - Grid on mobile */}
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-6 text-xs sm:text-sm">
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-900">Rating:</span>
-                      <span className="text-yellow-600 font-semibold">{barber.avgRating.toFixed(1)}</span>
-                      <span className="text-gray-500">★</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-900">Bookings:</span>
-                      <span className="text-gray-700">{barber.totalBookings}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-900">Completed:</span>
-                      <span className="text-green-600 font-semibold">{barber.completedBookings}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium text-gray-900">Rate:</span>
-                      <span className={`font-semibold ${
-                        ((barber.completedBookings / barber.totalBookings) * 100) >= 76 
-                          ? 'text-green-600' 
-                          : ((barber.completedBookings / barber.totalBookings) * 100) >= 51 
-                            ? 'text-yellow-600' 
-                            : 'text-red-600'
-                      }`}>
-                        {((barber.completedBookings / barber.totalBookings) * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Actions - Full width on mobile */}
