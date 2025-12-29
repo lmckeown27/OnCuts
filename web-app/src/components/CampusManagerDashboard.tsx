@@ -219,6 +219,20 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusName 
 }) => {
   const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'content' | 'incidents'>('applications');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayedTab, setDisplayedTab] = useState(activeTab);
+
+  const handleTabChange = (newTab: typeof activeTab) => {
+    if (newTab === activeTab) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setDisplayedTab(newTab);
+      setActiveTab(newTab);
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 20);
+    }, 150);
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -226,8 +240,8 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
         <nav className="flex gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
           <button
-            onClick={() => setActiveTab('applications')}
-            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+            onClick={() => handleTabChange('applications')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'applications'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -240,8 +254,8 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           </button>
           
           <button
-            onClick={() => setActiveTab('barbers')}
-            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+            onClick={() => handleTabChange('barbers')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'barbers'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -254,8 +268,8 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           </button>
           
           <button
-            onClick={() => setActiveTab('content')}
-            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+            onClick={() => handleTabChange('content')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'content'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -268,8 +282,8 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           </button>
           
           <button
-            onClick={() => setActiveTab('incidents')}
-            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+            onClick={() => handleTabChange('incidents')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'incidents'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -283,12 +297,18 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
         </nav>
       </div>
 
-      {/* Tab Content */}
-      <div className="animate-fade-in">
-        {activeTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
-        {activeTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
-        {activeTab === 'content' && <ContentManagementPanel campusId={campusId} />}
-        {activeTab === 'incidents' && <IncidentsPanel campusId={campusId} />}
+      {/* Tab Content with smooth transition */}
+      <div 
+        className={`transition-all duration-150 ease-out ${
+          isTransitioning 
+            ? 'opacity-0 translate-y-2' 
+            : 'opacity-100 translate-y-0'
+        }`}
+      >
+        {displayedTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
+        {displayedTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
+        {displayedTab === 'content' && <ContentManagementPanel campusId={campusId} />}
+        {displayedTab === 'incidents' && <IncidentsPanel campusId={campusId} />}
       </div>
     </div>
   );
