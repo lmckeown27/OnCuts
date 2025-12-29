@@ -47,10 +47,6 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(400, 'Missing required fields: yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
-    if (whyBeBarber.length < 50) {
-      throw new ApiError(400, 'Please provide at least 50 characters explaining why you want to be a barber');
-    }
-
     // Get user's campus ID
     const userResult = await pool.query(
       'SELECT "campusId", role FROM users WHERE id = $1',
