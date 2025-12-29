@@ -176,8 +176,8 @@ class MessageService {
    * Get messages in a conversation
    */
   async getConversationMessages(
-    conversationId: number,
-    userId: number,
+    conversationId: string | number,
+    userId: string | number,
     page: number = 1,
     limit: number = 50
   ): Promise<any> {
@@ -390,7 +390,7 @@ class MessageService {
   /**
    * Get conversation by ID
    */
-  async getConversationById(conversationId: number, userId: number): Promise<any> {
+  async getConversationById(conversationId: string | number, userId: string | number): Promise<any> {
     try {
       const result = await pool.query(
         `SELECT 
@@ -422,8 +422,8 @@ class MessageService {
    * Send a message in a conversation
    */
   async sendMessage(
-    conversationId: number,
-    senderId: number,
+    conversationId: string | number,
+    senderId: string | number,
     content: string,
     messageType: string = 'text',
     mediaUrl: string | null = null
@@ -512,7 +512,7 @@ class MessageService {
   /**
    * Mark conversation as read
    */
-  async markConversationAsRead(conversationId: number, userId: number): Promise<any> {
+  async markConversationAsRead(conversationId: string | number, userId: string | number): Promise<any> {
     try {
       const convCheck = await pool.query(
         `SELECT id FROM conversations WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
@@ -554,7 +554,7 @@ class MessageService {
   /**
    * Delete a conversation
    */
-  async deleteConversation(conversationId: number, userId: number): Promise<any> {
+  async deleteConversation(conversationId: string | number, userId: string | number): Promise<any> {
     try {
       const convCheck = await pool.query(
         `SELECT user1_id, user2_id FROM conversations 
@@ -591,7 +591,7 @@ class MessageService {
   /**
    * Get unread message count for a user
    */
-  async getUnreadMessageCount(userId: number): Promise<number> {
+  async getUnreadMessageCount(userId: string | number): Promise<number> {
     try {
       const result = await pool.query(
         `SELECT COUNT(*) as unread_count
@@ -613,7 +613,7 @@ class MessageService {
   /**
    * Get message statistics for a user
    */
-  async getMessageStats(userId: number): Promise<any> {
+  async getMessageStats(userId: string | number): Promise<any> {
     try {
       const stats = await pool.query(
         `SELECT 
