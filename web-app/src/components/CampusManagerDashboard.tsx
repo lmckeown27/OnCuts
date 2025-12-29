@@ -378,9 +378,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Barber Applications</h3>
-        </div>
         <Card className="text-center py-8 sm:py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
           <p className="text-gray-500 text-sm sm:text-base">Loading applications...</p>
@@ -391,20 +388,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Barber Applications</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-xs sm:text-sm text-gray-500">{applications.length} total</span>
-          <button 
-            onClick={fetchApplications}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-      </div>
-
       {applications.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
           <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
@@ -592,10 +575,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   if (loading) {
     return (
       <div className="space-y-4">
-        <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
-          <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
-        </div>
         <Card className="text-center py-8 sm:py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
           <p className="text-gray-500 text-sm sm:text-base">Loading barbers...</p>
@@ -606,20 +585,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Barber Management</h3>
-          <p className="text-xs sm:text-sm text-gray-500">View and manage barbers working on your campus</p>
-        </div>
-        <button 
-          onClick={fetchBarbers}
-          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
-
       {/* Search and Filter */}
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1 relative">
@@ -797,13 +762,6 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Campus Content & Social Media</h3>
-        <p className="text-xs sm:text-sm text-gray-500">
-          Manage your campus's Instagram presence and share barber content with the community.
-        </p>
-      </div>
-
       {/* Instagram Card */}
       <Card className="p-5 sm:p-8">
         <div className="text-center">
@@ -916,14 +874,6 @@ const IncidentsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div>
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Incident Reports</h3>
-        <p className="text-xs sm:text-sm text-gray-500">
-          Automatically detected from customer review patterns
-        </p>
-      </div>
-
       {/* Incidents List */}
       {incidents.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
