@@ -28,20 +28,42 @@ router.get('/conversations', authenticate, async (req, res, next) => {
 
 /**
  * POST /api/messages/conversations
- * Start a new conversation
+ * Start a new BOOKING-CENTRIC conversation
+ * CampusCuts conversations are always about a scheduled service
  */
 router.post('/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
     // Accept both camelCase and snake_case from frontend
     const otherUserId = req.body.otherUserId || req.body.other_user_id;
-    const bookingId = req.body.bookingId || req.body.booking_id;
 
     if (!otherUserId) {
       return res.status(400).json({ success: false, error: 'other_user_id is required' });
     }
 
-    const result = await messageService.startConversation(userId, otherUserId, bookingId);
+    // Build booking context from request body
+    const bookingContext = {
+      bookingId: req.body.bookingId || req.body.booking_id,
+      serviceName: req.body.serviceName || req.body.service_name,
+      servicePrice: req.body.servicePrice || req.body.service_price,
+      scheduledTime: req.body.scheduledTime || req.body.scheduled_time,
+      location: req.body.location,
+      locationDetails: req.body.locationDetails || req.body.location_details,
+      notes: req.body.notes,
+      barberName: req.body.barberName || req.body.barber_name,
+      consumerName: req.body.consumerName || req.body.consumer_name,
+      barberProfilePicture: req.body.barberProfilePicture || req.body.barber_profile_picture,
+      consumerProfilePicture: req.body.consumerProfilePicture || req.body.consumer_profile_picture,
+    };
+
+    console.log('🚀 Starting BOOKING-CENTRIC conversation:', { 
+      userId, 
+      otherUserId, 
+      serviceName: bookingContext.serviceName,
+      scheduledTime: bookingContext.scheduledTime 
+    });
+
+    const result = await messageService.startConversation(userId, otherUserId, bookingContext);
     res.status(201).json(result);
   } catch (error) {
     next(error);

@@ -123,11 +123,22 @@ export default function MessagesPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle navigation state for starting a new conversation
+  // Handle navigation state for starting a BOOKING-CENTRIC conversation
   const startConversationData = location.state as { 
     startConversation?: boolean; 
     otherUserId?: string; 
     bookingId?: string;
+    // Booking context for CampusCuts
+    serviceName?: string;
+    servicePrice?: number;
+    scheduledAt?: string;
+    location?: string;
+    locationDetails?: string;
+    notes?: string;
+    barberName?: string;
+    consumerName?: string;
+    barberProfilePicture?: string;
+    consumerProfilePicture?: string;
   } | null;
 
   // Scroll to bottom of messages
@@ -176,23 +187,34 @@ export default function MessagesPage() {
     loadData();
   }, [fetchConversations]);
 
-  // Handle starting a new conversation from navigation state
+  // Handle starting a new BOOKING-CENTRIC conversation from navigation state
   useEffect(() => {
     const startNewConversation = async () => {
       if (startConversationData?.startConversation && startConversationData.otherUserId && !isCreatingConversation) {
         setIsCreatingConversation(true);
         try {
-          // Create or get existing conversation
+          // Create BOOKING-CENTRIC conversation with full service context
           const response = await messageService.createConversation({
             other_user_id: startConversationData.otherUserId,
-            booking_id: startConversationData.bookingId
+            booking_id: startConversationData.bookingId,
+            // Pass booking context for CampusCuts service-centric messaging
+            service_name: startConversationData.serviceName,
+            service_price: startConversationData.servicePrice,
+            scheduled_time: startConversationData.scheduledAt,
+            location: startConversationData.location,
+            location_details: startConversationData.locationDetails,
+            notes: startConversationData.notes,
+            barber_name: startConversationData.barberName,
+            consumer_name: startConversationData.consumerName,
+            barber_profile_picture: startConversationData.barberProfilePicture,
+            consumer_profile_picture: startConversationData.consumerProfilePicture,
           });
           
           // Refresh conversations list
           await fetchConversations();
           
           // Navigate to the conversation
-          const convId = (response as any).id || (response as any).conversation?.id;
+          const convId = (response as any).id || (response as any).conversation?.id || (response as any).data?.conversation?.id;
           if (convId) {
             const messagesPath = isBarberView ? 'barber/messages' : 'consumer/messages';
             navigate(`${platformPrefix}/${messagesPath}/${convId}`, { replace: true, state: null });
@@ -207,7 +229,7 @@ export default function MessagesPage() {
     };
     
     startNewConversation();
-  }, [startConversationData, isCreatingConversation, fetchConversations, navigate, platformPrefix]);
+  }, [startConversationData, isCreatingConversation, fetchConversations, navigate, platformPrefix, isBarberView]);
 
   // Handle conversation selection from URL
   useEffect(() => {

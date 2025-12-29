@@ -306,13 +306,21 @@ export default function BookingPaymentPage() {
           <div className="space-y-3">
             <Button 
               onClick={() => {
-                // Navigate to messages and start/open conversation with barber
-                // Use barberUserId (the user's ID) for messaging, not barberId (the barber profile ID)
+                // Navigate to messages and start BOOKING-CENTRIC conversation with barber
+                // Pass full service context for CampusCuts messaging
                 navigate('/web/messages', { 
                   state: { 
                     startConversation: true,
                     otherUserId: bookingDetails.barberUserId || bookingDetails.barberId,
-                    bookingId: paymentIntentId
+                    bookingId: paymentIntentId,
+                    // Full booking context for service-centric messaging
+                    serviceName: bookingDetails.serviceName,
+                    servicePrice: bookingDetails.servicePrice,
+                    scheduledAt: bookingDetails.scheduledAt,
+                    location: bookingDetails.location,
+                    locationDetails: bookingDetails.locationDetails,
+                    notes: bookingDetails.notes,
+                    barberName: bookingDetails.barberName,
                   }
                 });
               }} 

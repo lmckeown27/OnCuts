@@ -17,12 +17,13 @@ import pushNotificationService from './pushNotification.service';
 class MessageService {
   /**
    * Get user's conversations with pagination
+   * Booking-centric: Shows service context for each conversation
    */
-  async getUserConversations(userId: number, page: number = 1, limit: number = 20): Promise<any> {
+  async getUserConversations(userId: string | number, page: number = 1, limit: number = 20): Promise<any> {
     try {
       const offset = (page - 1) * limit;
 
-      // Get conversations with booking context
+      // Get conversations with BOOKING-CENTRIC context (cached + live data)
       const result = await pool.query(
         `SELECT 
           c.id as conversation_id,
@@ -30,24 +31,28 @@ class MessageService {
           c.created_at as conversation_created,
           c.last_message_at,
           
-          -- BOOKING CONTEXT
-          b.service_name,
-          b.scheduled_time,
-          b.location,
-          b.status as booking_status,
-          b.student_id,
-          b.barber_id,
+          -- CACHED BOOKING CONTEXT (primary - for performance)
+          COALESCE(c.service_name, b.service_name) as service_name,
+          COALESCE(c.service_price, b.service_price) as service_price,
+          COALESCE(c.scheduled_time, b.scheduled_time) as scheduled_time,
+          COALESCE(c.location, b.location) as location,
+          c.location_details,
+          COALESCE(c.booking_status, b.status, 'pending') as booking_status,
+          c.notes as booking_notes,
+          c.barber_name as cached_barber_name,
+          c.consumer_name as cached_consumer_name,
+          c.barber_profile_picture as cached_barber_picture,
+          c.consumer_profile_picture as cached_consumer_picture,
           
           -- OTHER USER INFO
           CASE 
             WHEN c.user1_id = $1 THEN c.user2_id
             ELSE c.user1_id
           END as other_user_id,
-          u.username as other_user_username,
           u.first_name as other_user_first_name,
           u.last_name as other_user_last_name,
-          u.profile_picture as other_user_profile_picture,
-          u.user_type as other_user_type,
+          u."avatarUrl" as other_user_profile_picture,
+          u.role as other_user_type,
           
           -- BARBER INFO (if other user is barber)
           br.display_name as barber_display_name,
@@ -90,7 +95,7 @@ class MessageService {
             ELSE c.user1_id
           END = u.id
         )
-        LEFT JOIN bookings b ON c.booking_id = b.id
+        LEFT JOIN booking_requests b ON c.booking_id = b.id
         LEFT JOIN barbers br ON u.id = br.user_id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
@@ -106,25 +111,31 @@ class MessageService {
 
       const total = parseInt(countResult.rows[0].total);
 
+      // Format conversations with BOOKING-CENTRIC emphasis
       const conversations = result.rows.map((conv) => ({
         id: conv.conversation_id,
         bookingId: conv.booking_id,
-        booking: conv.booking_id
-          ? {
-              serviceName: conv.service_name,
-              scheduledTime: conv.scheduled_time,
-              location: conv.location,
-              status: conv.booking_status,
-            }
-          : null,
+        // BOOKING CONTEXT - Primary focus for CampusCuts
+        booking: {
+          serviceName: conv.service_name || 'Haircut Service',
+          servicePrice: conv.service_price ? parseFloat(conv.service_price) : null,
+          scheduledTime: conv.scheduled_time,
+          location: conv.location,
+          locationDetails: conv.location_details,
+          status: conv.booking_status || 'pending',
+          notes: conv.booking_notes,
+          barberName: conv.cached_barber_name || (conv.barber_display_name || `${conv.other_user_first_name} ${conv.other_user_last_name}`),
+          consumerName: conv.cached_consumer_name,
+        },
+        // Other user info (secondary)
         otherUser: {
           id: conv.other_user_id,
-          username: conv.other_user_username,
           firstName: conv.other_user_first_name,
           lastName: conv.other_user_last_name,
-          profilePicture: conv.other_user_profile_picture,
-          userType: conv.other_user_type,
-          barberInfo: conv.other_user_type === 'barber'
+          displayName: conv.barber_display_name || `${conv.other_user_first_name} ${conv.other_user_last_name}`,
+          profilePicture: conv.other_user_profile_picture || conv.cached_barber_picture,
+          userType: conv.other_user_type?.toLowerCase() || 'consumer',
+          barberInfo: (conv.other_user_type === 'BARBER' || conv.other_user_type === 'barber')
             ? {
                 displayName: conv.barber_display_name,
                 specialties: conv.barber_specialties,
@@ -139,7 +150,7 @@ class MessageService {
               time: conv.last_message_time,
             }
           : null,
-        unreadCount: conv.unread_count || 0,
+        unreadCount: parseInt(conv.unread_count) || 0,
         createdAt: conv.conversation_created,
       }));
 
@@ -269,34 +280,95 @@ class MessageService {
 
   /**
    * Start a booking-centric conversation
+   * CampusCuts conversations are always about a scheduled service
    */
-  async startConversation(userId: number, otherUserId: number, bookingId?: number): Promise<any> {
+  async startConversation(
+    userId: string | number, 
+    otherUserId: string | number, 
+    bookingContext?: {
+      bookingId?: string | number;
+      serviceName?: string;
+      servicePrice?: number;
+      scheduledTime?: string;
+      location?: string;
+      locationDetails?: string;
+      notes?: string;
+      barberName?: string;
+      consumerName?: string;
+      barberProfilePicture?: string;
+      consumerProfilePicture?: string;
+    }
+  ): Promise<any> {
     try {
-      if (otherUserId === userId) {
+      if (String(otherUserId) === String(userId)) {
         throw new Error('Cannot start conversation with yourself');
       }
 
-      // Check if conversation already exists
+      const bookingId = bookingContext?.bookingId;
+
+      // Check if conversation already exists between these users (optionally for same booking)
       const existingConv = await pool.query(
-        `SELECT id FROM conversations 
+        `SELECT id, is_active FROM conversations 
          WHERE ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
-         ${bookingId ? 'AND booking_id = $3' : ''}`,
+         ${bookingId ? 'AND booking_id = $3' : 'AND booking_id IS NULL'}`,
         bookingId ? [userId, otherUserId, bookingId] : [userId, otherUserId]
       );
 
       if (existingConv.rows.length > 0) {
-        return await this.getConversationById(existingConv.rows[0].id, userId);
+        const conv = existingConv.rows[0];
+        
+        // If active, return existing conversation
+        if (conv.is_active) {
+          console.log('✅ Found active conversation:', conv.id);
+          return await this.getConversationById(conv.id, userId);
+        }
+        
+        // If inactive, reactivate and update with new booking context
+        console.log('🔄 Reactivating inactive conversation:', conv.id);
+        await pool.query(
+          `UPDATE conversations SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+          [conv.id]
+        );
+        return await this.getConversationById(conv.id, userId);
       }
 
-      // Create new conversation
+      // Get user info for caching
+      const usersResult = await pool.query(
+        `SELECT id, first_name, last_name, "avatarUrl" as profile_picture FROM users WHERE id IN ($1, $2)`,
+        [userId, otherUserId]
+      );
+      
+      const currentUser = usersResult.rows.find(u => String(u.id) === String(userId));
+      const otherUser = usersResult.rows.find(u => String(u.id) === String(otherUserId));
+
+      // Create new BOOKING-CENTRIC conversation with cached service data
       const result = await pool.query(
-        `INSERT INTO conversations (user1_id, user2_id, booking_id)
-         VALUES ($1, $2, $3)
+        `INSERT INTO conversations (
+          user1_id, user2_id, booking_id,
+          service_name, service_price, scheduled_time, location, location_details,
+          barber_name, consumer_name, barber_profile_picture, consumer_profile_picture, notes
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING id, created_at`,
-        [userId, otherUserId, bookingId || null]
+        [
+          userId, 
+          otherUserId, 
+          bookingId || null,
+          bookingContext?.serviceName || null,
+          bookingContext?.servicePrice || null,
+          bookingContext?.scheduledTime || null,
+          bookingContext?.location || null,
+          bookingContext?.locationDetails || null,
+          bookingContext?.barberName || otherUser?.first_name + ' ' + otherUser?.last_name || null,
+          bookingContext?.consumerName || currentUser?.first_name + ' ' + currentUser?.last_name || null,
+          bookingContext?.barberProfilePicture || otherUser?.profile_picture || null,
+          bookingContext?.consumerProfilePicture || currentUser?.profile_picture || null,
+          bookingContext?.notes || null
+        ]
       );
 
       const conversation = result.rows[0];
+      console.log('✅ Created new booking-centric conversation:', conversation.id);
 
       return {
         success: true,
@@ -305,6 +377,7 @@ class MessageService {
           conversation: {
             id: conversation.id,
             createdAt: conversation.created_at,
+            bookingContext: bookingContext || null,
           },
         },
       };
