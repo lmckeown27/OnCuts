@@ -560,7 +560,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
         >
         <div className="flex flex-col items-center gap-3 mb-4">
           {/* View Toggle Buttons with Walk-in aligned above Weekly */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 justify-items-center">
             {/* Empty cell above Daily */}
             <div></div>
             {/* Walk-in Button - aligned above Weekly */}
