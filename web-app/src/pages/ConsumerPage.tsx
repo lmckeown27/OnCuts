@@ -419,23 +419,18 @@ export default function ConsumerPage() {
               <Scissors className="w-8 h-8 text-red-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Rejected</h3>
-            <p className="text-gray-600 mb-6">
-              You have been rejected. If you believe the decision made by your campus manager was unfair, please email campuscuthelp@gmail.com
+            <p className="text-gray-600 mb-4">
+              You have been rejected. If you believe the decision made by your campus manager was unfair, please contact support at:
             </p>
-            <div className="flex flex-col gap-3">
-              <a
-                href="mailto:campuscuthelp@gmail.com?subject=Appeal%20Barber%20Application%20Rejection"
-                className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-block"
-              >
-                Email Support
-              </a>
-              <button
-                onClick={closeRejectedPopup}
-                className="px-6 py-2.5 text-gray-600 font-medium hover:text-gray-800 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+            <p className="text-primary-600 font-semibold mb-6 select-all">
+              campuscuthelp@gmail.com
+            </p>
+            <button
+              onClick={closeRejectedPopup}
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Got it
+            </button>
           </div>
         </div>
       )}

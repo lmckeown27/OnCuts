@@ -14,7 +14,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Mail,
   Flag,
   RefreshCw
 } from 'lucide-react';
@@ -424,13 +423,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                 <div className="grid grid-cols-2 sm:flex gap-2 sm:ml-4">
                   {app.status === 'pending' && (
                     <>
-                      <a
-                        href={`mailto:${app.email || ''}?subject=${encodeURIComponent('CampusCut Barber Application - Interview Invitation')}&body=${encodeURIComponent(`Hi ${app.first_name || 'there'},\n\nThank you for applying to become a CampusCut barber! We'd like to schedule an interview with you to discuss your application.\n\nPlease let us know your availability for a brief interview.\n\nBest regards,\nCampusCut Campus Manager`)}`}
-                        className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500 px-3 py-1.5 text-xs sm:text-sm"
-                      >
-                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-                        Email
-                      </a>
                       <Button
                         variant="primary"
                         size="sm"
@@ -455,13 +447,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                   )}
                   {(app.status === 'under_review' || app.status === 'interview_scheduled') && (
                     <>
-                      <a
-                        href={`mailto:${app.email || ''}?subject=${encodeURIComponent('CampusCut Barber Application - Follow Up')}&body=${encodeURIComponent(`Hi ${app.first_name || 'there'},\n\nI'm following up on your CampusCut barber application.\n\nBest regards,\nCampusCut Campus Manager`)}`}
-                        className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500 px-3 py-1.5 text-xs sm:text-sm"
-                      >
-                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-                        Email
-                      </a>
                       <Button
                         variant="primary"
                         size="sm"
