@@ -184,7 +184,7 @@ export default function LandingPage() {
             {/* CTA Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                onClick={() => navigate('/web')}
+                onClick={() => navigate('/web/consumer')}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
                 Book Here
@@ -220,7 +220,7 @@ export default function LandingPage() {
               <div className="pt-3 border-t border-gray-200">
                 <button 
                   onClick={() => {
-                    navigate('/web');
+                    navigate('/web/consumer');
                     closeMobileMenu();
                   }} 
                   className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
@@ -243,7 +243,7 @@ export default function LandingPage() {
           {/* CTA Button */}
           <div className="flex justify-center mb-8">
             <button
-              onClick={() => navigate('/web')}
+              onClick={() => navigate('/web/consumer')}
               className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Book Here
@@ -540,7 +540,7 @@ export default function LandingPage() {
           </h2>
           <div className="flex justify-center">
             <button 
-              onClick={() => navigate('/web')}
+              onClick={() => navigate('/web/consumer')}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Book Here
