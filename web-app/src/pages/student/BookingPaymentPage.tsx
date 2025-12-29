@@ -33,6 +33,7 @@ import Card from '../../components/Card';
 
 interface BookingDetails {
   barberId: string;
+  barberUserId?: string; // User ID for messaging
   barberName: string;
   serviceName: string;
   servicePrice: number;
@@ -306,10 +307,11 @@ export default function BookingPaymentPage() {
             <Button 
               onClick={() => {
                 // Navigate to messages and start/open conversation with barber
+                // Use barberUserId (the user's ID) for messaging, not barberId (the barber profile ID)
                 navigate('/web/messages', { 
                   state: { 
                     startConversation: true,
-                    otherUserId: bookingDetails.barberId,
+                    otherUserId: bookingDetails.barberUserId || bookingDetails.barberId,
                     bookingId: paymentIntentId
                   }
                 });

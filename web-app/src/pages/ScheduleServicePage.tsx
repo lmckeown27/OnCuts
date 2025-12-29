@@ -104,6 +104,7 @@ export default function ScheduleServicePage() {
       navigate('/web/student/booking/payment', {
         state: {
           barberId: barberId,
+          barberUserId: barber?.user_id, // User ID for messaging
           barberName: barber?.user?.first_name 
             ? `${barber.user.first_name} ${barber.user.last_name}` 
             : 'Barber',
