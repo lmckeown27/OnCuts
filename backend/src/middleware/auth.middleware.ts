@@ -163,6 +163,11 @@ export const authenticate = (
      * 5. Checks exp claim (must be in future)
      * 6. Returns decoded payload if all checks pass
      */
+    // DEBUG: Log token info for troubleshooting
+    console.log('[AUTH DEBUG] Token length:', token.length);
+    console.log('[AUTH DEBUG] Token preview:', token.substring(0, 50) + '...');
+    console.log('[AUTH DEBUG] Secret length:', secret.length);
+    
     const decoded = jwt.verify(token, secret) as TokenPayload;
 
     // Step 5: Attach user data to request object
@@ -178,6 +183,7 @@ export const authenticate = (
     
     if (error instanceof jwt.JsonWebTokenError) {
       // Invalid token format or signature mismatch
+      console.log('[AUTH DEBUG] JsonWebTokenError:', error.message);
       next(new ApiError(401, 'Invalid token'));
     } else if (error instanceof jwt.TokenExpiredError) {
       // Token exp claim is in the past
