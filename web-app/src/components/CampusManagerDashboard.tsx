@@ -407,9 +407,6 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                     <span className="text-xs text-gray-500">
                       Applied {new Date(app.created_at).toLocaleDateString()}
                     </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusStyle(app.status)}`}>
-                      {formatStatus(app.status)}
-                    </span>
                     {app.years_experience && (
                       <span className="text-xs text-gray-500">
                         {app.years_experience} years exp.
