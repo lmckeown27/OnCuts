@@ -3,9 +3,12 @@
  * 
  * Provides browser-based geolocation with permission handling.
  * Used to determine closest barbers to the user.
+ * Automatically syncs location to backend for authenticated users.
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
+import locationService from '../services/location.service';
 
 export interface GeolocationState {
   latitude: number | null;
@@ -19,6 +22,7 @@ export interface GeolocationState {
 export interface UseGeolocationReturn extends GeolocationState {
   requestLocation: () => void;
   clearLocation: () => void;
+  syncToBackend: () => Promise<void>;
 }
 
 const STORAGE_KEY = 'campuscut_user_location';
@@ -59,6 +63,24 @@ export function useGeolocation(): UseGeolocationReturn {
     loading: false,
     permissionStatus: 'prompt',
   });
+  
+  const { isAuthenticated } = useAuthStore();
+
+  // Sync location to backend for authenticated users
+  const syncToBackend = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      await locationService.updateLocation({
+        latitude: state.latitude ?? undefined,
+        longitude: state.longitude ?? undefined,
+        permission: state.permissionStatus,
+      });
+    } catch (error) {
+      console.warn('Failed to sync location to backend:', error);
+      // Don't throw - this is a non-critical operation
+    }
+  }, [isAuthenticated, state.latitude, state.longitude, state.permissionStatus]);
 
   // Check permission status on mount
   useEffect(() => {
@@ -103,18 +125,24 @@ export function useGeolocation(): UseGeolocationReturn {
 
   const requestLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setState(prev => ({
-        ...prev,
+      const newState = {
+        ...state,
         error: 'Geolocation is not supported by your browser',
-        permissionStatus: 'unavailable',
-      }));
+        permissionStatus: 'unavailable' as const,
+      };
+      setState(newState);
+      
+      // Sync unavailable status to backend
+      if (isAuthenticated) {
+        locationService.updateLocation({ permission: 'unavailable' }).catch(() => {});
+      }
       return;
     }
 
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         
         // Store location for later use
@@ -133,8 +161,21 @@ export function useGeolocation(): UseGeolocationReturn {
           loading: false,
           permissionStatus: 'granted',
         });
+
+        // Sync to backend for authenticated users
+        if (isAuthenticated) {
+          try {
+            await locationService.updateLocation({
+              latitude,
+              longitude,
+              permission: 'granted',
+            });
+          } catch (error) {
+            console.warn('Failed to sync location to backend:', error);
+          }
+        }
       },
-      (error) => {
+      async (error) => {
         let errorMessage = 'Unable to get your location';
         let permissionStatus: GeolocationState['permissionStatus'] = 'denied';
 
@@ -159,6 +200,15 @@ export function useGeolocation(): UseGeolocationReturn {
           loading: false,
           permissionStatus,
         }));
+
+        // Sync denied/unavailable status to backend
+        if (isAuthenticated && permissionStatus === 'denied') {
+          try {
+            await locationService.updateLocation({ permission: 'denied' });
+          } catch (err) {
+            console.warn('Failed to sync location denial to backend:', err);
+          }
+        }
       },
       {
         enableHighAccuracy: true,
@@ -166,7 +216,7 @@ export function useGeolocation(): UseGeolocationReturn {
         maximumAge: 300000, // 5 minutes
       }
     );
-  }, []);
+  }, [isAuthenticated, state]);
 
   const clearLocation = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -184,6 +234,7 @@ export function useGeolocation(): UseGeolocationReturn {
     ...state,
     requestLocation,
     clearLocation,
+    syncToBackend,
   };
 }
 

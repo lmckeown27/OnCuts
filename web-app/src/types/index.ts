@@ -13,6 +13,11 @@ export interface User {
   profile_picture_url?: string;
   bio?: string;
   created_at: string;
+  // Location tracking
+  latitude?: number;
+  longitude?: number;
+  location_updated_at?: string;
+  location_permission?: 'granted' | 'denied' | 'prompt' | 'unavailable';
 }
 
 export interface Campus {
@@ -68,6 +73,12 @@ export interface Barber {
   weekly_schedule?: WeeklySchedule; // Recurring weekly availability
   aptos_address?: string;
   campus_id?: string;
+  // Location fields
+  service_latitude?: number;
+  service_longitude?: number;
+  service_radius_km?: number;
+  distance_km?: number; // Calculated distance from user (when location provided)
+  distance_miles?: number; // Distance in miles
 }
 
 export interface PortfolioImage {

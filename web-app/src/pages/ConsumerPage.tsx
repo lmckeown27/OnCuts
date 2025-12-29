@@ -501,7 +501,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
   useEffect(() => {
     loadBarbers();
-    
+  }, [latitude, longitude]); // Reload barbers when location changes
+
+  useEffect(() => {
     // Show location prompt if permission not yet requested
     if (permissionStatus === 'prompt') {
       // Delay to avoid showing immediately on page load
@@ -510,7 +512,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [permissionStatus]);
 
   useEffect(() => {
     applyFilters();
@@ -549,11 +551,19 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const loadBarbers = async () => {
     try {
       setLoading(true);
-      const response = await barberService.getBarbers();
+      
+      // Pass user location to backend for distance-based sorting
+      let response;
+      if (latitude && longitude) {
+        response = await barberService.getBarbersByLocation(latitude, longitude);
+      } else {
+        response = await barberService.getBarbers();
+      }
+      
       const barbersData = response.data || [];
       
-      // Apply algorithmic ranking
-      const rankedBarbers = rankBarbers(barbersData);
+      // Apply algorithmic ranking (only if not already sorted by distance)
+      const rankedBarbers = (latitude && longitude) ? barbersData : rankBarbers(barbersData);
       setBarbers(rankedBarbers);
       setFilteredBarbers(rankedBarbers);
       
@@ -592,23 +602,12 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       filtered = filtered.filter(() => true);
     }
 
-    // Sort by distance if location is available, otherwise by rating
-    if (latitude && longitude) {
-      filtered = filtered.map(barber => {
-        // For now, use a mock location for barbers (campus center)
-        // In production, barbers would have their own location stored
-        const barberLat = 35.3050 + (Math.random() - 0.5) * 0.01; // SLO area mock
-        const barberLng = -120.6625 + (Math.random() - 0.5) * 0.01;
-        const distance = calculateDistance(latitude, longitude, barberLat, barberLng);
-        return { ...barber, distance };
-      });
-      
-      // Sort by distance (closest first)
-      filtered.sort((a, b) => (a.distance || 999) - (b.distance || 999));
-    } else {
-      // Sort by rating (highest first)
+    // Backend already sorts by distance when location is provided
+    // Only apply client-side sorting if no location (fallback to rating)
+    if (!latitude || !longitude) {
       filtered.sort((a, b) => b.average_rating - a.average_rating);
     }
+    // When location is available, barbers are already sorted by distance from backend
 
     setFilteredBarbers(filtered);
   };

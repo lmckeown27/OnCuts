@@ -8,10 +8,17 @@ import { logger } from '../utils/logger';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng } = req.query;
+    
+    // Parse user location for distance-based sorting
+    const userLat = lat ? parseFloat(lat as string) : null;
+    const userLng = lng ? parseFloat(lng as string) : null;
+    const hasUserLocation = userLat !== null && userLng !== null && 
+                            !isNaN(userLat) && !isNaN(userLng);
 
     // Build dynamic query for barbers from PostgreSQL
     // Column names match Prisma schema: avgRating, totalReviews, totalBookings, isActive
+    // If user location provided, calculate distance using Haversine formula
     let query = `
       SELECT 
         b.id,
@@ -24,20 +31,47 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."isActive" as is_active,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
+        b.service_latitude,
+        b.service_longitude,
+        b.service_radius_km,
         u.email,
         u.first_name,
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle,
-        u."campusId" as campus_id
-      FROM barbers b
-      JOIN users u ON b."userId" = u.id
-      WHERE b."isActive" = true
+        u."campusId" as campus_id,
+        u.latitude as user_latitude,
+        u.longitude as user_longitude
     `;
     
     const params: any[] = [];
     let paramIndex = 1;
+
+    // Add distance calculation if user location is provided
+    if (hasUserLocation) {
+      // Haversine formula for distance in km
+      // Uses barber's service location if set, otherwise falls back to user's location
+      query += `,
+        (6371 * acos(
+          LEAST(1.0, GREATEST(-1.0,
+            cos(radians($${paramIndex})) * 
+            cos(radians(COALESCE(b.service_latitude, u.latitude))) * 
+            cos(radians(COALESCE(b.service_longitude, u.longitude)) - radians($${paramIndex + 1})) + 
+            sin(radians($${paramIndex})) * 
+            sin(radians(COALESCE(b.service_latitude, u.latitude)))
+          ))
+        )) as distance_km
+      `;
+      params.push(userLat, userLng);
+      paramIndex += 2;
+    }
+
+    query += `
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."isActive" = true
+    `;
 
     if (campusId) {
       query += ` AND b."campusId" = $${paramIndex}`;
@@ -57,7 +91,12 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex++;
     }
 
-    query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
+    // Sort by distance if user location provided, otherwise by rating
+    if (hasUserLocation) {
+      query += ` ORDER BY distance_km ASC NULLS LAST, b."avgRating" DESC NULLS LAST`;
+    } else {
+      query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
+    }
 
     const result = await pool.query(query, params);
     
@@ -82,6 +121,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       return {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
+        // Include distance if calculated (rounded to 1 decimal)
+        distance_km: barber.distance_km !== null ? Math.round(barber.distance_km * 10) / 10 : null,
+        // Convert km to miles for US users
+        distance_miles: barber.distance_km !== null ? Math.round(barber.distance_km * 0.621371 * 10) / 10 : null,
         pricing: servicesResult.rows.map(s => ({
           ...s,
           price: s.price / 100 // Convert cents to dollars for frontend
@@ -108,6 +151,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         limit: filteredBarbers.length,
         total: filteredBarbers.length,
         total_pages: 1,
+      },
+      meta: {
+        sorted_by: hasUserLocation ? 'distance' : 'rating',
+        user_location_provided: hasUserLocation,
       },
     });
   } catch (error) {

@@ -9,11 +9,29 @@ interface BarberFilters {
   specialties?: string[];
   page?: number;
   limit?: number;
+  // Location-based sorting
+  lat?: number;
+  lng?: number;
 }
 
 class BarberService {
   async getBarbers(filters: BarberFilters = {}): Promise<PaginatedResponse<Barber>> {
     return await api.get<PaginatedResponse<Barber>>('/barbers', filters);
+  }
+
+  /**
+   * Get barbers sorted by distance from user's location
+   */
+  async getBarbersByLocation(
+    latitude: number, 
+    longitude: number, 
+    filters: Omit<BarberFilters, 'lat' | 'lng'> = {}
+  ): Promise<PaginatedResponse<Barber>> {
+    return await api.get<PaginatedResponse<Barber>>('/barbers', {
+      ...filters,
+      lat: latitude,
+      lng: longitude,
+    });
   }
 
   async getBarberById(id: string): Promise<Barber> {
