@@ -257,7 +257,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."isActive" as is_active,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
-        b."instagramHandle" as instagram_handle,
+        u."instagramHandle" as instagram_handle,
         u.email,
         u.first_name,
         u.last_name,
