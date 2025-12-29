@@ -127,7 +127,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   };
 
   const canProceedStep1 = form.yearsExperience && form.specialties.length > 0;
-  const canProceedStep2 = form.whyBeBarber.length >= 50 && form.availableHours;
+  const canProceedStep2 = form.whyBeBarber.trim().length > 0 && form.availableHours;
   const canSubmit = canProceedStep1 && canProceedStep2;
 
   if (!shouldRender) return null;
@@ -315,9 +315,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
                 />
-                <p className={`text-xs mt-1 ${form.whyBeBarber.length >= 50 ? 'text-green-600' : 'text-gray-500'}`}>
-                  {form.whyBeBarber.length}/50 minimum characters
-                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
