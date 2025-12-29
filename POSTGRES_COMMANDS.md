@@ -312,26 +312,114 @@ sudo -u postgres psql -d campuscuts -c "\d messages"
 
 ---
 
-## CAMPUSES
+## USER LOCATIONS
 
-### View All Campuses
+### View All Users with Location Data
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT * FROM campuses;"
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    email,
+    first_name,
+    last_name,
+    role,
+    latitude,
+    longitude,
+    location_permission,
+    location_updated_at
+FROM users 
+WHERE latitude IS NOT NULL 
+ORDER BY location_updated_at DESC;
+"
 ```
 
-### Add New Campus
+### View Users Grouped by Approximate Location
 ```bash
-sudo -u postgres psql -d campuscuts -c "INSERT INTO campuses (name, domain, city, state) VALUES ('University Name', 'university.edu', 'City', 'ST');"
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    ROUND(latitude::numeric, 2) as lat_zone,
+    ROUND(longitude::numeric, 2) as lng_zone,
+    COUNT(*) as user_count,
+    COUNT(*) FILTER (WHERE role = 'BARBER') as barber_count,
+    COUNT(*) FILTER (WHERE role = 'CONSUMER') as consumer_count
+FROM users
+WHERE latitude IS NOT NULL
+GROUP BY lat_zone, lng_zone
+ORDER BY user_count DESC;
+"
 ```
 
-### Update Campus
+### View Users Who Granted Location Permission
 ```bash
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET name = 'New Name' WHERE domain = 'university.edu';"
+sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'granted';"
 ```
 
-### Describe Campuses Table
+### View Users Who Denied Location Permission
 ```bash
-sudo -u postgres psql -d campuscuts -c "\d campuses"
+sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, location_permission FROM users WHERE location_permission = 'denied';"
+```
+
+### Update User Location (Manual)
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET latitude = 37.2395, longitude = -121.9251, location_updated_at = NOW(), location_permission = 'granted' WHERE email = 'user@example.com';"
+```
+
+### Clear User Location
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET latitude = NULL, longitude = NULL, location_updated_at = NULL, location_permission = 'prompt' WHERE email = 'user@example.com';"
+```
+
+### View Barbers with Service Location Set
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    b.service_latitude,
+    b.service_longitude,
+    b.service_radius_km
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.service_latitude IS NOT NULL;
+"
+```
+
+### Update Barber Service Location
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE barbers 
+SET service_latitude = 37.2395, service_longitude = -121.9251, service_radius_km = 10.0
+FROM users 
+WHERE barbers.\"userId\" = users.id AND users.email = 'barber@example.com';
+"
+```
+
+### Find Users Within X km of a Location
+```bash
+# Find users within 8km of coordinates (37.2395, -121.9251)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    email,
+    first_name,
+    last_name,
+    role,
+    (6371 * acos(
+        cos(radians(37.2395)) * 
+        cos(radians(latitude)) * 
+        cos(radians(longitude) - radians(-121.9251)) + 
+        sin(radians(37.2395)) * 
+        sin(radians(latitude))
+    )) as distance_km
+FROM users
+WHERE latitude IS NOT NULL
+HAVING distance_km <= 8
+ORDER BY distance_km;
+"
+```
+
+### Describe Users Table (Location Columns)
+```bash
+sudo -u postgres psql -d campuscuts -c "\d users" | grep -E "latitude|longitude|location"
 ```
 
 ---
