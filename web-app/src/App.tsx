@@ -138,6 +138,9 @@ function AppContent() {
         {/* Web - Wallet */}
         <Route path="/web/wallet" element={<PlatformGuard requiredPlatform="web"><LazyRoute><WalletPage /></LazyRoute></PlatformGuard>} />
         
+        {/* Web - Messages (Generic - redirects to consumer messages) */}
+        <Route path="/web/messages" element={<PlatformGuard requiredPlatform="web"><LazyRoute><MessagesPage /></LazyRoute></PlatformGuard>} />
+        
         {/* Web - Messages (Barber) */}
         <Route path="/web/barber/messages" element={<PlatformGuard requiredPlatform="web"><LazyRoute><MessagesPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/messages/:conversationId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><MessagesPage /></LazyRoute></PlatformGuard>} />

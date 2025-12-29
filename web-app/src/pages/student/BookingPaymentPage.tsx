@@ -306,9 +306,9 @@ export default function BookingPaymentPage() {
           <div className="space-y-3">
             <Button 
               onClick={() => {
-                // Navigate to messages and start BOOKING-CENTRIC conversation with barber
+                // Navigate to CONSUMER messages and start BOOKING-CENTRIC conversation with barber
                 // Pass full service context for CampusCuts messaging
-                navigate('/web/messages', { 
+                navigate('/web/consumer/messages', { 
                   state: { 
                     startConversation: true,
                     otherUserId: bookingDetails.barberUserId || bookingDetails.barberId,
@@ -328,7 +328,7 @@ export default function BookingPaymentPage() {
               className="w-full flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4" />
-              Message {bookingDetails.barberName.split(' ')[0]}
+              Message {bookingDetails.barberName?.split(' ')[0] || 'Barber'}
             </Button>
             <Button onClick={() => navigate('/web/consumer')} className="w-full">
               Back to Dashboard
