@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import TimePickerDropdown from '../components/TimePickerDropdown';
+import DatePicker from '../components/DatePicker';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import type { Barber } from '../types';
@@ -269,18 +270,11 @@ export default function ScheduleServicePage() {
 
                   {/* Date */}
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        Date *
-                      </div>
-                    </label>
-                    <input
-                      type="date"
+                    <DatePicker
+                      label="Date"
                       value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      min={today}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      onChange={setDate}
+                      minDate={today}
                       required
                     />
                   </div>
