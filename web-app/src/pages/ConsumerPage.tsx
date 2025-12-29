@@ -11,6 +11,7 @@ import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
+import { barberApplicationService } from '../services/barber-application.service';
 import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
@@ -76,6 +77,9 @@ export default function ConsumerPage() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
   const [showBarberApplication, setShowBarberApplication] = useState(false);
+  const [hasPendingApplication, setHasPendingApplication] = useState(false);
+  const [showPendingPopup, setShowPendingPopup] = useState(false);
+  const [isPendingPopupVisible, setIsPendingPopupVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -130,6 +134,51 @@ export default function ConsumerPage() {
     };
     checkBarberProfile();
   }, [user?.id]);
+
+  // Check for pending barber application
+  useEffect(() => {
+    const checkPendingApplication = async () => {
+      if (user && !user.has_barber_profile) {
+        try {
+          const application = await barberApplicationService.getMyApplication();
+          if (application && (application.status === 'pending' || application.status === 'under_review' || application.status === 'interview_scheduled')) {
+            setHasPendingApplication(true);
+          } else {
+            setHasPendingApplication(false);
+          }
+        } catch {
+          setHasPendingApplication(false);
+        }
+      }
+    };
+    checkPendingApplication();
+  }, [user?.id, user?.has_barber_profile]);
+
+  // Pending application popup handlers
+  const openPendingPopup = () => {
+    setShowPendingPopup(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsPendingPopupVisible(true);
+      });
+    });
+  };
+
+  const closePendingPopup = () => {
+    setIsPendingPopupVisible(false);
+    setTimeout(() => {
+      setShowPendingPopup(false);
+    }, 150);
+  };
+
+  // Handle "Become a Barber" button click
+  const handleBecomeBarberClick = () => {
+    if (hasPendingApplication) {
+      openPendingPopup();
+    } else {
+      setShowBarberApplication(true);
+    }
+  };
   
   // Debug viewport in development
   useEffect(() => {
@@ -170,7 +219,7 @@ export default function ConsumerPage() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setShowBarberApplication(true)}
+                  onClick={handleBecomeBarberClick}
                   className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                   title="Apply to become a barber"
                 >
@@ -293,6 +342,34 @@ export default function ConsumerPage() {
         isOpen={showBarberApplication}
         onClose={() => setShowBarberApplication(false)}
       />
+
+      {/* Pending Application Popup */}
+      {showPendingPopup && (
+        <div 
+          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isPendingPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closePendingPopup}
+        >
+          <div 
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transition-all duration-150 ease-out
+              ${isPendingPopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Clock className="w-8 h-8 text-primary-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
+            <p className="text-gray-600 mb-6">
+              Please be patient as the campus manager goes over your application.
+            </p>
+            <button
+              onClick={closePendingPopup}
+              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
