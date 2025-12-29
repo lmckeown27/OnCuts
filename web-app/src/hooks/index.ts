@@ -9,3 +9,6 @@ export type { ViewportType, ViewportInfo } from './useViewport';
 
 export { useBodyScrollLock } from './useBodyScrollLock';
 
+export { useGeolocation, calculateDistance, kmToMiles } from './useGeolocation';
+export type { GeolocationState, UseGeolocationReturn } from './useGeolocation';
+

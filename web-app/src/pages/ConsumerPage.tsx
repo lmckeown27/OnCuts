@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -16,7 +16,8 @@ import type { Barber } from '../types';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
-import { useViewport, useBodyScrollLock } from '../hooks';
+import { useViewport, useBodyScrollLock, useGeolocation, calculateDistance, kmToMiles } from '../hooks';
+import LocationPermissionPrompt from '../components/LocationPermissionPrompt';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { WeeklySchedule } from '../types';
 
@@ -450,17 +451,42 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     location: null,
     locationDetails: null,
   });
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
+  
+  // Geolocation hook
+  const { 
+    latitude, 
+    longitude, 
+    loading: locationLoading, 
+    permissionStatus, 
+    requestLocation 
+  } = useGeolocation();
 
   useEffect(() => {
     loadBarbers();
+    
+    // Show location prompt if permission not yet requested
+    if (permissionStatus === 'prompt') {
+      // Delay to avoid showing immediately on page load
+      const timer = setTimeout(() => {
+        setShowLocationPrompt(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   useEffect(() => {
     applyFilters();
-  }, [barbers, filterCriteria]);
+  }, [barbers, filterCriteria, latitude, longitude]);
+
+  // Handle location permission request
+  const handleAllowLocation = () => {
+    requestLocation();
+    setShowLocationPrompt(false);
+  };
 
   const loadBarbers = async () => {
     try {
@@ -508,8 +534,23 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       filtered = filtered.filter(() => true);
     }
 
-    // Sort by rating (highest first)
-    filtered.sort((a, b) => b.average_rating - a.average_rating);
+    // Sort by distance if location is available, otherwise by rating
+    if (latitude && longitude) {
+      filtered = filtered.map(barber => {
+        // For now, use a mock location for barbers (campus center)
+        // In production, barbers would have their own location stored
+        const barberLat = 35.3050 + (Math.random() - 0.5) * 0.01; // SLO area mock
+        const barberLng = -120.6625 + (Math.random() - 0.5) * 0.01;
+        const distance = calculateDistance(latitude, longitude, barberLat, barberLng);
+        return { ...barber, distance };
+      });
+      
+      // Sort by distance (closest first)
+      filtered.sort((a, b) => (a.distance || 999) - (b.distance || 999));
+    } else {
+      // Sort by rating (highest first)
+      filtered.sort((a, b) => b.average_rating - a.average_rating);
+    }
 
     setFilteredBarbers(filtered);
   };
@@ -545,9 +586,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       />
 
       {/* Sort Info */}
-      {filterCriteria.serviceType && filteredBarbers.length > 0 && (
-        <div className="mb-4 sm:mb-6 text-center text-xs sm:text-sm text-gray-600">
-          Sorted by top performers first
+      {filteredBarbers.length > 0 && (
+        <div className="mb-4 sm:mb-6 text-center text-xs sm:text-sm text-gray-600 flex items-center justify-center gap-2">
+          {latitude && longitude ? (
+            <>
+              <MapPin className="w-4 h-4 text-primary-500" />
+              Sorted by distance from you
+            </>
+          ) : (
+            'Sorted by top performers first'
+          )}
         </div>
       )}
 
@@ -840,6 +888,14 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           </div>
         </div>
       )}
+
+      {/* Location Permission Prompt */}
+      <LocationPermissionPrompt
+        isOpen={showLocationPrompt}
+        onClose={() => setShowLocationPrompt(false)}
+        onAllow={handleAllowLocation}
+        loading={locationLoading}
+      />
     </>
   );
 }
