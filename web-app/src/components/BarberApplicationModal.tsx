@@ -320,39 +320,38 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Clock className="w-4 h-4 inline mr-2" />
-                  How many hours per week can you dedicate? *
-                </label>
-                <select
-                  value={form.availableHours}
-                  onChange={(e) => setForm({ ...form, availableHours: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                >
-                  <option value="">Select availability</option>
-                  <option value="5-10">5-10 hours/week</option>
-                  <option value="10-20">10-20 hours/week</option>
-                  <option value="20-30">20-30 hours/week</option>
-                  <option value="30-plus">30+ hours/week</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Hours per week? *
+                  </label>
+                  <select
+                    value={form.availableHours}
+                    onChange={(e) => setForm({ ...form, availableHours: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  >
+                    <option value="">Select availability</option>
+                    <option value="5-10">5-10 hours/week</option>
+                    <option value="10-20">10-20 hours/week</option>
+                    <option value="20-30">20-30 hours/week</option>
+                    <option value="30-plus">30+ hours/week</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Camera className="w-4 h-4 inline mr-2" />
-                  Portfolio / Social Media (optional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Instagram handle or portfolio link"
-                  value={form.socialMedia}
-                  onChange={(e) => setForm({ ...form, socialMedia: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Share your work! This helps us see your style and skill level.
-                </p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Camera className="w-4 h-4 inline mr-2" />
+                    Social Media (optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Instagram handle or link"
+                    value={form.socialMedia}
+                    onChange={(e) => setForm({ ...form, socialMedia: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  />
+                </div>
               </div>
 
               <div>
