@@ -207,59 +207,64 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           ) : step === 1 ? (
             /* Step 1: Experience & Skills */
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Clock className="w-4 h-4 inline mr-2" />
-                  Years of Experience *
-                </label>
-                <select
-                  value={form.yearsExperience}
-                  onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                >
-                  <option value="">Select experience level</option>
-                  <option value="less-than-1">Less than 1 year</option>
-                  <option value="1-2">1-2 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="5-plus">5+ years</option>
-                </select>
+              {/* Experience and License - Side by side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Years of Experience *
+                  </label>
+                  <select
+                    value={form.yearsExperience}
+                    onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  >
+                    <option value="">Select experience level</option>
+                    <option value="less-than-1">Less than 1 year</option>
+                    <option value="1-2">1-2 years</option>
+                    <option value="3-5">3-5 years</option>
+                    <option value="5-plus">5+ years</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Award className="w-4 h-4 inline mr-2" />
+                    Barbering license?
+                  </label>
+                  <div className="flex gap-4 py-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={form.hasLicense}
+                        onChange={() => setForm({ ...form, hasLicense: true })}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span>Yes</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={!form.hasLicense}
+                        onChange={() => setForm({ ...form, hasLicense: false, licenseNumber: '' })}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Award className="w-4 h-4 inline mr-2" />
-                  Do you have a barbering license?
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={form.hasLicense}
-                      onChange={() => setForm({ ...form, hasLicense: true })}
-                      className="w-4 h-4 text-primary-600"
-                    />
-                    <span>Yes</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      checked={!form.hasLicense}
-                      onChange={() => setForm({ ...form, hasLicense: false, licenseNumber: '' })}
-                      className="w-4 h-4 text-primary-600"
-                    />
-                    <span>No (still learning)</span>
-                  </label>
-                </div>
-                {form.hasLicense && (
-                  <input
-                    type="text"
-                    placeholder="License number (optional)"
-                    value={form.licenseNumber}
-                    onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
-                    className="mt-3 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-                  />
-                )}
-              </div>
+              {/* License Number - Shows when hasLicense is true */}
+              {form.hasLicense && (
+                <input
+                  type="text"
+                  placeholder="License number (optional)"
+                  value={form.licenseNumber}
+                  onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+                  className="w-full sm:w-1/2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
+                />
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">
