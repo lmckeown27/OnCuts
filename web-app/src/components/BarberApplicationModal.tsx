@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, AlertCircle, Check } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService } from '../services/barber-application.service';
+import { SERVICE_TYPES } from '../config/services';
 import toast from 'react-hot-toast';
 
 interface BarberApplicationModalProps {
@@ -22,19 +23,6 @@ interface ApplicationForm {
   socialMedia: string;
   additionalNotes: string;
 }
-
-const SPECIALTY_OPTIONS = [
-  'Fades',
-  'Beard Trimming',
-  'Line-ups',
-  'Afro/Textured Hair',
-  'Classic Cuts',
-  'Modern Styles',
-  'Hair Design/Patterns',
-  'Braiding',
-  'Twists/Locs',
-  'Color/Highlights'
-];
 
 export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess }: BarberApplicationModalProps) {
   const { user } = useAuthStore();
@@ -267,25 +255,50 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   <Scissors className="w-4 h-4 inline mr-2" />
-                  What are your specialties? * (Select all that apply)
+                  What services will you offer? * (Select all that apply)
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {SPECIALTY_OPTIONS.map((specialty) => (
-                    <button
-                      key={specialty}
-                      type="button"
-                      onClick={() => handleSpecialtyToggle(specialty)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        form.specialties.includes(specialty)
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {specialty}
-                    </button>
-                  ))}
+                <p className="text-xs text-gray-500 mb-3">These will be your specialties on your barber profile.</p>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {SERVICE_TYPES.map((service) => {
+                    const isSelected = form.specialties.includes(service.name);
+                    return (
+                      <div
+                        key={service.id}
+                        onClick={() => handleSpecialtyToggle(service.name)}
+                        className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-primary-400 bg-primary-50'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                              isSelected
+                                ? 'bg-primary-400 border-primary-400'
+                                : 'border-gray-300'
+                            }`}>
+                              {isSelected && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 text-sm">{service.name}</h4>
+                              {service.description && (
+                                <p className="text-xs text-gray-500">{service.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">Base Price</p>
+                            <p className={`text-sm font-semibold ${isSelected ? 'text-gray-900' : 'text-gray-400'}`}>
+                              ${service.basePrice?.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
