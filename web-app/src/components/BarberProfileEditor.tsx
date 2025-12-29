@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Upload, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -40,6 +40,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   const [instagramHandle, setInstagramHandle] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<string>('');
   const [specialties, setSpecialties] = useState<string[]>([]);
+  const [isHidden, setIsHidden] = useState(false); // Hide profile from consumers
   
   // Available specialty options from shared config
   const availableSpecialties = SPECIALTY_OPTIONS;
@@ -76,6 +77,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       setInstagramHandle(data.instagram_handle || '');
       setProfilePhoto(data.profile_photo_url || data.profile_picture_url || '');
       setSpecialties(data.specialties || []);
+      setIsHidden(!data.is_active); // is_active=false means hidden
       
       setIsLoading(false);
     } catch (error: any) {
@@ -99,6 +101,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         bio,
         instagram_handle: instagramHandle,
         specialties,
+        is_active: !isHidden, // Hidden = not active
       };
 
       await barberService.updateBarberProfile(barber.id, updateData);
@@ -291,6 +294,38 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           />
         </div>
         <p className="text-xs text-gray-500 mt-2">Your Instagram serves as your portfolio - students can view your work there</p>
+      </Card>
+
+      {/* Profile Visibility */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-2">Profile Visibility</h3>
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isHidden}
+              onChange={(e) => setIsHidden(e.target.checked)}
+              className="mt-1 w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+            />
+            <div>
+              <span className="font-medium text-gray-900">Hide my profile from consumers</span>
+              <p className="text-sm text-gray-500">Your barber card will not appear in search results</p>
+            </div>
+          </label>
+          
+          {isHidden && (
+            <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Warning: Profile Hidden</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  It will be virtually impossible for consumers to book a service with you while your profile is hidden. 
+                  Only enable this if you need a temporary break from taking bookings.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </Card>
 
       {/* Action Buttons (Bottom) */}
