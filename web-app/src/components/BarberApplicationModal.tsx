@@ -49,24 +49,28 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     if (isOpen) {
       setShouldRender(true);
       document.body.style.overflow = 'hidden';
-      // Trigger animation after render
-      requestAnimationFrame(() => {
+      // Small delay to ensure initial invisible state renders first
+      const openTimer = setTimeout(() => {
         setIsVisible(true);
-      });
+      }, 10);
+      return () => clearTimeout(openTimer);
     } else {
       setIsVisible(false);
       document.body.style.overflow = '';
       // Wait for animation to complete before unmounting
-      const timer = setTimeout(() => {
+      const closeTimer = setTimeout(() => {
         setShouldRender(false);
       }, 150);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(closeTimer);
     }
-    
+  }, [isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, []);
 
   const handleClose = () => {
     setIsVisible(false);
