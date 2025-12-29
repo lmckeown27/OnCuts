@@ -195,23 +195,36 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           ) : step === 1 ? (
             /* Step 1: Experience & Skills */
             <div className="space-y-6">
-              {/* Experience */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Clock className="w-4 h-4 inline mr-2" />
-                  Years of Experience *
-                </label>
-                <select
-                  value={form.yearsExperience}
-                  onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
-                  className="w-full sm:w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                >
-                  <option value="">Select experience level</option>
-                  <option value="less-than-1">Less than 1 year</option>
-                  <option value="1-2">1-2 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="5-plus">5+ years</option>
-                </select>
+              {/* Experience and Tools - Side by side */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Years of Experience *
+                  </label>
+                  <select
+                    value={form.yearsExperience}
+                    onChange={(e) => setForm({ ...form, yearsExperience: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  >
+                    <option value="">Select experience level</option>
+                    <option value="less-than-1">Less than 1 year</option>
+                    <option value="1-2">1-2 years</option>
+                    <option value="3-5">3-5 years</option>
+                    <option value="5-plus">5+ years</option>
+                  </select>
+                </div>
+                <div className="flex items-center justify-center pb-1">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.hasOwnTools}
+                      onChange={(e) => setForm({ ...form, hasOwnTools: e.target.checked })}
+                      className="w-5 h-5 text-primary-600 rounded"
+                    />
+                    <span className="text-gray-700 text-sm">I have my own tools</span>
+                  </label>
+                </div>
               </div>
 
               <div>
@@ -260,18 +273,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     );
                   })}
                 </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.hasOwnTools}
-                    onChange={(e) => setForm({ ...form, hasOwnTools: e.target.checked })}
-                    className="w-5 h-5 text-primary-600 rounded"
-                  />
-                  <span className="text-gray-700">I have my own barbering tools and equipment</span>
-                </label>
               </div>
             </div>
           ) : step === 2 ? (
