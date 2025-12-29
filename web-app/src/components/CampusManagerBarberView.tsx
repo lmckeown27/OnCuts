@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Campus Manager Barber Profile View
  * 
@@ -8,7 +7,7 @@
  * - Cannot block, ban, or modify barber account
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Calendar, 
@@ -20,41 +19,12 @@ import {
   Award,
   Clock,
   CheckCircle,
-  XCircle
+  Loader2
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
-
-interface BarberProfileData {
-  id: string;
-  name: string;
-  email: string; // Required
-  instagramHandle?: string; // Optional
-  bio?: string;
-  
-  // Performance metrics
-  avgRating: number;
-  totalBookings: number;
-  completedBookings: number;
-  cancelledBookings: number;
-  totalReviews: number;
-  
-  // Financial
-  totalEarnings: number;
-  currentPriceRange: {
-    min: number;
-    max: number;
-  };
-  
-  // Status
-  isActive: boolean;
-  isVerified: boolean;
-  lastActiveDate: Date;
-  
-  // Additional info
-  specialties: string[];
-  responseTime: string;
-}
+import barberService from '../services/barber.service';
+import type { Barber } from '../types';
 
 interface CampusManagerBarberViewProps {
   barberId: string;
@@ -65,40 +35,30 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   barberId, 
   onClose 
 }) => {
-  // TODO: Fetch from API
-  const [barber] = useState<BarberProfileData>({
-    id: barberId,
-    name: 'Marcus Johnson',
-    email: 'marcus.j@example.com',
-    instagramHandle: 'marcuscuts_slo',
-    bio: 'Professional barber with 8 years experience. Specializing in modern fades and classic cuts.',
-    
-    avgRating: 4.8,
-    totalBookings: 127,
-    completedBookings: 119,
-    cancelledBookings: 3,
-    totalReviews: 98,
-    
-    totalEarnings: 11865,
-    currentPriceRange: {
-      min: 22,
-      max: 60,
-    },
-    
-    isActive: true,
-    isVerified: true,
-    lastActiveDate: new Date('2025-01-16'),
-    
-    specialties: ['Fade', 'Haircut', 'Beard Trim', 'Full Service'],
-    responseTime: '< 2 hours',
-  });
-
+  const [barber, setBarber] = useState<Barber | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
 
-  const completionRate = ((barber.completedBookings / barber.totalBookings) * 100).toFixed(1);
-  const cancellationRate = ((barber.cancelledBookings / barber.totalBookings) * 100).toFixed(1);
+  useEffect(() => {
+    const fetchBarber = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await barberService.getBarberById(barberId);
+        setBarber(data);
+      } catch (err) {
+        console.error('Failed to fetch barber:', err);
+        setError('Failed to load barber profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBarber();
+  }, [barberId]);
 
   const handleSubmitReport = () => {
     if (!reportReason || !reportDetails) {
@@ -108,7 +68,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     
     // TODO: Submit report to admin via API
     console.log('Report submitted:', {
-      barberId: barber.id,
+      barberId: barberId,
       reason: reportReason,
       details: reportDetails,
     });
@@ -118,6 +78,83 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     setReportReason('');
     setReportDetails('');
   };
+
+  // Helper to get barber name
+  const getBarberName = () => {
+    if (!barber) return 'Unknown';
+    if (barber.display_name) return barber.display_name;
+    if (barber.name) return barber.name;
+    if (barber.first_name || barber.last_name) {
+      return `${barber.first_name || ''} ${barber.last_name || ''}`.trim();
+    }
+    if (barber.user?.first_name || barber.user?.last_name) {
+      return `${barber.user.first_name || ''} ${barber.user.last_name || ''}`.trim();
+    }
+    return 'Unknown Barber';
+  };
+
+  // Helper to get email
+  const getEmail = () => {
+    return barber?.user?.email || 'Not available';
+  };
+
+  // Helper to get price range
+  const getPriceRange = () => {
+    if (!barber?.pricing || barber.pricing.length === 0) {
+      return { min: 0, max: 0 };
+    }
+    const prices = barber.pricing.map(s => s.price);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices)
+    };
+  };
+
+  // Calculate completion rate
+  const getCompletionRate = () => {
+    if (!barber?.total_bookings || barber.total_bookings === 0) return 0;
+    // Since we don't have completed_bookings directly, estimate based on is_active
+    // In a real scenario, this would come from the backend
+    return barber.is_active ? 85 : 0; // Placeholder - backend should provide this
+  };
+
+  if (loading) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-8 flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+          <span className="ml-3 text-gray-600">Loading barber profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !barber) {
+    return (
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-8"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error || 'Barber not found'}</p>
+            <Button variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const priceRange = getPriceRange();
 
   return (
     <div 
@@ -146,19 +183,24 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
         <div className="p-6 space-y-6">
           {/* Basic Info */}
           <Card className="p-6">
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start gap-4 mb-4">
+              {/* Profile Photo */}
+              {(barber.profile_photo_url || barber.profile_picture_url) && (
+                <img
+                  src={barber.profile_photo_url || barber.profile_picture_url}
+                  alt={getBarberName()}
+                  className="w-20 h-20 rounded-full object-cover flex-shrink-0"
+                />
+              )}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-2xl font-bold text-gray-900">{barber.name}</h3>
-                  {barber.isVerified && (
-                    <CheckCircle className="w-6 h-6 text-green-500" title="Verified" />
-                  )}
+                  <h3 className="text-2xl font-bold text-gray-900">{getBarberName()}</h3>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    barber.isActive
+                    barber.is_active
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-700'
                   }`}>
-                    {barber.isActive ? 'Active' : 'Inactive'}
+                    {barber.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
                 {barber.bio && (
@@ -170,27 +212,33 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center gap-2 text-gray-700">
                 <Mail className="w-4 h-4 text-gray-500" />
-                <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline">
-                  {barber.email}
-                </a>
+                {getEmail() !== 'Not available' ? (
+                  <a href={`mailto:${getEmail()}`} className="text-primary-600 hover:underline">
+                    {getEmail()}
+                  </a>
+                ) : (
+                  <span className="text-gray-500">Email not available</span>
+                )}
               </div>
-              {barber.instagramHandle && (
+              {barber.instagram_handle && (
                 <div className="flex items-center gap-2 text-gray-700">
                   <Instagram className="w-4 h-4 text-gray-500" />
                   <a
-                    href={`https://www.instagram.com/${barber.instagramHandle}/`}
+                    href={`https://www.instagram.com/${barber.instagram_handle.replace('@', '')}/`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary-600 hover:underline"
                   >
-                    @{barber.instagramHandle}
+                    @{barber.instagram_handle.replace('@', '')}
                   </a>
                 </div>
               )}
-              <div className="flex items-center gap-2 text-gray-700">
-                <Clock className="w-4 h-4 text-gray-500" />
-                <span>Response time: {barber.responseTime}</span>
-              </div>
+              {barber.years_experience > 0 && (
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Clock className="w-4 h-4 text-gray-500" />
+                  <span>{barber.years_experience} years experience</span>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -201,50 +249,69 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 <Calendar className="w-5 h-5 text-blue-500" />
                 <span className="text-sm text-gray-600">Bookings</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{barber.totalBookings}</p>
-              <p className="text-xs text-gray-500 mt-1">{barber.completedBookings} completed</p>
+              <p className="text-2xl font-bold text-gray-900">{barber.total_bookings || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Total bookings</p>
             </Card>
 
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-sm text-gray-600">Completion</span>
+                <CheckCircle className="w-5 h-5 text-yellow-500" />
+                <span className="text-sm text-gray-600">Rating</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{completionRate}%</p>
-              <p className="text-xs text-gray-500 mt-1">Success rate</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {barber.average_rating ? barber.average_rating.toFixed(1) : 'N/A'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {barber.total_reviews || 0} reviews
+              </p>
             </Card>
 
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-green-500" />
-                <span className="text-sm text-gray-600">Earnings</span>
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-gray-600">Status</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">${barber.totalEarnings.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1">Total earned</p>
+              <p className={`text-2xl font-bold ${barber.is_active ? 'text-green-600' : 'text-gray-500'}`}>
+                {barber.is_active ? 'Active' : 'Inactive'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Current status</p>
             </Card>
           </div>
 
           {/* Pricing Info */}
-          <Card className="p-6">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary-600" />
-              Pricing
-            </h4>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Price Range</p>
-                <p className="text-lg font-bold text-gray-900">
-                  ${barber.currentPriceRange.min} - ${barber.currentPriceRange.max}
-                </p>
+          {priceRange.max > 0 && (
+            <Card className="p-6">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-primary-600" />
+                Pricing
+              </h4>
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Price Range</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    ${priceRange.min} - ${priceRange.max}
+                  </p>
+                </div>
+                <div className="text-sm text-gray-500">
+                  Based on {barber.pricing?.length || 0} services offered
+                </div>
               </div>
-              <div className="text-sm text-gray-500">
-                Pricing is determined algorithmically based on quality and demand
-              </div>
-            </div>
-          </Card>
+              {/* Service List */}
+              {barber.pricing && barber.pricing.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {barber.pricing.map((service, index) => (
+                    <div key={service.id || index} className="flex justify-between text-sm">
+                      <span className="text-gray-600">{service.name}</span>
+                      <span className="font-medium text-gray-900">${service.price}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
 
           {/* Specialties */}
-          {barber.specialties.length > 0 && (
+          {barber.specialties && barber.specialties.length > 0 && (
             <Card className="p-6">
               <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <Award className="w-5 h-5 text-primary-600" />
@@ -263,31 +330,28 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
             </Card>
           )}
 
-          {/* Activity Timeline */}
-          <Card className="p-6">
-            <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary-600" />
-              Activity
-            </h4>
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Last Active:</span>
-                <span className="font-medium text-gray-900">
-                  {barber.lastActiveDate.toLocaleDateString()}
-                </span>
+          {/* Weekly Schedule */}
+          {barber.weekly_schedule && (
+            <Card className="p-6">
+              <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-primary-600" />
+                Weekly Schedule
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Object.entries(barber.weekly_schedule).map(([day, schedule]) => (
+                  <div key={day} className="text-sm">
+                    <span className="font-medium text-gray-900 capitalize">{day}</span>
+                    <p className="text-gray-600">
+                      {schedule?.isAvailable 
+                        ? `${schedule.startTime} - ${schedule.endTime}`
+                        : 'Unavailable'
+                      }
+                    </p>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Cancellation Rate:</span>
-                <span className={`font-medium ${
-                  parseFloat(cancellationRate) < 5 ? 'text-green-600' :
-                  parseFloat(cancellationRate) < 10 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
-                  {cancellationRate}%
-                </span>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
 
           {/* Campus Manager Actions */}
           <Card className="p-6 bg-yellow-50 border-yellow-200">
@@ -396,4 +460,3 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     </div>
   );
 };
-
