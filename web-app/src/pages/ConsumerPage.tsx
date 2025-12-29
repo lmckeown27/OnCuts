@@ -424,9 +424,7 @@ export default function ConsumerPage() {
             </p>
             <div className="flex flex-col gap-3">
               <a
-                href="https://mail.google.com/mail/?view=cm&fs=1&to=campuscuthelp@gmail.com&su=Appeal%20Barber%20Application%20Rejection"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:campuscuthelp@gmail.com?subject=Appeal%20Barber%20Application%20Rejection"
                 className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-block"
               >
                 Email Support
