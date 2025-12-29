@@ -8,13 +8,17 @@ import { logger } from '../utils/logger';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance } = req.query;
     
     // Parse user location for distance-based sorting
     const userLat = lat ? parseFloat(lat as string) : null;
     const userLng = lng ? parseFloat(lng as string) : null;
     const hasUserLocation = userLat !== null && userLng !== null && 
                             !isNaN(userLat) && !isNaN(userLng);
+    
+    // Maximum distance filter in km (default: 8km / ~5 miles - reasonable for university area)
+    // This prevents students from accidentally booking barbers too far away
+    const maxDistanceKm = maxDistance ? parseFloat(maxDistance as string) : 8;
 
     // Build dynamic query for barbers from PostgreSQL
     // Column names match Prisma schema: avgRating, totalReviews, totalBookings, isActive
@@ -100,8 +104,19 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
 
     const result = await pool.query(query, params);
     
+    // Filter by max distance if user location is provided
+    // Default 8km (~5 miles) is reasonable for university students
+    let filteredRows = result.rows;
+    if (hasUserLocation) {
+      filteredRows = result.rows.filter(row => {
+        // Include barbers without location data (they might be new)
+        if (row.distance_km === null || row.distance_km === undefined) return true;
+        return row.distance_km <= maxDistanceKm;
+      });
+    }
+    
     // Get services/pricing for each barber
-    const barbers = await Promise.all(result.rows.map(async (barber) => {
+    const barbers = await Promise.all(filteredRows.map(async (barber) => {
       const servicesResult = await pool.query(
         `SELECT id, name, description, "priceUsdCents" as price, "durationMinutes" as duration_minutes
          FROM barber_services 
@@ -155,6 +170,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       meta: {
         sorted_by: hasUserLocation ? 'distance' : 'rating',
         user_location_provided: hasUserLocation,
+        max_distance_km: hasUserLocation ? maxDistanceKm : null,
+        max_distance_miles: hasUserLocation ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
+        total_before_distance_filter: hasUserLocation ? result.rows.length : filteredBarbers.length,
       },
     });
   } catch (error) {

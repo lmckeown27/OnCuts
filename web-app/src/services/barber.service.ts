@@ -9,9 +9,10 @@ interface BarberFilters {
   specialties?: string[];
   page?: number;
   limit?: number;
-  // Location-based sorting
+  // Location-based filtering
   lat?: number;
   lng?: number;
+  maxDistance?: number; // Maximum distance in km (default: 8km / ~5 miles)
 }
 
 class BarberService {
@@ -21,16 +22,20 @@ class BarberService {
 
   /**
    * Get barbers sorted by distance from user's location
+   * Default max distance: 8km (~5 miles) - reasonable for university students
+   * This prevents accidentally booking barbers too far away
    */
   async getBarbersByLocation(
     latitude: number, 
     longitude: number, 
-    filters: Omit<BarberFilters, 'lat' | 'lng'> = {}
+    filters: Omit<BarberFilters, 'lat' | 'lng'> = {},
+    maxDistanceKm: number = 8 // Default: 8km (~5 miles)
   ): Promise<PaginatedResponse<Barber>> {
     return await api.get<PaginatedResponse<Barber>>('/barbers', {
       ...filters,
       lat: latitude,
       lng: longitude,
+      maxDistance: maxDistanceKm,
     });
   }
 

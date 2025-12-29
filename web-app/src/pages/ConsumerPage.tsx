@@ -648,7 +648,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           {latitude && longitude ? (
             <>
               <MapPin className="w-4 h-4 text-primary-500" />
-              Sorted by distance from you
+              Barbers within 5 miles of you
             </>
           ) : (
             'Sorted by top performers first'
@@ -656,7 +656,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         </div>
       )}
 
-      {/* No Results */}
+      {/* No Results - Location Based */}
+      {filteredBarbers.length === 0 && latitude && longitude && !filterCriteria.serviceType && (
+        <Card className="text-center py-8 sm:py-12">
+          <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers within 5 miles</p>
+          <p className="text-xs sm:text-sm text-gray-500">
+            There are no barbers available in your area yet.
+            <br />
+            Check back soon as more barbers join the platform!
+          </p>
+        </Card>
+      )}
+
+      {/* No Results - Filter Based */}
       {filteredBarbers.length === 0 && filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
           <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers match your criteria</p>
@@ -710,6 +723,12 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     )}
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
+                    {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                      <>
+                        <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
+                        <span className="text-gray-400 text-sm">•</span>
+                      </>
+                    )}
                     <span className="text-sm text-gray-500">{barber.total_bookings} cuts</span>
                     {barber.instagram_handle && (
                       <>
@@ -774,13 +793,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Info */}
               <div className="flex-1 flex flex-col pb-2">
 
-                {/* Instagram */}
-                {barber.instagram_handle && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mt-1 mb-2">
-                    <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
-                  </div>
-                )}
+                {/* Distance & Instagram */}
+                <div className="flex items-center gap-2 text-xs sm:text-sm mt-1 mb-2">
+                  {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                    <span className="text-primary-600 font-medium flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {barber.distance_miles} mi
+                    </span>
+                  )}
+                  {barber.instagram_handle && (
+                    <div className="flex items-center gap-1 text-gray-600">
+                      <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
+                    </div>
+                  )}
+                </div>
 
                 {/* Specialties */}
                 <div className="flex flex-wrap gap-1 mb-2">
