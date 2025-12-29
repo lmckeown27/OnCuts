@@ -11,6 +11,7 @@ interface LocationPermissionPromptProps {
   isOpen: boolean;
   onClose: () => void;
   onAllow: () => void;
+  onDeny?: () => void;
   loading?: boolean;
 }
 
@@ -18,6 +19,7 @@ export default function LocationPermissionPrompt({
   isOpen,
   onClose,
   onAllow,
+  onDeny,
   loading = false,
 }: LocationPermissionPromptProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -130,7 +132,13 @@ export default function LocationPermissionPrompt({
               )}
             </button>
             <button
-              onClick={handleClose}
+              onClick={() => {
+                if (onDeny) {
+                  onDeny();
+                } else {
+                  handleClose();
+                }
+              }}
               disabled={loading}
               className="w-full px-6 py-3 text-gray-600 font-medium hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >

@@ -18,6 +18,7 @@ import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock, useGeolocation, calculateDistance, kmToMiles } from '../hooks';
 import LocationPermissionPrompt from '../components/LocationPermissionPrompt';
+import LoginPrompt from '../components/LoginPrompt';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { WeeklySchedule } from '../types';
 
@@ -84,6 +85,7 @@ export default function ConsumerPage() {
   const [isPendingPopupVisible, setIsPendingPopupVisible] = useState(false);
   const [showRejectedPopup, setShowRejectedPopup] = useState(false);
   const [isRejectedPopupVisible, setIsRejectedPopupVisible] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -205,6 +207,12 @@ export default function ConsumerPage() {
 
   // Handle "Become a Barber" button click
   const handleBecomeBarberClick = () => {
+    // Check if user is authenticated first
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    
     if (hasPendingApplication) {
       openPendingPopup();
     } else if (hasRejectedApplication) {
@@ -268,69 +276,82 @@ export default function ConsumerPage() {
               <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
             </div>
             
-            {/* Right section - Messages & Profile */}
+            {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Messages Button */}
-              <button
-                onClick={() => navigate(`${platformPrefix}/consumer/messages`)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-                title="Messages"
-              >
-                <MessageCircle className="w-5 h-5 text-gray-600" />
-              </button>
-              
-              {/* Profile Dropdown */}
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="md" />
-                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
+              {user ? (
+                <>
+                  {/* Messages Button - Only for authenticated users */}
+                  <button
+                    onClick={() => navigate(`${platformPrefix}/consumer/messages`)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                    title="Messages"
+                  >
+                    <MessageCircle className="w-5 h-5 text-gray-600" />
+                  </button>
+                  
+                  {/* Profile Dropdown - Only for authenticated users */}
+                  <div className="relative" ref={dropdownRef}>
                     <button
-                      onClick={() => {
-                        openProfileEditor();
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                     >
-                      <Settings className="w-4 h-4 text-gray-500" />
-                      Edit Profile
+                      <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="md" />
+                      <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
                     </button>
-                    {user?.is_admin && (
-                      <>
-                        <div className="border-t border-gray-200 my-1"></div>
+
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
                         <button
                           onClick={() => {
-                            navigate(`${platformPrefix}/admin-role-select`);
+                            openProfileEditor();
                             setShowProfileDropdown(false);
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                         >
-                          <ArrowLeft className="w-4 h-4 text-gray-500" />
-                          Back to Roles
+                          <Settings className="w-4 h-4 text-gray-500" />
+                          Edit Profile
                         </button>
-                      </>
+                        {user?.is_admin && (
+                          <>
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                              onClick={() => {
+                                navigate(`${platformPrefix}/admin-role-select`);
+                                setShowProfileDropdown(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                            >
+                              <ArrowLeft className="w-4 h-4 text-gray-500" />
+                              Back to Roles
+                            </button>
+                          </>
+                        )}
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <button
+                          onClick={() => {
+                            useAuthStore.getState().logout();
+                            navigate(`${platformPrefix}`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                        >
+                          <LogOut className="w-4 h-4 text-red-500" />
+                          Sign Out
+                        </button>
+                      </div>
                     )}
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={() => {
-                        useAuthStore.getState().logout();
-                        navigate(`${platformPrefix}`);
-                        setShowProfileDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
-                    >
-                      <LogOut className="w-4 h-4 text-red-500" />
-                      Sign Out
-                    </button>
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                /* Sign In button for unauthenticated users */
+                <button
+                  onClick={() => navigate('/web')}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                >
+                  <UserIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -435,11 +456,19 @@ export default function ConsumerPage() {
           </div>
         </div>
       )}
+
+      {/* Login Prompt for unauthenticated users trying to become a barber */}
+      <LoginPrompt
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        action="become_barber"
+      />
     </div>
   );
 }
 
 function DiscoveryView({ navigate }: { navigate: any }) {
+  const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -452,6 +481,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     locationDetails: null,
   });
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
+  
+  // Auth state
+  const { isAuthenticated } = useAuthStore();
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -486,6 +520,30 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const handleAllowLocation = () => {
     requestLocation();
     setShowLocationPrompt(false);
+  };
+
+  // Handle location denial - go to landing page
+  const handleDenyLocation = () => {
+    setShowLocationPrompt(false);
+    navigate('/');
+  };
+
+  // Handle schedule click - check auth first
+  const handleScheduleClick = (barber: Barber) => {
+    if (!isAuthenticated) {
+      setLoginPromptAction('schedule');
+      setShowLoginPrompt(true);
+      return;
+    }
+    // Navigate to booking
+    const formData = location.state?.preservedFormData;
+    navigate(`/web/consumer/book/${barber.id}`, {
+      state: {
+        barber,
+        filters: filterCriteria,
+        preservedFormData: formData?.barberId === barber.id ? formData : undefined,
+      },
+    });
   };
 
   const loadBarbers = async () => {
@@ -848,16 +906,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     {/* Schedule Button */}
                     <div className="flex justify-center sm:justify-start">
                       <Button
-                        onClick={() => {
-                          const formData = location.state?.preservedFormData;
-                          navigate(`/web/consumer/book/${selectedBarber.id}`, {
-                            state: {
-                              barber: selectedBarber,
-                              filters: filterCriteria,
-                              preservedFormData: formData?.barberId === selectedBarber.id ? formData : undefined,
-                            },
-                          });
-                        }}
+                        onClick={() => handleScheduleClick(selectedBarber)}
                         className="px-6 py-2 text-base"
                       >
                         Schedule Service
@@ -894,7 +943,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         isOpen={showLocationPrompt}
         onClose={() => setShowLocationPrompt(false)}
         onAllow={handleAllowLocation}
+        onDeny={handleDenyLocation}
         loading={locationLoading}
+      />
+
+      {/* Login Prompt for unauthenticated users */}
+      <LoginPrompt
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        action={loginPromptAction}
       />
     </>
   );
