@@ -122,7 +122,7 @@ class PushNotificationService {
   /**
    * Send notification to a user
    */
-  async sendNotification(userId: number, notification: NotificationData): Promise<any> {
+  async sendNotification(userId: string | number, notification: NotificationData): Promise<any> {
     try {
       console.log(`📱 Sending notification to user ${userId}:`, {
         title: notification.title,
@@ -273,7 +273,7 @@ class PushNotificationService {
    * Log notification for analytics
    */
   private async logNotification(
-    userId: number,
+    userId: string | number,
     notification: NotificationData,
     results: DeviceResult[]
   ): Promise<void> {
@@ -294,7 +294,7 @@ class PushNotificationService {
    * Send booking confirmation notification
    */
   async sendBookingConfirmationNotification(
-    userId: number,
+    userId: string | number,
     barberName: string,
     service: string,
     dateTime: string
@@ -319,7 +319,7 @@ class PushNotificationService {
    * Send appointment reminder notification
    */
   async sendAppointmentReminderNotification(
-    userId: number,
+    userId: string | number,
     barberName: string,
     service: string,
     hoursUntil: number
@@ -344,7 +344,7 @@ class PushNotificationService {
    * Send chat message notification
    */
   async sendMessageNotification(
-    recipientId: number,
+    recipientId: string | number,
     senderName: string,
     messagePreview: string
   ): Promise<any> {
@@ -384,7 +384,7 @@ class PushNotificationService {
    * Send payment received notification (for barbers)
    */
   async sendPaymentReceivedNotification(
-    barberId: number,
+    barberId: string | number,
     amount: number,
     studentName: string
   ): Promise<any> {
@@ -408,7 +408,7 @@ class PushNotificationService {
    * Send review notification (for barbers)
    */
   async sendReviewNotification(
-    barberId: number,
+    barberId: string | number,
     studentName: string,
     rating: number
   ): Promise<any> {
@@ -433,7 +433,7 @@ class PushNotificationService {
    * Send system notification
    */
   async sendSystemNotification(
-    userId: number,
+    userId: string | number,
     title: string,
     body: string,
     data: Record<string, any> = {}
@@ -456,7 +456,7 @@ class PushNotificationService {
   /**
    * Update badge count
    */
-  async updateBadgeCount(userId: number, badgeCount: number | null = null): Promise<any> {
+  async updateBadgeCount(userId: string | number, badgeCount: number | null = null): Promise<any> {
     try {
       if (badgeCount === null) {
         // Get current unread count (messages + pending bookings)
@@ -495,14 +495,14 @@ class PushNotificationService {
   /**
    * Clear badge
    */
-  async clearBadge(userId: number): Promise<any> {
+  async clearBadge(userId: string | number): Promise<any> {
     return await this.updateBadgeCount(userId, 0);
   }
 
   /**
    * Get notification preferences
    */
-  async getNotificationPreferences(userId: number): Promise<any> {
+  async getNotificationPreferences(userId: string | number): Promise<any> {
     try {
       const result = await pool.query(
         'SELECT notification_preferences FROM users WHERE id = $1',
@@ -543,7 +543,7 @@ class PushNotificationService {
   /**
    * Update notification preferences
    */
-  async updateNotificationPreferences(userId: number, preferences: any): Promise<any> {
+  async updateNotificationPreferences(userId: string | number, preferences: any): Promise<any> {
     try {
       await pool.query('UPDATE users SET notification_preferences = $1 WHERE id = $2', [
         JSON.stringify(preferences),
@@ -559,7 +559,7 @@ class PushNotificationService {
   /**
    * Check if user should receive notification
    */
-  async shouldSendNotification(userId: number, notificationType: string): Promise<boolean> {
+  async shouldSendNotification(userId: string | number, notificationType: string): Promise<boolean> {
     try {
       const preferences = await this.getNotificationPreferences(userId);
 
