@@ -127,15 +127,15 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (loading) {
     return (
       <div 
-        className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+        className={`absolute inset-0 flex items-center justify-center z-20 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
         onClick={handleClose}
       >
         <div 
-          className={`bg-white rounded-lg shadow-xl max-w-2xl w-full p-8 flex items-center justify-center border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          className={`bg-white rounded-lg shadow-xl max-w-md w-full p-6 flex items-center justify-center border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
-          <span className="ml-3 text-gray-600">Loading barber profile...</span>
+          <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+          <span className="ml-3 text-gray-600 text-sm">Loading...</span>
         </div>
       </div>
     );
@@ -144,16 +144,16 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (error || !barber) {
     return (
       <div 
-        className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+        className={`absolute inset-0 flex items-center justify-center z-20 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
         onClick={handleClose}
       >
         <div 
-          className={`bg-white rounded-lg shadow-xl max-w-2xl w-full p-8 border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          className={`bg-white rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-center">
-            <p className="text-red-600 mb-4">{error || 'Barber not found'}</p>
-            <Button variant="outline" onClick={handleClose}>Close</Button>
+            <p className="text-red-600 mb-4 text-sm">{error || 'Barber not found'}</p>
+            <Button variant="outline" size="sm" onClick={handleClose}>Close</Button>
           </div>
         </div>
       </div>
@@ -164,44 +164,43 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
   return (
     <div 
-      className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+      className={`absolute inset-0 flex items-center justify-center z-20 p-2 transition-all duration-150 ease-out ${isVisible ? 'bg-black/30' : 'bg-black/0'}`}
       onClick={handleClose}
     >
       <div 
-        className={`bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[75vh] overflow-y-auto border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
+        className={`bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[85%] overflow-y-auto border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-3 py-2 flex items-center justify-between z-10">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-gray-900">Barber Profile</h2>
-            <span className="text-xs text-gray-500">(Campus Manager View)</span>
+            <h2 className="text-base font-bold text-gray-900">Barber Profile</h2>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none p-1"
           >
             ×
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-4">
+        <div className="p-3 space-y-2">
           {/* Basic Info */}
-          <Card className="p-4">
-            <div className="flex items-start gap-3 mb-3">
+          <Card className="p-3">
+            <div className="flex items-start gap-2 mb-2">
               {/* Profile Photo */}
               {(barber.profile_photo_url || barber.profile_picture_url) && (
                 <img
                   src={barber.profile_photo_url || barber.profile_picture_url}
                   alt={getBarberName()}
-                  className="w-14 h-14 rounded-full object-cover flex-shrink-0"
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                 />
               )}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-gray-900">{getBarberName()}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-900 truncate">{getBarberName()}</h3>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${
                     barber.is_active
                       ? 'bg-green-100 text-green-700'
                       : 'bg-gray-100 text-gray-700'
@@ -210,16 +209,16 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                   </span>
                 </div>
                 {barber.bio && (
-                  <p className="text-sm text-gray-600">{barber.bio}</p>
+                  <p className="text-xs text-gray-600 line-clamp-2">{barber.bio}</p>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-700">
-                <Mail className="w-4 h-4 text-gray-500" />
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center gap-1.5 text-gray-700">
+                <Mail className="w-3 h-3 text-gray-500 flex-shrink-0" />
                 {getEmail() !== 'Not available' ? (
-                  <a href={`mailto:${getEmail()}`} className="text-primary-600 hover:underline">
+                  <a href={`mailto:${getEmail()}`} className="text-primary-600 hover:underline truncate">
                     {getEmail()}
                   </a>
                 ) : (
@@ -227,8 +226,8 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 )}
               </div>
               {barber.instagram_handle && (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Instagram className="w-4 h-4 text-gray-500" />
+                <div className="flex items-center gap-1.5 text-gray-700">
+                  <Instagram className="w-3 h-3 text-gray-500 flex-shrink-0" />
                   <a
                     href={`https://www.instagram.com/${barber.instagram_handle.replace('@', '')}/`}
                     target="_blank"
@@ -239,26 +238,20 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                   </a>
                 </div>
               )}
-              {barber.years_experience > 0 && (
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span>{barber.years_experience} years experience</span>
-                </div>
-              )}
             </div>
           </Card>
 
           {/* Pricing Info */}
           {priceRange.max > 0 && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                <DollarSign className="w-4 h-4 text-primary-600" />
+            <Card className="p-3">
+              <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2 text-xs">
+                <DollarSign className="w-3 h-3 text-primary-600" />
                 Pricing
               </h4>
               <div className="flex items-center gap-3">
                 <div>
-                  <p className="text-xs text-gray-600">Price Range</p>
-                  <p className="text-base font-bold text-gray-900">
+                  <p className="text-xs text-gray-600">Range</p>
+                  <p className="text-sm font-bold text-gray-900">
                     ${priceRange.min} - ${priceRange.max}
                   </p>
                 </div>
@@ -266,28 +259,17 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                   {barber.pricing?.length || 0} services
                 </div>
               </div>
-              {/* Service List */}
-              {barber.pricing && barber.pricing.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {barber.pricing.map((service, index) => (
-                    <div key={service.id || index} className="flex justify-between text-xs">
-                      <span className="text-gray-600">{service.name}</span>
-                      <span className="font-medium text-gray-900">${service.price}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </Card>
           )}
 
           {/* Specialties */}
           {barber.specialties && barber.specialties.length > 0 && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                <Award className="w-4 h-4 text-primary-600" />
+            <Card className="p-3">
+              <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2 text-xs">
+                <Award className="w-3 h-3 text-primary-600" />
                 Specialties
               </h4>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {barber.specialties.map((specialty) => (
                   <span
                     key={specialty}
@@ -302,27 +284,26 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
           {/* Weekly Schedule */}
           {barber.weekly_schedule && (
-            <Card className="p-4">
-              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-primary-600" />
-                Weekly Schedule
+            <Card className="p-3">
+              <h4 className="font-semibold text-gray-900 mb-1 flex items-center gap-2 text-xs">
+                <Clock className="w-3 h-3 text-primary-600" />
+                Schedule
               </h4>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1">
                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
                   const schedule = (barber.weekly_schedule as any)?.[day];
-                  // Convert 24-hour time to 12-hour format
                   const formatTime = (time: string) => {
                     const [hours, minutes] = time.split(':').map(Number);
-                    const period = hours >= 12 ? 'PM' : 'AM';
+                    const period = hours >= 12 ? 'p' : 'a';
                     const hour12 = hours % 12 || 12;
-                    return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+                    return `${hour12}${period}`;
                   };
                   return (
                     <div key={day} className="text-xs">
-                      <span className="font-medium text-gray-900 capitalize">{day.slice(0, 3)}</span>
-                      <p className="text-gray-600">
+                      <span className="font-medium text-gray-900 capitalize">{day.slice(0, 2)}</span>
+                      <p className="text-gray-600 text-[10px]">
                         {schedule?.enabled 
-                          ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
+                          ? `${formatTime(schedule.start)}-${formatTime(schedule.end)}`
                           : 'Off'
                         }
                       </p>
@@ -334,24 +315,20 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
           )}
 
           {/* Campus Manager Actions */}
-          <Card className="p-3 bg-yellow-50 border-yellow-200">
-            <div className="flex items-start gap-2">
-              <Flag className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h4 className="font-semibold text-yellow-900 mb-1 text-sm">Campus Manager Actions</h4>
-                <p className="text-xs text-yellow-800 mb-2">
-                  Report issues or concerns about this barber to platform administrators.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowReportModal(true)}
-                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-100 text-xs"
-                >
-                  <Flag className="w-3 h-3 mr-1" />
-                  Report to Admin
-                </Button>
+          <Card className="p-2 bg-yellow-50 border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Flag className="w-3 h-3 text-yellow-600" />
+                <span className="text-xs text-yellow-800">Report issues to admin</span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReportModal(true)}
+                className="border-yellow-600 text-yellow-700 hover:bg-yellow-100 text-xs py-1 px-2"
+              >
+                Report
+              </Button>
             </div>
           </Card>
         </div>
