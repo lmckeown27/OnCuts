@@ -7,8 +7,8 @@
 
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { pool } from '../config/database';
-import { ApiError } from '../utils/errors';
+import { pool } from '../database/connection';
+import { ApiError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 
 interface UpdateLocationBody {
