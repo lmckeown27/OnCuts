@@ -713,23 +713,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
         </div>
       )}
 
-      {/* Info Card */}
-      <Card className="p-4 sm:p-6 bg-blue-50 border-blue-200">
-        <div className="flex gap-2 sm:gap-3">
-          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">Campus Manager Responsibilities</h4>
-            <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-1.5">
-              <li>• Monitor barber performance and assist with onboarding</li>
-              <li>• Provide support and answer questions from barbers</li>
-              <li>• Help resolve issues between barbers and customers</li>
-              <li>• Ensure all barbers maintain professional standards</li>
-              <li>• Cannot manipulate rankings, pricing, or visibility</li>
-            </ul>
-          </div>
-        </div>
-      </Card>
-
       {/* Barber Profile Modal */}
       {selectedBarberId && (
         <CampusManagerBarberView
@@ -812,26 +795,6 @@ const ContentManagementPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
       </Card>
 
-      {/* Content Guidelines */}
-      <Card className="p-4 sm:p-6 bg-blue-50 border-blue-200">
-        <div className="flex gap-2 sm:gap-3">
-          <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-blue-900 mb-1.5 sm:mb-2 text-sm sm:text-base">Content Guidelines</h4>
-            <ul className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-1.5">
-              <li>• Showcase barber work and transformations</li>
-              <li>• Highlight positive customer experiences</li>
-              <li>• Promote campus events and special offers</li>
-              <li>• Tag barbers and customers (with permission)</li>
-              <li>• Use relevant hashtags (#CampusCut, #YourCampusName)</li>
-              <li>• Maintain professional and inclusive content</li>
-            </ul>
-          </div>
-        </div>
-      </Card>
-
-      {/* Quick Stats - Will be populated with real Instagram API data */}
-      {/* Stats section temporarily hidden until Instagram API integration */}
     </div>
   );
 };
