@@ -156,9 +156,8 @@ export default function BarberPage() {
               
               {/* Campus Manager Badge */}
               {isCampusManager && (
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 border border-blue-200">
-                  <Shield className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="text-xs font-semibold text-blue-700">Campus Manager</span>
+                <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+                  <span className="text-xs font-semibold text-gray-600">Campus Manager</span>
                 </div>
               )}
             </div>
