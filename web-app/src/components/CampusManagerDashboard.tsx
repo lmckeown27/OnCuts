@@ -584,7 +584,12 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 relative">
+      {/* Grey overlay when barber profile is open */}
+      {selectedBarberId && (
+        <div className="absolute inset-0 bg-gray-500/30 rounded-lg z-10 pointer-events-none" />
+      )}
+      
       {/* Search and Filter */}
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1 relative">
