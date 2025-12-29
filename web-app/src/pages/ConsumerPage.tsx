@@ -78,8 +78,11 @@ export default function ConsumerPage() {
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
   const [showBarberApplication, setShowBarberApplication] = useState(false);
   const [hasPendingApplication, setHasPendingApplication] = useState(false);
+  const [hasRejectedApplication, setHasRejectedApplication] = useState(false);
   const [showPendingPopup, setShowPendingPopup] = useState(false);
   const [isPendingPopupVisible, setIsPendingPopupVisible] = useState(false);
+  const [showRejectedPopup, setShowRejectedPopup] = useState(false);
+  const [isRejectedPopupVisible, setIsRejectedPopupVisible] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -135,23 +138,34 @@ export default function ConsumerPage() {
     checkBarberProfile();
   }, [user?.id]);
 
-  // Check for pending barber application
+  // Check for pending or rejected barber application
   useEffect(() => {
-    const checkPendingApplication = async () => {
+    const checkApplicationStatus = async () => {
       if (user && !user.has_barber_profile) {
         try {
           const application = await barberApplicationService.getMyApplication();
-          if (application && (application.status === 'pending' || application.status === 'under_review' || application.status === 'interview_scheduled')) {
-            setHasPendingApplication(true);
+          if (application) {
+            if (application.status === 'pending' || application.status === 'under_review' || application.status === 'interview_scheduled') {
+              setHasPendingApplication(true);
+              setHasRejectedApplication(false);
+            } else if (application.status === 'rejected') {
+              setHasPendingApplication(false);
+              setHasRejectedApplication(true);
+            } else {
+              setHasPendingApplication(false);
+              setHasRejectedApplication(false);
+            }
           } else {
             setHasPendingApplication(false);
+            setHasRejectedApplication(false);
           }
         } catch {
           setHasPendingApplication(false);
+          setHasRejectedApplication(false);
         }
       }
     };
-    checkPendingApplication();
+    checkApplicationStatus();
   }, [user?.id, user?.has_barber_profile]);
 
   // Pending application popup handlers
@@ -171,10 +185,29 @@ export default function ConsumerPage() {
     }, 150);
   };
 
+  // Rejected application popup handlers
+  const openRejectedPopup = () => {
+    setShowRejectedPopup(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsRejectedPopupVisible(true);
+      });
+    });
+  };
+
+  const closeRejectedPopup = () => {
+    setIsRejectedPopupVisible(false);
+    setTimeout(() => {
+      setShowRejectedPopup(false);
+    }, 150);
+  };
+
   // Handle "Become a Barber" button click
   const handleBecomeBarberClick = () => {
     if (hasPendingApplication) {
       openPendingPopup();
+    } else if (hasRejectedApplication) {
+      openRejectedPopup();
     } else {
       setShowBarberApplication(true);
     }
@@ -367,6 +400,44 @@ export default function ConsumerPage() {
             >
               Got it
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Rejected Application Popup */}
+      {showRejectedPopup && (
+        <div 
+          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isRejectedPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeRejectedPopup}
+        >
+          <div 
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transition-all duration-150 ease-out
+              ${isRejectedPopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Scissors className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Application Rejected</h3>
+            <p className="text-gray-600 mb-6">
+              You have been rejected. If you believe the decision made by your campus manager was unfair, please email campuscuthelp@gmail.com
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=campuscuthelp@gmail.com&su=Appeal%20Barber%20Application%20Rejection"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-block"
+              >
+                Email Support
+              </a>
+              <button
+                onClick={closeRejectedPopup}
+                className="px-6 py-2.5 text-gray-600 font-medium hover:text-gray-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
