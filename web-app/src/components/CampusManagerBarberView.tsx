@@ -291,17 +291,20 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 Weekly Schedule
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {Object.entries(barber.weekly_schedule).map(([day, schedule]) => (
-                  <div key={day} className="text-sm">
-                    <span className="font-medium text-gray-900 capitalize">{day}</span>
-                    <p className="text-gray-600">
-                      {schedule?.isAvailable 
-                        ? `${schedule.startTime} - ${schedule.endTime}`
-                        : 'Unavailable'
-                      }
-                    </p>
-                  </div>
-                ))}
+                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                  const schedule = (barber.weekly_schedule as any)?.[day];
+                  return (
+                    <div key={day} className="text-sm">
+                      <span className="font-medium text-gray-900 capitalize">{day}</span>
+                      <p className="text-gray-600">
+                        {schedule?.enabled 
+                          ? `${schedule.start} - ${schedule.end}`
+                          : 'Unavailable'
+                        }
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </Card>
           )}
