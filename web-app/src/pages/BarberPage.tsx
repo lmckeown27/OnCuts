@@ -1143,7 +1143,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
     try {
       const response = await fetch(`/api/v1/barbers/user/${userId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
       
@@ -1199,7 +1199,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({ weekly_schedule: availability }),
       });

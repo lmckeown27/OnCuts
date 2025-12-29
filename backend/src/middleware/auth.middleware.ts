@@ -163,9 +163,6 @@ export const authenticate = (
      * 5. Checks exp claim (must be in future)
      * 6. Returns decoded payload if all checks pass
      */
-    // DEBUG
-    console.log('[AUTH] Token length:', token?.length, 'Token starts with:', token?.substring(0, 20));
-    
     const decoded = jwt.verify(token, secret) as TokenPayload;
 
     // Step 5: Attach user data to request object
@@ -181,7 +178,6 @@ export const authenticate = (
     
     if (error instanceof jwt.JsonWebTokenError) {
       // Invalid token format or signature mismatch
-      console.log('[AUTH] JWT Error:', error.message);
       next(new ApiError(401, 'Invalid token'));
     } else if (error instanceof jwt.TokenExpiredError) {
       // Token exp claim is in the past
