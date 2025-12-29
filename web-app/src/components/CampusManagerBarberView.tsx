@@ -90,9 +90,9 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     return 'Unknown Barber';
   };
 
-  // Helper to get email
+  // Helper to get email - backend returns email directly on barber object from JOIN
   const getEmail = () => {
-    return barber?.user?.email || 'Not available';
+    return (barber as any)?.email || barber?.user?.email || 'Not available';
   };
 
   // Helper to get price range
