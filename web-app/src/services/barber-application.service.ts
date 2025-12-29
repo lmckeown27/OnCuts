@@ -6,6 +6,7 @@ export interface BarberApplicationForm {
   licenseNumber?: string;
   specialties: string[];
   hasOwnTools: boolean;
+  toolsNeeded?: string;
   availableHours: string;
   whyBeBarber: string;
   portfolioDescription?: string;
