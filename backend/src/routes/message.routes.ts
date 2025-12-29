@@ -15,7 +15,7 @@ const router = express.Router();
  */
 router.get('/conversations', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
 
@@ -33,7 +33,7 @@ router.get('/conversations', authenticate, async (req, res, next) => {
  */
 router.post('/conversations', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     // Accept both camelCase and snake_case from frontend
     const otherUserId = req.body.otherUserId || req.body.other_user_id;
 
@@ -76,7 +76,7 @@ router.post('/conversations', authenticate, async (req, res, next) => {
  */
 router.get('/conversations/:conversationId/messages', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
@@ -94,7 +94,7 @@ router.get('/conversations/:conversationId/messages', authenticate, async (req, 
  */
 router.post('/conversations/:conversationId/messages', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
     const { content, messageType, mediaUrl } = req.body;
 
@@ -131,7 +131,7 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
  */
 router.put('/conversations/:conversationId/read', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
 
     const result = await messageService.markConversationAsRead(conversationId, userId);
@@ -147,7 +147,7 @@ router.put('/conversations/:conversationId/read', authenticate, async (req, res,
  */
 router.delete('/conversations/:conversationId', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
 
     const result = await messageService.deleteConversation(conversationId, userId);
@@ -163,7 +163,7 @@ router.delete('/conversations/:conversationId', authenticate, async (req, res, n
  */
 router.get('/unread-count', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const count = await messageService.getUnreadMessageCount(userId);
     
     res.json({
@@ -181,7 +181,7 @@ router.get('/unread-count', authenticate, async (req, res, next) => {
  */
 router.get('/stats', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const result = await messageService.getMessageStats(userId);
     res.json(result);
   } catch (error) {
