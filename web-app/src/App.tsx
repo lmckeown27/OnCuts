@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import AppStatus from './components/AppStatus';
 import PlatformGuard from './components/PlatformGuard';
 import Loading from './components/Loading';
+import { useAuthStore } from './store/useAuthStore';
 
 // Landing & Authentication - Load immediately (critical path)
 import LandingPage from './pages/LandingPage';
@@ -70,6 +71,14 @@ function AppContent() {
   const location = useLocation();
   const isAppRoute = location.pathname.startsWith('/app');
   const isWebRoute = location.pathname.startsWith('/web');
+  const { loadUser, isAuthenticated } = useAuthStore();
+
+  // Load user data from API on mount to ensure fresh role data (e.g., is_campus_manager)
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadUser();
+    }
+  }, []); // Only run on initial mount
 
   return (
     <div className="min-h-screen bg-gray-50">
