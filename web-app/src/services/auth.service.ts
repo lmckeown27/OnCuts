@@ -137,9 +137,20 @@ class AuthService {
   }
 
   private saveAuthData(data: AuthResponse): void {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
+    // Only save tokens if they are valid strings (not null/undefined)
+    if (data.accessToken && typeof data.accessToken === 'string') {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
+    } else {
+      console.error('Invalid accessToken received from login:', data.accessToken);
+    }
+    if (data.refreshToken && typeof data.refreshToken === 'string') {
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+    } else {
+      console.error('Invalid refreshToken received from login:', data.refreshToken);
+    }
+    if (data.user) {
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user));
+    }
   }
 
   private clearAuthData(): void {

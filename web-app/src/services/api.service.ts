@@ -19,7 +19,8 @@ class ApiService {
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-        if (token && config.headers) {
+        // Only add token if it exists and is not the literal string "null" or "undefined"
+        if (token && token !== 'null' && token !== 'undefined' && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
