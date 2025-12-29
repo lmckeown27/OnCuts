@@ -255,7 +255,7 @@ export default function LoginPage() {
         {/* Back to Landing */}
         <div className="text-center mt-6">
           <Link 
-            to="/"
+            to="/web/consumer"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
             ← Back to CampusCut

@@ -615,10 +615,10 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* Back to Landing */}
+        {/* Back to Consumer Page */}
         <div className="text-center mt-6">
           <Link 
-            to="/"
+            to="/web/consumer"
             className="text-gray-400 hover:text-white text-sm transition-colors inline-flex items-center gap-2"
           >
             <ArrowLeft size={16} />
