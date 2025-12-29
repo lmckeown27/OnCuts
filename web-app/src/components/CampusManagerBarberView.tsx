@@ -38,6 +38,23 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportDetails, setReportDetails] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Animate in on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle smooth close
+  const handleClose = () => {
+    setIsClosing(true);
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 150);
+  };
 
   useEffect(() => {
     const fetchBarber = async () => {
@@ -110,11 +127,11 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (loading) {
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        onClick={onClose}
+        className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+        onClick={handleClose}
       >
         <div 
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-8 flex items-center justify-center"
+          className={`bg-white rounded-lg shadow-xl max-w-2xl w-full p-8 flex items-center justify-center border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           onClick={(e) => e.stopPropagation()}
         >
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
@@ -127,16 +144,16 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   if (error || !barber) {
     return (
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        onClick={onClose}
+        className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+        onClick={handleClose}
       >
         <div 
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-8"
+          className={`bg-white rounded-lg shadow-xl max-w-2xl w-full p-8 border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-center">
             <p className="text-red-600 mb-4">{error || 'Barber not found'}</p>
-            <Button variant="outline" onClick={onClose}>Close</Button>
+            <Button variant="outline" onClick={handleClose}>Close</Button>
           </div>
         </div>
       </div>
@@ -147,11 +164,11 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
-      onClick={onClose}
+      className={`fixed inset-0 flex items-center justify-center z-[60] p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+      onClick={handleClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[75vh] overflow-y-auto border border-gray-300"
+        className={`bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[75vh] overflow-y-auto border border-gray-300 transition-all duration-150 ease-out ${isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -161,7 +178,7 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
             <span className="text-xs text-gray-500">(Campus Manager View)</span>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600 text-xl leading-none"
           >
             ×
