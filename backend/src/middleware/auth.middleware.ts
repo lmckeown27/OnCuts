@@ -132,29 +132,6 @@ export const authenticate = (
   try {
     const authHeader = req.headers.authorization;
 
-    // ========================================
-    // DEVELOPMENT MODE BYPASS
-    // ========================================
-    // ⚠️ WARNING: This bypass allows requests without authentication
-    // in development mode. Remove or disable in production!
-    if (process.env.NODE_ENV === 'development' && (!authHeader || !authHeader.startsWith('Bearer '))) {
-      console.warn('⚠️  DEV MODE: Bypassing authentication - using mock admin user');
-      
-      // Attach mock user for development testing
-      (req as AuthRequest).user = {
-        userId: 'dev-admin-001',
-        email: 'admin@campuscuts.dev',
-        role: 'admin',
-        campusId: 1,
-      };
-      
-      return next();
-    }
-
-    // ========================================
-    // PRODUCTION AUTHENTICATION
-    // ========================================
-
     // Step 1: Check for Authorization header
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new ApiError(401, 'No token provided');
