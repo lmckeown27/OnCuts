@@ -19,7 +19,8 @@ interface ApplicationForm {
   portfolioDescription: string;
   whyBeBarber: string;
   availableHours: string;
-  hasOwnTools: boolean;
+  needsTools: boolean;
+  toolsNeeded: string;
   socialMedia: string;
   additionalNotes: string;
 }
@@ -73,7 +74,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     portfolioDescription: '',
     whyBeBarber: '',
     availableHours: '',
-    hasOwnTools: false,
+    needsTools: false,
+    toolsNeeded: '',
     socialMedia: '',
     additionalNotes: ''
   });
@@ -96,7 +98,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         hasLicense: form.hasLicense,
         licenseNumber: form.licenseNumber || undefined,
         specialties: form.specialties,
-        hasOwnTools: form.hasOwnTools,
+        hasOwnTools: !form.needsTools,
+        toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
         availableHours: form.availableHours,
         whyBeBarber: form.whyBeBarber,
         portfolioDescription: form.portfolioDescription || undefined,
@@ -214,16 +217,39 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     <option value="5-plus">5+ years</option>
                   </select>
                 </div>
-                <div className="flex items-center justify-center pb-1">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.hasOwnTools}
-                      onChange={(e) => setForm({ ...form, hasOwnTools: e.target.checked })}
-                      className="w-5 h-5 text-primary-600 rounded"
-                    />
-                    <span className="text-gray-700 text-sm">I have my own tools</span>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Do you need barber tools?
                   </label>
+                  <div className="flex gap-4 mb-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={form.needsTools}
+                        onChange={() => setForm({ ...form, needsTools: true })}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span className="text-sm">Yes</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={!form.needsTools}
+                        onChange={() => setForm({ ...form, needsTools: false, toolsNeeded: '' })}
+                        className="w-4 h-4 text-primary-600"
+                      />
+                      <span className="text-sm">No</span>
+                    </label>
+                  </div>
+                  {form.needsTools && (
+                    <input
+                      type="text"
+                      placeholder="What tools do you need?"
+                      value={form.toolsNeeded}
+                      onChange={(e) => setForm({ ...form, toolsNeeded: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    />
+                  )}
                 </div>
               </div>
 
