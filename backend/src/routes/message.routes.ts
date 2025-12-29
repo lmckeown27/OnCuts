@@ -33,7 +33,13 @@ router.get('/conversations', authenticate, async (req, res, next) => {
 router.post('/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.id;
-    const { otherUserId, bookingId } = req.body;
+    // Accept both camelCase and snake_case from frontend
+    const otherUserId = req.body.otherUserId || req.body.other_user_id;
+    const bookingId = req.body.bookingId || req.body.booking_id;
+
+    if (!otherUserId) {
+      return res.status(400).json({ success: false, error: 'other_user_id is required' });
+    }
 
     const result = await messageService.startConversation(userId, otherUserId, bookingId);
     res.status(201).json(result);
