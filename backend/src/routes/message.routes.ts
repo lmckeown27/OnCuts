@@ -20,6 +20,12 @@ router.get('/conversations', authenticate, async (req, res, next) => {
     const limit = parseInt(req.query.limit as string) || 20;
 
     const result = await messageService.getUserConversations(userId, page, limit);
+    
+    // Prevent browser caching to ensure fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     res.json(result);
   } catch (error) {
     next(error);
