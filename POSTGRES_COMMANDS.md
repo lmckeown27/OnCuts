@@ -490,22 +490,22 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 ```bash
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    id,
-    stripe_payment_intent_id,
-    stripe_transfer_id,
+    pt.id,
+    pt.stripe_payment_intent_id,
+    pt.stripe_transfer_id,
     u_c.email AS consumer_email,
     u_b.email AS barber_email,
-    amount,
-    platform_fee,
-    barber_payout,
-    tip_amount,
-    status,
-    created_at
+    pt.amount,
+    pt.platform_fee,
+    pt.barber_payout,
+    pt.tip_amount,
+    pt.status,
+    pt.created_at
 FROM payment_transactions pt
 LEFT JOIN users u_c ON pt.client_id = u_c.id
 LEFT JOIN barbers b ON pt.barber_id = b.id
 LEFT JOIN users u_b ON b.\"userId\" = u_b.id
-ORDER BY created_at DESC 
+ORDER BY pt.created_at DESC 
 LIMIT 20;
 "
 ```
