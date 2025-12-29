@@ -183,7 +183,13 @@ export default function ScheduleServicePage() {
             <Card className="sticky top-4">
               <div className="p-6">
                 <div className="w-48 h-64 mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
-                  {barber.portfolio && barber.portfolio.length > 0 ? (
+                  {barber.profile_picture_url || barber.profile_photo_url ? (
+                    <img
+                      src={barber.profile_picture_url || barber.profile_photo_url}
+                      alt="Barber"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : barber.portfolio && barber.portfolio.length > 0 ? (
                     <img
                       src={barber.portfolio[0].url}
                       alt="Barber"
