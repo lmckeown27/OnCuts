@@ -43,9 +43,9 @@ class MessageService {
           u.role as other_user_type,
           
           -- BARBER INFO (if other user is barber)
-          br.display_name as barber_display_name,
+          u."displayName" as barber_display_name,
           br.specialties as barber_specialties,
-          br.average_rating as barber_rating,
+          br."avgRating" as barber_rating,
           
           -- MESSAGE INFO
           (
@@ -83,7 +83,7 @@ class MessageService {
             ELSE c.user1_id
           END = u.id
         )
-        LEFT JOIN barbers br ON u.id = br.user_id
+        LEFT JOIN barbers br ON u.id = br."userId"
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
