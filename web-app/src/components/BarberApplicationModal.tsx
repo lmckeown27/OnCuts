@@ -227,8 +227,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <div className="flex flex-col items-center justify-center">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2 text-center">
                     <Award className="w-4 h-4 inline mr-2" />
                     Barbering license?
                   </label>
