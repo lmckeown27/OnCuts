@@ -419,12 +419,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   </div>
                 )}
               </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Note:</strong> By submitting this application, you agree to be contacted by a CampusCut campus manager for an interview. Your application will be reviewed within 2-3 business days.
-                </p>
-              </div>
             </div>
           )}
         </div>
