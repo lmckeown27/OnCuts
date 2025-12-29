@@ -4,13 +4,12 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Award, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import TimePickerDropdown from '../components/TimePickerDropdown';
 import BarberProfileEditor from '../components/BarberProfileEditor';
-import BarberPricingDashboard from '../components/BarberPricingDashboard';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
@@ -42,9 +41,6 @@ export default function BarberPage() {
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [isServiceSpecialtiesVisible, setIsServiceSpecialtiesVisible] = useState(false);
   
-  const [showPricingDashboard, setShowPricingDashboard] = useState(false);
-  const [isPricingDashboardVisible, setIsPricingDashboardVisible] = useState(false);
-  
   const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
   const [isCampusManagerVisible, setIsCampusManagerVisible] = useState(false);
   
@@ -60,7 +56,7 @@ export default function BarberPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showPricingDashboard || showCampusManagerDashboard || showServiceHistory || showAvailability || showServiceDetails || showWalkInPayment;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showServiceHistory || showAvailability || showServiceDetails || showWalkInPayment;
   useBodyScrollLock(isAnyModalOpen);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -88,9 +84,6 @@ export default function BarberPage() {
   
   const openServiceSpecialties = () => openModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
   const closeServiceSpecialties = () => closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
-  
-  const openPricingDashboard = () => openModal(setShowPricingDashboard, setIsPricingDashboardVisible);
-  const closePricingDashboard = () => closeModal(setShowPricingDashboard, setIsPricingDashboardVisible);
   
   const openCampusManager = () => openModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
   const closeCampusManager = () => closeModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
@@ -233,17 +226,6 @@ export default function BarberPage() {
                     <Clock className="w-4 h-4 text-gray-500" />
                     Availability
                   </button>
-                  <button
-                    onClick={() => {
-                      openPricingDashboard();
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                    <Award className="w-4 h-4 text-gray-500" />
-                    Performance & Pricing
-                  </button>
-                  
                   {/* Campus Manager Option (conditional) */}
                   {isCampusManager && (
                     <>
@@ -347,33 +329,6 @@ export default function BarberPage() {
             </div>
             <div className="p-6">
               <BarberServiceSpecialties barberId={barberId} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pricing Dashboard Modal */}
-      {showPricingDashboard && (
-        <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isPricingDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
-          onClick={closePricingDashboard}
-        >
-          <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
-              ${isPricingDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Performance & Pricing</h2>
-              <button
-                onClick={closePricingDashboard}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-6">
-              <BarberPricingDashboard barberId={barberId} />
             </div>
           </div>
         </div>
