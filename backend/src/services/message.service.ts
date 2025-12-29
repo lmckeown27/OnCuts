@@ -279,7 +279,13 @@ class MessageService {
         throw new Error('Cannot start conversation with yourself');
       }
 
-      const bookingId = bookingContext?.bookingId;
+      // Validate booking_id is a proper UUID before using it
+      // Temporary/pending booking IDs like "booking-pending-123" are not valid UUIDs
+      const rawBookingId = bookingContext?.bookingId;
+      const isValidUUID = rawBookingId && 
+        typeof rawBookingId === 'string' && 
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawBookingId);
+      const bookingId = isValidUUID ? rawBookingId : null;
 
       // Check if conversation already exists between these users (optionally for same booking)
       const existingConv = await pool.query(
