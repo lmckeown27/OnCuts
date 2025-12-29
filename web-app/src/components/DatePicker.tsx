@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DatePickerProps {
@@ -10,6 +10,13 @@ interface DatePickerProps {
   required?: boolean;
 }
 
+// Helper to get today at midnight
+const getTodayAtMidnight = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+};
+
 export default function DatePicker({
   value,
   onChange,
@@ -18,8 +25,25 @@ export default function DatePicker({
   label = 'Select Date',
   required = false,
 }: DatePickerProps) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // State for today that updates at midnight
+  const [today, setToday] = useState(getTodayAtMidnight);
+
+  // Auto-update "today" at midnight
+  useEffect(() => {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    // Time until midnight
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const timeoutId = setTimeout(() => {
+      setToday(getTodayAtMidnight());
+    }, msUntilMidnight);
+
+    return () => clearTimeout(timeoutId);
+  }, [today]); // Re-run when today changes (after midnight)
   
   const selectedDate = value ? new Date(value + 'T00:00:00') : null;
   
