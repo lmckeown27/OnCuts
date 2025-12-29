@@ -187,16 +187,16 @@ export class MarketplaceCronService {
 
     this.jobs.set('nightly', nightlyJob);
 
-    // Surge detection every 15 minutes
-    const surgeJob = cron.schedule('*/15 * * * *', async () => {
-      await this.jobSurgeDetection();
-    });
-
-    this.jobs.set('surge', surgeJob);
+    // Surge detection disabled - requires surge_events table
+    // TODO: Re-enable when surge pricing feature is implemented
+    // const surgeJob = cron.schedule('*/15 * * * *', async () => {
+    //   await this.jobSurgeDetection();
+    // });
+    // this.jobs.set('surge', surgeJob);
 
     logger.info('✅ Marketplace cron jobs started:');
     logger.info('   - Nightly update: 2am (BQS → Pricing → Rankings)');
-    logger.info('   - Surge detection: Every 15 minutes');
+    logger.info('   - Surge detection: Disabled');
   }
 
   /**
