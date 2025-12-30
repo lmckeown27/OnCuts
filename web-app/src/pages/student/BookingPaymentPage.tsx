@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
+import messageService from '../../services/message.service';
+import { useAuthStore } from '../../store/useAuthStore';
 
 interface BookingDetails {
   barberId: string;
@@ -109,6 +111,7 @@ export default function BookingPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingDetails = location.state as BookingDetails;
+  const { user } = useAuthStore();
 
   const [step, setStep] = useState<'payment-timing' | 'payment' | 'processing' | 'success' | 'error'>('payment-timing');
   const [paymentTiming, setPaymentTiming] = useState<'now' | 'later' | null>(null);
@@ -131,14 +134,43 @@ export default function BookingPaymentPage() {
   });
   const [customTipInput, setCustomTipInput] = useState('');
 
+  // Create conversation automatically when booking is confirmed
+  const createBookingConversation = async (bookingId: string) => {
+    try {
+      const barberUserId = bookingDetails.barberUserId || bookingDetails.barberId;
+      if (!barberUserId) {
+        console.warn('No barber user ID available for conversation');
+        return;
+      }
+
+      await messageService.startConversation(barberUserId, {
+        bookingId,
+        serviceName: bookingDetails.serviceName,
+        servicePrice: bookingDetails.servicePrice,
+        scheduledTime: bookingDetails.scheduledAt,
+        location: bookingDetails.location,
+        notes: bookingDetails.notes,
+        barberName: bookingDetails.barberName,
+        consumerName: user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Customer',
+      });
+      console.log('✅ Booking conversation created automatically');
+    } catch (error) {
+      console.error('Failed to create booking conversation:', error);
+      // Don't fail the booking if conversation creation fails
+    }
+  };
+
   // Handle "Pay Later" booking confirmation
-  const handlePayLater = () => {
+  const handlePayLater = async () => {
     setStep('processing');
     // Simulate booking confirmation without payment
-    setTimeout(() => {
-      setPaymentIntentId(`booking-pending-${Date.now()}`);
-      setStep('success');
-    }, 1500);
+    const newBookingId = `booking-pending-${Date.now()}`;
+    
+    // Create conversation automatically
+    await createBookingConversation(newBookingId);
+    
+    setPaymentIntentId(newBookingId);
+    setStep('success');
   };
   // ============================================================================
 
@@ -211,11 +243,14 @@ export default function BookingPaymentPage() {
 
     // Simulate payment processing
     // TODO: Replace with actual Stripe payment intent creation
-    setTimeout(() => {
-      // Mock successful payment
-      setPaymentIntentId(`pi_${Date.now()}_mock`);
-      setStep('success');
-    }, 2500);
+    const newPaymentIntentId = `pi_${Date.now()}_mock`;
+    
+    // Create conversation automatically
+    await createBookingConversation(newPaymentIntentId);
+    
+    // Mock successful payment
+    setPaymentIntentId(newPaymentIntentId);
+    setStep('success');
   };
 
   const handlePaymentError = (error: string) => {
