@@ -470,6 +470,28 @@ export class BookingRequestService {
           throw new Error('Conversation not found or already responded to');
         }
 
+        // Get barber's user ID
+        const barberResult = await client.query(
+          'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
+          [barberId]
+        );
+        const barberUserId = barberResult.rows[0]?.userId || barberId;
+
+        // Add system message to conversation about the decline
+        const declineMessage = reason 
+          ? `The barber has declined your service request. Reason: ${reason}\n\nIf you believe this was a mistake or you were unfairly rejected, please email campuscuthelp@gmail.com`
+          : `The barber has declined your service request.\n\nIf you believe this was a mistake or you were unfairly rejected, please email campuscuthelp@gmail.com`;
+
+        await client.query(`
+          INSERT INTO messages (conversation_id, sender_id, content, message_type)
+          VALUES ($1, $2, $3, 'system')
+        `, [conversationId, barberUserId, declineMessage]);
+
+        // Update conversation's last_message_at
+        await client.query(`
+          UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = $1
+        `, [conversationId]);
+
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking rejected by barber ${barberId}`);
         return { success: true };
