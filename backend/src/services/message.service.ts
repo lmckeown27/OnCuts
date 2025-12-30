@@ -23,8 +23,7 @@ class MessageService {
     try {
       const offset = (page - 1) * limit;
 
-      // Get conversations - use simpler query that works with existing schema
-      // Will work whether or not booking-centric columns exist
+      // Get conversations with booking details
       const result = await pool.query(
         `SELECT 
           c.id as conversation_id,
@@ -46,6 +45,15 @@ class MessageService {
           u."displayName" as barber_display_name,
           br.specialties as barber_specialties,
           br."avgRating" as barber_rating,
+          
+          -- BOOKING INFO (if linked to a booking)
+          b.id as booking_id_ref,
+          b."serviceName" as booking_service_name,
+          b."servicePrice" as booking_service_price,
+          b."scheduledAt" as booking_scheduled_time,
+          b.location as booking_location,
+          b.notes as booking_notes,
+          b.status as booking_status,
           
           -- MESSAGE INFO
           (
@@ -84,6 +92,7 @@ class MessageService {
           END = u.id
         )
         LEFT JOIN barbers br ON u.id = br."userId"
+        LEFT JOIN bookings b ON c.booking_id = b.id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
@@ -102,6 +111,16 @@ class MessageService {
       const conversations = result.rows.map((conv) => ({
         id: conv.conversation_id,
         bookingId: conv.booking_id,
+        // Booking details
+        booking: conv.booking_id_ref ? {
+          id: conv.booking_id_ref,
+          serviceName: conv.booking_service_name || 'Service',
+          servicePrice: parseFloat(conv.booking_service_price) || null,
+          scheduledTime: conv.booking_scheduled_time,
+          location: conv.booking_location || 'TBD',
+          notes: conv.booking_notes,
+          status: conv.booking_status || 'pending',
+        } : null,
         // Other user info
         otherUser: {
           id: conv.other_user_id,
