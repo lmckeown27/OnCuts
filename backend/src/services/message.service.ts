@@ -180,10 +180,10 @@ class MessageService {
           m.is_read,
           m.created_at,
           m.sender_id,
-          u.username,
+          u."displayName" as username,
           u.first_name,
           u.last_name,
-          u.profile_picture
+          u."avatarUrl" as profile_picture
         FROM messages m
         JOIN users u ON m.sender_id = u.id
         WHERE m.conversation_id = $1 AND m.is_deleted = false
