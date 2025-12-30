@@ -189,10 +189,10 @@ export default function LandingPage() {
             {/* CTA Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                onClick={handleFindBarberClick}
+                onClick={() => navigate('/web/auth/signup')}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
-                Find Barber
+                Become a Barber
               </button>
             </div>
 
