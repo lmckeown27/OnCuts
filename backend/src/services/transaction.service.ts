@@ -12,8 +12,9 @@ import { ApiError } from '../middleware/errorHandler';
 
 export enum TransactionType {
   CHARGE = 'charge',                      // Consumer charged via Stripe
-  HOLD = 'hold',                          // Funds held in escrow
-  RELEASE = 'release',                    // Escrow released to barber
+  HOLD = 'hold',                          // Funds held in escrow (deprecated)
+  RELEASE = 'release',                    // Escrow released to barber (deprecated)
+  EARNING = 'earning',                    // Barber earning from direct payment
   PAYOUT = 'payout',                      // Barber withdrawal to bank
   REFUND = 'refund',                      // Refund to consumer
   FEE = 'fee',                            // Platform fee collected
