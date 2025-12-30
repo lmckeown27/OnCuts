@@ -829,7 +829,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       <div className="mb-4 sm:mb-6">
         {/* University and Filter Info */}
         <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
-          <GraduationCap className="w-4 h-4 text-primary-500" />
           <span>Barbers near {selectedUniversity?.shortName || selectedUniversity?.name}</span>
           {filterCriteria.serviceType && (
             <>
