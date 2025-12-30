@@ -391,18 +391,31 @@ export class BookingRequestService {
       if (bookingId.startsWith('conv-')) {
         const conversationId = bookingId.replace('conv-', '');
         
-        // Update conversation booking_status
+        // Update conversation booking_status and get the linked booking_id
         const updateResult = await client.query(`
           UPDATE conversations
           SET 
             booking_status = 'accepted',
             updated_at = CURRENT_TIMESTAMP
           WHERE id = $1 AND booking_status = 'pending'
-          RETURNING user1_id, user2_id
+          RETURNING user1_id, user2_id, booking_id
         `, [conversationId]);
 
         if (updateResult.rows.length === 0) {
           throw new Error('Conversation not found or already responded to');
+        }
+
+        // Also update the linked booking record if it exists
+        const linkedBookingId = updateResult.rows[0].booking_id;
+        if (linkedBookingId) {
+          await client.query(`
+            UPDATE bookings
+            SET 
+              status = 'ACCEPTED',
+              "updatedAt" = CURRENT_TIMESTAMP
+            WHERE id = $1
+          `, [linkedBookingId]);
+          logger.info(`Linked booking ${linkedBookingId} also marked as ACCEPTED`);
         }
 
         await client.query('COMMIT');
@@ -456,18 +469,31 @@ export class BookingRequestService {
       if (bookingId.startsWith('conv-')) {
         const conversationId = bookingId.replace('conv-', '');
         
-        // Update conversation booking_status
+        // Update conversation booking_status and get the linked booking_id
         const updateResult = await client.query(`
           UPDATE conversations
           SET 
             booking_status = 'rejected',
             updated_at = CURRENT_TIMESTAMP
           WHERE id = $1 AND booking_status = 'pending'
-          RETURNING user1_id, user2_id
+          RETURNING user1_id, user2_id, booking_id
         `, [conversationId]);
 
         if (updateResult.rows.length === 0) {
           throw new Error('Conversation not found or already responded to');
+        }
+
+        // Also update the linked booking record if it exists
+        const linkedBookingId = updateResult.rows[0].booking_id;
+        if (linkedBookingId) {
+          await client.query(`
+            UPDATE bookings
+            SET 
+              status = 'REJECTED',
+              "updatedAt" = CURRENT_TIMESTAMP
+            WHERE id = $1
+          `, [linkedBookingId]);
+          logger.info(`Linked booking ${linkedBookingId} also marked as REJECTED`);
         }
 
         // Get barber's user ID
