@@ -31,19 +31,9 @@ export default function LandingPage() {
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // Handle "Book Here" click - request location and navigate immediately
-  // The location request happens in background, consumer page will use the result
-  const handleBookHereClick = useCallback(() => {
-    // Start location request in background (triggers browser's native dialog)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => {}, // Success - location will be cached by browser
-        () => {}, // Error - consumer page will handle it
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-    // Navigate immediately - don't wait for location response
-    navigate('/web/consumer');
+  // Handle "Find Barber" click - navigate to questionnaire
+  const handleFindBarberClick = useCallback(() => {
+    navigate('/web/find-barber');
   }, [navigate]);
   
   // Mobile menu open/close with animation
@@ -199,10 +189,10 @@ export default function LandingPage() {
             {/* CTA Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                onClick={handleBookHereClick}
+                onClick={handleFindBarberClick}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
-                Book Here
+                Find Barber
               </button>
             </div>
 
@@ -236,11 +226,11 @@ export default function LandingPage() {
                 <button 
                   onClick={() => {
                     closeMobileMenu();
-                    handleBookHereClick();
+                    handleFindBarberClick();
                   }} 
                   className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
-                  Book Here
+                  Find Barber
                 </button>
               </div>
             </div>
@@ -258,10 +248,10 @@ export default function LandingPage() {
           {/* CTA Button */}
           <div className="flex justify-center mb-8">
             <button
-              onClick={handleBookHereClick}
+              onClick={handleFindBarberClick}
               className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
-              Book Here
+              Find Barber
             </button>
           </div>
         </div>
@@ -555,10 +545,10 @@ export default function LandingPage() {
           </h2>
           <div className="flex justify-center">
             <button 
-              onClick={handleBookHereClick}
+              onClick={handleFindBarberClick}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
-              Book Here
+              Find Barber
             </button>
           </div>
         </div>

@@ -7,9 +7,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
-import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import BarberApplicationModal from '../components/BarberApplicationModal';
-import UniversitySelector from '../components/UniversitySelector';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import notificationService, { Notification } from '../services/notification.service';
@@ -21,11 +19,11 @@ import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
-import { SPECIALTY_OPTIONS } from '../config/services';
 import type { WeeklySchedule } from '../types';
 
-// Storage key for selected university
+// Storage keys
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+const FILTER_STORAGE_KEY = 'campuscut_filter_criteria';
 
 // Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
 function formatTime(time24: string): string {
@@ -676,18 +674,36 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const latitude = selectedUniversity?.latitude ?? null;
   const longitude = selectedUniversity?.longitude ?? null;
 
-  // Load saved university on mount
+  // Load saved university and filters on mount
   useEffect(() => {
-    const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
-    if (saved) {
+    // Load university
+    const savedUni = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
+    if (savedUni) {
       try {
-        const parsed = JSON.parse(saved);
+        const parsed = JSON.parse(savedUni);
         setSelectedUniversity(parsed);
       } catch (e) {
         localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
       }
+    } else {
+      // No university selected - redirect to find-barber page
+      navigate('/web/find-barber');
+      return;
     }
-  }, []);
+    
+    // Load filters
+    const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (savedFilters) {
+      try {
+        const parsed = JSON.parse(savedFilters);
+        setFilterCriteria(parsed);
+        // Clear filters from storage after loading (one-time use)
+        localStorage.removeItem(FILTER_STORAGE_KEY);
+      } catch (e) {
+        localStorage.removeItem(FILTER_STORAGE_KEY);
+      }
+    }
+  }, [navigate]);
 
   // Load barbers when university is selected
   useEffect(() => {
@@ -699,12 +715,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   useEffect(() => {
     applyFilters();
   }, [barbers, filterCriteria, latitude, longitude, user?.id]);
-
-  // Handle university selection
-  const handleUniversitySelect = (university: University) => {
-    setSelectedUniversity(university);
-    localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
-  };
 
   // Handle schedule click - check auth first
   const handleScheduleClick = (barber: Barber) => {
@@ -807,67 +817,48 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     });
   };
 
-  // Services from shared config
-  const availableServices = SPECIALTY_OPTIONS;
+  // Redirect handled in useEffect if no university
 
-  // Show university selection if not yet selected
-  if (!selectedUniversity) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <GraduationCap className="w-10 h-10 text-primary-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Campus Barbers</h1>
-            <p className="text-gray-600">
-              What university do you attend?
-            </p>
-          </div>
-          
-          <UniversitySelector
-            value={null}
-            onChange={handleUniversitySelect}
-            placeholder="Search for your university..."
-          />
-          
-          <p className="text-xs text-gray-400 text-center mt-4">
-            We'll show you barbers near your campus
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (loading || !selectedUniversity) {
     return <Loading />;
   }
 
   return (
     <>
-      {/* Progressive Filter Questionnaire */}
-      <BarberFilterQuestionnaire
-        onFilterChange={handleFilterChange}
-        availableServices={availableServices}
-        availableCount={filteredBarbers.length}
-      />
-
-      {/* Sort Info */}
-      {filteredBarbers.length > 0 && (
-        <div className="mb-4 sm:mb-6 text-center text-xs sm:text-sm text-gray-600 flex items-center justify-center gap-2">
+      {/* Filter Header */}
+      <div className="mb-4 sm:mb-6">
+        {/* University and Filter Info */}
+        <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
           <GraduationCap className="w-4 h-4 text-primary-500" />
-          Barbers near {selectedUniversity.shortName || selectedUniversity.name}
+          <span>Barbers near {selectedUniversity?.shortName || selectedUniversity?.name}</span>
+          {filterCriteria.serviceType && (
+            <>
+              <span className="text-gray-400">•</span>
+              <span className="text-primary-600 font-medium">{filterCriteria.serviceType}</span>
+              <button 
+                onClick={clearFilters}
+                className="text-gray-400 hover:text-gray-600 underline"
+              >
+                Clear
+              </button>
+            </>
+          )}
+          <span className="text-gray-400">•</span>
           <button 
-            onClick={() => {
-              setSelectedUniversity(null);
-              localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-            }}
-            className="text-primary-600 hover:text-primary-700 underline ml-1"
+            onClick={() => navigate('/web/find-barber')}
+            className="text-primary-600 hover:text-primary-700 underline"
           >
             Change
           </button>
         </div>
-      )}
+        
+        {/* Results count */}
+        {filteredBarbers.length > 0 && (
+          <p className="text-center text-xs text-gray-500 mt-2">
+            {filteredBarbers.length} barber{filteredBarbers.length !== 1 ? 's' : ''} found
+          </p>
+        )}
+      </div>
 
       {/* No Results - University Based */}
       {filteredBarbers.length === 0 && selectedUniversity && !filterCriteria.serviceType && (

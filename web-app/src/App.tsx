@@ -30,6 +30,7 @@ const AdminUserView = lazy(() => import('./pages/admin/AdminUserView'));
 const DiscoverBarbers = lazy(() => import('./pages/DiscoverBarbers'));
 const BarberProfilePage = lazy(() => import('./pages/BarberProfilePage'));
 const ConsumerPage = lazy(() => import('./pages/ConsumerPage'));
+const FindBarberPage = lazy(() => import('./pages/FindBarberPage'));
 const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
 
@@ -122,6 +123,7 @@ function AppContent() {
         <Route path="/web/admin/user/:userId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminUserView /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Consumer/Student Routes */}
+        <Route path="/web/find-barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><FindBarberPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ScheduleServicePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/discover" element={<PlatformGuard requiredPlatform="web"><LazyRoute><DiscoverBarbers customerId="user-temp" customerName="User" /></LazyRoute></PlatformGuard>} />

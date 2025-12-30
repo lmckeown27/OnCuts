@@ -27,12 +27,10 @@ import {
   Clock,
   DollarSign,
   Loader2,
-  GraduationCap,
-  ArrowRight
+  GraduationCap
 } from 'lucide-react';
 import { calculateDistance, kmToMiles } from '../../hooks';
 import barberService from '../../services/barber.service';
-import UniversitySelector from '../../components/UniversitySelector';
 import type { Barber } from '../../types';
 import type { University } from '../../data/universities';
 
@@ -55,7 +53,7 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Load saved university on mount
+  // Load saved university on mount - redirect to find-barber if not set
   useEffect(() => {
     const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
     if (saved) {
@@ -64,9 +62,13 @@ export default function MobileConsumerPage() {
         setSelectedUniversity(parsed);
       } catch (e) {
         localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+        navigate('/web/find-barber');
       }
+    } else {
+      // No university selected - redirect to find-barber
+      navigate('/web/find-barber');
     }
-  }, []);
+  }, [navigate]);
 
   // Load barbers when university is selected
   useEffect(() => {
@@ -74,12 +76,6 @@ export default function MobileConsumerPage() {
       loadBarbers();
     }
   }, [selectedUniversity]);
-
-  // Handle university selection
-  const handleUniversitySelect = (university: University) => {
-    setSelectedUniversity(university);
-    localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
-  };
 
   // Load barbers from API - filtered by university location
   const loadBarbers = async () => {
@@ -177,37 +173,8 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show university selection screen if no university selected
-  if (!selectedUniversity) {
-    return (
-      <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <GraduationCap className="w-10 h-10 text-primary-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Campus Barbers</h1>
-            <p className="text-gray-600">
-              What university do you attend?
-            </p>
-          </div>
-          
-          <UniversitySelector
-            value={null}
-            onChange={handleUniversitySelect}
-            placeholder="Search for your university..."
-          />
-          
-          <p className="text-xs text-gray-400 text-center mt-4">
-            We'll show you barbers near your campus
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state while fetching barbers
-  if (isLoading) {
+  // Show loading state while redirecting or fetching
+  if (!selectedUniversity || isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
@@ -228,10 +195,7 @@ export default function MobileConsumerPage() {
           Check back later or try a different university.
         </p>
         <button
-          onClick={() => {
-            setSelectedUniversity(null);
-            localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-          }}
+          onClick={() => navigate('/web/find-barber')}
           className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
         >
           Change University
