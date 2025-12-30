@@ -29,6 +29,7 @@ interface BookingRequest {
   requestedDate: string;
   requestedTime: string;
   price: number;
+  location?: string;
   message?: string;
 }
 
@@ -364,16 +365,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
               <div className="space-y-4">
-                {/* Customer Message */}
-                {viewingRequest.message && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Customer Message</h4>
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <p className="text-sm text-gray-700 italic">"{viewingRequest.message}"</p>
-                    </div>
-                  </div>
-                )}
-
                 {/* Service Request Details */}
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">Service Request Details</h4>
@@ -397,12 +388,28 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       <span className="text-sm text-gray-600">Requested Time</span>
                       <span className="text-sm font-semibold text-gray-900">{viewingRequest.requestedTime}</span>
                     </div>
+                    {viewingRequest.location && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Location</span>
+                        <span className="text-sm font-semibold text-gray-900">{viewingRequest.location}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                       <span className="text-sm text-gray-600">Price</span>
                       <span className="text-lg font-bold text-green-600">${viewingRequest.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Customer Message */}
+                {viewingRequest.message && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Customer Message</h4>
+                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                      <p className="text-sm text-gray-700 italic">"{viewingRequest.message}"</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

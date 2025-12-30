@@ -259,6 +259,7 @@ export class BookingRequestService {
               ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
               : '',
             price: parseFloat(row.service_price) || 0,
+            location: row.location || null,
             message: row.notes || '',
             status: 'pending',
             requestedAt: row.created_at,
