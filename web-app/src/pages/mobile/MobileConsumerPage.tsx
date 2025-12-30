@@ -11,7 +11,7 @@
  * - Location-based barber discovery
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Heart,
@@ -30,7 +30,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { useGeolocation, calculateDistance, kmToMiles } from '../../hooks';
-import LocationPermissionPrompt from '../../components/LocationPermissionPrompt';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
 
@@ -42,11 +41,11 @@ export default function MobileConsumerPage() {
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'messages' | 'bookings' | 'profile'>('home');
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const hasRequestedLocation = useRef(false);
 
   // Geolocation hook for location-based barber discovery
   const { 
@@ -60,17 +59,17 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Show location prompt immediately if permission not yet requested
+  // Auto-request location on mount - browser will show native dialog
   useEffect(() => {
-    // Show prompt if permission is 'prompt' OR if we haven't determined status yet
-    if (permissionStatus === 'prompt') {
-      // Show immediately on mobile - no delay
-      setShowLocationPrompt(true);
+    if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
+      hasRequestedLocation.current = true;
+      // Trigger browser's native location permission dialog
+      requestLocation();
     } else if (permissionStatus === 'denied') {
       // If denied, redirect to landing
       navigate('/');
     }
-  }, [permissionStatus, navigate]);
+  }, [permissionStatus, requestLocation, navigate]);
 
   // Load barbers when we have location
   useEffect(() => {
@@ -112,18 +111,6 @@ export default function MobileConsumerPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Handle location permission request
-  const handleAllowLocation = () => {
-    requestLocation();
-    setShowLocationPrompt(false);
-  };
-
-  // Handle location denial - go to landing page
-  const handleDenyLocation = () => {
-    setShowLocationPrompt(false);
-    navigate('/');
   };
 
   // Get distance string for a barber
@@ -180,34 +167,21 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // PRIORITY 1: Show location prompt if we need permission
-  if (showLocationPrompt || permissionStatus === 'prompt') {
+  // Show loading state while waiting for location or fetching barbers
+  if (isLoading || locationLoading || permissionStatus === 'prompt') {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col items-center justify-center p-6">
-        <div className="text-center mb-8">
-          <MapPin className="w-16 h-16 text-primary-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Barbers Near You</h1>
-          <p className="text-gray-600">Enable location to discover the closest barbers</p>
-        </div>
-        
-        {/* Location Permission Prompt */}
-        <LocationPermissionPrompt
-          isOpen={true}
-          onClose={() => setShowLocationPrompt(false)}
-          onAllow={handleAllowLocation}
-          onDeny={handleDenyLocation}
-          loading={locationLoading}
-        />
-      </div>
-    );
-  }
-
-  // PRIORITY 2: Show loading state while fetching barbers
-  if (isLoading || locationLoading) {
-    return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center">
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600">Finding barbers near you...</p>
+        <p className="text-gray-600 text-center">
+          {permissionStatus === 'prompt' 
+            ? 'Please allow location access in your browser...' 
+            : 'Finding barbers near you...'}
+        </p>
+        {permissionStatus === 'prompt' && (
+          <p className="text-sm text-gray-400 mt-2 text-center">
+            Check for a browser popup asking for location permission
+          </p>
+        )}
       </div>
     );
   }

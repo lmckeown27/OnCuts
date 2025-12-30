@@ -18,7 +18,6 @@ import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useViewport, useBodyScrollLock, useGeolocation, calculateDistance, kmToMiles } from '../hooks';
-import LocationPermissionPrompt from '../components/LocationPermissionPrompt';
 import LoginPrompt from '../components/LoginPrompt';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { WeeklySchedule } from '../types';
@@ -658,9 +657,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     location: null,
     locationDetails: null,
   });
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
+  const hasRequestedLocation = useRef(false);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -681,32 +680,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     loadBarbers();
   }, [latitude, longitude]); // Reload barbers when location changes
 
+  // Auto-request location on mount - browser will show native dialog
   useEffect(() => {
-    // Show location prompt if permission not yet requested
-    if (permissionStatus === 'prompt') {
-      // Delay to avoid showing immediately on page load
-      const timer = setTimeout(() => {
-        setShowLocationPrompt(true);
-      }, 1500);
-      return () => clearTimeout(timer);
+    if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
+      hasRequestedLocation.current = true;
+      // Trigger browser's native location permission dialog
+      requestLocation();
+    } else if (permissionStatus === 'denied') {
+      // If denied, redirect to landing
+      navigate('/');
     }
-  }, [permissionStatus]);
+  }, [permissionStatus, requestLocation, navigate]);
 
   useEffect(() => {
     applyFilters();
   }, [barbers, filterCriteria, latitude, longitude, user?.id]);
-
-  // Handle location permission request
-  const handleAllowLocation = () => {
-    requestLocation();
-    setShowLocationPrompt(false);
-  };
-
-  // Handle location denial - go to landing page
-  const handleDenyLocation = () => {
-    setShowLocationPrompt(false);
-    navigate('/');
-  };
 
   // Handle schedule click - check auth first
   const handleScheduleClick = (barber: Barber) => {
@@ -1146,15 +1134,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           </div>
         </div>
       )}
-
-      {/* Location Permission Prompt */}
-      <LocationPermissionPrompt
-        isOpen={showLocationPrompt}
-        onClose={() => setShowLocationPrompt(false)}
-        onAllow={handleAllowLocation}
-        onDeny={handleDenyLocation}
-        loading={locationLoading}
-      />
 
       {/* Login Prompt for unauthenticated users */}
       <LoginPrompt
