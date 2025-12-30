@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronDown,
   MoreVertical,
-  Image as ImageIcon,
   Check,
   CheckCheck,
   Scissors,
@@ -835,9 +834,6 @@ export default function MessagesPage() {
         {/* Message Input */}
         <div className="p-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-3">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <ImageIcon className="w-5 h-5 text-gray-500" />
-            </button>
             <input
               ref={inputRef}
               type="text"
