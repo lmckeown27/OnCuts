@@ -59,17 +59,18 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Auto-request location on mount - browser will show native dialog
+  // Handle location denial - redirect to landing
   useEffect(() => {
-    if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
-      hasRequestedLocation.current = true;
-      // Trigger browser's native location permission dialog
-      requestLocation();
-    } else if (permissionStatus === 'denied') {
-      // If denied, redirect to landing
+    if (permissionStatus === 'denied') {
       navigate('/');
     }
-  }, [permissionStatus, requestLocation, navigate]);
+  }, [permissionStatus, navigate]);
+
+  // Handle tap to request location (required for mobile browsers)
+  const handleRequestLocation = () => {
+    hasRequestedLocation.current = true;
+    requestLocation();
+  };
 
   // Load barbers when we have location
   useEffect(() => {
@@ -167,21 +168,44 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show loading state while waiting for location or fetching barbers
-  if (isLoading || locationLoading || permissionStatus === 'prompt') {
+  // Show location request screen for mobile (requires user tap)
+  if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
+          <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MapPin className="w-10 h-10 text-primary-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Find Barbers Near You</h1>
+          <p className="text-gray-600 mb-6">
+            Tap below to enable location and discover barbers closest to you.
+          </p>
+          <button
+            onClick={handleRequestLocation}
+            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors active:scale-95 shadow-lg"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <MapPin className="w-5 h-5" />
+              Enable Location
+            </span>
+          </button>
+          <button
+            onClick={() => navigate('/')}
+            className="w-full text-gray-500 font-medium py-3 mt-3"
+          >
+            Not Now
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while getting location or fetching barbers
+  if (isLoading || locationLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600 text-center">
-          {permissionStatus === 'prompt' 
-            ? 'Please allow location access in your browser...' 
-            : 'Finding barbers near you...'}
-        </p>
-        {permissionStatus === 'prompt' && (
-          <p className="text-sm text-gray-400 mt-2 text-center">
-            Check for a browser popup asking for location permission
-          </p>
-        )}
+        <p className="text-gray-600 text-center">Finding barbers near you...</p>
       </div>
     );
   }
