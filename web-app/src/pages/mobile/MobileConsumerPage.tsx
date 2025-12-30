@@ -89,11 +89,11 @@ export default function MobileConsumerPage() {
       // Sort by distance if we have user location
       if (latitude && longitude && barberList.length > 0) {
         barberList.sort((a: Barber, b: Barber) => {
-          const distA = a.serviceLatitude && a.serviceLongitude
-            ? calculateDistance(latitude, longitude, a.serviceLatitude, a.serviceLongitude)
+          const distA = a.service_latitude && a.service_longitude
+            ? calculateDistance(latitude, longitude, a.service_latitude, a.service_longitude)
             : Infinity;
-          const distB = b.serviceLatitude && b.serviceLongitude
-            ? calculateDistance(latitude, longitude, b.serviceLatitude, b.serviceLongitude)
+          const distB = b.service_latitude && b.service_longitude
+            ? calculateDistance(latitude, longitude, b.service_latitude, b.service_longitude)
             : Infinity;
           return distA - distB;
         });
@@ -121,8 +121,8 @@ export default function MobileConsumerPage() {
 
   // Get distance string for a barber
   const getDistanceString = (barber: Barber): string => {
-    if (latitude && longitude && barber.serviceLatitude && barber.serviceLongitude) {
-      const distKm = calculateDistance(latitude, longitude, barber.serviceLatitude, barber.serviceLongitude);
+    if (latitude && longitude && barber.service_latitude && barber.service_longitude) {
+      const distKm = calculateDistance(latitude, longitude, barber.service_latitude, barber.service_longitude);
       const distMiles = kmToMiles(distKm);
       return distMiles < 0.1 ? 'Nearby' : `${distMiles.toFixed(1)} mi`;
     }
@@ -264,33 +264,33 @@ export default function MobileConsumerPage() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden h-full flex flex-col">
             {/* Profile Image */}
             <div className="relative h-2/3 bg-gradient-to-br from-primary-100 to-primary-200">
-              {currentBarber.profileImage ? (
+              {currentBarber.profile_image ? (
                 <img
-                  src={currentBarber.profileImage}
-                  alt={currentBarber.user?.firstName || 'Barber'}
+                  src={currentBarber.profile_image}
+                  alt={currentBarber.user?.first_name || 'Barber'}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <div className="w-32 h-32 bg-primary-200 rounded-full flex items-center justify-center">
                     <span className="text-5xl font-bold text-primary-600">
-                      {(currentBarber.user?.firstName || 'B')[0].toUpperCase()}
+                      {(currentBarber.user?.first_name || 'B')[0].toUpperCase()}
                     </span>
                   </div>
                 </div>
               )}
               
               {/* Price Badge */}
-              {currentBarber.basePrice && (
+              {currentBarber.base_price && (
                 <div className="absolute bottom-4 left-4 bg-primary-400 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                  From ${currentBarber.basePrice}
+                  From ${currentBarber.base_price}
                 </div>
               )}
 
               {/* Instagram Badge */}
-              {currentBarber.instagramHandle && (
+              {currentBarber.instagram_handle && (
                 <a
-                  href={`https://instagram.com/${currentBarber.instagramHandle.replace('@', '')}`}
+                  href={`https://instagram.com/${currentBarber.instagram_handle.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg"
@@ -305,11 +305,11 @@ export default function MobileConsumerPage() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {currentBarber.user?.firstName || 'Barber'} {currentBarber.user?.lastName?.[0] || ''}.
+                    {currentBarber.user?.first_name || 'Barber'} {currentBarber.user?.last_name?.[0] || ''}.
                   </h2>
-                  {currentBarber.yearsExperience && (
+                  {currentBarber.years_experience && (
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-500">{currentBarber.yearsExperience} years experience</span>
+                      <span className="text-gray-500">{currentBarber.years_experience} years experience</span>
                     </div>
                   )}
                 </div>
@@ -428,22 +428,22 @@ export default function MobileConsumerPage() {
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
             
             <div className="flex items-center gap-4 mb-6">
-              {currentBarber.profileImage ? (
+              {currentBarber.profile_image ? (
                 <img
-                  src={currentBarber.profileImage}
-                  alt={currentBarber.user?.firstName || 'Barber'}
+                  src={currentBarber.profile_image}
+                  alt={currentBarber.user?.first_name || 'Barber'}
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
                   <span className="text-2xl font-bold text-primary-600">
-                    {(currentBarber.user?.firstName || 'B')[0].toUpperCase()}
+                    {(currentBarber.user?.first_name || 'B')[0].toUpperCase()}
                   </span>
                 </div>
               )}
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
-                  {currentBarber.user?.firstName || 'Barber'} {currentBarber.user?.lastName?.[0] || ''}.
+                  {currentBarber.user?.first_name || 'Barber'} {currentBarber.user?.last_name?.[0] || ''}.
                 </h3>
                 <p className="text-gray-500">{getDistanceString(currentBarber)}</p>
               </div>
