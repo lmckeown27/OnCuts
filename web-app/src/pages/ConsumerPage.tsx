@@ -1005,8 +1005,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Info */}
               <div className="flex-1 flex flex-col pb-2">
 
+                {/* Distance */}
+                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-primary-600 font-medium mt-1 mb-1">
+                    <MapPin className="w-3 h-3" />
+                    {barber.distance_miles} mi
+                  </div>
+                )}
+
                 {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty, idx) => (
                     <span
                       key={idx}
@@ -1016,14 +1024,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </span>
                   ))}
                 </div>
-
-                {/* Distance */}
-                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-primary-600 font-medium mb-1">
-                    <MapPin className="w-3 h-3" />
-                    {barber.distance_miles} mi
-                  </div>
-                )}
 
                 {/* Instagram */}
                 {barber.instagram_handle && (
