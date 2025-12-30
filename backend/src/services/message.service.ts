@@ -46,12 +46,21 @@ class MessageService {
           br.specialties as barber_specialties,
           br."avgRating" as barber_rating,
           
-          -- BOOKING INFO (if linked to a booking)
+          -- BOOKING INFO (from conversation context or linked booking)
+          c.service_name as conv_service_name,
+          c.service_price as conv_service_price,
+          c.scheduled_time as conv_scheduled_time,
+          c.location as conv_location,
+          c.notes as conv_notes,
+          c.booking_status as conv_booking_status,
+          c.barber_name as conv_barber_name,
+          c.consumer_name as conv_consumer_name,
+          -- Fallback to linked booking if exists
           b.id as booking_id_ref,
           b."serviceType" as booking_service_type,
           b."priceUsdCents" as booking_price_cents,
           b."requestedAt" as booking_scheduled_time,
-          b.status as booking_status,
+          b.status as linked_booking_status,
           a."startTime" as availability_start_time,
           
           -- MESSAGE INFO
@@ -111,15 +120,18 @@ class MessageService {
       const conversations = result.rows.map((conv) => ({
         id: conv.conversation_id,
         bookingId: conv.booking_id,
-        // Booking details
-        booking: conv.booking_id_ref ? {
-          id: conv.booking_id_ref,
-          serviceName: conv.booking_service_type || 'Service',
-          servicePrice: conv.booking_price_cents ? (conv.booking_price_cents / 100) : null,
-          scheduledTime: conv.availability_start_time || conv.booking_scheduled_time,
-          location: 'TBD',
-          notes: null,
-          status: (conv.booking_status || 'pending').toLowerCase(),
+        // Booking details - prefer conversation context, fallback to linked booking
+        booking: (conv.conv_service_name || conv.booking_id_ref) ? {
+          id: conv.booking_id_ref || null,
+          serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
+          servicePrice: conv.conv_service_price ? parseFloat(conv.conv_service_price) : 
+                       (conv.booking_price_cents ? (conv.booking_price_cents / 100) : null),
+          scheduledTime: conv.conv_scheduled_time || conv.availability_start_time || conv.booking_scheduled_time,
+          location: conv.conv_location || 'TBD',
+          notes: conv.conv_notes || null,
+          status: (conv.conv_booking_status || conv.linked_booking_status || 'pending').toLowerCase(),
+          barberName: conv.conv_barber_name,
+          consumerName: conv.conv_consumer_name,
         } : null,
         // Other user info
         otherUser: {
@@ -332,16 +344,33 @@ class MessageService {
         return await this.getConversationById(conv.id, userId);
       }
 
-      // Create new conversation with base columns only (works with existing schema)
+      // Create new conversation with booking context
       const result = await pool.query(
-        `INSERT INTO conversations (user1_id, user2_id, booking_id)
-         VALUES ($1, $2, $3)
+        `INSERT INTO conversations (
+          user1_id, user2_id, booking_id, 
+          service_name, service_price, scheduled_time, 
+          location, notes, booking_status,
+          barber_name, consumer_name
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id, created_at`,
-        [userId, otherUserId, bookingId || null]
+        [
+          userId, 
+          otherUserId, 
+          bookingId || null,
+          bookingContext?.serviceName || null,
+          bookingContext?.servicePrice || null,
+          bookingContext?.scheduledTime || null,
+          bookingContext?.location || null,
+          bookingContext?.notes || null,
+          'pending',
+          bookingContext?.barberName || null,
+          bookingContext?.consumerName || null,
+        ]
       );
 
       const conversation = result.rows[0];
-      console.log('✅ Created new booking-centric conversation:', conversation.id);
+      console.log('✅ Created new booking-centric conversation:', conversation.id, 'with service:', bookingContext?.serviceName);
 
       return {
         success: true,
@@ -350,7 +379,16 @@ class MessageService {
           conversation: {
             id: conversation.id,
             createdAt: conversation.created_at,
-            bookingContext: bookingContext || null,
+            booking: bookingContext ? {
+              serviceName: bookingContext.serviceName,
+              servicePrice: bookingContext.servicePrice,
+              scheduledTime: bookingContext.scheduledTime,
+              location: bookingContext.location || 'TBD',
+              notes: bookingContext.notes,
+              status: 'pending',
+              barberName: bookingContext.barberName,
+              consumerName: bookingContext.consumerName,
+            } : null,
           },
         },
       };
