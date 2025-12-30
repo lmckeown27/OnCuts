@@ -782,7 +782,7 @@ export default function MessagesPage() {
                 return (
                   <div
                     key={message.id}
-                    className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-3' : 'mb-0.5'}`}
+                    className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-3' : ''}`}
                   >
                     {!isOwn && showAvatar && (
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
