@@ -135,7 +135,7 @@ router.post('/', authenticate, async (req, res, next) => {
     logger.info('Simple booking created', {
       booking_id: booking.id,
       consumer_id: consumerId,
-      barber_id: barberUserId,
+      barber_id: barberRecordId,
       service_type: serviceType,
     });
 
