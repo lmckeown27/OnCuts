@@ -47,7 +47,7 @@ router.post('/', authenticate, async (req, res, next) => {
       ? barberResult.rows[0].userId 
       : barberId;
 
-    // Create booking record
+    // Create booking record (minimal columns that exist in production)
     const result = await pool.query(
       `INSERT INTO bookings (
         "consumerId", 
@@ -55,9 +55,8 @@ router.post('/', authenticate, async (req, res, next) => {
         "serviceType", 
         "priceUsdCents", 
         "requestedAt",
-        notes,
         status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
+      ) VALUES ($1, $2, $3, $4, $5, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
@@ -65,7 +64,6 @@ router.post('/', authenticate, async (req, res, next) => {
         serviceType,
         priceUsdCents || 0,
         scheduledTime ? new Date(scheduledTime) : new Date(),
-        notes || null,
       ]
     );
 
@@ -118,7 +116,6 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."priceUsdCents",
         b."requestedAt" as "scheduledTime",
         b.status,
-        b.notes,
         b."createdAt",
         u.first_name || ' ' || u.last_name as barber_name,
         u."avatarUrl" as barber_profile_picture,
