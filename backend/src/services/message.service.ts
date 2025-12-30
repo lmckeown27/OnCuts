@@ -310,57 +310,49 @@ class MessageService {
         throw new Error('Cannot start conversation with yourself');
       }
 
-      // Validate booking_id is a proper UUID before using it
-      // Temporary/pending booking IDs like "booking-pending-123" are not valid UUIDs
-      const rawBookingId = bookingContext?.bookingId;
-      const isValidUUID = rawBookingId && 
-        typeof rawBookingId === 'string' && 
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawBookingId);
-      const bookingId = isValidUUID ? rawBookingId : null;
+      // Each booking creates a UNIQUE conversation based on users + scheduled_time
+      // This ensures new bookings get new conversations, not reusing old rejected ones
+      const scheduledTime = bookingContext?.scheduledTime || null;
 
-      // Check if conversation already exists between these users (optionally for same booking)
-      const existingConv = await pool.query(
-        `SELECT id, is_active FROM conversations 
-         WHERE ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
-         ${bookingId ? 'AND booking_id = $3' : 'AND booking_id IS NULL'}`,
-        bookingId ? [userId, otherUserId, bookingId] : [userId, otherUserId]
-      );
-
-      if (existingConv.rows.length > 0) {
-        const conv = existingConv.rows[0];
-        
-        // If active, return existing conversation
-        if (conv.is_active) {
-          console.log('✅ Found active conversation:', conv.id);
-          return await this.getConversationById(conv.id, userId);
-        }
-        
-        // If inactive, reactivate and update with new booking context
-        console.log('🔄 Reactivating inactive conversation:', conv.id);
-        await pool.query(
-          `UPDATE conversations SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-          [conv.id]
+      // Only check for duplicate if we have a scheduled time (to prevent duplicate bookings for same slot)
+      if (scheduledTime) {
+        const existingConv = await pool.query(
+          `SELECT id, is_active, booking_status FROM conversations 
+           WHERE ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
+           AND scheduled_time = $3`,
+          [userId, otherUserId, scheduledTime]
         );
-        return await this.getConversationById(conv.id, userId);
+
+        if (existingConv.rows.length > 0) {
+          const conv = existingConv.rows[0];
+          
+          // If same time slot exists and is active/pending, return existing
+          if (conv.is_active && conv.booking_status === 'pending') {
+            console.log('✅ Found existing pending conversation for same time slot:', conv.id);
+            return await this.getConversationById(conv.id, userId);
+          }
+          // If rejected/cancelled, allow creating a new booking (don't return old one)
+          console.log('📌 Previous conversation exists but was ' + conv.booking_status + ', creating new one');
+        }
       }
 
       // Create new conversation with booking context
+      // Note: booking_id is not used since bookings aren't stored in a separate table
       const result = await pool.query(
         `INSERT INTO conversations (
-          user1_id, user2_id, booking_id, 
+          user1_id, user2_id, 
           service_name, service_price, scheduled_time, 
           location, notes, booking_status,
           barber_name, consumer_name
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING id, created_at`,
         [
           userId, 
           otherUserId, 
-          bookingId || null,
           bookingContext?.serviceName || null,
           bookingContext?.servicePrice || null,
-          bookingContext?.scheduledTime || null,
+          scheduledTime,
           bookingContext?.location || null,
           bookingContext?.notes || null,
           'pending',
