@@ -92,18 +92,35 @@ export default function MobileConsumerPage() {
       const barberList = Array.isArray(response) ? response : response.data;
       
       // Sort by distance from university and filter to nearby barbers (within 5 miles)
+      // Barbers without location data are included (they might be new or haven't set location)
       const universityLat = selectedUniversity.latitude;
       const universityLng = selectedUniversity.longitude;
       
       const nearbyBarbers = barberList
         .map((barber: Barber) => {
-          const distance = barber.service_latitude && barber.service_longitude
-            ? calculateDistance(universityLat, universityLng, barber.service_latitude, barber.service_longitude)
-            : Infinity;
+          // Use service location, fall back to user location from backend, or null
+          const barberLat = barber.service_latitude || barber.user_latitude;
+          const barberLng = barber.service_longitude || barber.user_longitude;
+          
+          const distance = barberLat && barberLng
+            ? calculateDistance(universityLat, universityLng, barberLat, barberLng)
+            : null; // null = no location data
           return { ...barber, _distance: distance };
         })
-        .filter((b: Barber & { _distance: number }) => b._distance < 8) // ~5 miles
-        .sort((a: Barber & { _distance: number }, b: Barber & { _distance: number }) => a._distance - b._distance);
+        .filter((b: Barber & { _distance: number | null }) => {
+          // Include barbers without location data
+          if (b._distance === null) return true;
+          // Filter barbers with location to within 8km (~5 miles)
+          return b._distance < 8;
+        })
+        .sort((a: Barber & { _distance: number | null }, b: Barber & { _distance: number | null }) => {
+          // Barbers with location come first, sorted by distance
+          // Barbers without location come last
+          if (a._distance === null && b._distance === null) return 0;
+          if (a._distance === null) return 1;
+          if (b._distance === null) return -1;
+          return a._distance - b._distance;
+        });
       
       setBarbers(nearbyBarbers);
     } catch (error) {

@@ -77,6 +77,8 @@ export interface Barber {
   service_latitude?: number;
   service_longitude?: number;
   service_radius_km?: number;
+  user_latitude?: number; // Barber's user location (fallback)
+  user_longitude?: number;
   distance_km?: number; // Calculated distance from user (when location provided)
   distance_miles?: number; // Distance in miles
 }
