@@ -75,7 +75,6 @@ router.post('/', authenticate, async (req, res, next) => {
     // Platform fee is 5% of price
     const price = priceUsdCents || 0;
     const platformFee = Math.round(price * 0.05);
-    const barberPayout = price - platformFee;
     
     const result = await pool.query(
       `INSERT INTO bookings (
@@ -85,11 +84,10 @@ router.post('/', authenticate, async (req, res, next) => {
         "serviceType", 
         "priceUsdCents",
         "platformFeeUsdCents",
-        "barberPayoutUsdCents",
         "requestedAt",
         "availabilityId",
         status
-      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, gen_random_uuid(), 'PENDING')
+      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, gen_random_uuid(), 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
@@ -97,7 +95,6 @@ router.post('/', authenticate, async (req, res, next) => {
         dbServiceType,
         price,
         platformFee,
-        barberPayout,
         scheduledTime ? new Date(scheduledTime) : new Date(),
       ]
     );
