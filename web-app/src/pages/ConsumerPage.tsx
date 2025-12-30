@@ -686,11 +686,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       hasRequestedLocation.current = true;
       // Trigger browser's native location permission dialog
       requestLocation();
-    } else if (permissionStatus === 'denied') {
-      // If denied, redirect to landing
-      navigate('/');
     }
-  }, [permissionStatus, requestLocation, navigate]);
+    // Note: If denied, we still show barbers - just without distance sorting
+  }, [permissionStatus, requestLocation]);
 
   useEffect(() => {
     applyFilters();

@@ -59,25 +59,26 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Handle location denial - redirect to landing
-  useEffect(() => {
-    if (permissionStatus === 'denied') {
-      navigate('/');
-    }
-  }, [permissionStatus, navigate]);
-
   // Handle tap to request location (required for mobile browsers)
   const handleRequestLocation = () => {
     hasRequestedLocation.current = true;
     requestLocation();
   };
 
-  // Load barbers when we have location
+  // Load barbers - with or without location
   useEffect(() => {
-    // Only load if we have granted permission and have coordinates
-    if (permissionStatus === 'granted' && (latitude || longitude || !hasLoadedOnce)) {
+    // Load barbers if:
+    // 1. Permission granted and we have coordinates, OR
+    // 2. Permission denied (show barbers without distance), OR
+    // 3. User skipped location request
+    if (!hasLoadedOnce) {
+      if (permissionStatus === 'granted' || permissionStatus === 'denied' || hasRequestedLocation.current) {
+        loadBarbers();
+        setHasLoadedOnce(true);
+      }
+    } else if (latitude && longitude) {
+      // Reload with new coordinates
       loadBarbers();
-      setHasLoadedOnce(true);
     }
   }, [latitude, longitude, permissionStatus, hasLoadedOnce]);
 
@@ -190,10 +191,14 @@ export default function MobileConsumerPage() {
             </span>
           </button>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              // Skip location request but still load barbers
+              hasRequestedLocation.current = true;
+              setHasLoadedOnce(false); // Trigger barber load
+            }}
             className="w-full text-gray-500 font-medium py-3 mt-3"
           >
-            Not Now
+            Skip for Now
           </button>
         </div>
       </div>
