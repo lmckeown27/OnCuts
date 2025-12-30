@@ -3,15 +3,14 @@
  * 
  * Touch-optimized mobile interface for discovering and booking barbers.
  * Features:
+ * - University-based barber discovery
  * - Swipeable barber cards (Tinder-style)
  * - Bottom sheet for booking
  * - Touch-friendly filters
  * - Bottom navigation
- * - Pull-to-refresh
- * - Location-based barber discovery
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Heart,
@@ -27,17 +26,24 @@ import {
   User as UserIcon,
   Clock,
   DollarSign,
-  Loader2
+  Loader2,
+  GraduationCap,
+  ArrowRight
 } from 'lucide-react';
-import { useGeolocation, calculateDistance, kmToMiles } from '../../hooks';
+import { calculateDistance, kmToMiles } from '../../hooks';
 import barberService from '../../services/barber.service';
+import UniversitySelector from '../../components/UniversitySelector';
 import type { Barber } from '../../types';
+import type { University } from '../../data/universities';
+
+// Storage key for selected university
+const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -45,69 +51,65 @@ export default function MobileConsumerPage() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const hasRequestedLocation = useRef(false);
-
-  // Geolocation hook for location-based barber discovery
-  const { 
-    latitude, 
-    longitude, 
-    loading: locationLoading, 
-    permissionStatus, 
-    requestLocation 
-  } = useGeolocation();
 
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Handle tap to request location (required for mobile browsers)
-  const handleRequestLocation = () => {
-    hasRequestedLocation.current = true;
-    requestLocation();
-  };
-
-  // Load barbers - with or without location
+  // Load saved university on mount
   useEffect(() => {
-    // Load barbers if:
-    // 1. Permission granted and we have coordinates, OR
-    // 2. Permission denied (show barbers without distance), OR
-    // 3. User skipped location request
-    if (!hasLoadedOnce) {
-      if (permissionStatus === 'granted' || permissionStatus === 'denied' || hasRequestedLocation.current) {
-        loadBarbers();
-        setHasLoadedOnce(true);
+    const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSelectedUniversity(parsed);
+      } catch (e) {
+        localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
       }
-    } else if (latitude && longitude) {
-      // Reload with new coordinates
+    }
+  }, []);
+
+  // Load barbers when university is selected
+  useEffect(() => {
+    if (selectedUniversity) {
       loadBarbers();
     }
-  }, [latitude, longitude, permissionStatus, hasLoadedOnce]);
+  }, [selectedUniversity]);
 
-  // Load barbers from API
+  // Handle university selection
+  const handleUniversitySelect = (university: University) => {
+    setSelectedUniversity(university);
+    localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+  };
+
+  // Load barbers from API - filtered by university location
   const loadBarbers = async () => {
+    if (!selectedUniversity) return;
+    
     try {
       setIsLoading(true);
       const response = await barberService.getBarbers({
-        lat: latitude ?? undefined,
-        lng: longitude ?? undefined,
+        lat: selectedUniversity.latitude,
+        lng: selectedUniversity.longitude,
       });
       
       // Handle paginated response
       const barberList = Array.isArray(response) ? response : response.data;
       
-      // Sort by distance if we have user location
-      if (latitude && longitude && barberList.length > 0) {
-        barberList.sort((a: Barber, b: Barber) => {
-          const distA = a.service_latitude && a.service_longitude
-            ? calculateDistance(latitude, longitude, a.service_latitude, a.service_longitude)
-            : Infinity;
-          const distB = b.service_latitude && b.service_longitude
-            ? calculateDistance(latitude, longitude, b.service_latitude, b.service_longitude)
-            : Infinity;
-          return distA - distB;
-        });
-      }
+      // Sort by distance from university and filter to nearby barbers (within 25 miles)
+      const universityLat = selectedUniversity.latitude;
+      const universityLng = selectedUniversity.longitude;
       
-      setBarbers(barberList);
+      const nearbyBarbers = barberList
+        .map((barber: Barber) => {
+          const distance = barber.service_latitude && barber.service_longitude
+            ? calculateDistance(universityLat, universityLng, barber.service_latitude, barber.service_longitude)
+            : Infinity;
+          return { ...barber, _distance: distance };
+        })
+        .filter((b: Barber & { _distance: number }) => b._distance < 40) // ~25 miles
+        .sort((a: Barber & { _distance: number }, b: Barber & { _distance: number }) => a._distance - b._distance);
+      
+      setBarbers(nearbyBarbers);
     } catch (error) {
       console.error('Failed to load barbers:', error);
     } finally {
@@ -115,12 +117,18 @@ export default function MobileConsumerPage() {
     }
   };
 
-  // Get distance string for a barber
+  // Get distance string for a barber (from selected university)
   const getDistanceString = (barber: Barber): string => {
-    if (latitude && longitude && barber.service_latitude && barber.service_longitude) {
-      const distKm = calculateDistance(latitude, longitude, barber.service_latitude, barber.service_longitude);
+    if (selectedUniversity && barber.service_latitude && barber.service_longitude) {
+      const distKm = calculateDistance(
+        selectedUniversity.latitude, 
+        selectedUniversity.longitude, 
+        barber.service_latitude, 
+        barber.service_longitude
+      );
       const distMiles = kmToMiles(distKm);
-      return distMiles < 0.1 ? 'Nearby' : `${distMiles.toFixed(1)} mi`;
+      if (distMiles < 0.5) return 'On campus';
+      return `${distMiles.toFixed(1)} mi from campus`;
     }
     return 'Distance unknown';
   };
@@ -169,48 +177,41 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show location request screen for mobile (requires user tap)
-  if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
+  // Show university selection screen if no university selected
+  if (!selectedUniversity) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col items-center justify-center p-6">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
-          <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MapPin className="w-10 h-10 text-primary-600" />
+        <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <GraduationCap className="w-10 h-10 text-primary-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Campus Barbers</h1>
+            <p className="text-gray-600">
+              What university do you attend?
+            </p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Find Barbers Near You</h1>
-          <p className="text-gray-600 mb-6">
-            Tap below to enable location and discover barbers closest to you.
+          
+          <UniversitySelector
+            value={null}
+            onChange={handleUniversitySelect}
+            placeholder="Search for your university..."
+          />
+          
+          <p className="text-xs text-gray-400 text-center mt-4">
+            We'll show you barbers near your campus
           </p>
-          <button
-            onClick={handleRequestLocation}
-            className="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors active:scale-95 shadow-lg"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Enable Location
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              // Skip location request but still load barbers
-              hasRequestedLocation.current = true;
-              setHasLoadedOnce(false); // Trigger barber load
-            }}
-            className="w-full text-gray-500 font-medium py-3 mt-3"
-          >
-            Skip for Now
-          </button>
         </div>
       </div>
     );
   }
 
-  // Show loading state while getting location or fetching barbers
-  if (isLoading || locationLoading) {
+  // Show loading state while fetching barbers
+  if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600 text-center">Finding barbers near you...</p>
+        <p className="text-gray-600 text-center">Finding barbers near {selectedUniversity.shortName || selectedUniversity.name}...</p>
       </div>
     );
   }
@@ -218,16 +219,22 @@ export default function MobileConsumerPage() {
   if (!currentBarber) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
-        <MapPin className="w-16 h-16 text-gray-300 mb-4" />
+        <GraduationCap className="w-16 h-16 text-gray-300 mb-4" />
         <h2 className="text-xl font-bold text-gray-900 mb-2">No Barbers Found</h2>
-        <p className="text-gray-600 text-center mb-6">
-          We couldn't find any barbers in your area. Try adjusting your location or check back later.
+        <p className="text-gray-600 text-center mb-4">
+          We couldn't find any barbers near {selectedUniversity?.shortName || selectedUniversity?.name || 'your campus'}.
+        </p>
+        <p className="text-sm text-gray-500 text-center mb-6">
+          Check back later or try a different university.
         </p>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => {
+            setSelectedUniversity(null);
+            localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+          }}
           className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
         >
-          Back to Home
+          Change University
         </button>
       </div>
     );
@@ -239,7 +246,10 @@ export default function MobileConsumerPage() {
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between safe-area-inset-top">
         <div className="flex items-center gap-2">
           <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
-          <h1 className="text-lg font-bold text-gray-900">Discover</h1>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
+            <p className="text-xs text-gray-500 leading-tight">{selectedUniversity?.shortName || selectedUniversity?.name}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
