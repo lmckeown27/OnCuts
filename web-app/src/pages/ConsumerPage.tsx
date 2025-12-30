@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -9,18 +9,23 @@ import Loading from '../components/Loading';
 import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
 import BarberFilterQuestionnaire from '../components/BarberFilterQuestionnaire';
 import BarberApplicationModal from '../components/BarberApplicationModal';
+import UniversitySelector from '../components/UniversitySelector';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import notificationService, { Notification } from '../services/notification.service';
 import { barberApplicationService } from '../services/barber-application.service';
 import type { Barber } from '../types';
+import type { University } from '../data/universities';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
-import { useViewport, useBodyScrollLock, useGeolocation, calculateDistance, kmToMiles } from '../hooks';
+import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { WeeklySchedule } from '../types';
+
+// Storage key for selected university
+const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 // Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
 function formatTime(time24: string): string {
@@ -650,6 +655,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
     date: null,
@@ -659,7 +665,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   });
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
-  const hasRequestedLocation = useRef(false);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -667,32 +672,39 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // Geolocation hook
-  const { 
-    latitude, 
-    longitude, 
-    loading: locationLoading, 
-    permissionStatus, 
-    requestLocation 
-  } = useGeolocation();
+  // University coordinates (used instead of geolocation)
+  const latitude = selectedUniversity?.latitude ?? null;
+  const longitude = selectedUniversity?.longitude ?? null;
 
+  // Load saved university on mount
   useEffect(() => {
-    loadBarbers();
-  }, [latitude, longitude]); // Reload barbers when location changes
-
-  // Auto-request location on mount - browser will show native dialog
-  useEffect(() => {
-    if (permissionStatus === 'prompt' && !hasRequestedLocation.current) {
-      hasRequestedLocation.current = true;
-      // Trigger browser's native location permission dialog
-      requestLocation();
+    const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setSelectedUniversity(parsed);
+      } catch (e) {
+        localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+      }
     }
-    // Note: If denied, we still show barbers - just without distance sorting
-  }, [permissionStatus, requestLocation]);
+  }, []);
+
+  // Load barbers when university is selected
+  useEffect(() => {
+    if (selectedUniversity) {
+      loadBarbers();
+    }
+  }, [selectedUniversity]);
 
   useEffect(() => {
     applyFilters();
   }, [barbers, filterCriteria, latitude, longitude, user?.id]);
+
+  // Handle university selection
+  const handleUniversitySelect = (university: University) => {
+    setSelectedUniversity(university);
+    localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+  };
 
   // Handle schedule click - check auth first
   const handleScheduleClick = (barber: Barber) => {
@@ -798,6 +810,35 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   // Services from shared config
   const availableServices = SPECIALTY_OPTIONS;
 
+  // Show university selection if not yet selected
+  if (!selectedUniversity) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <GraduationCap className="w-10 h-10 text-primary-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Campus Barbers</h1>
+            <p className="text-gray-600">
+              What university do you attend?
+            </p>
+          </div>
+          
+          <UniversitySelector
+            value={null}
+            onChange={handleUniversitySelect}
+            placeholder="Search for your university..."
+          />
+          
+          <p className="text-xs text-gray-400 text-center mt-4">
+            We'll show you barbers near your campus
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return <Loading />;
   }
@@ -814,27 +855,39 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Sort Info */}
       {filteredBarbers.length > 0 && (
         <div className="mb-4 sm:mb-6 text-center text-xs sm:text-sm text-gray-600 flex items-center justify-center gap-2">
-          {latitude && longitude ? (
-            <>
-              <MapPin className="w-4 h-4 text-primary-500" />
-              Barbers within 5 miles of you
-            </>
-          ) : (
-            'Sorted by top performers first'
-          )}
+          <GraduationCap className="w-4 h-4 text-primary-500" />
+          Barbers near {selectedUniversity.shortName || selectedUniversity.name}
+          <button 
+            onClick={() => {
+              setSelectedUniversity(null);
+              localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+            }}
+            className="text-primary-600 hover:text-primary-700 underline ml-1"
+          >
+            Change
+          </button>
         </div>
       )}
 
-      {/* No Results - Location Based */}
-      {filteredBarbers.length === 0 && latitude && longitude && !filterCriteria.serviceType && (
+      {/* No Results - University Based */}
+      {filteredBarbers.length === 0 && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
-          <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers within 5 miles</p>
-          <p className="text-xs sm:text-sm text-gray-500">
-            There are no barbers available in your area yet.
+          <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers near {selectedUniversity.shortName || selectedUniversity.name}</p>
+          <p className="text-xs sm:text-sm text-gray-500 mb-4">
+            There are no barbers available near your campus yet.
             <br />
             Check back soon as more barbers join the platform!
           </p>
+          <button 
+            onClick={() => {
+              setSelectedUniversity(null);
+              localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+            }}
+            className="text-primary-600 hover:text-primary-700 underline"
+          >
+            Try a different university
+          </button>
         </Card>
       )}
 
