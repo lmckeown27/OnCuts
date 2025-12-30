@@ -1,33 +1,25 @@
 /**
- * Booking Payment Page
+ * Booking Confirmation Page
  * 
- * Complete booking flow with Stripe payment integration
- * 
- * Payment Flow (Direct - No Escrow):
- * 1. Student selects service and reviews price
- * 2. Student adds optional tip
- * 3. Payment processed via Stripe directly to barber
- * 4. Barber receives 95% (platform takes 5% fee)
- * 5. 100% of tips go to barber
+ * Simple booking confirmation flow:
+ * 1. Consumer reviews service details (receipt)
+ * 2. Consumer confirms booking
+ * 3. Payment is handled directly between consumer and barber
  */
 
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   CheckCircle, 
   ArrowLeft, 
   AlertCircle, 
-  CreditCard, 
-  DollarSign,
-  Lock,
-  Shield,
+  Calendar,
   Clock,
-  AlertTriangle,
-  Info,
-  Heart,
-  Percent,
+  MapPin,
+  User,
+  Scissors,
   MessageCircle,
-  Zap
+  FileText
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -37,7 +29,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 interface BookingDetails {
   barberId: string;
-  barberUserId?: string; // User ID for messaging
+  barberUserId?: string;
   barberName: string;
   serviceName: string;
   servicePrice: number;
@@ -48,51 +40,18 @@ interface BookingDetails {
   notes?: string;
 }
 
-// Placeholder for tip selection state
-interface TipSelection {
-  type: 'percentage' | 'custom' | 'none';
-  percentage?: number;
-  customAmount?: number;
-}
-
-const PLATFORM_FEE_PERCENTAGE = 0.05; // 5% platform fee
-
-// Pre-defined tip percentages
-const TIP_PERCENTAGES = [
-  { value: 0, label: 'No Tip' },
-  { value: 15, label: '15%' },
-  { value: 20, label: '20%' },
-  { value: 25, label: '25%' },
-  { value: 30, label: '30%' },
-];
-
 export default function BookingPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingDetails = location.state as BookingDetails;
   const { user } = useAuthStore();
 
-  const [step, setStep] = useState<'payment-timing' | 'payment' | 'processing' | 'success' | 'error'>('payment-timing');
-  const [paymentTiming, setPaymentTiming] = useState<'now' | 'later' | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string>('');
+  const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'error'>('confirm');
+  const [bookingId, setBookingId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  
-  // Card input state (mock - would be replaced with Stripe Elements)
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvc, setCardCvc] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
-  const [saveCard, setSaveCard] = useState(false);
-
-  // Tip state
-  const [tipSelection, setTipSelection] = useState<TipSelection>({
-    type: 'percentage',
-    percentage: 20, // Default to 20% tip
-  });
-  const [customTipInput, setCustomTipInput] = useState('');
 
   // Create conversation automatically when booking is confirmed
-  const createBookingConversation = async (bookingId: string) => {
+  const createBookingConversation = async (newBookingId: string) => {
     try {
       const barberUserId = bookingDetails.barberUserId || bookingDetails.barberId;
       if (!barberUserId) {
@@ -101,7 +60,7 @@ export default function BookingPaymentPage() {
       }
 
       await messageService.startBookingConversation(barberUserId, {
-        bookingId,
+        bookingId: newBookingId,
         serviceName: bookingDetails.serviceName,
         servicePrice: bookingDetails.servicePrice,
         scheduledTime: bookingDetails.scheduledAt,
@@ -113,26 +72,29 @@ export default function BookingPaymentPage() {
       console.log('✅ Booking conversation created automatically');
     } catch (error) {
       console.error('Failed to create booking conversation:', error);
-      // Don't fail the booking if conversation creation fails
     }
   };
 
-  // Handle "Pay Later" booking confirmation
-  const handlePayLater = async () => {
+  // Handle booking confirmation
+  const handleConfirmBooking = async () => {
     setStep('processing');
-    // Generate a proper UUID for the booking so multiple bookings can be created
-    const newBookingId = uuidv4();
     
-    // Create conversation automatically
-    await createBookingConversation(newBookingId);
-    
-    setPaymentIntentId(newBookingId);
-    setStep('success');
+    try {
+      // Generate booking ID
+      const newBookingId = uuidv4();
+      
+      // Create conversation automatically
+      await createBookingConversation(newBookingId);
+      
+      setBookingId(newBookingId);
+      setStep('success');
+    } catch (error) {
+      setErrorMessage('Failed to confirm booking. Please try again.');
+      setStep('error');
+    }
   };
 
-  // Mock booking ID for demo
-  const bookingId = `booking-${Date.now()}`;
-
+  // No booking details
   if (!bookingDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -150,70 +112,22 @@ export default function BookingPaymentPage() {
     );
   }
 
-  // Tip calculation
-  const calculateTipAmount = (): number => {
-    if (tipSelection.type === 'none') return 0;
-    if (tipSelection.type === 'custom' && tipSelection.customAmount) {
-      return tipSelection.customAmount;
-    }
-    if (tipSelection.type === 'percentage' && tipSelection.percentage) {
-      return (bookingDetails.servicePrice * tipSelection.percentage) / 100;
-    }
-    return 0;
-  };
-
-  const tipAmount = calculateTipAmount();
-  const subtotal = bookingDetails.servicePrice + tipAmount;
-  const platformFee = bookingDetails.servicePrice * PLATFORM_FEE_PERCENTAGE;
-  const barberEarnings = bookingDetails.servicePrice - platformFee + tipAmount;
-  const totalCharge = subtotal;
-
-  const handleTipSelect = (percentage: number) => {
-    if (percentage === 0) {
-      setTipSelection({ type: 'none' });
-    } else {
-      setTipSelection({ type: 'percentage', percentage });
-    }
-    setCustomTipInput('');
-  };
-
-  const handleCustomTip = () => {
-    const amount = parseFloat(customTipInput);
-    if (!isNaN(amount) && amount >= 0) {
-      setTipSelection({ type: 'custom', customAmount: amount });
-    }
-  };
-
-  const handlePayment = async () => {
-    // Basic validation
-    if (!cardNumber || !cardExpiry || !cardCvc || !cardholderName) {
-      setErrorMessage('Please fill in all card details');
-      setStep('error');
-      return;
-    }
-
-    setStep('processing');
-
-    // Generate a proper UUID for the booking so multiple bookings can be created
-    // TODO: Replace with actual Stripe payment intent ID from backend
-    const newPaymentIntentId = uuidv4();
-    
-    // Create conversation automatically
-    await createBookingConversation(newPaymentIntentId);
-    
-    // Mock successful payment
-    setPaymentIntentId(newPaymentIntentId);
-    setStep('success');
-  };
-
-  const handlePaymentError = (error: string) => {
-    setErrorMessage(error);
-    setStep('error');
-  };
+  // Format date and time
+  const scheduledDate = new Date(bookingDetails.scheduledAt);
+  const formattedDate = scheduledDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const formattedTime = scheduledDate.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
 
   // Success Screen
   if (step === 'success') {
-    const isPaidNow = paymentTiming === 'now';
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
@@ -222,11 +136,7 @@ export default function BookingPaymentPage() {
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
           <p className="text-gray-600 mb-6">
-            {isPaidNow ? (
-              <>Your payment of ${totalCharge.toFixed(2)} has been processed. {bookingDetails.barberName} has been notified and will receive ${barberEarnings.toFixed(2)}.</>
-            ) : (
-              <>Your appointment with {bookingDetails.barberName} is confirmed. You'll pay ${bookingDetails.servicePrice.toFixed(2)} after your service is completed.</>
-            )}
+            Your appointment with {bookingDetails.barberName} has been confirmed. You'll pay ${bookingDetails.servicePrice.toFixed(2)} directly to the barber.
           </p>
 
           <div className="text-left bg-gray-50 p-4 rounded-lg mb-6">
@@ -241,67 +151,39 @@ export default function BookingPaymentPage() {
                 <span className="font-medium">{bookingDetails.serviceName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Scheduled:</span>
-                <span className="font-medium">
-                  {new Date(bookingDetails.scheduledAt).toLocaleString()}
-                </span>
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium">{formattedDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Service Price:</span>
-                <span className="font-medium">${bookingDetails.servicePrice.toFixed(2)}</span>
+                <span className="text-gray-600">Time:</span>
+                <span className="font-medium">{formattedTime}</span>
               </div>
-              {isPaidNow && tipAmount > 0 && (
-                <div className="flex justify-between text-primary-600">
-                  <span>Tip:</span>
-                  <span className="font-medium">${tipAmount.toFixed(2)}</span>
-                </div>
-              )}
               <div className="flex justify-between font-bold border-t border-gray-200 pt-2 mt-2">
-                <span>{isPaidNow ? 'Total Paid:' : 'Amount Due After Service:'}</span>
-                <span>${isPaidNow ? totalCharge.toFixed(2) : bookingDetails.servicePrice.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Payment Status:</span>
-                <span className={`font-medium ${isPaidNow ? 'text-green-600' : 'text-amber-600'}`}>
-                  {isPaidNow ? 'Paid' : 'Pay After Service'}
-                </span>
+                <span>Amount Due:</span>
+                <span className="text-primary-600">${bookingDetails.servicePrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-500 mt-2">
                 <span>Booking ID:</span>
-                <span className="font-mono">{paymentIntentId}</span>
+                <span className="font-mono">{bookingId.slice(0, 8)}...</span>
               </div>
             </div>
           </div>
 
-          <div className={`p-3 rounded-lg mb-6 text-sm ${isPaidNow ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
-            {isPaidNow ? (
-              <>
-                <p className="text-green-700 font-medium mb-1">Payment Complete</p>
-                <p className="text-green-600">
-                  Your barber has been paid. Enjoy your appointment!
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-amber-700 font-medium mb-1">Payment Due After Service</p>
-                <p className="text-amber-600">
-                  Please be ready to pay when your service is complete. You can pay via card, cash, or other methods.
-                </p>
-              </>
-            )}
+          <div className="p-3 rounded-lg mb-6 text-sm bg-amber-50 border border-amber-200">
+            <p className="text-amber-700 font-medium mb-1">Payment Due at Appointment</p>
+            <p className="text-amber-600">
+              Please pay your barber directly when your service is complete.
+            </p>
           </div>
 
           <div className="space-y-3">
             <Button 
               onClick={() => {
-                // Navigate to CONSUMER messages and start BOOKING-CENTRIC conversation with barber
-                // Pass full service context for CampusCuts messaging
                 navigate('/web/consumer/messages', { 
                   state: { 
                     startConversation: true,
                     otherUserId: bookingDetails.barberUserId || bookingDetails.barberId,
-                    bookingId: paymentIntentId,
-                    // Full booking context for service-centric messaging
+                    bookingId: bookingId,
                     serviceName: bookingDetails.serviceName,
                     servicePrice: bookingDetails.servicePrice,
                     scheduledAt: bookingDetails.scheduledAt,
@@ -335,10 +217,10 @@ export default function BookingPaymentPage() {
           <div className="bg-red-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Something Went Wrong</h2>
           <p className="text-gray-600 mb-6">{errorMessage}</p>
           <div className="space-y-2">
-            <Button onClick={() => setStep('payment')} className="w-full">
+            <Button onClick={() => setStep('confirm')} className="w-full">
               Try Again
             </Button>
             <Button onClick={() => navigate(-1)} variant="secondary" className="w-full">
@@ -356,475 +238,145 @@ export default function BookingPaymentPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {paymentTiming === 'now' ? 'Processing Payment...' : 'Confirming Booking...'}
-          </h2>
-          <p className="text-gray-600">
-            {paymentTiming === 'now' ? 'Securely processing your payment via Stripe.' : 'Setting up your appointment.'}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirming Booking...</h2>
+          <p className="text-gray-600">Setting up your appointment.</p>
         </Card>
       </div>
     );
   }
 
-  // Payment Timing Selection Screen
-  if (step === 'payment-timing') {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <div className="mb-8 flex items-center gap-4">
-            <Button 
-              onClick={() => {
-                // Parse the scheduled date and time from scheduledAt
-                const scheduledDate = new Date(bookingDetails.scheduledAt);
-                const date = scheduledDate.toISOString().split('T')[0];
-                const time = scheduledDate.toTimeString().slice(0, 5);
-                
-                navigate(`/web/consumer/book/${bookingDetails.barberId}`, {
-                  state: {
-                    preservedFormData: {
-                      barberId: bookingDetails.barberId,
-                      serviceType: bookingDetails.serviceName,
-                      date: date,
-                      time: time,
-                      location: bookingDetails.location || '',
-                      locationDetails: bookingDetails.locationDetails || '',
-                      notes: bookingDetails.notes || '',
-                    }
-                  }
-                });
-              }} 
-              variant="secondary"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Choose Payment Option</h1>
-              <p className="text-gray-600 mt-1">When would you like to pay?</p>
-            </div>
-          </div>
-
-          {/* Booking Summary */}
-          <Card className="mb-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Booking Summary</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Barber:</span>
-                <span className="font-medium">{bookingDetails.barberName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service:</span>
-                <span className="font-medium">{bookingDetails.serviceName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Scheduled:</span>
-                <span className="font-medium">
-                  {new Date(bookingDetails.scheduledAt).toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-2 mt-2">
-                <span>Total:</span>
-                <span className="text-primary-600">${bookingDetails.servicePrice.toFixed(2)}</span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Payment Options */}
-          <div className="space-y-4">
-            {/* Pay Now Option */}
-            <Card 
-              className={`cursor-pointer transition-all border-2 ${
-                paymentTiming === 'now' 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-primary-300'
-              }`}
-              onClick={() => setPaymentTiming('now')}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                  paymentTiming === 'now' ? 'border-primary-500 bg-primary-500' : 'border-gray-300'
-                }`}>
-                  {paymentTiming === 'now' && <CheckCircle className="w-4 h-4 text-white" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <CreditCard className="w-5 h-5 text-primary-600" />
-                    <h3 className="text-lg font-bold text-gray-900">Pay Now</h3>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Recommended</span>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-3">
-                    Pay securely with your card. Your barber receives payment instantly via Stripe.
-                  </p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="flex items-center gap-1 text-green-600">
-                      <Zap className="w-3 h-3" /> Instant payment to barber
-                    </span>
-                    <span className="flex items-center gap-1 text-green-600">
-                      <Lock className="w-3 h-3" /> Secure payment
-                    </span>
-                    <span className="flex items-center gap-1 text-green-600">
-                      <CheckCircle className="w-3 h-3" /> Easy refunds
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Pay Later Option */}
-            <Card 
-              className={`cursor-pointer transition-all border-2 ${
-                paymentTiming === 'later' 
-                  ? 'border-primary-500 bg-primary-50' 
-                  : 'border-gray-200 hover:border-primary-300'
-              }`}
-              onClick={() => setPaymentTiming('later')}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-1 ${
-                  paymentTiming === 'later' ? 'border-primary-500 bg-primary-500' : 'border-gray-300'
-                }`}>
-                  {paymentTiming === 'later' && <CheckCircle className="w-4 h-4 text-white" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-5 h-5 text-amber-600" />
-                    <h3 className="text-lg font-bold text-gray-900">Pay After Service</h3>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-3">
-                    Book now and pay after your haircut is complete. You can pay by card, cash, or other methods.
-                  </p>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="flex items-center gap-1 text-amber-600">
-                      <Clock className="w-3 h-3" /> Pay when satisfied
-                    </span>
-                    <span className="flex items-center gap-1 text-amber-600">
-                      <DollarSign className="w-3 h-3" /> Multiple payment options
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Continue Button */}
-          <div className="mt-8">
-            <Button 
-              onClick={() => {
-                if (paymentTiming === 'now') {
-                  setStep('payment');
-                } else if (paymentTiming === 'later') {
-                  handlePayLater();
-                }
-              }}
-              disabled={!paymentTiming}
-              className="w-full py-4 text-lg"
-            >
-              {paymentTiming === 'now' ? 'Continue to Payment' : paymentTiming === 'later' ? 'Confirm Booking' : 'Select an Option'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Payment Form Screen
+  // Confirmation Screen (Receipt)
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="mb-6 flex items-center gap-4">
-          <Button onClick={() => navigate(-1)} variant="secondary">
+        <div className="mb-8 flex items-center gap-4">
+          <Button 
+            onClick={() => {
+              const scheduledDate = new Date(bookingDetails.scheduledAt);
+              const date = scheduledDate.toISOString().split('T')[0];
+              const time = scheduledDate.toTimeString().slice(0, 5);
+              
+              navigate(`/web/consumer/book/${bookingDetails.barberId}`, {
+                state: {
+                  preservedFormData: {
+                    barberId: bookingDetails.barberId,
+                    serviceType: bookingDetails.serviceName,
+                    date: date,
+                    time: time,
+                    location: bookingDetails.location || '',
+                    locationDetails: bookingDetails.locationDetails || '',
+                    notes: bookingDetails.notes || '',
+                  }
+                }
+              });
+            }} 
+            variant="secondary"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Complete Payment</h1>
-            <p className="text-gray-600 mt-1">Review your booking and pay securely</p>
+            <h1 className="text-3xl font-bold text-gray-900">Confirm Booking</h1>
+            <p className="text-gray-600 mt-1">Review your appointment details</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Payment Form */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Tipping Section */}
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                <Heart className="w-5 h-5 text-pink-500" />
-                <h3 className="text-lg font-bold text-gray-900">Add a Tip</h3>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4">
-                Show your appreciation! 100% of your tip goes directly to {bookingDetails.barberName}.
-              </p>
-              
-              {/* Tip Selection Buttons */}
-              <div className="grid grid-cols-5 gap-2 mb-4">
-                {TIP_PERCENTAGES.map((tip) => (
-                  <button
-                    key={tip.value}
-                    onClick={() => handleTipSelect(tip.value)}
-                    className={`p-3 rounded-lg border-2 text-center transition-all ${
-                      (tipSelection.type === 'none' && tip.value === 0) ||
-                      (tipSelection.type === 'percentage' && tipSelection.percentage === tip.value)
-                        ? 'border-primary-500 bg-primary-50 text-primary-700'
-                        : 'border-gray-200 hover:border-primary-300'
-                    }`}
-                  >
-                    <div className="font-bold">{tip.label}</div>
-                    {tip.value > 0 && (
-                      <div className="text-xs text-gray-500">
-                        ${((bookingDetails.servicePrice * tip.value) / 100).toFixed(2)}
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Custom Tip Input */}
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Custom amount"
-                    value={customTipInput}
-                    onChange={(e) => setCustomTipInput(e.target.value)}
-                    className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-                <Button 
-                  variant="secondary" 
-                  onClick={handleCustomTip}
-                  disabled={!customTipInput}
-                >
-                  Apply
-                </Button>
-              </div>
-
-              {tipAmount > 0 && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-green-700">
-                    You're adding a <strong>${tipAmount.toFixed(2)}</strong> tip. Thank you for supporting your barber!
-                  </span>
-                </div>
-              )}
-            </Card>
-
-            {/* Payment Method */}
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                <CreditCard className="w-5 h-5 text-primary-600" />
-                <h3 className="text-lg font-bold text-gray-900">Payment Method</h3>
-              </div>
-
-              <div className="space-y-4">
-                {/* Cardholder Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name on Card
-                  </label>
-                  <input
-                    type="text"
-                    value={cardholderName}
-                    onChange={(e) => setCardholderName(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                {/* Card Number */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Card Number
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, '').slice(0, 16))}
-                      placeholder="1234 5678 9012 3456"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                      <img src="https://img.icons8.com/color/32/visa.png" alt="Visa" className="h-6" />
-                      <img src="https://img.icons8.com/color/32/mastercard.png" alt="Mastercard" className="h-6" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expiry & CVC */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Expiry Date
-                    </label>
-                    <input
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      placeholder="MM/YY"
-                      maxLength={5}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      CVC
-                    </label>
-                    <input
-                      type="text"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      placeholder="123"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Save Card */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={saveCard}
-                    onChange={(e) => setSaveCard(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-600">Save card for future payments</span>
-                </label>
-              </div>
-
-              {/* Security Notice */}
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
-                <Lock className="w-4 h-4" />
-                <span>Your payment is secured with 256-bit SSL encryption</span>
-              </div>
-            </Card>
-
-            {/* Pay Button */}
-            <Button onClick={handlePayment} className="w-full py-4 text-lg">
-              <Lock className="w-5 h-5 mr-2" />
-              Pay ${totalCharge.toFixed(2)}
-            </Button>
-
-            {/* Terms */}
-            <p className="text-xs text-gray-500 text-center">
-              By completing this payment, you agree to our{' '}
-              <Link to="/terms" className="text-primary-600 hover:underline">Terms of Service</Link>
-              {' '}and{' '}
-              <Link to="/privacy" className="text-primary-600 hover:underline">Privacy Policy</Link>
-            </p>
+        {/* Receipt Card */}
+        <Card className="mb-6">
+          {/* Receipt Header */}
+          <div className="text-center border-b border-gray-200 pb-4 mb-4">
+            <FileText className="w-10 h-10 text-primary-600 mx-auto mb-2" />
+            <h2 className="text-xl font-bold text-gray-900">Booking Summary</h2>
           </div>
 
-          {/* Right Column - Order Summary */}
-          <div className="space-y-6">
-            {/* Booking Summary */}
-            <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Booking Summary</h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-gray-600 mb-1">Barber</p>
-                  <p className="font-semibold text-gray-900">{bookingDetails.barberName}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">Service</p>
-                  <p className="font-semibold text-gray-900">{bookingDetails.serviceName}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">Date & Time</p>
-                  <p className="font-semibold text-gray-900">
-                    {new Date(bookingDetails.scheduledAt).toLocaleDateString()}
-                  </p>
-                  <p className="text-gray-600">
-                    {new Date(bookingDetails.scheduledAt).toLocaleTimeString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1">Duration</p>
-                  <p className="font-semibold text-gray-900">{bookingDetails.duration} minutes</p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Price Breakdown */}
-            <Card>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Price Breakdown</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Service Price</span>
-                  <span className="font-medium">${bookingDetails.servicePrice.toFixed(2)}</span>
-                </div>
-                
-                {tipAmount > 0 && (
-                  <div className="flex justify-between text-primary-600">
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3 h-3" />
-                      Tip
-                    </span>
-                    <span className="font-medium">${tipAmount.toFixed(2)}</span>
-                  </div>
-                )}
-
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-primary-600">${totalCharge.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                {/* Barber earnings breakdown */}
-                <div className="border-t border-gray-200 pt-3 mt-3 text-xs text-gray-500">
-                  <div className="flex justify-between">
-                    <span>Barber receives:</span>
-                    <span className="text-green-600 font-medium">${barberEarnings.toFixed(2)}</span>
-                  </div>
-                  <p className="mt-1 text-gray-400">
-                    (Service: ${(bookingDetails.servicePrice - platformFee).toFixed(2)} + Tip: ${tipAmount.toFixed(2)})
-                  </p>
-                </div>
-              </div>
-
-            </Card>
-
-            {/* How Payment Works */}
-            <Card className="bg-primary-50 border-2 border-primary-200">
-              <h3 className="text-sm font-bold text-primary-700 mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                How Payment Works
-              </h3>
-              <ul className="text-xs text-primary-600 space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">1</span>
-                  <span>Payment is securely processed via Stripe</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
-                  <span>Barber receives payment instantly (95%)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
-                  <span>100% of your tip goes to the barber</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
-                  <span>Refunds available if service not provided</span>
-                </li>
-              </ul>
-            </Card>
-
-            {/* Stripe Badge */}
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-              <Lock className="w-3 h-3" />
-              <span>Powered by</span>
-              <span className="font-bold text-indigo-600">Stripe</span>
+          {/* Barber Info */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
+            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+              <User className="w-6 h-6 text-primary-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">{bookingDetails.barberName}</p>
+              <p className="text-sm text-gray-500">Your Barber</p>
             </div>
           </div>
-        </div>
+
+          {/* Service Details */}
+          <div className="space-y-4 mb-6">
+            <div className="flex items-start gap-3">
+              <Scissors className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Service</p>
+                <p className="font-medium text-gray-900">{bookingDetails.serviceName}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Date</p>
+                <p className="font-medium text-gray-900">{formattedDate}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-gray-500">Time</p>
+                <p className="font-medium text-gray-900">{formattedTime}</p>
+                <p className="text-xs text-gray-400">{bookingDetails.duration} minutes</p>
+              </div>
+            </div>
+
+            {bookingDetails.location && (
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-gray-500">Location</p>
+                  <p className="font-medium text-gray-900">{bookingDetails.location}</p>
+                  {bookingDetails.locationDetails && (
+                    <p className="text-xs text-gray-400">{bookingDetails.locationDetails}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {bookingDetails.notes && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-medium">Note:</span> {bookingDetails.notes}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Price */}
+          <div className="border-t border-dashed border-gray-300 pt-4">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-medium text-gray-700">Amount Due</span>
+              <span className="text-2xl font-bold text-primary-600">
+                ${bookingDetails.servicePrice.toFixed(2)}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1 text-right">
+              Pay directly to barber at appointment
+            </p>
+          </div>
+        </Card>
+
+        {/* Confirm Button */}
+        <Button 
+          onClick={handleConfirmBooking}
+          className="w-full py-4 text-lg"
+        >
+          <CheckCircle className="w-5 h-5 mr-2" />
+          Confirm Booking
+        </Button>
+
+        {/* Info Text */}
+        <p className="text-xs text-gray-500 text-center mt-4">
+          By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName} at your appointment.
+        </p>
       </div>
     </div>
   );
