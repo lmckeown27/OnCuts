@@ -143,7 +143,7 @@ export default function BookingPaymentPage() {
         return;
       }
 
-      await messageService.startConversation(barberUserId, {
+      await messageService.startBookingConversation(barberUserId, {
         bookingId,
         serviceName: bookingDetails.serviceName,
         servicePrice: bookingDetails.servicePrice,
