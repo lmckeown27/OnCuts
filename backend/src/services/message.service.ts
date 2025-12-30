@@ -42,7 +42,7 @@ class MessageService {
           u.user_type as other_user_type,
           
           -- BARBER INFO (if other user is barber)
-          COALESCE(br.display_name, u.first_name || ' ' || u.last_name) as barber_display_name,
+          u.first_name || ' ' || u.last_name as barber_display_name,
           br.specialties as barber_specialties,
           br.average_rating as barber_rating,
           
@@ -170,9 +170,9 @@ class MessageService {
           },
         },
       };
-    } catch (error) {
-      console.error('Get conversations error:', error);
-      throw new Error('Failed to fetch conversations');
+    } catch (error: any) {
+      console.error('Get conversations error:', error.message || error);
+      throw new Error(`Failed to fetch conversations: ${error.message || 'Unknown error'}`);
     }
   }
 
