@@ -78,13 +78,19 @@ interface ConversationWithDetails extends Conversation {
 
 interface MessageWithSender {
   id: string;
-  conversation_id: string;
-  sender_id: string;
+  conversation_id?: string;
+  conversationId?: string;
+  sender_id?: string;
+  senderId?: string;
   content: string;
-  message_type: 'text' | 'image' | 'system';
+  message_type?: 'text' | 'image' | 'system';
+  messageType?: 'text' | 'image' | 'system';
   media_url?: string;
-  is_read: boolean;
-  created_at: string;
+  mediaUrl?: string;
+  is_read?: boolean;
+  isRead?: boolean;
+  created_at?: string;
+  createdAt?: string;
   sender?: {
     id: string;
     username?: string;
@@ -600,8 +606,10 @@ export default function MessagesPage() {
           ) : (
             <div className="space-y-4">
               {messages.map((message, idx) => {
-                const isOwn = message.sender_id === user?.id || message.isOwn;
-                const showAvatar = !isOwn && (idx === 0 || messages[idx - 1].sender_id !== message.sender_id);
+                const senderId = message.senderId || message.sender_id;
+                const isOwn = senderId === user?.id || (message as any).isOwn;
+                const prevSenderId = messages[idx - 1]?.senderId || messages[idx - 1]?.sender_id;
+                const showAvatar = !isOwn && (idx === 0 || prevSenderId !== senderId);
                 
                 return (
                   <div
@@ -635,10 +643,10 @@ export default function MessagesPage() {
                       </div>
                       <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                         <span className="text-xs text-gray-400">
-                          {formatTime(message.created_at)}
+                          {formatTime(message.createdAt || message.created_at)}
                         </span>
                         {isOwn && (
-                          message.is_read 
+                          (message.isRead || message.is_read)
                             ? <CheckCheck className="w-3 h-3 text-primary-500" />
                             : <Check className="w-3 h-3 text-gray-400" />
                         )}
