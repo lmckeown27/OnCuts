@@ -91,7 +91,7 @@ export default function MobileConsumerPage() {
       // Handle paginated response
       const barberList = Array.isArray(response) ? response : response.data;
       
-      // Sort by distance from university and filter to nearby barbers (within 25 miles)
+      // Sort by distance from university and filter to nearby barbers (within 5 miles)
       const universityLat = selectedUniversity.latitude;
       const universityLng = selectedUniversity.longitude;
       
@@ -102,7 +102,7 @@ export default function MobileConsumerPage() {
             : Infinity;
           return { ...barber, _distance: distance };
         })
-        .filter((b: Barber & { _distance: number }) => b._distance < 40) // ~25 miles
+        .filter((b: Barber & { _distance: number }) => b._distance < 8) // ~5 miles
         .sort((a: Barber & { _distance: number }, b: Barber & { _distance: number }) => a._distance - b._distance);
       
       setBarbers(nearbyBarbers);
