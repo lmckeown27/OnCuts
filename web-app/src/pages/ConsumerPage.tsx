@@ -1005,8 +1005,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               {/* Barber Info */}
               <div className="flex-1 flex flex-col pb-2">
 
+                {/* Specialties */}
+                <div className="flex flex-wrap gap-1 mt-1 mb-2">
+                  {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"
+                    >
+                      {specialty}
+                    </span>
+                  ))}
+                </div>
+
                 {/* Distance & Instagram */}
-                <div className="flex items-center gap-2 text-xs sm:text-sm mt-1 mb-2">
+                <div className="flex items-center gap-2 text-xs sm:text-sm mb-2">
                   {barber.distance_miles !== undefined && barber.distance_miles !== null && (
                     <span className="text-primary-600 font-medium flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
@@ -1019,18 +1031,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
                     </div>
                   )}
-                </div>
-
-                {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {(Array.isArray(barber.specialties) ? barber.specialties : []).slice(0, 3).map((specialty, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
                 </div>
 
               </div>
