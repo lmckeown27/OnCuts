@@ -115,26 +115,32 @@ export class BookingRequestService {
 
   /**
    * Get pending booking requests for a barber
+   * Checks both the bookings table AND conversations with pending booking_status
    */
   async getBarberPendingRequests(barberIdOrUserId: string): Promise<BookingRequest[]> {
     try {
       // Check if PostgreSQL is available
       await pool.query('SELECT 1');
       
+      const requests: BookingRequest[] = [];
+      
       // First, try to find the barber ID - the input could be either barber ID or user ID
       let barberId = barberIdOrUserId;
+      let barberUserId = barberIdOrUserId;
       
       // Check if this is a user ID by looking up the barbers table
       const barberCheck = await pool.query(
-        'SELECT id FROM barbers WHERE id = $1 OR "userId" = $1',
+        'SELECT id, "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
         [barberIdOrUserId]
       );
       
       if (barberCheck.rows.length > 0) {
         barberId = barberCheck.rows[0].id;
+        barberUserId = barberCheck.rows[0].userId;
       }
       
-      const result = await pool.query(`
+      // Query 1: Get from bookings table (traditional flow)
+      const bookingsResult = await pool.query(`
         SELECT 
           b.id as booking_id,
           b."consumerId" as customer_id,
@@ -156,39 +162,117 @@ export class BookingRequestService {
         ORDER BY b."createdAt" DESC
       `, [barberId]);
 
-      return result.rows.map(row => ({
-        bookingId: row.booking_id,
-        customerId: row.customer_id,
-        customerName: row.customer_name,
-        customerProfile: {
-          displayName: row.display_name || row.customer_name,
-          bio: row.bio,
-          profileImageUrl: row.profile_image_url,
-          stats: {
-            totalBookings: 0,
-            completedBookings: 0,
-            cancelledBookings: 0,
-            noShowCount: 0,
-            avgRating: 0,
-            totalReviews: 0,
-            isReliable: true,
-            responseRate: 100,
+      bookingsResult.rows.forEach(row => {
+        requests.push({
+          bookingId: row.booking_id,
+          customerId: row.customer_id,
+          customerName: row.customer_name,
+          customerProfile: {
+            displayName: row.display_name || row.customer_name,
+            bio: row.bio,
+            profileImageUrl: row.profile_image_url,
+            stats: {
+              totalBookings: 0,
+              completedBookings: 0,
+              cancelledBookings: 0,
+              noShowCount: 0,
+              avgRating: 0,
+              totalReviews: 0,
+              isReliable: true,
+              completionRate: 100,
+              responseRate: 100,
+            },
           },
-        },
-        barberId: row.barber_id,
-        serviceType: row.service_type || 'Haircut',
-        requestedDate: row.requested_date,
-        requestedTime: row.requested_time,
-        price: parseFloat(row.price) || 0,
-        message: '',
-        status: row.status,
-        requestedAt: row.requested_at,
-      }));
+          barberId: row.barber_id,
+          serviceType: row.service_type || 'Haircut',
+          requestedDate: row.requested_date,
+          requestedTime: row.requested_time,
+          price: parseFloat(row.price) || 0,
+          message: '',
+          status: row.status,
+          requestedAt: row.requested_at,
+        });
+      });
+
+      // Query 2: Get from conversations with pending booking_status
+      // This handles the case where consumer scheduled a service via messages
+      const conversationsResult = await pool.query(`
+        SELECT 
+          c.id as conversation_id,
+          c.user1_id,
+          c.user2_id,
+          c.service_name,
+          c.service_price,
+          c.scheduled_time,
+          c.location,
+          c.notes,
+          c.booking_status,
+          c.consumer_name,
+          c.created_at,
+          u.id as customer_id,
+          u.first_name || ' ' || u.last_name as customer_name,
+          u."displayName" as display_name,
+          u.bio,
+          u."avatarUrl" as profile_image_url
+        FROM conversations c
+        JOIN users u ON (
+          CASE 
+            WHEN c.user1_id = $1 THEN c.user2_id
+            ELSE c.user1_id
+          END = u.id
+        )
+        WHERE (c.user1_id = $1 OR c.user2_id = $1)
+          AND c.booking_status = 'pending'
+          AND c.is_active = true
+          AND c.service_name IS NOT NULL
+        ORDER BY c.created_at DESC
+      `, [barberUserId]);
+
+      conversationsResult.rows.forEach(row => {
+        // Don't add if we already have this from bookings
+        const alreadyExists = requests.some(r => r.bookingId === `conv-${row.conversation_id}`);
+        if (!alreadyExists) {
+          requests.push({
+            bookingId: `conv-${row.conversation_id}`, // Prefix to identify it's from conversations
+            customerId: row.customer_id,
+            customerName: row.customer_name || row.consumer_name || 'Customer',
+            customerProfile: {
+              displayName: row.display_name || row.customer_name || 'Customer',
+              bio: row.bio,
+              profileImageUrl: row.profile_image_url,
+              stats: {
+                totalBookings: 0,
+                completedBookings: 0,
+                cancelledBookings: 0,
+                noShowCount: 0,
+                avgRating: 0,
+                totalReviews: 0,
+                isReliable: true,
+                completionRate: 100,
+                responseRate: 100,
+              },
+            },
+            barberId: barberId,
+            serviceType: row.service_name || 'Haircut',
+            requestedDate: row.scheduled_time || row.created_at,
+            requestedTime: row.scheduled_time 
+              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+              : '',
+            price: parseFloat(row.service_price) || 0,
+            message: row.notes || '',
+            status: 'pending',
+            requestedAt: row.created_at,
+          });
+        }
+      });
+
+      logger.info(`Found ${requests.length} pending requests for barber ${barberIdOrUserId}`);
+      return requests;
     } catch (error) {
-      logger.error('Error getting pending requests (using mock data):', error);
+      logger.error('Error getting pending requests (using empty array):', error);
       
-      // Return mock data when PostgreSQL is unavailable
-      return this.getMockPendingRequests(barberIdOrUserId);
+      // Return empty array instead of mock data
+      return [];
     }
   }
 
@@ -289,6 +373,7 @@ export class BookingRequestService {
 
   /**
    * Accept a booking request
+   * Handles both traditional bookings and conversation-based requests
    */
   async acceptBookingRequest(
     bookingId: string,
@@ -300,67 +385,52 @@ export class BookingRequestService {
     try {
       await client.query('BEGIN');
 
-      // Update booking status
+      // Check if this is a conversation-based request
+      if (bookingId.startsWith('conv-')) {
+        const conversationId = bookingId.replace('conv-', '');
+        
+        // Update conversation booking_status
+        const updateResult = await client.query(`
+          UPDATE conversations
+          SET 
+            booking_status = 'accepted',
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1 AND booking_status = 'pending'
+          RETURNING user1_id, user2_id
+        `, [conversationId]);
+
+        if (updateResult.rows.length === 0) {
+          throw new Error('Conversation not found or already responded to');
+        }
+
+        await client.query('COMMIT');
+        logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
+        return { success: true };
+      }
+
+      // Traditional booking flow
       const updateResult = await client.query(`
         UPDATE bookings
         SET 
-          status = 'accepted',
-          responded_at = NOW(),
-          updated_at = NOW()
-        WHERE id = $1 AND barber_id = $2 AND status = 'pending'
-        RETURNING customer_id
-      `, [bookingId, barberId]);
+          status = 'ACCEPTED',
+          "acceptedAt" = NOW(),
+          "updatedAt" = NOW()
+        WHERE id = $1 AND status = 'PENDING'
+        RETURNING "consumerId"
+      `, [bookingId]);
 
       if (updateResult.rows.length === 0) {
         throw new Error('Booking not found or already responded to');
       }
 
-      const customerId = updateResult.rows[0].customer_id;
-
-      // Add acceptance message if provided
-      if (message) {
-        await client.query(`
-          INSERT INTO booking_messages (
-            booking_id,
-            sender_id,
-            sender_type,
-            message,
-            message_type
-          ) VALUES ($1, (SELECT user_id FROM barbers WHERE barber_id = $2), 'barber', $3, 'text')
-        `, [bookingId, barberId, message]);
-      }
-
-      // Create notification for customer
-      await client.query(`
-        INSERT INTO booking_request_notifications (
-          user_id,
-          booking_id,
-          type,
-          title,
-          message
-        ) SELECT 
-          $1,
-          $2,
-          'accepted',
-          'Booking Accepted!',
-          b.name || ' has accepted your booking request'
-        FROM barbers ba
-        JOIN users b ON ba.user_id = b.id
-        WHERE ba.barber_id = $3
-      `, [customerId, bookingId, barberId]);
-
       await client.query('COMMIT');
-
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
 
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
-      logger.error('Error accepting booking request (using mock response):', error);
-      
-      // Return mock success when PostgreSQL is unavailable
-      logger.info(`Mock: Booking ${bookingId} accepted by barber ${barberId}`);
-      return { success: true };
+      logger.error('Error accepting booking request:', error);
+      throw error;
     } finally {
       client.release();
     }
@@ -368,6 +438,7 @@ export class BookingRequestService {
 
   /**
    * Reject a booking request
+   * Handles both traditional bookings and conversation-based requests
    */
   async rejectBookingRequest(
     bookingId: string,
@@ -379,70 +450,53 @@ export class BookingRequestService {
     try {
       await client.query('BEGIN');
 
-      // Update booking status
+      // Check if this is a conversation-based request
+      if (bookingId.startsWith('conv-')) {
+        const conversationId = bookingId.replace('conv-', '');
+        
+        // Update conversation booking_status
+        const updateResult = await client.query(`
+          UPDATE conversations
+          SET 
+            booking_status = 'rejected',
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1 AND booking_status = 'pending'
+          RETURNING user1_id, user2_id
+        `, [conversationId]);
+
+        if (updateResult.rows.length === 0) {
+          throw new Error('Conversation not found or already responded to');
+        }
+
+        await client.query('COMMIT');
+        logger.info(`Conversation ${conversationId} booking rejected by barber ${barberId}`);
+        return { success: true };
+      }
+
+      // Traditional booking flow
       const updateResult = await client.query(`
         UPDATE bookings
         SET 
-          status = 'rejected',
-          responded_at = NOW(),
-          rejection_reason = $3,
-          updated_at = NOW()
-        WHERE id = $1 AND barber_id = $2 AND status = 'pending'
-        RETURNING customer_id
-      `, [bookingId, barberId, reason]);
+          status = 'CANCELLED',
+          "cancelledAt" = NOW(),
+          "cancellationReason" = $2,
+          "updatedAt" = NOW()
+        WHERE id = $1 AND status = 'PENDING'
+        RETURNING "consumerId"
+      `, [bookingId, reason]);
 
       if (updateResult.rows.length === 0) {
         throw new Error('Booking not found or already responded to');
       }
 
-      const customerId = updateResult.rows[0].customer_id;
-
-      // Add rejection message
-      const rejectionMessage = reason 
-        ? `Sorry, I can't accept this booking. ${reason}`
-        : 'Sorry, I can\'t accept this booking at this time.';
-
-      await client.query(`
-        INSERT INTO booking_messages (
-          booking_id,
-          sender_id,
-          sender_type,
-          message,
-          message_type
-        ) VALUES ($1, (SELECT user_id FROM barbers WHERE barber_id = $2), 'barber', $3, 'system')
-      `, [bookingId, barberId, rejectionMessage]);
-
-      // Create notification for customer
-      await client.query(`
-        INSERT INTO booking_request_notifications (
-          user_id,
-          booking_id,
-          type,
-          title,
-          message
-        ) SELECT 
-          $1,
-          $2,
-          'rejected',
-          'Booking Not Available',
-          b.name || ' is unable to accept your booking request'
-        FROM barbers ba
-        JOIN users b ON ba.user_id = b.id
-        WHERE ba.barber_id = $3
-      `, [customerId, bookingId, barberId]);
-
       await client.query('COMMIT');
-
       logger.info(`Booking ${bookingId} rejected by barber ${barberId}`);
 
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
-      logger.error('Error rejecting booking request (using mock response):', error);
-      
-      // Return mock success when PostgreSQL is unavailable
-      logger.info(`Mock: Booking ${bookingId} rejected by barber ${barberId}. Reason: ${reason || 'No reason provided'}`);
-      return { success: true };
+      logger.error('Error rejecting booking request:', error);
+      throw error;
     } finally {
       client.release();
     }
