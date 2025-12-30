@@ -307,7 +307,6 @@ export default function BookingPaymentPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900">{bookingDetails.barberName}</p>
-              <p className="text-sm text-gray-500">Your Barber</p>
             </div>
           </div>
 
@@ -334,7 +333,6 @@ export default function BookingPaymentPage() {
               <div>
                 <p className="text-sm text-gray-500">Time</p>
                 <p className="font-medium text-gray-900">{formattedTime}</p>
-                <p className="text-xs text-gray-400">{bookingDetails.duration} minutes</p>
               </div>
             </div>
 
