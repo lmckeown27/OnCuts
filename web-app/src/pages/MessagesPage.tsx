@@ -559,28 +559,61 @@ export default function MessagesPage() {
             </div>
           )}
 
-          {/* Compact Booking Context Bar */}
+          {/* Compact Booking Context Bar - Mobile: Interactive button | Desktop: Static display */}
           {selectedConversation.booking && (
-            <button 
-              onClick={() => setShowServiceDetails(true)}
-              className="mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors text-left"
-            >
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1 text-primary-700">
-                    <Scissors className="w-4 h-4" />
-                    <span className="font-medium">{selectedConversation.booking.serviceName}</span>
+            <>
+              {/* Mobile - Interactive button to open service details modal */}
+              <button 
+                onClick={() => setShowServiceDetails(true)}
+                className="md:hidden mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors text-left"
+              >
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Scissors className="w-4 h-4" />
+                      <span className="font-medium">{selectedConversation.booking.serviceName}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Clock className="w-4 h-4" />
+                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-primary-700">
-                    <Calendar className="w-4 h-4" />
-                    <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-primary-700">
-                    <Clock className="w-4 h-4" />
-                    <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                      selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedConversation.booking.status}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-primary-600" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+              </button>
+
+              {/* Desktop - Static display (service details visible in right panel) */}
+              <div className="hidden md:block mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Scissors className="w-4 h-4" />
+                      <span className="font-medium">{selectedConversation.booking.serviceName}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-primary-700">
+                      <Clock className="w-4 h-4" />
+                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
                     selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -590,10 +623,9 @@ export default function MessagesPage() {
                   }`}>
                     {selectedConversation.booking.status}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-primary-600" />
                 </div>
               </div>
-            </button>
+            </>
           )}
         </div>
 
