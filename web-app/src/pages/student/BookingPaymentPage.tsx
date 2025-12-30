@@ -51,7 +51,7 @@ export default function BookingPaymentPage() {
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Create conversation automatically when booking is confirmed
-  const createBookingConversation = async (newBookingId: string) => {
+  const createBookingConversation = async () => {
     try {
       const barberUserId = bookingDetails.barberUserId || bookingDetails.barberId;
       if (!barberUserId) {
@@ -59,8 +59,9 @@ export default function BookingPaymentPage() {
         return;
       }
 
+      // Note: We don't pass bookingId here since the booking isn't stored in the database
+      // The conversation stores all the booking context without a foreign key reference
       await messageService.startBookingConversation(barberUserId, {
-        bookingId: newBookingId,
         serviceName: bookingDetails.serviceName,
         servicePrice: bookingDetails.servicePrice,
         scheduledTime: bookingDetails.scheduledAt,
@@ -80,11 +81,11 @@ export default function BookingPaymentPage() {
     setStep('processing');
     
     try {
-      // Generate booking ID
+      // Generate a local reference ID for display purposes
       const newBookingId = uuidv4();
       
-      // Create conversation automatically
-      await createBookingConversation(newBookingId);
+      // Create conversation automatically (without database booking_id)
+      await createBookingConversation();
       
       setBookingId(newBookingId);
       setStep('success');
