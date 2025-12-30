@@ -31,30 +31,19 @@ export default function LandingPage() {
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // Handle "Book Here" click - request location then navigate
-  // This triggers the browser's native location dialog on mobile
+  // Handle "Book Here" click - request location and navigate immediately
+  // The location request happens in background, consumer page will use the result
   const handleBookHereClick = useCallback(() => {
+    // Start location request in background (triggers browser's native dialog)
     if (navigator.geolocation) {
-      // Request location - this triggers the browser's permission dialog
       navigator.geolocation.getCurrentPosition(
-        () => {
-          // Success - location granted, navigate to consumer page
-          navigate('/web/consumer');
-        },
-        () => {
-          // Error or denied - still navigate, the consumer page will handle it
-          navigate('/web/consumer');
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
+        () => {}, // Success - location will be cached by browser
+        () => {}, // Error - consumer page will handle it
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
-    } else {
-      // Geolocation not supported, just navigate
-      navigate('/web/consumer');
     }
+    // Navigate immediately - don't wait for location response
+    navigate('/web/consumer');
   }, [navigate]);
   
   // Mobile menu open/close with animation
