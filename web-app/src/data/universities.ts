@@ -289,7 +289,7 @@ export const US_UNIVERSITIES: University[] = [
 
 // Helper function to search universities
 export function searchUniversities(query: string, limit: number = 10): University[] {
-  if (!query || query.length < 2) return [];
+  if (!query || query.length < 1) return [];
   
   const lowerQuery = query.toLowerCase();
   

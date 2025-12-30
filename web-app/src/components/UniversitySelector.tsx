@@ -36,7 +36,7 @@ export default function UniversitySelector({
 
   // Search universities when query changes
   useEffect(() => {
-    if (searchQuery.length >= 2) {
+    if (searchQuery.length >= 1) {
       const matches = searchUniversities(searchQuery, 8);
       setResults(matches);
       setHighlightedIndex(0);
@@ -173,10 +173,10 @@ export default function UniversitySelector({
           ref={dropdownRef}
           className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto"
         >
-          {searchQuery.length < 2 ? (
+          {searchQuery.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-              <p>Type at least 2 characters to search</p>
+              <p>Start typing to search</p>
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
