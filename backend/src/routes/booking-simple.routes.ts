@@ -71,15 +71,17 @@ router.post('/', authenticate, async (req, res, next) => {
     const dbServiceType = serviceTypeMap[serviceType] || 'HAIRCUT';
 
     // Create booking record (minimal columns that exist in production)
+    // Use gen_random_uuid() to generate the ID since table doesn't have default
     const result = await pool.query(
       `INSERT INTO bookings (
+        id,
         "consumerId", 
         "barberId", 
         "serviceType", 
         "priceUsdCents", 
         "requestedAt",
         status
-      ) VALUES ($1, $2, $3::"ServiceType", $4, $5, 'PENDING')
+      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
