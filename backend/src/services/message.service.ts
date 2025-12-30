@@ -57,9 +57,9 @@ class MessageService {
           c.consumer_name as conv_consumer_name,
           -- Fallback to linked booking if exists
           b.id as booking_id_ref,
-          b.service_name as booking_service_type,
-          b.price as booking_price_cents,
-          b.scheduled_time as booking_scheduled_time,
+          b."serviceType" as booking_service_type,
+          b."priceUsdCents" as booking_price_cents,
+          b."requestedAt" as booking_scheduled_time,
           b.status as linked_booking_status,
           
           -- MESSAGE INFO
