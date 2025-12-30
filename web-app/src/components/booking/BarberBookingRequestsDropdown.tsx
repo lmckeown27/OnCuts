@@ -38,6 +38,15 @@ interface Props {
 }
 
 
+// Common decline reasons
+const DECLINE_REASONS = [
+  'Schedule conflict',
+  'Fully booked for this day',
+  'Too far from my service area',
+  'Service not available at this time',
+  'Other',
+];
+
 export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -45,8 +54,17 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [viewingRequest, setViewingRequest] = useState<BookingRequest | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  // Decline reason modal state
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [isDeclineModalVisible, setIsDeclineModalVisible] = useState(false);
+  const [decliningRequest, setDecliningRequest] = useState<BookingRequest | null>(null);
+  const [selectedReason, setSelectedReason] = useState('');
+  const [customReason, setCustomReason] = useState('');
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const declineModalRef = useRef<HTMLDivElement>(null);
   
   // Viewport detection for responsive backdrop
   const { isMobile, isTablet } = useViewport();
@@ -125,6 +143,43 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     }, 150);
   };
 
+  // Decline modal handlers
+  const openDeclineModal = (request: BookingRequest) => {
+    setDecliningRequest(request);
+    setSelectedReason('');
+    setCustomReason('');
+    setShowDeclineModal(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsDeclineModalVisible(true);
+      });
+    });
+  };
+
+  const closeDeclineModal = () => {
+    setIsDeclineModalVisible(false);
+    setTimeout(() => {
+      setShowDeclineModal(false);
+      setDecliningRequest(null);
+      setSelectedReason('');
+      setCustomReason('');
+    }, 150);
+  };
+
+  // Click outside handler for decline modal
+  useEffect(() => {
+    const handleDeclineModalClickOutside = (event: MouseEvent) => {
+      if (declineModalRef.current && !declineModalRef.current.contains(event.target as Node)) {
+        closeDeclineModal();
+      }
+    };
+
+    if (showDeclineModal) {
+      document.addEventListener('mousedown', handleDeclineModalClickOutside);
+      return () => document.removeEventListener('mousedown', handleDeclineModalClickOutside);
+    }
+  }, [showDeclineModal]);
+
   const fetchRequests = async () => {
     try {
       const response = await api.get<{ requests: BookingRequest[] }>(
@@ -157,23 +212,37 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     }
   };
 
-  const handleReject = async (bookingId: string) => {
+  const handleReject = async (bookingId: string, reason: string) => {
     setActionLoading(bookingId);
     try {
       await api.post(`/booking-requests/${bookingId}/reject`, {
         barberId,
-        reason: 'Schedule conflict',
+        reason,
       });
       toast.success('Booking request declined');
       fetchRequests();
+      closeDeclineModal();
+      closeModal(); // Close viewing modal if open
     } catch (error) {
       console.error('Failed to reject booking:', error);
       // For mock data, just remove from list
       setRequests(prev => prev.filter(r => r.bookingId !== bookingId));
       toast.success('Booking request declined (Mock)');
+      closeDeclineModal();
+      closeModal();
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleConfirmDecline = () => {
+    if (!decliningRequest) return;
+    const reason = selectedReason === 'Other' ? customReason : selectedReason;
+    if (!reason.trim()) {
+      toast.error('Please select or enter a reason');
+      return;
+    }
+    handleReject(decliningRequest.bookingId, reason);
   };
 
   const getReliabilityBadge = (profile: CustomerProfile) => {
@@ -303,7 +372,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       Accept
                     </Button>
                     <Button
-                      onClick={() => handleReject(request.bookingId)}
+                      onClick={() => openDeclineModal(request)}
                       disabled={actionLoading === request.bookingId}
                       variant="secondary"
                       className="flex-1 max-w-[140px] text-red-600 hover:bg-red-50 text-sm py-2.5"
@@ -429,8 +498,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                 </Button>
                 <Button
                   onClick={() => {
-                    handleReject(viewingRequest.bookingId);
-                    closeModal();
+                    openDeclineModal(viewingRequest);
                   }}
                   disabled={actionLoading === viewingRequest.bookingId}
                   variant="secondary"
@@ -440,6 +508,123 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   Decline
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Reason Modal */}
+      {showDeclineModal && decliningRequest && (
+        <div 
+          className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-150 ${
+            isDeclineModalVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeDeclineModal}
+        >
+          <div 
+            ref={declineModalRef}
+            className={`bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden transform transition-all duration-150 ${
+              isDeclineModalVisible 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-0 scale-95 translate-y-4'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-red-50 px-6 py-4 flex items-center justify-between border-b border-red-100">
+              <div>
+                <h2 className="text-lg font-bold text-red-700">Decline Request</h2>
+                <p className="text-sm text-red-600/80">
+                  {decliningRequest.customerName} • {decliningRequest.serviceType}
+                </p>
+              </div>
+              <button 
+                onClick={closeDeclineModal}
+                className="text-red-600 hover:bg-red-100 rounded-full p-2 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Please select a reason for declining this booking request:
+              </p>
+
+              {/* Reason Options */}
+              <div className="space-y-2 mb-4">
+                {DECLINE_REASONS.map((reason) => (
+                  <label 
+                    key={reason}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                      selectedReason === reason 
+                        ? 'bg-red-50 border-2 border-red-300' 
+                        : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="declineReason"
+                      value={reason}
+                      checked={selectedReason === reason}
+                      onChange={(e) => setSelectedReason(e.target.value)}
+                      className="w-4 h-4 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-700">{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              {/* Custom Reason Input */}
+              {selectedReason === 'Other' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Please specify:
+                  </label>
+                  <textarea
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    placeholder="Enter your reason..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                    rows={3}
+                    maxLength={200}
+                  />
+                  <p className="text-xs text-gray-400 mt-1 text-right">
+                    {customReason.length}/200
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+                The customer will receive a message with your reason for declining. 
+                They can contact campuscuthelp@gmail.com if they believe this was unfair.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex gap-3">
+              <Button
+                onClick={closeDeclineModal}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmDecline}
+                disabled={!selectedReason || (selectedReason === 'Other' && !customReason.trim()) || actionLoading === decliningRequest.bookingId}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                {actionLoading === decliningRequest.bookingId ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Confirm Decline
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
