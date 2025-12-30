@@ -91,27 +91,22 @@ export default function MobileConsumerPage() {
       // Handle paginated response
       const barberList = Array.isArray(response) ? response : response.data;
       
-      // Sort by distance from university and filter to nearby barbers (within 5 miles)
-      // Barbers without location data are included (they might be new or haven't set location)
+      // Sort by distance from university
+      // First try to find barbers within 5 miles, if none found show closest barbers
       const universityLat = selectedUniversity.latitude;
       const universityLng = selectedUniversity.longitude;
       
-      const nearbyBarbers = barberList
+      const barbersWithDistance = barberList
         .map((barber: Barber) => {
           // Use service location, fall back to user location from backend, or null
           const barberLat = barber.service_latitude || barber.user_latitude;
           const barberLng = barber.service_longitude || barber.user_longitude;
           
-          const distance = barberLat && barberLng
+          const distanceKm = barberLat && barberLng
             ? calculateDistance(universityLat, universityLng, barberLat, barberLng)
             : null; // null = no location data
-          return { ...barber, _distance: distance };
-        })
-        .filter((b: Barber & { _distance: number | null }) => {
-          // Include barbers without location data
-          if (b._distance === null) return true;
-          // Filter barbers with location to within 8km (~5 miles)
-          return b._distance < 8;
+          const distanceMiles = distanceKm !== null ? kmToMiles(distanceKm) : null;
+          return { ...barber, _distance: distanceKm, _distanceMiles: distanceMiles };
         })
         .sort((a: Barber & { _distance: number | null }, b: Barber & { _distance: number | null }) => {
           // Barbers with location come first, sorted by distance
@@ -122,7 +117,19 @@ export default function MobileConsumerPage() {
           return a._distance - b._distance;
         });
       
-      setBarbers(nearbyBarbers);
+      // Filter to barbers within 5 miles (8km)
+      const nearbyBarbers = barbersWithDistance.filter((b: Barber & { _distance: number | null }) => {
+        if (b._distance === null) return true;
+        return b._distance < 8; // ~5 miles
+      });
+      
+      // If no barbers within 5 miles, show closest barbers anyway
+      if (nearbyBarbers.length === 0 && barbersWithDistance.length > 0) {
+        // Show all barbers sorted by distance (closest first)
+        setBarbers(barbersWithDistance);
+      } else {
+        setBarbers(nearbyBarbers);
+      }
     } catch (error) {
       console.error('Failed to load barbers:', error);
     } finally {
@@ -131,17 +138,27 @@ export default function MobileConsumerPage() {
   };
 
   // Get distance string for a barber (from selected university)
-  const getDistanceString = (barber: Barber): string => {
-    if (selectedUniversity && barber.service_latitude && barber.service_longitude) {
+  const getDistanceString = (barber: Barber & { _distanceMiles?: number | null }): string => {
+    // Use pre-calculated distance if available
+    if (barber._distanceMiles !== undefined && barber._distanceMiles !== null) {
+      if (barber._distanceMiles < 0.5) return 'On campus';
+      return `${barber._distanceMiles.toFixed(1)} mi away`;
+    }
+    
+    // Fallback: calculate distance
+    const barberLat = barber.service_latitude || barber.user_latitude;
+    const barberLng = barber.service_longitude || barber.user_longitude;
+    
+    if (selectedUniversity && barberLat && barberLng) {
       const distKm = calculateDistance(
         selectedUniversity.latitude, 
         selectedUniversity.longitude, 
-        barber.service_latitude, 
-        barber.service_longitude
+        barberLat, 
+        barberLng
       );
       const distMiles = kmToMiles(distKm);
       if (distMiles < 0.5) return 'On campus';
-      return `${distMiles.toFixed(1)} mi from campus`;
+      return `${distMiles.toFixed(1)} mi away`;
     }
     return 'Distance unknown';
   };

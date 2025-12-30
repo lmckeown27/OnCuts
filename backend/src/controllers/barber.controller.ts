@@ -107,12 +107,22 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     // Filter by max distance if user location is provided
     // Default 8km (~5 miles) is reasonable for university students
     let filteredRows = result.rows;
+    let showingClosestFallback = false;
+    
     if (hasUserLocation) {
-      filteredRows = result.rows.filter(row => {
+      const nearbyRows = result.rows.filter(row => {
         // Include barbers without location data (they might be new)
         if (row.distance_km === null || row.distance_km === undefined) return true;
         return row.distance_km <= maxDistanceKm;
       });
+      
+      // If no barbers within radius, show all barbers sorted by distance (closest first)
+      if (nearbyRows.length === 0 && result.rows.length > 0) {
+        filteredRows = result.rows; // All barbers, already sorted by distance
+        showingClosestFallback = true;
+      } else {
+        filteredRows = nearbyRows;
+      }
     }
     
     // Get services/pricing for each barber
@@ -170,9 +180,10 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       meta: {
         sorted_by: hasUserLocation ? 'distance' : 'rating',
         user_location_provided: hasUserLocation,
-        max_distance_km: hasUserLocation ? maxDistanceKm : null,
-        max_distance_miles: hasUserLocation ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
+        max_distance_km: hasUserLocation && !showingClosestFallback ? maxDistanceKm : null,
+        max_distance_miles: hasUserLocation && !showingClosestFallback ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
         total_before_distance_filter: hasUserLocation ? result.rows.length : filteredBarbers.length,
+        showing_closest_fallback: showingClosestFallback, // true if no barbers within radius, showing closest instead
       },
     });
   } catch (error) {
