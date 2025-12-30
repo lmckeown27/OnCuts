@@ -467,8 +467,8 @@ class PushNotificationService {
              WHERE (c.user1_id = $1 OR c.user2_id = $1)
              AND m.sender_id != $1 AND m.is_read = false) +
             (SELECT COUNT(*) FROM bookings
-             WHERE (student_id = $1 OR barber_id = $1)
-             AND status = 'pending') as count`,
+             WHERE "consumerId" = $1
+             AND status = 'PENDING') as count`,
           [userId]
         );
         badgeCount = parseInt(result.rows[0]?.count || '0');
