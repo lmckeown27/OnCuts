@@ -180,8 +180,11 @@ export default function MessagesPage() {
   const fetchMessages = useCallback(async (convId: string) => {
     try {
       const response = await messageService.getMessages(convId);
-      if (response.data) {
-        const messagesData = Array.isArray(response.data) ? response.data : (response.data as any).messages || [];
+      // Handle various response formats: { messages: [...] }, { data: [...] }, or direct array
+      const messagesData = (response as any).messages || 
+                          (response as any).data || 
+                          (Array.isArray(response) ? response : []);
+      if (Array.isArray(messagesData)) {
         setMessages(messagesData as MessageWithSender[]);
         // Mark as read
         await messageService.markConversationAsRead(convId);
@@ -189,6 +192,9 @@ export default function MessagesPage() {
         setConversations(prev => prev.map(c => 
           c.id === convId ? { ...c, unreadCount: 0 } : c
         ));
+      } else {
+        console.warn('Unexpected messages response format:', response);
+        setMessages([]);
       }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
