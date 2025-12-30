@@ -50,9 +50,13 @@ export default function FindBarberPage() {
   }, []);
 
   // Handle university selection
-  const handleUniversitySelect = (university: University) => {
+  const handleUniversitySelect = (university: University | null) => {
     setSelectedUniversity(university);
-    localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+    if (university) {
+      localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+    } else {
+      localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
+    }
   };
 
   // Handle service selection

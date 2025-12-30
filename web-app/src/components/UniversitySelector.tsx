@@ -15,7 +15,7 @@ import { searchUniversities, type University } from '../data/universities';
 
 interface UniversitySelectorProps {
   value: University | null;
-  onChange: (university: University) => void;
+  onChange: (university: University | null) => void;
   placeholder?: string;
   className?: string;
 }
@@ -99,8 +99,10 @@ export default function UniversitySelector({
   // Clear selection
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
+    onChange(null); // Notify parent to clear selection
     setSearchQuery('');
     setResults([]);
+    setIsOpen(true);
     inputRef.current?.focus();
   };
 
