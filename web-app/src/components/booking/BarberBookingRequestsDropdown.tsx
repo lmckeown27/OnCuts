@@ -421,12 +421,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">{viewingRequest.customerName}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getReliabilityBadge(viewingRequest.customerProfile)}
-                    <span className="text-white/90 text-sm">
-                      {viewingRequest.customerProfile.stats.completionRate}% completion rate
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
