@@ -1017,21 +1017,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   ))}
                 </div>
 
-                {/* Distance & Instagram */}
-                <div className="flex items-center gap-2 text-xs sm:text-sm mb-2">
-                  {barber.distance_miles !== undefined && barber.distance_miles !== null && (
-                    <span className="text-primary-600 font-medium flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {barber.distance_miles} mi
-                    </span>
-                  )}
-                  {barber.instagram_handle && (
-                    <div className="flex items-center gap-1 text-gray-600">
-                      <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="truncate max-w-[80px] sm:max-w-none">@{barber.instagram_handle}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Distance */}
+                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-primary-600 font-medium mb-1">
+                    <MapPin className="w-3 h-3" />
+                    {barber.distance_miles} mi
+                  </div>
+                )}
+
+                {/* Instagram */}
+                {barber.instagram_handle && (
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mb-2">
+                    <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="truncate max-w-[100px] sm:max-w-none">@{barber.instagram_handle}</span>
+                  </div>
+                )}
 
               </div>
             </Card>
