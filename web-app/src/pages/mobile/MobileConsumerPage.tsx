@@ -8,6 +8,7 @@
  * - Touch-friendly filters
  * - Bottom navigation
  * - Pull-to-refresh
+ * - Location-based barber discovery
  */
 
 import { useState, useEffect } from 'react';
@@ -25,38 +26,108 @@ import {
   MessageCircle,
   User as UserIcon,
   Clock,
-  DollarSign
+  DollarSign,
+  Loader2
 } from 'lucide-react';
-
-interface Barber {
-  id: string;
-  name: string;
-  rating: number;
-  reviewCount: number;
-  minPrice: number;
-  maxPrice: number;
-  yearsExperience: number;
-  specialties: string[];
-  instagram?: string;
-  distance: string;
-  availability: string;
-  profileImage: string;
-  portfolioImages: string[];
-}
+import { useGeolocation, calculateDistance, kmToMiles } from '../../hooks';
+import LocationPermissionPrompt from '../../components/LocationPermissionPrompt';
+import barberService from '../../services/barber.service';
+import type { Barber } from '../../types';
 
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'messages' | 'bookings' | 'profile'>('home');
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
+  // Geolocation hook for location-based barber discovery
+  const { 
+    latitude, 
+    longitude, 
+    loading: locationLoading, 
+    permissionStatus, 
+    requestLocation 
+  } = useGeolocation();
+
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
+
+  // Load barbers when location changes
+  useEffect(() => {
+    loadBarbers();
+  }, [latitude, longitude]);
+
+  // Show location prompt if permission not yet requested
+  useEffect(() => {
+    if (permissionStatus === 'prompt') {
+      const timer = setTimeout(() => {
+        setShowLocationPrompt(true);
+      }, 1000); // Slightly faster for mobile
+      return () => clearTimeout(timer);
+    }
+  }, [permissionStatus]);
+
+  // Load barbers from API
+  const loadBarbers = async () => {
+    try {
+      setIsLoading(true);
+      const response = await barberService.getBarbers({
+        lat: latitude ?? undefined,
+        lng: longitude ?? undefined,
+      });
+      
+      // Handle paginated response
+      const barberList = Array.isArray(response) ? response : response.data;
+      
+      // Sort by distance if we have user location
+      if (latitude && longitude && barberList.length > 0) {
+        barberList.sort((a: Barber, b: Barber) => {
+          const distA = a.serviceLatitude && a.serviceLongitude
+            ? calculateDistance(latitude, longitude, a.serviceLatitude, a.serviceLongitude)
+            : Infinity;
+          const distB = b.serviceLatitude && b.serviceLongitude
+            ? calculateDistance(latitude, longitude, b.serviceLatitude, b.serviceLongitude)
+            : Infinity;
+          return distA - distB;
+        });
+      }
+      
+      setBarbers(barberList);
+    } catch (error) {
+      console.error('Failed to load barbers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle location permission request
+  const handleAllowLocation = () => {
+    requestLocation();
+    setShowLocationPrompt(false);
+  };
+
+  // Handle location denial - go to landing page
+  const handleDenyLocation = () => {
+    setShowLocationPrompt(false);
+    navigate('/');
+  };
+
+  // Get distance string for a barber
+  const getDistanceString = (barber: Barber): string => {
+    if (latitude && longitude && barber.serviceLatitude && barber.serviceLongitude) {
+      const distKm = calculateDistance(latitude, longitude, barber.serviceLatitude, barber.serviceLongitude);
+      const distMiles = kmToMiles(distKm);
+      return distMiles < 0.1 ? 'Nearby' : `${distMiles.toFixed(1)} mi`;
+    }
+    return 'Distance unknown';
+  };
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
@@ -102,12 +173,63 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
+  // Show loading state
+  if (isLoading || locationLoading) {
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
+        <p className="text-gray-600">Finding barbers near you...</p>
+        
+        {/* Location Permission Prompt */}
+        <LocationPermissionPrompt
+          isOpen={showLocationPrompt}
+          onClose={() => setShowLocationPrompt(false)}
+          onAllow={handleAllowLocation}
+          onDeny={handleDenyLocation}
+          loading={locationLoading}
+        />
+      </div>
+    );
+  }
+
   if (!currentBarber) {
-    return <div>No barbers available</div>;
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
+        <MapPin className="w-16 h-16 text-gray-300 mb-4" />
+        <h2 className="text-xl font-bold text-gray-900 mb-2">No Barbers Found</h2>
+        <p className="text-gray-600 text-center mb-6">
+          We couldn't find any barbers in your area. Try adjusting your location or check back later.
+        </p>
+        <button
+          onClick={() => navigate('/')}
+          className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
+        >
+          Back to Home
+        </button>
+        
+        {/* Location Permission Prompt */}
+        <LocationPermissionPrompt
+          isOpen={showLocationPrompt}
+          onClose={() => setShowLocationPrompt(false)}
+          onAllow={handleAllowLocation}
+          onDeny={handleDenyLocation}
+          loading={locationLoading}
+        />
+      </div>
+    );
   }
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
+      {/* Location Permission Prompt */}
+      <LocationPermissionPrompt
+        isOpen={showLocationPrompt}
+        onClose={() => setShowLocationPrompt(false)}
+        onAllow={handleAllowLocation}
+        onDeny={handleDenyLocation}
+        loading={locationLoading}
+      />
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between safe-area-inset-top">
         <div className="flex items-center gap-2">
@@ -142,21 +264,33 @@ export default function MobileConsumerPage() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden h-full flex flex-col">
             {/* Profile Image */}
             <div className="relative h-2/3 bg-gradient-to-br from-primary-100 to-primary-200">
-              <img
-                src={currentBarber.profileImage}
-                alt={currentBarber.name}
-                className="w-full h-full object-cover"
-              />
+              {currentBarber.profileImage ? (
+                <img
+                  src={currentBarber.profileImage}
+                  alt={currentBarber.user?.firstName || 'Barber'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-32 h-32 bg-primary-200 rounded-full flex items-center justify-center">
+                    <span className="text-5xl font-bold text-primary-600">
+                      {(currentBarber.user?.firstName || 'B')[0].toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              )}
               
               {/* Price Badge */}
-              <div className="absolute bottom-4 left-4 bg-primary-400 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                ${currentBarber.minPrice} - ${currentBarber.maxPrice}
-              </div>
+              {currentBarber.basePrice && (
+                <div className="absolute bottom-4 left-4 bg-primary-400 text-white px-4 py-2 rounded-full font-bold shadow-lg">
+                  From ${currentBarber.basePrice}
+                </div>
+              )}
 
               {/* Instagram Badge */}
-              {currentBarber.instagram && (
+              {currentBarber.instagramHandle && (
                 <a
-                  href={`https://instagram.com/${currentBarber.instagram.replace('@', '')}`}
+                  href={`https://instagram.com/${currentBarber.instagramHandle.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg"
@@ -170,39 +304,44 @@ export default function MobileConsumerPage() {
             <div className="flex-1 p-4 overflow-y-auto">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">{currentBarber.name}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-gray-500">{currentBarber.reviewCount} reviews</span>
-                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {currentBarber.user?.firstName || 'Barber'} {currentBarber.user?.lastName?.[0] || ''}.
+                  </h2>
+                  {currentBarber.yearsExperience && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-gray-500">{currentBarber.yearsExperience} years experience</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{currentBarber.distance} away</span>
+                  <span className="text-sm">{getDistanceString(currentBarber)}</span>
                 </div>
                 
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm">{currentBarber.availability}</span>
-                </div>
+                {currentBarber.bio && (
+                  <p className="text-sm text-gray-600 line-clamp-2">{currentBarber.bio}</p>
+                )}
               </div>
 
               {/* Specialties */}
-              <div className="mt-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Specialties</h3>
-                <div className="flex flex-wrap gap-2">
-                  {currentBarber.specialties.map((specialty) => (
-                    <span
-                      key={specialty}
-                      className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
+              {currentBarber.specialties && currentBarber.specialties.length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Specialties</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {currentBarber.specialties.slice(0, 4).map((specialty) => (
+                      <span
+                        key={specialty}
+                        className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -277,7 +416,7 @@ export default function MobileConsumerPage() {
       </nav>
 
       {/* Booking Bottom Sheet */}
-      {showBookingSheet && (
+      {showBookingSheet && currentBarber && (
         <div
           className="fixed inset-0 bg-black/50 z-50 animate-fade-in"
           onClick={() => setShowBookingSheet(false)}
@@ -289,13 +428,24 @@ export default function MobileConsumerPage() {
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
             
             <div className="flex items-center gap-4 mb-6">
-              <img
-                src={currentBarber.profileImage}
-                alt={currentBarber.name}
-                className="w-16 h-16 rounded-full"
-              />
+              {currentBarber.profileImage ? (
+                <img
+                  src={currentBarber.profileImage}
+                  alt={currentBarber.user?.firstName || 'Barber'}
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-primary-600">
+                    {(currentBarber.user?.firstName || 'B')[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{currentBarber.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {currentBarber.user?.firstName || 'Barber'} {currentBarber.user?.lastName?.[0] || ''}.
+                </h3>
+                <p className="text-gray-500">{getDistanceString(currentBarber)}</p>
               </div>
             </div>
 
@@ -303,6 +453,7 @@ export default function MobileConsumerPage() {
               onClick={() => {
                 // Navigate to booking page
                 setShowBookingSheet(false);
+                navigate(`/app/consumer/book/${currentBarber.id}`);
               }}
               className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg"
             >
