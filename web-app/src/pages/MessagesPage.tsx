@@ -652,11 +652,38 @@ export default function MessagesPage() {
                 {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
               </h2>
               {selectedConversation.booking && (
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-gray-500 truncate md:hidden">
                   {selectedConversation.booking.serviceName} • {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}
                 </p>
               )}
             </div>
+
+            {/* Desktop - Compact inline booking context */}
+            {selectedConversation.booking && (
+              <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-lg text-xs">
+                <div className="flex items-center gap-1 text-primary-700">
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span className="font-medium">{selectedConversation.booking.serviceName}</span>
+                </div>
+                <div className="flex items-center gap-1 text-primary-700">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-1 text-primary-700">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                  selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                  selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {selectedConversation.booking.status}
+                </span>
+              </div>
+            )}
 
             {/* Service Details Button - Mobile Only (panel is visible on desktop) */}
             <button 
@@ -718,34 +745,6 @@ export default function MessagesPage() {
                 </div>
               </button>
 
-              {/* Desktop - Static display (service details visible in right panel) */}
-              <div className="hidden md:block mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1 text-primary-700">
-                      <Scissors className="w-4 h-4" />
-                      <span className="font-medium">{selectedConversation.booking.serviceName}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-primary-700">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-primary-700">
-                      <Clock className="w-4 h-4" />
-                      <span>{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-                    </div>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                    selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                    selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                    selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {selectedConversation.booking.status}
-                  </span>
-                </div>
-              </div>
             </>
           )}
         </div>
