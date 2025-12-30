@@ -79,19 +79,37 @@ router.post('/', authenticate, async (req, res, next) => {
     const barberEarnings = price - platformFee;
     const requestedTime = scheduledTime ? new Date(scheduledTime) : new Date();
     
-    // Get an existing location from the locations table (or create a default one)
-    let locationResult = await pool.query(
-      'SELECT id FROM locations LIMIT 1'
-    );
+    // Get or create location (requires campus -> location chain)
+    let locationId: string;
     
-    let locationId = locationResult.rows[0]?.id;
+    // First check for existing location
+    let locationResult = await pool.query('SELECT id FROM locations LIMIT 1');
     
-    // If no locations exist, create a default one
-    if (!locationId) {
+    if (locationResult.rows.length > 0) {
+      locationId = locationResult.rows[0].id;
+    } else {
+      // Need to create campus first, then location
+      let campusResult = await pool.query('SELECT id FROM campuses LIMIT 1');
+      let campusId: string;
+      
+      if (campusResult.rows.length > 0) {
+        campusId = campusResult.rows[0].id;
+      } else {
+        // Create a default campus
+        const newCampusResult = await pool.query(
+          `INSERT INTO campuses (id, name, "shortCode", city, state, latitude, longitude, "isActive", "createdAt", "updatedAt")
+           VALUES (gen_random_uuid(), 'Default Campus', 'DEFAULT', 'San Luis Obispo', 'CA', 35.3050, -120.6625, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+           RETURNING id`
+        );
+        campusId = newCampusResult.rows[0].id;
+      }
+      
+      // Create location with campus
       const newLocationResult = await pool.query(
-        `INSERT INTO locations (id, name, address, city, state, "zipCode", latitude, longitude)
-         VALUES (gen_random_uuid(), 'Default Location', 'TBD', 'TBD', 'CA', '00000', 0, 0)
-         RETURNING id`
+        `INSERT INTO locations (id, "campusId", name, "normalizedName", type, cohort, "usageCount", confidence, "isVerified", "updatedAt")
+         VALUES (gen_random_uuid(), $1, 'Default Location', 'default-location', 'DORM'::"LocationType", 'UNKNOWN'::"LocationCohort", 1, 0.50, false, CURRENT_TIMESTAMP)
+         RETURNING id`,
+        [campusId]
       );
       locationId = newLocationResult.rows[0].id;
     }
