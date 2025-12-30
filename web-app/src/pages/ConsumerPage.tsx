@@ -1033,22 +1033,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   ))}
                 </div>
 
-                {/* Availability */}
-                {barber.weekly_schedule && formatSchedule(barber.weekly_schedule).length > 0 && (
-                  <div className="mt-2 space-y-0.5">
-                    <div className="flex items-center gap-1 text-xs text-gray-600 font-medium">
-                      <Clock className="w-3 h-3" />
-                      <span>Availability</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {formatSchedule(barber.weekly_schedule).map(({ day, times }) => (
-                        <span key={day} className="text-xs text-gray-500">
-                          <span className="font-medium">{day}</span> {times}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
           );
