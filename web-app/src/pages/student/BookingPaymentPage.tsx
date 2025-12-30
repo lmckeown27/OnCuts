@@ -3,12 +3,12 @@
  * 
  * Complete booking flow with Stripe payment integration
  * 
- * Payment Flow:
+ * Payment Flow (Direct - No Escrow):
  * 1. Student selects service and reviews price
- * 2. Student adds optional tip (TODO: IMPLEMENT TIPPING SYSTEM)
- * 3. Payment processed via Stripe
- * 4. Funds held in platform escrow
- * 5. After service completion, barber receives payout via Stripe Connect
+ * 2. Student adds optional tip
+ * 3. Payment processed via Stripe directly to barber
+ * 4. Barber receives 95% (platform takes 5% fee)
+ * 5. 100% of tips go to barber
  */
 
 import { useState, useEffect } from 'react';
@@ -26,7 +26,8 @@ import {
   Info,
   Heart,
   Percent,
-  MessageCircle
+  MessageCircle,
+  Zap
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -46,49 +47,6 @@ interface BookingDetails {
   locationDetails?: string;
   notes?: string;
 }
-
-/**
- * ============================================================================
- * TODO: IMPLEMENT TIPPING SYSTEM
- * ============================================================================
- * 
- * The tipping system needs to be implemented to allow students to add
- * optional tips to their service payments. This should include:
- * 
- * 1. TIP SELECTION UI:
- *    - Pre-set tip percentages (15%, 20%, 25%, 30%)
- *    - Custom tip amount input
- *    - "No Tip" option
- *    - Visual feedback showing tip amount in dollars
- * 
- * 2. TIP CALCULATION:
- *    - Calculate tip based on service price (not including platform fee)
- *    - Update total in real-time as tip selection changes
- *    - Validate custom tip amounts (min $0, max reasonable limit)
- * 
- * 3. BACKEND INTEGRATION:
- *    - Include tip_amount in payment intent creation
- *    - Store tip_amount separately from service_price in booking record
- *    - Ensure 100% of tip goes to barber (no platform fee on tips)
- *    - Update escrow release to include tip amount
- * 
- * 4. BARBER PAYOUT:
- *    - Tip should be included in barber's Stripe Connect payout
- *    - Show tip breakdown in barber earnings dashboard
- *    - Display tip as separate line item in transaction history
- * 
- * 5. ANALYTICS:
- *    - Track average tip percentage per barber
- *    - Show tipping trends in admin dashboard
- *    - Include tip totals in barber performance metrics
- * 
- * Reference files:
- *    - backend/src/services/stripe-payment.service.ts (add tip handling)
- *    - backend/src/services/escrow.service.ts (include tips in release)
- *    - backend/src/controllers/booking.controller.ts (accept tip_amount)
- * 
- * ============================================================================
- */
 
 // Placeholder for tip selection state
 interface TipSelection {
@@ -126,9 +84,7 @@ export default function BookingPaymentPage() {
   const [cardholderName, setCardholderName] = useState('');
   const [saveCard, setSaveCard] = useState(false);
 
-  // ============================================================================
-  // TODO: IMPLEMENT TIP STATE AND HANDLERS
-  // ============================================================================
+  // Tip state
   const [tipSelection, setTipSelection] = useState<TipSelection>({
     type: 'percentage',
     percentage: 20, // Default to 20% tip
@@ -173,7 +129,6 @@ export default function BookingPaymentPage() {
     setPaymentIntentId(newBookingId);
     setStep('success');
   };
-  // ============================================================================
 
   // Mock booking ID for demo
   const bookingId = `booking-${Date.now()}`;
@@ -195,9 +150,7 @@ export default function BookingPaymentPage() {
     );
   }
 
-  // ============================================================================
-  // TODO: IMPLEMENT TIP CALCULATION
-  // ============================================================================
+  // Tip calculation
   const calculateTipAmount = (): number => {
     if (tipSelection.type === 'none') return 0;
     if (tipSelection.type === 'custom' && tipSelection.customAmount) {
@@ -214,7 +167,6 @@ export default function BookingPaymentPage() {
   const platformFee = bookingDetails.servicePrice * PLATFORM_FEE_PERCENTAGE;
   const barberEarnings = bookingDetails.servicePrice - platformFee + tipAmount;
   const totalCharge = subtotal;
-  // ============================================================================
 
   const handleTipSelect = (percentage: number) => {
     if (percentage === 0) {
@@ -271,7 +223,7 @@ export default function BookingPaymentPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h2>
           <p className="text-gray-600 mb-6">
             {isPaidNow ? (
-              <>Your payment of ${totalCharge.toFixed(2)} has been received and held in escrow. Funds will be released to {bookingDetails.barberName} upon service completion.</>
+              <>Your payment of ${totalCharge.toFixed(2)} has been processed. {bookingDetails.barberName} has been notified and will receive ${barberEarnings.toFixed(2)}.</>
             ) : (
               <>Your appointment with {bookingDetails.barberName} is confirmed. You'll pay ${bookingDetails.servicePrice.toFixed(2)} after your service is completed.</>
             )}
@@ -321,19 +273,19 @@ export default function BookingPaymentPage() {
             </div>
           </div>
 
-          <div className={`p-3 rounded-lg mb-6 text-sm ${isPaidNow ? 'bg-primary-50 border border-primary-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <div className={`p-3 rounded-lg mb-6 text-sm ${isPaidNow ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
             {isPaidNow ? (
               <>
-                <p className="text-primary-700 font-medium mb-1">Payment Secured</p>
-                <p className="text-primary-600">
-                  Your payment is held securely in escrow until your service is completed.
+                <p className="text-green-700 font-medium mb-1">Payment Complete</p>
+                <p className="text-green-600">
+                  Your barber has been paid. Enjoy your appointment!
                 </p>
               </>
             ) : (
               <>
                 <p className="text-amber-700 font-medium mb-1">Payment Due After Service</p>
                 <p className="text-amber-600">
-                  Please be ready to pay when your service is complete. You can pay via card or other methods.
+                  Please be ready to pay when your service is complete. You can pay via card, cash, or other methods.
                 </p>
               </>
             )}
@@ -503,11 +455,11 @@ export default function BookingPaymentPage() {
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Recommended</span>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">
-                    Pay securely with your card. Your payment is held in escrow and released to the barber after your service.
+                    Pay securely with your card. Your barber receives payment instantly via Stripe.
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="flex items-center gap-1 text-green-600">
-                      <Shield className="w-3 h-3" /> Protected by escrow
+                      <Zap className="w-3 h-3" /> Instant payment to barber
                     </span>
                     <span className="flex items-center gap-1 text-green-600">
                       <Lock className="w-3 h-3" /> Secure payment
@@ -597,35 +549,11 @@ export default function BookingPaymentPage() {
           {/* Left Column - Payment Form */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* ============================================================ */}
-            {/* TODO: TIPPING SECTION - IMPLEMENT FULL FUNCTIONALITY */}
-            {/* ============================================================ */}
+            {/* Tipping Section */}
             <Card>
               <div className="flex items-center gap-3 mb-4">
                 <Heart className="w-5 h-5 text-pink-500" />
                 <h3 className="text-lg font-bold text-gray-900">Add a Tip</h3>
-                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
-                  TODO: IMPLEMENT
-                </span>
-              </div>
-              
-              {/* TODO Implementation Notice */}
-              <div className="bg-amber-50 border-2 border-amber-300 border-dashed rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-amber-800 mb-1">Tipping System Not Yet Implemented</p>
-                    <p className="text-sm text-amber-700">
-                      This UI is a placeholder. The following needs to be built:
-                    </p>
-                    <ul className="text-sm text-amber-700 mt-2 space-y-1 list-disc list-inside">
-                      <li>Backend: Add tip_amount to payment intent & booking</li>
-                      <li>Backend: Ensure 100% of tip goes to barber (no platform fee)</li>
-                      <li>Frontend: Connect tip selection to payment flow</li>
-                      <li>Barber Dashboard: Show tip earnings separately</li>
-                    </ul>
-                  </div>
-                </div>
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
@@ -687,9 +615,6 @@ export default function BookingPaymentPage() {
                 </div>
               )}
             </Card>
-            {/* ============================================================ */}
-            {/* END TIPPING SECTION */}
-            {/* ============================================================ */}
 
             {/* Payment Method */}
             <Card>
@@ -851,6 +776,17 @@ export default function BookingPaymentPage() {
                     <span className="text-primary-600">${totalCharge.toFixed(2)}</span>
                   </div>
                 </div>
+
+                {/* Barber earnings breakdown */}
+                <div className="border-t border-gray-200 pt-3 mt-3 text-xs text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Barber receives:</span>
+                    <span className="text-green-600 font-medium">${barberEarnings.toFixed(2)}</span>
+                  </div>
+                  <p className="mt-1 text-gray-400">
+                    (Service: ${(bookingDetails.servicePrice - platformFee).toFixed(2)} + Tip: ${tipAmount.toFixed(2)})
+                  </p>
+                </div>
               </div>
 
             </Card>
@@ -858,7 +794,7 @@ export default function BookingPaymentPage() {
             {/* How Payment Works */}
             <Card className="bg-primary-50 border-2 border-primary-200">
               <h3 className="text-sm font-bold text-primary-700 mb-3 flex items-center gap-2">
-                <Shield className="w-4 h-4" />
+                <Zap className="w-4 h-4" />
                 How Payment Works
               </h3>
               <ul className="text-xs text-primary-600 space-y-2">
@@ -868,15 +804,15 @@ export default function BookingPaymentPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">2</span>
-                  <span>Funds held in escrow until service complete</span>
+                  <span>Barber receives payment instantly (95%)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">3</span>
-                  <span>Barber receives payment via Stripe Connect</span>
+                  <span>100% of your tip goes to the barber</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold bg-primary-200 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">4</span>
-                  <span>Full refund if service not completed</span>
+                  <span>Refunds available if service not provided</span>
                 </li>
               </ul>
             </Card>
