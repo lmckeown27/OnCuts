@@ -22,18 +22,8 @@ export default function FindBarberPage() {
   const navigate = useNavigate();
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
-  // Load saved university on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSelectedUniversity(parsed);
-      } catch (e) {
-        localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-      }
-    }
-  }, []);
+  // Always start with empty search bar - don't load saved university
+  // User must select their campus each time they visit this page
 
   // Handle university selection
   const handleUniversitySelect = (university: University | null) => {
