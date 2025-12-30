@@ -7,7 +7,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  GraduationCap, 
   ArrowRight, 
   ArrowLeft
 } from 'lucide-react';
@@ -75,9 +74,6 @@ export default function FindBarberPage() {
       <main className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
         <div className="space-y-8">
           <div className="text-center">
-            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <GraduationCap className="w-10 h-10 text-primary-600" />
-            </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
               Find Your Campus Barbers
             </h1>
