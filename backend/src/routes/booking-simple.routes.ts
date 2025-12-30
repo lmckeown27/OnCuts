@@ -37,15 +37,17 @@ router.post('/', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'serviceType is required' });
     }
 
-    // Get barber's user ID from barbers table
+    // Get barber record ID from barbers table (bookings.barberId references barbers.id, not users.id)
     const barberResult = await pool.query(
-      'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
+      'SELECT id FROM barbers WHERE id = $1 OR "userId" = $1',
       [barberId]
     );
     
-    const barberUserId = barberResult.rows.length > 0 
-      ? barberResult.rows[0].userId 
-      : barberId;
+    if (barberResult.rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'Barber not found' });
+    }
+    
+    const barberRecordId = barberResult.rows[0].id;
 
     // Map frontend service names to database enum values
     // Valid enum: HAIRCUT, FADE, BEARD_TRIM, FULL_SERVICE, HOT_TOWEL_SHAVE, COLOR, STYLING, LINEUP, BUZZ_CUT, SHAPE_UP, PERM, BRAIDS, LOCS
@@ -71,11 +73,36 @@ router.post('/', authenticate, async (req, res, next) => {
     const dbServiceType = serviceTypeMap[serviceType] || 'HAIRCUT';
 
     // Create booking record (all NOT NULL columns in production)
-    // Use gen_random_uuid() to generate IDs since table doesn't have defaults
-    // Platform fee is 5% of price
+    // Platform fee is 5% of price, barber gets 95%
     const price = priceUsdCents || 0;
     const platformFee = Math.round(price * 0.05);
+    const barberEarnings = price - platformFee;
+    const requestedTime = scheduledTime ? new Date(scheduledTime) : new Date();
     
+    // First, create an availability slot for this booking (availabilityId is a required FK)
+    const availabilityResult = await pool.query(
+      `INSERT INTO availability (
+        id,
+        "barberId",
+        "startTime",
+        "endTime",
+        "priceUsdCents",
+        "serviceTypes",
+        status
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, ARRAY[$5::"ServiceType"], 'BOOKED')
+      RETURNING id`,
+      [
+        barberRecordId,
+        requestedTime,
+        new Date(requestedTime.getTime() + 30 * 60 * 1000), // 30 min later
+        price,
+        dbServiceType,
+      ]
+    );
+    
+    const availabilityId = availabilityResult.rows[0].id;
+    
+    // Now create the booking with the availability ID
     const result = await pool.query(
       `INSERT INTO bookings (
         id,
@@ -84,18 +111,22 @@ router.post('/', authenticate, async (req, res, next) => {
         "serviceType", 
         "priceUsdCents",
         "platformFeeUsdCents",
+        "barberEarningsUsdCents",
         "requestedAt",
         "availabilityId",
+        "updatedAt",
         status
-      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, gen_random_uuid(), 'PENDING')
+      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
-        barberUserId,
+        barberRecordId,
         dbServiceType,
         price,
         platformFee,
-        scheduledTime ? new Date(scheduledTime) : new Date(),
+        barberEarnings,
+        requestedTime,
+        availabilityId,
       ]
     );
 
