@@ -264,9 +264,9 @@ export default function MobileConsumerPage() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden h-full flex flex-col">
             {/* Profile Image */}
             <div className="relative h-2/3 bg-gradient-to-br from-primary-100 to-primary-200">
-              {currentBarber.profile_image ? (
+              {(currentBarber.profile_photo_url || currentBarber.profile_picture_url) ? (
                 <img
-                  src={currentBarber.profile_image}
+                  src={currentBarber.profile_photo_url || currentBarber.profile_picture_url}
                   alt={currentBarber.user?.first_name || 'Barber'}
                   className="w-full h-full object-cover"
                 />
@@ -281,9 +281,9 @@ export default function MobileConsumerPage() {
               )}
               
               {/* Price Badge */}
-              {currentBarber.base_price && (
+              {currentBarber.pricing && currentBarber.pricing.length > 0 && (
                 <div className="absolute bottom-4 left-4 bg-primary-400 text-white px-4 py-2 rounded-full font-bold shadow-lg">
-                  From ${currentBarber.base_price}
+                  From ${Math.min(...currentBarber.pricing.map(p => p.price))}
                 </div>
               )}
 
@@ -428,9 +428,9 @@ export default function MobileConsumerPage() {
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
             
             <div className="flex items-center gap-4 mb-6">
-              {currentBarber.profile_image ? (
+              {(currentBarber.profile_photo_url || currentBarber.profile_picture_url) ? (
                 <img
-                  src={currentBarber.profile_image}
+                  src={currentBarber.profile_photo_url || currentBarber.profile_picture_url}
                   alt={currentBarber.user?.first_name || 'Barber'}
                   className="w-16 h-16 rounded-full object-cover"
                 />
