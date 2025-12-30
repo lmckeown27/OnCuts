@@ -363,40 +363,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
 
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
-              {/* Booking Request Details */}
               <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary-600" />
-                    Booking Request
-                  </h4>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Service</span>
-                      <span className="text-sm font-semibold text-gray-900">{viewingRequest.serviceType}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Date</span>
-                      <span className="text-sm font-semibold text-gray-900">
-                        {new Date(viewingRequest.requestedDate).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">Time</span>
-                      <span className="text-sm font-semibold text-gray-900">{viewingRequest.requestedTime}</span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                      <span className="text-sm text-gray-600">Price</span>
-                      <span className="text-lg font-bold text-green-600">${viewingRequest.price.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Customer Message */}
                 {viewingRequest.message && (
                   <div>
@@ -407,21 +374,32 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   </div>
                 )}
 
-                {/* Customer Stats */}
+                {/* Service Request Details */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Customer Statistics</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-green-50 rounded-lg p-3 border border-green-100">
-                      <p className="text-xs text-green-700 font-medium mb-1">Completion Rate</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {viewingRequest.customerProfile.stats.completionRate}%
-                      </p>
+                  <h4 className="font-semibold text-gray-900 mb-3">Service Request Details</h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Service</span>
+                      <span className="text-sm font-semibold text-gray-900">{viewingRequest.serviceType}</span>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                      <p className="text-xs text-blue-700 font-medium mb-1">Reliability</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {viewingRequest.customerProfile.stats.isReliable ? 'Reliable' : 'Normal'}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Requested Date</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {new Date(viewingRequest.requestedDate).toLocaleDateString('en-US', { 
+                          weekday: 'short',
+                          month: 'short', 
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Requested Time</span>
+                      <span className="text-sm font-semibold text-gray-900">{viewingRequest.requestedTime}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <span className="text-sm text-gray-600">Price</span>
+                      <span className="text-lg font-bold text-green-600">${viewingRequest.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
