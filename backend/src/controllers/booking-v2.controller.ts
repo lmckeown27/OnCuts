@@ -59,6 +59,11 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Barber not found or inactive');
     }
 
+    // Check if consumer is trying to book with themselves
+    if (consumerId === barberId) {
+      throw new ApiError(400, 'You cannot book a service with yourself');
+    }
+
     // 2. Verify consumer exists (current user)
     const consumerResult = await pool.query(
       `SELECT id FROM users WHERE id = $1`,

@@ -49,6 +49,11 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Barber not found');
     }
 
+    // Check if consumer is trying to book with themselves
+    if (clientId === barberResult.rows[0].user_id) {
+      throw new ApiError(400, 'You cannot book a service with yourself');
+    }
+
     const barber = barberResult.rows[0];
     const pricing = barber.pricing as any;
     const priceDollars = pricing[serviceType];

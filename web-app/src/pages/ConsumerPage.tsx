@@ -663,7 +663,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
   
   // Auth state
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   
   // Viewport detection for responsive grid
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -694,7 +694,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
   useEffect(() => {
     applyFilters();
-  }, [barbers, filterCriteria, latitude, longitude]);
+  }, [barbers, filterCriteria, latitude, longitude, user?.id]);
 
   // Handle location permission request
   const handleAllowLocation = () => {
@@ -756,6 +756,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
 
   const applyFilters = () => {
     let filtered = [...barbers];
+
+    // Filter out the user's own barber profile (prevent self-booking)
+    if (user?.id) {
+      filtered = filtered.filter(barber => barber.user_id !== user.id);
+    }
 
     // Filter by service type
     if (filterCriteria.serviceType) {
