@@ -1,6 +1,6 @@
 /**
  * Notification Routes for CampusCuts
- * Handles push notification device registration and preferences
+ * Handles push notification device registration, preferences, and in-app notifications
  */
 
 import express from 'express';
@@ -9,6 +9,120 @@ import pushNotificationService from '../services/pushNotification.service';
 import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
+
+/**
+ * GET /api/notifications
+ * Get user's in-app notifications
+ */
+router.get('/', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+
+    const result = await pool.query(
+      `SELECT id, type, title, message, data, is_read, created_at
+       FROM notifications
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [userId, limit, offset]
+    );
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM notifications WHERE user_id = $1`,
+      [userId]
+    );
+
+    const unreadResult = await pool.query(
+      `SELECT COUNT(*) as unread FROM notifications WHERE user_id = $1 AND is_read = false`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        notifications: result.rows,
+        unreadCount: parseInt(unreadResult.rows[0].unread),
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total: parseInt(countResult.rows[0].total),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/notifications/:id/read
+ * Mark a notification as read
+ */
+router.put('/:id/read', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+
+    await pool.query(
+      `UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Notification marked as read',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PUT /api/notifications/read-all
+ * Mark all notifications as read
+ */
+router.put('/read-all', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    await pool.query(
+      `UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'All notifications marked as read',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/notifications/:id
+ * Delete a notification
+ */
+router.delete('/:id', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+
+    await pool.query(
+      `DELETE FROM notifications WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Notification deleted',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * POST /api/notifications/register-device

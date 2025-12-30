@@ -6,6 +6,7 @@
 import express from 'express';
 import messageService from '../services/message.service';
 import { authenticate } from '../middleware/auth';
+import { pool } from '../database/connection';
 
 const router = express.Router();
 
@@ -155,6 +156,44 @@ router.delete('/conversations/:conversationId', authenticate, async (req, res, n
   try {
     const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
+
+    // Get conversation details before deleting to notify the other user
+    const convResult = await pool.query(
+      `SELECT c.*, c.service_name, c.booking_status,
+              u1.first_name as user1_first_name, u1.last_name as user1_last_name,
+              u2.first_name as user2_first_name, u2.last_name as user2_last_name
+       FROM conversations c
+       JOIN users u1 ON c.user1_id = u1.id
+       JOIN users u2 ON c.user2_id = u2.id
+       WHERE c.id = $1`,
+      [conversationId]
+    );
+
+    if (convResult.rows.length > 0) {
+      const conv = convResult.rows[0];
+      const otherUserId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
+      const deletingUserName = conv.user1_id === userId 
+        ? `${conv.user1_first_name} ${conv.user1_last_name}`
+        : `${conv.user2_first_name} ${conv.user2_last_name}`;
+      const serviceName = conv.service_name || 'a service';
+
+      // Create notification for the other user
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, title, message, data)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [
+          otherUserId,
+          'booking_cancelled',
+          'Booking Cancelled',
+          `${deletingUserName} has cancelled the conversation about ${serviceName}.`,
+          JSON.stringify({
+            conversation_id: conversationId,
+            service_name: conv.service_name,
+            cancelled_by: userId,
+          }),
+        ]
+      );
+    }
 
     const result = await messageService.deleteConversation(conversationId, userId);
     res.json(result);
