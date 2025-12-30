@@ -55,10 +55,9 @@ router.post('/', authenticate, async (req, res, next) => {
         "serviceType", 
         "priceUsdCents", 
         "requestedAt",
-        location,
         notes,
         status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING')
+      ) VALUES ($1, $2, $3, $4, $5, $6, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
@@ -66,7 +65,6 @@ router.post('/', authenticate, async (req, res, next) => {
         serviceType,
         priceUsdCents || 0,
         scheduledTime ? new Date(scheduledTime) : new Date(),
-        location || null,
         notes || null,
       ]
     );
@@ -120,7 +118,6 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."priceUsdCents",
         b."requestedAt" as "scheduledTime",
         b.status,
-        b.location,
         b.notes,
         b."createdAt",
         u.first_name || ' ' || u.last_name as barber_name,
