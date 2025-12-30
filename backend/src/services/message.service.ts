@@ -57,11 +57,10 @@ class MessageService {
           c.consumer_name as conv_consumer_name,
           -- Fallback to linked booking if exists
           b.id as booking_id_ref,
-          b."serviceType" as booking_service_type,
-          b."priceUsdCents" as booking_price_cents,
-          b."requestedAt" as booking_scheduled_time,
+          b.service_name as booking_service_type,
+          b.price as booking_price_cents,
+          b.scheduled_time as booking_scheduled_time,
           b.status as linked_booking_status,
-          a."startTime" as availability_start_time,
           
           -- MESSAGE INFO
           (
@@ -99,9 +98,8 @@ class MessageService {
             ELSE c.user1_id
           END = u.id
         )
-        LEFT JOIN barbers br ON u.id = br."userId"
+        LEFT JOIN barbers br ON u.id = br.user_id
         LEFT JOIN bookings b ON c.booking_id = b.id
-        LEFT JOIN availability a ON b."availabilityId" = a.id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
