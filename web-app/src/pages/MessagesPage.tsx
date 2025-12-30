@@ -26,7 +26,8 @@ import {
   X,
   DollarSign,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
@@ -119,6 +120,9 @@ export default function MessagesPage() {
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showServiceDetails, setShowServiceDetails] = useState(false);
+  const [deletingConversation, setDeletingConversation] = useState<ConversationWithDetails | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -206,6 +210,42 @@ export default function MessagesPage() {
       console.error('Failed to fetch messages:', error);
     }
   }, []);
+
+  // Delete conversation handler
+  const handleDeleteConversation = async () => {
+    if (!deletingConversation) return;
+    
+    setIsDeleting(true);
+    try {
+      await messageService.deleteConversation(String(deletingConversation.id));
+      toast.success('Conversation deleted');
+      
+      // Remove from list
+      setConversations(prev => prev.filter(c => c.id !== deletingConversation.id));
+      
+      // If the deleted conversation was selected, clear it
+      if (selectedConversation?.id === deletingConversation.id) {
+        setSelectedConversation(null);
+        setMessages([]);
+        setShowMobileChat(false);
+      }
+      
+      // Close modal
+      setShowDeleteConfirm(false);
+      setDeletingConversation(null);
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      toast.error('Failed to delete conversation');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const openDeleteConfirm = (conv: ConversationWithDetails, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the conversation
+    setDeletingConversation(conv);
+    setShowDeleteConfirm(true);
+  };
 
   // Initial load
   useEffect(() => {
@@ -433,7 +473,7 @@ export default function MessagesPage() {
             <div
               key={conv.id}
               onClick={() => handleSelectConversation(conv)}
-              className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+              className={`group relative p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
                 selectedConversation?.id === conv.id ? 'bg-primary-50' : ''
               }`}
             >
@@ -457,9 +497,19 @@ export default function MessagesPage() {
                     <h3 className="font-semibold text-gray-900 truncate">
                       {conv.otherUser?.firstName} {conv.otherUser?.lastName}
                     </h3>
-                    <span className="text-xs text-gray-500 flex-shrink-0">
-                      {conv.lastMessage?.time ? formatTime(conv.lastMessage.time) : ''}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {conv.lastMessage?.time ? formatTime(conv.lastMessage.time) : ''}
+                      </span>
+                      {/* Delete button - appears on hover */}
+                      <button
+                        onClick={(e) => openDeleteConfirm(conv, e)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 rounded-lg transition-all"
+                        title="Delete conversation"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Booking context */}
@@ -1140,6 +1190,70 @@ export default function MessagesPage() {
                 className="w-full"
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Conversation Confirmation Modal */}
+      {showDeleteConfirm && deletingConversation && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => {
+            setShowDeleteConfirm(false);
+            setDeletingConversation(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 text-center">
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Conversation?</h3>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete your conversation with{' '}
+                <span className="font-semibold">
+                  {deletingConversation.otherUser?.firstName} {deletingConversation.otherUser?.lastName}
+                </span>
+                ? This action cannot be undone.
+              </p>
+              {deletingConversation.booking && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Service: {deletingConversation.booking.serviceName}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingConversation(null);
+                }}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteConversation}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </>
+                )}
               </Button>
             </div>
           </div>
