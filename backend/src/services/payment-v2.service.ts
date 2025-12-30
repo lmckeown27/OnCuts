@@ -1,26 +1,29 @@
 /**
  * Payment Service V2
  * 
- * Integrates Stripe with the production escrow-based custodial wallet.
+ * Direct payment flow (no escrow):
+ * 1. Consumer pays via Stripe
+ * 2. Barber receives payment directly (minus platform fee)
+ * 3. No funds held by platform
  * 
- * Flow:
- * 1. Deposit: Stripe charge → Credit user balance
- * 2. Booking: User pays → Escrow hold created
- * 3. Completion: Escrow released → Barber gets funds (minus fee)
- * 4. Cancellation: Escrow refunded → User gets money back
+ * Uses Stripe Connect for direct transfers to barber accounts.
  */
 
 import Stripe from 'stripe';
+import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import transactionService, { TransactionType } from './transaction.service';
-import escrowService from './escrow.service';
-import onchainAnchorService, { RecordType } from './onchain-anchor.service';
+// ESCROW DISABLED - Direct payments only
+// import escrowService from './escrow.service';
 import auditService from './audit.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
+
+// Platform fee rate (5%)
+const PLATFORM_FEE_RATE = 0.05;
 
 export interface DepositInput {
   userId: string;
@@ -34,7 +37,7 @@ export interface BookingPaymentInput {
   consumerId: string;
   barberId: string;
   amountCents: number;
-  expiresHours?: number;
+  serviceDescription?: string;
 }
 
 export interface CompleteBookingInput {
@@ -45,8 +48,186 @@ export interface CompleteBookingInput {
 
 class PaymentServiceV2 {
   /**
-   * Process deposit via Stripe
-   * Flow: Stripe charge → User balance increased
+   * Create payment intent for booking (direct payment to barber)
+   * Flow: Consumer pays → Barber receives (minus fee) → Done
+   */
+  async createBookingPaymentIntent(input: BookingPaymentInput): Promise<{
+    clientSecret: string;
+    paymentIntentId: string;
+    amountCents: number;
+    platformFeeCents: number;
+    barberReceivesCents: number;
+  }> {
+    try {
+      // Calculate platform fee
+      const platformFeeCents = Math.floor(input.amountCents * PLATFORM_FEE_RATE);
+      const barberReceivesCents = input.amountCents - platformFeeCents;
+
+      // Get barber's Stripe account ID (if they have one)
+      const barberResult = await pool.query(
+        `SELECT u.stripe_account_id, u.email, u."firstName", u."lastName"
+         FROM users u
+         WHERE u.id = $1`,
+        [input.barberId]
+      );
+
+      const barber = barberResult.rows[0];
+      const barberStripeAccountId = barber?.stripe_account_id;
+
+      // Create payment intent
+      // If barber has connected Stripe account, use Stripe Connect for direct transfer
+      // Otherwise, payment goes to platform and is tracked for manual payout
+      const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
+        amount: input.amountCents,
+        currency: 'usd',
+        automatic_payment_methods: { enabled: true },
+        metadata: {
+          booking_id: input.bookingId,
+          consumer_id: input.consumerId,
+          barber_id: input.barberId,
+          type: 'booking_payment',
+          platform_fee_cents: platformFeeCents.toString(),
+          barber_receives_cents: barberReceivesCents.toString(),
+        },
+        description: input.serviceDescription || 'CampusCuts booking payment',
+      };
+
+      // If barber has Stripe Connect account, set up direct transfer
+      if (barberStripeAccountId) {
+        paymentIntentParams.transfer_data = {
+          destination: barberStripeAccountId,
+          amount: barberReceivesCents, // Barber receives amount minus platform fee
+        };
+        paymentIntentParams.application_fee_amount = platformFeeCents;
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+
+      logger.info('Booking payment intent created', {
+        payment_intent_id: paymentIntent.id,
+        booking_id: input.bookingId,
+        amount_dollars: input.amountCents / 100,
+        platform_fee_dollars: platformFeeCents / 100,
+        barber_receives_dollars: barberReceivesCents / 100,
+        direct_transfer: !!barberStripeAccountId,
+      });
+
+      return {
+        clientSecret: paymentIntent.client_secret!,
+        paymentIntentId: paymentIntent.id,
+        amountCents: input.amountCents,
+        platformFeeCents,
+        barberReceivesCents,
+      };
+    } catch (error: any) {
+      logger.error('Failed to create booking payment intent', {
+        booking_id: input.bookingId,
+        error: error.message,
+      });
+      throw new ApiError(500, 'Failed to create payment intent');
+    }
+  }
+
+  /**
+   * Process booking payment confirmation (called after Stripe confirms payment)
+   * Records the transaction in our system
+   */
+  async processBookingPayment(input: BookingPaymentInput & { stripePaymentIntentId?: string }): Promise<{
+    success: boolean;
+    transactionId: number;
+  }> {
+    try {
+      const platformFeeCents = Math.floor(input.amountCents * PLATFORM_FEE_RATE);
+      const barberReceivesCents = input.amountCents - platformFeeCents;
+
+      // 1. Record consumer payment transaction
+      const consumerTx = await transactionService.createTransaction({
+        user_id: input.consumerId,
+        type: TransactionType.CHARGE,
+        amount: -input.amountCents, // Debit from consumer
+        related_booking_id: input.bookingId,
+        stripe_payment_intent_id: input.stripePaymentIntentId,
+        metadata: {
+          barber_id: input.barberId,
+          type: 'booking_payment',
+        },
+      });
+
+      // 2. Record barber earning transaction (amount after platform fee)
+      await transactionService.createTransaction({
+        user_id: input.barberId,
+        type: TransactionType.EARNING,
+        amount: barberReceivesCents, // Credit to barber
+        related_booking_id: input.bookingId,
+        stripe_payment_intent_id: input.stripePaymentIntentId,
+        metadata: {
+          consumer_id: input.consumerId,
+          gross_amount: input.amountCents,
+          platform_fee: platformFeeCents,
+          type: 'booking_earning',
+        },
+      });
+
+      // 3. Record platform fee
+      await pool.query(
+        `INSERT INTO platform_fees (amount, currency, booking_id, created_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT DO NOTHING`,
+        [platformFeeCents, 'USD', input.bookingId]
+      ).catch(() => {
+        // Table might not exist, log but continue
+        logger.warn('platform_fees table may not exist');
+      });
+
+      // 4. Update booking status to paid
+      await pool.query(
+        `UPDATE bookings SET 
+          status = 'paid',
+          payment_status = 'completed',
+          stripe_payment_intent_id = $1,
+          updated_at = NOW()
+         WHERE id = $2`,
+        [input.stripePaymentIntentId, input.bookingId]
+      );
+
+      // 5. Audit log
+      await auditService.log({
+        actor_user_id: input.consumerId,
+        action: 'booking_payment_processed',
+        object_type: 'booking',
+        object_id: input.bookingId,
+        details: {
+          amount_cents: input.amountCents,
+          platform_fee_cents: platformFeeCents,
+          barber_receives_cents: barberReceivesCents,
+          stripe_payment_intent_id: input.stripePaymentIntentId,
+        },
+      });
+
+      logger.info('Booking payment processed (direct)', {
+        booking_id: input.bookingId,
+        consumer_id: input.consumerId,
+        barber_id: input.barberId,
+        amount_dollars: input.amountCents / 100,
+        fee_dollars: platformFeeCents / 100,
+        barber_receives_dollars: barberReceivesCents / 100,
+      });
+
+      return {
+        success: true,
+        transactionId: consumerTx.id,
+      };
+    } catch (error: any) {
+      logger.error('Booking payment processing failed', {
+        booking_id: input.bookingId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Process deposit via Stripe (for wallet top-up)
    */
   async processDeposit(input: DepositInput): Promise<{
     success: boolean;
@@ -194,48 +375,64 @@ class PaymentServiceV2 {
   }
 
   /**
-   * Process booking payment (create escrow hold)
-   * Flow: Check balance → Debit user → Create escrow hold
+   * Process refund for cancelled booking
    */
-  async processBookingPayment(input: BookingPaymentInput): Promise<{
-    escrowId: string;
-    transactionId: number;
-  }> {
+  async processRefund(params: {
+    bookingId: string;
+    consumerId: string;
+    barberId: string;
+    amountCents: number;
+    stripePaymentIntentId?: string;
+    reason: string;
+  }): Promise<{ success: boolean; refundId?: string }> {
     try {
-      // 1. Verify consumer has sufficient balance
-      const balance = await transactionService.getUserBalance(input.consumerId);
-      
-      if (balance.available_amount < input.amountCents) {
-        throw new ApiError(
-          400,
-          `Insufficient balance. Required: $${input.amountCents / 100}, Available: $${balance.available_amount / 100}`
-        );
+      // If we have a Stripe payment intent, refund via Stripe
+      if (params.stripePaymentIntentId) {
+        const refund = await stripe.refunds.create({
+          payment_intent: params.stripePaymentIntentId,
+          reason: 'requested_by_customer',
+          metadata: {
+            booking_id: params.bookingId,
+            reason: params.reason,
+          },
+        });
+
+        logger.info('Stripe refund processed', {
+          refund_id: refund.id,
+          booking_id: params.bookingId,
+          amount_dollars: refund.amount / 100,
+        });
+
+        // Record refund transaction
+        await transactionService.createTransaction({
+          user_id: params.consumerId,
+          type: TransactionType.REFUND,
+          amount: params.amountCents,
+          related_booking_id: params.bookingId,
+          metadata: {
+            stripe_refund_id: refund.id,
+            reason: params.reason,
+          },
+        });
+
+        return { success: true, refundId: refund.id };
       }
 
-      // 2. Create escrow hold (this debits consumer and credits barber.pending)
-      const escrow = await escrowService.createHold({
-        booking_id: input.bookingId,
-        consumer_id: input.consumerId,
-        barber_id: input.barberId,
-        amount: input.amountCents,
-        expires_hours: input.expiresHours || 48,
+      // No Stripe payment to refund (might be internal balance payment)
+      await transactionService.createTransaction({
+        user_id: params.consumerId,
+        type: TransactionType.REFUND,
+        amount: params.amountCents,
+        related_booking_id: params.bookingId,
+        metadata: {
+          reason: params.reason,
+        },
       });
 
-      logger.info('Booking payment processed via escrow', {
-        booking_id: input.bookingId,
-        consumer_id: input.consumerId,
-        barber_id: input.barberId,
-        amount_dollars: input.amountCents / 100,
-        escrow_id: escrow.id,
-      });
-
-      return {
-        escrowId: escrow.id,
-        transactionId: 0, // TODO: Get transaction ID from escrow
-      };
+      return { success: true };
     } catch (error: any) {
-      logger.error('Booking payment failed', {
-        booking_id: input.bookingId,
+      logger.error('Refund processing failed', {
+        booking_id: params.bookingId,
         error: error.message,
       });
       throw error;
@@ -243,87 +440,7 @@ class PaymentServiceV2 {
   }
 
   /**
-   * Complete booking and release funds to barber
-   * Flow: Release escrow → Barber.pending → Barber.available (minus fee)
-   */
-  async completeBookingPayment(input: CompleteBookingInput): Promise<{
-    released: boolean;
-    netToBarber: number;
-    platformFee: number;
-  }> {
-    try {
-      // 1. Release escrow
-      const result = await escrowService.releaseHold({
-        booking_id: input.bookingId,
-        tip_cents: input.tipCents,
-        platform_fee_rate: input.platformFeeRate || 0.05,
-      });
-
-      // 2. Anchor booking completion on-chain (hash proof)
-      await onchainAnchorService.anchorBookingCompletion(input.bookingId, {
-        barber_id: result.escrow.barber_id,
-        consumer_id: result.escrow.consumer_id,
-        amount: result.escrow.amount,
-        net_to_barber: result.net_to_barber,
-        completed_at: new Date().toISOString(),
-      });
-
-      const platformFee = result.escrow.amount - result.net_to_barber;
-
-      logger.info('Booking payment completed', {
-        booking_id: input.bookingId,
-        gross_dollars: result.escrow.amount / 100,
-        fee_dollars: platformFee / 100,
-        net_dollars: result.net_to_barber / 100,
-      });
-
-      return {
-        released: true,
-        netToBarber: result.net_to_barber,
-        platformFee,
-      };
-    } catch (error: any) {
-      logger.error('Booking completion failed', {
-        booking_id: input.bookingId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Cancel booking and refund consumer
-   * Flow: Refund escrow → Consumer gets money back
-   */
-  async cancelBookingPayment(
-    bookingId: string,
-    reason: string
-  ): Promise<{ refunded: boolean; amount: number }> {
-    try {
-      const escrow = await escrowService.refundHold(bookingId, reason);
-
-      logger.info('Booking payment cancelled', {
-        booking_id: bookingId,
-        consumer_id: escrow.consumer_id,
-        amount_dollars: escrow.amount / 100,
-        reason,
-      });
-
-      return {
-        refunded: true,
-        amount: escrow.amount,
-      };
-    } catch (error: any) {
-      logger.error('Booking cancellation failed', {
-        booking_id: bookingId,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Process tip (instant internal transfer)
+   * Process tip (direct transfer)
    */
   async processTip(params: {
     fromUserId: string;
@@ -394,7 +511,34 @@ class PaymentServiceV2 {
       throw error;
     }
   }
+
+  // ============================================================
+  // ESCROW METHODS - DISABLED
+  // Platform uses direct payments, no escrow holding
+  // ============================================================
+
+  /**
+   * @deprecated - Escrow disabled. Use processBookingPayment instead.
+   */
+  async completeBookingPayment(_input: CompleteBookingInput): Promise<{
+    released: boolean;
+    netToBarber: number;
+    platformFee: number;
+  }> {
+    logger.warn('completeBookingPayment called but escrow is disabled');
+    throw new ApiError(501, 'Escrow is disabled. Payments are processed directly.');
+  }
+
+  /**
+   * @deprecated - Escrow disabled. Use processRefund instead.
+   */
+  async cancelBookingPayment(
+    _bookingId: string,
+    _reason: string
+  ): Promise<{ refunded: boolean; amount: number }> {
+    logger.warn('cancelBookingPayment called but escrow is disabled');
+    throw new ApiError(501, 'Escrow is disabled. Use processRefund instead.');
+  }
 }
 
 export default new PaymentServiceV2();
-

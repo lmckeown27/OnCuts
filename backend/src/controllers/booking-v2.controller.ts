@@ -1,28 +1,26 @@
 /**
  * Booking Controller V2
  * 
- * Implements production escrow-based payment flow (Stripe off-chain):
- * 1. Create booking → Create escrow hold via Stripe
- * 2. Complete booking → Release escrow to barber
- * 3. Cancel booking → Refund escrow to consumer
+ * Implements direct payment flow (no escrow):
+ * 1. Create booking → Generate Stripe payment intent
+ * 2. Consumer pays → Barber receives payment directly (minus fee)
+ * 3. Cancel booking → Stripe refund if already paid
  * 
- * NOTE: Blockchain features disabled - platform uses Stripe for payments
+ * NOTE: Platform does NOT hold funds. All payments are direct consumer-to-barber.
  */
 
 import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-// BLOCKCHAIN DISABLED - Platform uses Stripe for off-chain payments
-// import aptosService from '../services/aptos.service';
-// import onchainAnchorService, { RecordType } from '../services/onchain-anchor.service';
 import paymentServiceV2 from '../services/payment-v2.service';
-import escrowService, { EscrowStatus } from '../services/escrow.service';
+// ESCROW DISABLED - Platform uses direct payments
+// import escrowService, { EscrowStatus } from '../services/escrow.service';
 import auditService from '../services/audit.service';
 import { logger } from '../utils/logger';
 
 /**
- * Create booking with escrow hold
+ * Create booking (no escrow - direct payment)
  * POST /api/bookings
  */
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -74,46 +72,33 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Consumer not found');
     }
 
-    // 3. Create booking record
+    // 3. Create booking record (status: pending until payment)
     const bookingResult = await pool.query(
       `INSERT INTO bookings (
         consumer_id, barber_id, service_id, price_cents,
-        requested_slot, status
+        requested_slot, status, location_details, special_requests
       )
-      VALUES ($1, $2, $3, $4, $5, 'pending')
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7)
       RETURNING *`,
-      [consumerId, barberId, serviceId, priceCents, requestedSlot]
+      [consumerId, barberId, serviceId, priceCents, requestedSlot, locationDetails, specialRequests]
     );
 
     const booking = bookingResult.rows[0];
 
-    // 4. Process booking payment (creates escrow hold)
-    const paymentResult = await paymentServiceV2.processBookingPayment({
+    // 4. Create Stripe payment intent for direct payment
+    const paymentIntent = await paymentServiceV2.createBookingPaymentIntent({
       bookingId: booking.id,
       consumerId,
       barberId,
       amountCents: priceCents,
-      expiresHours: 48,
+      serviceDescription: `Booking #${booking.id}`,
     });
 
-    // BLOCKCHAIN DISABLED - On-chain anchoring removed
-    // Platform uses Stripe for off-chain payments only
-    // To re-enable blockchain proof anchoring, uncomment below:
-    // try {
-    //   await onchainAnchorService.anchorProof({
-    //     record_type: RecordType.BOOKING_HASH,
-    //     subject_id: booking.id,
-    //     data: {
-    //       booking_id: booking.id,
-    //       consumer_address: consumer.aptos_address,
-    //       barber_address: barber.aptos_address,
-    //       price_cents: priceCents,
-    //       created_at: new Date().toISOString(),
-    //     },
-    //   });
-    // } catch (anchorError) {
-    //   logger.warn('Failed to anchor booking on-chain', { booking_id: booking.id, error: anchorError });
-    // }
+    // 5. Update booking with payment intent ID
+    await pool.query(
+      `UPDATE bookings SET stripe_payment_intent_id = $1 WHERE id = $2`,
+      [paymentIntent.paymentIntentId, booking.id]
+    );
 
     // 6. Audit log
     await auditService.log({
@@ -124,30 +109,32 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       details: {
         barber_id: barberId,
         price_cents: priceCents,
-        escrow_id: paymentResult.escrowId,
+        payment_intent_id: paymentIntent.paymentIntentId,
       },
     });
 
-    logger.info('Booking created with escrow hold', {
+    logger.info('Booking created with payment intent (direct payment)', {
       booking_id: booking.id,
       consumer_id: consumerId,
       barber_id: barberId,
       amount_dollars: priceCents / 100,
-      escrow_id: paymentResult.escrowId,
+      platform_fee_dollars: paymentIntent.platformFeeCents / 100,
+      barber_receives_dollars: paymentIntent.barberReceivesCents / 100,
     });
 
     res.status(201).json({
       success: true,
       data: {
         booking,
-        escrow: {
-          id: paymentResult.escrowId,
-          status: 'held',
-          amount_cents: priceCents,
-          expires_hours: 48,
+        payment: {
+          clientSecret: paymentIntent.clientSecret,
+          paymentIntentId: paymentIntent.paymentIntentId,
+          amountCents: paymentIntent.amountCents,
+          platformFeeCents: paymentIntent.platformFeeCents,
+          barberReceivesCents: paymentIntent.barberReceivesCents,
         },
       },
-      message: 'Booking created successfully. Payment held in escrow.',
+      message: 'Booking created. Complete payment to confirm.',
     });
   } catch (error) {
     next(error);
@@ -155,7 +142,65 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
- * Complete booking (release escrow to barber)
+ * Confirm booking payment (called after Stripe payment succeeds)
+ * POST /api/bookings/:id/confirm-payment
+ */
+export const confirmBookingPayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id: bookingId } = req.params;
+    const { paymentIntentId } = req.body;
+    const userId = req.user!.userId;
+
+    // 1. Get booking
+    const bookingResult = await pool.query(
+      `SELECT * FROM bookings WHERE id = $1 AND consumer_id = $2`,
+      [bookingId, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      throw new ApiError(404, 'Booking not found');
+    }
+
+    const booking = bookingResult.rows[0];
+
+    if (booking.status !== 'pending') {
+      throw new ApiError(400, `Cannot confirm payment for booking with status: ${booking.status}`);
+    }
+
+    // 2. Process the payment confirmation
+    await paymentServiceV2.processBookingPayment({
+      bookingId,
+      consumerId: booking.consumer_id,
+      barberId: booking.barber_id,
+      amountCents: booking.price_cents,
+      stripePaymentIntentId: paymentIntentId,
+    });
+
+    // 3. Update booking status to paid/confirmed
+    await pool.query(
+      `UPDATE bookings SET status = 'confirmed', payment_status = 'completed', updated_at = NOW()
+       WHERE id = $1`,
+      [bookingId]
+    );
+
+    logger.info('Booking payment confirmed (direct payment)', {
+      booking_id: bookingId,
+      consumer_id: userId,
+      barber_id: booking.barber_id,
+    });
+
+    res.json({
+      success: true,
+      data: { booking_id: bookingId, status: 'confirmed' },
+      message: 'Payment confirmed. Barber has been notified.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Complete booking (barber marks as done)
  * POST /api/bookings/:id/complete
  */
 export const completeBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -177,24 +222,27 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
 
     const booking = bookingResult.rows[0];
 
-    if (booking.status !== 'pending' && booking.status !== 'confirmed') {
+    if (booking.status !== 'confirmed' && booking.status !== 'paid') {
       throw new ApiError(400, `Cannot complete booking with status: ${booking.status}`);
     }
 
-    // 2. Release escrow (moves funds to barber's available balance)
-    const releaseResult = await paymentServiceV2.completeBookingPayment({
-      bookingId,
-      tipCents,
-      platformFeeRate: 0.05, // 5%
-    });
-
-    // 3. Update booking status
+    // 2. Update booking status
     await pool.query(
       `UPDATE bookings
        SET status = 'completed', completed_at = NOW()
        WHERE id = $1`,
       [bookingId]
     );
+
+    // 3. Process tip if provided
+    if (tipCents && tipCents > 0) {
+      await paymentServiceV2.processTip({
+        fromUserId: booking.consumer_id,
+        toUserId: booking.barber_id,
+        amountCents: tipCents,
+        bookingId,
+      });
+    }
 
     // 4. Audit log
     await auditService.log({
@@ -203,17 +251,14 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
       object_type: 'booking',
       object_id: bookingId,
       details: {
-        net_to_barber_cents: releaseResult.netToBarber,
-        platform_fee_cents: releaseResult.platformFee,
         tip_cents: tipCents || 0,
       },
     });
 
-    logger.info('Booking completed - escrow released', {
+    logger.info('Booking completed', {
       booking_id: bookingId,
       barber_id: userId,
-      net_dollars: releaseResult.netToBarber / 100,
-      fee_dollars: releaseResult.platformFee / 100,
+      tip_dollars: (tipCents || 0) / 100,
     });
 
     res.json({
@@ -221,11 +266,9 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
       data: {
         booking_id: bookingId,
         status: 'completed',
-        net_to_barber_dollars: releaseResult.netToBarber / 100,
-        platform_fee_dollars: releaseResult.platformFee / 100,
         tip_dollars: (tipCents || 0) / 100,
       },
-      message: 'Booking completed. Funds released to your available balance.',
+      message: 'Booking marked as completed.',
     });
   } catch (error) {
     next(error);
@@ -233,7 +276,7 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
 };
 
 /**
- * Cancel booking (refund escrow to consumer)
+ * Cancel booking (refund if already paid)
  * POST /api/bookings/:id/cancel
  */
 export const cancelBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -265,18 +308,25 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(400, 'Booking already cancelled');
     }
 
-    // 2. Refund escrow
-    const refundResult = await paymentServiceV2.cancelBookingPayment(
-      bookingId,
-      reason || 'Booking cancelled'
-    );
+    // 2. If payment was made, process refund
+    let refundResult = null;
+    if (booking.payment_status === 'completed' && booking.stripe_payment_intent_id) {
+      refundResult = await paymentServiceV2.processRefund({
+        bookingId,
+        consumerId: booking.consumer_id,
+        barberId: booking.barber_id,
+        amountCents: booking.price_cents,
+        stripePaymentIntentId: booking.stripe_payment_intent_id,
+        reason: reason || 'Booking cancelled',
+      });
+    }
 
     // 3. Update booking status
     await pool.query(
       `UPDATE bookings
-       SET status = 'cancelled', cancelled_at = NOW()
+       SET status = 'cancelled', cancelled_at = NOW(), cancellation_reason = $2
        WHERE id = $1`,
-      [bookingId]
+      [bookingId, reason]
     );
 
     // 4. Audit log
@@ -288,14 +338,16 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
       details: {
         cancelled_by: isBarber ? 'barber' : 'consumer',
         reason,
-        refund_amount_cents: refundResult.amount,
+        refund_issued: !!refundResult,
+        refund_amount_cents: booking.price_cents,
       },
     });
 
-    logger.info('Booking cancelled - escrow refunded', {
+    logger.info('Booking cancelled', {
       booking_id: bookingId,
       cancelled_by: isBarber ? 'barber' : 'consumer',
-      refund_dollars: refundResult.amount / 100,
+      refund_issued: !!refundResult,
+      refund_dollars: booking.price_cents / 100,
       reason,
     });
 
@@ -304,9 +356,12 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
       data: {
         booking_id: bookingId,
         status: 'cancelled',
-        refund_amount_dollars: refundResult.amount / 100,
+        refund_issued: !!refundResult,
+        refund_amount_dollars: booking.price_cents / 100,
       },
-      message: 'Booking cancelled. Refund issued to consumer wallet.',
+      message: refundResult 
+        ? 'Booking cancelled. Refund has been processed.'
+        : 'Booking cancelled.',
     });
   } catch (error) {
     next(error);
@@ -325,18 +380,15 @@ export const getBookings = async (req: AuthRequest, res: Response, next: NextFun
 
     let query = `
       SELECT b.*,
-        consumer.first_name as consumer_first_name,
-        consumer.last_name as consumer_last_name,
+        consumer."firstName" as consumer_first_name,
+        consumer."lastName" as consumer_last_name,
         consumer.email as consumer_email,
-        barber.first_name as barber_first_name,
-        barber.last_name as barber_last_name,
-        barber.email as barber_email,
-        e.status as escrow_status,
-        e.expires_at as escrow_expires_at
+        barber."firstName" as barber_first_name,
+        barber."lastName" as barber_last_name,
+        barber.email as barber_email
       FROM bookings b
       JOIN users consumer ON b.consumer_id = consumer.id
       JOIN users barber ON b.barber_id = barber.id
-      LEFT JOIN escrow_holds e ON b.id = e.booking_id
       WHERE ${userRole === 'barber' ? 'b.barber_id' : 'b.consumer_id'} = $1
     `;
 
@@ -371,17 +423,13 @@ export const getBookingById = async (req: AuthRequest, res: Response, next: Next
 
     const result = await pool.query(
       `SELECT b.*,
-        consumer.first_name as consumer_first_name,
-        consumer.last_name as consumer_last_name,
-        barber.first_name as barber_first_name,
-        barber.last_name as barber_last_name,
-        e.status as escrow_status,
-        e.amount as escrow_amount,
-        e.expires_at as escrow_expires_at
+        consumer."firstName" as consumer_first_name,
+        consumer."lastName" as consumer_last_name,
+        barber."firstName" as barber_first_name,
+        barber."lastName" as barber_last_name
       FROM bookings b
       JOIN users consumer ON b.consumer_id = consumer.id
       JOIN users barber ON b.barber_id = barber.id
-      LEFT JOIN escrow_holds e ON b.id = e.booking_id
       WHERE b.id = $1 AND (b.consumer_id = $2 OR b.barber_id = $2)`,
       [id, userId]
     );
@@ -398,4 +446,3 @@ export const getBookingById = async (req: AuthRequest, res: Response, next: Next
     next(error);
   }
 };
-

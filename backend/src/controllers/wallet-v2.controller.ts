@@ -1,7 +1,7 @@
 /**
  * Wallet Controller V2
  * 
- * User-facing wallet operations with production escrow system
+ * User-facing wallet operations with direct payment system (no escrow)
  */
 
 import { Response, NextFunction } from 'express';
@@ -10,7 +10,8 @@ import { ApiError } from '../middleware/errorHandler';
 import transactionService from '../services/transaction.service';
 import paymentServiceV2 from '../services/payment-v2.service';
 import payoutServiceV2 from '../services/payout-v2.service';
-import escrowService from '../services/escrow.service';
+// ESCROW DISABLED - Direct payments only
+// import escrowService from '../services/escrow.service';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 
@@ -24,9 +25,6 @@ export const getBalance = async (req: AuthRequest, res: Response, next: NextFunc
     
     const balance = await transactionService.getUserBalance(userId);
 
-    // Get active escrows
-    const escrows = await escrowService.getUserEscrows(userId, 'held' as any);
-
     res.json({
       success: true,
       data: {
@@ -36,7 +34,6 @@ export const getBalance = async (req: AuthRequest, res: Response, next: NextFunc
         available_cents: balance.available_amount,
         pending_cents: balance.pending_amount,
         total_cents: balance.total_balance,
-        active_escrows: escrows.length,
       },
     });
   } catch (error) {
@@ -276,29 +273,19 @@ export const sendTip = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 /**
- * Get escrows for user
+ * Get escrows for user (DEPRECATED - No escrow in direct payment flow)
  * GET /api/wallet/escrows
  */
 export const getEscrows = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.userId;
-    const { status } = req.query;
-
-    const escrows = await escrowService.getUserEscrows(userId, status as any);
-
-    // Format amounts
-    const formatted = escrows.map(e => ({
-      ...e,
-      amount_dollars: e.amount / 100,
-    }));
-
+    // Escrow is disabled - return empty array
     res.json({
       success: true,
-      data: formatted,
+      data: [],
+      message: 'Escrow is disabled. Platform uses direct payments.',
     });
   } catch (error) {
     logger.error('Error getting escrows:', error);
     next(error);
   }
 };
-
