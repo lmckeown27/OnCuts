@@ -169,8 +169,11 @@ export default function MessagesPage() {
   } | null;
 
   // Scroll to bottom of messages
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = useCallback((instant = false) => {
+    // Use setTimeout to ensure DOM has rendered
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' });
+    }, 50);
   }, []);
 
   // Fetch conversations
@@ -392,10 +395,19 @@ export default function MessagesPage() {
     };
   }, [selectedConversation, fetchConversations, scrollToBottom]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change (instant on first load)
+  const isFirstLoadRef = useRef(true);
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0) {
+      scrollToBottom(isFirstLoadRef.current);
+      isFirstLoadRef.current = false;
+    }
   }, [messages, scrollToBottom]);
+  
+  // Reset first load flag when conversation changes
+  useEffect(() => {
+    isFirstLoadRef.current = true;
+  }, [selectedConversation?.id]);
 
   // Handle selecting a conversation
   const handleSelectConversation = (conv: ConversationWithDetails) => {
