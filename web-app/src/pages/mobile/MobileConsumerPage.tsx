@@ -37,7 +37,8 @@ import type { Barber } from '../../types';
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -59,20 +60,26 @@ export default function MobileConsumerPage() {
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
 
-  // Load barbers when location changes
+  // Show location prompt immediately if permission not yet requested
   useEffect(() => {
-    loadBarbers();
-  }, [latitude, longitude]);
-
-  // Show location prompt if permission not yet requested
-  useEffect(() => {
+    // Show prompt if permission is 'prompt' OR if we haven't determined status yet
     if (permissionStatus === 'prompt') {
-      const timer = setTimeout(() => {
-        setShowLocationPrompt(true);
-      }, 1000); // Slightly faster for mobile
-      return () => clearTimeout(timer);
+      // Show immediately on mobile - no delay
+      setShowLocationPrompt(true);
+    } else if (permissionStatus === 'denied') {
+      // If denied, redirect to landing
+      navigate('/');
     }
-  }, [permissionStatus]);
+  }, [permissionStatus, navigate]);
+
+  // Load barbers when we have location
+  useEffect(() => {
+    // Only load if we have granted permission and have coordinates
+    if (permissionStatus === 'granted' && (latitude || longitude || !hasLoadedOnce)) {
+      loadBarbers();
+      setHasLoadedOnce(true);
+    }
+  }, [latitude, longitude, permissionStatus, hasLoadedOnce]);
 
   // Load barbers from API
   const loadBarbers = async () => {
@@ -173,21 +180,34 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show loading state
-  if (isLoading || locationLoading) {
+  // PRIORITY 1: Show location prompt if we need permission
+  if (showLocationPrompt || permissionStatus === 'prompt') {
     return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600">Finding barbers near you...</p>
+      <div className="fixed inset-0 bg-gradient-to-br from-primary-50 to-primary-100 flex flex-col items-center justify-center p-6">
+        <div className="text-center mb-8">
+          <MapPin className="w-16 h-16 text-primary-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Barbers Near You</h1>
+          <p className="text-gray-600">Enable location to discover the closest barbers</p>
+        </div>
         
         {/* Location Permission Prompt */}
         <LocationPermissionPrompt
-          isOpen={showLocationPrompt}
+          isOpen={true}
           onClose={() => setShowLocationPrompt(false)}
           onAllow={handleAllowLocation}
           onDeny={handleDenyLocation}
           loading={locationLoading}
         />
+      </div>
+    );
+  }
+
+  // PRIORITY 2: Show loading state while fetching barbers
+  if (isLoading || locationLoading) {
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
+        <p className="text-gray-600">Finding barbers near you...</p>
       </div>
     );
   }
@@ -206,30 +226,12 @@ export default function MobileConsumerPage() {
         >
           Back to Home
         </button>
-        
-        {/* Location Permission Prompt */}
-        <LocationPermissionPrompt
-          isOpen={showLocationPrompt}
-          onClose={() => setShowLocationPrompt(false)}
-          onAllow={handleAllowLocation}
-          onDeny={handleDenyLocation}
-          loading={locationLoading}
-        />
       </div>
     );
   }
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
-      {/* Location Permission Prompt */}
-      <LocationPermissionPrompt
-        isOpen={showLocationPrompt}
-        onClose={() => setShowLocationPrompt(false)}
-        onAllow={handleAllowLocation}
-        onDeny={handleDenyLocation}
-        loading={locationLoading}
-      />
-
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between safe-area-inset-top">
         <div className="flex items-center gap-2">
