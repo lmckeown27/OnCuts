@@ -195,24 +195,31 @@ export default function MessagesPage() {
   const fetchMessages = useCallback(async (convId: string) => {
     try {
       const response = await messageService.getMessages(convId);
-      // Handle various response formats: { messages: [...] }, { data: [...] }, or direct array
-      const messagesData = (response as any).messages || 
-                          (response as any).data || 
-                          (Array.isArray(response) ? response : []);
-      if (Array.isArray(messagesData)) {
-        setMessages(messagesData as MessageWithSender[]);
-        // Mark as read
-        await messageService.markConversationAsRead(convId);
-        // Update unread count in conversations list
-        setConversations(prev => prev.map(c => 
-          c.id === convId ? { ...c, unreadCount: 0 } : c
-        ));
-      } else {
-        console.warn('Unexpected messages response format:', response);
-        setMessages([]);
+      // Handle various response formats: { messages: [...] }, { data: { messages: [...] } }, or direct array
+      let messagesData: any[] = [];
+      
+      if (Array.isArray(response)) {
+        messagesData = response;
+      } else if ((response as any).messages && Array.isArray((response as any).messages)) {
+        messagesData = (response as any).messages;
+      } else if ((response as any).data?.messages && Array.isArray((response as any).data.messages)) {
+        messagesData = (response as any).data.messages;
+      } else if ((response as any).data && Array.isArray((response as any).data)) {
+        messagesData = (response as any).data;
       }
+      
+      console.log('📨 Fetched messages:', messagesData.length, 'messages');
+      setMessages(messagesData as MessageWithSender[]);
+      
+      // Mark as read
+      await messageService.markConversationAsRead(convId);
+      // Update unread count in conversations list
+      setConversations(prev => prev.map(c => 
+        c.id === convId ? { ...c, unreadCount: 0 } : c
+      ));
     } catch (error) {
       console.error('Failed to fetch messages:', error);
+      setMessages([]);
     }
   }, []);
 
@@ -431,9 +438,29 @@ export default function MessagesPage() {
     try {
       const response = await messageService.sendMessage(selectedConversation.id, messageContent);
       
+      console.log('✅ Message sent, response:', response);
+      
       // Replace optimistic message with real one
+      // The response should be the Message object with id, content, createdAt, etc.
+      const realMessage: MessageWithSender = {
+        id: response.id || optimisticMessage.id,
+        conversation_id: selectedConversation.id,
+        sender_id: user?.id || '',
+        content: response.content || messageContent,
+        message_type: response.messageType || response.message_type || 'text',
+        is_read: response.isRead || response.is_read || false,
+        created_at: response.createdAt || response.created_at || new Date().toISOString(),
+        createdAt: response.createdAt || response.created_at || new Date().toISOString(),
+        isOwn: true,
+        sender: response.sender || {
+          id: user?.id || '',
+          firstName: user?.first_name || '',
+          lastName: user?.last_name || '',
+        }
+      };
+      
       setMessages(prev => prev.map(m => 
-        m.id === optimisticMessage.id ? { ...response, isOwn: true } as unknown as MessageWithSender : m
+        m.id === optimisticMessage.id ? realMessage : m
       ));
       
       // Update conversations list
@@ -458,9 +485,15 @@ export default function MessagesPage() {
     navigate(`${platformPrefix}/${messagesPath}`, { replace: true });
   };
 
-  // Format time
-  const formatTime = (dateString: string) => {
+  // Format time - with null/undefined safety
+  const formatTime = (dateString: string | undefined | null) => {
+    if (!dateString) return '';
+    
     const date = new Date(dateString);
+    
+    // Check for Invalid Date
+    if (isNaN(date.getTime())) return '';
+    
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -759,18 +792,22 @@ export default function MessagesPage() {
                             : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content || ''}
+                        </p>
                       </div>
-                      <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                        <span className="text-xs text-gray-400">
-                          {formatTime(message.createdAt || message.created_at)}
-                        </span>
-                        {isOwn && (
-                          (message.isRead || message.is_read)
-                            ? <CheckCheck className="w-3 h-3 text-primary-500" />
-                            : <Check className="w-3 h-3 text-gray-400" />
-                        )}
-                      </div>
+                      {(message.createdAt || message.created_at) && (
+                        <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                          <span className="text-xs text-gray-400">
+                            {formatTime(message.createdAt || message.created_at)}
+                          </span>
+                          {isOwn && (
+                            (message.isRead || message.is_read)
+                              ? <CheckCheck className="w-3 h-3 text-primary-500" />
+                              : <Check className="w-3 h-3 text-gray-400" />
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

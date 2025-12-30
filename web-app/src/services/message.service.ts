@@ -70,19 +70,23 @@ class MessageService {
     return await api.post<Conversation>('/messages/conversations', data);
   }
 
-  async getMessages(conversationId: string, page = 1, limit = 50): Promise<PaginatedResponse<Message>> {
-    return await api.get<PaginatedResponse<Message>>(`/messages/conversations/${conversationId}/messages`, { 
+  async getMessages(conversationId: string, page = 1, limit = 50): Promise<{ messages: Message[], pagination?: any }> {
+    const response = await api.get<{ messages: Message[], pagination?: any }>(`/messages/conversations/${conversationId}/messages`, { 
       page, 
       limit 
     });
+    // Backend returns { messages: [...], pagination: {...} }
+    return response;
   }
 
   async sendMessage(conversationId: string, content: string, messageType: 'text' | 'image' = 'text', mediaUrl?: string): Promise<Message> {
-    return await api.post<Message>(`/messages/conversations/${conversationId}/messages`, {
+    const response = await api.post<{ message: Message }>(`/messages/conversations/${conversationId}/messages`, {
       content,
       message_type: messageType,
       media_url: mediaUrl,
     });
+    // Backend returns { message: {...} }, extract the message
+    return response.message || response as unknown as Message;
   }
 
   async markConversationAsRead(conversationId: string): Promise<void> {
@@ -94,8 +98,10 @@ class MessageService {
   }
 
   async getUnreadCount(): Promise<number> {
-    const response = await api.get<{ count: number }>('/messages/unread-count');
-    return response.count;
+    const response = await api.get<{ count: number } | number>('/messages/unread-count');
+    // Handle both wrapped { count: N } and direct number responses
+    if (typeof response === 'number') return response;
+    return (response as { count: number }).count || 0;
   }
 
   async uploadChatImage(file: File): Promise<string> {

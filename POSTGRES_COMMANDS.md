@@ -261,6 +261,15 @@ sudo -u postgres psql -d campuscuts -c "DELETE FROM campuses WHERE name IN ('GMA
 ### Seed All Universities
 ```bash
 # Run the seed script (after git pull)
+# Option 1: Pipe the file (recommended - avoids permission issues)
+cat ~/CampusCuts/backend/src/database/seed_campuses.sql | sudo -u postgres psql -d campuscuts
+
+# Option 2: Copy to tmp first
+cp ~/CampusCuts/backend/src/database/seed_campuses.sql /tmp/
+sudo -u postgres psql -d campuscuts -f /tmp/seed_campuses.sql
+
+# Option 3: Fix permissions then run directly
+chmod 644 ~/CampusCuts/backend/src/database/seed_campuses.sql
 sudo -u postgres psql -d campuscuts -f ~/CampusCuts/backend/src/database/seed_campuses.sql
 ```
 
