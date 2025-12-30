@@ -359,7 +359,7 @@ export default function BookingPaymentPage() {
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1 text-right">
-              Pay directly to barber at appointment
+              Pay directly to barber after service
             </p>
           </div>
         </Card>
@@ -375,7 +375,7 @@ export default function BookingPaymentPage() {
 
         {/* Info Text */}
         <p className="text-xs text-gray-500 text-center mt-4">
-          By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName} at your appointment.
+          By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName} after your service is completed.
         </p>
       </div>
     </div>
