@@ -79,36 +79,24 @@ router.post('/', authenticate, async (req, res, next) => {
     const barberEarnings = price - platformFee;
     const requestedTime = scheduledTime ? new Date(scheduledTime) : new Date();
     
-    // Get the barber's locationId (or use a default)
-    const locationResult = await pool.query(
-      'SELECT "locationId" FROM barbers WHERE id = $1',
-      [barberRecordId]
+    // Get an existing location from the locations table (or create a default one)
+    let locationResult = await pool.query(
+      'SELECT id FROM locations LIMIT 1'
     );
-    const locationId = locationResult.rows[0]?.locationId || null;
     
-    // First, create an availability slot for this booking (availabilityId is a required FK)
-    // If barber has no locationId, create a default location first
-    let finalLocationId = locationId;
-    if (!finalLocationId) {
-      const defaultLocationResult = await pool.query(
-        `INSERT INTO barber_locations (id, "barberId", name, address, "isDefault")
-         VALUES (gen_random_uuid(), $1, 'Default Location', 'TBD', true)
-         ON CONFLICT DO NOTHING
-         RETURNING id`,
-        [barberRecordId]
+    let locationId = locationResult.rows[0]?.id;
+    
+    // If no locations exist, create a default one
+    if (!locationId) {
+      const newLocationResult = await pool.query(
+        `INSERT INTO locations (id, name, address, city, state, "zipCode", latitude, longitude)
+         VALUES (gen_random_uuid(), 'Default Location', 'TBD', 'TBD', 'CA', '00000', 0, 0)
+         RETURNING id`
       );
-      if (defaultLocationResult.rows.length > 0) {
-        finalLocationId = defaultLocationResult.rows[0].id;
-      } else {
-        // Get existing default location
-        const existingLocation = await pool.query(
-          'SELECT id FROM barber_locations WHERE "barberId" = $1 LIMIT 1',
-          [barberRecordId]
-        );
-        finalLocationId = existingLocation.rows[0]?.id || null;
-      }
+      locationId = newLocationResult.rows[0].id;
     }
     
+    // Create availability slot for this booking (availabilityId is a required FK)
     const availabilityResult = await pool.query(
       `INSERT INTO availability (
         id,
@@ -118,12 +106,13 @@ router.post('/', authenticate, async (req, res, next) => {
         "endTime",
         "priceUsdCents",
         "serviceTypes",
-        status
-      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, ARRAY[$6::"ServiceType"], 'BOOKED')
+        status,
+        "updatedAt"
+      ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, ARRAY[$6::"ServiceType"], 'BOOKED', CURRENT_TIMESTAMP)
       RETURNING id`,
       [
         barberRecordId,
-        finalLocationId,
+        locationId,
         requestedTime,
         new Date(requestedTime.getTime() + 30 * 60 * 1000), // 30 min later
         price,
