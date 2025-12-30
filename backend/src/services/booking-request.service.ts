@@ -21,6 +21,7 @@ interface BookingRequest {
   requestedDate: Date;
   requestedTime: string;
   price: number;
+  location?: string | null;
   message?: string;
   status: string;
   requestedAt: Date;
