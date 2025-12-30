@@ -5,7 +5,7 @@
  * Inspired by modern SaaS landing pages
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
@@ -30,6 +30,32 @@ export default function LandingPage() {
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
+  
+  // Handle "Book Here" click - request location then navigate
+  // This triggers the browser's native location dialog on mobile
+  const handleBookHereClick = useCallback(() => {
+    if (navigator.geolocation) {
+      // Request location - this triggers the browser's permission dialog
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          // Success - location granted, navigate to consumer page
+          navigate('/web/consumer');
+        },
+        () => {
+          // Error or denied - still navigate, the consumer page will handle it
+          navigate('/web/consumer');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      // Geolocation not supported, just navigate
+      navigate('/web/consumer');
+    }
+  }, [navigate]);
   
   // Mobile menu open/close with animation
   const openMobileMenu = () => {
@@ -184,7 +210,7 @@ export default function LandingPage() {
             {/* CTA Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-4">
               <button
-                onClick={() => navigate('/web/consumer')}
+                onClick={handleBookHereClick}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
                 Book Here
@@ -220,8 +246,8 @@ export default function LandingPage() {
               <div className="pt-3 border-t border-gray-200">
                 <button 
                   onClick={() => {
-                    navigate('/web/consumer');
                     closeMobileMenu();
+                    handleBookHereClick();
                   }} 
                   className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
@@ -243,7 +269,7 @@ export default function LandingPage() {
           {/* CTA Button */}
           <div className="flex justify-center mb-8">
             <button
-              onClick={() => navigate('/web/consumer')}
+              onClick={handleBookHereClick}
               className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Book Here
@@ -540,7 +566,7 @@ export default function LandingPage() {
           </h2>
           <div className="flex justify-center">
             <button 
-              onClick={() => navigate('/web/consumer')}
+              onClick={handleBookHereClick}
               className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Book Here
