@@ -100,14 +100,19 @@ export default function ScheduleServicePage() {
       // Combine date and time for scheduled datetime
       const scheduledAt = new Date(`${date}T${time}`).toISOString();
 
+      // Build barber name from available properties
+      const barberName = barber?.name 
+        || barber?.display_name 
+        || (barber?.user?.first_name ? `${barber.user.first_name} ${barber.user.last_name || ''}`.trim() : null)
+        || (barber?.first_name ? `${barber.first_name} ${barber.last_name || ''}`.trim() : null)
+        || 'Barber';
+
       // Navigate to payment page with booking details
       navigate('/web/student/booking/payment', {
         state: {
           barberId: barberId,
           barberUserId: barber?.user_id, // User ID for messaging
-          barberName: barber?.user?.first_name 
-            ? `${barber.user.first_name} ${barber.user.last_name}` 
-            : 'Barber',
+          barberName: barberName,
           barberProfilePicture: barber?.profile_picture_url || barber?.profile_photo_url,
           serviceName: serviceType,
           servicePrice: servicePrice,

@@ -416,11 +416,18 @@ export default function BookingPage() {
                     const [hours, minutes] = bookingData.time.split(':');
                     const scheduledTime = setMinutes(setHours(bookingData.date, parseInt(hours)), parseInt(minutes));
                     
+                    // Build barber name from available properties
+                    const barberName = barber?.name 
+                      || barber?.display_name 
+                      || (barber?.user?.first_name ? `${barber.user.first_name} ${barber.user.last_name || ''}`.trim() : null)
+                      || (barber?.first_name ? `${barber.first_name} ${barber.last_name || ''}`.trim() : null)
+                      || 'Barber';
+                    
                     navigate('/web/student/booking/payment', {
                       state: {
                         barberId: barberId,
                         barberUserId: barber?.user_id,
-                        barberName: `${barber?.user?.first_name} ${barber?.user?.last_name}`,
+                        barberName: barberName,
                         barberProfilePicture: barber?.profile_picture_url || barber?.profile_photo_url,
                         serviceName: bookingData.service.name,
                         servicePrice: bookingData.service.price,
