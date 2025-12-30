@@ -986,26 +986,26 @@ export default function MessagesPage() {
         {/* Desktop Layout - Three Column */}
         <div className="hidden md:flex h-full">
           {/* Conversation List - Fixed Width */}
-          <div className="w-80 lg:w-96 border-r border-gray-200 bg-white flex-shrink-0">
+          <div className="w-80 lg:w-96 border-r border-gray-200 bg-white flex-shrink-0 overflow-hidden">
             {renderConversationList()}
           </div>
           
-          {/* Chat View - Reduced Width */}
-          <div className="flex-1 max-w-2xl border-r border-gray-200">
+          {/* Chat View - Reduced Width, matches Service Details height */}
+          <div className="flex-1 max-w-2xl border-r border-gray-200 h-full overflow-hidden">
             {renderChatView()}
           </div>
 
           {/* Service Details Panel - Right Side (Desktop Only) */}
-          <div className="w-80 lg:w-96 bg-white flex-shrink-0 overflow-y-auto">
+          <div className="w-80 lg:w-96 bg-white flex-shrink-0 h-full overflow-hidden flex flex-col">
             {selectedConversation?.booking ? (
-              <div className="h-full flex flex-col">
-                {/* Panel Header */}
-                <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-5 py-4">
+              <>
+                {/* Panel Header - Fixed */}
+                <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-5 py-4 flex-shrink-0">
                   <h2 className="text-lg font-bold text-white">Service Details</h2>
                   <p className="text-white/80 text-sm">Booking Information</p>
                 </div>
 
-                {/* Panel Content */}
+                {/* Panel Content - Scrollable */}
                 <div className="flex-1 p-4 space-y-3 overflow-y-auto">
                   {/* Service Name & Price */}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
@@ -1117,7 +1117,7 @@ export default function MessagesPage() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50">
                 <Info className="w-12 h-12 text-gray-300 mb-3" />
