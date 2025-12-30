@@ -269,6 +269,68 @@ sudo -u postgres psql -d campuscuts -f ~/CampusCuts/backend/src/database/seed_ca
 sudo -u postgres psql -d campuscuts -c "\d campuses"
 ```
 
+### View All Campus Coordinates
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT name, city, state, latitude, longitude 
+FROM campuses 
+WHERE latitude IS NOT NULL 
+ORDER BY state, name;
+"
+```
+
+### View Campus Coordinates by State
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT name, city, latitude, longitude 
+FROM campuses 
+WHERE state = 'CA' AND latitude IS NOT NULL 
+ORDER BY name;
+"
+```
+
+### Find Campuses Near Coordinates
+```bash
+# Find campuses within ~50km of coordinates (approximate)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    name, 
+    city, 
+    state,
+    latitude, 
+    longitude,
+    ROUND((
+        6371 * acos(
+            cos(radians(35.3050)) * cos(radians(latitude)) * 
+            cos(radians(longitude) - radians(-120.6625)) + 
+            sin(radians(35.3050)) * sin(radians(latitude))
+        )
+    )::numeric, 2) as distance_km
+FROM campuses 
+WHERE latitude IS NOT NULL
+ORDER BY distance_km 
+LIMIT 10;
+"
+```
+
+### Update Campus Coordinates
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE campuses 
+SET latitude = 35.3050, longitude = -120.6625 
+WHERE slug = 'cal-poly';
+"
+```
+
+### Add Coordinates Columns (if not exists)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+ALTER TABLE campuses ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 6);
+ALTER TABLE campuses ADD COLUMN IF NOT EXISTS longitude DECIMAL(10, 6);
+CREATE INDEX IF NOT EXISTS idx_campuses_coordinates ON campuses(latitude, longitude);
+"
+```
+
 ---
 
 ## LOCATIONS
