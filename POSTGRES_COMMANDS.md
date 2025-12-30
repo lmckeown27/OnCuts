@@ -211,11 +211,168 @@ sudo -u postgres psql -d campuscuts -x -c "SELECT * FROM bookings ORDER BY \"req
 
 ### View Bookings by Status
 ```bash
-# Status values: PENDING, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, CANCELLED
+# Status values: PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
 sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'PENDING';"
 sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'ACCEPTED';"
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'REJECTED';"
 sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'COMPLETED';"
 sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'CANCELLED';"
+```
+
+### Booking Lifecycle Stages
+
+#### Stage 1: PENDING (Consumer requested, waiting for barber response)
+```bash
+# View all pending booking requests
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id,
+    b.\"serviceType\",
+    b.\"priceUsdCents\" / 100.0 as price_usd,
+    c.email as consumer_email,
+    c.first_name as consumer_name,
+    bar_u.email as barber_email,
+    b.\"requestedAt\",
+    b.notes
+FROM bookings b
+JOIN users c ON b.\"consumerId\" = c.id
+LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
+WHERE b.status = 'PENDING'
+ORDER BY b.\"requestedAt\" DESC;
+"
+```
+
+#### Stage 2: ACCEPTED (Barber accepted the booking)
+```bash
+# View all accepted bookings awaiting service
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id,
+    b.\"serviceType\",
+    b.\"priceUsdCents\" / 100.0 as price_usd,
+    c.email as consumer_email,
+    bar_u.email as barber_email,
+    b.\"requestedAt\",
+    b.\"acceptedAt\"
+FROM bookings b
+JOIN users c ON b.\"consumerId\" = c.id
+LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
+WHERE b.status = 'ACCEPTED'
+ORDER BY b.\"acceptedAt\" DESC;
+"
+```
+
+#### Stage 3: REJECTED (Barber declined the booking)
+```bash
+# View all rejected bookings
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id,
+    b.\"serviceType\",
+    c.email as consumer_email,
+    bar_u.email as barber_email,
+    b.\"requestedAt\",
+    b.\"updatedAt\" as rejected_at
+FROM bookings b
+JOIN users c ON b.\"consumerId\" = c.id
+LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
+WHERE b.status = 'REJECTED'
+ORDER BY b.\"updatedAt\" DESC;
+"
+```
+
+#### Stage 4: COMPLETED (Service finished)
+```bash
+# View all completed bookings
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id,
+    b.\"serviceType\",
+    b.\"priceUsdCents\" / 100.0 as price_usd,
+    c.email as consumer_email,
+    bar_u.email as barber_email,
+    b.\"requestedAt\",
+    b.\"completedAt\"
+FROM bookings b
+JOIN users c ON b.\"consumerId\" = c.id
+LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
+WHERE b.status = 'COMPLETED'
+ORDER BY b.\"completedAt\" DESC;
+"
+```
+
+#### Stage 5: CANCELLED (Booking was cancelled)
+```bash
+# View all cancelled bookings
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id,
+    b.\"serviceType\",
+    c.email as consumer_email,
+    bar_u.email as barber_email,
+    b.\"requestedAt\",
+    b.\"cancelledAt\"
+FROM bookings b
+JOIN users c ON b.\"consumerId\" = c.id
+LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
+WHERE b.status = 'CANCELLED'
+ORDER BY b.\"cancelledAt\" DESC;
+"
+```
+
+### View Booking with Linked Conversation
+```bash
+# See booking and its linked conversation status
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.id as booking_id,
+    b.status as booking_status,
+    b.\"serviceType\",
+    c.id as conversation_id,
+    c.booking_status as conv_status,
+    c.service_name,
+    c.scheduled_time
+FROM bookings b
+LEFT JOIN conversations c ON c.booking_id = b.id
+WHERE b.id = 'BOOKING_UUID_HERE';
+"
+```
+
+### Booking Status Summary
+```bash
+# Count bookings by status
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    status,
+    COUNT(*) as count,
+    SUM(\"priceUsdCents\") / 100.0 as total_value_usd
+FROM bookings
+GROUP BY status
+ORDER BY count DESC;
+"
+```
+
+### View Barber's Booking Pipeline
+```bash
+# See all booking stages for a specific barber
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    b.status,
+    COUNT(*) as count,
+    b.\"serviceType\"
+FROM bookings b
+JOIN users u ON b.\"barberId\" = u.id
+WHERE u.email = 'barber@example.com'
+GROUP BY b.status, b.\"serviceType\"
+ORDER BY 
+    CASE b.status 
+        WHEN 'PENDING' THEN 1 
+        WHEN 'ACCEPTED' THEN 2 
+        WHEN 'COMPLETED' THEN 3 
+        WHEN 'REJECTED' THEN 4 
+        WHEN 'CANCELLED' THEN 5 
+    END;
+"
 ```
 
 ### View Bookings with User Details
