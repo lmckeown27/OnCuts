@@ -38,13 +38,13 @@ class MessageService {
           END as other_user_id,
           u.first_name as other_user_first_name,
           u.last_name as other_user_last_name,
-          u."avatarUrl" as other_user_profile_picture,
-          u.role as other_user_type,
+          u.profile_picture_url as other_user_profile_picture,
+          u.user_type as other_user_type,
           
           -- BARBER INFO (if other user is barber)
-          u."displayName" as barber_display_name,
+          COALESCE(br.display_name, u.first_name || ' ' || u.last_name) as barber_display_name,
           br.specialties as barber_specialties,
-          br."avgRating" as barber_rating,
+          br.average_rating as barber_rating,
           
           -- BOOKING INFO (from conversation context or linked booking)
           c.service_name as conv_service_name,
@@ -211,10 +211,10 @@ class MessageService {
           m.is_read,
           m.created_at,
           m.sender_id,
-          u."displayName" as username,
+          u.email,
           u.first_name,
           u.last_name,
-          u."avatarUrl" as profile_picture
+          u.profile_picture_url
         FROM messages m
         JOIN users u ON m.sender_id = u.id
         WHERE m.conversation_id = $1 AND m.is_deleted = false
@@ -257,10 +257,10 @@ class MessageService {
           createdAt: msg.created_at,
           sender: {
             id: msg.sender_id,
-            username: msg.username,
+            email: msg.email,
             firstName: msg.first_name,
             lastName: msg.last_name,
-            profilePicture: msg.profile_picture,
+            profilePicture: msg.profile_picture_url,
           },
           isOwn: msg.sender_id === userId,
         }))
@@ -461,9 +461,9 @@ class MessageService {
         [message.created_at, conversationId]
       );
 
-      // Get sender info
+      // Get sender info - use columns that exist in production
       const senderResult = await pool.query(
-        `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1`,
+        `SELECT email, first_name, last_name, profile_picture_url FROM users WHERE id = $1`,
         [senderId]
       );
 
@@ -491,10 +491,10 @@ class MessageService {
         createdAt: message.created_at,
         sender: {
           id: senderId,
-          username: sender.username,
+          email: sender.email,
           firstName: sender.first_name,
           lastName: sender.last_name,
-          profilePicture: sender.profile_picture,
+          profilePicture: sender.profile_picture_url,
         },
         isOwn: true,
       };
