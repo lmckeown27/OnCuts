@@ -197,6 +197,170 @@ sudo -u postgres psql -d campuscuts -c "\d barber_applications"
 
 ---
 
+## CAMPUSES
+
+### View All Campuses
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT id, name, city, state, \"isActive\" FROM campuses ORDER BY name;"
+```
+
+### View Campuses (Formatted)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    name,
+    city,
+    state,
+    slug,
+    \"basePriceUsdCents\" / 100.0 as base_price,
+    \"platformFeePercent\" as fee_pct,
+    \"isActive\"
+FROM campuses 
+ORDER BY state, city;
+"
+```
+
+### View Campus Count
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) as total_campuses FROM campuses;"
+```
+
+### Find Campus by Name
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM campuses WHERE name ILIKE '%poly%';"
+```
+
+### Find Campuses by State
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT name, city FROM campuses WHERE state = 'CA' ORDER BY name;"
+```
+
+### Add New Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+INSERT INTO campuses (id, slug, name, city, state, timezone, \"updatedAt\")
+VALUES (gen_random_uuid(), 'new-university', 'New University Name', 'City', 'ST', 'America/New_York', CURRENT_TIMESTAMP);
+"
+```
+
+### Update Campus
+```bash
+# Activate/Deactivate campus
+sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"isActive\" = false WHERE slug = 'campus-slug';"
+
+# Update pricing
+sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"basePriceUsdCents\" = 2500, \"averagePriceUsdCents\" = 4000 WHERE slug = 'campus-slug';"
+```
+
+### Delete Invalid Campuses
+```bash
+# Delete non-university entries (like GMAIL, ICLOUD)
+sudo -u postgres psql -d campuscuts -c "DELETE FROM campuses WHERE name IN ('GMAIL', 'ICLOUD');"
+```
+
+### Seed All Universities
+```bash
+# Run the seed script (after git pull)
+sudo -u postgres psql -d campuscuts -f ~/CampusCuts/backend/src/database/seed_campuses.sql
+```
+
+### Describe Campuses Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d campuses"
+```
+
+---
+
+## LOCATIONS
+
+### View All Locations
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    l.id,
+    l.name,
+    l.type,
+    c.name as campus_name,
+    l.\"isVerified\"
+FROM locations l
+JOIN campuses c ON l.\"campusId\" = c.id
+ORDER BY c.name, l.name;
+"
+```
+
+### View Locations for Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT l.* FROM locations l
+JOIN campuses c ON l.\"campusId\" = c.id
+WHERE c.slug = 'cal-poly';
+"
+```
+
+### Create Default Location for Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+INSERT INTO locations (id, \"campusId\", name, \"normalizedName\", type, cohort, \"usageCount\", confidence, \"isVerified\", \"updatedAt\")
+SELECT 
+    gen_random_uuid(),
+    id,
+    'Campus Default',
+    'campus-default',
+    'DORM'::\"LocationType\",
+    'UNKNOWN'::\"LocationCohort\",
+    1,
+    0.50,
+    false,
+    CURRENT_TIMESTAMP
+FROM campuses
+WHERE slug = 'cal-poly';
+"
+```
+
+### Describe Locations Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d locations"
+```
+
+---
+
+## AVAILABILITY
+
+### View All Availability Slots
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    a.id,
+    u.email as barber_email,
+    a.\"startTime\",
+    a.\"endTime\",
+    a.status,
+    a.\"priceUsdCents\" / 100.0 as price
+FROM availability a
+JOIN barbers b ON a.\"barberId\" = b.id
+JOIN users u ON b.\"userId\" = u.id
+ORDER BY a.\"startTime\" DESC
+LIMIT 20;
+"
+```
+
+### View Open Slots
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM availability WHERE status = 'OPEN' ORDER BY \"startTime\";"
+```
+
+### View Booked Slots
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT * FROM availability WHERE status = 'BOOKED' ORDER BY \"startTime\" DESC;"
+```
+
+### Describe Availability Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d availability"
+```
+
+---
+
 ## BOOKINGS
 
 ### View All Bookings
