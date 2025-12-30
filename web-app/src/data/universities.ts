@@ -288,19 +288,37 @@ export const US_UNIVERSITIES: University[] = [
 ];
 
 // Helper function to search universities
+// Prioritizes results that START with the query, then includes partial matches
 export function searchUniversities(query: string, limit: number = 10): University[] {
   if (!query || query.length < 1) return [];
   
   const lowerQuery = query.toLowerCase();
   
-  return US_UNIVERSITIES
-    .filter(uni => 
-      uni.name.toLowerCase().includes(lowerQuery) ||
-      uni.shortName?.toLowerCase().includes(lowerQuery) ||
-      uni.city.toLowerCase().includes(lowerQuery) ||
-      uni.state.toLowerCase().includes(lowerQuery)
-    )
-    .slice(0, limit);
+  // Split into exact start matches and contains matches
+  const startsWithMatches: University[] = [];
+  const containsMatches: University[] = [];
+  
+  for (const uni of US_UNIVERSITIES) {
+    const nameLower = uni.name.toLowerCase();
+    const shortNameLower = uni.shortName?.toLowerCase() || '';
+    const cityLower = uni.city.toLowerCase();
+    
+    // Check if name or shortName STARTS with the query
+    if (nameLower.startsWith(lowerQuery) || shortNameLower.startsWith(lowerQuery)) {
+      startsWithMatches.push(uni);
+    } 
+    // Otherwise check if it contains the query anywhere
+    else if (
+      nameLower.includes(lowerQuery) ||
+      shortNameLower.includes(lowerQuery) ||
+      cityLower.includes(lowerQuery)
+    ) {
+      containsMatches.push(uni);
+    }
+  }
+  
+  // Return starts-with matches first, then contains matches
+  return [...startsWithMatches, ...containsMatches].slice(0, limit);
 }
 
 // Helper function to find university by ID
