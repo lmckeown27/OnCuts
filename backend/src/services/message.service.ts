@@ -38,8 +38,8 @@ class MessageService {
           END as other_user_id,
           u.first_name as other_user_first_name,
           u.last_name as other_user_last_name,
-          u.profile_picture_url as other_user_profile_picture,
-          u.user_type as other_user_type,
+          u."avatarUrl" as other_user_profile_picture,
+          u.role as other_user_type,
           
           -- BARBER INFO (if other user is barber)
           u.first_name || ' ' || u.last_name as barber_display_name,
@@ -212,7 +212,7 @@ class MessageService {
           u.email,
           u.first_name,
           u.last_name,
-          u.profile_picture_url
+          u."avatarUrl" as profile_picture
         FROM messages m
         JOIN users u ON m.sender_id = u.id
         WHERE m.conversation_id = $1 AND m.is_deleted = false
@@ -258,7 +258,7 @@ class MessageService {
             email: msg.email,
             firstName: msg.first_name,
             lastName: msg.last_name,
-            profilePicture: msg.profile_picture_url,
+            profilePicture: msg.profile_picture,
           },
           isOwn: msg.sender_id === userId,
         }))
@@ -461,7 +461,7 @@ class MessageService {
 
       // Get sender info - use columns that exist in production
       const senderResult = await pool.query(
-        `SELECT email, first_name, last_name, profile_picture_url FROM users WHERE id = $1`,
+        `SELECT email, first_name, last_name, "avatarUrl" as profile_picture FROM users WHERE id = $1`,
         [senderId]
       );
 
@@ -492,7 +492,7 @@ class MessageService {
           email: sender.email,
           firstName: sender.first_name,
           lastName: sender.last_name,
-          profilePicture: sender.profile_picture_url,
+          profilePicture: sender.profile_picture,
         },
         isOwn: true,
       };
