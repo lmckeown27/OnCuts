@@ -758,17 +758,31 @@ export default function MessagesPage() {
               <p className="text-gray-500">No messages yet. Start the conversation!</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-1">
               {messages.map((message, idx) => {
                 const senderId = message.senderId || message.sender_id;
                 const isOwn = senderId === user?.id || (message as any).isOwn;
                 const prevSenderId = messages[idx - 1]?.senderId || messages[idx - 1]?.sender_id;
+                const nextSenderId = messages[idx + 1]?.senderId || messages[idx + 1]?.sender_id;
                 const showAvatar = !isOwn && (idx === 0 || prevSenderId !== senderId);
+                
+                // iOS-style: Only show timestamp on last message in a group
+                // A group is consecutive messages from same sender within 1 minute
+                const currentTime = new Date(message.createdAt || message.created_at || 0).getTime();
+                const nextTime = messages[idx + 1] 
+                  ? new Date(messages[idx + 1].createdAt || messages[idx + 1].created_at || 0).getTime() 
+                  : 0;
+                const isNextSameSender = nextSenderId === senderId;
+                const isWithinOneMinute = nextTime && Math.abs(nextTime - currentTime) < 60000; // 1 minute
+                const showTimestamp = !isNextSameSender || !isWithinOneMinute;
+                
+                // Determine if this is the last message in a group (for spacing)
+                const isLastInGroup = !isNextSameSender || !isWithinOneMinute;
                 
                 return (
                   <div
                     key={message.id}
-                    className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
+                    className={`flex items-end gap-2 ${isOwn ? 'justify-end' : 'justify-start'} ${isLastInGroup ? 'mb-3' : 'mb-0.5'}`}
                   >
                     {!isOwn && showAvatar && (
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -797,7 +811,7 @@ export default function MessagesPage() {
                           {message.content || ''}
                         </p>
                       </div>
-                      {(message.createdAt || message.created_at) && (
+                      {showTimestamp && (message.createdAt || message.created_at) && (
                         <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                           <span className="text-xs text-gray-400">
                             {formatTime(message.createdAt || message.created_at)}
