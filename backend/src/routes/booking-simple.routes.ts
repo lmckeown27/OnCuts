@@ -47,6 +47,29 @@ router.post('/', authenticate, async (req, res, next) => {
       ? barberResult.rows[0].userId 
       : barberId;
 
+    // Map frontend service names to database enum values
+    // Valid enum: HAIRCUT, FADE, BEARD_TRIM, FULL_SERVICE, HOT_TOWEL_SHAVE, COLOR, STYLING, LINEUP, BUZZ_CUT, SHAPE_UP, PERM, BRAIDS, LOCS
+    const serviceTypeMap: Record<string, string> = {
+      'Haircut': 'HAIRCUT',
+      'Taper': 'FADE',        // Taper maps to FADE
+      'Fade': 'FADE',
+      'Buzz Cut': 'BUZZ_CUT',
+      'Beard Trim': 'BEARD_TRIM',
+      'Lineup': 'LINEUP',
+      'Line Up': 'LINEUP',
+      'Shape Up': 'SHAPE_UP',
+      'Full Service': 'FULL_SERVICE',
+      'Hot Towel Shave': 'HOT_TOWEL_SHAVE',
+      'Color': 'COLOR',
+      'Styling': 'STYLING',
+      'Perm': 'PERM',
+      'Braids': 'BRAIDS',
+      'Locs': 'LOCS',
+    };
+    
+    // Convert to enum value or fallback to HAIRCUT as default
+    const dbServiceType = serviceTypeMap[serviceType] || 'HAIRCUT';
+
     // Create booking record (minimal columns that exist in production)
     const result = await pool.query(
       `INSERT INTO bookings (
@@ -56,12 +79,12 @@ router.post('/', authenticate, async (req, res, next) => {
         "priceUsdCents", 
         "requestedAt",
         status
-      ) VALUES ($1, $2, $3, $4, $5, 'PENDING')
+      ) VALUES ($1, $2, $3::"ServiceType", $4, $5, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
         barberUserId,
-        serviceType,
+        dbServiceType,
         priceUsdCents || 0,
         scheduledTime ? new Date(scheduledTime) : new Date(),
       ]
