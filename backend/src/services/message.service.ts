@@ -48,12 +48,11 @@ class MessageService {
           
           -- BOOKING INFO (if linked to a booking)
           b.id as booking_id_ref,
-          b."serviceName" as booking_service_name,
-          b."servicePrice" as booking_service_price,
-          b."scheduledAt" as booking_scheduled_time,
-          b.location as booking_location,
-          b.notes as booking_notes,
+          b."serviceType" as booking_service_type,
+          b."priceUsdCents" as booking_price_cents,
+          b."requestedAt" as booking_scheduled_time,
           b.status as booking_status,
+          a."startTime" as availability_start_time,
           
           -- MESSAGE INFO
           (
@@ -93,6 +92,7 @@ class MessageService {
         )
         LEFT JOIN barbers br ON u.id = br."userId"
         LEFT JOIN bookings b ON c.booking_id = b.id
+        LEFT JOIN availability a ON b."availabilityId" = a.id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
@@ -114,12 +114,12 @@ class MessageService {
         // Booking details
         booking: conv.booking_id_ref ? {
           id: conv.booking_id_ref,
-          serviceName: conv.booking_service_name || 'Service',
-          servicePrice: parseFloat(conv.booking_service_price) || null,
-          scheduledTime: conv.booking_scheduled_time,
-          location: conv.booking_location || 'TBD',
-          notes: conv.booking_notes,
-          status: conv.booking_status || 'pending',
+          serviceName: conv.booking_service_type || 'Service',
+          servicePrice: conv.booking_price_cents ? (conv.booking_price_cents / 100) : null,
+          scheduledTime: conv.availability_start_time || conv.booking_scheduled_time,
+          location: 'TBD',
+          notes: null,
+          status: (conv.booking_status || 'pending').toLowerCase(),
         } : null,
         // Other user info
         otherUser: {
