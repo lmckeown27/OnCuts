@@ -758,7 +758,7 @@ export default function MessagesPage() {
               <p className="text-gray-500">No messages yet. Start the conversation!</p>
             </div>
           ) : (
-            <div className="space-y-1">
+            <div>
               {messages.map((message, idx) => {
                 const senderId = message.senderId || message.sender_id;
                 const isOwn = senderId === user?.id || (message as any).isOwn;
