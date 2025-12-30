@@ -31,6 +31,7 @@ interface BookingDetails {
   barberId: string;
   barberUserId?: string;
   barberName: string;
+  barberProfilePicture?: string;
   serviceName: string;
   servicePrice: number;
   scheduledAt: string;
@@ -293,8 +294,16 @@ export default function BookingPaymentPage() {
 
           {/* Barber Info */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-4">
-            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-              <User className="w-6 h-6 text-primary-600" />
+            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+              {bookingDetails.barberProfilePicture ? (
+                <img 
+                  src={bookingDetails.barberProfilePicture} 
+                  alt={bookingDetails.barberName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-6 h-6 text-primary-600" />
+              )}
             </div>
             <div>
               <p className="font-semibold text-gray-900">{bookingDetails.barberName}</p>

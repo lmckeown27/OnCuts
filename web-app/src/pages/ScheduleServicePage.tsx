@@ -108,6 +108,7 @@ export default function ScheduleServicePage() {
           barberName: barber?.user?.first_name 
             ? `${barber.user.first_name} ${barber.user.last_name}` 
             : 'Barber',
+          barberProfilePicture: barber?.profile_picture_url || barber?.profile_photo_url,
           serviceName: serviceType,
           servicePrice: servicePrice,
           scheduledAt: scheduledAt,

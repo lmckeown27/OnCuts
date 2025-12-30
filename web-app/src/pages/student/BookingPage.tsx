@@ -419,7 +419,9 @@ export default function BookingPage() {
                     navigate('/web/student/booking/payment', {
                       state: {
                         barberId: barberId,
+                        barberUserId: barber?.user_id,
                         barberName: `${barber?.user?.first_name} ${barber?.user?.last_name}`,
+                        barberProfilePicture: barber?.profile_picture_url || barber?.profile_photo_url,
                         serviceName: bookingData.service.name,
                         servicePrice: bookingData.service.price,
                         scheduledAt: scheduledTime.toISOString(),
