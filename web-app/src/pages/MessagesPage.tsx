@@ -537,10 +537,10 @@ export default function MessagesPage() {
               )}
             </div>
 
-            {/* Service Details Button */}
+            {/* Service Details Button - Mobile Only (panel is visible on desktop) */}
             <button 
               onClick={() => setShowServiceDetails(true)}
-              className="p-2 hover:bg-primary-50 rounded-lg transition-colors"
+              className="md:hidden p-2 hover:bg-primary-50 rounded-lg transition-colors"
               title="View Service Details"
             >
               <Info className="w-5 h-5 text-primary-600" />
@@ -798,16 +798,148 @@ export default function MessagesPage() {
 
       {/* Messages Content */}
       <div className="flex-1 overflow-hidden">
-        {/* Desktop Layout - Side by Side */}
+        {/* Desktop Layout - Three Column */}
         <div className="hidden md:flex h-full">
           {/* Conversation List - Fixed Width */}
           <div className="w-80 lg:w-96 border-r border-gray-200 bg-white flex-shrink-0">
             {renderConversationList()}
           </div>
           
-          {/* Chat View - Flexible Width */}
-          <div className="flex-1">
+          {/* Chat View - Reduced Width */}
+          <div className="flex-1 max-w-2xl border-r border-gray-200">
             {renderChatView()}
+          </div>
+
+          {/* Service Details Panel - Right Side (Desktop Only) */}
+          <div className="w-80 lg:w-96 bg-white flex-shrink-0 overflow-y-auto">
+            {selectedConversation?.booking ? (
+              <div className="h-full flex flex-col">
+                {/* Panel Header */}
+                <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-5 py-4">
+                  <h2 className="text-lg font-bold text-white">Service Details</h2>
+                  <p className="text-white/80 text-sm">Booking Information</p>
+                </div>
+
+                {/* Panel Content */}
+                <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+                  {/* Service Name & Price */}
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center">
+                        <Scissors className="w-4 h-4 text-primary-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-sm">{selectedConversation.booking.serviceName}</h3>
+                        <p className="text-xs text-gray-500">Service</p>
+                      </div>
+                    </div>
+                    {selectedConversation.booking.servicePrice && (
+                      <p className="text-base font-bold text-gray-900">${selectedConversation.booking.servicePrice}</p>
+                    )}
+                  </div>
+
+                  {/* Date & Time */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="text-xs">Date</span>
+                      </div>
+                      <p className="font-medium text-gray-900 text-sm">
+                        {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                          weekday: 'short',
+                          month: 'short', 
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span className="text-xs">Time</span>
+                      </div>
+                      <p className="font-medium text-gray-900 text-sm">
+                        {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                          hour: 'numeric', 
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span className="text-xs">Location</span>
+                    </div>
+                    <p className="font-medium text-gray-900 text-sm">{selectedConversation.booking.location || 'TBD'}</p>
+                  </div>
+
+                  {/* Status */}
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                      selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                      selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                      selectedConversation.booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                      selectedConversation.booking.status === 'cancelled' || selectedConversation.booking.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {selectedConversation.booking.status === 'pending' ? 'Awaiting Acceptance' :
+                       selectedConversation.booking.status === 'accepted' ? 'Accepted' :
+                       selectedConversation.booking.status === 'confirmed' ? 'Confirmed' :
+                       selectedConversation.booking.status === 'completed' ? 'Completed' :
+                       selectedConversation.booking.status === 'cancelled' ? 'Cancelled' :
+                       selectedConversation.booking.status === 'rejected' ? 'Rejected' :
+                       selectedConversation.booking.status}
+                    </span>
+                  </div>
+
+                  {/* Notes */}
+                  {selectedConversation.booking.notes && (
+                    <div className="p-3 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="text-xs">Notes</span>
+                      </div>
+                      <p className="text-gray-900 text-sm">{selectedConversation.booking.notes}</p>
+                    </div>
+                  )}
+
+                  {/* Barber/Consumer Info */}
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        {selectedConversation.otherUser?.profilePicture ? (
+                          <img 
+                            src={selectedConversation.otherUser.profilePicture} 
+                            alt=""
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">
+                          {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {isBarberView ? 'Customer' : 'Barber'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-gray-50">
+                <Info className="w-12 h-12 text-gray-300 mb-3" />
+                <h3 className="text-base font-semibold text-gray-600 mb-1">Service Details</h3>
+                <p className="text-sm text-gray-500">Select a conversation to view booking details</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -821,10 +953,10 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* Service Details Modal */}
+      {/* Service Details Modal - Mobile Only */}
       {showServiceDetails && selectedConversation?.booking && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:hidden"
           onClick={() => setShowServiceDetails(false)}
         >
           <div 
@@ -846,7 +978,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
               {/* Service Name & Price */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
