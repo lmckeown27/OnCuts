@@ -70,25 +70,34 @@ router.post('/', authenticate, async (req, res, next) => {
     // Convert to enum value or fallback to HAIRCUT as default
     const dbServiceType = serviceTypeMap[serviceType] || 'HAIRCUT';
 
-    // Create booking record (minimal columns that exist in production)
+    // Create booking record (all NOT NULL columns in production)
     // Use gen_random_uuid() to generate IDs since table doesn't have defaults
+    // Platform fee is 15% of price
+    const price = priceUsdCents || 0;
+    const platformFee = Math.round(price * 0.15);
+    const barberPayout = price - platformFee;
+    
     const result = await pool.query(
       `INSERT INTO bookings (
         id,
         "consumerId", 
         "barberId", 
         "serviceType", 
-        "priceUsdCents", 
+        "priceUsdCents",
+        "platformFeeUsdCents",
+        "barberPayoutUsdCents",
         "requestedAt",
         "availabilityId",
         status
-      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, gen_random_uuid(), 'PENDING')
+      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, gen_random_uuid(), 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
       [
         consumerId,
         barberUserId,
         dbServiceType,
-        priceUsdCents || 0,
+        price,
+        platformFee,
+        barberPayout,
         scheduledTime ? new Date(scheduledTime) : new Date(),
       ]
     );
