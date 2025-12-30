@@ -177,22 +177,27 @@ router.delete('/conversations/:conversationId', authenticate, async (req, res, n
         : `${conv.user2_first_name} ${conv.user2_last_name}`;
       const serviceName = conv.service_name || 'a service';
 
-      // Create notification for the other user
-      await pool.query(
-        `INSERT INTO notifications (user_id, type, title, message, data)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          otherUserId,
-          'booking_cancelled',
-          'Booking Cancelled',
-          `${deletingUserName} has cancelled the conversation about ${serviceName}.`,
-          JSON.stringify({
-            conversation_id: conversationId,
-            service_name: conv.service_name,
-            cancelled_by: userId,
-          }),
-        ]
-      );
+      // Create notification for the other user (if table exists)
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, title, message, data)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            otherUserId,
+            'booking_cancelled',
+            'Booking Cancelled',
+            `${deletingUserName} has cancelled the conversation about ${serviceName}.`,
+            JSON.stringify({
+              conversation_id: conversationId,
+              service_name: conv.service_name,
+              cancelled_by: userId,
+            }),
+          ]
+        );
+      } catch (notifError) {
+        // Don't fail the delete if notification fails (table might not exist)
+        console.warn('Failed to create cancellation notification:', notifError);
+      }
     }
 
     const result = await messageService.deleteConversation(conversationId, userId);
