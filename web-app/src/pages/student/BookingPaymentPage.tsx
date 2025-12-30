@@ -24,8 +24,8 @@ import {
 import Button from '../../components/Button';
 import Card from '../../components/Card';
 import messageService from '../../services/message.service';
+import api from '../../services/api.service';
 import { useAuthStore } from '../../store/useAuthStore';
-import { v4 as uuidv4 } from 'uuid';
 
 interface BookingDetails {
   barberId: string;
@@ -51,47 +51,50 @@ export default function BookingPaymentPage() {
   const [bookingId, setBookingId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Create conversation automatically when booking is confirmed
-  const createBookingConversation = async () => {
-    try {
-      const barberUserId = bookingDetails.barberUserId || bookingDetails.barberId;
-      if (!barberUserId) {
-        console.warn('No barber user ID available for conversation');
-        return;
-      }
-
-      // Note: We don't pass bookingId here since the booking isn't stored in the database
-      // The conversation stores all the booking context without a foreign key reference
-      await messageService.startBookingConversation(barberUserId, {
-        serviceName: bookingDetails.serviceName,
-        servicePrice: bookingDetails.servicePrice,
-        scheduledTime: bookingDetails.scheduledAt,
-        location: bookingDetails.location,
-        notes: bookingDetails.notes,
-        barberName: bookingDetails.barberName,
-        consumerName: user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Customer',
-      });
-      console.log('✅ Booking conversation created automatically');
-    } catch (error) {
-      console.error('Failed to create booking conversation:', error);
-    }
-  };
-
   // Handle booking confirmation
   const handleConfirmBooking = async () => {
     setStep('processing');
     
     try {
-      // Generate a local reference ID for display purposes
-      const newBookingId = uuidv4();
+      const barberUserId = bookingDetails.barberUserId || bookingDetails.barberId;
       
-      // Create conversation automatically (without database booking_id)
-      await createBookingConversation();
+      // 1. Create booking in database
+      const bookingResponse = await api.post<{ booking: { id: string } }>('/bookings-simple', {
+        barberId: barberUserId,
+        serviceType: bookingDetails.serviceName,
+        priceUsdCents: Math.round(bookingDetails.servicePrice * 100),
+        scheduledTime: bookingDetails.scheduledAt,
+        location: bookingDetails.location,
+        notes: bookingDetails.notes,
+      });
+      
+      const newBookingId = bookingResponse.booking.id;
+      console.log('✅ Booking created in database:', newBookingId);
+      
+      // 2. Create conversation with booking reference
+      if (barberUserId) {
+        try {
+          await messageService.startBookingConversation(barberUserId, {
+            bookingId: newBookingId,
+            serviceName: bookingDetails.serviceName,
+            servicePrice: bookingDetails.servicePrice,
+            scheduledTime: bookingDetails.scheduledAt,
+            location: bookingDetails.location,
+            notes: bookingDetails.notes,
+            barberName: bookingDetails.barberName,
+            consumerName: user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Customer',
+          });
+          console.log('✅ Booking conversation created');
+        } catch (convError) {
+          console.error('Failed to create conversation (booking still created):', convError);
+        }
+      }
       
       setBookingId(newBookingId);
       setStep('success');
-    } catch (error) {
-      setErrorMessage('Failed to confirm booking. Please try again.');
+    } catch (error: any) {
+      console.error('Failed to confirm booking:', error);
+      setErrorMessage(error?.response?.data?.error || 'Failed to confirm booking. Please try again.');
       setStep('error');
     }
   };

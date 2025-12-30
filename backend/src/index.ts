@@ -94,6 +94,9 @@ import locationAdminRoutes from './routes/admin/location-admin.routes';
 // Barber Applications
 import barberApplicationRoutes from './routes/barber-application.routes';
 
+// Simple Booking Routes (matches production schema)
+import bookingSimpleRoutes from './routes/booking-simple.routes';
+
 // Environment variables already loaded at top of file
 
 const app: Application = express();
@@ -277,6 +280,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/barbers', barberRoutes);
 app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
+app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
 app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/campus', campusRoutes);
