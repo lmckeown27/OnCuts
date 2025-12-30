@@ -163,8 +163,13 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const response = await messageService.getConversations();
-      if (response.data) {
-        setConversations(response.data as unknown as ConversationWithDetails[]);
+      // Handle both response formats: { conversations: [...] } and { data: [...] }
+      const conversationsData = (response as any).conversations || (response as any).data || [];
+      if (Array.isArray(conversationsData)) {
+        setConversations(conversationsData as ConversationWithDetails[]);
+      } else {
+        console.warn('Unexpected conversations response format:', response);
+        setConversations([]);
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
