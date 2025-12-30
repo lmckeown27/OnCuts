@@ -30,7 +30,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await messageService.getConversations();
-      set({ conversations: response.data, isLoading: false });
+      // Handle various response formats
+      const conversations = (response as any).conversations || (response as any).data?.conversations || (response as any).data || [];
+      set({ conversations: Array.isArray(conversations) ? conversations : [], isLoading: false });
     } catch (error) {
       set({ isLoading: false });
     }
@@ -40,7 +42,9 @@ export const useMessageStore = create<MessageState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await messageService.getMessages(conversationId);
-      set({ messages: response.data, isLoading: false });
+      // Handle various response formats: { messages: [...] } or { data: { messages: [...] } }
+      const messages = response.messages || (response as any).data?.messages || [];
+      set({ messages: Array.isArray(messages) ? messages : [], isLoading: false });
     } catch (error) {
       set({ isLoading: false });
     }

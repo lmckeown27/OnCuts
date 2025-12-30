@@ -441,18 +441,19 @@ export default function MessagesPage() {
       console.log('✅ Message sent, response:', response);
       
       // Replace optimistic message with real one
-      // The response should be the Message object with id, content, createdAt, etc.
+      // The response should be the Message object with id, content, created_at, etc.
+      const resp = response as any;
       const realMessage: MessageWithSender = {
-        id: response.id || optimisticMessage.id,
+        id: resp.id || optimisticMessage.id,
         conversation_id: selectedConversation.id,
         sender_id: user?.id || '',
-        content: response.content || messageContent,
-        message_type: response.messageType || response.message_type || 'text',
-        is_read: response.isRead || response.is_read || false,
-        created_at: response.createdAt || response.created_at || new Date().toISOString(),
-        createdAt: response.createdAt || response.created_at || new Date().toISOString(),
+        content: resp.content || messageContent,
+        message_type: resp.message_type || 'text',
+        is_read: resp.is_read || false,
+        created_at: resp.created_at || new Date().toISOString(),
+        createdAt: resp.created_at || new Date().toISOString(),
         isOwn: true,
-        sender: response.sender || {
+        sender: resp.sender || {
           id: user?.id || '',
           firstName: user?.first_name || '',
           lastName: user?.last_name || '',
