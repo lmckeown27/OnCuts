@@ -589,11 +589,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   </p>
                 </div>
               )}
-
-              <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-                The customer will receive a message with your reason for declining. 
-                They can contact campuscuthelp@gmail.com if they believe this was unfair.
-              </p>
             </div>
 
             {/* Footer */}
