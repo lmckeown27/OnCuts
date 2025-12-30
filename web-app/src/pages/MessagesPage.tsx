@@ -711,14 +711,18 @@ export default function MessagesPage() {
                   <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
                 </button>
               ) : (
-                <button
-                  onClick={() => navigate(`${platformPrefix}/barber`)}
-                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                  title="Switch to Barber view"
-                >
-                  <Scissors className="w-4 h-4 text-primary-600" />
-                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
-                </button>
+                // Only show "Switch to Barber" if user is a barber, otherwise navigate to consumer page
+                // where "Become a Barber" flow exists
+                (user?.user_type === 'barber' || user?.user_type === 'BARBER' || user?.user_type === 'campus_manager' || user?.user_type === 'CAMPUS_MANAGER') ? (
+                  <button
+                    onClick={() => navigate(`${platformPrefix}/barber`)}
+                    className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                    title="Switch to Barber view"
+                  >
+                    <Scissors className="w-4 h-4 text-primary-600" />
+                    <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
+                  </button>
+                ) : null
               )}
             </div>
             
