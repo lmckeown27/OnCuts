@@ -32,6 +32,7 @@ import Button from '../../components/Button';
 import Card from '../../components/Card';
 import messageService from '../../services/message.service';
 import { useAuthStore } from '../../store/useAuthStore';
+import { v4 as uuidv4 } from 'uuid';
 
 interface BookingDetails {
   barberId: string;
@@ -163,8 +164,8 @@ export default function BookingPaymentPage() {
   // Handle "Pay Later" booking confirmation
   const handlePayLater = async () => {
     setStep('processing');
-    // Simulate booking confirmation without payment
-    const newBookingId = `booking-pending-${Date.now()}`;
+    // Generate a proper UUID for the booking so multiple bookings can be created
+    const newBookingId = uuidv4();
     
     // Create conversation automatically
     await createBookingConversation(newBookingId);
@@ -241,9 +242,9 @@ export default function BookingPaymentPage() {
 
     setStep('processing');
 
-    // Simulate payment processing
-    // TODO: Replace with actual Stripe payment intent creation
-    const newPaymentIntentId = `pi_${Date.now()}_mock`;
+    // Generate a proper UUID for the booking so multiple bookings can be created
+    // TODO: Replace with actual Stripe payment intent ID from backend
+    const newPaymentIntentId = uuidv4();
     
     // Create conversation automatically
     await createBookingConversation(newPaymentIntentId);
