@@ -72,9 +72,9 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Create booking record (all NOT NULL columns in production)
     // Use gen_random_uuid() to generate IDs since table doesn't have defaults
-    // Platform fee is 15% of price
+    // Platform fee is 5% of price
     const price = priceUsdCents || 0;
-    const platformFee = Math.round(price * 0.15);
+    const platformFee = Math.round(price * 0.05);
     const barberPayout = price - platformFee;
     
     const result = await pool.query(
