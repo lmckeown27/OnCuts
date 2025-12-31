@@ -801,33 +801,82 @@ router.put('/:id', authenticate, async (req, res, next) => {
     }
 
     // Update location and/or notes on conversations table (if linked)
-    if ((location !== undefined || notes !== undefined) && booking.conversation_id) {
-      const convUpdates: string[] = [];
-      const convValues: any[] = [];
-      let convParamIndex = 1;
+    if (location !== undefined || notes !== undefined) {
+      if (booking.conversation_id) {
+        const convUpdates: string[] = [];
+        const convValues: any[] = [];
+        let convParamIndex = 1;
 
-      if (location !== undefined) {
-        convUpdates.push(`location = $${convParamIndex++}`);
-        convValues.push(location);
-        updatedLocation = location;
-      }
-      if (notes !== undefined) {
-        convUpdates.push(`notes = $${convParamIndex++}`);
-        convValues.push(notes);
-        updatedNotes = notes;
-      }
+        if (location !== undefined) {
+          convUpdates.push(`location = $${convParamIndex++}`);
+          convValues.push(location);
+          updatedLocation = location;
+        }
+        if (notes !== undefined) {
+          convUpdates.push(`notes = $${convParamIndex++}`);
+          convValues.push(notes);
+          updatedNotes = notes;
+        }
 
-      if (convUpdates.length > 0) {
-        convUpdates.push(`updated_at = CURRENT_TIMESTAMP`);
-        convValues.push(booking.conversation_id);
+        if (convUpdates.length > 0) {
+          convUpdates.push(`updated_at = CURRENT_TIMESTAMP`);
+          convValues.push(booking.conversation_id);
 
-        await pool.query(
-          `UPDATE conversations 
-           SET ${convUpdates.join(', ')}
-           WHERE id = $${convParamIndex}`,
-          convValues
+          await pool.query(
+            `UPDATE conversations 
+             SET ${convUpdates.join(', ')}
+             WHERE id = $${convParamIndex}`,
+            convValues
+          );
+          logger.info(`Updated conversation ${booking.conversation_id} location/notes`);
+        }
+      } else {
+        // No linked conversation - try to find or create one
+        logger.warn(`Booking ${id} has no linked conversation, attempting to find by participants`);
+        
+        // Try to find existing conversation between barber and consumer
+        const convSearch = await pool.query(
+          `SELECT id FROM conversations 
+           WHERE (user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1)
+           LIMIT 1`,
+          [userId, booking.consumerId]
         );
-        logger.info(`Updated conversation ${booking.conversation_id} location/notes`);
+
+        if (convSearch.rows.length > 0) {
+          const convId = convSearch.rows[0].id;
+          
+          // Link conversation to booking and update fields
+          const convUpdates: string[] = [`booking_id = '${id}'`];
+          const convValues: any[] = [];
+          let convParamIndex = 1;
+
+          if (location !== undefined) {
+            convUpdates.push(`location = $${convParamIndex++}`);
+            convValues.push(location);
+            updatedLocation = location;
+          }
+          if (notes !== undefined) {
+            convUpdates.push(`notes = $${convParamIndex++}`);
+            convValues.push(notes);
+            updatedNotes = notes;
+          }
+
+          convUpdates.push(`updated_at = CURRENT_TIMESTAMP`);
+          convValues.push(convId);
+
+          await pool.query(
+            `UPDATE conversations 
+             SET ${convUpdates.join(', ')}
+             WHERE id = $${convParamIndex}`,
+            convValues
+          );
+          logger.info(`Linked and updated conversation ${convId} for booking ${id}`);
+        } else {
+          logger.warn(`No conversation found for booking ${id} - location/notes not saved`);
+          // Still update the response values so frontend shows what user entered
+          if (location !== undefined) updatedLocation = location;
+          if (notes !== undefined) updatedNotes = notes;
+        }
       }
     }
 
