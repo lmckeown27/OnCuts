@@ -30,11 +30,10 @@ export default function BookingDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
-  // Editable fields
+  // Editable fields (notes are read-only - set by consumer)
   const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
   const [editedTime, setEditedTime] = useState(''); // HH:MM (24-hour for TimePickerDropdown)
   const [editedLocation, setEditedLocation] = useState('');
-  const [editedNotes, setEditedNotes] = useState('');
   
   // Store original date parts for smart autocomplete
   const [originalDateParts, setOriginalDateParts] = useState<{ month: number; day: number; year: number } | null>(null);
@@ -132,7 +131,6 @@ export default function BookingDetailsModal({
       setEditedDate(formatDateForDisplay(scheduledTime));
       setEditedTime(formatTimeFor24Hour(scheduledTime));
       setEditedLocation(booking.location || '');
-      setEditedNotes(booking.notes || '');
       // Store original date parts for smart autocomplete
       setOriginalDateParts({
         month: scheduledTime.getMonth() + 1,
@@ -174,7 +172,6 @@ export default function BookingDetailsModal({
       await api.put(`/bookings-simple/${booking.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
         location: editedLocation || null,
-        notes: editedNotes || null,
       });
 
       toast.success('Booking updated successfully!');
@@ -186,7 +183,7 @@ export default function BookingDetailsModal({
     } finally {
       setIsSaving(false);
     }
-  }, [editedDate, editedTime, editedLocation, editedNotes, booking, onBookingUpdated]);
+  }, [editedDate, editedTime, editedLocation, booking, onBookingUpdated]);
 
   // Handle Enter key to save changes
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -369,24 +366,15 @@ export default function BookingDetailsModal({
                 />
               </div>
 
-              {/* Notes - Ctrl/Cmd+Enter to save from textarea */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={editedNotes}
-                  onChange={(e) => setEditedNotes(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Use Ctrl+Enter or Cmd+Enter to save from textarea (since Enter adds newlines)
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !isSaving) {
-                      e.preventDefault();
-                      handleSaveChanges();
-                    }
-                  }}
-                  placeholder="Any notes about the booking..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
-                  rows={3}
-                />
-              </div>
+              {/* Consumer Notes - Read-only display */}
+              {booking.notes && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Notes</label>
+                  <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 italic">
+                    "{booking.notes}"
+                  </div>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
