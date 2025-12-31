@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import Avatar from '../components/Avatar';
@@ -649,6 +649,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
@@ -1088,22 +1089,24 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
         {/* Monthly View */}
         {scheduleView === 'monthly' && (() => {
           const today = new Date();
-          const currentMonth = today.getMonth();
-          const currentYear = today.getFullYear();
+          // Calculate the displayed month based on offset
+          const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+          const displayMonth = displayDate.getMonth();
+          const displayYear = displayDate.getFullYear();
           
           // Get first day of month and number of days
-          const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
-          const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+          const firstDayOfMonth = new Date(displayYear, displayMonth, 1);
+          const lastDayOfMonth = new Date(displayYear, displayMonth + 1, 0);
           const daysInMonth = lastDayOfMonth.getDate();
           const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
           
-          const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          const monthName = displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
           
           // Group bookings by day of month
           const monthAppointmentsByDay: { [day: number]: ConfirmedBooking[] } = {};
           confirmedBookings.forEach(booking => {
             const bookingDate = new Date(booking.scheduledTime);
-            if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
+            if (bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear) {
               const day = bookingDate.getDate();
               if (!monthAppointmentsByDay[day]) {
                 monthAppointmentsByDay[day] = [];
@@ -1126,7 +1129,29 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{monthName}</h3>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setMonthOffset(prev => prev - 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">{monthName}</h3>
+                  <button 
+                    onClick={() => setMonthOffset(prev => prev + 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                  {monthOffset !== 0 && (
+                    <button 
+                      onClick={() => setMonthOffset(0)}
+                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                    >
+                      Today
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm sm:text-base text-gray-600 font-medium">{totalMonthAppointments} appointment{totalMonthAppointments !== 1 ? 's' : ''} this month</p>
               </div>
               <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
