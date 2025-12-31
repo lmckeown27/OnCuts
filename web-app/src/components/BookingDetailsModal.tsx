@@ -2,7 +2,7 @@
  * BookingDetailsModal - In-depth booking details popup for barbers
  * Allows viewing all booking details and editing/cancelling bookings
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
   Edit3, Trash2, Check, AlertTriangle, Star, MessageSquare,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
+import TimePickerDropdown from './TimePickerDropdown';
 
 interface BookingDetailsModalProps {
   isOpen: boolean;
@@ -29,28 +30,25 @@ export default function BookingDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
-  // Editable fields - using human-readable formats
+  // Editable fields
   const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
-  const [editedTime, setEditedTime] = useState(''); // h:mm AM/PM
+  const [editedTime, setEditedTime] = useState(''); // HH:MM (24-hour for TimePickerDropdown)
   const [editedLocation, setEditedLocation] = useState('');
   const [editedNotes, setEditedNotes] = useState('');
 
   // Format date as MM/DD/YYYY
-  const formatDateDisplay = (date: Date): string => {
+  const formatDateForDisplay = (date: Date): string => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const year = date.getFullYear();
     return `${month}/${day}/${year}`;
   };
 
-  // Format time as h:mm AM/PM
-  const formatTimeDisplay = (date: Date): string => {
-    let hours = date.getHours();
+  // Format time as HH:MM (24-hour) for TimePickerDropdown
+  const formatTimeFor24Hour = (date: Date): string => {
+    const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // 0 should be 12
-    return `${hours}:${minutes} ${ampm}`;
+    return `${hours}:${minutes}`;
   };
 
   // Auto-format date input (MM/DD/YYYY)
@@ -76,47 +74,6 @@ export default function BookingDetailsModal({
     setEditedDate(formatted);
   };
 
-  // Auto-format time input (h:mm AM/PM)
-  const handleTimeChange = (value: string) => {
-    // Convert to uppercase for AM/PM
-    value = value.toUpperCase();
-    
-    // Extract digits and AM/PM
-    const digits = value.replace(/[^0-9]/g, '');
-    const hasA = value.includes('A');
-    const hasP = value.includes('P');
-    
-    let formatted = '';
-    
-    if (digits.length > 0) {
-      // Handle hour (1-12)
-      let hour = digits.slice(0, digits.length >= 3 ? (parseInt(digits[0]) > 1 ? 1 : 2) : Math.min(2, digits.length));
-      if (parseInt(hour) > 12) hour = '12';
-      if (parseInt(hour) === 0) hour = '1';
-      formatted = hour;
-    }
-    
-    if (digits.length >= 2) {
-      // Handle minutes
-      const hourLen = parseInt(digits[0]) > 1 ? 1 : 2;
-      const minuteDigits = digits.slice(hourLen, hourLen + 2);
-      if (minuteDigits.length > 0) {
-        let mins = parseInt(minuteDigits.slice(0, 2)) || 0;
-        if (mins > 59) mins = 59;
-        formatted += ':' + String(mins).padStart(2, '0');
-      }
-    }
-    
-    // Add AM/PM
-    if (hasA) {
-      formatted += ' AM';
-    } else if (hasP) {
-      formatted += ' PM';
-    }
-    
-    setEditedTime(formatted);
-  };
-
   // Parse MM/DD/YYYY to Date components
   const parseDateInput = (dateStr: string): { month: number; day: number; year: number } | null => {
     const parts = dateStr.split('/');
@@ -131,24 +88,14 @@ export default function BookingDetailsModal({
     return { month, day, year };
   };
 
-  // Parse h:mm AM/PM to 24-hour time
+  // Parse HH:MM (24-hour) to hours and minutes
   const parseTimeInput = (timeStr: string): { hours: number; minutes: number } | null => {
-    const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-    if (!match) return null;
-    let hours = parseInt(match[1]);
-    const minutes = parseInt(match[2]);
-    const ampm = match[3]?.toUpperCase();
-    
-    if (hours < 1 || hours > 12) return null;
+    const [hourStr, minuteStr] = timeStr.split(':');
+    const hours = parseInt(hourStr);
+    const minutes = parseInt(minuteStr);
+    if (isNaN(hours) || isNaN(minutes)) return null;
+    if (hours < 0 || hours > 23) return null;
     if (minutes < 0 || minutes > 59) return null;
-    
-    // Convert to 24-hour format
-    if (ampm === 'PM' && hours !== 12) {
-      hours += 12;
-    } else if (ampm === 'AM' && hours === 12) {
-      hours = 0;
-    }
-    
     return { hours, minutes };
   };
 
@@ -156,8 +103,8 @@ export default function BookingDetailsModal({
   useEffect(() => {
     if (booking) {
       const scheduledTime = new Date(booking.scheduledTime);
-      setEditedDate(formatDateDisplay(scheduledTime));
-      setEditedTime(formatTimeDisplay(scheduledTime));
+      setEditedDate(formatDateForDisplay(scheduledTime));
+      setEditedTime(formatTimeFor24Hour(scheduledTime));
       setEditedLocation(booking.location || '');
       setEditedNotes(booking.notes || '');
     }
@@ -190,7 +137,7 @@ export default function BookingDetailsModal({
     }
   };
 
-  const handleSaveChanges = async () => {
+  const handleSaveChanges = useCallback(async () => {
     // Validate date format
     const dateParts = parseDateInput(editedDate);
     if (!dateParts) {
@@ -198,10 +145,10 @@ export default function BookingDetailsModal({
       return;
     }
 
-    // Validate time format
+    // Validate time format (HH:MM from dropdown)
     const timeParts = parseTimeInput(editedTime);
     if (!timeParts) {
-      toast.error('Please enter a valid time (e.g., 9:30 AM)');
+      toast.error('Please select a valid time');
       return;
     }
 
@@ -231,7 +178,15 @@ export default function BookingDetailsModal({
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [editedDate, editedTime, editedLocation, editedNotes, booking?.id, onBookingUpdated]);
+
+  // Handle Enter key to save changes
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && isEditing && !isSaving) {
+      e.preventDefault();
+      handleSaveChanges();
+    }
+  }, [isEditing, isSaving, handleSaveChanges]);
 
   const handleCancelBooking = async () => {
     setIsSaving(true);
@@ -352,17 +307,15 @@ export default function BookingDetailsModal({
                     placeholder="MM/DD/YYYY"
                     value={editedDate}
                     onChange={(e) => handleDateChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="text"
-                    placeholder="9:00 AM"
+                  <TimePickerDropdown
                     value={editedTime}
-                    onChange={(e) => handleTimeChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    onChange={setEditedTime}
                   />
                 </div>
               </div>
@@ -374,17 +327,25 @@ export default function BookingDetailsModal({
                   type="text"
                   value={editedLocation}
                   onChange={(e) => setEditedLocation(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter location..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                 />
               </div>
 
-              {/* Notes */}
+              {/* Notes - Ctrl/Cmd+Enter to save from textarea */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                 <textarea
                   value={editedNotes}
                   onChange={(e) => setEditedNotes(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Use Ctrl+Enter or Cmd+Enter to save from textarea (since Enter adds newlines)
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !isSaving) {
+                      e.preventDefault();
+                      handleSaveChanges();
+                    }
+                  }}
                   placeholder="Any notes about the booking..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
                   rows={3}
