@@ -28,6 +28,7 @@ export default function BookingDetailsModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
   // Editable fields (notes are read-only - set by consumer)
@@ -240,8 +241,28 @@ export default function BookingDetailsModal({
     }
   };
 
+  const handleCompleteBooking = async () => {
+    setIsCompleting(true);
+    try {
+      const response = await api.put(`/bookings-simple/${booking.id}/complete`);
+      if (response.success) {
+        toast.success('Service marked complete! Payment request sent to customer.');
+        onClose();
+        onBookingUpdated?.();
+      } else {
+        toast.error(response.error || 'Failed to complete booking');
+      }
+    } catch (error: any) {
+      console.error('Failed to complete booking:', error);
+      toast.error(error.message || 'Failed to complete booking');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
   const canEdit = booking.status === 'ACCEPTED';
   const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
+  const canComplete = booking.status === 'ACCEPTED';
 
   return (
     <div
@@ -553,25 +574,51 @@ export default function BookingDetailsModal({
               </div>
 
               {/* Action Buttons */}
-              {(canEdit || canCancel) && (
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
-                  {canEdit && (
+              {(canComplete || canEdit || canCancel) && (
+                <div className="space-y-3 pt-4 border-t border-gray-100">
+                  {/* Complete Booking Button - Primary Action */}
+                  {canComplete && (
                     <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      onClick={handleCompleteBooking}
+                      disabled={isCompleting}
+                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Edit3 className="w-4 h-4" />
-                      Edit Booking
+                      {isCompleting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Complete Booking
+                        </>
+                      )}
                     </button>
                   )}
-                  {canCancel && (
-                    <button
-                      onClick={() => setIsDeleting(true)}
-                      className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-red-200"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Cancel Booking
-                    </button>
+                  
+                  {/* Edit & Cancel Buttons */}
+                  {(canEdit || canCancel) && (
+                    <div className="flex gap-3">
+                      {canEdit && (
+                        <button
+                          onClick={() => setIsEditing(true)}
+                          className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          Edit Booking
+                        </button>
+                      )}
+                      {canCancel && (
+                        <button
+                          onClick={() => setIsDeleting(true)}
+                          className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-red-200"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Cancel Booking
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
