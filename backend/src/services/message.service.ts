@@ -335,16 +335,15 @@ class MessageService {
         }
       }
 
-      // Create new conversation with booking context
-      // Note: booking_id is not used since bookings aren't stored in a separate table
+      // Create new conversation with booking context - includes booking_id link
       const result = await pool.query(
         `INSERT INTO conversations (
           user1_id, user2_id, 
           service_name, service_price, scheduled_time, 
           location, notes, booking_status,
-          barber_name, consumer_name
+          barber_name, consumer_name, booking_id
         )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id, created_at`,
         [
           userId, 
@@ -357,6 +356,7 @@ class MessageService {
           'pending',
           bookingContext?.barberName || null,
           bookingContext?.consumerName || null,
+          bookingContext?.bookingId || null,  // Link to bookings table
         ]
       );
 
