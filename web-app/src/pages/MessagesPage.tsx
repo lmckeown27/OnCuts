@@ -131,6 +131,7 @@ export default function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasScrolledRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Determine the view based on the URL path
@@ -169,33 +170,29 @@ export default function MessagesPage() {
     consumerProfilePicture?: string;
   } | null;
 
-  // Scroll to bottom of messages - multiple attempts to ensure it works
+  // Scroll to bottom of messages - use scrollIntoView on the end marker
   const scrollToBottom = useCallback((instant = false) => {
-    const doScroll = () => {
+    const scrollToEnd = () => {
+      // Method 1: Use the end marker element
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: instant ? 'auto' : 'smooth',
+          block: 'end'
+        });
+      }
+      // Method 2: Also try setting scrollTop directly as backup
       const container = messagesContainerRef.current;
       if (container) {
-        if (instant) {
-          container.scrollTop = container.scrollHeight;
-        } else {
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth'
-          });
-        }
+        container.scrollTop = container.scrollHeight;
       }
     };
     
-    // Multiple scroll attempts to handle async rendering
-    // Immediate scroll
-    doScroll();
-    // After React render cycle
-    requestAnimationFrame(() => {
-      doScroll();
-      // After a short delay for images/content to load
-      setTimeout(doScroll, 50);
-      // Final attempt after longer delay
-      setTimeout(doScroll, 200);
-    });
+    // Multiple scroll attempts at different timings
+    scrollToEnd();
+    requestAnimationFrame(scrollToEnd);
+    setTimeout(scrollToEnd, 100);
+    setTimeout(scrollToEnd, 300);
+    setTimeout(scrollToEnd, 500);
   }, []);
 
   // Fetch conversations
