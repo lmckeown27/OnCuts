@@ -328,6 +328,18 @@ export default function ConsumerBookingStatusPage() {
                   <p className="text-sm text-gray-500 truncate">{user?.email}</p>
                 </div>
                 
+                {/* Notifications */}
+                <button
+                  onClick={() => {
+                    navigate(`${platformPrefix}/consumer`);
+                    setShowProfileDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                >
+                  <Bell className="w-4 h-4 text-gray-500" />
+                  Notifications
+                </button>
+                
                 {/* Edit Profile */}
                 <button
                   onClick={() => {

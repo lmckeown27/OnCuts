@@ -482,7 +482,7 @@ CampusCut Team
     </p>
     
     <p style="color: #6b7280; font-size: 14px; text-align: center;">
-      We're excited to help you look your best! 💈
+      We're excited to help you look your best!
     </p>
   </div>
   
@@ -644,7 +644,7 @@ function generateBookingConfirmationHtml(
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
-    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Booking Confirmed! ✅</p>
+    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">Booking Confirmed!</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
@@ -879,7 +879,7 @@ function generatePendingBookingHtml(
     <!-- Status Badge -->
     <div style="text-align: center; margin: 20px 0;">
       <span style="display: inline-block; background-color: ${statusColor}20; color: ${statusColor}; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px;">
-        ⏳ ${statusText}
+        ${statusText}
       </span>
     </div>
     
@@ -1004,13 +1004,13 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
-    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">📅 Booking Updated</p>
+    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">Booking Updated</p>
   </div>
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${details.consumerName.split(' ')[0]}!</h2>
     <p style="color: #6b7280; margin: 0 0 20px 0;">${details.barberName} has rescheduled your appointment</p>
     <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
-      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚡ What Changed</h3>
+      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">What Changed</h3>
       <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
       <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
     </div>
@@ -1052,13 +1052,13 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
-    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">📅 Booking Updated</p>
+    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">Booking Updated</p>
   </div>
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${details.barberName.split(' ')[0]}!</h2>
     <p style="color: #6b7280; margin: 0 0 20px 0;">Confirmation of your changes</p>
     <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
-      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚡ What Changed</h3>
+      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">What Changed</h3>
       <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
       <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
     </div>
@@ -1072,7 +1072,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
       <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
       <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
     </div>
-    <p style="color: #166534; text-align: center; font-size: 14px;">✅ The customer has been notified of this change.</p>
+    <p style="color: #166534; text-align: center; font-size: 14px;">The customer has been notified of this change.</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Booking</a>
     </p>

@@ -689,7 +689,7 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
       type: 'payment_received',
-      title: 'Payment Received! 💰',
+      title: 'Payment Received!',
       message: `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
       data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents },
     });
@@ -782,11 +782,10 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
     }
 
     // Notify barber of new review
-    const starEmoji = rating >= 4 ? '⭐' : rating >= 3 ? '👍' : '📝';
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
       type: 'new_review',
-      title: `New ${rating}-Star Review ${starEmoji}`,
+      title: `New ${rating}-Star Review`,
       message: `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
       data: { bookingId: id, rating, comment },
     });
@@ -981,7 +980,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
         await notificationService.saveNotification({
           userId: booking.consumerId,
           type: 'booking_updated',
-          title: 'Booking Updated 📅',
+          title: 'Booking Updated',
           message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
           data: { 
             bookingId: id, 
@@ -995,7 +994,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
         await notificationService.saveNotification({
           userId: booking.barber_user_id,
           type: 'booking_updated',
-          title: 'Booking Updated 📅',
+          title: 'Booking Updated',
           message: `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
           data: { 
             bookingId: id, 
@@ -1144,7 +1143,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       await notificationService.saveNotification({
         userId: booking.consumerId,
         type: 'booking_cancelled',
-        title: 'Booking Cancelled ❌',
+        title: 'Booking Cancelled',
         message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
         data: { bookingId: id, reason, cancelledBy: 'barber' },
       });
@@ -1153,7 +1152,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       await notificationService.saveNotification({
         userId: booking.barber_user_id,
         type: 'booking_cancelled',
-        title: 'Booking Cancelled ❌',
+        title: 'Booking Cancelled',
         message: `${consumerName} has cancelled their ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
         data: { bookingId: id, reason, cancelledBy: 'consumer' },
       });

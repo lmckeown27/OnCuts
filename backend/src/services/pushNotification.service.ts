@@ -412,10 +412,9 @@ class PushNotificationService {
     studentName: string,
     rating: number
   ): Promise<any> {
-    const stars = '⭐'.repeat(rating);
     const notification: NotificationData = {
       title: 'New Review!',
-      body: `${studentName} rated you ${stars}`,
+      body: `${studentName} rated you ${rating} stars`,
       type: 'review',
       category: 'REVIEW_CATEGORY',
       sound: 'default',

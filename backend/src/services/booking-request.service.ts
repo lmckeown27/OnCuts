@@ -469,7 +469,7 @@ export class BookingRequestService {
         await notificationService.saveNotification({
           userId: consumerUserId,
           type: 'booking_accepted',
-          title: 'Booking Accepted! ✅',
+          title: 'Booking Accepted!',
           message: `${barberName} accepted your booking request`,
           data: { conversationId, bookingId: linkedBookingId },
         });
@@ -526,7 +526,7 @@ export class BookingRequestService {
       await notificationService.saveNotification({
         userId: consumerId,
         type: 'booking_accepted',
-        title: 'Booking Accepted! ✅',
+        title: 'Booking Accepted!',
         message: `${barberName} accepted your booking request`,
         data: { bookingId },
       });

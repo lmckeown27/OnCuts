@@ -127,7 +127,7 @@ class NotificationService {
   async notifyBookingConfirmed(bookingId: number, clientId: string, barberName: string): Promise<void> {
     await this.sendPushNotification({
       userId: clientId,
-      title: 'Booking Confirmed! ✅',
+      title: 'Booking Confirmed!',
       body: `${barberName} confirmed your appointment`,
       data: { bookingId: bookingId.toString(), type: 'booking_confirmed' },
     });
