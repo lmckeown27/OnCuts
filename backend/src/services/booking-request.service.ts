@@ -165,6 +165,22 @@ export class BookingRequestService {
       `, [barberId]);
 
       bookingsResult.rows.forEach(row => {
+        // Format service type: "HAIRCUT" -> "Haircut", "BEARD_TRIM" -> "Beard Trim"
+        const formatServiceType = (type: string) => {
+          if (!type) return 'Haircut';
+          return type
+            .toLowerCase()
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+        };
+        
+        // Format time: ISO string -> "6:15 PM"
+        const formatTime = (date: Date | string) => {
+          if (!date) return '';
+          const d = new Date(date);
+          return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        };
+        
         requests.push({
           bookingId: row.booking_id,
           customerId: row.customer_id,
@@ -186,9 +202,9 @@ export class BookingRequestService {
             },
           },
           barberId: row.barber_id,
-          serviceType: row.service_type || 'Haircut',
+          serviceType: formatServiceType(row.service_type),
           requestedDate: row.requested_date,
-          requestedTime: row.requested_time,
+          requestedTime: formatTime(row.requested_time),
           price: parseFloat(row.price) || 0,
           message: '',
           status: row.status,
