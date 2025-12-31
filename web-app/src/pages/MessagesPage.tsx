@@ -170,29 +170,12 @@ export default function MessagesPage() {
     consumerProfilePicture?: string;
   } | null;
 
-  // Scroll to bottom of messages - use scrollIntoView on the end marker
-  const scrollToBottom = useCallback((instant = false) => {
-    const scrollToEnd = () => {
-      // Method 1: Use the end marker element
-      if (messagesEndRef.current) {
-        messagesEndRef.current.scrollIntoView({ 
-          behavior: instant ? 'auto' : 'smooth',
-          block: 'end'
-        });
-      }
-      // Method 2: Also try setting scrollTop directly as backup
-      const container = messagesContainerRef.current;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    };
-    
-    // Multiple scroll attempts at different timings
-    scrollToEnd();
-    requestAnimationFrame(scrollToEnd);
-    setTimeout(scrollToEnd, 100);
-    setTimeout(scrollToEnd, 300);
-    setTimeout(scrollToEnd, 500);
+  // Scroll to bottom of messages
+  const scrollToBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, []);
 
   // Fetch conversations
@@ -414,26 +397,15 @@ export default function MessagesPage() {
     };
   }, [selectedConversation, fetchConversations, scrollToBottom]);
 
-  // Scroll to bottom when messages change (instant on first load)
-  // Use useLayoutEffect for synchronous scroll before browser paint
-  const isFirstLoadRef = useRef(true);
+  // Scroll to bottom when messages change
   useLayoutEffect(() => {
     if (messages.length > 0) {
-      // Immediate synchronous scroll
-      const container = messagesContainerRef.current;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-      // Also use the scrollToBottom for additional attempts
-      scrollToBottom(isFirstLoadRef.current);
-      isFirstLoadRef.current = false;
+      scrollToBottom();
+      // Additional attempts with delays in case content is still loading
+      setTimeout(scrollToBottom, 50);
+      setTimeout(scrollToBottom, 150);
     }
   }, [messages, scrollToBottom]);
-  
-  // Reset first load flag when conversation changes
-  useEffect(() => {
-    isFirstLoadRef.current = true;
-  }, [selectedConversation?.id]);
   
   // Additional scroll after conversation selection
   useEffect(() => {
@@ -806,7 +778,16 @@ export default function MessagesPage() {
         </div>
 
         {/* Messages */}
-        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
+        <div 
+          ref={(el) => {
+            messagesContainerRef.current = el;
+            // Scroll to bottom immediately when container is mounted or messages change
+            if (el && messages.length > 0) {
+              el.scrollTop = el.scrollHeight;
+            }
+          }} 
+          className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50"
+        >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-gray-500">No messages yet. Start the conversation!</p>
