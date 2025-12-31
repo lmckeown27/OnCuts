@@ -747,7 +747,8 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
 /**
  * PUT /api/v1/bookings-simple/:id
  * Edit booking details (barber only for ACCEPTED bookings)
- * Editable fields: scheduledTime, location, notes
+ * - scheduledTime updates the bookings table ("requestedAt" column)
+ * - location and notes update the linked conversations table
  */
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
@@ -757,12 +758,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     // First, verify the booking exists and belongs to this barber
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", bar."userId" as barber_user_id,
+      `SELECT b.id, b.status, b."consumerId", b."requestedAt", bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
-              u_consumer.email as consumer_email
+              u_consumer.email as consumer_email,
+              c.id as conversation_id, c.location as conv_location, c.notes as conv_notes
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       LEFT JOIN conversations c ON c.booking_id = b.id
        WHERE b.id = $1 AND bar."userId" = $2`,
       [id, userId]
     );
@@ -781,40 +784,52 @@ router.put('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Build dynamic update query
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    let updatedScheduledTime = booking.requestedAt;
+    let updatedLocation = booking.conv_location;
+    let updatedNotes = booking.conv_notes;
 
+    // Update scheduledTime on bookings table
     if (scheduledTime !== undefined) {
-      // Note: Database column is "requestedAt", we use "scheduledTime" as alias in frontend
-      updates.push(`"requestedAt" = $${paramIndex++}`);
-      values.push(scheduledTime);
-    }
-    if (location !== undefined) {
-      updates.push(`location = $${paramIndex++}`);
-      values.push(location);
-    }
-    if (notes !== undefined) {
-      updates.push(`notes = $${paramIndex++}`);
-      values.push(notes);
+      await pool.query(
+        `UPDATE bookings 
+         SET "requestedAt" = $1, "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $2`,
+        [scheduledTime, id]
+      );
+      updatedScheduledTime = scheduledTime;
+      logger.info(`Updated booking ${id} scheduledTime to ${scheduledTime}`);
     }
 
-    if (updates.length === 0) {
-      return res.status(400).json({ success: false, error: 'No fields to update' });
+    // Update location and/or notes on conversations table (if linked)
+    if ((location !== undefined || notes !== undefined) && booking.conversation_id) {
+      const convUpdates: string[] = [];
+      const convValues: any[] = [];
+      let convParamIndex = 1;
+
+      if (location !== undefined) {
+        convUpdates.push(`location = $${convParamIndex++}`);
+        convValues.push(location);
+        updatedLocation = location;
+      }
+      if (notes !== undefined) {
+        convUpdates.push(`notes = $${convParamIndex++}`);
+        convValues.push(notes);
+        updatedNotes = notes;
+      }
+
+      if (convUpdates.length > 0) {
+        convUpdates.push(`updated_at = CURRENT_TIMESTAMP`);
+        convValues.push(booking.conversation_id);
+
+        await pool.query(
+          `UPDATE conversations 
+           SET ${convUpdates.join(', ')}
+           WHERE id = $${convParamIndex}`,
+          convValues
+        );
+        logger.info(`Updated conversation ${booking.conversation_id} location/notes`);
+      }
     }
-
-    updates.push(`"updatedAt" = CURRENT_TIMESTAMP`);
-    values.push(id);
-
-    const updateQuery = `
-      UPDATE bookings 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING id, "requestedAt" as "scheduledTime", location, notes, status
-    `;
-
-    const result = await pool.query(updateQuery, values);
 
     // If scheduledTime was changed, notify the consumer
     if (scheduledTime) {
@@ -847,7 +862,15 @@ router.put('/:id', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       message: 'Booking updated successfully',
-      data: { booking: result.rows[0] },
+      data: { 
+        booking: {
+          id,
+          scheduledTime: updatedScheduledTime,
+          location: updatedLocation,
+          notes: updatedNotes,
+          status: booking.status,
+        }
+      },
     });
   } catch (error: any) {
     logger.error('Error updating booking:', error.message || error);
