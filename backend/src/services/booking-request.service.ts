@@ -11,6 +11,7 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
+import { sendBookingConfirmationEmails } from './email.service';
 
 interface BookingRequest {
   bookingId: string;
@@ -475,6 +476,14 @@ export class BookingRequestService {
 
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
+
+        // Send confirmation emails if there's a linked booking (non-blocking)
+        if (linkedBookingId) {
+          this.sendBookingConfirmationEmailsAsync(linkedBookingId).catch(err => {
+            logger.error(`Failed to send booking confirmation emails for ${linkedBookingId}:`, err);
+          });
+        }
+
         return { success: true };
       }
 
@@ -524,6 +533,11 @@ export class BookingRequestService {
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
+
+      // Send confirmation emails to both consumer and barber (non-blocking)
+      this.sendBookingConfirmationEmailsAsync(bookingId).catch(err => {
+        logger.error(`Failed to send booking confirmation emails for ${bookingId}:`, err);
+      });
 
       return { success: true };
     } catch (error) {
@@ -818,6 +832,75 @@ export class BookingRequestService {
       }));
     } catch (error) {
       logger.error('Error getting customer booking status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send booking confirmation emails asynchronously
+   * Fetches full booking details and sends emails to both consumer and barber
+   */
+  private async sendBookingConfirmationEmailsAsync(bookingId: string): Promise<void> {
+    try {
+      // Fetch complete booking details with consumer and barber info
+      const result = await pool.query(`
+        SELECT 
+          b.id,
+          b."serviceType",
+          b."originalServiceName",
+          b."priceUsdCents",
+          b."scheduledTime",
+          b.location,
+          b.notes,
+          u_consumer.id as consumer_id,
+          u_consumer.first_name as consumer_first_name,
+          u_consumer.last_name as consumer_last_name,
+          u_consumer.email as consumer_email,
+          u_barber.id as barber_user_id,
+          u_barber.first_name as barber_first_name,
+          u_barber.last_name as barber_last_name,
+          u_barber.email as barber_email
+        FROM bookings b
+        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+        JOIN barbers bar ON b."barberId" = bar.id
+        JOIN users u_barber ON bar."userId" = u_barber.id
+        WHERE b.id = $1
+      `, [bookingId]);
+
+      if (result.rows.length === 0) {
+        logger.error(`Booking ${bookingId} not found for email confirmation`);
+        return;
+      }
+
+      const booking = result.rows[0];
+      const scheduledTime = new Date(booking.scheduledTime);
+
+      await sendBookingConfirmationEmails({
+        bookingId: booking.id,
+        serviceName: booking.originalServiceName || booking.serviceType,
+        price: (booking.priceUsdCents || 0) / 100,
+        scheduledDate: scheduledTime.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        scheduledTime: scheduledTime.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit',
+          hour12: true 
+        }),
+        location: booking.location || undefined,
+        notes: booking.notes || undefined,
+        consumerName: `${booking.consumer_first_name} ${booking.consumer_last_name}`,
+        consumerEmail: booking.consumer_email,
+        barberName: `${booking.barber_first_name} ${booking.barber_last_name}`,
+        barberEmail: booking.barber_email,
+      });
+
+      logger.info(`Booking confirmation emails sent for booking ${bookingId}`);
+    } catch (error) {
+      logger.error(`Error sending booking confirmation emails for ${bookingId}:`, error);
       throw error;
     }
   }
