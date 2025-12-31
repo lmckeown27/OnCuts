@@ -51,36 +51,48 @@ router.post('/', authenticate, async (req, res, next) => {
     const barberRecordId = barberResult.rows[0].id;
 
     // Map frontend service names to database enum values
-    // Valid enum: HAIRCUT, FADE, BEARD_TRIM, FULL_SERVICE, HOT_TOWEL_SHAVE, COLOR, STYLING, LINEUP, BUZZ_CUT, SHAPE_UP, PERM, BRAIDS, LOCS, TAPER
+    // NOTE: The original service name is preserved in conversations.service_name for display
+    // This mapping is for database storage - the display will show the original name
+    // 
+    // Frontend services (from web-app/src/config/services.ts):
+    //   'Buzz Cut', 'Line Up', 'Beard Trim', 'Haircut', 'Taper', 'Hot Shave',
+    //   'Kids Cut', 'Fade', 'Haircut & Fade', 'Design/Art', 'Afro Textures',
+    //   "Women's Cut", 'Color Treatment', 'Perm'
+    //
+    // Database enum: HAIRCUT, FADE, BEARD_TRIM, FULL_SERVICE, HOT_TOWEL_SHAVE, 
+    //   COLOR, STYLING, LINEUP, BUZZ_CUT, SHAPE_UP, PERM, BRAIDS, LOCS, TAPER
     const serviceTypeMap: Record<string, string> = {
-      'Haircut': 'HAIRCUT',
-      'Taper': 'TAPER',       // Keep Taper as its own type
-      'Fade': 'FADE',
+      // Exact matches from frontend config
       'Buzz Cut': 'BUZZ_CUT',
-      'Beard Trim': 'BEARD_TRIM',
-      'Lineup': 'LINEUP',
       'Line Up': 'LINEUP',
+      'Beard Trim': 'BEARD_TRIM',
+      'Haircut': 'HAIRCUT',
+      'Taper': 'TAPER',
+      'Hot Shave': 'HOT_TOWEL_SHAVE',
+      'Kids Cut': 'HAIRCUT',           // Maps to HAIRCUT (no KIDS_CUT enum)
+      'Fade': 'FADE',
+      'Haircut & Fade': 'FADE',        // Maps to FADE (combo service)
+      'Design/Art': 'STYLING',         // Maps to STYLING
+      'Afro Textures': 'STYLING',      // Maps to STYLING
+      "Women's Cut": 'HAIRCUT',        // Maps to HAIRCUT
+      'Color Treatment': 'COLOR',
+      'Perm': 'PERM',
+      
+      // Legacy/alternative names for backwards compatibility
+      'Lineup': 'LINEUP',
       'Shape Up': 'SHAPE_UP',
       'Full Service': 'FULL_SERVICE',
       'Hot Towel Shave': 'HOT_TOWEL_SHAVE',
-      'Hot Shave': 'HOT_TOWEL_SHAVE',
       'Color': 'COLOR',
-      'Color Treatment': 'COLOR',
       'Styling': 'STYLING',
-      'Perm': 'PERM',
       'Braids': 'BRAIDS',
       'Locs': 'LOCS',
-      'Kids Cut': 'HAIRCUT',      // Map to HAIRCUT
-      'Haircut & Fade': 'FADE',   // Combo service
-      'Design/Art': 'STYLING',    // Map to STYLING
-      'Afro Textures': 'STYLING', // Map to STYLING
-      "Women's Cut": 'HAIRCUT',   // Map to HAIRCUT
     };
     
     // Convert to enum value or fallback to HAIRCUT as default
     const dbServiceType = serviceTypeMap[serviceType] || 'HAIRCUT';
     
-    // Store the original display name for later retrieval
+    // Store the original display name for later retrieval (passed to conversation)
     const originalServiceName = serviceType;
 
     // Create booking record (all NOT NULL columns in production)
