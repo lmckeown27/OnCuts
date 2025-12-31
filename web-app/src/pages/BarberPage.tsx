@@ -803,9 +803,11 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   }, [showDayModal]);
 
   // Get appointments for a specific day from confirmed bookings
+  // Uses monthOffset to get bookings from the currently displayed month
   const getAppointmentsForDay = (day: number): ConfirmedBooking[] => {
     const today = new Date();
-    const targetDate = new Date(today.getFullYear(), today.getMonth(), day);
+    // Use monthOffset to calculate the correct month
+    const targetDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, day);
     targetDate.setHours(0, 0, 0, 0);
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -1249,7 +1251,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, selectedDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </h2>
                   <p className="text-white/80">
                     {getAppointmentsForDay(selectedDay).length} appointment{getAppointmentsForDay(selectedDay).length !== 1 ? 's' : ''}
