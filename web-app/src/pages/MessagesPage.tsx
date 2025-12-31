@@ -3,7 +3,7 @@
  * Similar to Airbnb's messaging interface
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -415,9 +415,16 @@ export default function MessagesPage() {
   }, [selectedConversation, fetchConversations, scrollToBottom]);
 
   // Scroll to bottom when messages change (instant on first load)
+  // Use useLayoutEffect for synchronous scroll before browser paint
   const isFirstLoadRef = useRef(true);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (messages.length > 0) {
+      // Immediate synchronous scroll
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+      // Also use the scrollToBottom for additional attempts
       scrollToBottom(isFirstLoadRef.current);
       isFirstLoadRef.current = false;
     }
@@ -427,6 +434,24 @@ export default function MessagesPage() {
   useEffect(() => {
     isFirstLoadRef.current = true;
   }, [selectedConversation?.id]);
+  
+  // Additional scroll after conversation selection
+  useEffect(() => {
+    if (selectedConversation && messages.length > 0) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        // Immediate scroll
+        container.scrollTop = container.scrollHeight;
+        // Delayed scrolls for content that loads async
+        setTimeout(() => {
+          if (container) container.scrollTop = container.scrollHeight;
+        }, 100);
+        setTimeout(() => {
+          if (container) container.scrollTop = container.scrollHeight;
+        }, 500);
+      }
+    }
+  }, [selectedConversation, messages.length]);
 
   // Handle selecting a conversation
   const handleSelectConversation = (conv: ConversationWithDetails) => {
