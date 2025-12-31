@@ -180,20 +180,21 @@ export default function BarberPage() {
   const campusId = user?.campus_id || '';
   const campusName = ''; // TODO: Fetch campus name from API
 
-  // Appointment details will be fetched from API
-  const appointmentDetailsData: Record<string, any> = {};
+  // State for booking details modal
+  const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
 
-  // Function to open service details modal [v3.0]
-  const openServiceDetails = (appointmentId: string) => {
-    console.log('🔍 Opening service details for appointment:', appointmentId);
-    const appointmentData = appointmentDetailsData[appointmentId];
-    if (appointmentData) {
-      setSelectedAppointment(appointmentData);
-      setShowServiceDetails(true);
-      console.log('✅ Modal opened with data:', appointmentData);
-    } else {
-      console.error('❌ No appointment data found for ID:', appointmentId);
-    }
+  // Function to open booking details modal - receives full booking object
+  const openBookingDetails = (booking: any) => {
+    console.log('🔍 Opening booking details for:', booking.id);
+    setSelectedBookingForDetails(booking);
+    setShowBookingDetailsModal(true);
+  };
+
+  // Refresh bookings when a booking is updated
+  const handleBookingUpdated = () => {
+    setBookingsRefreshKey(prev => prev + 1);
   };
 
   // Close dropdown when clicking outside
@@ -376,7 +377,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openServiceDetails} onWalkInClick={() => setShowWalkInPayment(true)} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onWalkInClick={() => setShowWalkInPayment(true)} refreshKey={bookingsRefreshKey} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -480,6 +481,17 @@ export default function BarberPage() {
           barberId={barberId}
         />
       )}
+
+      {/* Booking Details Modal - for schedule view bookings */}
+      <BookingDetailsModal
+        isOpen={showBookingDetailsModal}
+        onClose={() => {
+          setShowBookingDetailsModal(false);
+          setSelectedBookingForDetails(null);
+        }}
+        booking={selectedBookingForDetails}
+        onBookingUpdated={handleBookingUpdated}
+      />
 
       {/* Availability Modal */}
       {showAvailability && (
@@ -653,8 +665,9 @@ export default function BarberPage() {
 interface DashboardViewProps {
   navigate: any;
   barberId: string;
-  onViewDetails: (appointmentId: string) => void;
+  onViewDetails: (booking: any) => void;
   onWalkInClick: () => void;
+  refreshKey?: number;
 }
 
 // Type for confirmed bookings
@@ -678,7 +691,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refreshKey = 0 }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
@@ -716,7 +729,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
     };
     
     fetchConfirmedBookings();
-  }, []);
+  }, [refreshKey]);
 
   // Touch/swipe state for switching views
   const touchStartX = useRef<number | null>(null);
@@ -987,7 +1000,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                   {dailyAppointments.map((apt) => (
                     <div 
                       key={apt.id} 
-                      onClick={() => onViewDetails(apt.id)}
+                      onClick={() => onViewDetails(apt)}
                       className="p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer"
                     >
                       {/* Top row: Client name + Price */}
@@ -1407,7 +1420,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                       key={apt.id} 
                       onClick={() => {
                         closeDayModal();
-                        onViewDetails(apt.id);
+                        onViewDetails(apt);
                       }}
                       className="p-5 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-100 transition-colors cursor-pointer"
                     >
