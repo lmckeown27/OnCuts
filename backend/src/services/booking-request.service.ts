@@ -463,6 +463,14 @@ export class BookingRequestService {
 
       const consumerId = updateResult.rows[0].consumerId;
       
+      // Also update any linked conversation's booking_status
+      await client.query(`
+        UPDATE conversations
+        SET booking_status = 'accepted', updated_at = CURRENT_TIMESTAMP
+        WHERE booking_id = $1
+      `, [bookingId]);
+      logger.info(`Updated linked conversation booking_status for booking ${bookingId}`);
+      
       // Get barber name for notification
       const barberNameResult = await client.query(
         `SELECT u.first_name || ' ' || u.last_name as name 
@@ -604,6 +612,14 @@ export class BookingRequestService {
       }
 
       const consumerId = updateResult.rows[0].consumerId;
+      
+      // Also update any linked conversation's booking_status
+      await client.query(`
+        UPDATE conversations
+        SET booking_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+        WHERE booking_id = $1
+      `, [bookingId]);
+      logger.info(`Updated linked conversation booking_status for booking ${bookingId}`);
       
       // Get barber name for notification
       const barberNameResult = await client.query(
