@@ -358,6 +358,21 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
     }
 
+    // If status is CANCELLED or REJECTED, delete the conversation and messages
+    if (status === 'CANCELLED' || status === 'REJECTED') {
+      const convResult = await pool.query(
+        `SELECT id FROM conversations WHERE booking_id = $1`,
+        [id]
+      );
+      
+      if (convResult.rows.length > 0) {
+        const conversationId = convResult.rows[0].id;
+        await pool.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
+        await pool.query(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
+        logger.info(`Deleted conversation ${conversationId} and messages for ${status} booking ${id}`);
+      }
+    }
+
     res.json({
       success: true,
       data: { booking: result.rows[0] },
@@ -1036,16 +1051,30 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Also update any linked conversation with cancellation reason
-    const cancellationNote = `Cancelled by barber${reason ? ': ' + reason : ''}`;
-    await pool.query(
-      `UPDATE conversations 
-       SET booking_status = 'cancelled', 
-           notes = COALESCE(notes || ' | ', '') || $1,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE booking_id = $2`,
-      [cancellationNote, id]
+    // Delete the conversation and its messages when booking is cancelled
+    // First, find the conversation ID
+    const convResult = await pool.query(
+      `SELECT id FROM conversations WHERE booking_id = $1`,
+      [id]
     );
+    
+    if (convResult.rows.length > 0) {
+      const conversationId = convResult.rows[0].id;
+      
+      // Delete all messages in the conversation first (foreign key constraint)
+      await pool.query(
+        `DELETE FROM messages WHERE conversation_id = $1`,
+        [conversationId]
+      );
+      
+      // Delete the conversation
+      await pool.query(
+        `DELETE FROM conversations WHERE id = $1`,
+        [conversationId]
+      );
+      
+      logger.info(`Deleted conversation ${conversationId} and its messages for cancelled booking ${id}`);
+    }
 
     // Notify consumer about the cancellation
     const barberNameResult = await pool.query(

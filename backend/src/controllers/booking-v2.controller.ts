@@ -329,6 +329,30 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
       [bookingId, reason]
     );
 
+    // 3.5 Delete the conversation and its messages when booking is cancelled
+    const convResult = await pool.query(
+      `SELECT id FROM conversations WHERE booking_id = $1`,
+      [bookingId]
+    );
+    
+    if (convResult.rows.length > 0) {
+      const conversationId = convResult.rows[0].id;
+      
+      // Delete all messages in the conversation first (foreign key constraint)
+      await pool.query(
+        `DELETE FROM messages WHERE conversation_id = $1`,
+        [conversationId]
+      );
+      
+      // Delete the conversation
+      await pool.query(
+        `DELETE FROM conversations WHERE id = $1`,
+        [conversationId]
+      );
+      
+      logger.info(`Deleted conversation ${conversationId} and messages for cancelled booking ${bookingId}`);
+    }
+
     // 4. Audit log
     await auditService.log({
       actor_user_id: userId,
