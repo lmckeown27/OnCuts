@@ -142,6 +142,7 @@ export class BookingRequestService {
       }
       
       // Query 1: Get from bookings table (traditional flow)
+      // Also LEFT JOIN conversations to get the original service_name for display
       const bookingsResult = await pool.query(`
         SELECT 
           b.id as booking_id,
@@ -149,6 +150,7 @@ export class BookingRequestService {
           u.first_name || ' ' || u.last_name as customer_name,
           b."barberId" as barber_id,
           b."serviceType" as service_type,
+          c.service_name as original_service_name,
           b."requestedAt" as requested_date,
           b."requestedAt" as requested_time,
           b."priceUsdCents" / 100.0 as price,
@@ -156,9 +158,12 @@ export class BookingRequestService {
           b."createdAt" as requested_at,
           u."displayName" as display_name,
           u.bio,
-          u."avatarUrl" as profile_image_url
+          u."avatarUrl" as profile_image_url,
+          c.location as booking_location,
+          c.notes as booking_notes
         FROM bookings b
         JOIN users u ON b."consumerId" = u.id
+        LEFT JOIN conversations c ON c.booking_id = b.id
         WHERE b."barberId" = $1 
           AND b.status = 'PENDING'
         ORDER BY b."createdAt" DESC
@@ -181,6 +186,9 @@ export class BookingRequestService {
           return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         };
         
+        // Prefer original service name from conversation, fallback to formatted enum
+        const displayServiceType = row.original_service_name || formatServiceType(row.service_type);
+        
         requests.push({
           bookingId: row.booking_id,
           customerId: row.customer_id,
@@ -202,11 +210,12 @@ export class BookingRequestService {
             },
           },
           barberId: row.barber_id,
-          serviceType: formatServiceType(row.service_type),
+          serviceType: displayServiceType,
           requestedDate: row.requested_date,
           requestedTime: formatTime(row.requested_time),
           price: parseFloat(row.price) || 0,
-          message: '',
+          location: row.booking_location || null,
+          message: row.booking_notes || '',
           status: row.status,
           requestedAt: row.requested_at,
         });
