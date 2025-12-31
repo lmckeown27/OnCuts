@@ -787,7 +787,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     let paramIndex = 1;
 
     if (scheduledTime !== undefined) {
-      updates.push(`"scheduledTime" = $${paramIndex++}`);
+      // Note: Database column is "requestedAt", we use "scheduledTime" as alias in frontend
+      updates.push(`"requestedAt" = $${paramIndex++}`);
       values.push(scheduledTime);
     }
     if (location !== undefined) {
@@ -810,7 +811,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
       UPDATE bookings 
       SET ${updates.join(', ')}
       WHERE id = $${paramIndex}
-      RETURNING id, "scheduledTime", location, notes, status
+      RETURNING id, "requestedAt" as "scheduledTime", location, notes, status
     `;
 
     const result = await pool.query(updateQuery, values);
