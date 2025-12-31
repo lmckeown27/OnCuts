@@ -2,16 +2,18 @@
  * ConsumerBookingStatusPage - Shows consumer their active booking status
  * Displays pending → accepted flow and any changes made by barber
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
-  MessageCircle, AlertTriangle, Bell, CheckCircle, Edit3
+  MessageCircle, AlertTriangle, Bell, CheckCircle, Edit3,
+  ChevronDown, Settings, LogOut
 } from 'lucide-react';
 import api from '../services/api.service';
 import notificationService from '../services/notification.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { CampusCutLogo } from '@assets';
+import Avatar from '../components/Avatar';
 import toast from 'react-hot-toast';
 
 interface ActiveBooking {
@@ -39,10 +41,24 @@ export default function ConsumerBookingStatusPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchActiveBooking();
@@ -210,8 +226,10 @@ export default function ConsumerBookingStatusPage() {
     navigate(`${platformPrefix}/consumer/messages`);
   };
 
-  const handleGoToProfile = () => {
-    navigate(`${platformPrefix}/consumer`);
+  const handleLogout = () => {
+    useAuthStore.getState().logout();
+    navigate(`${platformPrefix}`);
+    setShowProfileDropdown(false);
   };
 
   return (
@@ -226,12 +244,50 @@ export default function ConsumerBookingStatusPage() {
             <MessageCircle className="w-5 h-5 text-gray-600" />
           </button>
           <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
-          <button
-            onClick={handleGoToProfile}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <User className="w-5 h-5 text-gray-600" />
-          </button>
+          
+          {/* Profile Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              className="flex items-center gap-1 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="sm" />
+              <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showProfileDropdown && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                {/* User Info */}
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="font-semibold text-gray-900 truncate">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+                </div>
+                
+                {/* Edit Profile */}
+                <button
+                  onClick={() => {
+                    navigate(`${platformPrefix}/consumer`);
+                    setShowProfileDropdown(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                >
+                  <Settings className="w-4 h-4 text-gray-500" />
+                  Edit Profile
+                </button>
+                
+                <div className="border-t border-gray-200 my-1"></div>
+                
+                {/* Sign Out */}
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                >
+                  <LogOut className="w-4 h-4 text-red-500" />
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
