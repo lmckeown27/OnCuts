@@ -128,7 +128,8 @@ class MessageService {
           scheduledTime: conv.conv_scheduled_time || conv.availability_start_time || conv.booking_scheduled_time,
           location: conv.conv_location || 'TBD',
           notes: conv.conv_notes || null,
-          status: (conv.conv_booking_status || conv.linked_booking_status || 'pending').toLowerCase(),
+          // Prefer linked booking status (source of truth) over cached conversation status
+          status: (conv.linked_booking_status || conv.conv_booking_status || 'pending').toLowerCase(),
           barberName: conv.conv_barber_name,
           consumerName: conv.conv_consumer_name,
         } : null,
