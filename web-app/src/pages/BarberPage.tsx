@@ -1470,9 +1470,14 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
     setIsLoading(true);
     try {
       // Fetch all bookings for this barber (ACCEPTED and COMPLETED)
-      const response = await api.get(`/bookings-simple?barberId=${barberId}`);
+      // Use role=barber to get bookings where user is the barber
+      const response = await api.get(`/bookings-simple?role=barber`);
       if (response.data?.bookings) {
-        setBookings(response.data.bookings);
+        // Filter to only show ACCEPTED and COMPLETED bookings
+        const relevantBookings = response.data.bookings.filter(
+          (b: any) => b.status === 'ACCEPTED' || b.status === 'COMPLETED'
+        );
+        setBookings(relevantBookings);
       }
     } catch (error) {
       console.error('Failed to fetch bookings:', error);
