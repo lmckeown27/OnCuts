@@ -650,7 +650,7 @@ interface ConfirmedBooking {
 
 function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
@@ -776,8 +776,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   }, []);
 
   // Day modal open/close handlers with animation
-  const openDayModal = (day: number) => {
-    setSelectedDay(day);
+  const openDayModal = (date: Date) => {
+    setSelectedDate(date);
     setShowDayModal(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -790,7 +790,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
     setIsDayModalVisible(false);
     setTimeout(() => {
       setShowDayModal(false);
-      setSelectedDay(null);
+      setSelectedDate(null);
     }, 150);
   };
 
@@ -808,12 +808,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
     }
   }, [showDayModal]);
 
-  // Get appointments for a specific day from confirmed bookings
-  // Uses monthOffset to get bookings from the currently displayed month
-  const getAppointmentsForDay = (day: number): ConfirmedBooking[] => {
-    const today = new Date();
-    // Use monthOffset to calculate the correct month
-    const targetDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, day);
+  // Get appointments for a specific date from confirmed bookings
+  const getAppointmentsForDate = (date: Date): ConfirmedBooking[] => {
+    const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
@@ -826,8 +823,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
       .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
   };
 
-  const handleDayClick = (day: number) => {
-    openDayModal(day);
+  const handleDayClick = (date: Date) => {
+    openDayModal(date);
   };
 
   return (
@@ -1093,7 +1090,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      onClick={() => handleDayClick(day.date)}
+                      onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1137,7 +1134,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      onClick={() => handleDayClick(day.date)}
+                      onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1267,7 +1264,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                   return (
                     <div
                       key={day}
-                      onClick={() => handleDayClick(day)}
+                      onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
                           ? 'bg-primary-400 text-white border-primary-500' 
@@ -1321,7 +1318,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
       </Card>
 
       {/* Day Detail Modal */}
-      {showDayModal && selectedDay !== null && (
+      {showDayModal && selectedDate !== null && (
         <div 
           className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
             isDayModalVisible ? 'bg-black/50' : 'bg-black/0'
@@ -1341,10 +1338,10 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {new Date(new Date().getFullYear(), new Date().getMonth() + monthOffset, selectedDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </h2>
                   <p className="text-white/80">
-                    {getAppointmentsForDay(selectedDay).length} appointment{getAppointmentsForDay(selectedDay).length !== 1 ? 's' : ''}
+                    {getAppointmentsForDate(selectedDate).length} appointment{getAppointmentsForDate(selectedDate).length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <button
@@ -1359,7 +1356,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               </div>
             </div>
             <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
-              {getAppointmentsForDay(selectedDay).length === 0 ? (
+              {getAppointmentsForDate(selectedDate).length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
@@ -1367,7 +1364,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {getAppointmentsForDay(selectedDay).map((apt) => (
+                  {getAppointmentsForDate(selectedDate).map((apt) => (
                     <div 
                       key={apt.id} 
                       onClick={() => {
