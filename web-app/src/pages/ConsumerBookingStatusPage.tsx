@@ -241,9 +241,9 @@ export default function ConsumerBookingStatusPage() {
             onClick={handleGoToMessages}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <MessageCircle className="w-5 h-5 text-gray-600" />
+            <MessageCircle className="w-6 h-6 text-gray-600" />
           </button>
-          <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+          <img src={CampusCutLogo} alt="CampusCut" className="h-10" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
@@ -251,8 +251,8 @@ export default function ConsumerBookingStatusPage() {
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="flex items-center gap-1 p-1 rounded-full hover:bg-gray-100 transition-colors"
             >
-              <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="sm" />
-              <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
+              <Avatar src={user?.profile_picture_url} alt={user?.first_name || 'User'} size="md" />
+              <ChevronDown className={`w-5 h-5 text-gray-600 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showProfileDropdown && (
