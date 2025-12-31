@@ -939,12 +939,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // First, verify the booking exists and belongs to this barber
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."originalServiceName",
+      `SELECT b.id, b.status, b."consumerId", b."serviceType",
               bar."userId" as barber_user_id,
-              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name
+              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
+              c.service_name as original_service_name
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       LEFT JOIN conversations c ON c.booking_id = b.id
        WHERE b.id = $1 AND bar."userId" = $2`,
       [id, userId]
     );
@@ -992,7 +994,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       [userId]
     );
     const barberName = barberNameResult.rows[0]?.name || 'Your barber';
-    const serviceName = booking.originalServiceName || booking.serviceType;
+    const serviceName = booking.original_service_name || booking.serviceType;
 
     await notificationService.saveNotification({
       userId: booking.consumerId,
