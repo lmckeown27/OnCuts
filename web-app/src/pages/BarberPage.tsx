@@ -650,6 +650,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
+  const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
@@ -888,27 +890,54 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Daily View */}
         {scheduleView === 'daily' && (() => {
-          // Filter bookings for today
+          // Filter bookings for the selected day (using dayOffset)
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
+          const displayDate = new Date(today);
+          displayDate.setDate(displayDate.getDate() + dayOffset);
+          const nextDay = new Date(displayDate);
+          nextDay.setDate(nextDay.getDate() + 1);
           
           const dailyAppointments = confirmedBookings
             .filter(booking => {
               const bookingDate = new Date(booking.scheduledTime);
-              return bookingDate >= today && bookingDate < tomorrow;
+              return bookingDate >= displayDate && bookingDate < nextDay;
             })
             .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
 
           const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
           const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-          const todayFormatted = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+          const dayLabel = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : dayOffset === -1 ? 'Yesterday' : '';
+          const dateFormatted = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Today - {todayFormatted}</h3>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setDayOffset(prev => prev - 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+                    {dayLabel ? `${dayLabel} - ` : ''}{dateFormatted}
+                  </h3>
+                  <button 
+                    onClick={() => setDayOffset(prev => prev + 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                  {dayOffset !== 0 && (
+                    <button 
+                      onClick={() => setDayOffset(0)}
+                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                    >
+                      Today
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm sm:text-base text-gray-600 font-medium">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
               </div>
               {isLoadingBookings ? (
@@ -920,7 +949,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                 <div className="text-center py-8 sm:py-12">
                   <Calendar className="w-14 h-14 sm:w-20 sm:h-20 text-gray-400 mx-auto mb-4 sm:mb-5" />
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No appointments scheduled</h3>
-                  <p className="text-base sm:text-lg text-gray-600">You have no appointments scheduled for today.</p>
+                  <p className="text-base sm:text-lg text-gray-600">You have no appointments scheduled for {dayOffset === 0 ? 'today' : 'this day'}.</p>
                 </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4">
@@ -952,17 +981,19 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Weekly View */}
         {scheduleView === 'weekly' && (() => {
-          // Get the current week (Sunday to Saturday)
+          // Get the week based on weekOffset
           const today = new Date();
           const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
           
-          // Calculate start of week (Monday)
+          // Calculate start of current week (Monday)
           const startOfWeek = new Date(today);
           const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
           startOfWeek.setDate(today.getDate() - daysFromMonday);
+          // Apply week offset
+          startOfWeek.setDate(startOfWeek.getDate() + (weekOffset * 7));
           startOfWeek.setHours(0, 0, 0, 0);
           
-          // Build week days array dynamically
+          // Build week days array dynamically (handles month boundaries automatically)
           const weekDays = [];
           for (let i = 0; i < 7; i++) {
             const date = new Date(startOfWeek);
@@ -971,6 +1002,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               name: date.toLocaleDateString('en-US', { weekday: 'long' }),
               shortName: date.toLocaleDateString('en-US', { weekday: 'short' }),
               date: date.getDate(),
+              month: date.toLocaleDateString('en-US', { month: 'short' }),
               fullDate: date,
             });
           }
@@ -992,12 +1024,41 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
           });
 
           const totalWeekAppointments = Object.values(weekAppointmentsByDate).reduce((sum, arr) => sum + arr.length, 0);
-          const weekRangeText = `${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${new Date(endOfWeek.getTime() - 1).toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
+          
+          // Format week range - show month on both ends if they differ
+          const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
+          const endDate = new Date(endOfWeek.getTime() - 1);
+          const endMonth = endDate.toLocaleDateString('en-US', { month: 'long' });
+          const weekRangeText = startMonth === endMonth 
+            ? `${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`
+            : `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Week of {weekRangeText}</h3>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setWeekOffset(prev => prev - 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[240px] text-center">Week of {weekRangeText}</h3>
+                  <button 
+                    onClick={() => setWeekOffset(prev => prev + 1)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  </button>
+                  {weekOffset !== 0 && (
+                    <button 
+                      onClick={() => setWeekOffset(0)}
+                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                    >
+                      This Week
+                    </button>
+                  )}
+                </div>
                 <p className="text-sm sm:text-base text-gray-600 font-medium">{totalWeekAppointments} appointment{totalWeekAppointments !== 1 ? 's' : ''} this week</p>
               </div>
               
@@ -1018,7 +1079,13 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                       } cursor-pointer`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`text-3xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
+                        <div className="text-center">
+                          <div className={`text-3xl font-bold ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.date}</div>
+                          {/* Show month if different from first day of week */}
+                          {day.month !== weekDays[0].month && (
+                            <div className={`text-xs ${isToday ? 'text-white/70' : 'text-gray-500'}`}>{day.month}</div>
+                          )}
+                        </div>
                         <div>
                           <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
                           <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
@@ -1058,7 +1125,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                       <div className="text-center mb-4">
                         <div className="text-3xl font-bold mb-1">{day.date}</div>
                         <div className={`text-sm ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
-                          {day.name}
+                          {/* Show month if different from first day of week */}
+                          {day.month !== weekDays[0].month ? `${day.month} - ${day.name}` : day.name}
                         </div>
                       </div>
                       <div className="text-sm space-y-1.5 flex-1 overflow-hidden">
