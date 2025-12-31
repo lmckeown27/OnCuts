@@ -1001,7 +1001,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                     <div 
                       key={apt.id} 
                       onClick={() => onViewDetails(apt)}
-                      className="p-5 sm:p-6 lg:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer max-w-2xl"
+                      className="p-5 sm:p-6 lg:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer max-w-2xl mx-auto"
                     >
                       {/* Top row: Client name + Price */}
                       <div className="flex items-start justify-between mb-1.5">
