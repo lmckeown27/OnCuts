@@ -74,10 +74,10 @@ export default function ConsumerBookingStatusPage() {
         let originalScheduledTime: string | undefined;
         
         try {
-          const notifications = await notificationService.getNotifications();
+          const notifResponse = await notificationService.getNotifications();
           
           // Find the most recent booking_updated notification for this booking
-          const updateNotification = notifications.data
+          const updateNotification = notifResponse.notifications
             .filter((n: any) => 
               n.type === 'booking_updated' && 
               n.data?.bookingId === activeBooking.id
