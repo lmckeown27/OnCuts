@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
   MessageCircle, AlertTriangle, Bell, CheckCircle, Edit3,
-  ChevronDown, Settings, LogOut
+  ChevronDown, Settings, LogOut, Trash2
 } from 'lucide-react';
 import api from '../services/api.service';
 import notificationService from '../services/notification.service';
@@ -46,6 +46,12 @@ export default function ConsumerBookingStatusPage() {
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -137,15 +143,74 @@ export default function ConsumerBookingStatusPage() {
 
   const handleCancelBooking = async () => {
     if (!booking) return;
-    
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    setIsSaving(true);
     
     try {
-      await api.put(`/bookings-simple/${booking.id}/status`, { status: 'CANCELLED' });
+      await api.delete(`/bookings-simple/${booking.id}`, { reason: cancelReason || undefined });
       toast.success('Booking cancelled');
+      setShowCancelConfirm(false);
       navigate(`${platformPrefix}/consumer`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to cancel booking');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenEditModal = () => {
+    if (!booking) return;
+    
+    // Initialize edit fields with current booking values
+    const scheduledDate = new Date(booking.scheduledTime);
+    const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
+    const day = String(scheduledDate.getDate()).padStart(2, '0');
+    const year = scheduledDate.getFullYear();
+    setEditDate(`${month}/${day}/${year}`);
+    
+    const hours = scheduledDate.getHours();
+    const minutes = scheduledDate.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    setEditTime(`${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`);
+    
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!booking) return;
+    setIsSaving(true);
+    
+    try {
+      // Parse the edited date and time
+      const [month, day, year] = editDate.split('/').map(Number);
+      const timeMatch = editTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      
+      if (!timeMatch) {
+        toast.error('Invalid time format');
+        setIsSaving(false);
+        return;
+      }
+      
+      let hours = parseInt(timeMatch[1]);
+      const minutes = parseInt(timeMatch[2]);
+      const ampm = timeMatch[3].toUpperCase();
+      
+      if (ampm === 'PM' && hours !== 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      
+      const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
+      
+      await api.put(`/bookings-simple/${booking.id}`, {
+        scheduledTime: newScheduledTime.toISOString(),
+      });
+      
+      toast.success('Booking updated!');
+      setShowEditModal(false);
+      fetchActiveBooking(); // Refresh booking data
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update booking');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -490,14 +555,24 @@ export default function ConsumerBookingStatusPage() {
             Message {booking.barberName}
           </button>
           
-          {isPending && (
-            <button
-              onClick={handleCancelBooking}
-              className="w-full py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-red-200"
-            >
-              <X className="w-5 h-5" />
-              Cancel Request
-            </button>
+          {/* Edit and Cancel buttons for pending and accepted bookings */}
+          {(isPending || isAccepted) && (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleOpenEditModal}
+                className="py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-amber-200"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit Booking
+              </button>
+              <button
+                onClick={() => setShowCancelConfirm(true)}
+                className="py-3 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-red-200"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
           )}
         </div>
         
@@ -507,6 +582,115 @@ export default function ConsumerBookingStatusPage() {
           <p className="font-mono text-sm text-gray-600">{booking.id.slice(0, 8).toUpperCase()}</p>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-primary-500" />
+              Edit Booking
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date (MM/DD/YYYY)</label>
+                <input
+                  type="text"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  placeholder="MM/DD/YYYY"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time (e.g., 9:00 AM)</label>
+                <input
+                  type="text"
+                  value={editTime}
+                  onChange={(e) => setEditTime(e.target.value)}
+                  placeholder="9:00 AM"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSaving}
+                className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCancelConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              Cancel Booking
+            </h3>
+            <p className="text-gray-600 mb-4">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Let the barber know why you're cancelling..."
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelConfirm(false);
+                  setCancelReason('');
+                }}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={handleCancelBooking}
+                disabled={isSaving}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Yes, Cancel'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -820,17 +820,21 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId;
     const { scheduledTime, location, notes } = req.body;
 
-    // First, verify the booking exists and belongs to this barber
+    // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."requestedAt", bar."userId" as barber_user_id,
+      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType",
+              bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
               u_consumer.email as consumer_email,
-              c.id as conversation_id, c.location as conv_location, c.notes as conv_notes
+              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name,
+              u_barber.email as barber_email,
+              c.id as conversation_id, c.location as conv_location, c.notes as conv_notes, c.service_name
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       JOIN users u_barber ON bar."userId" = u_barber.id
        LEFT JOIN conversations c ON c.booking_id = b.id
-       WHERE b.id = $1 AND bar."userId" = $2`,
+       WHERE b.id = $1 AND (bar."userId" = $2 OR b."consumerId" = $2)`,
       [id, userId]
     );
 
@@ -839,6 +843,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
+    const isBarber = booking.barber_user_id === userId;
+    const isConsumer = booking.consumerId === userId;
 
     // Only allow editing ACCEPTED bookings
     if (booking.status !== 'ACCEPTED') {
@@ -944,15 +950,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
       }
     }
 
-    // If scheduledTime was changed, notify the consumer and send emails
+    // If scheduledTime was changed, notify the OTHER party and send emails
     if (scheduledTime) {
-      const barberNameResult = await pool.query(
-        `SELECT u.first_name || ' ' || u.last_name as name, u.email as barber_email
-         FROM users u WHERE u.id = $1`,
-        [userId]
-      );
-      const barberName = barberNameResult.rows[0]?.name || 'Your barber';
-      const barberEmail = barberNameResult.rows[0]?.barber_email;
+      const barberName = `${booking.barber_first_name} ${booking.barber_last_name}`.trim() || 'Your barber';
+      const consumerName = `${booking.consumer_first_name} ${booking.consumer_last_name}`.trim() || 'Customer';
+      const barberEmail = booking.barber_email;
+      const consumerEmail = booking.consumer_email;
 
       const newDate = new Date(scheduledTime);
       const formattedDate = newDate.toLocaleDateString('en-US', { 
@@ -972,38 +975,45 @@ router.put('/:id', authenticate, async (req, res, next) => {
         hour: 'numeric', minute: '2-digit' 
       });
 
-      await notificationService.saveNotification({
-        userId: booking.consumerId,
-        type: 'booking_updated',
-        title: 'Booking Updated 📅',
-        message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
-        data: { 
-          bookingId: id, 
-          newScheduledTime: scheduledTime,
-          originalScheduledTime: originalScheduledTime,
-          barberName: barberName,
-        },
-      });
+      // Notify the OTHER party (not the one who made the edit)
+      if (isBarber) {
+        // Barber edited, notify consumer
+        await notificationService.saveNotification({
+          userId: booking.consumerId,
+          type: 'booking_updated',
+          title: 'Booking Updated 📅',
+          message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
+          data: { 
+            bookingId: id, 
+            newScheduledTime: scheduledTime,
+            originalScheduledTime: originalScheduledTime,
+            editedBy: 'barber',
+          },
+        });
+      } else {
+        // Consumer edited, notify barber
+        await notificationService.saveNotification({
+          userId: booking.barber_user_id,
+          type: 'booking_updated',
+          title: 'Booking Updated 📅',
+          message: `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
+          data: { 
+            bookingId: id, 
+            newScheduledTime: scheduledTime,
+            originalScheduledTime: originalScheduledTime,
+            editedBy: 'consumer',
+          },
+        });
+      }
 
-      // Send booking edit emails to both consumer and barber
-      const consumerEmailResult = await pool.query(
-        `SELECT first_name || ' ' || last_name as name, email FROM users WHERE id = $1`,
-        [booking.consumerId]
-      );
-      const consumerName = consumerEmailResult.rows[0]?.name || 'Customer';
-      const consumerEmail = consumerEmailResult.rows[0]?.email;
-
-      // Get service name from conversation
-      const serviceResult = await pool.query(
-        `SELECT c.service_name, b."priceUsdCents", c.location
-         FROM bookings b
-         LEFT JOIN conversations c ON c.booking_id = b.id
-         WHERE b.id = $1`,
+      // Get service details for email
+      const serviceName = booking.service_name || booking.serviceType || 'Haircut';
+      const priceResult = await pool.query(
+        `SELECT "priceUsdCents" FROM bookings WHERE id = $1`,
         [id]
       );
-      const serviceName = serviceResult.rows[0]?.service_name || booking.serviceType || 'Haircut';
-      const priceUsdCents = serviceResult.rows[0]?.priceUsdCents || 0;
-      const bookingLocation = serviceResult.rows[0]?.location;
+      const priceUsdCents = priceResult.rows[0]?.priceUsdCents || 0;
+      const bookingLocation = booking.conv_location;
 
       if (consumerEmail && barberEmail) {
         sendBookingEditEmails({
@@ -1023,7 +1033,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
       }
     }
 
-    logger.info(`Booking ${id} updated by barber ${userId}`);
+    logger.info(`Booking ${id} updated by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
 
     res.json({
       success: true,
@@ -1046,7 +1056,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
 /**
  * DELETE /api/v1/bookings-simple/:id
- * Cancel/delete a booking (barber only for non-completed bookings)
+ * Cancel/delete a booking (barber or consumer for non-completed bookings)
  */
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
@@ -1054,17 +1064,19 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId;
     const { reason } = req.body;
 
-    // First, verify the booking exists and belongs to this barber
+    // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
       `SELECT b.id, b.status, b."consumerId", b."serviceType",
               bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
+              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name,
               c.service_name as original_service_name
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       JOIN users u_barber ON bar."userId" = u_barber.id
        LEFT JOIN conversations c ON c.booking_id = b.id
-       WHERE b.id = $1 AND bar."userId" = $2`,
+       WHERE b.id = $1 AND (bar."userId" = $2 OR b."consumerId" = $2)`,
       [id, userId]
     );
 
@@ -1073,6 +1085,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
+    const isBarber = booking.barber_user_id === userId;
+    const isConsumer = booking.consumerId === userId;
 
     // Cannot delete completed or already cancelled bookings
     if (booking.status === 'COMPLETED') {
@@ -1097,7 +1111,6 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     );
 
     // Delete the conversation and its messages when booking is cancelled
-    // First, find the conversation ID
     const convResult = await pool.query(
       `SELECT id FROM conversations WHERE booking_id = $1`,
       [id]
@@ -1121,24 +1134,32 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       logger.info(`Deleted conversation ${conversationId} and its messages for cancelled booking ${id}`);
     }
 
-    // Notify consumer about the cancellation
-    const barberNameResult = await pool.query(
-      `SELECT u.first_name || ' ' || u.last_name as name 
-       FROM users u WHERE u.id = $1`,
-      [userId]
-    );
-    const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+    const barberName = `${booking.barber_first_name} ${booking.barber_last_name}`.trim() || 'Your barber';
+    const consumerName = `${booking.consumer_first_name} ${booking.consumer_last_name}`.trim() || 'Customer';
     const serviceName = booking.original_service_name || booking.serviceType;
 
-    await notificationService.saveNotification({
-      userId: booking.consumerId,
-      type: 'booking_cancelled',
-      title: 'Booking Cancelled ❌',
-      message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
-      data: { bookingId: id, reason },
-    });
+    // Notify the OTHER party about the cancellation
+    if (isBarber) {
+      // Barber cancelled, notify consumer
+      await notificationService.saveNotification({
+        userId: booking.consumerId,
+        type: 'booking_cancelled',
+        title: 'Booking Cancelled ❌',
+        message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
+        data: { bookingId: id, reason, cancelledBy: 'barber' },
+      });
+    } else {
+      // Consumer cancelled, notify barber
+      await notificationService.saveNotification({
+        userId: booking.barber_user_id,
+        type: 'booking_cancelled',
+        title: 'Booking Cancelled ❌',
+        message: `${consumerName} has cancelled their ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
+        data: { bookingId: id, reason, cancelledBy: 'consumer' },
+      });
+    }
 
-    logger.info(`Booking ${id} cancelled by barber ${userId}`);
+    logger.info(`Booking ${id} cancelled by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
 
     res.json({
       success: true,
