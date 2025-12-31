@@ -1148,7 +1148,7 @@ export default function MessagesPage() {
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {isBarberView ? 'Customer' : 'Barber'}
+                          {selectedConversation.otherUser?.userType === 'barber' ? 'Barber' : 'Customer'}
                         </p>
                       </div>
                     </div>
@@ -1315,7 +1315,7 @@ export default function MessagesPage() {
                       {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {isBarberView ? 'Customer' : 'Barber'}
+                      {selectedConversation.otherUser?.userType === 'barber' ? 'Barber' : 'Customer'}
                     </p>
                   </div>
                 </div>
