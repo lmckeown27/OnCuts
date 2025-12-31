@@ -847,11 +847,11 @@ export class BookingRequestService {
         SELECT 
           b.id,
           b."serviceType",
-          b."originalServiceName",
           b."priceUsdCents",
-          b."scheduledTime",
-          b.location,
-          b.notes,
+          b."requestedAt" as "scheduledTime",
+          c.service_name as "serviceName",
+          c.location,
+          c.notes,
           u_consumer.id as consumer_id,
           u_consumer.first_name as consumer_first_name,
           u_consumer.last_name as consumer_last_name,
@@ -864,6 +864,7 @@ export class BookingRequestService {
         JOIN users u_consumer ON b."consumerId" = u_consumer.id
         JOIN barbers bar ON b."barberId" = bar.id
         JOIN users u_barber ON bar."userId" = u_barber.id
+        LEFT JOIN conversations c ON c.booking_id = b.id
         WHERE b.id = $1
       `, [bookingId]);
 
@@ -877,7 +878,7 @@ export class BookingRequestService {
 
       await sendBookingConfirmationEmails({
         bookingId: booking.id,
-        serviceName: booking.originalServiceName || booking.serviceType,
+        serviceName: booking.serviceName || booking.serviceType,
         price: (booking.priceUsdCents || 0) / 100,
         scheduledDate: scheduledTime.toLocaleDateString('en-US', { 
           weekday: 'long', 
