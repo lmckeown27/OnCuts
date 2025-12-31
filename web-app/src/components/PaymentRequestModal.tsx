@@ -141,7 +141,7 @@ export default function PaymentRequestModal({
               {/* Tip Selection */}
               <div>
                 <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {tipOptions.map((option) => (
                     <button
                       key={option.label}
@@ -149,7 +149,7 @@ export default function PaymentRequestModal({
                         setSelectedTip(option.value);
                         setCustomTip('');
                       }}
-                      className={`py-3 px-4 rounded-lg border-2 transition-all font-semibold ${
+                      className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
                         selectedTip === option.value && !customTip
                           ? 'border-primary-500 bg-primary-50 text-primary-700'
                           : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -215,17 +215,17 @@ export default function PaymentRequestModal({
               </div>
 
               {/* Star Rating */}
-              <div className="flex justify-center gap-2">
+              <div className="flex justify-center gap-1 sm:gap-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     onClick={() => setRating(star)}
                     onMouseEnter={() => setHoveredStar(star)}
                     onMouseLeave={() => setHoveredStar(0)}
-                    className="p-1 transition-transform hover:scale-110"
+                    className="p-1 transition-transform hover:scale-110 active:scale-95"
                   >
                     <Star
-                      className={`w-10 h-10 transition-colors ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 transition-colors ${
                         star <= (hoveredStar || rating)
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'text-gray-300'

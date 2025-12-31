@@ -1682,19 +1682,19 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                     </div>
 
                     {/* Date/Time Row */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mb-3">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
+                        <Calendar className="w-4 h-4 flex-shrink-0" />
                         {date}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-4 h-4 flex-shrink-0" />
                         {time}
                       </span>
                       {booking.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {booking.location}
+                          <MapPin className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate max-w-[120px]">{booking.location}</span>
                         </span>
                       )}
                     </div>
