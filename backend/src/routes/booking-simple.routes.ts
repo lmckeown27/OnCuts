@@ -501,11 +501,20 @@ router.get('/', authenticate, async (req, res, next) => {
       }
     }
 
-    // Filter by status (case-insensitive using UPPER)
+    // Filter by status (supports comma-separated values like "PENDING,ACCEPTED")
     if (status) {
-      whereClause += ` AND UPPER(b.status::text) = UPPER($${paramIndex})`;
-      params.push(status);
-      paramIndex++;
+      const statusValues = (status as string).split(',').map(s => s.trim().toUpperCase());
+      if (statusValues.length === 1) {
+        whereClause += ` AND UPPER(b.status::text) = $${paramIndex}`;
+        params.push(statusValues[0]);
+        paramIndex++;
+      } else {
+        // Build IN clause for multiple statuses
+        const placeholders = statusValues.map((_, i) => `$${paramIndex + i}`).join(', ');
+        whereClause += ` AND UPPER(b.status::text) IN (${placeholders})`;
+        statusValues.forEach(sv => params.push(sv));
+        paramIndex += statusValues.length;
+      }
     }
 
     // Filter by date range
