@@ -6,8 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
-  MessageCircle, AlertTriangle, ArrowLeft, Bell,
-  CheckCircle, XCircle, Edit3
+  MessageCircle, AlertTriangle, Bell, CheckCircle, Edit3
 } from 'lucide-react';
 import api from '../services/api.service';
 import notificationService from '../services/notification.service';
@@ -211,23 +210,27 @@ export default function ConsumerBookingStatusPage() {
     navigate(`${platformPrefix}/consumer/messages`);
   };
 
+  const handleGoToProfile = () => {
+    navigate(`${platformPrefix}/consumer`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
-            onClick={handleBackToDiscover}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
-          <button
             onClick={handleGoToMessages}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <MessageCircle className="w-5 h-5 text-gray-600" />
+          </button>
+          <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+          <button
+            onClick={handleGoToProfile}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <User className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
