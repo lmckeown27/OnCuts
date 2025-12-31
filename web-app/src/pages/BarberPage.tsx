@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
+import api from '../services/api.service';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -658,25 +659,18 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
   
-  // Fetch confirmed bookings
+  // Fetch confirmed bookings using the API service (handles auth automatically)
   useEffect(() => {
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        const token = localStorage.getItem('campuscut_token');
-        const response = await fetch('/api/v1/bookings-simple?role=barber&status=ACCEPTED', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+        // Fetch ACCEPTED bookings for the barber's schedule
+        const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
+          role: 'barber',
+          status: 'ACCEPTED',
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          setConfirmedBookings(data.data?.bookings || []);
-        } else {
-          console.error('Failed to fetch bookings:', response.status);
-        }
+        setConfirmedBookings(response.bookings || []);
       } catch (error) {
         console.error('Error fetching confirmed bookings:', error);
       } finally {
