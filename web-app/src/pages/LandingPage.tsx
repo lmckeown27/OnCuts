@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import PullToRefresh from '../components/PullToRefresh';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
 import MainChairLogo from '../assets/logos/Main_Chair.webp';
@@ -108,8 +109,14 @@ export default function LandingPage() {
     }
   };
 
+  // Pull-to-refresh handler for mobile
+  const handlePullToRefresh = async () => {
+    // For landing page, just scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-white">
       {/* Top Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'bg-white shadow-md' : 'bg-transparent'
@@ -226,11 +233,11 @@ export default function LandingPage() {
                 <button 
                   onClick={() => {
                     closeMobileMenu();
-                    handleFindBarberClick();
+                    navigate('/web');
                   }} 
                   className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
-                  Find Barber
+                  Become a Barber
                 </button>
               </div>
             </div>
@@ -792,6 +799,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </PullToRefresh>
   );
 }
