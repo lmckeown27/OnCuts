@@ -332,6 +332,89 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
 });
 
 /**
+ * PUT /api/v1/bookings-simple/:id/complete
+ * Mark a booking as complete - triggers payment request to consumer
+ * Only the barber can mark a booking as complete
+ */
+router.put('/:id/complete', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the barber for this booking
+    const barberCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."priceUsdCents", b."serviceType",
+              barber."userId" as barber_user_id,
+              consumer.first_name || ' ' || consumer.last_name as consumer_name,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name,
+              c.service_name as original_service_name
+       FROM bookings b
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users consumer ON b."consumerId" = consumer.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       LEFT JOIN conversations c ON c.booking_id = b.id
+       WHERE b.id = $1 AND barber."userId" = $2`,
+      [id, userId]
+    );
+
+    if (barberCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only the barber can mark this booking as complete' 
+      });
+    }
+
+    const booking = barberCheck.rows[0];
+
+    // Update booking status to COMPLETED
+    const result = await pool.query(
+      `UPDATE bookings 
+       SET status = 'COMPLETED', 
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING id, status`,
+      [id]
+    );
+
+    // Also update linked conversation's booking_status
+    await pool.query(
+      `UPDATE conversations 
+       SET booking_status = 'completed', updated_at = CURRENT_TIMESTAMP
+       WHERE booking_id = $1`,
+      [id]
+    );
+
+    const serviceName = booking.original_service_name || booking.serviceType;
+    const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
+
+    // Send payment request notification to consumer
+    await notificationService.saveNotification({
+      userId: booking.consumerId,
+      type: 'payment_request',
+      title: 'Payment Request',
+      message: `${booking.barber_name} has completed your ${serviceName}. Please complete payment of ${priceFormatted}.`,
+      data: { 
+        bookingId: id,
+        amount: booking.priceUsdCents,
+        barberName: booking.barber_name,
+        serviceName,
+      },
+    });
+
+    logger.info(`Booking ${id} marked as COMPLETED by barber ${userId}. Payment request sent to consumer ${booking.consumerId}`);
+
+    res.json({
+      success: true,
+      data: { booking: result.rows[0] },
+      message: 'Booking marked as complete. Payment request sent to customer.',
+    });
+  } catch (error: any) {
+    logger.error('Error completing booking:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/bookings-simple
  * Get bookings for the authenticated user (barber or consumer)
  * Query params:
@@ -482,6 +565,181 @@ router.get('/', authenticate, async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Error fetching bookings:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/pay
+ * Process payment for a completed booking
+ * Only the consumer can pay for their booking
+ */
+router.post('/:id/pay', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { tipAmountCents = 0 } = req.body;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the consumer for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              barber."userId" as barber_user_id,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name
+       FROM bookings b
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Booking not found or access denied' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    if (booking.status !== 'COMPLETED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Can only pay for completed bookings'
+      });
+    }
+
+    const totalAmountCents = booking.priceUsdCents + tipAmountCents;
+
+    // Update booking with payment info
+    await pool.query(
+      `UPDATE bookings 
+       SET "tipAmountCents" = $1,
+           "totalPaidCents" = $2,
+           "paidAt" = CURRENT_TIMESTAMP,
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [tipAmountCents, totalAmountCents, id]
+    );
+
+    // Notify barber of payment received
+    await notificationService.saveNotification({
+      userId: booking.barber_user_id,
+      type: 'payment_received',
+      title: 'Payment Received! 💰',
+      message: `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
+      data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents },
+    });
+
+    logger.info(`Payment processed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
+
+    res.json({
+      success: true,
+      message: 'Payment processed successfully',
+      data: {
+        bookingId: id,
+        amountPaid: totalAmountCents,
+        tipAmount: tipAmountCents,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error processing payment:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/review
+ * Submit a review for a completed booking
+ * Only the consumer can review their booking
+ */
+router.post('/:id/review', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+    const userId = (req as any).user.userId;
+
+    // Validate rating
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'Rating must be between 1 and 5'
+      });
+    }
+
+    // Verify user is the consumer for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."barberId", b.status,
+              barber."userId" as barber_user_id,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name,
+              consumer.first_name || ' ' || consumer.last_name as consumer_name
+       FROM bookings b
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       JOIN users consumer ON b."consumerId" = consumer.id
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Booking not found or access denied' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    // Store review in bookings table (simple approach)
+    await pool.query(
+      `UPDATE bookings 
+       SET "reviewRating" = $1,
+           "reviewComment" = $2,
+           "reviewedAt" = CURRENT_TIMESTAMP,
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [rating, comment || null, id]
+    );
+
+    // Update barber's average rating
+    const ratingResult = await pool.query(
+      `SELECT AVG("reviewRating")::numeric(3,2) as avg_rating, COUNT(*) as review_count
+       FROM bookings 
+       WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL`,
+      [booking.barberId]
+    );
+
+    if (ratingResult.rows.length > 0) {
+      await pool.query(
+        `UPDATE barbers 
+         SET "averageRating" = $1, "totalReviews" = $2, "updatedAt" = CURRENT_TIMESTAMP
+         WHERE id = $3`,
+        [ratingResult.rows[0].avg_rating, ratingResult.rows[0].review_count, booking.barberId]
+      );
+    }
+
+    // Notify barber of new review
+    const starEmoji = rating >= 4 ? '⭐' : rating >= 3 ? '👍' : '📝';
+    await notificationService.saveNotification({
+      userId: booking.barber_user_id,
+      type: 'new_review',
+      title: `New ${rating}-Star Review ${starEmoji}`,
+      message: `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
+      data: { bookingId: id, rating, comment },
+    });
+
+    logger.info(`Review submitted for booking ${id}: ${rating} stars`);
+
+    res.json({
+      success: true,
+      message: 'Review submitted successfully',
+      data: {
+        bookingId: id,
+        rating,
+        comment,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error submitting review:', error.message || error);
     next(error);
   }
 });

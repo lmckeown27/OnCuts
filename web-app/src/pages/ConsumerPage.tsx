@@ -20,6 +20,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
+import PaymentRequestModal from '../components/PaymentRequestModal';
 import type { WeeklySchedule } from '../types';
 
 // Storage keys
@@ -97,6 +98,13 @@ export default function ConsumerPage() {
   const [showRejectedPopup, setShowRejectedPopup] = useState(false);
   const [isRejectedPopupVisible, setIsRejectedPopupVisible] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentModalData, setPaymentModalData] = useState<{
+    bookingId: string;
+    barberName: string;
+    serviceName: string;
+    amount: number;
+  } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -654,6 +662,16 @@ export default function ConsumerPage() {
                       if (isMessageNotification && data.conversationId) {
                         navigate(`${platformPrefix}/consumer/messages/${data.conversationId}`);
                         setShowNotifications(false);
+                      } else if (notification.type === 'payment_request' && data.bookingId) {
+                        // Payment request - open payment modal
+                        setPaymentModalData({
+                          bookingId: data.bookingId,
+                          barberName: data.barberName || 'Your Barber',
+                          serviceName: data.serviceName || 'Service',
+                          amount: data.amount || 0,
+                        });
+                        setShowPaymentModal(true);
+                        setShowNotifications(false);
                       } else {
                         // Default: close modal
                         setShowNotifications(false);
@@ -708,6 +726,24 @@ export default function ConsumerPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payment Request Modal */}
+      {paymentModalData && (
+        <PaymentRequestModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPaymentModalData(null);
+          }}
+          bookingId={paymentModalData.bookingId}
+          barberName={paymentModalData.barberName}
+          serviceName={paymentModalData.serviceName}
+          amount={paymentModalData.amount}
+          onPaymentComplete={() => {
+            fetchNotifications();
+          }}
+        />
       )}
     </div>
   );

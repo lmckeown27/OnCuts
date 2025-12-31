@@ -11,7 +11,7 @@ interface BarberHeaderProps {
   campusName?: string;
   showBookingRequests?: boolean;
   bookingRequestsCount?: number;
-  onServiceHistoryClick?: () => void;
+  onBookingsClick?: () => void;
 }
 
 export default function BarberHeader({ 
@@ -21,7 +21,7 @@ export default function BarberHeader({
   campusName = '',
   showBookingRequests = false,
   bookingRequestsCount = 0,
-  onServiceHistoryClick
+  onBookingsClick
 }: BarberHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -117,17 +117,17 @@ export default function BarberHeader({
                   </button>
                   <button
                     onClick={() => {
-                      if (onServiceHistoryClick) {
-                        onServiceHistoryClick();
+                      if (onBookingsClick) {
+                        onBookingsClick();
                       } else {
-                        navigate(`${platformPrefix}/barber/service-history`);
+                        navigate(`${platformPrefix}/barber/bookings`);
                       }
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <Calendar className="w-4 h-4 text-gray-500" />
-                    Service History
+                    Bookings
                   </button>
                   
                   {isCampusManager && (
