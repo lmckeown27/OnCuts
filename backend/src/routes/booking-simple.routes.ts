@@ -219,7 +219,7 @@ router.post('/', authenticate, async (req, res, next) => {
       await notificationService.saveNotification({
         userId: barberUserId,
         type: 'new_booking_request',
-        title: 'New Booking Request! 📅',
+        title: 'New Booking Request!',
         message: `${consumerName} wants to book a ${serviceType} with you`,
         data: { bookingId: booking.id, consumerId, serviceType },
       });

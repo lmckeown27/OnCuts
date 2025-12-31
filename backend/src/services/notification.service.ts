@@ -163,7 +163,7 @@ class NotificationService {
   async notifyNewBooking(bookingId: number, barberId: string, clientName: string): Promise<void> {
     await this.sendPushNotification({
       userId: barberId,
-      title: 'New Booking Request! 📅',
+      title: 'New Booking Request!',
       body: `${clientName} wants to book with you`,
       data: { bookingId: bookingId.toString(), type: 'new_booking' },
     });
