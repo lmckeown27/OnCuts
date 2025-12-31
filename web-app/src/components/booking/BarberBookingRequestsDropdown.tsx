@@ -457,22 +457,24 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                         <span className="text-sm font-semibold text-gray-900">{viewingRequest.location}</span>
                       </div>
                     )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Status</span>
+                      <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        Awaiting Acceptance
+                      </span>
+                    </div>
+                    {viewingRequest.message && (
+                      <div className="flex items-start justify-between">
+                        <span className="text-sm text-gray-600">Notes</span>
+                        <span className="text-sm font-semibold text-gray-900 text-right max-w-[60%]">{viewingRequest.message}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                       <span className="text-sm text-gray-600">Price</span>
                       <span className="text-lg font-bold text-green-600">${viewingRequest.price.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
-
-                {/* Customer Message */}
-                {viewingRequest.message && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Customer Message</h4>
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <p className="text-sm text-gray-700 italic">"{viewingRequest.message}"</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
