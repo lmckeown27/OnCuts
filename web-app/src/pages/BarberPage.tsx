@@ -965,7 +965,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         <p className="font-bold text-green-600 text-xl sm:text-2xl">{formatPrice(apt.priceUsdCents)}</p>
                       </div>
                       {/* Middle: Service */}
-                      <p className="text-base sm:text-lg text-gray-600 mb-3">{apt.serviceType.replace(/_/g, ' ')}</p>
+                      <p className="text-base sm:text-lg text-gray-600 mb-3">
+                        {apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </p>
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-primary-400 text-base sm:text-lg">{formatTime(apt.scheduledTime)}</p>
@@ -1360,7 +1362,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
                       </div>
                       {/* Middle: Service */}
-                      <p className="text-base text-gray-600 mb-3">{apt.serviceType.replace(/_/g, ' ')}</p>
+                      <p className="text-base text-gray-600 mb-3">
+                        {apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </p>
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
