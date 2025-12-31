@@ -284,6 +284,16 @@ export default function ConsumerPage() {
     }
   };
 
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadNotifications(0);
+    } catch (error) {
+      console.error('Failed to delete all notifications:', error);
+    }
+  };
+
   // Format time for notifications
   const formatNotificationTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -565,6 +575,14 @@ export default function ConsumerPage() {
                     className="text-white/80 hover:text-white text-sm underline"
                   >
                     Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button 
+                    onClick={handleDeleteAllNotifications}
+                    className="text-white/80 hover:text-white text-sm underline"
+                  >
+                    Delete all
                   </button>
                 )}
                 <button 

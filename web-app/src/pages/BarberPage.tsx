@@ -98,6 +98,16 @@ export default function BarberPage() {
       console.error('Failed to mark all notifications as read:', error);
     }
   };
+
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadNotifications(0);
+    } catch (error) {
+      console.error('Failed to delete all notifications:', error);
+    }
+  };
   
   // Format time helper
   const formatNotificationTime = (dateString: string) => {
@@ -500,6 +510,14 @@ export default function BarberPage() {
                     className="text-white/80 hover:text-white text-sm underline"
                   >
                     Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button 
+                    onClick={handleDeleteAllNotifications}
+                    className="text-white/80 hover:text-white text-sm underline"
+                  >
+                    Delete all
                   </button>
                 )}
                 <button 

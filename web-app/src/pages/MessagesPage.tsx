@@ -297,6 +297,16 @@ export default function MessagesPage() {
     }
   };
 
+  const handleDeleteAllNotifications = async () => {
+    try {
+      await notificationService.deleteAllNotifications();
+      setNotifications([]);
+      setUnreadNotifications(0);
+    } catch (error) {
+      console.error('Failed to delete all notifications:', error);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     const loadData = async () => {
@@ -1428,6 +1438,14 @@ export default function MessagesPage() {
                     className="text-white/80 hover:text-white text-sm underline"
                   >
                     Mark all read
+                  </button>
+                )}
+                {notifications.length > 0 && (
+                  <button 
+                    onClick={handleDeleteAllNotifications}
+                    className="text-white/80 hover:text-white text-sm underline"
+                  >
+                    Delete all
                   </button>
                 )}
                 <button 

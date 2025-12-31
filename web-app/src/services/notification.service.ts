@@ -53,6 +53,10 @@ class NotificationService {
   async deleteNotification(notificationId: string): Promise<void> {
     await api.delete(`/notifications/${notificationId}`);
   }
+
+  async deleteAllNotifications(): Promise<void> {
+    await api.delete('/notifications/all');
+  }
 }
 
 export default new NotificationService();

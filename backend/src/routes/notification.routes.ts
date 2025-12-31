@@ -141,6 +141,29 @@ router.put('/read-all', authenticate, async (req, res, next) => {
 });
 
 /**
+ * DELETE /api/notifications/all
+ * Delete all notifications for the current user
+ */
+router.delete('/all', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    const result = await pool.query(
+      `DELETE FROM notifications WHERE user_id = $1`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'All notifications deleted',
+      data: { deletedCount: result.rowCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/notifications/:id
  * Delete a notification
  */
