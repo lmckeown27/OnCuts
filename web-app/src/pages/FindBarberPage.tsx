@@ -4,7 +4,7 @@
  * Simple page to select your university and find nearby barbers.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowRight, 
@@ -13,12 +13,14 @@ import {
 import UniversitySelector from '../components/UniversitySelector';
 import type { University } from '../data/universities';
 import { CampusCutLogo } from '@assets';
+import { useAuthStore } from '../store/useAuthStore';
 
 // Storage key
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function FindBarberPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
   // Always start with empty search bar - don't load saved university
@@ -65,13 +67,17 @@ export default function FindBarberPage() {
             className="h-8"
           />
           
-          {/* Sign In Button */}
-          <button
-            onClick={() => navigate('/web')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-          >
-            Sign In
-          </button>
+          {/* Sign In Button - only show when not authenticated */}
+          {!isAuthenticated ? (
+            <button
+              onClick={() => navigate('/web')}
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+            >
+              Sign In
+            </button>
+          ) : (
+            <div className="w-[70px]" /> // Spacer to maintain header balance
+          )}
         </div>
       </header>
 
