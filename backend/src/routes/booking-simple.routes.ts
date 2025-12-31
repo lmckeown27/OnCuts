@@ -974,17 +974,20 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     // Update booking status to CANCELLED instead of deleting
     await pool.query(
       `UPDATE bookings 
-       SET status = 'CANCELLED', "updatedAt" = CURRENT_TIMESTAMP, notes = COALESCE(notes || ' | ', '') || $1
-       WHERE id = $2`,
-      [`Cancelled by barber${reason ? ': ' + reason : ''}`, id]
+       SET status = 'CANCELLED', "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [id]
     );
 
-    // Also update any linked conversation
+    // Also update any linked conversation with cancellation reason
+    const cancellationNote = `Cancelled by barber${reason ? ': ' + reason : ''}`;
     await pool.query(
       `UPDATE conversations 
-       SET booking_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
-       WHERE booking_id = $1`,
-      [id]
+       SET booking_status = 'cancelled', 
+           notes = COALESCE(notes || ' | ', '') || $1,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE booking_id = $2`,
+      [cancellationNote, id]
     );
 
     // Notify consumer about the cancellation
