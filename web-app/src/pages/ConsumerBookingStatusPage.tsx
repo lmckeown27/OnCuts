@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
-  MessageCircle, AlertTriangle, ArrowLeft, Bell, RefreshCw,
+  MessageCircle, AlertTriangle, ArrowLeft, Bell,
   CheckCircle, XCircle, Edit3
 } from 'lucide-react';
 import api from '../services/api.service';
@@ -44,7 +44,6 @@ export default function ConsumerBookingStatusPage() {
   
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchActiveBooking();
@@ -108,13 +107,7 @@ export default function ConsumerBookingStatusPage() {
       console.error('Failed to fetch active booking:', error);
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
-  };
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchActiveBooking();
   };
 
   const handleBackToDiscover = () => {
@@ -214,26 +207,27 @@ export default function ConsumerBookingStatusPage() {
   const isPending = booking.status === 'PENDING';
   const isAccepted = booking.status === 'ACCEPTED';
 
+  const handleGoToMessages = () => {
+    navigate(`${platformPrefix}/consumer/messages`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleBackToDiscover}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
-          </div>
           <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
+            onClick={handleBackToDiscover}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <RefreshCw className={`w-5 h-5 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+          <button
+            onClick={handleGoToMessages}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <MessageCircle className="w-5 h-5 text-gray-600" />
           </button>
         </div>
       </div>
