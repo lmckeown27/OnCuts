@@ -1644,7 +1644,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
             <div className="space-y-3">
               {filteredBookings.map((booking) => {
                 const { date, time } = formatDateTime(booking.scheduledTime);
-                const showMarkComplete = booking.status === 'ACCEPTED' && (activeTab === 'today' || isPaymentDue(booking));
+                // Show "Mark Complete" for all ACCEPTED bookings - barber can trigger payment at any time
+                const showMarkComplete = booking.status === 'ACCEPTED';
                 
                 return (
                   <div 
