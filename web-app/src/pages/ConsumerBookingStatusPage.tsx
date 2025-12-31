@@ -14,6 +14,7 @@ import notificationService from '../services/notification.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
+import TimePickerDropdown from '../components/TimePickerDropdown';
 import toast from 'react-hot-toast';
 
 interface ActiveBooking {
@@ -169,11 +170,10 @@ export default function ConsumerBookingStatusPage() {
     const year = scheduledDate.getFullYear();
     setEditDate(`${month}/${day}/${year}`);
     
-    const hours = scheduledDate.getHours();
-    const minutes = scheduledDate.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    setEditTime(`${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`);
+    // Set time in 24-hour format (HH:MM) for TimePickerDropdown
+    const hours = String(scheduledDate.getHours()).padStart(2, '0');
+    const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
+    setEditTime(`${hours}:${minutes}`);
     
     setEditLocation(booking.location || '');
     setEditNotes(booking.notes || '');
@@ -188,20 +188,15 @@ export default function ConsumerBookingStatusPage() {
     try {
       // Parse the edited date and time
       const [month, day, year] = editDate.split('/').map(Number);
-      const timeMatch = editTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
       
-      if (!timeMatch) {
+      // Parse 24-hour format time from TimePickerDropdown (HH:MM)
+      const [hours, minutes] = editTime.split(':').map(Number);
+      
+      if (isNaN(hours) || isNaN(minutes)) {
         toast.error('Invalid time format');
         setIsSaving(false);
         return;
       }
-      
-      let hours = parseInt(timeMatch[1]);
-      const minutes = parseInt(timeMatch[2]);
-      const ampm = timeMatch[3].toUpperCase();
-      
-      if (ampm === 'PM' && hours !== 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
       
       const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
       
@@ -624,13 +619,10 @@ export default function ConsumerBookingStatusPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time (e.g., 9:00 AM)</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <TimePickerDropdown
                   value={editTime}
-                  onChange={(e) => setEditTime(e.target.value)}
-                  placeholder="9:00 AM"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  onChange={setEditTime}
                 />
               </div>
               
