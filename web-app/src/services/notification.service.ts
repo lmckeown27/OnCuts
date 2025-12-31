@@ -25,8 +25,21 @@ interface NotificationsResponse {
 
 class NotificationService {
   async getNotifications(page = 1, limit = 20): Promise<NotificationsResponse['data']> {
-    const response = await api.get<NotificationsResponse>('/notifications', { page, limit });
-    return response.data;
+    // api.get already extracts response.data.data, so we get the inner data directly
+    const data = await api.get<NotificationsResponse['data']>('/notifications', { page, limit });
+    
+    // Handle various response formats
+    if (data && 'notifications' in data) {
+      return data;
+    }
+    
+    // Fallback: if the response structure is different
+    const responseData = data as any;
+    return {
+      notifications: responseData?.notifications || [],
+      unreadCount: responseData?.unreadCount || 0,
+      pagination: responseData?.pagination || { page: 1, limit: 20, total: 0 },
+    };
   }
 
   async markAsRead(notificationId: string): Promise<void> {
