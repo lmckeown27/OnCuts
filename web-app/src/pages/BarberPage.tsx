@@ -4,7 +4,8 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
+import notificationService, { Notification } from '../services/notification.service';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -55,9 +56,70 @@ export default function BarberPage() {
   const [showServiceDetails, setShowServiceDetails] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   
+  // Notifications state
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showServiceHistory || showAvailability || showServiceDetails || showWalkInPayment;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showServiceHistory || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
   useBodyScrollLock(isAnyModalOpen);
+  
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data.notifications);
+      setUnreadNotifications(data.unreadCount);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+  
+  const handleMarkNotificationRead = async (notificationId: string) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, is_read: true } : n
+      ));
+      setUnreadNotifications(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+  
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadNotifications(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+  
+  // Format time helper
+  const formatNotificationTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+  
+  // Fetch notifications on mount
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -225,6 +287,21 @@ export default function BarberPage() {
                   >
                     <Clock className="w-4 h-4 text-gray-500" />
                     Availability
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNotifications(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <Bell className="w-4 h-4 text-gray-500" />
+                    Notifications
+                    {unreadNotifications > 0 && (
+                      <span className="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+                        {unreadNotifications}
+                      </span>
+                    )}
                   </button>
                   {/* Campus Manager Option (conditional) */}
                   {isCampusManager && (
@@ -396,6 +473,139 @@ export default function BarberPage() {
         onClose={() => setShowWalkInPayment(false)}
         barberName="Marcus"
       />
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowNotifications(false)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white">Notifications</h2>
+                <p className="text-white/80 text-sm">
+                  {unreadNotifications > 0 ? `${unreadNotifications} unread` : 'All caught up!'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadNotifications > 0 && (
+                  <button 
+                    onClick={handleMarkAllNotificationsRead}
+                    className="text-white/80 hover:text-white text-sm underline"
+                  >
+                    Mark all read
+                  </button>
+                )}
+                <button 
+                  onClick={() => setShowNotifications(false)}
+                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="max-h-[60vh] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No notifications yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {notifications.map((notification) => {
+                    // Determine icon and colors based on notification type
+                    const getNotificationStyle = () => {
+                      switch (notification.type) {
+                        case 'booking_accepted':
+                          return { bg: 'bg-green-100', icon: <Check className="w-5 h-5 text-green-600" /> };
+                        case 'booking_rejected':
+                        case 'booking_cancelled':
+                          return { bg: 'bg-red-100', icon: <AlertCircle className="w-5 h-5 text-red-600" /> };
+                        case 'new_booking_request':
+                          return { bg: 'bg-blue-100', icon: <Calendar className="w-5 h-5 text-blue-600" /> };
+                        case 'new_message':
+                          return { bg: 'bg-primary-100', icon: <MessageCircle className="w-5 h-5 text-primary-600" /> };
+                        default:
+                          return { bg: 'bg-primary-100', icon: <Bell className="w-5 h-5 text-primary-600" /> };
+                      }
+                    };
+                    
+                    const style = getNotificationStyle();
+                    
+                    // Handle click
+                    const handleNotificationClick = () => {
+                      if (!notification.is_read) {
+                        handleMarkNotificationRead(notification.id);
+                      }
+                      
+                      // Navigate based on notification type
+                      const data = notification.data ? (typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data) : {};
+                      
+                      if (notification.type === 'new_message' && data.conversationId) {
+                        navigate(`${platformPrefix}/barber/messages/${data.conversationId}`);
+                        setShowNotifications(false);
+                      } else if (notification.type === 'new_booking_request') {
+                        // Stay on barber page, close modal - dashboard shows requests
+                        setShowNotifications(false);
+                      }
+                    };
+                    
+                    return (
+                      <div 
+                        key={notification.id}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          !notification.is_read ? 'bg-primary-50/50' : ''
+                        }`}
+                        onClick={handleNotificationClick}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                            {style.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm">
+                                {notification.title}
+                              </h4>
+                              {!notification.is_read && (
+                                <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatNotificationTime(notification.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <Button
+                onClick={() => setShowNotifications(false)}
+                variant="secondary"
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
