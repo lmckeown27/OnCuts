@@ -544,22 +544,20 @@ export class BookingRequestService {
       if (bookingId.startsWith('conv-')) {
         const conversationId = bookingId.replace('conv-', '');
         
-        // Update conversation booking_status and get the linked booking_id
-        const updateResult = await client.query(`
-          UPDATE conversations
-          SET 
-            booking_status = 'rejected',
-            updated_at = CURRENT_TIMESTAMP
+        // Get conversation details before deleting
+        const convResult = await client.query(`
+          SELECT user1_id, user2_id, booking_id
+          FROM conversations
           WHERE id = $1 AND booking_status = 'pending'
-          RETURNING user1_id, user2_id, booking_id
         `, [conversationId]);
 
-        if (updateResult.rows.length === 0) {
+        if (convResult.rows.length === 0) {
           throw new Error('Conversation not found or already responded to');
         }
 
-        // Also update the linked booking record if it exists
-        const linkedBookingId = updateResult.rows[0].booking_id;
+        const linkedBookingId = convResult.rows[0].booking_id;
+
+        // Update the linked booking record to REJECTED if it exists
         if (linkedBookingId) {
           await client.query(`
             UPDATE bookings
@@ -568,35 +566,20 @@ export class BookingRequestService {
               "updatedAt" = CURRENT_TIMESTAMP
             WHERE id = $1
           `, [linkedBookingId]);
-          logger.info(`Linked booking ${linkedBookingId} also marked as REJECTED`);
+          logger.info(`Linked booking ${linkedBookingId} marked as REJECTED`);
         }
 
-        // Get barber's user ID
+        // Get barber's user ID for notification
         const barberResult = await client.query(
           'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
           [barberId]
         );
         const barberUserId = barberResult.rows[0]?.userId || barberId;
 
-        // Add system message to conversation about the decline
-        const declineMessage = reason 
-          ? `The barber has declined your service request. Reason: ${reason}\n\nIf you believe this was a mistake or you were unfairly rejected, please email campuscuthelp@gmail.com`
-          : `The barber has declined your service request.\n\nIf you believe this was a mistake or you were unfairly rejected, please email campuscuthelp@gmail.com`;
-
-        await client.query(`
-          INSERT INTO messages (conversation_id, sender_id, content, message_type)
-          VALUES ($1, $2, $3, 'system')
-        `, [conversationId, barberUserId, declineMessage]);
-
-        // Update conversation's last_message_at
-        await client.query(`
-          UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = $1
-        `, [conversationId]);
-
-        // Send notification to consumer about rejection
-        const consumerUserId = updateResult.rows[0].user1_id === barberUserId 
-          ? updateResult.rows[0].user2_id 
-          : updateResult.rows[0].user1_id;
+        // Determine consumer user ID
+        const consumerUserId = convResult.rows[0].user1_id === barberUserId 
+          ? convResult.rows[0].user2_id 
+          : convResult.rows[0].user1_id;
         
         // Get barber name for notification
         const barberNameResult = await client.query(
@@ -605,16 +588,22 @@ export class BookingRequestService {
         );
         const barberName = barberNameResult.rows[0]?.name || 'The barber';
         
+        // Send notification to consumer about rejection BEFORE deleting conversation
         await notificationService.saveNotification({
           userId: consumerUserId,
           type: 'booking_rejected',
           title: 'Booking Declined',
-          message: `${barberName} was unable to accept your booking request`,
-          data: { conversationId, bookingId: linkedBookingId, reason },
+          message: `${barberName} was unable to accept your booking request${reason ? `: ${reason}` : ''}`,
+          data: { bookingId: linkedBookingId, reason },
         });
 
+        // Delete the conversation and its messages (cascading delete should handle messages)
+        await client.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
+        await client.query(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
+        logger.info(`Deleted conversation ${conversationId} and its messages after rejection`);
+
         await client.query('COMMIT');
-        logger.info(`Conversation ${conversationId} booking rejected by barber ${barberId}`);
+        logger.info(`Booking rejected by barber ${barberId}, conversation deleted`);
         return { success: true };
       }
 
@@ -636,13 +625,17 @@ export class BookingRequestService {
 
       const consumerId = updateResult.rows[0].consumerId;
       
-      // Also update any linked conversation's booking_status
+      // Delete any linked conversation and its messages when booking is cancelled
+      // First delete messages, then conversation
       await client.query(`
-        UPDATE conversations
-        SET booking_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+        DELETE FROM messages 
+        WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)
+      `, [bookingId]);
+      await client.query(`
+        DELETE FROM conversations
         WHERE booking_id = $1
       `, [bookingId]);
-      logger.info(`Updated linked conversation booking_status for booking ${bookingId}`);
+      logger.info(`Deleted linked conversation and messages for cancelled booking ${bookingId}`);
       
       // Get barber name for notification
       const barberNameResult = await client.query(

@@ -27,7 +27,8 @@ import {
   FileText,
   AlertCircle,
   Trash2,
-  Bell
+  Bell,
+  Lock
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
@@ -869,29 +870,37 @@ export default function MessagesPage() {
 
         {/* Message Input */}
         <div className="p-4 border-t border-gray-200 bg-white">
-          <div className="flex items-center gap-3">
-            <input
-              ref={inputRef}
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Type a message..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              disabled={isSending}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim() || isSending}
-              className={`p-2 rounded-full transition-colors ${
-                newMessage.trim() && !isSending
-                  ? 'bg-primary-500 text-white hover:bg-primary-600'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
+          {/* Show locked message when booking is pending */}
+          {selectedConversation?.booking?.status === 'pending' ? (
+            <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-sm">
+              <Lock className="w-4 h-4" />
+              <span>Messaging is locked until the booking is accepted</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                disabled={isSending}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || isSending}
+                className={`p-2 rounded-full transition-colors ${
+                  newMessage.trim() && !isSending
+                    ? 'bg-primary-500 text-white hover:bg-primary-600'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                <Send className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
