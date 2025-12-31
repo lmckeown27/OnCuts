@@ -50,6 +50,8 @@ export default function ConsumerBookingStatusPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -173,6 +175,9 @@ export default function ConsumerBookingStatusPage() {
     const displayHours = hours % 12 || 12;
     setEditTime(`${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`);
     
+    setEditLocation(booking.location || '');
+    setEditNotes(booking.notes || '');
+    
     setShowEditModal(true);
   };
 
@@ -202,6 +207,8 @@ export default function ConsumerBookingStatusPage() {
       
       await api.put(`/bookings-simple/${booking.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
+        location: editLocation,
+        notes: editNotes,
       });
       
       toast.success('Booking updated!');
@@ -624,6 +631,28 @@ export default function ConsumerBookingStatusPage() {
                   onChange={(e) => setEditTime(e.target.value)}
                   placeholder="9:00 AM"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="Where should the appointment take place?"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Any special requests or notes for your barber..."
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
                 />
               </div>
             </div>
