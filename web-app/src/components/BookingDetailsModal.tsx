@@ -389,7 +389,7 @@ export default function BookingDetailsModal({
             <div className="space-y-5">
               {/* Customer Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
                   {booking.consumer?.profileImageUrl ? (
                     <img 
                       src={booking.consumer.profileImageUrl} 
@@ -397,9 +397,7 @@ export default function BookingDetailsModal({
                       className="w-14 h-14 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="text-primary-600 font-bold text-lg">
-                      {booking.consumer?.firstName?.[0]}{booking.consumer?.lastName?.[0]}
-                    </span>
+                    <User className="w-7 h-7 text-primary-600" />
                   )}
                 </div>
                 <div className="flex-1">
