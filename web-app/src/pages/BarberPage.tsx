@@ -520,9 +520,16 @@ export default function BarberPage() {
               ) : (
                 <div className="divide-y divide-gray-100">
                   {notifications.map((notification) => {
+                    // Normalize type for matching (handle case/whitespace variations)
+                    const notifType = (notification.type || '').toLowerCase().trim();
+                    const isMessageNotification = notifType === 'new_message' || notification.title?.toLowerCase().includes('message');
+                    
                     // Determine icon and colors based on notification type
                     const getNotificationStyle = () => {
-                      switch (notification.type) {
+                      if (isMessageNotification) {
+                        return { bg: 'bg-primary-100', icon: <MessageCircle className="w-5 h-5 text-primary-600" /> };
+                      }
+                      switch (notifType) {
                         case 'booking_accepted':
                           return { bg: 'bg-green-100', icon: <Check className="w-5 h-5 text-green-600" /> };
                         case 'booking_rejected':
@@ -530,8 +537,6 @@ export default function BarberPage() {
                           return { bg: 'bg-red-100', icon: <AlertCircle className="w-5 h-5 text-red-600" /> };
                         case 'new_booking_request':
                           return { bg: 'bg-blue-100', icon: <Calendar className="w-5 h-5 text-blue-600" /> };
-                        case 'new_message':
-                          return { bg: 'bg-primary-100', icon: <MessageCircle className="w-5 h-5 text-primary-600" /> };
                         default:
                           return { bg: 'bg-primary-100', icon: <Bell className="w-5 h-5 text-primary-600" /> };
                       }
@@ -539,20 +544,24 @@ export default function BarberPage() {
                     
                     const style = getNotificationStyle();
                     
-                    // Handle click
+                    // Parse notification data
+                    const data = notification.data ? (typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data) : {};
+                    
+                    // Handle click - navigate to appropriate page
                     const handleNotificationClick = () => {
                       if (!notification.is_read) {
                         handleMarkNotificationRead(notification.id);
                       }
                       
-                      // Navigate based on notification type
-                      const data = notification.data ? (typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data) : {};
-                      
-                      if (notification.type === 'new_message' && data.conversationId) {
+                      // Message notifications navigate to the conversation
+                      if (isMessageNotification && data.conversationId) {
                         navigate(`${platformPrefix}/barber/messages/${data.conversationId}`);
                         setShowNotifications(false);
-                      } else if (notification.type === 'new_booking_request') {
+                      } else if (notifType === 'new_booking_request') {
                         // Stay on barber page, close modal - dashboard shows requests
+                        setShowNotifications(false);
+                      } else {
+                        // Default: close modal
                         setShowNotifications(false);
                       }
                     };
