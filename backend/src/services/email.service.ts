@@ -957,3 +957,132 @@ function generatePendingBookingHtml(
 </html>
 `.trim();
 }
+
+/**
+ * Interface for booking edit email details
+ */
+interface BookingEditEmailDetails {
+  consumerEmail: string;
+  consumerName: string;
+  barberEmail: string;
+  barberName: string;
+  serviceName: string;
+  originalScheduledDate: string;
+  originalScheduledTime: string;
+  newScheduledDate: string;
+  newScheduledTime: string;
+  location?: string;
+  price: number;
+  bookingId: string;
+}
+
+/**
+ * Send Booking Edit Notification Emails
+ * Sends notification emails to both consumer and barber when a booking is edited.
+ */
+export async function sendBookingEditEmails(details: BookingEditEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping booking edit emails for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  // Send to consumer
+  try {
+    const transporter = createTransporter();
+    
+    await transporter.sendMail({
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject: `Booking Updated - Your ${details.serviceName} appointment has been rescheduled`,
+      text: `Hi ${details.consumerName.split(' ')[0]}!\n\n${details.barberName} has made changes to your upcoming ${details.serviceName} appointment.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nIf you have questions, message your barber through the app.\n\n- CampusCut`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">📅 Booking Updated</p>
+  </div>
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${details.consumerName.split(' ')[0]}!</h2>
+    <p style="color: #6b7280; margin: 0 0 20px 0;">${details.barberName} has rescheduled your appointment</p>
+    <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚡ What Changed</h3>
+      <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
+      <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+    </div>
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p><strong>Service:</strong> ${details.serviceName}</p>
+      <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
+      ${details.location ? `<p><strong>Location:</strong> ${details.location}</p>` : ''}
+    </div>
+    <div style="text-align: center; margin: 20px 0;">
+      <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
+      <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+    </div>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${frontendUrl}/web/consumer/booking-status" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Updated Booking</a>
+    </p>
+  </div>
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
+</body>
+</html>`.trim()
+    });
+    logger.info(`Booking edit email sent to consumer: ${details.consumerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking edit email to consumer:`, error.message);
+  }
+
+  // Send to barber
+  try {
+    const transporter = createTransporter();
+    
+    await transporter.sendMail({
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject: `Booking Updated - Confirmation of changes to ${details.consumerName}'s appointment`,
+      text: `Hi ${details.barberName.split(' ')[0]}!\n\nThis confirms your changes to the ${details.serviceName} appointment with ${details.consumerName}.\n\nWHAT CHANGED:\nOriginal: ${details.originalScheduledDate} at ${details.originalScheduledTime}\nNew: ${details.newScheduledDate} at ${details.newScheduledTime}\n\nBooking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}\n\nThe customer has been notified of this change.\n\n- CampusCut`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 16px;">📅 Booking Updated</p>
+  </div>
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${details.barberName.split(' ')[0]}!</h2>
+    <p style="color: #6b7280; margin: 0 0 20px 0;">Confirmation of your changes</p>
+    <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚡ What Changed</h3>
+      <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
+      <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+    </div>
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <p><strong>Customer:</strong> ${details.consumerName}</p>
+      <p><strong>Service:</strong> ${details.serviceName}</p>
+      <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
+      ${details.location ? `<p><strong>Location:</strong> ${details.location}</p>` : ''}
+    </div>
+    <div style="text-align: center; margin: 20px 0;">
+      <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
+      <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+    </div>
+    <p style="color: #166534; text-align: center; font-size: 14px;">✅ The customer has been notified of this change.</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Booking</a>
+    </p>
+  </div>
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
+</body>
+</html>`.trim()
+    });
+    logger.info(`Booking edit email sent to barber: ${details.barberEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking edit email to barber:`, error.message);
+  }
+}

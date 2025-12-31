@@ -10,7 +10,7 @@ import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
-import { sendPendingBookingEmails } from '../services/email.service';
+import { sendPendingBookingEmails, sendBookingEditEmails } from '../services/email.service';
 
 const router = express.Router();
 
@@ -944,14 +944,15 @@ router.put('/:id', authenticate, async (req, res, next) => {
       }
     }
 
-    // If scheduledTime was changed, notify the consumer
+    // If scheduledTime was changed, notify the consumer and send emails
     if (scheduledTime) {
       const barberNameResult = await pool.query(
-        `SELECT u.first_name || ' ' || u.last_name as name 
+        `SELECT u.first_name || ' ' || u.last_name as name, u.email as barber_email
          FROM users u WHERE u.id = $1`,
         [userId]
       );
       const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+      const barberEmail = barberNameResult.rows[0]?.barber_email;
 
       const newDate = new Date(scheduledTime);
       const formattedDate = newDate.toLocaleDateString('en-US', { 
@@ -963,6 +964,13 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
       // Get the original scheduled time for comparison in notification data
       const originalScheduledTime = booking.original_scheduled_time || booking.requestedAt;
+      const originalDate = new Date(originalScheduledTime);
+      const originalFormattedDate = originalDate.toLocaleDateString('en-US', { 
+        weekday: 'short', month: 'short', day: 'numeric' 
+      });
+      const originalFormattedTime = originalDate.toLocaleTimeString('en-US', { 
+        hour: 'numeric', minute: '2-digit' 
+      });
 
       await notificationService.saveNotification({
         userId: booking.consumerId,
@@ -976,6 +984,43 @@ router.put('/:id', authenticate, async (req, res, next) => {
           barberName: barberName,
         },
       });
+
+      // Send booking edit emails to both consumer and barber
+      const consumerEmailResult = await pool.query(
+        `SELECT first_name || ' ' || last_name as name, email FROM users WHERE id = $1`,
+        [booking.consumerId]
+      );
+      const consumerName = consumerEmailResult.rows[0]?.name || 'Customer';
+      const consumerEmail = consumerEmailResult.rows[0]?.email;
+
+      // Get service name from conversation
+      const serviceResult = await pool.query(
+        `SELECT c.service_name, b."priceUsdCents", c.location
+         FROM bookings b
+         LEFT JOIN conversations c ON c.booking_id = b.id
+         WHERE b.id = $1`,
+        [id]
+      );
+      const serviceName = serviceResult.rows[0]?.service_name || booking.serviceType || 'Haircut';
+      const priceUsdCents = serviceResult.rows[0]?.priceUsdCents || 0;
+      const bookingLocation = serviceResult.rows[0]?.location;
+
+      if (consumerEmail && barberEmail) {
+        sendBookingEditEmails({
+          consumerEmail,
+          consumerName,
+          barberEmail,
+          barberName,
+          serviceName,
+          originalScheduledDate: originalFormattedDate,
+          originalScheduledTime: originalFormattedTime,
+          newScheduledDate: formattedDate,
+          newScheduledTime: formattedTime,
+          location: bookingLocation || undefined,
+          price: priceUsdCents / 100,
+          bookingId: id,
+        }).catch(err => logger.error('Failed to send booking edit emails:', err));
+      }
     }
 
     logger.info(`Booking ${id} updated by barber ${userId}`);
