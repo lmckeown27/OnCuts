@@ -129,6 +129,7 @@ export default function MessagesPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -170,10 +171,22 @@ export default function MessagesPage() {
 
   // Scroll to bottom of messages
   const scrollToBottom = useCallback((instant = false) => {
-    // Use setTimeout to ensure DOM has rendered
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: instant ? 'auto' : 'smooth' });
-    }, 50);
+    // Use requestAnimationFrame + setTimeout for reliable DOM timing
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const container = messagesContainerRef.current;
+        if (container) {
+          if (instant) {
+            container.scrollTop = container.scrollHeight;
+          } else {
+            container.scrollTo({
+              top: container.scrollHeight,
+              behavior: 'smooth'
+            });
+          }
+        }
+      }, 100);
+    });
   }, []);
 
   // Fetch conversations
@@ -762,7 +775,7 @@ export default function MessagesPage() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
+        <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 bg-gray-50">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <p className="text-gray-500">No messages yet. Start the conversation!</p>
