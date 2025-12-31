@@ -11,6 +11,7 @@ import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
 import notificationService, { Notification } from '../services/notification.service';
+import api from '../services/api.service';
 import { barberApplicationService } from '../services/barber-application.service';
 import type { Barber } from '../types';
 import type { University } from '../data/universities';
@@ -140,6 +141,32 @@ export default function ConsumerPage() {
   const { user, setUser } = useAuthStore();
   const consumerId = user?.id || '';
   
+  // Check for active bookings and redirect to booking status page
+  useEffect(() => {
+    const checkActiveBookings = async () => {
+      if (!user) return;
+      
+      try {
+        const response = await api.get('/bookings-simple', { role: 'consumer' });
+        const bookings = response.bookings || [];
+        
+        // Check if user has any PENDING or ACCEPTED bookings
+        const activeBooking = bookings.find(
+          (b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED'
+        );
+        
+        if (activeBooking) {
+          // Redirect to booking status page
+          navigate(`${platformPrefix}/consumer/booking-status`, { replace: true });
+        }
+      } catch (error) {
+        console.error('Failed to check active bookings:', error);
+      }
+    };
+    
+    checkActiveBookings();
+  }, [user?.id, platformPrefix, navigate]);
+
   // Check for barber profile if not already known
   useEffect(() => {
     const checkBarberProfile = async () => {

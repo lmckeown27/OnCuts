@@ -10,6 +10,7 @@ import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
+import { sendPendingBookingEmails } from '../services/email.service';
 
 const router = express.Router();
 
@@ -223,6 +224,43 @@ router.post('/', authenticate, async (req, res, next) => {
         data: { bookingId: booking.id, consumerId, serviceType },
       });
       logger.info(`Notification sent to barber ${barberUserId} for new booking ${booking.id}`);
+    }
+
+    // Send pending booking emails to both consumer and barber
+    try {
+      // Get consumer and barber emails
+      const emailDetailsResult = await pool.query(
+        `SELECT 
+          u_consumer.email as consumer_email,
+          u_consumer.first_name || ' ' || u_consumer.last_name as consumer_full_name,
+          u_barber.email as barber_email,
+          u_barber.first_name || ' ' || u_barber.last_name as barber_full_name
+         FROM users u_consumer, users u_barber
+         WHERE u_consumer.id = $1 AND u_barber.id = $2`,
+        [consumerId, barberUserId]
+      );
+      
+      if (emailDetailsResult.rows.length > 0) {
+        const emailDetails = emailDetailsResult.rows[0];
+        const scheduledDate = new Date(requestedTime);
+        
+        // Send pending booking emails (non-blocking)
+        sendPendingBookingEmails({
+          consumerEmail: emailDetails.consumer_email,
+          consumerName: emailDetails.consumer_full_name,
+          barberEmail: emailDetails.barber_email,
+          barberName: emailDetails.barber_full_name,
+          serviceName: serviceType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()),
+          scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          price: price / 100, // Convert cents to dollars
+          location: location || undefined,
+          notes: notes || undefined,
+          bookingId: booking.id,
+        }).catch(err => logger.error('Failed to send pending booking emails:', err));
+      }
+    } catch (emailError) {
+      logger.error('Error preparing pending booking emails:', emailError);
     }
 
     res.status(201).json({
@@ -549,6 +587,8 @@ router.get('/', authenticate, async (req, res, next) => {
           location: row.conv_location || null,
           notes: row.conv_notes || null,
           serviceName: row.conv_service_name || null,
+          // Full barber name for display
+          barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
           consumer: {
             firstName: row.consumer_first_name,
             lastName: row.consumer_last_name,
@@ -897,12 +937,20 @@ router.put('/:id', authenticate, async (req, res, next) => {
         hour: 'numeric', minute: '2-digit' 
       });
 
+      // Get the original scheduled time for comparison in notification data
+      const originalScheduledTime = booking.original_scheduled_time || booking.requestedAt;
+
       await notificationService.saveNotification({
         userId: booking.consumerId,
         type: 'booking_updated',
         title: 'Booking Updated 📅',
         message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
-        data: { bookingId: id, newScheduledTime: scheduledTime },
+        data: { 
+          bookingId: id, 
+          newScheduledTime: scheduledTime,
+          originalScheduledTime: originalScheduledTime,
+          barberName: barberName,
+        },
       });
     }
 

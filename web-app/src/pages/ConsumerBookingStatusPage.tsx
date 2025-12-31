@@ -1,0 +1,460 @@
+/**
+ * ConsumerBookingStatusPage - Shows consumer their active booking status
+ * Displays pending → accepted flow and any changes made by barber
+ */
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Clock, Check, X, Calendar, MapPin, DollarSign, User, 
+  MessageCircle, AlertTriangle, ArrowLeft, Bell, RefreshCw,
+  CheckCircle, XCircle, Edit3
+} from 'lucide-react';
+import api from '../services/api.service';
+import notificationService from '../services/notification.service';
+import { useAuthStore } from '../store/useAuthStore';
+import { CampusCutLogo } from '@assets';
+import toast from 'react-hot-toast';
+
+interface ActiveBooking {
+  id: string;
+  barberId: string;
+  barberName: string;
+  barberAvatar?: string;
+  serviceName: string;
+  serviceType: string;
+  priceUsdCents: number;
+  scheduledTime: string;
+  location?: string;
+  notes?: string;
+  status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string;
+  // Original values (for detecting edits)
+  originalScheduledTime?: string;
+  originalLocation?: string;
+  // Flags
+  hasEdits?: boolean;
+  editsAcknowledged?: boolean;
+}
+
+export default function ConsumerBookingStatusPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  const { user, logout } = useAuthStore();
+  
+  const [booking, setBooking] = useState<ActiveBooking | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchActiveBooking();
+    // Poll for updates every 30 seconds
+    const interval = setInterval(fetchActiveBooking, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchActiveBooking = async () => {
+    try {
+      // Fetch consumer's active bookings (PENDING or ACCEPTED)
+      const response = await api.get('/bookings-simple', { 
+        role: 'consumer',
+        status: 'PENDING,ACCEPTED' 
+      });
+      
+      const bookings = response.bookings || [];
+      
+      // Get the most recent active booking
+      const activeBooking = bookings
+        .filter((b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED')
+        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+      
+      if (activeBooking) {
+        // Fetch notifications to check for booking updates
+        let hasEdits = false;
+        let originalScheduledTime: string | undefined;
+        
+        try {
+          const notifications = await notificationService.getNotifications();
+          
+          // Find the most recent booking_updated notification for this booking
+          const updateNotification = notifications.data
+            .filter((n: any) => 
+              n.type === 'booking_updated' && 
+              n.data?.bookingId === activeBooking.id
+            )
+            .sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+          
+          if (updateNotification && updateNotification.data?.originalScheduledTime) {
+            originalScheduledTime = updateNotification.data.originalScheduledTime;
+            hasEdits = new Date(activeBooking.scheduledTime).getTime() !== 
+                       new Date(originalScheduledTime).getTime();
+          }
+        } catch (notifError) {
+          console.error('Failed to fetch notifications for edit detection:', notifError);
+        }
+        
+        setBooking({
+          ...activeBooking,
+          originalScheduledTime,
+          hasEdits,
+          editsAcknowledged: !hasEdits, // If no edits, consider acknowledged
+        });
+      } else {
+        setBooking(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch active booking:', error);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchActiveBooking();
+  };
+
+  const handleBackToDiscover = () => {
+    navigate(`${platformPrefix}/consumer`);
+  };
+
+  const handleMessageBarber = () => {
+    if (booking) {
+      navigate(`${platformPrefix}/consumer/messages`);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+    
+    if (!confirm('Are you sure you want to cancel this booking?')) return;
+    
+    try {
+      await api.put(`/bookings-simple/${booking.id}/status`, { status: 'CANCELLED' });
+      toast.success('Booking cancelled');
+      navigate(`${platformPrefix}/consumer`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to cancel booking');
+    }
+  };
+
+  const handleAcknowledgeEdits = async () => {
+    if (!booking) return;
+    
+    toast.success('Changes acknowledged!');
+    setBooking(prev => prev ? { ...prev, editsAcknowledged: true, hasEdits: false } : null);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your booking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+            <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+            <button
+              onClick={handleBackToDiscover}
+              className="text-primary-600 font-semibold hover:text-primary-700"
+            >
+              Find Barbers
+            </button>
+          </div>
+        </div>
+        
+        <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Booking</h2>
+          <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
+          <button
+            onClick={handleBackToDiscover}
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+          >
+            Find a Barber
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const isPending = booking.status === 'PENDING';
+  const isAccepted = booking.status === 'ACCEPTED';
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToDiscover}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <RefreshCw className={`w-5 h-5 text-gray-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Status Timeline */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">Booking Status</h2>
+          
+          <div className="flex items-center justify-between relative">
+            {/* Progress Line */}
+            <div className="absolute top-5 left-10 right-10 h-1 bg-gray-200 rounded-full">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isAccepted ? 'w-full bg-green-500' : 'w-0 bg-primary-500'
+                }`}
+              />
+            </div>
+            
+            {/* Step 1: Pending */}
+            <div className="flex flex-col items-center z-10">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isPending 
+                  ? 'bg-amber-100 text-amber-600 ring-4 ring-amber-50' 
+                  : 'bg-green-100 text-green-600'
+              }`}>
+                {isPending ? <Clock className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+              </div>
+              <span className={`text-sm mt-2 font-medium ${isPending ? 'text-amber-600' : 'text-green-600'}`}>
+                {isPending ? 'Pending' : 'Submitted'}
+              </span>
+            </div>
+            
+            {/* Step 2: Accepted */}
+            <div className="flex flex-col items-center z-10">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isAccepted 
+                  ? 'bg-green-100 text-green-600 ring-4 ring-green-50' 
+                  : 'bg-gray-100 text-gray-400'
+              }`}>
+                {isAccepted ? <CheckCircle className="w-5 h-5" /> : <Check className="w-5 h-5" />}
+              </div>
+              <span className={`text-sm mt-2 font-medium ${isAccepted ? 'text-green-600' : 'text-gray-400'}`}>
+                Confirmed
+              </span>
+            </div>
+          </div>
+          
+          {isPending && (
+            <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-amber-500 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-800">Waiting for barber confirmation</p>
+                  <p className="text-sm text-amber-600 mt-1">
+                    {booking.barberName} will review and confirm your booking request.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {isAccepted && (
+            <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-green-800">Booking Confirmed!</p>
+                  <p className="text-sm text-green-600 mt-1">
+                    Your appointment with {booking.barberName} is confirmed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Edits Alert */}
+        {booking.hasEdits && !booking.editsAcknowledged && (
+          <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-300 p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Edit3 className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-gray-900 mb-2">Barber Made Changes</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {booking.barberName} has updated some details of your booking. Please review the changes below.
+                </p>
+                
+                {/* Show what changed */}
+                <div className="space-y-2 mb-4">
+                  {booking.originalScheduledTime && 
+                   new Date(booking.scheduledTime).getTime() !== new Date(booking.originalScheduledTime).getTime() && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-amber-500" />
+                      <span className="text-gray-500 line-through">
+                        {formatDate(booking.originalScheduledTime)} at {formatTime(booking.originalScheduledTime)}
+                      </span>
+                      <span className="text-gray-900 font-medium">
+                        → {formatDate(booking.scheduledTime)} at {formatTime(booking.scheduledTime)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAcknowledgeEdits}
+                    className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    OK with Changes
+                  </button>
+                  <button
+                    onClick={handleMessageBarber}
+                    className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Message Barber
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Booking Details */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 className="font-bold text-gray-900 mb-4">Booking Details</h3>
+          
+          {/* Barber Info */}
+          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl mb-4">
+            <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+              {booking.barberAvatar ? (
+                <img src={booking.barberAvatar} alt={booking.barberName} className="w-14 h-14 rounded-full object-cover" />
+              ) : (
+                <User className="w-7 h-7 text-primary-600" />
+              )}
+            </div>
+            <div>
+              <p className="font-bold text-gray-900">{booking.barberName}</p>
+              <p className="text-sm text-gray-500">Your Barber</p>
+            </div>
+          </div>
+          
+          {/* Service & Price */}
+          <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl mb-4">
+            <div>
+              <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
+              <p className="text-sm text-gray-500">Service</p>
+            </div>
+            <p className="text-2xl font-bold text-green-600">{formatPrice(booking.priceUsdCents)}</p>
+          </div>
+          
+          {/* Date & Time */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar className="w-4 h-4 text-primary-500" />
+                <span className="text-sm text-gray-500">Date</span>
+              </div>
+              <p className="font-semibold text-gray-900">{formatDate(booking.scheduledTime)}</p>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-primary-500" />
+                <span className="text-sm text-gray-500">Time</span>
+              </div>
+              <p className="font-semibold text-gray-900">{formatTime(booking.scheduledTime)}</p>
+            </div>
+          </div>
+          
+          {/* Location */}
+          {booking.location && (
+            <div className="p-4 bg-gray-50 rounded-xl mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="w-4 h-4 text-primary-500" />
+                <span className="text-sm text-gray-500">Location</span>
+              </div>
+              <p className="font-semibold text-gray-900">{booking.location}</p>
+            </div>
+          )}
+          
+          {/* Notes */}
+          {booking.notes && (
+            <div className="p-4 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-500 mb-1">Your Notes</p>
+              <p className="text-gray-700 italic">"{booking.notes}"</p>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="space-y-3">
+          <button
+            onClick={handleMessageBarber}
+            className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Message {booking.barberName}
+          </button>
+          
+          {isPending && (
+            <button
+              onClick={handleCancelBooking}
+              className="w-full py-3.5 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-red-200"
+            >
+              <X className="w-5 h-5" />
+              Cancel Request
+            </button>
+          )}
+        </div>
+        
+        {/* Booking Reference */}
+        <div className="text-center mt-6">
+          <p className="text-xs text-gray-400">Booking Reference</p>
+          <p className="font-mono text-sm text-gray-600">{booking.id.slice(0, 8).toUpperCase()}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+

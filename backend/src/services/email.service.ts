@@ -725,3 +725,235 @@ function generateBookingConfirmationHtml(
 </html>
 `.trim();
 }
+
+/**
+ * Interface for pending booking email details
+ */
+interface PendingBookingEmailDetails {
+  consumerEmail: string;
+  consumerName: string;
+  barberEmail: string;
+  barberName: string;
+  serviceName: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  price: number;
+  location?: string;
+  notes?: string;
+  bookingId: string;
+}
+
+/**
+ * Send Pending Booking Receipt Emails
+ * 
+ * Sends receipt emails to the consumer when a booking is created (pending status).
+ * Also notifies the barber about the new booking request.
+ */
+export async function sendPendingBookingEmails(details: PendingBookingEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping pending booking emails for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  // Send receipt to consumer
+  try {
+    const transporter = createTransporter();
+    
+    const consumerMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject: `Booking Request Submitted - ${details.serviceName} with ${details.barberName}`,
+      text: generatePendingBookingText(details, 'consumer'),
+      html: generatePendingBookingHtml(details, 'consumer', frontendUrl)
+    };
+
+    await transporter.sendMail(consumerMailOptions);
+    logger.info(`Pending booking receipt sent to consumer: ${details.consumerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send pending booking email to consumer ${details.consumerEmail}:`, error.message);
+  }
+
+  // Send notification to barber
+  try {
+    const transporter = createTransporter();
+    
+    const barberMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject: `New Booking Request from ${details.consumerName}`,
+      text: generatePendingBookingText(details, 'barber'),
+      html: generatePendingBookingHtml(details, 'barber', frontendUrl)
+    };
+
+    await transporter.sendMail(barberMailOptions);
+    logger.info(`Pending booking notification sent to barber: ${details.barberEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send pending booking email to barber ${details.barberEmail}:`, error.message);
+  }
+}
+
+/**
+ * Generate Pending Booking Plain Text
+ */
+function generatePendingBookingText(
+  details: PendingBookingEmailDetails, 
+  recipient: 'consumer' | 'barber'
+): string {
+  const isConsumer = recipient === 'consumer';
+  const greeting = isConsumer 
+    ? `Hi ${details.consumerName.split(' ')[0]}!` 
+    : `Hi ${details.barberName.split(' ')[0]}!`;
+  
+  const intro = isConsumer
+    ? `Your booking request with ${details.barberName} has been submitted and is awaiting confirmation.`
+    : `You have a new booking request from ${details.consumerName}!`;
+
+  return `
+${greeting}
+
+${intro}
+
+BOOKING REQUEST DETAILS
+-----------------------
+Service: ${details.serviceName}
+Requested Date: ${details.scheduledDate}
+Requested Time: ${details.scheduledTime}
+Price: $${details.price.toFixed(2)}
+${details.location ? `Location: ${details.location}` : ''}
+${details.notes ? `Notes: ${details.notes}` : ''}
+
+${isConsumer ? 'Barber' : 'Customer'}: ${isConsumer ? details.barberName : details.consumerName}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+${isConsumer 
+  ? "We'll notify you once the barber confirms your booking. You can track your booking status in the app."
+  : 'Please review and respond to this booking request in the CampusCut app.'}
+
+---
+CampusCut - Campus Haircuts Made Easy
+`.trim();
+}
+
+/**
+ * Generate Pending Booking HTML Email
+ */
+function generatePendingBookingHtml(
+  details: PendingBookingEmailDetails, 
+  recipient: 'consumer' | 'barber',
+  frontendUrl: string
+): string {
+  const isConsumer = recipient === 'consumer';
+  
+  const title = isConsumer ? 'Booking Request Submitted' : 'New Booking Request';
+  const subtitle = isConsumer 
+    ? `Awaiting confirmation from ${details.barberName}`
+    : `${details.consumerName} wants to book with you`;
+  const statusColor = '#f59e0b'; // Amber for pending
+  const statusText = 'PENDING CONFIRMATION';
+  
+  const ctaText = isConsumer ? 'Track Your Booking' : 'View Request';
+  const ctaLink = isConsumer 
+    ? `${frontendUrl}/web/consumer/booking-status`
+    : `${frontendUrl}/web/barber`;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">${title}</p>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin: 0 0 10px 0;">${isConsumer ? `Hi ${details.consumerName.split(' ')[0]}!` : `Hi ${details.barberName.split(' ')[0]}!`}</h2>
+    <p style="color: #6b7280; margin: 0 0 20px 0;">${subtitle}</p>
+    
+    <!-- Status Badge -->
+    <div style="text-align: center; margin: 20px 0;">
+      <span style="display: inline-block; background-color: ${statusColor}20; color: ${statusColor}; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px;">
+        ⏳ ${statusText}
+      </span>
+    </div>
+    
+    <!-- Booking Details Card -->
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 16px;">Booking Request Details</h3>
+      
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Service</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.serviceName}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Requested Date</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.scheduledDate}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Requested Time</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.scheduledTime}</td>
+        </tr>
+        ${details.location ? `
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Location</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.location}</td>
+        </tr>
+        ` : ''}
+      </table>
+      
+      <div style="border-top: 1px dashed #e5e7eb; margin: 15px 0; padding-top: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="color: #6b7280; font-weight: 600;">Total</td>
+            <td style="color: #22c55e; font-weight: 700; font-size: 20px; text-align: right;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    ${details.notes ? `
+    <div style="background-color: #fefce8; border-radius: 8px; padding: 15px; margin: 15px 0;">
+      <p style="color: #854d0e; margin: 0; font-size: 14px;"><strong>Notes:</strong> ${details.notes}</p>
+    </div>
+    ` : ''}
+    
+    <!-- Person Info -->
+    <div style="background-color: #f0fdf4; border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <p style="color: #166534; margin: 0; font-size: 14px;">
+        <strong>${isConsumer ? 'Your Barber:' : 'Customer:'}</strong> ${isConsumer ? details.barberName : details.consumerName}
+      </p>
+    </div>
+    
+    <!-- Reference -->
+    <div style="text-align: center; margin: 20px 0;">
+      <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
+      <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+    </div>
+    
+    <p style="color: #6b7280; font-size: 14px; margin: 20px 0;">
+      ${isConsumer 
+        ? "We'll notify you once the barber confirms your booking. You can track your booking status in the app."
+        : 'Please review and respond to this booking request in the CampusCut app.'}
+    </p>
+    
+    <p style="text-align: center; margin: 30px 0 20px 0;">
+      <a href="${ctaLink}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        ${ctaText}
+      </a>
+    </p>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+  </div>
+</body>
+</html>
+`.trim();
+}
