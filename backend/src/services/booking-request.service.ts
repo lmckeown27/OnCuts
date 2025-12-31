@@ -10,6 +10,7 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import notificationService from './notification.service';
 
 interface BookingRequest {
   bookingId: string;
@@ -418,6 +419,28 @@ export class BookingRequestService {
           logger.info(`Linked booking ${linkedBookingId} also marked as ACCEPTED`);
         }
 
+        // Send notification to consumer about acceptance
+        const consumerUserId = updateResult.rows[0].user1_id === barberId 
+          ? updateResult.rows[0].user2_id 
+          : updateResult.rows[0].user1_id;
+        
+        // Get barber name for notification
+        const barberNameResult = await client.query(
+          `SELECT u.first_name || ' ' || u.last_name as name 
+           FROM users u 
+           WHERE u.id = $1`,
+          [barberId]
+        );
+        const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+        
+        await notificationService.saveNotification({
+          userId: consumerUserId,
+          type: 'booking_accepted',
+          title: 'Booking Accepted! ✅',
+          message: `${barberName} accepted your booking request`,
+          data: { conversationId, bookingId: linkedBookingId },
+        });
+
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
         return { success: true };
@@ -437,6 +460,27 @@ export class BookingRequestService {
       if (updateResult.rows.length === 0) {
         throw new Error('Booking not found or already responded to');
       }
+
+      const consumerId = updateResult.rows[0].consumerId;
+      
+      // Get barber name for notification
+      const barberNameResult = await client.query(
+        `SELECT u.first_name || ' ' || u.last_name as name 
+         FROM barbers b
+         JOIN users u ON b."userId" = u.id
+         WHERE b.id = $1 OR b."userId" = $1`,
+        [barberId]
+      );
+      const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+      
+      // Send notification to consumer
+      await notificationService.saveNotification({
+        userId: consumerId,
+        type: 'booking_accepted',
+        title: 'Booking Accepted! ✅',
+        message: `${barberName} accepted your booking request`,
+        data: { bookingId },
+      });
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
@@ -518,6 +562,26 @@ export class BookingRequestService {
           UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = $1
         `, [conversationId]);
 
+        // Send notification to consumer about rejection
+        const consumerUserId = updateResult.rows[0].user1_id === barberUserId 
+          ? updateResult.rows[0].user2_id 
+          : updateResult.rows[0].user1_id;
+        
+        // Get barber name for notification
+        const barberNameResult = await client.query(
+          `SELECT first_name || ' ' || last_name as name FROM users WHERE id = $1`,
+          [barberUserId]
+        );
+        const barberName = barberNameResult.rows[0]?.name || 'The barber';
+        
+        await notificationService.saveNotification({
+          userId: consumerUserId,
+          type: 'booking_rejected',
+          title: 'Booking Declined',
+          message: `${barberName} was unable to accept your booking request`,
+          data: { conversationId, bookingId: linkedBookingId, reason },
+        });
+
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking rejected by barber ${barberId}`);
         return { success: true };
@@ -538,6 +602,27 @@ export class BookingRequestService {
       if (updateResult.rows.length === 0) {
         throw new Error('Booking not found or already responded to');
       }
+
+      const consumerId = updateResult.rows[0].consumerId;
+      
+      // Get barber name for notification
+      const barberNameResult = await client.query(
+        `SELECT u.first_name || ' ' || u.last_name as name 
+         FROM barbers b
+         JOIN users u ON b."userId" = u.id
+         WHERE b.id = $1 OR b."userId" = $1`,
+        [barberId]
+      );
+      const barberName = barberNameResult.rows[0]?.name || 'The barber';
+      
+      // Send notification to consumer
+      await notificationService.saveNotification({
+        userId: consumerId,
+        type: 'booking_rejected',
+        title: 'Booking Declined',
+        message: `${barberName} was unable to accept your booking request`,
+        data: { bookingId, reason },
+      });
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} rejected by barber ${barberId}`);

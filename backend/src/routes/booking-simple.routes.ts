@@ -9,6 +9,7 @@ import express from 'express';
 import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
+import notificationService from '../services/notification.service';
 
 const router = express.Router();
 
@@ -176,6 +177,31 @@ router.post('/', authenticate, async (req, res, next) => {
       barber_id: barberRecordId,
       service_type: serviceType,
     });
+
+    // Get consumer name and barber user ID for notification
+    const consumerResult = await pool.query(
+      `SELECT first_name || ' ' || last_name as name FROM users WHERE id = $1`,
+      [consumerId]
+    );
+    const consumerName = consumerResult.rows[0]?.name || 'A customer';
+    
+    const barberUserResult = await pool.query(
+      `SELECT "userId" FROM barbers WHERE id = $1`,
+      [barberRecordId]
+    );
+    const barberUserId = barberUserResult.rows[0]?.userId;
+    
+    // Send notification to barber about new booking request
+    if (barberUserId) {
+      await notificationService.saveNotification({
+        userId: barberUserId,
+        type: 'new_booking_request',
+        title: 'New Booking Request! 📅',
+        message: `${consumerName} wants to book a ${serviceType} with you`,
+        data: { bookingId: booking.id, consumerId, serviceType },
+      });
+      logger.info(`Notification sent to barber ${barberUserId} for new booking ${booking.id}`);
+    }
 
     res.status(201).json({
       success: true,

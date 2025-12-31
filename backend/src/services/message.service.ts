@@ -13,6 +13,7 @@
 import { pool } from '../database/connection';
 import { redisGet, redisSet, redisDel, generateCacheKey, CACHE_TTL } from '../config/redis';
 import pushNotificationService from './pushNotification.service';
+import notificationService from './notification.service';
 
 class MessageService {
   /**
@@ -476,6 +477,15 @@ class MessageService {
           `${sender.first_name} ${sender.last_name}`,
           content
         );
+        
+        // Also save in-app notification for the recipient
+        await notificationService.saveNotification({
+          userId: recipientId,
+          type: 'new_message',
+          title: `New message from ${sender.first_name} ${sender.last_name}`,
+          message: content.length > 100 ? content.substring(0, 100) + '...' : content,
+          data: { conversationId, senderId, senderName: `${sender.first_name} ${sender.last_name}` },
+        });
       } catch (notificationError) {
         console.error('Failed to send push notification:', notificationError);
       }

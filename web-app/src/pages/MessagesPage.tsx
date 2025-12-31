@@ -1427,47 +1427,80 @@ export default function MessagesPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {notifications.map((notification) => (
-                    <div 
-                      key={notification.id}
-                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                        !notification.is_read ? 'bg-primary-50/50' : ''
-                      }`}
-                      onClick={() => {
-                        if (!notification.is_read) {
-                          handleMarkNotificationRead(notification.id);
+                  {notifications.map((notification) => {
+                    // Determine icon and colors based on notification type
+                    const getNotificationStyle = () => {
+                      switch (notification.type) {
+                        case 'booking_accepted':
+                          return { bg: 'bg-green-100', icon: <Check className="w-5 h-5 text-green-600" /> };
+                        case 'booking_rejected':
+                        case 'booking_cancelled':
+                          return { bg: 'bg-red-100', icon: <AlertCircle className="w-5 h-5 text-red-600" /> };
+                        case 'new_booking_request':
+                          return { bg: 'bg-blue-100', icon: <Calendar className="w-5 h-5 text-blue-600" /> };
+                        case 'new_message':
+                          return { bg: 'bg-primary-100', icon: <MessageCircle className="w-5 h-5 text-primary-600" /> };
+                        default:
+                          return { bg: 'bg-primary-100', icon: <Bell className="w-5 h-5 text-primary-600" /> };
+                      }
+                    };
+                    
+                    const style = getNotificationStyle();
+                    
+                    // Handle click to navigate
+                    const handleNotificationClick = () => {
+                      if (!notification.is_read) {
+                        handleMarkNotificationRead(notification.id);
+                      }
+                      
+                      // Navigate based on notification type
+                      const data = notification.data ? (typeof notification.data === 'string' ? JSON.parse(notification.data) : notification.data) : {};
+                      
+                      if (notification.type === 'new_message' && data.conversationId) {
+                        // Navigate to the conversation
+                        const conv = conversations.find(c => c.id.toString() === data.conversationId.toString());
+                        if (conv) {
+                          handleSelectConversation(conv);
                         }
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          notification.type === 'booking_cancelled' ? 'bg-red-100' : 'bg-primary-100'
-                        }`}>
-                          {notification.type === 'booking_cancelled' ? (
-                            <AlertCircle className="w-5 h-5 text-red-600" />
-                          ) : (
-                            <Bell className="w-5 h-5 text-primary-600" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-semibold text-gray-900 text-sm">
-                              {notification.title}
-                            </h4>
-                            {!notification.is_read && (
-                              <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></span>
-                            )}
+                        setShowNotifications(false);
+                      } else if (['booking_accepted', 'booking_rejected', 'new_booking_request'].includes(notification.type)) {
+                        // For booking notifications, close modal and stay on messages page
+                        setShowNotifications(false);
+                      }
+                    };
+                    
+                    return (
+                      <div 
+                        key={notification.id}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          !notification.is_read ? 'bg-primary-50/50' : ''
+                        }`}
+                        onClick={handleNotificationClick}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                            {style.icon}
                           </div>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {formatTime(notification.created_at)}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-semibold text-gray-900 text-sm">
+                                {notification.title}
+                              </h4>
+                              {!notification.is_read && (
+                                <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatTime(notification.created_at)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
