@@ -35,6 +35,9 @@ export default function BookingDetailsModal({
   const [editedTime, setEditedTime] = useState(''); // HH:MM (24-hour for TimePickerDropdown)
   const [editedLocation, setEditedLocation] = useState('');
   const [editedNotes, setEditedNotes] = useState('');
+  
+  // Store original date parts for smart autocomplete
+  const [originalDateParts, setOriginalDateParts] = useState<{ month: number; day: number; year: number } | null>(null);
 
   // Format date as MM/DD/YYYY
   const formatDateForDisplay = (date: Date): string => {
@@ -74,17 +77,40 @@ export default function BookingDetailsModal({
     setEditedDate(formatted);
   };
 
-  // Parse MM/DD/YYYY to Date components
+  // Parse date input with smart autocomplete from original date
+  // - Just month (MM) → use original day and year
+  // - Month and day (MM/DD) → use original year
+  // - Full date (MM/DD/YYYY) → use as-is
   const parseDateInput = (dateStr: string): { month: number; day: number; year: number } | null => {
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return null;
+    const parts = dateStr.split('/').filter(p => p.length > 0);
+    
+    if (parts.length === 0) return null;
+    
     const month = parseInt(parts[0]);
-    const day = parseInt(parts[1]);
-    const year = parseInt(parts[2]);
-    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
-    if (month < 1 || month > 12) return null;
-    if (day < 1 || day > 31) return null;
-    if (year < 2024 || year > 2099) return null;
+    if (isNaN(month) || month < 1 || month > 12) return null;
+    
+    // Get day - from input or original
+    let day: number;
+    if (parts.length >= 2 && parts[1].length > 0) {
+      day = parseInt(parts[1]);
+      if (isNaN(day) || day < 1 || day > 31) return null;
+    } else if (originalDateParts) {
+      day = originalDateParts.day;
+    } else {
+      return null;
+    }
+    
+    // Get year - from input or original
+    let year: number;
+    if (parts.length >= 3 && parts[2].length === 4) {
+      year = parseInt(parts[2]);
+      if (isNaN(year) || year < 2024 || year > 2099) return null;
+    } else if (originalDateParts) {
+      year = originalDateParts.year;
+    } else {
+      return null;
+    }
+    
     return { month, day, year };
   };
 
@@ -107,6 +133,12 @@ export default function BookingDetailsModal({
       setEditedTime(formatTimeFor24Hour(scheduledTime));
       setEditedLocation(booking.location || '');
       setEditedNotes(booking.notes || '');
+      // Store original date parts for smart autocomplete
+      setOriginalDateParts({
+        month: scheduledTime.getMonth() + 1,
+        day: scheduledTime.getDate(),
+        year: scheduledTime.getFullYear(),
+      });
     }
   }, [booking]);
 
