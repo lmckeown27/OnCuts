@@ -1001,28 +1001,28 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                     <div 
                       key={apt.id} 
                       onClick={() => onViewDetails(apt)}
-                      className="p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer"
+                      className="p-5 sm:p-6 lg:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer max-w-2xl"
                     >
                       {/* Top row: Client name + Price */}
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-bold text-gray-900 text-lg sm:text-xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
-                        <p className="font-bold text-green-600 text-xl sm:text-2xl">{formatPrice(apt.priceUsdCents)}</p>
+                        <p className="font-bold text-gray-900 text-lg sm:text-xl lg:text-2xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                        <p className="font-bold text-green-600 text-xl sm:text-2xl lg:text-3xl">{formatPrice(apt.priceUsdCents)}</p>
                       </div>
                       {/* Service - prefer serviceName from input, fallback to serviceType */}
-                      <p className="text-base sm:text-lg text-gray-600 mb-2">
+                      <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-2">
                         {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </p>
                       {/* Location and Notes if available */}
                       {(apt.location || apt.notes) && (
                         <div className="flex flex-wrap gap-2 mb-2">
                           {apt.location && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
-                              <MapPin className="w-3 h-3" />
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm lg:text-base">
+                              <MapPin className="w-3 h-3 lg:w-4 lg:h-4" />
                               {apt.location}
                             </span>
                           )}
                           {apt.notes && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm lg:text-base">
                               {apt.notes}
                             </span>
                           )}
@@ -1030,8 +1030,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                       )}
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary-400 text-base sm:text-lg">{formatTime(apt.scheduledTime)}</p>
-                        <span className="text-sm sm:text-base text-gray-500">Tap for details →</span>
+                        <p className="font-bold text-primary-400 text-base sm:text-lg lg:text-xl">{formatTime(apt.scheduledTime)}</p>
+                        <span className="text-sm sm:text-base lg:text-lg text-gray-500">Tap for details →</span>
                       </div>
                     </div>
                   ))}
