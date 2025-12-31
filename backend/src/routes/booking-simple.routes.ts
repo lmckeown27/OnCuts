@@ -358,9 +358,9 @@ router.get('/', authenticate, async (req, res, next) => {
       }
     }
 
-    // Filter by status
+    // Filter by status (case-insensitive using UPPER)
     if (status) {
-      whereClause += ` AND b.status = $${paramIndex}`;
+      whereClause += ` AND UPPER(b.status::text) = UPPER($${paramIndex})`;
       params.push(status);
       paramIndex++;
     }
@@ -376,6 +376,15 @@ router.get('/', authenticate, async (req, res, next) => {
       params.push(new Date(endDate as string));
       paramIndex++;
     }
+
+    logger.info('Fetching bookings', { 
+      userId, 
+      role, 
+      status, 
+      barberRecordId, 
+      whereClause,
+      params 
+    });
 
     const result = await pool.query(
       `SELECT 
@@ -401,6 +410,8 @@ router.get('/', authenticate, async (req, res, next) => {
       ORDER BY b."requestedAt" ASC`,
       params
     );
+
+    logger.info('Bookings fetched', { count: result.rows.length });
 
     res.json({
       success: true,
