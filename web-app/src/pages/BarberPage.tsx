@@ -20,6 +20,7 @@ import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock } from '../hooks';
 import toast from 'react-hot-toast';
 
@@ -33,6 +34,9 @@ export default function BarberPage() {
   
   // Viewport detection for responsive behavior
   const { isMobile, isTablet, viewport } = useViewport();
+  
+  // Message store for unread count
+  const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
   
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   
@@ -127,10 +131,11 @@ export default function BarberPage() {
     return date.toLocaleDateString();
   };
   
-  // Fetch notifications on mount
+  // Fetch notifications and unread messages on mount
   useEffect(() => {
     fetchNotifications();
-  }, []);
+    loadUnreadCount();
+  }, [loadUnreadCount]);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -242,6 +247,11 @@ export default function BarberPage() {
                 title="Messages"
               >
                 <MessageCircle className="w-5 h-5 text-gray-600" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                )}
               </button>
               
               {/* Booking Requests Inbox */}

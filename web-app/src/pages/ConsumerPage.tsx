@@ -17,6 +17,7 @@ import type { University } from '../data/universities';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import type { WeeklySchedule } from '../types';
@@ -78,6 +79,10 @@ function rankBarbers(barbers: Barber[]): Barber[] {
 export default function ConsumerPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Message store for unread count
+  const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
+  
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
@@ -247,7 +252,7 @@ export default function ConsumerPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch notifications
+  // Fetch notifications and unread messages
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!user) return;
@@ -260,7 +265,10 @@ export default function ConsumerPage() {
       }
     };
     fetchNotifications();
-  }, [user?.id]);
+    if (user) {
+      loadUnreadCount();
+    }
+  }, [user?.id, loadUnreadCount]);
 
   const handleMarkNotificationRead = async (notificationId: string) => {
     try {
@@ -356,6 +364,11 @@ export default function ConsumerPage() {
                     title="Messages"
                   >
                     <MessageCircle className="w-5 h-5 text-gray-600" />
+                    {unreadMessages > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {unreadMessages > 99 ? '99+' : unreadMessages}
+                      </span>
+                    )}
                   </button>
                   
                   {/* Profile Dropdown - Only for authenticated users */}
