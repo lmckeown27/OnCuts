@@ -110,34 +110,10 @@ export default function BookingDetailsModal({
     }
   }, [booking]);
 
-  if (!isOpen || !booking) return null;
-
-  const scheduledTime = new Date(booking.scheduledTime);
-  const formattedDate = scheduledTime.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  const formattedTime = scheduledTime.toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: true 
-  });
-
-  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-  
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACCEPTED': return 'bg-blue-100 text-blue-700';
-      case 'COMPLETED': return 'bg-green-100 text-green-700';
-      case 'CANCELLED': return 'bg-red-100 text-red-700';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
-
+  // All hooks must be called before any early returns
   const handleSaveChanges = useCallback(async () => {
+    if (!booking) return;
+    
     // Validate date format
     const dateParts = parseDateInput(editedDate);
     if (!dateParts) {
@@ -178,7 +154,7 @@ export default function BookingDetailsModal({
     } finally {
       setIsSaving(false);
     }
-  }, [editedDate, editedTime, editedLocation, editedNotes, booking?.id, onBookingUpdated]);
+  }, [editedDate, editedTime, editedLocation, editedNotes, booking, onBookingUpdated]);
 
   // Handle Enter key to save changes
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -187,6 +163,34 @@ export default function BookingDetailsModal({
       handleSaveChanges();
     }
   }, [isEditing, isSaving, handleSaveChanges]);
+
+  // Early return AFTER all hooks
+  if (!isOpen || !booking) return null;
+
+  const scheduledTime = new Date(booking.scheduledTime);
+  const formattedDate = scheduledTime.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const formattedTime = scheduledTime.toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit',
+    hour12: true 
+  });
+
+  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ACCEPTED': return 'bg-blue-100 text-blue-700';
+      case 'COMPLETED': return 'bg-green-100 text-green-700';
+      case 'CANCELLED': return 'bg-red-100 text-red-700';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
 
   const handleCancelBooking = async () => {
     setIsSaving(true);
