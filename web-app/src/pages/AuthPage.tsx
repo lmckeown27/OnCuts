@@ -138,8 +138,18 @@ export default function AuthPage() {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
       
-      // All users go to consumer page first upon login
-      navigate('/web/consumer');
+      // Redirect based on user role
+      const currentUser = useAuthStore.getState().user;
+      
+      if (result.isAdmin) {
+        navigate('/web/admin');
+      } else if (result.isCampusManager) {
+        navigate('/web/barber'); // Campus managers go to barber page
+      } else if (currentUser?.user_type === 'barber') {
+        navigate('/web/barber'); // Barbers go to barber page
+      } else {
+        navigate('/web/consumer'); // Consumers/students go to consumer page
+      }
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;
       let errorMessage: string;

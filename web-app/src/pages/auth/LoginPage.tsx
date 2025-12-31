@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
@@ -13,7 +13,7 @@ interface LoginForm {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,20 @@ export default function LoginPage() {
     email: '',
     password: ''
   });
+  
+  // Redirect based on user role after login
+  const redirectBasedOnRole = (userType: string) => {
+    if (userType === 'barber' || userType === 'campus_manager') {
+      // Barbers and campus managers go to barber dashboard
+      navigate('/web/barber');
+    } else if (userType === 'admin') {
+      // Admins go to admin dashboard
+      navigate('/web/admin');
+    } else {
+      // Consumers/students go to consumer page
+      navigate('/web/consumer');
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -56,8 +70,19 @@ export default function LoginPage() {
       const result = await login(formData.email, formData.password);
       toast.success('Login successful!');
       
-      // All users go to consumer page first upon login
-      navigate('/web/consumer');
+      // Get the user from the store after login to check their role
+      const currentUser = useAuthStore.getState().user;
+      
+      // Redirect based on user role
+      if (result.isAdmin) {
+        navigate('/web/admin');
+      } else if (result.isCampusManager) {
+        navigate('/web/barber'); // Campus managers go to barber page
+      } else if (currentUser?.user_type === 'barber') {
+        navigate('/web/barber'); // Barbers go to barber page
+      } else {
+        navigate('/web/consumer'); // Consumers/students go to consumer page
+      }
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;
       let errorMessage: string;
