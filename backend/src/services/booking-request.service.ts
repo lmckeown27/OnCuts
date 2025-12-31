@@ -198,6 +198,7 @@ export class BookingRequestService {
 
       // Query 2: Get from conversations with pending booking_status
       // This handles the case where consumer scheduled a service via messages
+      // EXCLUDE conversations that have a booking_id (those are already captured in Query 1)
       const conversationsResult = await pool.query(`
         SELECT 
           c.id as conversation_id,
@@ -211,6 +212,7 @@ export class BookingRequestService {
           c.booking_status,
           c.consumer_name,
           c.created_at,
+          c.booking_id,
           u.id as customer_id,
           u.first_name || ' ' || u.last_name as customer_name,
           u."displayName" as display_name,
@@ -227,10 +229,15 @@ export class BookingRequestService {
           AND c.booking_status = 'pending'
           AND c.is_active = true
           AND c.service_name IS NOT NULL
+          AND c.booking_id IS NULL  -- Only get conversations WITHOUT a linked booking (to prevent duplicates)
         ORDER BY c.created_at DESC
       `, [barberUserId]);
 
       conversationsResult.rows.forEach(row => {
+        // Skip if this conversation has a linked booking (already captured above)
+        if (row.booking_id) {
+          return;
+        }
         // Don't add if we already have this from bookings
         const alreadyExists = requests.some(r => r.bookingId === `conv-${row.conversation_id}`);
         if (!alreadyExists) {
