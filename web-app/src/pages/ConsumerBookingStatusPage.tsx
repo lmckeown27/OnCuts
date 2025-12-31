@@ -15,6 +15,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import TimePickerDropdown from '../components/TimePickerDropdown';
+import PullToRefresh from '../components/PullToRefresh';
 import toast from 'react-hot-toast';
 
 interface ActiveBooking {
@@ -372,7 +373,7 @@ export default function ConsumerBookingStatusPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={fetchActiveBooking} className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -797,7 +798,7 @@ export default function ConsumerBookingStatusPage() {
           </div>
         </div>
       )}
-    </div>
+    </PullToRefresh>
   );
 }
 

@@ -19,6 +19,7 @@ import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import BookingDetailsModal from '../components/BookingDetailsModal';
+import PullToRefresh from '../components/PullToRefresh';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
@@ -185,6 +186,13 @@ export default function BarberPage() {
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
 
+  // Pull-to-refresh handler for mobile
+  const handlePullToRefresh = async () => {
+    await fetchNotifications();
+    await loadUnreadCount();
+    setBookingsRefreshKey(prev => prev + 1);
+  };
+
   // Function to open booking details modal - receives full booking object
   const openBookingDetails = (booking: any) => {
     console.log('🔍 Opening booking details for:', booking.id);
@@ -210,7 +218,7 @@ export default function BarberPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -658,7 +666,7 @@ export default function BarberPage() {
           </div>
         </div>
       )}
-    </div>
+    </PullToRefresh>
   );
 }
 

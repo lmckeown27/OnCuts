@@ -22,6 +22,7 @@ import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
+import PullToRefresh from '../components/PullToRefresh';
 import type { WeeklySchedule } from '../types';
 
 // Storage keys
@@ -353,8 +354,22 @@ export default function ConsumerPage() {
     return date.toLocaleDateString();
   };
 
+  // Pull-to-refresh handler for mobile
+  const handlePullToRefresh = async () => {
+    // Refresh notifications
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data.notifications);
+      setUnreadNotifications(data.unreadCount);
+    } catch (error) {
+      console.error('Failed to refresh notifications:', error);
+    }
+    // Refresh barbers will be triggered by BarberListSection
+    await loadUnreadCount();
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -768,11 +783,11 @@ export default function ConsumerPage() {
           serviceName={paymentModalData.serviceName}
           amount={paymentModalData.amount}
           onPaymentComplete={() => {
-            fetchNotifications();
+            handlePullToRefresh();
           }}
         />
       )}
-    </div>
+    </PullToRefresh>
   );
 }
 
