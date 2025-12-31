@@ -401,11 +401,16 @@ router.get('/', authenticate, async (req, res, next) => {
         consumer."avatarUrl" as consumer_avatar,
         barber_user.first_name as barber_first_name,
         barber_user.last_name as barber_last_name,
-        barber_user."avatarUrl" as barber_avatar
+        barber_user."avatarUrl" as barber_avatar,
+        -- Pull additional data from linked conversation
+        c.location as conv_location,
+        c.notes as conv_notes,
+        c.service_name as conv_service_name
       FROM bookings b
       LEFT JOIN users consumer ON b."consumerId" = consumer.id
       LEFT JOIN barbers barber ON b."barberId" = barber.id
       LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+      LEFT JOIN conversations c ON c.booking_id = b.id
       WHERE ${whereClause}
       ORDER BY b."requestedAt" ASC`,
       params
@@ -425,6 +430,10 @@ router.get('/', authenticate, async (req, res, next) => {
           scheduledTime: row.scheduledTime,
           status: row.status,
           createdAt: row.createdAt,
+          // Consumer-provided input data from conversation
+          location: row.conv_location || null,
+          notes: row.conv_notes || null,
+          serviceName: row.conv_service_name || null,
           consumer: {
             firstName: row.consumer_first_name,
             lastName: row.consumer_last_name,

@@ -637,6 +637,10 @@ interface ConfirmedBooking {
   scheduledTime: string;
   status: string;
   createdAt: string;
+  // Consumer-provided input data
+  location?: string;
+  notes?: string;
+  serviceName?: string;
   consumer: {
     firstName: string;
     lastName: string;
@@ -964,10 +968,26 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         <p className="font-bold text-gray-900 text-lg sm:text-xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
                         <p className="font-bold text-green-600 text-xl sm:text-2xl">{formatPrice(apt.priceUsdCents)}</p>
                       </div>
-                      {/* Middle: Service */}
-                      <p className="text-base sm:text-lg text-gray-600 mb-3">
-                        {apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {/* Service - prefer serviceName from input, fallback to serviceType */}
+                      <p className="text-base sm:text-lg text-gray-600 mb-2">
+                        {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </p>
+                      {/* Location and Notes if available */}
+                      {(apt.location || apt.notes) && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {apt.location && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
+                              <MapPin className="w-3 h-3" />
+                              {apt.location}
+                            </span>
+                          )}
+                          {apt.notes && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                              {apt.notes}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-primary-400 text-base sm:text-lg">{formatTime(apt.scheduledTime)}</p>
@@ -1361,10 +1381,26 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
                         <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
                       </div>
-                      {/* Middle: Service */}
-                      <p className="text-base text-gray-600 mb-3">
-                        {apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      {/* Service - prefer serviceName from input, fallback to serviceType */}
+                      <p className="text-base text-gray-600 mb-2">
+                        {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </p>
+                      {/* Location and Notes if available */}
+                      {(apt.location || apt.notes) && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {apt.location && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
+                              <MapPin className="w-3 h-3" />
+                              {apt.location}
+                            </span>
+                          )}
+                          {apt.notes && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                              {apt.notes}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
