@@ -626,6 +626,23 @@ interface DashboardViewProps {
   onWalkInClick: () => void;
 }
 
+// Type for confirmed bookings
+interface ConfirmedBooking {
+  id: string;
+  consumerId: string;
+  barberId: string;
+  serviceType: string;
+  priceUsdCents: number;
+  scheduledTime: string;
+  status: string;
+  createdAt: string;
+  consumer: {
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+}
+
 function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -634,8 +651,41 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
+  // Confirmed bookings state
+  const [confirmedBookings, setConfirmedBookings] = useState<ConfirmedBooking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+  
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
+  
+  // Fetch confirmed bookings
+  useEffect(() => {
+    const fetchConfirmedBookings = async () => {
+      try {
+        setIsLoadingBookings(true);
+        const token = localStorage.getItem('campuscut_token');
+        const response = await fetch('/api/v1/bookings-simple?role=barber&status=ACCEPTED', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConfirmedBookings(data.data?.bookings || []);
+        } else {
+          console.error('Failed to fetch bookings:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching confirmed bookings:', error);
+      } finally {
+        setIsLoadingBookings(false);
+      }
+    };
+    
+    fetchConfirmedBookings();
+  }, []);
 
   // Touch/swipe state for switching views
   const touchStartX = useRef<number | null>(null);
@@ -757,10 +807,20 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
     }
   }, [showDayModal]);
 
-  // Appointments will be fetched from API - for now return empty
-  const getAppointmentsForDay = (_day: number): Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> => {
-    // TODO: Fetch from API based on barberId and date
-    return [];
+  // Get appointments for a specific day from confirmed bookings
+  const getAppointmentsForDay = (day: number): ConfirmedBooking[] => {
+    const today = new Date();
+    const targetDate = new Date(today.getFullYear(), today.getMonth(), day);
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    return confirmedBookings
+      .filter(booking => {
+        const bookingDate = new Date(booking.scheduledTime);
+        return bookingDate >= targetDate && bookingDate < nextDay;
+      })
+      .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
   };
 
   const handleDayClick = (day: number) => {
@@ -831,16 +891,35 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Daily View */}
         {scheduleView === 'daily' && (() => {
-          // TODO: Fetch daily appointments from API
-          const dailyAppointments: Array<{ id: string; time: string; client: string; service: string; price: string; status: string }> = [];
+          // Filter bookings for today
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          
+          const dailyAppointments = confirmedBookings
+            .filter(booking => {
+              const bookingDate = new Date(booking.scheduledTime);
+              return bookingDate >= today && bookingDate < tomorrow;
+            })
+            .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
+
+          const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
+          const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          const todayFormatted = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Today - Friday, January 12, 2025</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Today - {todayFormatted}</h3>
                 <p className="text-sm sm:text-base text-gray-600 font-medium">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
               </div>
-              {dailyAppointments.length === 0 ? (
+              {isLoadingBookings ? (
+                <div className="text-center py-8 sm:py-12">
+                  <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading appointments...</p>
+                </div>
+              ) : dailyAppointments.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
                   <Calendar className="w-14 h-14 sm:w-20 sm:h-20 text-gray-400 mx-auto mb-4 sm:mb-5" />
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No appointments scheduled</h3>
@@ -848,22 +927,22 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                 </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4">
-                  {dailyAppointments.map((apt, idx) => (
+                  {dailyAppointments.map((apt) => (
                     <div 
-                      key={idx} 
+                      key={apt.id} 
                       onClick={() => onViewDetails(apt.id)}
                       className="p-5 sm:p-6 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer"
                     >
                       {/* Top row: Client name + Price */}
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-bold text-gray-900 text-lg sm:text-xl">{apt.client}</p>
-                        <p className="font-bold text-green-600 text-xl sm:text-2xl">{apt.price}</p>
+                        <p className="font-bold text-gray-900 text-lg sm:text-xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                        <p className="font-bold text-green-600 text-xl sm:text-2xl">{formatPrice(apt.priceUsdCents)}</p>
                       </div>
                       {/* Middle: Service */}
-                      <p className="text-base sm:text-lg text-gray-600 mb-3">{apt.service}</p>
+                      <p className="text-base sm:text-lg text-gray-600 mb-3">{apt.serviceType.replace(/_/g, ' ')}</p>
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary-400 text-base sm:text-lg">{apt.time}</p>
+                        <p className="font-bold text-primary-400 text-base sm:text-lg">{formatTime(apt.scheduledTime)}</p>
                         <span className="text-sm sm:text-base text-gray-500">Tap for details →</span>
                       </div>
                     </div>
@@ -876,38 +955,64 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
 
         {/* Weekly View */}
         {scheduleView === 'weekly' && (() => {
-          // Week days structure
-          const weekDays = [
-            { name: 'Monday', date: 8, shortName: 'Mon' },
-            { name: 'Tuesday', date: 9, shortName: 'Tue' },
-            { name: 'Wednesday', date: 10, shortName: 'Wed' },
-            { name: 'Thursday', date: 11, shortName: 'Thu' },
-            { name: 'Friday', date: 12, shortName: 'Fri' },
-            { name: 'Saturday', date: 13, shortName: 'Sat' },
-            { name: 'Sunday', date: 14, shortName: 'Sun' },
-          ];
+          // Get the current week (Sunday to Saturday)
+          const today = new Date();
+          const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          
+          // Calculate start of week (Monday)
+          const startOfWeek = new Date(today);
+          const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+          startOfWeek.setDate(today.getDate() - daysFromMonday);
+          startOfWeek.setHours(0, 0, 0, 0);
+          
+          // Build week days array dynamically
+          const weekDays = [];
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            weekDays.push({
+              name: date.toLocaleDateString('en-US', { weekday: 'long' }),
+              shortName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+              date: date.getDate(),
+              fullDate: date,
+            });
+          }
+          
+          const endOfWeek = new Date(startOfWeek);
+          endOfWeek.setDate(startOfWeek.getDate() + 7);
+          
+          // Group bookings by date
+          const weekAppointmentsByDate: { [dateKey: string]: ConfirmedBooking[] } = {};
+          confirmedBookings.forEach(booking => {
+            const bookingDate = new Date(booking.scheduledTime);
+            if (bookingDate >= startOfWeek && bookingDate < endOfWeek) {
+              const dateKey = bookingDate.toDateString();
+              if (!weekAppointmentsByDate[dateKey]) {
+                weekAppointmentsByDate[dateKey] = [];
+              }
+              weekAppointmentsByDate[dateKey].push(booking);
+            }
+          });
 
-          // TODO: Fetch weekly appointments from API
-          const weekAppointmentNames: { [date: number]: string[] } = {};
-
-          const totalWeekAppointments = Object.values(weekAppointmentNames).reduce((sum, arr) => sum + arr.length, 0);
+          const totalWeekAppointments = Object.values(weekAppointmentsByDate).reduce((sum, arr) => sum + arr.length, 0);
+          const weekRangeText = `${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${new Date(endOfWeek.getTime() - 1).toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`;
 
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Week of January 8 - 14, 2025</h3>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalWeekAppointments} appointments this week</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Week of {weekRangeText}</h3>
+                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalWeekAppointments} appointment{totalWeekAppointments !== 1 ? 's' : ''} this week</p>
               </div>
               
               {/* Mobile: List view */}
               <div className="sm:hidden space-y-2">
                 {weekDays.map(day => {
-                  const appointments = weekAppointmentNames[day.date] || [];
-                  const isToday = day.date === 12;
+                  const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
+                  const isToday = day.fullDate.toDateString() === today.toDateString();
 
                   return (
                     <div
-                      key={day.date}
+                      key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.date)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
@@ -920,7 +1025,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         <div>
                           <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
                           <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
-                            {appointments.length === 0 ? 'No appointments' : `${appointments.length} appointment${appointments.length > 1 ? 's' : ''}`}
+                            {dayBookings.length === 0 ? 'No appointments' : `${dayBookings.length} appointment${dayBookings.length > 1 ? 's' : ''}`}
                           </div>
                         </div>
                       </div>
@@ -934,18 +1039,18 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
               <div className="hidden sm:grid grid-cols-7 gap-4">
                 {/* Week day headers */}
                 {weekDays.map(day => (
-                  <div key={day.date} className="text-center font-bold text-gray-600 text-base py-2">
+                  <div key={day.fullDate.toISOString() + '-header'} className="text-center font-bold text-gray-600 text-base py-2">
                     {day.shortName}
                   </div>
                 ))}
                 {/* Week day cards */}
                 {weekDays.map(day => {
-                  const appointments = weekAppointmentNames[day.date] || [];
-                  const isToday = day.date === 12;
+                  const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
+                  const isToday = day.fullDate.toDateString() === today.toDateString();
 
                   return (
                     <div
-                      key={day.date}
+                      key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.date)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
@@ -960,17 +1065,17 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                         </div>
                       </div>
                       <div className="text-sm space-y-1.5 flex-1 overflow-hidden">
-                        {appointments.length === 0 ? (
+                        {dayBookings.length === 0 ? (
                           <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                         ) : (
                           <>
-                            <div className="truncate font-semibold">{appointments[0]}</div>
-                            {appointments.length > 1 && (
+                            <div className="truncate font-semibold">{dayBookings[0].consumer.firstName}</div>
+                            {dayBookings.length > 1 && (
                               <>
-                                <div className="truncate">{appointments[1]}</div>
-                                {appointments.length > 2 && (
+                                <div className="truncate">{dayBookings[1].consumer.firstName}</div>
+                                {dayBookings.length > 2 && (
                                   <div className={isToday ? 'text-white/80 font-bold' : 'text-gray-500 font-bold'}>
-                                    +{appointments.length - 2} more
+                                    +{dayBookings.length - 2} more
                                   </div>
                                 )}
                               </>
@@ -987,36 +1092,73 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
         })()}
 
         {/* Monthly View */}
-        {scheduleView === 'monthly' && (
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">January 2025</h3>
-              <p className="text-sm sm:text-base text-gray-600 font-medium">0 appointments this month</p>
-            </div>
-            <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
-              {/* Calendar header */}
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                <div key={i} className="text-center font-bold text-gray-600 text-sm sm:text-base py-2 sm:py-3">
-                  <span className="sm:hidden">{day}</span>
-                  <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
-                </div>
-              ))}
-              {/* Calendar days */}
-              {(() => {
-                // TODO: Fetch monthly appointments from API
-                const monthAppointments: { [day: number]: string[] } = {};
-
-                return Array.from({ length: 31 }, (_, i) => {
-                  const day = i + 1;
-                  const appointments = monthAppointments[day] || [];
-                  const hasAppointments = appointments.length > 0;
+        {scheduleView === 'monthly' && (() => {
+          const today = new Date();
+          const currentMonth = today.getMonth();
+          const currentYear = today.getFullYear();
+          
+          // Get first day of month and number of days
+          const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+          const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+          const daysInMonth = lastDayOfMonth.getDate();
+          const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+          
+          const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+          
+          // Group bookings by day of month
+          const monthAppointmentsByDay: { [day: number]: ConfirmedBooking[] } = {};
+          confirmedBookings.forEach(booking => {
+            const bookingDate = new Date(booking.scheduledTime);
+            if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
+              const day = bookingDate.getDate();
+              if (!monthAppointmentsByDay[day]) {
+                monthAppointmentsByDay[day] = [];
+              }
+              monthAppointmentsByDay[day].push(booking);
+            }
+          });
+          
+          const totalMonthAppointments = Object.values(monthAppointmentsByDay).reduce((sum, arr) => sum + arr.length, 0);
+          
+          // Create array with empty slots for padding
+          const calendarDays: (number | null)[] = [];
+          for (let i = 0; i < startDayOfWeek; i++) {
+            calendarDays.push(null); // Padding for days before first of month
+          }
+          for (let i = 1; i <= daysInMonth; i++) {
+            calendarDays.push(i);
+          }
+          
+          return (
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{monthName}</h3>
+                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalMonthAppointments} appointment{totalMonthAppointments !== 1 ? 's' : ''} this month</p>
+              </div>
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
+                {/* Calendar header */}
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, i) => (
+                  <div key={i} className="text-center font-bold text-gray-600 text-sm sm:text-base py-2 sm:py-3">
+                    <span className="sm:hidden">{dayLabel}</span>
+                    <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
+                  </div>
+                ))}
+                {/* Calendar days */}
+                {calendarDays.map((day, index) => {
+                  if (day === null) {
+                    return <div key={`empty-${index}`} className="aspect-square" />;
+                  }
+                  
+                  const dayBookings = monthAppointmentsByDay[day] || [];
+                  const hasAppointments = dayBookings.length > 0;
+                  const isToday = day === today.getDate();
                   
                   return (
                     <div
                       key={day}
                       onClick={() => handleDayClick(day)}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
-                        day === 12 
+                        isToday 
                           ? 'bg-primary-400 text-white border-primary-500' 
                           : 'bg-gray-50 border-gray-200 hover:border-primary-300'
                       } cursor-pointer active:scale-95 transition-all`}
@@ -1025,33 +1167,33 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                       {/* Mobile: Show +X bookings count */}
                       <div className="sm:hidden flex justify-center">
                         {hasAppointments && (
-                          <div className={`text-base font-bold ${day === 12 ? 'text-white' : 'text-primary-500'}`}>
-                            +{appointments.length}
+                          <div className={`text-base font-bold ${isToday ? 'text-white' : 'text-primary-500'}`}>
+                            +{dayBookings.length}
                           </div>
                         )}
                       </div>
                       {/* Desktop: Show names */}
                       <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
-                        {appointments.length === 0 ? (
+                        {dayBookings.length === 0 ? (
                           <div className="text-gray-400">No apts</div>
-                        ) : appointments.length === 1 ? (
-                          <div className="truncate font-medium">{appointments[0]}</div>
+                        ) : dayBookings.length === 1 ? (
+                          <div className="truncate font-medium">{dayBookings[0].consumer.firstName}</div>
                         ) : (
                           <>
-                            <div className="truncate font-medium">{appointments[0]}</div>
-                            <div className={`font-semibold ${day === 12 ? 'text-white/80' : 'text-gray-500'}`}>
-                              +{appointments.length - 1} more
+                            <div className="truncate font-medium">{dayBookings[0].consumer.firstName}</div>
+                            <div className={`font-semibold ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
+                              +{dayBookings.length - 1} more
                             </div>
                           </>
                         )}
                       </div>
                     </div>
                   );
-                });
-              })()}
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* View indicator dots at bottom for swipe hint - mobile only */}
         <div className="flex justify-center gap-2 mt-4 sm:hidden">
@@ -1087,7 +1229,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
             <div className="bg-primary-400 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold">January {selectedDay}, 2025</h2>
+                  <h2 className="text-2xl font-bold">
+                    {new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </h2>
                   <p className="text-white/80">
                     {getAppointmentsForDay(selectedDay).length} appointment{getAppointmentsForDay(selectedDay).length !== 1 ? 's' : ''}
                   </p>
@@ -1112,9 +1256,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {getAppointmentsForDay(selectedDay).map((apt, idx) => (
+                  {getAppointmentsForDay(selectedDay).map((apt) => (
                     <div 
-                      key={idx} 
+                      key={apt.id} 
                       onClick={() => {
                         closeDayModal();
                         onViewDetails(apt.id);
@@ -1123,14 +1267,14 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                     >
                       {/* Top row: Client name + Price */}
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-bold text-gray-900 text-lg">{apt.client}</p>
-                        <p className="font-bold text-green-600 text-xl">{apt.price}</p>
+                        <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                        <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
                       </div>
                       {/* Middle: Service */}
-                      <p className="text-base text-gray-600 mb-3">{apt.service}</p>
+                      <p className="text-base text-gray-600 mb-3">{apt.serviceType.replace(/_/g, ' ')}</p>
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary-400 text-base">{apt.time}</p>
+                        <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
                         <span className="text-sm text-gray-500">Tap for details →</span>
                       </div>
                     </div>

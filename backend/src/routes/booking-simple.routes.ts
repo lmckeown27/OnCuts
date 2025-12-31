@@ -309,5 +309,130 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
   }
 });
 
+/**
+ * GET /api/v1/bookings-simple
+ * Get bookings for the authenticated user (barber or consumer)
+ * Query params:
+ *   - status: filter by status (PENDING, ACCEPTED, COMPLETED, etc.)
+ *   - startDate: filter from this date
+ *   - endDate: filter until this date
+ *   - role: 'barber' or 'consumer' to specify which side of the booking
+ */
+router.get('/', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { status, startDate, endDate, role } = req.query;
+
+    // Build query based on role
+    let whereClause = '';
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // Determine if user is a barber
+    const barberCheck = await pool.query(
+      'SELECT id FROM barbers WHERE "userId" = $1',
+      [userId]
+    );
+    const isBarber = barberCheck.rows.length > 0;
+    const barberRecordId = isBarber ? barberCheck.rows[0].id : null;
+
+    // Build the where clause based on role
+    if (role === 'barber' && barberRecordId) {
+      whereClause = `b."barberId" = $${paramIndex}`;
+      params.push(barberRecordId);
+      paramIndex++;
+    } else if (role === 'consumer') {
+      whereClause = `b."consumerId" = $${paramIndex}`;
+      params.push(userId);
+      paramIndex++;
+    } else {
+      // Default: show both consumer and barber bookings
+      if (barberRecordId) {
+        whereClause = `(b."barberId" = $${paramIndex} OR b."consumerId" = $${paramIndex + 1})`;
+        params.push(barberRecordId, userId);
+        paramIndex += 2;
+      } else {
+        whereClause = `b."consumerId" = $${paramIndex}`;
+        params.push(userId);
+        paramIndex++;
+      }
+    }
+
+    // Filter by status
+    if (status) {
+      whereClause += ` AND b.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    // Filter by date range
+    if (startDate) {
+      whereClause += ` AND b."requestedAt" >= $${paramIndex}`;
+      params.push(new Date(startDate as string));
+      paramIndex++;
+    }
+    if (endDate) {
+      whereClause += ` AND b."requestedAt" <= $${paramIndex}`;
+      params.push(new Date(endDate as string));
+      paramIndex++;
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        b.id,
+        b."consumerId",
+        b."barberId",
+        b."serviceType",
+        b."priceUsdCents",
+        b."requestedAt" as "scheduledTime",
+        b.status,
+        b."createdAt",
+        consumer.first_name as consumer_first_name,
+        consumer.last_name as consumer_last_name,
+        consumer."avatarUrl" as consumer_avatar,
+        barber_user.first_name as barber_first_name,
+        barber_user.last_name as barber_last_name,
+        barber_user."avatarUrl" as barber_avatar
+      FROM bookings b
+      LEFT JOIN users consumer ON b."consumerId" = consumer.id
+      LEFT JOIN barbers barber ON b."barberId" = barber.id
+      LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+      WHERE ${whereClause}
+      ORDER BY b."requestedAt" ASC`,
+      params
+    );
+
+    res.json({
+      success: true,
+      data: {
+        bookings: result.rows.map(row => ({
+          id: row.id,
+          consumerId: row.consumerId,
+          barberId: row.barberId,
+          serviceType: row.serviceType,
+          priceUsdCents: row.priceUsdCents,
+          scheduledTime: row.scheduledTime,
+          status: row.status,
+          createdAt: row.createdAt,
+          consumer: {
+            firstName: row.consumer_first_name,
+            lastName: row.consumer_last_name,
+            avatar: row.consumer_avatar,
+          },
+          barber: {
+            firstName: row.barber_first_name,
+            lastName: row.barber_last_name,
+            avatar: row.barber_avatar,
+          },
+        })),
+      },
+      count: result.rows.length,
+    });
+  } catch (error: any) {
+    logger.error('Error fetching bookings:', error.message || error);
+    next(error);
+  }
+});
+
 export default router;
 
