@@ -18,6 +18,7 @@ import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import WalkInPaymentModal from '../components/WalkInPaymentModal';
+import BookingDetailsModal from '../components/BookingDetailsModal';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
@@ -1458,6 +1459,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [markingComplete, setMarkingComplete] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
 
   // Fetch bookings when modal opens
   useEffect(() => {
@@ -1650,13 +1653,17 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                 return (
                   <div 
                     key={booking.id} 
-                    className={`p-4 rounded-xl border transition-all ${
+                    className={`p-4 rounded-xl border transition-all cursor-pointer ${
                       isPaymentDue(booking) 
-                        ? 'bg-amber-50 border-amber-200' 
+                        ? 'bg-amber-50 border-amber-200 hover:border-amber-400' 
                         : booking.status === 'COMPLETED'
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-300'
+                          ? 'bg-green-50 border-green-200 hover:border-green-400'
+                          : 'bg-gray-50 border-gray-200 hover:border-primary-400 hover:shadow-md'
                     }`}
+                    onClick={() => {
+                      setSelectedBooking(booking);
+                      setShowBookingDetails(true);
+                    }}
                   >
                     {/* Top Row: Customer + Status */}
                     <div className="flex items-start justify-between mb-2">
@@ -1709,7 +1716,10 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                     {/* Action Button */}
                     {showMarkComplete && (
                       <button
-                        onClick={() => handleMarkComplete(booking.id)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent opening details modal
+                          handleMarkComplete(booking.id);
+                        }}
                         disabled={markingComplete === booking.id}
                         className={`w-full py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
                           markingComplete === booking.id
@@ -1733,7 +1743,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
 
                     {/* Review display for completed bookings */}
                     {booking.status === 'COMPLETED' && booking.review && (
-                      <div className="mt-3 p-3 bg-white rounded-lg border border-green-100">
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-green-100" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1 mb-1">
                           {[1, 2, 3, 4, 5].map(star => (
                             <span key={star} className={star <= booking.review.rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
@@ -1744,6 +1754,9 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                         )}
                       </div>
                     )}
+                    
+                    {/* Tap to view details hint */}
+                    <p className="text-xs text-gray-400 text-center mt-2">Tap to view details</p>
                   </div>
                 );
               })}
@@ -1751,6 +1764,17 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
           )}
         </div>
       </div>
+
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        isOpen={showBookingDetails}
+        onClose={() => {
+          setShowBookingDetails(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking}
+        onBookingUpdated={fetchBookings}
+      />
     </div>
   );
 }

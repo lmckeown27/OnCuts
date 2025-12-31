@@ -744,5 +744,202 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
   }
 });
 
+/**
+ * PUT /api/v1/bookings-simple/:id
+ * Edit booking details (barber only for ACCEPTED bookings)
+ * Editable fields: scheduledTime, location, notes
+ */
+router.put('/:id', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+    const { scheduledTime, location, notes } = req.body;
+
+    // First, verify the booking exists and belongs to this barber
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b.status, b."consumerId", bar."userId" as barber_user_id,
+              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
+              u_consumer.email as consumer_email
+       FROM bookings b
+       JOIN barbers bar ON b."barberId" = bar.id
+       JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       WHERE b.id = $1 AND bar."userId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    // Only allow editing ACCEPTED bookings
+    if (booking.status !== 'ACCEPTED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Cannot edit a ${booking.status.toLowerCase()} booking` 
+      });
+    }
+
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (scheduledTime !== undefined) {
+      updates.push(`"scheduledTime" = $${paramIndex++}`);
+      values.push(scheduledTime);
+    }
+    if (location !== undefined) {
+      updates.push(`location = $${paramIndex++}`);
+      values.push(location);
+    }
+    if (notes !== undefined) {
+      updates.push(`notes = $${paramIndex++}`);
+      values.push(notes);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'No fields to update' });
+    }
+
+    updates.push(`"updatedAt" = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const updateQuery = `
+      UPDATE bookings 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, "scheduledTime", location, notes, status
+    `;
+
+    const result = await pool.query(updateQuery, values);
+
+    // If scheduledTime was changed, notify the consumer
+    if (scheduledTime) {
+      const barberNameResult = await pool.query(
+        `SELECT u.first_name || ' ' || u.last_name as name 
+         FROM users u WHERE u.id = $1`,
+        [userId]
+      );
+      const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+
+      const newDate = new Date(scheduledTime);
+      const formattedDate = newDate.toLocaleDateString('en-US', { 
+        weekday: 'short', month: 'short', day: 'numeric' 
+      });
+      const formattedTime = newDate.toLocaleTimeString('en-US', { 
+        hour: 'numeric', minute: '2-digit' 
+      });
+
+      await notificationService.saveNotification({
+        userId: booking.consumerId,
+        type: 'booking_updated',
+        title: 'Booking Updated 📅',
+        message: `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
+        data: { bookingId: id, newScheduledTime: scheduledTime },
+      });
+    }
+
+    logger.info(`Booking ${id} updated by barber ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Booking updated successfully',
+      data: { booking: result.rows[0] },
+    });
+  } catch (error: any) {
+    logger.error('Error updating booking:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/v1/bookings-simple/:id
+ * Cancel/delete a booking (barber only for non-completed bookings)
+ */
+router.delete('/:id', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+    const { reason } = req.body;
+
+    // First, verify the booking exists and belongs to this barber
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."originalServiceName",
+              bar."userId" as barber_user_id,
+              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name
+       FROM bookings b
+       JOIN barbers bar ON b."barberId" = bar.id
+       JOIN users u_consumer ON b."consumerId" = u_consumer.id
+       WHERE b.id = $1 AND bar."userId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    // Cannot delete completed or already cancelled bookings
+    if (booking.status === 'COMPLETED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot cancel a completed booking' 
+      });
+    }
+    if (booking.status === 'CANCELLED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Booking is already cancelled' 
+      });
+    }
+
+    // Update booking status to CANCELLED instead of deleting
+    await pool.query(
+      `UPDATE bookings 
+       SET status = 'CANCELLED', "updatedAt" = CURRENT_TIMESTAMP, notes = COALESCE(notes || ' | ', '') || $1
+       WHERE id = $2`,
+      [`Cancelled by barber${reason ? ': ' + reason : ''}`, id]
+    );
+
+    // Also update any linked conversation
+    await pool.query(
+      `UPDATE conversations 
+       SET booking_status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+       WHERE booking_id = $1`,
+      [id]
+    );
+
+    // Notify consumer about the cancellation
+    const barberNameResult = await pool.query(
+      `SELECT u.first_name || ' ' || u.last_name as name 
+       FROM users u WHERE u.id = $1`,
+      [userId]
+    );
+    const barberName = barberNameResult.rows[0]?.name || 'Your barber';
+    const serviceName = booking.originalServiceName || booking.serviceType;
+
+    await notificationService.saveNotification({
+      userId: booking.consumerId,
+      type: 'booking_cancelled',
+      title: 'Booking Cancelled ❌',
+      message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
+      data: { bookingId: id, reason },
+    });
+
+    logger.info(`Booking ${id} cancelled by barber ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Booking cancelled successfully',
+    });
+  } catch (error: any) {
+    logger.error('Error cancelling booking:', error.message || error);
+    next(error);
+  }
+});
+
 export default router;
 
