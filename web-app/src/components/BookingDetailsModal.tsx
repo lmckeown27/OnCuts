@@ -29,18 +29,135 @@ export default function BookingDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
-  // Editable fields
-  const [editedDate, setEditedDate] = useState('');
-  const [editedTime, setEditedTime] = useState('');
+  // Editable fields - using human-readable formats
+  const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
+  const [editedTime, setEditedTime] = useState(''); // h:mm AM/PM
   const [editedLocation, setEditedLocation] = useState('');
   const [editedNotes, setEditedNotes] = useState('');
+
+  // Format date as MM/DD/YYYY
+  const formatDateDisplay = (date: Date): string => {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  // Format time as h:mm AM/PM
+  const formatTimeDisplay = (date: Date): string => {
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    return `${hours}:${minutes} ${ampm}`;
+  };
+
+  // Auto-format date input (MM/DD/YYYY)
+  const handleDateChange = (value: string) => {
+    // Remove all non-digits
+    let digits = value.replace(/\D/g, '');
+    
+    // Limit to 8 digits
+    digits = digits.slice(0, 8);
+    
+    // Auto-format with slashes
+    let formatted = '';
+    if (digits.length > 0) {
+      formatted = digits.slice(0, 2);
+    }
+    if (digits.length > 2) {
+      formatted += '/' + digits.slice(2, 4);
+    }
+    if (digits.length > 4) {
+      formatted += '/' + digits.slice(4, 8);
+    }
+    
+    setEditedDate(formatted);
+  };
+
+  // Auto-format time input (h:mm AM/PM)
+  const handleTimeChange = (value: string) => {
+    // Convert to uppercase for AM/PM
+    value = value.toUpperCase();
+    
+    // Extract digits and AM/PM
+    const digits = value.replace(/[^0-9]/g, '');
+    const hasA = value.includes('A');
+    const hasP = value.includes('P');
+    
+    let formatted = '';
+    
+    if (digits.length > 0) {
+      // Handle hour (1-12)
+      let hour = digits.slice(0, digits.length >= 3 ? (parseInt(digits[0]) > 1 ? 1 : 2) : Math.min(2, digits.length));
+      if (parseInt(hour) > 12) hour = '12';
+      if (parseInt(hour) === 0) hour = '1';
+      formatted = hour;
+    }
+    
+    if (digits.length >= 2) {
+      // Handle minutes
+      const hourLen = parseInt(digits[0]) > 1 ? 1 : 2;
+      const minuteDigits = digits.slice(hourLen, hourLen + 2);
+      if (minuteDigits.length > 0) {
+        let mins = parseInt(minuteDigits.slice(0, 2)) || 0;
+        if (mins > 59) mins = 59;
+        formatted += ':' + String(mins).padStart(2, '0');
+      }
+    }
+    
+    // Add AM/PM
+    if (hasA) {
+      formatted += ' AM';
+    } else if (hasP) {
+      formatted += ' PM';
+    }
+    
+    setEditedTime(formatted);
+  };
+
+  // Parse MM/DD/YYYY to Date components
+  const parseDateInput = (dateStr: string): { month: number; day: number; year: number } | null => {
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    const month = parseInt(parts[0]);
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return null;
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > 31) return null;
+    if (year < 2024 || year > 2099) return null;
+    return { month, day, year };
+  };
+
+  // Parse h:mm AM/PM to 24-hour time
+  const parseTimeInput = (timeStr: string): { hours: number; minutes: number } | null => {
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let hours = parseInt(match[1]);
+    const minutes = parseInt(match[2]);
+    const ampm = match[3]?.toUpperCase();
+    
+    if (hours < 1 || hours > 12) return null;
+    if (minutes < 0 || minutes > 59) return null;
+    
+    // Convert to 24-hour format
+    if (ampm === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (ampm === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    return { hours, minutes };
+  };
 
   // Initialize editable fields when booking changes
   useEffect(() => {
     if (booking) {
       const scheduledTime = new Date(booking.scheduledTime);
-      setEditedDate(scheduledTime.toISOString().split('T')[0]);
-      setEditedTime(scheduledTime.toTimeString().slice(0, 5));
+      setEditedDate(formatDateDisplay(scheduledTime));
+      setEditedTime(formatTimeDisplay(scheduledTime));
       setEditedLocation(booking.location || '');
       setEditedNotes(booking.notes || '');
     }
@@ -74,10 +191,30 @@ export default function BookingDetailsModal({
   };
 
   const handleSaveChanges = async () => {
+    // Validate date format
+    const dateParts = parseDateInput(editedDate);
+    if (!dateParts) {
+      toast.error('Please enter a valid date (MM/DD/YYYY)');
+      return;
+    }
+
+    // Validate time format
+    const timeParts = parseTimeInput(editedTime);
+    if (!timeParts) {
+      toast.error('Please enter a valid time (e.g., 9:30 AM)');
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Combine date and time into scheduledTime
-      const newScheduledTime = new Date(`${editedDate}T${editedTime}`);
+      const newScheduledTime = new Date(
+        dateParts.year,
+        dateParts.month - 1, // months are 0-indexed
+        dateParts.day,
+        timeParts.hours,
+        timeParts.minutes
+      );
       
       await api.put(`/bookings-simple/${booking.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
@@ -210,18 +347,21 @@ export default function BookingDetailsModal({
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
-                    type="date"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="MM/DD/YYYY"
                     value={editedDate}
-                    onChange={(e) => setEditedDate(e.target.value)}
+                    onChange={(e) => handleDateChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                   <input
-                    type="time"
+                    type="text"
+                    placeholder="9:00 AM"
                     value={editedTime}
-                    onChange={(e) => setEditedTime(e.target.value)}
+                    onChange={(e) => handleTimeChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   />
                 </div>
