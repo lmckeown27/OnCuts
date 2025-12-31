@@ -447,7 +447,7 @@ export default function BookingDetailsModal({
                       className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-red-200"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Cancel
+                      Cancel Booking
                     </button>
                   )}
                 </div>
