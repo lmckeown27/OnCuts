@@ -3,10 +3,11 @@
  * Allows viewing all booking details and editing/cancelling bookings
  */
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
   Edit3, Trash2, Check, AlertTriangle, Star, MessageSquare,
-  Phone, Mail, Save
+  Phone, Mail, Save, CreditCard
 } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
@@ -25,10 +26,10 @@ export default function BookingDetailsModal({
   booking, 
   onBookingUpdated 
 }: BookingDetailsModalProps) {
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
   // Editable fields (notes are read-only - set by consumer)
@@ -241,23 +242,11 @@ export default function BookingDetailsModal({
     }
   };
 
-  const handleCompleteBooking = async () => {
-    setIsCompleting(true);
-    try {
-      const response = await api.put(`/bookings-simple/${booking.id}/complete`);
-      if (response.success) {
-        toast.success('Service marked complete! Payment request sent to customer.');
-        onClose();
-        onBookingUpdated?.();
-      } else {
-        toast.error(response.error || 'Failed to complete booking');
-      }
-    } catch (error: any) {
-      console.error('Failed to complete booking:', error);
-      toast.error(error.message || 'Failed to complete booking');
-    } finally {
-      setIsCompleting(false);
-    }
+  const handleCompleteBooking = () => {
+    // Navigate to the payment page instead of immediately marking as complete
+    // This allows proper Stripe payment flow
+    onClose();
+    navigate(`/web/payment/${booking.id}`);
   };
 
   const canEdit = booking.status === 'ACCEPTED';
@@ -576,24 +565,14 @@ export default function BookingDetailsModal({
               {/* Action Buttons */}
               {(canComplete || canEdit || canCancel) && (
                 <div className="space-y-3 pt-4 border-t border-gray-100">
-                  {/* Complete Booking Button - Primary Action */}
+                  {/* Complete Booking Button - Navigates to Payment Page */}
                   {canComplete && (
                     <button
                       onClick={handleCompleteBooking}
-                      disabled={isCompleting}
-                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
-                      {isCompleting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" />
-                          Complete Booking
-                        </>
-                      )}
+                      <CreditCard className="w-4 h-4" />
+                      Complete Booking
                     </button>
                   )}
                   

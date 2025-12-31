@@ -304,13 +304,27 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."requestedAt" as "scheduledTime",
         b.status,
         b."createdAt",
-        u.first_name || ' ' || u.last_name as barber_name,
-        u."avatarUrl" as barber_profile_picture,
-        c.first_name || ' ' || c.last_name as consumer_name
+        b."paidAt",
+        b."tipAmountCents",
+        b."totalPaidCents",
+        conv.service_name,
+        conv.location,
+        conv.notes,
+        barber_record.id as barber_record_id,
+        barber_user.id as barber_user_id,
+        barber_user.first_name as barber_first_name,
+        barber_user.last_name as barber_last_name,
+        barber_user."avatarUrl" as barber_profile_url,
+        consumer.id as consumer_user_id,
+        consumer.first_name as consumer_first_name,
+        consumer.last_name as consumer_last_name,
+        consumer."avatarUrl" as consumer_profile_url
       FROM bookings b
-      LEFT JOIN users u ON b."barberId" = u.id
-      LEFT JOIN users c ON b."consumerId" = c.id
-      WHERE b.id = $1 AND (b."consumerId" = $2 OR b."barberId" = $2)`,
+      LEFT JOIN conversations conv ON conv.booking_id = b.id
+      LEFT JOIN barbers barber_record ON b."barberId" = barber_record.id
+      LEFT JOIN users barber_user ON barber_record."userId" = barber_user.id
+      LEFT JOIN users consumer ON b."consumerId" = consumer.id
+      WHERE b.id = $1 AND (b."consumerId" = $2 OR barber_user.id = $2)`,
       [id, userId]
     );
 
@@ -318,9 +332,42 @@ router.get('/:id', authenticate, async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Booking not found' });
     }
 
+    const row = result.rows[0];
+    
+    // Format response with nested barber/consumer objects
+    const booking = {
+      id: row.id,
+      consumerId: row.consumerId,
+      barberId: row.barberId,
+      serviceType: row.serviceType,
+      serviceName: row.service_name || row.serviceType,
+      priceUsdCents: row.priceUsdCents,
+      scheduledTime: row.scheduledTime,
+      status: row.status,
+      createdAt: row.createdAt,
+      paidAt: row.paidAt,
+      tipAmountCents: row.tipAmountCents,
+      totalPaidCents: row.totalPaidCents,
+      location: row.location,
+      notes: row.notes,
+      barber: {
+        id: row.barber_user_id,
+        recordId: row.barber_record_id,
+        firstName: row.barber_first_name,
+        lastName: row.barber_last_name,
+        profileImageUrl: row.barber_profile_url,
+      },
+      consumer: {
+        id: row.consumer_user_id,
+        firstName: row.consumer_first_name,
+        lastName: row.consumer_last_name,
+        profileImageUrl: row.consumer_profile_url,
+      },
+    };
+
     res.json({
       success: true,
-      data: { booking: result.rows[0] },
+      booking,
     });
   } catch (error: any) {
     logger.error('Error getting booking:', error.message || error);
@@ -634,8 +681,169 @@ router.get('/', authenticate, async (req, res, next) => {
 });
 
 /**
+ * POST /api/v1/bookings-simple/:id/create-payment-intent
+ * Create a Stripe payment intent for the booking
+ * Only the consumer can initiate payment
+ */
+router.post('/:id/create-payment-intent', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { tipAmountCents = 0 } = req.body;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the consumer for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              c.service_name,
+              barber."userId" as barber_user_id,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name
+       FROM bookings b
+       LEFT JOIN conversations c ON c.booking_id = b.id
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Booking not found or access denied' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    if (booking.status !== 'ACCEPTED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Can only pay for accepted bookings'
+      });
+    }
+
+    const totalAmountCents = booking.priceUsdCents + tipAmountCents;
+
+    // Import Stripe
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmountCents,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        booking_id: id,
+        consumer_id: userId,
+        barber_id: booking.barberId,
+        service_name: booking.service_name || 'Haircut',
+        tip_amount_cents: tipAmountCents.toString(),
+        platform: 'CampusCuts',
+      },
+      description: `CampusCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
+    });
+
+    logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}`);
+
+    res.json({
+      success: true,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
+  } catch (error: any) {
+    logger.error('Error creating payment intent:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/confirm-payment
+ * Confirm payment was successful and mark booking as completed
+ * Only the consumer can confirm their payment
+ */
+router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { paymentIntentId, tipAmountCents = 0 } = req.body;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the consumer for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              barber."userId" as barber_user_id,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name
+       FROM bookings b
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Booking not found or access denied' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+    const totalAmountCents = booking.priceUsdCents + tipAmountCents;
+
+    // Verify payment intent with Stripe
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment has not been completed'
+      });
+    }
+
+    // Update booking with payment info and mark as completed
+    await pool.query(
+      `UPDATE bookings 
+       SET status = 'COMPLETED',
+           "completedAt" = CURRENT_TIMESTAMP,
+           "tipAmountCents" = $1,
+           "totalPaidCents" = $2,
+           "paidAt" = CURRENT_TIMESTAMP,
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [tipAmountCents, totalAmountCents, id]
+    );
+
+    // Notify barber of payment received
+    await notificationService.saveNotification({
+      userId: booking.barber_user_id,
+      type: 'payment_received',
+      title: 'Payment Received!',
+      message: `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
+      data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents },
+    });
+
+    logger.info(`Payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
+
+    res.json({
+      success: true,
+      message: 'Payment confirmed and booking completed',
+      data: {
+        bookingId: id,
+        amountPaid: totalAmountCents,
+        tipAmount: tipAmountCents,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error confirming payment:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * POST /api/v1/bookings-simple/:id/pay
- * Process payment for a completed booking
+ * Process payment for a completed booking (legacy/mock endpoint)
  * Only the consumer can pay for their booking
  */
 router.post('/:id/pay', authenticate, async (req, res, next) => {

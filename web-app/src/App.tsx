@@ -34,6 +34,7 @@ const ConsumerBookingStatusPage = lazy(() => import('./pages/ConsumerBookingStat
 const FindBarberPage = lazy(() => import('./pages/FindBarberPage'));
 const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
+const PostServicePaymentPage = lazy(() => import('./pages/PostServicePaymentPage'));
 
 // Barber Pages - Lazy loaded
 const BarberPage = lazy(() => import('./pages/BarberPage'));
@@ -132,6 +133,7 @@ function AppContent() {
         <Route path="/web/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/student/booking/payment" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BookingPaymentPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/payment/:bookingId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PostServicePaymentPage /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Barber Routes (includes Campus Manager features when user is campus manager) */}
         <Route path="/web/barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberPage /></LazyRoute></PlatformGuard>} />
@@ -180,6 +182,7 @@ function AppContent() {
         <Route path="/app/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/student/booking/payment" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BookingPaymentPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/app/payment/:bookingId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><PostServicePaymentPage /></LazyRoute></PlatformGuard>} />
         
         {/* App - Barber Routes (Mobile-Optimized) */}
         <Route path="/app/barber" element={<PlatformGuard requiredPlatform="app"><LazyRoute><MobileBarberPage /></LazyRoute></PlatformGuard>} />
