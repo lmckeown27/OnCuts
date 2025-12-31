@@ -169,23 +169,32 @@ export default function MessagesPage() {
     consumerProfilePicture?: string;
   } | null;
 
-  // Scroll to bottom of messages
+  // Scroll to bottom of messages - multiple attempts to ensure it works
   const scrollToBottom = useCallback((instant = false) => {
-    // Use requestAnimationFrame + setTimeout for reliable DOM timing
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        const container = messagesContainerRef.current;
-        if (container) {
-          if (instant) {
-            container.scrollTop = container.scrollHeight;
-          } else {
-            container.scrollTo({
-              top: container.scrollHeight,
-              behavior: 'smooth'
-            });
-          }
+    const doScroll = () => {
+      const container = messagesContainerRef.current;
+      if (container) {
+        if (instant) {
+          container.scrollTop = container.scrollHeight;
+        } else {
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth'
+          });
         }
-      }, 100);
+      }
+    };
+    
+    // Multiple scroll attempts to handle async rendering
+    // Immediate scroll
+    doScroll();
+    // After React render cycle
+    requestAnimationFrame(() => {
+      doScroll();
+      // After a short delay for images/content to load
+      setTimeout(doScroll, 50);
+      // Final attempt after longer delay
+      setTimeout(doScroll, 200);
     });
   }, []);
 
