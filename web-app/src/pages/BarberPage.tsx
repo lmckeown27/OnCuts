@@ -1153,10 +1153,14 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                           <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                         ) : (
                           <>
-                            <div className="truncate font-semibold">{dayBookings[0].consumer.firstName}</div>
+                            <div className="truncate font-semibold">
+                              {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
+                            </div>
                             {dayBookings.length > 1 && (
                               <>
-                                <div className="truncate">{dayBookings[1].consumer.firstName}</div>
+                                <div className="truncate">
+                                  {dayBookings[1].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[1].consumer.firstName}
+                                </div>
                                 {dayBookings.length > 2 && (
                                   <div className={isToday ? 'text-white/80 font-bold' : 'text-gray-500 font-bold'}>
                                     +{dayBookings.length - 2} more
@@ -1283,12 +1287,16 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick }: Das
                       {/* Desktop: Show names */}
                       <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
                         {dayBookings.length === 0 ? (
-                          <div className="text-gray-400">No apts</div>
+                          <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                         ) : dayBookings.length === 1 ? (
-                          <div className="truncate font-medium">{dayBookings[0].consumer.firstName}</div>
+                          <div className="truncate font-medium">
+                            {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
+                          </div>
                         ) : (
                           <>
-                            <div className="truncate font-medium">{dayBookings[0].consumer.firstName}</div>
+                            <div className="truncate font-medium">
+                              {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
+                            </div>
                             <div className={`font-semibold ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
                               +{dayBookings.length - 1} more
                             </div>
