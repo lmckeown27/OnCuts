@@ -1356,3 +1356,232 @@ function generateBookingCompletedHtml(
 </body>
 </html>`.trim();
 }
+
+/**
+ * Booking Cancellation Email Details Interface
+ */
+interface BookingCancellationEmailDetails {
+  bookingId: string;
+  serviceName: string;
+  price: number; // in dollars
+  scheduledDate: string;
+  scheduledTime: string;
+  location?: string;
+  consumerName: string;
+  consumerEmail: string;
+  barberName: string;
+  barberEmail: string;
+  cancelledBy: 'consumer' | 'barber';
+  reason?: string;
+}
+
+/**
+ * Send Booking Cancellation Emails
+ * 
+ * Sends cancellation receipt emails to both consumer and barber when a booking is cancelled.
+ * 
+ * @param details - Booking cancellation details
+ */
+export async function sendBookingCancellationEmails(details: BookingCancellationEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping booking cancellation emails for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  // Send to consumer
+  try {
+    const transporter = createTransporter();
+    
+    const consumerSubject = details.cancelledBy === 'consumer'
+      ? `Booking Cancelled: Your ${details.serviceName} appointment`
+      : `Booking Cancelled: ${details.barberName} cancelled your appointment`;
+    
+    const consumerMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject: consumerSubject,
+      text: generateBookingCancellationText(details, 'consumer'),
+      html: generateBookingCancellationHtml(details, 'consumer', frontendUrl)
+    };
+
+    await transporter.sendMail(consumerMailOptions);
+    logger.info(`Booking cancellation email sent to consumer: ${details.consumerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking cancellation email to consumer ${details.consumerEmail}:`, error.message);
+  }
+
+  // Send to barber
+  try {
+    const transporter = createTransporter();
+    
+    const barberSubject = details.cancelledBy === 'barber'
+      ? `Booking Cancelled: Your ${details.serviceName} with ${details.consumerName}`
+      : `Booking Cancelled: ${details.consumerName} cancelled their appointment`;
+    
+    const barberMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject: barberSubject,
+      text: generateBookingCancellationText(details, 'barber'),
+      html: generateBookingCancellationHtml(details, 'barber', frontendUrl)
+    };
+
+    await transporter.sendMail(barberMailOptions);
+    logger.info(`Booking cancellation email sent to barber: ${details.barberEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking cancellation email to barber ${details.barberEmail}:`, error.message);
+  }
+}
+
+/**
+ * Generate Booking Cancellation Plain Text
+ */
+function generateBookingCancellationText(
+  details: BookingCancellationEmailDetails, 
+  recipient: 'consumer' | 'barber'
+): string {
+  const isConsumer = recipient === 'consumer';
+  const firstName = isConsumer 
+    ? details.consumerName.split(' ')[0] 
+    : details.barberName.split(' ')[0];
+  
+  const cancelledByYou = (isConsumer && details.cancelledBy === 'consumer') || 
+                         (!isConsumer && details.cancelledBy === 'barber');
+  
+  const otherPartyName = isConsumer ? details.barberName : details.consumerName;
+
+  const intro = cancelledByYou
+    ? `This confirms that you have cancelled your ${details.serviceName} appointment.`
+    : `${otherPartyName} has cancelled the ${details.serviceName} appointment.`;
+
+  return `
+Hi ${firstName},
+
+${intro}
+
+CANCELLED BOOKING DETAILS
+-------------------------
+Service: ${details.serviceName}
+Originally Scheduled: ${details.scheduledDate} at ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+${isConsumer ? 'Barber' : 'Customer'}: ${otherPartyName}
+Price: $${details.price.toFixed(2)}
+${details.reason ? `\nReason: ${details.reason}` : ''}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+${isConsumer 
+  ? 'We hope to see you again soon! You can book a new appointment anytime.'
+  : cancelledByYou 
+    ? 'The customer has been notified of this cancellation.'
+    : 'This time slot is now available for other bookings.'}
+
+---
+CampusCut - Campus Haircuts Made Easy
+`.trim();
+}
+
+/**
+ * Generate Booking Cancellation HTML Email
+ */
+function generateBookingCancellationHtml(
+  details: BookingCancellationEmailDetails, 
+  recipient: 'consumer' | 'barber',
+  frontendUrl: string
+): string {
+  const isConsumer = recipient === 'consumer';
+  const firstName = isConsumer 
+    ? details.consumerName.split(' ')[0] 
+    : details.barberName.split(' ')[0];
+  
+  const cancelledByYou = (isConsumer && details.cancelledBy === 'consumer') || 
+                         (!isConsumer && details.cancelledBy === 'barber');
+  
+  const otherPartyName = isConsumer ? details.barberName : details.consumerName;
+
+  const introText = cancelledByYou
+    ? `This confirms that you have cancelled your <strong>${details.serviceName}</strong> appointment.`
+    : `<strong>${otherPartyName}</strong> has cancelled the <strong>${details.serviceName}</strong> appointment.`;
+
+  const ctaText = isConsumer ? 'Book New Appointment' : 'View Dashboard';
+  const ctaLink = isConsumer ? `${frontendUrl}/web/discover` : `${frontendUrl}/web/barber`;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background-color: #ef4444; padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">❌</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Booking Cancelled</h1>
+    </div>
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">${introText}</p>
+      
+      ${details.reason ? `
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+        <p style="color: #991b1b; margin: 0; font-size: 14px;"><strong>Reason:</strong> ${details.reason}</p>
+      </div>` : ''}
+      
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #6b7280; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Cancelled Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Was Scheduled For</td>
+            <td style="padding: 8px 0; color: #9ca3af; font-weight: 600; text-align: right; text-decoration: line-through;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #9ca3af; font-weight: 600; text-align: right; text-decoration: line-through;">${details.scheduledTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">${isConsumer ? 'Barber' : 'Customer'}</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${otherPartyName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #9ca3af; font-weight: 600; text-align: right; text-decoration: line-through;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="text-align: center; margin: 25px 0 0 0;">
+        <p style="color: #9ca3af; font-size: 12px; margin: 0;">Booking Reference</p>
+        <p style="color: #1f2937; font-size: 16px; font-weight: 700; margin: 5px 0 0 0;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${ctaLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">${ctaText}</a>
+      </div>
+
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        ${isConsumer 
+          ? 'We hope to see you again soon! You can book a new appointment anytime.'
+          : cancelledByYou 
+            ? 'The customer has been notified of this cancellation.'
+            : 'This time slot is now available for other bookings.'}
+      </p>
+    </div>
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+}

@@ -10,7 +10,7 @@ import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
-import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
+import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails, sendBookingCancellationEmails } from '../services/email.service';
 
 const router = express.Router();
 
@@ -1433,10 +1433,10 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."serviceType",
+      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."scheduledTime", b.location,
               bar."userId" as barber_user_id,
-              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
-              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name,
+              u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
+              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
               c.service_name as original_service_name
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
@@ -1525,6 +1525,23 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         data: { bookingId: id, reason, cancelledBy: 'consumer' },
       });
     }
+
+    // Send cancellation emails to both parties
+    const scheduledDate = new Date(booking.scheduledTime);
+    await sendBookingCancellationEmails({
+      bookingId: id,
+      serviceName: serviceName,
+      price: (booking.priceUsdCents || 0) / 100,
+      scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+      scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      location: booking.location,
+      consumerName: consumerName,
+      consumerEmail: booking.consumer_email,
+      barberName: barberName,
+      barberEmail: booking.barber_email,
+      cancelledBy: isBarber ? 'barber' : 'consumer',
+      reason: reason,
+    });
 
     logger.info(`Booking ${id} cancelled by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
 
