@@ -1082,13 +1082,17 @@ router.put('/:id', authenticate, async (req, res, next) => {
       logger.info(`Updated booking ${id} scheduledTime to ${scheduledTime}`);
     }
 
-    // Update location and/or notes on conversations table (if linked)
-    if (location !== undefined || notes !== undefined) {
+    // Update scheduled_time, location and/or notes on conversations table (if linked)
+    if (scheduledTime !== undefined || location !== undefined || notes !== undefined) {
       if (booking.conversation_id) {
         const convUpdates: string[] = [];
         const convValues: any[] = [];
         let convParamIndex = 1;
 
+        if (scheduledTime !== undefined) {
+          convUpdates.push(`scheduled_time = $${convParamIndex++}`);
+          convValues.push(scheduledTime);
+        }
         if (location !== undefined) {
           convUpdates.push(`location = $${convParamIndex++}`);
           convValues.push(location);
@@ -1110,7 +1114,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
              WHERE id = $${convParamIndex}`,
             convValues
           );
-          logger.info(`Updated conversation ${booking.conversation_id} location/notes`);
+          logger.info(`Updated conversation ${booking.conversation_id} with scheduled_time/location/notes`);
         }
       } else {
         // No linked conversation - try to find or create one
@@ -1132,6 +1136,10 @@ router.put('/:id', authenticate, async (req, res, next) => {
           const convValues: any[] = [];
           let convParamIndex = 1;
 
+          if (scheduledTime !== undefined) {
+            convUpdates.push(`scheduled_time = $${convParamIndex++}`);
+            convValues.push(scheduledTime);
+          }
           if (location !== undefined) {
             convUpdates.push(`location = $${convParamIndex++}`);
             convValues.push(location);
@@ -1154,7 +1162,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
           );
           logger.info(`Linked and updated conversation ${convId} for booking ${id}`);
         } else {
-          logger.warn(`No conversation found for booking ${id} - location/notes not saved`);
+          logger.warn(`No conversation found for booking ${id} - scheduled_time/location/notes not saved to conversation`);
           // Still update the response values so frontend shows what user entered
           if (location !== undefined) updatedLocation = location;
           if (notes !== undefined) updatedNotes = notes;
