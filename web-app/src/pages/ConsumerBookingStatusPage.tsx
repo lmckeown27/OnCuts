@@ -632,9 +632,8 @@ export default function ConsumerBookingStatusPage() {
               <div className="flex gap-3 w-full max-w-md">
                 <button
                   onClick={handleAcknowledgeEdits}
-                  className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
                 >
-                  <Check className="w-4 h-4" />
                   OK with Changes
                 </button>
                 <button
