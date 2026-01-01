@@ -1555,5 +1555,218 @@ router.delete('/:id', authenticate, async (req, res, next) => {
   }
 });
 
+// ============================================================================
+// WALK-IN PAYMENT ENDPOINTS
+// ============================================================================
+
+/**
+ * POST /api/v1/bookings-simple/walk-in/create-payment
+ * Create a walk-in booking and Stripe payment intent
+ * Only barbers can create walk-in payments
+ */
+router.post('/walk-in/create-payment', authenticate, async (req, res, next) => {
+  try {
+    const barberId = (req as any).user.userId;
+    const { customerName, serviceName, priceUsdCents, tipAmountCents = 0 } = req.body;
+
+    // Validate required fields
+    if (!customerName || !serviceName || !priceUsdCents) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer name, service name, and price are required'
+      });
+    }
+
+    if (priceUsdCents < 100) {
+      return res.status(400).json({
+        success: false,
+        error: 'Minimum payment amount is $1.00'
+      });
+    }
+
+    // Verify user is a barber
+    const barberCheck = await pool.query(
+      `SELECT b.id as barber_record_id, u.first_name, u.last_name 
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       WHERE b."userId" = $1`,
+      [barberId]
+    );
+
+    if (barberCheck.rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only barbers can create walk-in payments'
+      });
+    }
+
+    const barber = barberCheck.rows[0];
+    const barberName = `${barber.first_name} ${barber.last_name}`;
+    const totalAmountCents = priceUsdCents + tipAmountCents;
+
+    // Create a walk-in record in walk_in_payments table (or use bookings with special flag)
+    // For simplicity, we'll just create the payment intent and track via Stripe metadata
+    
+    const walkInId = `walkin_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Import Stripe
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalAmountCents,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        walk_in_id: walkInId,
+        barber_user_id: barberId,
+        barber_record_id: barber.barber_record_id,
+        customer_name: customerName,
+        service_name: serviceName,
+        base_price_cents: priceUsdCents.toString(),
+        tip_amount_cents: tipAmountCents.toString(),
+        platform: 'CampusCuts',
+        payment_type: 'walk_in',
+      },
+      description: `CampusCuts Walk-in - ${serviceName} with ${barberName} for ${customerName}`,
+    });
+
+    logger.info(`Walk-in payment intent created: ${paymentIntent.id} for ${customerName} - $${(totalAmountCents / 100).toFixed(2)}`);
+
+    res.json({
+      success: true,
+      data: {
+        walkInId,
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: totalAmountCents,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error creating walk-in payment:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/walk-in/confirm-payment
+ * Confirm a walk-in Stripe payment was successful
+ * Only barbers can confirm walk-in payments
+ */
+router.post('/walk-in/confirm-payment', authenticate, async (req, res, next) => {
+  try {
+    const barberId = (req as any).user.userId;
+    const { paymentIntentId, walkInId } = req.body;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment intent ID is required'
+      });
+    }
+
+    // Import Stripe
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    // Retrieve payment intent to verify it succeeded
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({
+        success: false,
+        error: `Payment not completed. Status: ${paymentIntent.status}`
+      });
+    }
+
+    // Verify this payment belongs to the barber
+    if (paymentIntent.metadata.barber_user_id !== barberId) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized to confirm this payment'
+      });
+    }
+
+    const customerName = paymentIntent.metadata.customer_name;
+    const serviceName = paymentIntent.metadata.service_name;
+    const amountPaid = paymentIntent.amount;
+    const tipAmount = parseInt(paymentIntent.metadata.tip_amount_cents) || 0;
+
+    logger.info(`Walk-in payment confirmed: ${paymentIntentId} - $${(amountPaid / 100).toFixed(2)} for ${customerName}`);
+
+    res.json({
+      success: true,
+      message: 'Walk-in payment confirmed',
+      data: {
+        walkInId: paymentIntent.metadata.walk_in_id,
+        customerName,
+        serviceName,
+        amountPaid,
+        tipAmount,
+        transactionId: paymentIntentId,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error confirming walk-in payment:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/walk-in/record-cash
+ * Record a cash walk-in payment (for barber records only)
+ * Only barbers can record cash payments
+ */
+router.post('/walk-in/record-cash', authenticate, async (req, res, next) => {
+  try {
+    const barberId = (req as any).user.userId;
+    const { customerName, serviceName, priceUsdCents, tipAmountCents = 0 } = req.body;
+
+    // Validate required fields
+    if (!customerName || !serviceName || !priceUsdCents) {
+      return res.status(400).json({
+        success: false,
+        error: 'Customer name, service name, and price are required'
+      });
+    }
+
+    // Verify user is a barber
+    const barberCheck = await pool.query(
+      `SELECT b.id as barber_record_id FROM barbers b WHERE b."userId" = $1`,
+      [barberId]
+    );
+
+    if (barberCheck.rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only barbers can record cash payments'
+      });
+    }
+
+    const totalAmountCents = priceUsdCents + tipAmountCents;
+    const cashTransactionId = `CASH-${Date.now().toString(36).toUpperCase()}`;
+
+    // Log the cash payment (could also insert into a walk_in_payments table if needed)
+    logger.info(`Cash walk-in recorded: ${cashTransactionId} - ${customerName} - ${serviceName} - $${(totalAmountCents / 100).toFixed(2)}`);
+
+    res.json({
+      success: true,
+      message: 'Cash payment recorded',
+      data: {
+        transactionId: cashTransactionId,
+        customerName,
+        serviceName,
+        amountPaid: totalAmountCents,
+        tipAmount: tipAmountCents,
+        paymentMethod: 'cash',
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error recording cash payment:', error.message || error);
+    next(error);
+  }
+});
+
 export default router;
 
