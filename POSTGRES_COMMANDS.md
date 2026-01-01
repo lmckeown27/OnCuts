@@ -1189,3 +1189,12 @@ sudo -u postgres psql -d campuscuts -c "ALTER SEQUENCE messages_id_seq RESTART W
 ```
 
 ---
+
+## PENDING MIGRATIONS
+
+### Add paymentRequestedAt column to bookings (Required for payment flow)
+```bash
+sudo -u postgres psql -d campuscuts -c 'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "paymentRequestedAt" TIMESTAMPTZ;'
+```
+
+---

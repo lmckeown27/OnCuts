@@ -357,6 +357,7 @@ model Booking {
   // Timeline
   requestedAt     DateTime @default(now()) @db.Timestamptz
   acceptedAt      DateTime? @db.Timestamptz
+  paymentRequestedAt DateTime? @db.Timestamptz
   paidAt          DateTime? @db.Timestamptz
   startedAt       DateTime? @db.Timestamptz
   completedAt     DateTime? @db.Timestamptz

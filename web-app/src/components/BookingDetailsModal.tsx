@@ -242,11 +242,18 @@ export default function BookingDetailsModal({
     }
   };
 
-  const handleCompleteBooking = () => {
-    // Navigate to the payment page instead of immediately marking as complete
-    // This allows proper Stripe payment flow
-    onClose();
-    navigate(`/web/payment/${booking.id}`);
+  const handleCompleteBooking = async () => {
+    try {
+      // Request payment from consumer - this sends them a notification
+      await api.post(`/bookings-simple/${booking.id}/request-payment`, {});
+      toast.success('Payment request sent to customer');
+      onClose();
+      // Navigate to barber's payment waiting page
+      navigate(`/web/payment/${booking.id}`);
+    } catch (error: any) {
+      console.error('Failed to request payment:', error);
+      toast.error(error.message || 'Failed to request payment');
+    }
   };
 
   const canEdit = booking.status === 'ACCEPTED';

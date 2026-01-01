@@ -38,6 +38,9 @@ interface ActiveBooking {
   // Flags
   hasEdits?: boolean;
   editsAcknowledged?: boolean;
+  // Payment tracking
+  paymentRequestedAt?: string;
+  paidAt?: string;
 }
 
 export default function ConsumerBookingStatusPage() {
@@ -600,6 +603,44 @@ export default function ConsumerBookingStatusPage() {
             </div>
           )}
         </div>
+
+        {/* Payment Required Alert */}
+        {(() => {
+          // Check if payment is required: barber requested OR 15 mins past scheduled time
+          const scheduledDate = new Date(booking.scheduledTime);
+          const fifteenMinsAfter = new Date(scheduledDate.getTime() + 15 * 60 * 1000);
+          const now = new Date();
+          const isPaymentRequired = booking.status === 'ACCEPTED' && 
+            !booking.paidAt && 
+            (booking.paymentRequestedAt || now >= fifteenMinsAfter);
+          
+          if (!isPaymentRequired) return null;
+          
+          return (
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-green-400 p-6 mb-6">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {booking.paymentRequestedAt 
+                    ? `${booking.barberName} has marked your service as complete. Please complete your payment.`
+                    : `Your appointment time has passed. Please complete your payment to ${booking.barberName}.`
+                  }
+                </p>
+                
+                <button
+                  onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
+                  className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <DollarSign className="w-5 h-5" />
+                  Pay ${(booking.priceUsdCents / 100).toFixed(2)}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Edits Alert */}
         {booking.hasEdits && !booking.editsAcknowledged && (

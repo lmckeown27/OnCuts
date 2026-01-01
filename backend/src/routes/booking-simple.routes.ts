@@ -610,6 +610,8 @@ router.get('/', authenticate, async (req, res, next) => {
         b."requestedAt" as "scheduledTime",
         b.status,
         b."createdAt",
+        b."paymentRequestedAt",
+        b."paidAt",
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
         consumer."avatarUrl" as consumer_avatar,
@@ -663,6 +665,9 @@ router.get('/', authenticate, async (req, res, next) => {
           location: row.conv_location || null,
           notes: row.conv_notes || null,
           serviceName: row.conv_service_name || null,
+          // Payment tracking fields
+          paymentRequestedAt: row.paymentRequestedAt || null,
+          paidAt: row.paidAt || null,
           // Full barber name for display
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
           barberAvatar: row.barber_avatar || null,
@@ -682,6 +687,100 @@ router.get('/', authenticate, async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Error fetching bookings:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/request-payment
+ * Barber requests payment from consumer (marks service as ready for payment)
+ * This triggers a notification to the consumer and sets payment_requested_at
+ */
+router.post('/:id/request-payment', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the barber for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
+              b."requestedAt" as scheduled_time,
+              c.service_name, c.location,
+              barber."userId" as barber_user_id,
+              barber_user.first_name || ' ' || barber_user.last_name as barber_name,
+              consumer.first_name || ' ' || consumer.last_name as consumer_name,
+              consumer.email as consumer_email
+       FROM bookings b
+       LEFT JOIN conversations c ON c.booking_id = b.id
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users barber_user ON barber."userId" = barber_user.id
+       JOIN users consumer ON b."consumerId" = consumer.id
+       WHERE b.id = $1`,
+      [id]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Booking not found' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    // Check if user is the barber
+    if (booking.barber_user_id !== userId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only the barber can request payment' 
+      });
+    }
+
+    if (booking.status !== 'ACCEPTED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Can only request payment for accepted bookings'
+      });
+    }
+
+    // Update booking with payment_requested_at timestamp
+    await pool.query(
+      `UPDATE bookings 
+       SET "paymentRequestedAt" = CURRENT_TIMESTAMP, 
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [id]
+    );
+
+    logger.info(`Payment requested for booking ${id} by barber ${userId}`);
+
+    // Send notification to consumer
+    try {
+      const { createNotification } = await import('../services/notification.service');
+      await createNotification({
+        userId: booking.consumerId,
+        type: 'payment_request',
+        title: 'Payment Required',
+        message: `${booking.barber_name} has marked your service as complete. Please complete your payment.`,
+        data: {
+          bookingId: id,
+          barberId: booking.barberId,
+          barberName: booking.barber_name,
+          serviceName: booking.service_name || 'Haircut',
+          amount: booking.priceUsdCents,
+        },
+      });
+    } catch (notifError) {
+      logger.error('Failed to send payment request notification:', notifError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment request sent to consumer',
+      paymentRequestedAt: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    logger.error('Error requesting payment:', error.message || error);
     next(error);
   }
 });
