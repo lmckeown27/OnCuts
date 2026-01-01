@@ -665,6 +665,7 @@ router.get('/', authenticate, async (req, res, next) => {
           serviceName: row.conv_service_name || null,
           // Full barber name for display
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
+          barberAvatar: row.barber_avatar || null,
           consumer: {
             firstName: row.consumer_first_name,
             lastName: row.consumer_last_name,
