@@ -196,8 +196,9 @@ export default function BarberPage() {
       try {
         const response = await api.get(`/barbers/user/${barberId}`);
         if (response) {
+          const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber';
           setBarberProfile({
-            name: response.name || user?.name || 'Barber',
+            name: response.name || fullName || 'Barber',
             specialties: response.specialties || []
           });
         }
@@ -206,7 +207,7 @@ export default function BarberPage() {
       }
     };
     fetchBarberProfile();
-  }, [barberId, user?.name]);
+  }, [barberId, user]);
 
   // Pull-to-refresh handler for mobile
   const handlePullToRefresh = async () => {
@@ -537,7 +538,7 @@ export default function BarberPage() {
       <WalkInPaymentModal
         isOpen={showWalkInPayment}
         onClose={() => setShowWalkInPayment(false)}
-        barberName={barberProfile?.name || user?.name || 'Barber'}
+        barberName={barberProfile?.name || (user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber')}
         barberSpecialties={barberProfile?.specialties || []}
       />
 
