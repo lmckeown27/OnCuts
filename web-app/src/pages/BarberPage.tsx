@@ -1989,7 +1989,6 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [barberId, setBarberId] = useState<string | null>(null);
-  const [copyFromDay, setCopyFromDay] = useState<DayKey | null>(null);
 
   // Compute validation errors whenever availability changes
   const validationErrors = useMemo(() => validateAvailability(availability), [availability]);
@@ -2095,21 +2094,6 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         )
       }
     }));
-  };
-
-  const copyTimesToDay = (fromDay: DayKey, toDay: DayKey) => {
-    setAvailability(prev => ({
-      ...prev,
-      [toDay]: {
-        enabled: prev[fromDay].enabled,
-        intervals: prev[fromDay].intervals.map(i => ({
-          ...i,
-          id: generateId() // Generate new IDs for copied intervals
-        }))
-      }
-    }));
-    setCopyFromDay(null);
-    toast.success(`Copied ${fromDay}'s times to ${toDay}`);
   };
 
   const handleSave = async () => {
@@ -2277,39 +2261,6 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                         </svg>
                       </button>
                       
-                      {/* Copy times button */}
-                      {availability[key].intervals.length > 0 && (
-                        <div className="relative">
-                          <button
-                            onClick={() => setCopyFromDay(copyFromDay === key ? null : key)}
-                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                            title={`Copy ${label}'s times to other days`}
-                          >
-                            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M0 5C0 4.44772 0.447715 4 1 4H15C15.5523 4 16 4.44772 16 5V19C16 19.5523 15.5523 20 15 20H1C0.447715 20 0 19.5523 0 19V5ZM2 6V18H14V6H2Z" />
-                              <path fillRule="evenodd" clipRule="evenodd" d="M4.1543 1C4.1543 0.447715 4.60201 0 5.1543 0H17.6163C18.2486 0 18.855 0.251171 19.302 0.698257C19.7491 1.14534 20.0003 1.75172 20.0003 2.384V14.846C20.0003 15.3983 19.5526 15.846 19.0003 15.846C18.448 15.846 18.0003 15.3983 18.0003 14.846V2.384C18.0003 2.28216 17.9598 2.18449 17.8878 2.11247C17.8158 2.04046 17.7181 2 17.6163 2H5.1543C4.60201 2 4.1543 1.55228 4.1543 1Z" />
-                            </svg>
-                          </button>
-                          
-                          {/* Copy dropdown */}
-                          {copyFromDay === key && (
-                            <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[140px]">
-                              <div className="px-3 py-1 text-xs text-gray-500 font-medium border-b border-gray-100">
-                                Copy to...
-                              </div>
-                              {days.filter(d => d.key !== key).map(({ key: targetKey, label: targetLabel }) => (
-                                <button
-                                  key={targetKey}
-                                  onClick={() => copyTimesToDay(key, targetKey)}
-                                  className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  {targetLabel}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
