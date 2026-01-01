@@ -835,6 +835,10 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       
       if (!daySchedule || !daySchedule.enabled) {
         console.log(`[Availability] Day ${dayName} is not available - enabled: ${daySchedule?.enabled}`);
+        // Prevent caching
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.json({
           success: true,
           data: {
@@ -861,6 +865,10 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       // If no intervals defined, day is effectively unavailable
       if (intervals.length === 0) {
         console.log(`[Availability] No intervals for ${dayName}, returning unavailable`);
+        // Prevent caching
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         return res.json({
           success: true,
           data: {
@@ -893,6 +901,13 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
 
       // Generate available time slots
       const slots = generateTimeSlots(intervals, bookedSlots);
+      
+      console.log(`[Availability] Generated ${slots.length} slots, ${slots.filter(s => s.available).length} available`);
+
+      // Prevent caching of availability data
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
 
       return res.json({
         success: true,
