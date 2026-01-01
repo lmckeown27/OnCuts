@@ -1296,7 +1296,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
                         <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
                           <div className="font-semibold text-gray-800">{day}</div>
-                          <div className="text-xs sm:text-sm text-gray-600 break-words">{times}</div>
+                          <div className="flex flex-col gap-0.5">
+                            {times.split(', ').map((timeSlot, idx) => (
+                              <div key={idx} className="text-xs sm:text-sm text-gray-600">{timeSlot}</div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
