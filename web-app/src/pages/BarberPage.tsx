@@ -2229,7 +2229,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                                     value={interval.start}
                                     onChange={(value) => updateInterval(key, interval.id, 'start', value)}
                                     aria-label={`${label} start time`}
-                                    className="w-20 sm:w-24"
+                                    className="w-[5.5rem] sm:w-28"
                                     error={!!intervalError}
                                   />
                                   <span className="text-gray-400 text-sm">-</span>
@@ -2237,7 +2237,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                                     value={interval.end}
                                     onChange={(value) => updateInterval(key, interval.id, 'end', value)}
                                     aria-label={`${label} end time`}
-                                    className="w-20 sm:w-24"
+                                    className="w-[5.5rem] sm:w-28"
                                     error={!!intervalError}
                                   />
                                   <button
