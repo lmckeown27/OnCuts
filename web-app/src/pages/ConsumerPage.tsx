@@ -1110,20 +1110,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
                     {barber.distance_miles !== undefined && barber.distance_miles !== null && (
-                      <>
-                        <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
-                        <span className="text-gray-400 text-sm">•</span>
-                      </>
+                      <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
                     )}
-                    <span className="text-sm text-gray-500">{barber.total_bookings} cuts</span>
+                    {barber.distance_miles !== undefined && barber.distance_miles !== null && barber.instagram_handle && (
+                      <span className="text-gray-400 text-sm">•</span>
+                    )}
                     {barber.instagram_handle && (
-                      <>
-                        <span className="text-gray-400 text-sm">•</span>
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <Instagram className="w-4 h-4 flex-shrink-0" />
-                          <span>@{barber.instagram_handle}</span>
-                        </div>
-                      </>
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <Instagram className="w-4 h-4 flex-shrink-0" />
+                        <span>@{barber.instagram_handle}</span>
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
