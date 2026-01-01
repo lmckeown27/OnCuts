@@ -10,8 +10,10 @@
  * - Pull-to-refresh
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import toast from 'react-hot-toast';
 import {
   Calendar,
   Clock,
@@ -51,6 +53,10 @@ interface Appointment {
 
 export default function MobileBarberPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  const { user } = useAuthStore();
+  
   const [activeTab, setActiveTab] = useState<'schedule' | 'requests' | 'earnings' | 'profile'>('schedule');
   const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -61,6 +67,25 @@ export default function MobileBarberPage() {
   const todayEarnings = 0;
   const weekEarnings = 0;
   const todayAppointments = appointments.length;
+  
+  // Role-based access control: Only barbers, campus managers, and admins can access this page
+  const isAuthorizedForBarberPage = 
+    user?.user_type === 'barber' || 
+    user?.user_type === 'campus_manager' || 
+    user?.user_type === 'admin' ||
+    user?.has_barber_profile;
+  
+  useEffect(() => {
+    if (user && !isAuthorizedForBarberPage) {
+      console.warn('Unauthorized access to MobileBarberPage. Redirecting to consumer page.', {
+        userId: user.id,
+        userType: user.user_type,
+        hasBarberProfile: user.has_barber_profile
+      });
+      toast.error('You need a barber profile to access this page');
+      navigate(`${platformPrefix}/consumer`);
+    }
+  }, [user, isAuthorizedForBarberPage, navigate, platformPrefix]);
 
   const handleAcceptRequest = (requestId: string) => {
     setRequests(requests.filter(r => r.id !== requestId));

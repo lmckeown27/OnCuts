@@ -180,6 +180,26 @@ export default function BarberPage() {
   const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
   const campusId = user?.campus_id || '';
   const campusName = ''; // TODO: Fetch campus name from API
+  
+  // Role-based access control: Only barbers, campus managers, and admins can access this page
+  // Consumers/students should be redirected to the consumer page
+  const isAuthorizedForBarberPage = 
+    user?.user_type === 'barber' || 
+    user?.user_type === 'campus_manager' || 
+    user?.user_type === 'admin' ||
+    user?.has_barber_profile;
+  
+  useEffect(() => {
+    if (user && !isAuthorizedForBarberPage) {
+      console.warn('Unauthorized access to BarberPage. Redirecting to consumer page.', {
+        userId: user.id,
+        userType: user.user_type,
+        hasBarberProfile: user.has_barber_profile
+      });
+      toast.error('You need a barber profile to access this page');
+      navigate(`${platformPrefix}/consumer`);
+    }
+  }, [user, isAuthorizedForBarberPage, navigate, platformPrefix]);
 
   // State for booking details modal
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
