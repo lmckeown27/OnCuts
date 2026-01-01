@@ -125,7 +125,9 @@ class MessageService {
           serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
           servicePrice: conv.conv_service_price ? parseFloat(conv.conv_service_price) : 
                        (conv.booking_price_cents ? (conv.booking_price_cents / 100) : null),
-          scheduledTime: conv.conv_scheduled_time || conv.availability_start_time || conv.booking_scheduled_time,
+          // Prefer booking's requestedAt (source of truth) over conversation's cached scheduled_time
+          scheduledTime: conv.booking_scheduled_time || conv.conv_scheduled_time || conv.availability_start_time,
+          // Prefer booking's location from conversation (updated on edit) or fallback
           location: conv.conv_location || 'TBD',
           notes: conv.conv_notes || null,
           // Prefer linked booking status (source of truth) over cached conversation status
