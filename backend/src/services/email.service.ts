@@ -632,7 +632,7 @@ function generateBookingConfirmationHtml(
     : `You have a new confirmed booking with <strong>${details.consumerName}</strong>.`;
 
   const ctaText = isConsumer ? 'View My Bookings' : 'View Dashboard';
-  const ctaLink = isConsumer ? `${frontendUrl}/web/consumer` : `${frontendUrl}/web/barber`;
+  const ctaLink = `${frontendUrl}/web`; // Links to sign-in page, user redirected after login
 
   return `
 <!DOCTYPE html>
@@ -717,7 +717,7 @@ function generateBookingConfirmationHtml(
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
     <p style="margin: 10px 0 0 0;">
-      <a href="${frontendUrl}/web/consumer/messages" style="color: #9ca3af;">Messages</a> • 
+      <a href="${frontendUrl}/web" style="color: #9ca3af;">Messages</a> • 
       <a href="${frontendUrl}/help" style="color: #9ca3af;">Help Center</a>
     </p>
   </div>
@@ -855,9 +855,7 @@ function generatePendingBookingHtml(
   const statusText = 'PENDING CONFIRMATION';
   
   const ctaText = isConsumer ? 'Track Your Booking' : 'View Request';
-  const ctaLink = isConsumer 
-    ? `${frontendUrl}/web/consumer/booking-status`
-    : `${frontendUrl}/web/barber`;
+  const ctaLink = `${frontendUrl}/web`; // Links to sign-in page, user redirected after login
 
   return `
 <!DOCTYPE html>
@@ -1043,7 +1041,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
       <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
     </div>
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${frontendUrl}/web/consumer/booking-status" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Updated Booking</a>
+      <a href="${frontendUrl}/web" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Updated Booking</a>
     </p>
   </div>
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
@@ -1109,7 +1107,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     </div>
     <p style="color: #166534; text-align: center; font-size: 14px;">The customer has been notified of this change.</p>
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Booking</a>
+      <a href="${frontendUrl}/web" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Booking</a>
     </p>
   </div>
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">© ${new Date().getFullYear()} CampusCut</div>
