@@ -241,6 +241,8 @@ export default function ConsumerBookingStatusPage() {
         let hasEdits = false;
         let originalScheduledTime: string | undefined;
         
+        let editsAlreadyAcknowledged = false;
+        
         try {
           const notifResponse = await notificationService.getNotifications();
           
@@ -256,8 +258,11 @@ export default function ConsumerBookingStatusPage() {
           
           if (updateNotification && updateNotification.data?.originalScheduledTime) {
             originalScheduledTime = updateNotification.data.originalScheduledTime;
-            hasEdits = new Date(activeBooking.scheduledTime).getTime() !== 
+            // Only show edits if the notification is unread (not yet acknowledged)
+            const timesAreDifferent = new Date(activeBooking.scheduledTime).getTime() !== 
                        new Date(originalScheduledTime).getTime();
+            hasEdits = timesAreDifferent && !updateNotification.is_read;
+            editsAlreadyAcknowledged = updateNotification.is_read;
           }
         } catch (notifError) {
           console.error('Failed to fetch notifications for edit detection:', notifError);
@@ -267,7 +272,7 @@ export default function ConsumerBookingStatusPage() {
           ...activeBooking,
           originalScheduledTime,
           hasEdits,
-          editsAcknowledged: !hasEdits, // If no edits, consider acknowledged
+          editsAcknowledged: editsAlreadyAcknowledged || !hasEdits, // Acknowledged if notification was read or no edits
         });
       } else {
         setBooking(null);
@@ -375,8 +380,31 @@ export default function ConsumerBookingStatusPage() {
   const handleAcknowledgeEdits = async () => {
     if (!booking) return;
     
-    toast.success('Changes acknowledged!');
-    setBooking(prev => prev ? { ...prev, editsAcknowledged: true, hasEdits: false } : null);
+    try {
+      // Find and mark the booking_updated notification as read
+      const notifResponse = await notificationService.getNotifications();
+      const updateNotification = notifResponse.notifications
+        .filter((n: any) => 
+          n.type === 'booking_updated' && 
+          n.data?.bookingId === booking.id &&
+          !n.is_read
+        )
+        .sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )[0];
+      
+      if (updateNotification) {
+        await notificationService.markAsRead(updateNotification.id);
+      }
+      
+      toast.success('Changes acknowledged!');
+      setBooking(prev => prev ? { ...prev, editsAcknowledged: true, hasEdits: false } : null);
+    } catch (error) {
+      console.error('Failed to acknowledge edits:', error);
+      // Still update local state even if notification marking fails
+      toast.success('Changes acknowledged!');
+      setBooking(prev => prev ? { ...prev, editsAcknowledged: true, hasEdits: false } : null);
+    }
   };
 
   const formatDate = (dateStr: string) => {
