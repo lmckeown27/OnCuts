@@ -829,7 +829,7 @@ ${isConsumer ? 'Barber' : 'Customer'}: ${isConsumer ? details.barberName : detai
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ${isConsumer 
-  ? "We'll notify you once the barber confirms your booking. You can track your booking status in the app."
+  ? "We'll notify you once the barber confirms your booking. You can track your booking status on the webpage."
   : 'Please review and respond to this booking request in the CampusCut app.'}
 
 ---
@@ -939,7 +939,7 @@ function generatePendingBookingHtml(
     
     <p style="color: #6b7280; font-size: 14px; margin: 20px 0;">
       ${isConsumer 
-        ? "We'll notify you once the barber confirms your booking. You can track your booking status in the app."
+        ? "We'll notify you once the barber confirms your booking. You can track your booking status on the webpage."
         : 'Please review and respond to this booking request in the CampusCut app.'}
     </p>
     
