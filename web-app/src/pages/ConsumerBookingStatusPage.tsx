@@ -138,6 +138,18 @@ export default function ConsumerBookingStatusPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Lock body scroll when modals are open
+  useEffect(() => {
+    if (showEditModal || showCancelConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showEditModal, showCancelConfirm]);
+
   const fetchActiveBooking = async () => {
     try {
       // Fetch consumer's active bookings (PENDING or ACCEPTED)
