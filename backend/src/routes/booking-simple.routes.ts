@@ -756,8 +756,8 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
 
     // Send notification to consumer
     try {
-      const { createNotification } = await import('../services/notification.service');
-      await createNotification({
+      const notificationService = (await import('../services/notification.service')).default;
+      await notificationService.saveNotification({
         userId: booking.consumerId,
         type: 'payment_request',
         title: 'Payment Required',
