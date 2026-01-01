@@ -888,8 +888,10 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 
     res.json({
       success: true,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      },
     });
   } catch (error: any) {
     logger.error('Error creating payment intent:', error.message || error);
