@@ -69,14 +69,10 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
       
       // Check for new multi-interval format
       if (daySchedule.intervals && Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0) {
-        // Show multiple intervals (e.g., "9am-12pm, 2pm-6pm")
-        if (daySchedule.intervals.length === 1) {
-          times = `${formatTime(daySchedule.intervals[0].start)}-${formatTime(daySchedule.intervals[0].end)}`;
-        } else {
-          // For multiple intervals, show count to save space
-          const firstInterval = daySchedule.intervals[0];
-          times = `${formatTime(firstInterval.start)}+ (${daySchedule.intervals.length} slots)`;
-        }
+        // Show all intervals (e.g., "9am-12pm, 2pm-6pm")
+        times = daySchedule.intervals
+          .map(interval => `${formatTime(interval.start)}-${formatTime(interval.end)}`)
+          .join(', ');
       } else if (daySchedule.start && daySchedule.end) {
         // Legacy format
         times = `${formatTime(daySchedule.start)}-${formatTime(daySchedule.end)}`;
@@ -1322,11 +1318,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       <Clock className="w-5 h-5" />
                       <span>Availability</span>
                     </div>
-                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                       {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
                         <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
                           <div className="font-semibold text-gray-800">{day}</div>
-                          <div className="text-sm text-gray-600">{times}</div>
+                          <div className="text-xs sm:text-sm text-gray-600 break-words">{times}</div>
                         </div>
                       ))}
                     </div>
