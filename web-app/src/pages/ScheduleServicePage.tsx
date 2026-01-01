@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
-import TimePickerDropdown from '../components/TimePickerDropdown';
+import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import DatePicker from '../components/DatePicker';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
@@ -291,7 +291,7 @@ export default function ScheduleServicePage() {
                     />
                   </div>
 
-                  {/* Time */}
+                  {/* Time - Shows available slots based on barber's schedule and existing bookings */}
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       <div className="flex items-center gap-2">
@@ -299,26 +299,16 @@ export default function ScheduleServicePage() {
                         Time *
                       </div>
                     </label>
-                    <TimePickerDropdown
+                    <AvailableTimePickerDropdown
+                      barberId={barber.id}
+                      date={date}
                       value={time}
                       onChange={(value) => setTime(value)}
-                      minTime={(() => {
-                        if (!date || !barber.weekly_schedule) return undefined;
-                        const selectedDate = new Date(date + 'T00:00:00');
-                        const dayOfWeek = selectedDate.getDay();
-                        const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-                        const daySchedule = barber.weekly_schedule[dayKeys[dayOfWeek]];
-                        return daySchedule?.enabled ? daySchedule.start : undefined;
-                      })()}
-                      maxTime={(() => {
-                        if (!date || !barber.weekly_schedule) return undefined;
-                        const selectedDate = new Date(date + 'T00:00:00');
-                        const dayOfWeek = selectedDate.getDay();
-                        const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-                        const daySchedule = barber.weekly_schedule[dayKeys[dayOfWeek]];
-                        return daySchedule?.enabled ? daySchedule.end : undefined;
-                      })()}
+                      disabled={!date}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Times shown are based on the barber's availability and existing bookings
+                    </p>
                   </div>
 
                   {/* Location */}

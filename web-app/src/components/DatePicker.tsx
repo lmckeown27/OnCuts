@@ -131,6 +131,18 @@ export default function DatePicker({
       if (!daySchedule?.enabled) {
         return true;
       }
+      
+      // For new multi-interval format: check if there are any intervals
+      // (supports both new format with intervals array and legacy format with start/end)
+      if (daySchedule.intervals !== undefined) {
+        // New format: check if intervals array has any entries
+        if (!Array.isArray(daySchedule.intervals) || daySchedule.intervals.length === 0) {
+          return true;
+        }
+      } else if (!daySchedule.start || !daySchedule.end) {
+        // Legacy format: check if start and end are defined
+        return true;
+      }
     }
     
     return false;

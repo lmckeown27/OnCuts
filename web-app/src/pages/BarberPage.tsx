@@ -1837,20 +1837,90 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   );
 }
 
-// Availability Modal Component
+// Types for Calendly-style availability with multiple intervals per day
+interface TimeInterval {
+  id: string;
+  start: string;
+  end: string;
+}
+
+interface DayAvailability {
+  enabled: boolean;
+  intervals: TimeInterval[];
+}
+
+interface WeeklyAvailability {
+  monday: DayAvailability;
+  tuesday: DayAvailability;
+  wednesday: DayAvailability;
+  thursday: DayAvailability;
+  friday: DayAvailability;
+  saturday: DayAvailability;
+  sunday: DayAvailability;
+}
+
+type DayKey = keyof WeeklyAvailability;
+
+// Generate unique ID for intervals
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
+// Default availability with intervals structure
+const createDefaultAvailability = (): WeeklyAvailability => ({
+  monday: { enabled: true, intervals: [{ id: generateId(), start: '09:00', end: '17:00' }] },
+  tuesday: { enabled: true, intervals: [{ id: generateId(), start: '09:00', end: '17:00' }] },
+  wednesday: { enabled: true, intervals: [{ id: generateId(), start: '09:00', end: '17:00' }] },
+  thursday: { enabled: true, intervals: [{ id: generateId(), start: '09:00', end: '17:00' }] },
+  friday: { enabled: true, intervals: [{ id: generateId(), start: '09:00', end: '17:00' }] },
+  saturday: { enabled: false, intervals: [] },
+  sunday: { enabled: false, intervals: [] },
+});
+
+// Migrate old format (single start/end) to new format (intervals array)
+const migrateSchedule = (schedule: Record<string, unknown>): WeeklyAvailability => {
+  const days: DayKey[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const migrated = createDefaultAvailability();
+  
+  for (const day of days) {
+    const dayData = schedule[day] as { enabled?: boolean; start?: string; end?: string; intervals?: TimeInterval[] } | undefined;
+    if (!dayData) continue;
+    
+    // If already has intervals array, use it
+    if (dayData.intervals && Array.isArray(dayData.intervals) && dayData.intervals.length > 0) {
+      migrated[day] = {
+        enabled: dayData.enabled ?? true,
+        intervals: dayData.intervals.map(i => ({
+          id: i.id || generateId(),
+          start: i.start,
+          end: i.end
+        }))
+      };
+    } 
+    // Migrate from old single start/end format
+    else if (dayData.start && dayData.end && dayData.enabled) {
+      migrated[day] = {
+        enabled: true,
+        intervals: [{ id: generateId(), start: dayData.start, end: dayData.end }]
+      };
+    } 
+    // Disabled day
+    else {
+      migrated[day] = {
+        enabled: dayData.enabled ?? false,
+        intervals: []
+      };
+    }
+  }
+  
+  return migrated;
+};
+
+// Availability Modal Component - Calendly-style with multiple intervals per day
 function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean; onClose: () => void; userId?: string }) {
-  const [availability, setAvailability] = useState({
-    monday: { enabled: true, start: '09:00', end: '17:00' },
-    tuesday: { enabled: true, start: '09:00', end: '17:00' },
-    wednesday: { enabled: true, start: '09:00', end: '17:00' },
-    thursday: { enabled: true, start: '09:00', end: '17:00' },
-    friday: { enabled: true, start: '09:00', end: '17:00' },
-    saturday: { enabled: false, start: '10:00', end: '16:00' },
-    sunday: { enabled: false, start: '10:00', end: '16:00' },
-  });
+  const [availability, setAvailability] = useState<WeeklyAvailability>(createDefaultAvailability);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [barberId, setBarberId] = useState<string | null>(null);
+  const [copyFromDay, setCopyFromDay] = useState<DayKey | null>(null);
 
   // Load barber's current weekly schedule when modal opens
   useEffect(() => {
@@ -1875,7 +1945,9 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         if (data.data) {
           setBarberId(data.data.id);
           if (data.data.weekly_schedule) {
-            setAvailability(data.data.weekly_schedule);
+            // Migrate old format to new format if needed
+            const migratedSchedule = migrateSchedule(data.data.weekly_schedule);
+            setAvailability(migratedSchedule);
           }
         }
       }
@@ -1886,34 +1958,122 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
     }
   };
 
-  const days = [
-    { key: 'monday', label: 'Monday' },
-    { key: 'tuesday', label: 'Tuesday' },
-    { key: 'wednesday', label: 'Wednesday' },
-    { key: 'thursday', label: 'Thursday' },
-    { key: 'friday', label: 'Friday' },
-    { key: 'saturday', label: 'Saturday' },
-    { key: 'sunday', label: 'Sunday' },
-  ] as const;
+  const days: { key: DayKey; label: string; shortLabel: string }[] = [
+    { key: 'sunday', label: 'Sunday', shortLabel: 'S' },
+    { key: 'monday', label: 'Monday', shortLabel: 'M' },
+    { key: 'tuesday', label: 'Tuesday', shortLabel: 'T' },
+    { key: 'wednesday', label: 'Wednesday', shortLabel: 'W' },
+    { key: 'thursday', label: 'Thursday', shortLabel: 'T' },
+    { key: 'friday', label: 'Friday', shortLabel: 'F' },
+    { key: 'saturday', label: 'Saturday', shortLabel: 'S' },
+  ];
 
-  const handleToggleDay = (day: keyof typeof availability) => {
+  const addInterval = (day: DayKey) => {
+    setAvailability(prev => {
+      const dayData = prev[day];
+      const lastInterval = dayData.intervals[dayData.intervals.length - 1];
+      
+      // Calculate next interval start (end of last interval + 1 hour)
+      let newStart = '09:00';
+      if (lastInterval) {
+        const [hours] = lastInterval.end.split(':').map(Number);
+        const nextHour = Math.min(hours + 1, 23);
+        newStart = `${nextHour.toString().padStart(2, '0')}:00`;
+      }
+      
+      // End time is 2 hours after start
+      const [startHours] = newStart.split(':').map(Number);
+      const endHour = Math.min(startHours + 2, 23);
+      const newEnd = `${endHour.toString().padStart(2, '0')}:00`;
+      
+      return {
+        ...prev,
+        [day]: {
+          enabled: true,
+          intervals: [
+            ...dayData.intervals,
+            { id: generateId(), start: newStart, end: newEnd }
+          ]
+        }
+      };
+    });
+  };
+
+  const removeInterval = (day: DayKey, intervalId: string) => {
+    setAvailability(prev => {
+      const newIntervals = prev[day].intervals.filter(i => i.id !== intervalId);
+      return {
+        ...prev,
+        [day]: {
+          enabled: newIntervals.length > 0,
+          intervals: newIntervals
+        }
+      };
+    });
+  };
+
+  const updateInterval = (day: DayKey, intervalId: string, field: 'start' | 'end', value: string) => {
     setAvailability(prev => ({
       ...prev,
-      [day]: { ...prev[day], enabled: !prev[day].enabled }
+      [day]: {
+        ...prev[day],
+        intervals: prev[day].intervals.map(i => 
+          i.id === intervalId ? { ...i, [field]: value } : i
+        )
+      }
     }));
   };
 
-  const handleTimeChange = (day: keyof typeof availability, field: 'start' | 'end', value: string) => {
+  const copyTimesToDay = (fromDay: DayKey, toDay: DayKey) => {
     setAvailability(prev => ({
       ...prev,
-      [day]: { ...prev[day], [field]: value }
+      [toDay]: {
+        enabled: prev[fromDay].enabled,
+        intervals: prev[fromDay].intervals.map(i => ({
+          ...i,
+          id: generateId() // Generate new IDs for copied intervals
+        }))
+      }
     }));
+    setCopyFromDay(null);
+    toast.success(`Copied ${fromDay}'s times to ${toDay}`);
   };
 
   const handleSave = async () => {
     if (!barberId) {
       console.error('No barber ID found');
       return;
+    }
+    
+    // Validate that no intervals overlap
+    for (const day of days) {
+      const intervals = availability[day.key].intervals;
+      for (let i = 0; i < intervals.length; i++) {
+        const current = intervals[i];
+        const currentStart = current.start.split(':').map(Number);
+        const currentEnd = current.end.split(':').map(Number);
+        const currentStartMins = currentStart[0] * 60 + currentStart[1];
+        const currentEndMins = currentEnd[0] * 60 + currentEnd[1];
+        
+        if (currentStartMins >= currentEndMins) {
+          toast.error(`${day.label}: End time must be after start time`);
+          return;
+        }
+        
+        for (let j = i + 1; j < intervals.length; j++) {
+          const other = intervals[j];
+          const otherStart = other.start.split(':').map(Number);
+          const otherEnd = other.end.split(':').map(Number);
+          const otherStartMins = otherStart[0] * 60 + otherStart[1];
+          const otherEndMins = otherEnd[0] * 60 + otherEnd[1];
+          
+          // Check for overlap
+          if (currentStartMins < otherEndMins && currentEndMins > otherStartMins) {
+            toast.error(`${day.label}: Time intervals cannot overlap`);
+            return;
+          }
+        }
+      }
     }
     
     setIsSaving(true);
@@ -1942,13 +2102,22 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
     }
   };
 
+  // Format time for display (12-hour format)
+  const formatTime = (time24: string): string => {
+    const [hourStr, minuteStr] = time24.split(':');
+    const hour = parseInt(hourStr, 10);
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const period = hour < 12 ? 'am' : 'pm';
+    return `${displayHour}:${minuteStr}${period}`;
+  };
+
   return (
     <div 
       className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
       onClick={onClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -1956,8 +2125,8 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-xl font-bold text-white">Availability</h2>
-            <p className="text-white/80 text-sm">Set your working hours</p>
+            <h2 className="text-xl font-bold text-white">Set Your Availability</h2>
+            <p className="text-white/80 text-sm">Add multiple time slots per day</p>
           </div>
           <button 
             onClick={onClose}
@@ -1968,57 +2137,124 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-          <div className="space-y-4">
-            {days.map(({ key, label }) => (
-              <div 
-                key={key}
-                className={`p-4 rounded-xl border-2 transition-all ${
-                  availability[key].enabled 
-                    ? 'border-primary-200 bg-primary-50' 
-                    : 'border-gray-200 bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className={`font-semibold ${availability[key].enabled ? 'text-gray-900' : 'text-gray-500'}`}>
-                    {label}
-                  </span>
-                  <button
-                    onClick={() => handleToggleDay(key)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                      availability[key].enabled ? 'bg-primary-400' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span 
-                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                        availability[key].enabled ? 'left-7' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                
-                {availability[key].enabled && (
-                  <div className="flex items-center gap-3">
-                    <TimePickerDropdown
-                      label="Start"
-                      value={availability[key].start}
-                      onChange={(value) => handleTimeChange(key, 'start', value)}
-                      maxTime={availability[key].end}
-                      className="flex-1"
-                    />
-                    <span className="text-gray-400 mt-5">to</span>
-                    <TimePickerDropdown
-                      label="End"
-                      value={availability[key].end}
-                      onChange={(value) => handleTimeChange(key, 'end', value)}
-                      minTime={availability[key].start}
-                      className="flex-1"
-                    />
+        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {days.map(({ key, label, shortLabel }) => (
+                <div 
+                  key={key}
+                  className={`rounded-xl border-2 transition-all overflow-hidden ${
+                    availability[key].enabled && availability[key].intervals.length > 0
+                      ? 'border-primary-200 bg-primary-50/50' 
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  {/* Day header */}
+                  <div className="flex items-center gap-3 p-3 sm:p-4">
+                    {/* Day letter badge */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                      availability[key].enabled && availability[key].intervals.length > 0
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-gray-200 text-gray-500'
+                    }`}>
+                      {shortLabel}
+                    </div>
+                    
+                    {/* Day name and intervals or unavailable */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 hidden sm:block">{label}</div>
+                      
+                      {availability[key].intervals.length === 0 ? (
+                        <span className="text-gray-400 text-sm">Unavailable</span>
+                      ) : (
+                        <div className="space-y-2 mt-2">
+                          {availability[key].intervals.map((interval, idx) => (
+                            <div key={interval.id} className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg border border-gray-200 shadow-sm p-1">
+                                <TimePickerDropdown
+                                  value={interval.start}
+                                  onChange={(value) => updateInterval(key, interval.id, 'start', value)}
+                                  maxTime={interval.end}
+                                  className="w-24 sm:w-28"
+                                />
+                                <span className="text-gray-400 text-sm px-1">-</span>
+                                <TimePickerDropdown
+                                  value={interval.end}
+                                  onChange={(value) => updateInterval(key, interval.id, 'end', value)}
+                                  minTime={interval.start}
+                                  className="w-24 sm:w-28"
+                                />
+                                <button
+                                  onClick={() => removeInterval(key, interval.id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                  title={`Remove ${label} interval ${idx + 1}`}
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1">
+                      {/* Add interval button */}
+                      <button
+                        onClick={() => addInterval(key)}
+                        className="p-2 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors"
+                        title={`Add time slot for ${label}`}
+                      >
+                        <svg viewBox="0 0 10 10" className="w-5 h-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="5" cy="5" r="4.5" />
+                          <path d="M5 3v4M3 5h4" />
+                        </svg>
+                      </button>
+                      
+                      {/* Copy times button */}
+                      {availability[key].intervals.length > 0 && (
+                        <div className="relative">
+                          <button
+                            onClick={() => setCopyFromDay(copyFromDay === key ? null : key)}
+                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                            title={`Copy ${label}'s times to other days`}
+                          >
+                            <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                              <path fillRule="evenodd" clipRule="evenodd" d="M0 5C0 4.44772 0.447715 4 1 4H15C15.5523 4 16 4.44772 16 5V19C16 19.5523 15.5523 20 15 20H1C0.447715 20 0 19.5523 0 19V5ZM2 6V18H14V6H2Z" />
+                              <path fillRule="evenodd" clipRule="evenodd" d="M4.1543 1C4.1543 0.447715 4.60201 0 5.1543 0H17.6163C18.2486 0 18.855 0.251171 19.302 0.698257C19.7491 1.14534 20.0003 1.75172 20.0003 2.384V14.846C20.0003 15.3983 19.5526 15.846 19.0003 15.846C18.448 15.846 18.0003 15.3983 18.0003 14.846V2.384C18.0003 2.28216 17.9598 2.18449 17.8878 2.11247C17.8158 2.04046 17.7181 2 17.6163 2H5.1543C4.60201 2 4.1543 1.55228 4.1543 1Z" />
+                            </svg>
+                          </button>
+                          
+                          {/* Copy dropdown */}
+                          {copyFromDay === key && (
+                            <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 min-w-[140px]">
+                              <div className="px-3 py-1 text-xs text-gray-500 font-medium border-b border-gray-100">
+                                Copy to...
+                              </div>
+                              {days.filter(d => d.key !== key).map(({ key: targetKey, label: targetLabel }) => (
+                                <button
+                                  key={targetKey}
+                                  onClick={() => copyTimesToDay(key, targetKey)}
+                                  className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  {targetLabel}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

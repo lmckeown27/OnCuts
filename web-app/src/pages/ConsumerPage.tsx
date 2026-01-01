@@ -40,6 +40,7 @@ function formatTime(time24: string): string {
 }
 
 // Format schedule for display - returns array of { day, times } objects
+// Supports both new multi-interval format and legacy single interval format
 function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; times: string }[] {
   if (!schedule) return [];
   
@@ -50,11 +51,44 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
   };
   
   return dayOrder
-    .filter(day => schedule[day]?.enabled)
-    .map(day => ({
-      day: dayAbbrev[day],
-      times: `${formatTime(schedule[day].start)}-${formatTime(schedule[day].end)}`
-    }));
+    .filter(day => {
+      const daySchedule = schedule[day];
+      if (!daySchedule?.enabled) return false;
+      
+      // Check for new multi-interval format
+      if (daySchedule.intervals !== undefined) {
+        return Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0;
+      }
+      
+      // Legacy format
+      return daySchedule.start && daySchedule.end;
+    })
+    .map(day => {
+      const daySchedule = schedule[day];
+      let times: string;
+      
+      // Check for new multi-interval format
+      if (daySchedule.intervals && Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0) {
+        // Show multiple intervals (e.g., "9am-12pm, 2pm-6pm")
+        if (daySchedule.intervals.length === 1) {
+          times = `${formatTime(daySchedule.intervals[0].start)}-${formatTime(daySchedule.intervals[0].end)}`;
+        } else {
+          // For multiple intervals, show count to save space
+          const firstInterval = daySchedule.intervals[0];
+          times = `${formatTime(firstInterval.start)}+ (${daySchedule.intervals.length} slots)`;
+        }
+      } else if (daySchedule.start && daySchedule.end) {
+        // Legacy format
+        times = `${formatTime(daySchedule.start)}-${formatTime(daySchedule.end)}`;
+      } else {
+        times = 'Available';
+      }
+      
+      return {
+        day: dayAbbrev[day],
+        times
+      };
+    });
 }
 
 // Algorithmic ranking function (capitalistic-but-fair)

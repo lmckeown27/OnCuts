@@ -31,10 +31,20 @@ export interface Campus {
   is_active: boolean;
 }
 
-export interface DaySchedule {
-  enabled: boolean;
+// Time interval for availability (Calendly-style)
+export interface TimeInterval {
+  id: string;
   start: string; // "09:00" (24-hour format)
   end: string; // "17:00" (24-hour format)
+}
+
+// Day schedule with multiple intervals (Calendly-style)
+export interface DaySchedule {
+  enabled: boolean;
+  intervals: TimeInterval[]; // Multiple time ranges per day
+  // Legacy single interval support for backwards compatibility
+  start?: string;
+  end?: string;
 }
 
 export interface WeeklySchedule {
@@ -46,6 +56,30 @@ export interface WeeklySchedule {
   saturday: DaySchedule;
   sunday: DaySchedule;
 }
+
+// Helper to migrate old format to new format
+export const migrateDaySchedule = (day: DaySchedule): DaySchedule => {
+  // If already has intervals, return as-is
+  if (day.intervals && day.intervals.length > 0) {
+    return day;
+  }
+  // Migrate legacy single interval format
+  if (day.start && day.end && day.enabled) {
+    return {
+      enabled: true,
+      intervals: [{
+        id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7),
+        start: day.start,
+        end: day.end
+      }]
+    };
+  }
+  // Disabled day
+  return {
+    enabled: false,
+    intervals: []
+  };
+};
 
 export interface Barber {
   id: string;

@@ -726,18 +726,174 @@ export const updateAvailability = async (req: AuthRequest, res: Response, next: 
   }
 };
 
+// Types for availability
+interface TimeInterval {
+  id: string;
+  start: string;
+  end: string;
+}
+
+interface DayAvailability {
+  enabled: boolean;
+  intervals: TimeInterval[];
+  // Legacy format support
+  start?: string;
+  end?: string;
+}
+
+interface WeeklySchedule {
+  sunday?: DayAvailability;
+  monday?: DayAvailability;
+  tuesday?: DayAvailability;
+  wednesday?: DayAvailability;
+  thursday?: DayAvailability;
+  friday?: DayAvailability;
+  saturday?: DayAvailability;
+}
+
+// Helper to convert time string to minutes
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Helper to convert minutes to time string
+const minutesToTime = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+};
+
+// Generate available time slots in 15-minute increments
+const generateTimeSlots = (
+  intervals: TimeInterval[],
+  bookedSlots: { start: string; end: string }[],
+  slotDuration: number = 15 // minutes
+): { time: string; available: boolean }[] => {
+  const slots: { time: string; available: boolean }[] = [];
+  
+  for (const interval of intervals) {
+    const startMins = timeToMinutes(interval.start);
+    const endMins = timeToMinutes(interval.end);
+    
+    for (let mins = startMins; mins < endMins; mins += slotDuration) {
+      const time = minutesToTime(mins);
+      const slotEnd = minutesToTime(mins + slotDuration);
+      
+      // Check if this slot overlaps with any booked slots
+      let isBooked = false;
+      for (const booked of bookedSlots) {
+        const bookedStart = timeToMinutes(booked.start);
+        const bookedEnd = timeToMinutes(booked.end);
+        
+        // Check for overlap
+        if (mins < bookedEnd && (mins + slotDuration) > bookedStart) {
+          isBooked = true;
+          break;
+        }
+      }
+      
+      slots.push({ time, available: !isBooked });
+    }
+  }
+  
+  return slots;
+};
+
 export const getBarberAvailability = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const { date } = req.query; // Optional: specific date to check (YYYY-MM-DD)
 
-    const result = await pool.query(
+    // Get barber's weekly schedule
+    const barberResult = await pool.query(
+      'SELECT "weeklySchedule" as weekly_schedule FROM barbers WHERE id = $1',
+      [id]
+    );
+
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    const weeklySchedule: WeeklySchedule = barberResult.rows[0].weekly_schedule || {};
+    
+    // If a specific date is provided, return available slots for that date
+    if (date && typeof date === 'string') {
+      const targetDate = new Date(date);
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+      const dayName = dayNames[targetDate.getUTCDay()];
+      
+      const daySchedule = weeklySchedule[dayName];
+      
+      if (!daySchedule || !daySchedule.enabled) {
+        return res.json({
+          success: true,
+          data: {
+            date,
+            dayOfWeek: dayName,
+            available: false,
+            intervals: [],
+            slots: []
+          }
+        });
+      }
+
+      // Get intervals (support both new and legacy format)
+      let intervals: TimeInterval[] = [];
+      if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+        intervals = daySchedule.intervals;
+      } else if (daySchedule.start && daySchedule.end) {
+        // Legacy format - single interval
+        intervals = [{ id: 'legacy', start: daySchedule.start, end: daySchedule.end }];
+      }
+
+      // Get booked slots for this date
+      const bookingsResult = await pool.query(
+        `SELECT 
+          TO_CHAR("requestedAt" AT TIME ZONE 'UTC', 'HH24:MI') as start_time,
+          TO_CHAR("requestedAt" AT TIME ZONE 'UTC' + INTERVAL '30 minutes', 'HH24:MI') as end_time
+        FROM bookings 
+        WHERE "barberId" = $1 
+          AND DATE("requestedAt") = $2
+          AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+        ORDER BY "requestedAt"`,
+        [id, date]
+      );
+
+      const bookedSlots = bookingsResult.rows.map(row => ({
+        start: row.start_time,
+        end: row.end_time
+      }));
+
+      // Generate available time slots
+      const slots = generateTimeSlots(intervals, bookedSlots);
+
+      return res.json({
+        success: true,
+        data: {
+          date,
+          dayOfWeek: dayName,
+          available: true,
+          intervals,
+          bookedSlots,
+          slots
+        }
+      });
+    }
+
+    // Return the full weekly schedule
+    // Also get legacy availability_templates for backwards compatibility
+    const templatesResult = await pool.query(
       'SELECT * FROM availability_templates WHERE barber_id = $1 AND is_active = TRUE ORDER BY day_of_week, start_time',
       [id]
     );
 
     res.json({
       success: true,
-      data: result.rows,
+      data: {
+        weeklySchedule,
+        legacyTemplates: templatesResult.rows
+      }
     });
   } catch (error) {
     next(error);
