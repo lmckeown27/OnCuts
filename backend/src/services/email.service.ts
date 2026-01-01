@@ -971,7 +971,10 @@ interface BookingEditEmailDetails {
   originalScheduledTime: string;
   newScheduledDate: string;
   newScheduledTime: string;
-  location?: string;
+  originalLocation?: string;
+  newLocation?: string;
+  originalNotes?: string;
+  newNotes?: string;
   price: number;
   bookingId: string;
 }
@@ -1011,13 +1014,29 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     <p style="color: #6b7280; margin: 0 0 20px 0;">${details.barberName} has rescheduled your appointment</p>
     <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">What Changed</h3>
-      <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
-      <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+      ${(details.originalScheduledDate !== details.newScheduledDate || details.originalScheduledTime !== details.newScheduledTime) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Date & Time</p>
+        <p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+      </div>` : ''}
+      ${(details.originalLocation && details.newLocation && details.originalLocation !== details.newLocation) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Location</p>
+        <p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalLocation}</p>
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newLocation}</p>
+      </div>` : ''}
+      ${(details.originalNotes !== details.newNotes) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Notes</p>
+        ${details.originalNotes ? `<p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalNotes}</p>` : '<p style="color: #6b7280; margin: 2px 0;">(no notes)</p>'}
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newNotes || '(removed)'}</p>
+      </div>` : ''}
     </div>
     <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <p><strong>Service:</strong> ${details.serviceName}</p>
       <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
-      ${details.location ? `<p><strong>Location:</strong> ${details.location}</p>` : ''}
+      ${details.newLocation ? `<p><strong>Location:</strong> ${details.newLocation}</p>` : ''}
     </div>
     <div style="text-align: center; margin: 20px 0;">
       <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
@@ -1059,14 +1078,30 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     <p style="color: #6b7280; margin: 0 0 20px 0;">Confirmation of your changes</p>
     <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">What Changed</h3>
-      <p style="color: #6b7280; text-decoration: line-through; margin: 5px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
-      <p style="color: #059669; font-weight: 700; font-size: 18px; margin: 5px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+      ${(details.originalScheduledDate !== details.newScheduledDate || details.originalScheduledTime !== details.newScheduledTime) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Date & Time</p>
+        <p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalScheduledDate} at ${details.originalScheduledTime}</p>
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newScheduledDate} at ${details.newScheduledTime}</p>
+      </div>` : ''}
+      ${(details.originalLocation && details.newLocation && details.originalLocation !== details.newLocation) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Location</p>
+        <p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalLocation}</p>
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newLocation}</p>
+      </div>` : ''}
+      ${(details.originalNotes !== details.newNotes) ? `
+      <div style="margin-bottom: 10px;">
+        <p style="color: #6b7280; font-size: 12px; margin: 0 0 2px 0;">Notes</p>
+        ${details.originalNotes ? `<p style="color: #6b7280; text-decoration: line-through; margin: 2px 0;">${details.originalNotes}</p>` : '<p style="color: #6b7280; margin: 2px 0;">(no notes)</p>'}
+        <p style="color: #059669; font-weight: 700; font-size: 16px; margin: 2px 0;">→ ${details.newNotes || '(removed)'}</p>
+      </div>` : ''}
     </div>
     <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <p><strong>Customer:</strong> ${details.consumerName}</p>
       <p><strong>Service:</strong> ${details.serviceName}</p>
       <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
-      ${details.location ? `<p><strong>Location:</strong> ${details.location}</p>` : ''}
+      ${details.newLocation ? `<p><strong>Location:</strong> ${details.newLocation}</p>` : ''}
     </div>
     <div style="text-align: center; margin: 20px 0;">
       <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>

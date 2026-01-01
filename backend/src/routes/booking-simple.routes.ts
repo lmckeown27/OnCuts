@@ -1240,7 +1240,6 @@ router.put('/:id', authenticate, async (req, res, next) => {
         [id]
       );
       const priceUsdCents = priceResult.rows[0]?.priceUsdCents || 0;
-      const bookingLocation = booking.conv_location;
 
       if (consumerEmail && barberEmail) {
         sendBookingEditEmails({
@@ -1253,7 +1252,10 @@ router.put('/:id', authenticate, async (req, res, next) => {
           originalScheduledTime: originalFormattedTime,
           newScheduledDate: formattedDate,
           newScheduledTime: formattedTime,
-          location: bookingLocation || undefined,
+          originalLocation: booking.conv_location || undefined,
+          newLocation: updatedLocation || undefined,
+          originalNotes: booking.conv_notes || undefined,
+          newNotes: updatedNotes || undefined,
           price: priceUsdCents / 100,
           bookingId: id,
         }).catch(err => logger.error('Failed to send booking edit emails:', err));
