@@ -1,35 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, DollarSign, User, Scissors, CreditCard, Banknote, QrCode, CheckCircle, Copy } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
+import { SERVICE_TYPES, findService } from '../config/services';
 
 interface WalkInPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   barberName: string;
+  barberSpecialties?: string[]; // Barber's selected services
 }
 
 type PaymentMethod = 'digital' | 'cash' | null;
 type Step = 'details' | 'method' | 'digital-payment' | 'success';
 
-// Available services with prices
-const SERVICES = [
-  { id: 'buzzcut', name: 'Buzz Cut', price: 15 },
-  { id: 'lineup', name: 'Line Up', price: 15 },
-  { id: 'beardtrim', name: 'Beard Trim', price: 20 },
-  { id: 'haircut', name: 'Haircut', price: 25 },
-  { id: 'taper', name: 'Taper', price: 25 },
-  { id: 'hotshave', name: 'Hot Shave', price: 25 },
-  { id: 'fade', name: 'Fade', price: 30 },
-  { id: 'haircutfade', name: 'Haircut & Fade', price: 35 },
-  { id: 'designart', name: 'Design/Art', price: 40 },
-  { id: 'womenscut', name: "Women's Cut", price: 35 },
-  { id: 'perm', name: 'Perm', price: 50 },
-  { id: 'colortreatment', name: 'Color Treatment', price: 60 },
-  { id: 'custom', name: 'Custom Amount', price: 0 },
-];
-
-export default function WalkInPaymentModal({ isOpen, onClose, barberName }: WalkInPaymentModalProps) {
+export default function WalkInPaymentModal({ isOpen, onClose, barberName, barberSpecialties = [] }: WalkInPaymentModalProps) {
+  // Build services list from barber's specialties + custom option
+  const SERVICES = useMemo(() => {
+    // If barber has no specialties, show all services as fallback
+    if (barberSpecialties.length === 0) {
+      return [
+        ...SERVICE_TYPES.map(s => ({ id: s.id, name: s.name, price: s.basePrice || 25 })),
+        { id: 'custom', name: 'Custom Amount', price: 0 },
+      ];
+    }
+    
+    // Map barber's specialties to services with prices
+    const barberServices = barberSpecialties
+      .map(specialty => {
+        const service = findService(specialty);
+        if (service) {
+          return { id: service.id, name: service.name, price: service.basePrice || 25 };
+        }
+        // If specialty doesn't match a known service, use it as-is with default price
+        return { id: specialty.toLowerCase().replace(/\s+/g, '-'), name: specialty, price: 25 };
+      })
+      .sort((a, b) => a.price - b.price); // Sort by price
+    
+    // Always add custom option at the end
+    return [...barberServices, { id: 'custom', name: 'Custom Amount', price: 0 }];
+  }, [barberSpecialties]);
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   

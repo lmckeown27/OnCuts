@@ -185,6 +185,28 @@ export default function BarberPage() {
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
+  
+  // State for barber profile data (for walk-in services)
+  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[] } | null>(null);
+
+  // Fetch barber profile data for walk-in modal
+  useEffect(() => {
+    const fetchBarberProfile = async () => {
+      if (!barberId) return;
+      try {
+        const response = await api.get(`/barbers/user/${barberId}`);
+        if (response) {
+          setBarberProfile({
+            name: response.name || user?.name || 'Barber',
+            specialties: response.specialties || []
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber profile:', error);
+      }
+    };
+    fetchBarberProfile();
+  }, [barberId, user?.name]);
 
   // Pull-to-refresh handler for mobile
   const handlePullToRefresh = async () => {
@@ -515,7 +537,8 @@ export default function BarberPage() {
       <WalkInPaymentModal
         isOpen={showWalkInPayment}
         onClose={() => setShowWalkInPayment(false)}
-        barberName="Marcus"
+        barberName={barberProfile?.name || user?.name || 'Barber'}
+        barberSpecialties={barberProfile?.specialties || []}
       />
 
       {/* Notifications Modal */}
