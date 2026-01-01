@@ -15,6 +15,7 @@ interface TimeInputProps {
   placeholder?: string;
   className?: string;
   'aria-label'?: string;
+  error?: boolean; // External error state (e.g., validation errors)
 }
 
 // Convert 24-hour time to 12-hour display format
@@ -138,23 +139,27 @@ export default function TimeInput({
   placeholder = '9:00am',
   className = '',
   'aria-label': ariaLabel,
+  error = false,
 }: TimeInputProps) {
   const [inputValue, setInputValue] = useState(formatTimeDisplay(value));
   const [isFocused, setIsFocused] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [hasParseError, setHasParseError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Combined error state: external error OR parse error
+  const hasError = error || hasParseError;
 
   // Update display when value changes externally
   useEffect(() => {
     if (!isFocused) {
       setInputValue(formatTimeDisplay(value));
-      setHasError(false);
+      setHasParseError(false);
     }
   }, [value, isFocused]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    setHasError(false);
+    setHasParseError(false);
   };
 
   const handleBlur = () => {
@@ -172,13 +177,13 @@ export default function TimeInput({
       const rounded = roundToNearest15(parsed);
       onChange(rounded);
       setInputValue(formatTimeDisplay(rounded));
-      setHasError(false);
+      setHasParseError(false);
     } else {
       // Invalid input - show error and revert
-      setHasError(true);
+      setHasParseError(true);
       setTimeout(() => {
         setInputValue(formatTimeDisplay(value));
-        setHasError(false);
+        setHasParseError(false);
       }, 1000);
     }
   };

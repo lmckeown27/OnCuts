@@ -2,7 +2,7 @@
  * Barber Dashboard Page - Version 4.0 (Cache Buster)
  * Last updated: 2025-12-18 00:15:00
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
@@ -1914,6 +1914,75 @@ const migrateSchedule = (schedule: Record<string, unknown>): WeeklyAvailability 
   return migrated;
 };
 
+// Validation types
+type IntervalError = {
+  type: 'reverse' | 'overlap';
+  message: string;
+};
+
+type ValidationErrors = {
+  [day in DayKey]?: {
+    [intervalId: string]: IntervalError;
+  };
+};
+
+// Helper to convert time string to minutes
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Validate all intervals and return errors
+const validateAvailability = (availability: WeeklyAvailability): ValidationErrors => {
+  const errors: ValidationErrors = {};
+  
+  const dayKeys: DayKey[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  
+  for (const day of dayKeys) {
+    const intervals = availability[day].intervals;
+    
+    for (let i = 0; i < intervals.length; i++) {
+      const current = intervals[i];
+      const startMins = timeToMinutes(current.start);
+      const endMins = timeToMinutes(current.end);
+      
+      // Check for reverse time (start >= end)
+      if (startMins >= endMins) {
+        if (!errors[day]) errors[day] = {};
+        errors[day]![current.id] = {
+          type: 'reverse',
+          message: 'End time must be after start time'
+        };
+        continue; // Skip overlap check if times are reversed
+      }
+      
+      // Check for overlaps with other intervals
+      for (let j = 0; j < intervals.length; j++) {
+        if (i === j) continue;
+        
+        const other = intervals[j];
+        const otherStartMins = timeToMinutes(other.start);
+        const otherEndMins = timeToMinutes(other.end);
+        
+        // Skip if other interval has reverse times
+        if (otherStartMins >= otherEndMins) continue;
+        
+        // Check for overlap
+        if (startMins < otherEndMins && endMins > otherStartMins) {
+          if (!errors[day]) errors[day] = {};
+          errors[day]![current.id] = {
+            type: 'overlap',
+            message: 'Time slots cannot overlap'
+          };
+          break;
+        }
+      }
+    }
+  }
+  
+  return errors;
+};
+
 // Availability Modal Component - Calendly-style with multiple intervals per day
 function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean; onClose: () => void; userId?: string }) {
   const [availability, setAvailability] = useState<WeeklyAvailability>(createDefaultAvailability);
@@ -1921,6 +1990,10 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
   const [isSaving, setIsSaving] = useState(false);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [copyFromDay, setCopyFromDay] = useState<DayKey | null>(null);
+
+  // Compute validation errors whenever availability changes
+  const validationErrors = useMemo(() => validateAvailability(availability), [availability]);
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   // Load barber's current weekly schedule when modal opens
   useEffect(() => {
@@ -2045,35 +2118,10 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
       return;
     }
     
-    // Validate that no intervals overlap
-    for (const day of days) {
-      const intervals = availability[day.key].intervals;
-      for (let i = 0; i < intervals.length; i++) {
-        const current = intervals[i];
-        const currentStart = current.start.split(':').map(Number);
-        const currentEnd = current.end.split(':').map(Number);
-        const currentStartMins = currentStart[0] * 60 + currentStart[1];
-        const currentEndMins = currentEnd[0] * 60 + currentEnd[1];
-        
-        if (currentStartMins >= currentEndMins) {
-          toast.error(`${day.label}: End time must be after start time`);
-          return;
-        }
-        
-        for (let j = i + 1; j < intervals.length; j++) {
-          const other = intervals[j];
-          const otherStart = other.start.split(':').map(Number);
-          const otherEnd = other.end.split(':').map(Number);
-          const otherStartMins = otherStart[0] * 60 + otherStart[1];
-          const otherEndMins = otherEnd[0] * 60 + otherEnd[1];
-          
-          // Check for overlap
-          if (currentStartMins < otherEndMins && currentEndMins > otherStartMins) {
-            toast.error(`${day.label}: Time intervals cannot overlap`);
-            return;
-          }
-        }
-      }
+    // Safety check - should be disabled in UI but double-check
+    if (hasValidationErrors) {
+      toast.error('Please fix validation errors before saving');
+      return;
     }
     
     setIsSaving(true);
@@ -2172,32 +2220,45 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                         <span className="text-gray-400 text-sm">Unavailable</span>
                       ) : (
                         <div className="space-y-2 mt-2">
-                          {availability[key].intervals.map((interval, idx) => (
-                            <div key={interval.id} className="flex items-center gap-2 flex-wrap">
-                              <div className="flex items-center gap-1 sm:gap-2">
-                                <TimeInput
-                                  value={interval.start}
-                                  onChange={(value) => updateInterval(key, interval.id, 'start', value)}
-                                  aria-label={`${label} start time`}
-                                  className="w-20 sm:w-24"
-                                />
-                                <span className="text-gray-400 text-sm">-</span>
-                                <TimeInput
-                                  value={interval.end}
-                                  onChange={(value) => updateInterval(key, interval.id, 'end', value)}
-                                  aria-label={`${label} end time`}
-                                  className="w-20 sm:w-24"
-                                />
-                                <button
-                                  onClick={() => removeInterval(key, interval.id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                                  title={`Remove ${label} interval ${idx + 1}`}
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                          {availability[key].intervals.map((interval, idx) => {
+                            const intervalError = validationErrors[key]?.[interval.id];
+                            return (
+                              <div key={interval.id}>
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                  <TimeInput
+                                    value={interval.start}
+                                    onChange={(value) => updateInterval(key, interval.id, 'start', value)}
+                                    aria-label={`${label} start time`}
+                                    className="w-20 sm:w-24"
+                                    error={!!intervalError}
+                                  />
+                                  <span className="text-gray-400 text-sm">-</span>
+                                  <TimeInput
+                                    value={interval.end}
+                                    onChange={(value) => updateInterval(key, interval.id, 'end', value)}
+                                    aria-label={`${label} end time`}
+                                    className="w-20 sm:w-24"
+                                    error={!!intervalError}
+                                  />
+                                  <button
+                                    onClick={() => removeInterval(key, interval.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                    title={`Remove ${label} interval ${idx + 1}`}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                {intervalError && (
+                                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                    {intervalError.message}
+                                  </p>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -2262,8 +2323,8 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
           <Button variant="secondary" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || isLoading}>
-            {isSaving ? 'Saving...' : 'Save Availability'}
+          <Button onClick={handleSave} disabled={isSaving || isLoading || hasValidationErrors}>
+            {isSaving ? 'Saving...' : hasValidationErrors ? 'Fix Errors to Save' : 'Save Availability'}
           </Button>
         </div>
       </div>
