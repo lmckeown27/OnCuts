@@ -318,31 +318,6 @@ export default function ConsumerPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Lock body scroll when barber modal is open (fixes mobile viewport issues)
-  useEffect(() => {
-    if (selectedBarber) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
-    } else {
-      const scrollY = document.body.style.top;
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-      }
-    }
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.top = '';
-    };
-  }, [selectedBarber]);
-
   // Fetch notifications and unread messages
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -914,6 +889,32 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   useEffect(() => {
     applyFilters();
   }, [barbers, filterCriteria, latitude, longitude, user?.id]);
+
+  // Lock body scroll when barber modal is open (fixes mobile viewport issues)
+  useEffect(() => {
+    if (selectedBarber) {
+      const scrollY = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${scrollY}px`;
+    } else {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+    };
+  }, [selectedBarber]);
 
   // Handle schedule click - check auth first
   const handleScheduleClick = (barber: Barber) => {
