@@ -1119,26 +1119,38 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setWeekOffset(prev => prev - 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[240px] text-center">Week of {weekRangeText}</h3>
-                  <button 
-                    onClick={() => setWeekOffset(prev => prev + 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
+                <div className="flex flex-col items-center sm:flex-row gap-2">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setWeekOffset(prev => prev - 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[240px] text-center">Week of {weekRangeText}</h3>
+                    <button 
+                      onClick={() => setWeekOffset(prev => prev + 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    </button>
+                    {/* Desktop: inline This Week button */}
+                    {weekOffset !== 0 && (
+                      <button 
+                        onClick={() => setWeekOffset(0)}
+                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      >
+                        This Week
+                      </button>
+                    )}
+                  </div>
+                  {/* Mobile: This Week's Schedule button below header */}
                   {weekOffset !== 0 && (
                     <button 
                       onClick={() => setWeekOffset(0)}
-                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
                     >
-                      This Week
+                      This Week's Schedule
                     </button>
                   )}
                 </div>
