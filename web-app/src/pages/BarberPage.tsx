@@ -10,7 +10,7 @@ import api from '../services/api.service';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
-import TimePickerDropdown from '../components/TimePickerDropdown';
+import TimeInput from '../components/TimeInput';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
@@ -2143,7 +2143,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
             </div>
           ) : (
-            <div className="space-y-4 pb-48">
+            <div className="space-y-4">
               {days.map(({ key, label, shortLabel }) => (
                 <div 
                   key={key}
@@ -2173,20 +2173,20 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                       ) : (
                         <div className="space-y-2 mt-2">
                           {availability[key].intervals.map((interval, idx) => (
-                            <div key={interval.id} className="flex items-center gap-2 flex-wrap relative" style={{ zIndex: 100 - idx }}>
-                              <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg border border-gray-200 shadow-sm p-1 overflow-visible">
-                                <TimePickerDropdown
+                            <div key={interval.id} className="flex items-center gap-2 flex-wrap">
+                              <div className="flex items-center gap-1 sm:gap-2">
+                                <TimeInput
                                   value={interval.start}
                                   onChange={(value) => updateInterval(key, interval.id, 'start', value)}
-                                  maxTime={interval.end}
-                                  className="w-24 sm:w-28"
+                                  aria-label={`${label} start time`}
+                                  className="w-20 sm:w-24"
                                 />
-                                <span className="text-gray-400 text-sm px-1">-</span>
-                                <TimePickerDropdown
+                                <span className="text-gray-400 text-sm">-</span>
+                                <TimeInput
                                   value={interval.end}
                                   onChange={(value) => updateInterval(key, interval.id, 'end', value)}
-                                  minTime={interval.start}
-                                  className="w-24 sm:w-28"
+                                  aria-label={`${label} end time`}
+                                  className="w-20 sm:w-24"
                                 />
                                 <button
                                   onClick={() => removeInterval(key, interval.id)}
