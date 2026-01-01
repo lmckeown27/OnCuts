@@ -386,7 +386,7 @@ export default function BookingPaymentPage() {
 
         {/* Info Text */}
         <p className="text-xs text-gray-500 text-center mt-4">
-          By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName?.split(' ')[0] || 'your barber'} after your service is completed.
+          No payment is required until after your service is complete. By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName?.split(' ')[0] || 'your barber'} upon completion. A receipt will be sent to your registered email.
         </p>
       </div>
     </div>
