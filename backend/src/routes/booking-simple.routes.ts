@@ -1177,22 +1177,29 @@ router.put('/:id', authenticate, async (req, res, next) => {
       const barberEmail = booking.barber_email;
       const consumerEmail = booking.consumer_email;
 
+      // Use Pacific timezone for consistent display across all platforms
+      const timeZone = 'America/Los_Angeles';
+      
       const newDate = new Date(scheduledTime);
       const formattedDate = newDate.toLocaleDateString('en-US', { 
-        weekday: 'short', month: 'short', day: 'numeric' 
+        weekday: 'short', month: 'short', day: 'numeric',
+        timeZone 
       });
       const formattedTime = newDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric', minute: '2-digit' 
+        hour: 'numeric', minute: '2-digit',
+        timeZone 
       });
 
       // Get the original scheduled time for comparison in notification data
       const originalScheduledTime = booking.original_scheduled_time || booking.requestedAt;
       const originalDate = new Date(originalScheduledTime);
       const originalFormattedDate = originalDate.toLocaleDateString('en-US', { 
-        weekday: 'short', month: 'short', day: 'numeric' 
+        weekday: 'short', month: 'short', day: 'numeric',
+        timeZone 
       });
       const originalFormattedTime = originalDate.toLocaleTimeString('en-US', { 
-        hour: 'numeric', minute: '2-digit' 
+        hour: 'numeric', minute: '2-digit',
+        timeZone 
       });
 
       // Notify the OTHER party (not the one who made the edit)
