@@ -445,8 +445,10 @@ export default function PostServicePaymentPage() {
     );
   }
 
-  // Barber View - Waiting for Payment
+  // Barber View - Waiting for Payment OR Payment Confirmed
   if (isBarber) {
+    const isPaid = step === 'review' || step === 'complete' || booking.status === 'PAID';
+    
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
@@ -465,15 +467,32 @@ export default function PostServicePaymentPage() {
 
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-            <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Clock className="w-10 h-10 text-primary-500 animate-pulse" />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Waiting for Payment</h2>
-            <p className="text-gray-600 mb-6">
-              A payment request has been sent to {booking.consumer.firstName}.
-              You'll be notified once payment is complete.
-            </p>
+            {isPaid ? (
+              <>
+                {/* Payment Confirmed View */}
+                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Check className="w-10 h-10 text-green-600" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Confirmed!</h2>
+                <p className="text-gray-600 mb-6">
+                  {booking.consumer.firstName} has successfully completed payment for this service.
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Waiting for Payment View */}
+                <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Clock className="w-10 h-10 text-primary-500 animate-pulse" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Waiting for Payment</h2>
+                <p className="text-gray-600 mb-6">
+                  A payment request has been sent to {booking.consumer.firstName}.
+                  You'll be notified once payment is complete.
+                </p>
+              </>
+            )}
 
             {/* Booking Summary */}
             <div className="bg-gray-50 rounded-xl p-4 text-left space-y-3 mb-6">
@@ -489,11 +508,20 @@ export default function PostServicePaymentPage() {
                 <span className="text-gray-600">Amount</span>
                 <span className="font-bold text-green-600">${(booking.priceUsdCents / 100).toFixed(2)}</span>
               </div>
+              {isPaid && (
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="text-gray-600">Status</span>
+                  <span className="font-semibold text-green-600 flex items-center gap-1">
+                    <Check className="w-4 h-4" />
+                    Paid
+                  </span>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => navigate('/web/barber')}
-              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
             >
               Return to Dashboard
             </button>
