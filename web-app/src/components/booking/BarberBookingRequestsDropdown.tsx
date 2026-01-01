@@ -246,15 +246,6 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     handleReject(decliningRequest.bookingId, reason);
   };
 
-  const getReliabilityBadge = (profile: CustomerProfile) => {
-    if (profile.stats.isReliable && profile.stats.completionRate >= 95) {
-      return <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Reliable</span>;
-    } else if (profile.stats.completionRate >= 80) {
-      return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Good</span>;
-    }
-    return null;
-  };
-
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Inbox Button */}
@@ -328,12 +319,9 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       {request.customerName.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-gray-900 text-sm truncate">
-                          {request.customerName}
-                        </h4>
-                        {getReliabilityBadge(request.customerProfile)}
-                      </div>
+                      <h4 className="font-semibold text-gray-900 text-sm truncate">
+                        {request.customerName}
+                      </h4>
                       <p className="text-xs text-gray-500">{request.customerProfile.stats.completionRate}% completion</p>
                     </div>
                     <span className="text-xs text-gray-400 flex-shrink-0">Tap for details →</span>

@@ -115,17 +115,6 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
     setShowProfileModal(true);
   };
 
-  const getReliabilityBadge = (profile: CustomerProfile) => {
-    const { completionRate, noShowCount } = profile.stats;
-    
-    if (completionRate >= 90 && noShowCount === 0) {
-      return <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Reliable</span>;
-    } else if (completionRate >= 70 && noShowCount < 3) {
-      return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Good</span>;
-    }
-    return null;
-  };
-
   if (loading) {
     return (
       <Card>
@@ -164,15 +153,12 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{request.customerName}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getReliabilityBadge(request.customerProfile)}
-                    <button
-                      onClick={() => viewCustomerProfile(request)}
-                      className="text-xs text-primary-400 hover:text-primary-500 font-medium"
-                    >
-                      View Profile
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => viewCustomerProfile(request)}
+                    className="text-xs text-primary-400 hover:text-primary-500 font-medium mt-1"
+                  >
+                    View Profile
+                  </button>
                 </div>
               </div>
 
@@ -286,9 +272,6 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 text-lg">{selectedRequest.customerProfile.displayName || selectedRequest.customerName}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getReliabilityBadge(selectedRequest.customerProfile)}
-                  </div>
                 </div>
               </div>
 
