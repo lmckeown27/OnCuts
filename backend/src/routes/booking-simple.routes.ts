@@ -1126,7 +1126,7 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
     if (ratingResult.rows.length > 0) {
       await pool.query(
         `UPDATE barbers 
-         SET "averageRating" = $1, "totalReviews" = $2, "updatedAt" = CURRENT_TIMESTAMP
+         SET "avgRating" = $1, "totalReviews" = $2, "updatedAt" = CURRENT_TIMESTAMP
          WHERE id = $3`,
         [ratingResult.rows[0].avg_rating, ratingResult.rows[0].review_count, booking.barberId]
       );
