@@ -223,23 +223,8 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Campus Manager Badge */}
+            {/* Left section - Messages + Campus Manager Badge */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Campus Manager Badge */}
-              {isCampusManager && (
-                <div className="flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-600">Campus Manager</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Center section - Logo always centered */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
-            </div>
-            
-            {/* Right section - Messages, Booking Requests + Profile */}
-            <div className="flex items-center gap-1.5 sm:gap-4">
               {/* Messages Button */}
               <button
                 onClick={() => navigate(`${platformPrefix}/barber/messages`)}
@@ -254,6 +239,21 @@ export default function BarberPage() {
                 )}
               </button>
               
+              {/* Campus Manager Badge */}
+              {isCampusManager && (
+                <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+                  <span className="text-xs font-semibold text-gray-600">Campus Manager</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Center section - Logo always centered */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
+            </div>
+            
+            {/* Right section - Booking Requests + Profile */}
+            <div className="flex items-center gap-1.5 sm:gap-4">
               {/* Booking Requests Inbox */}
               <BarberBookingRequestsDropdown barberId={barberId} />
 
