@@ -158,11 +158,12 @@ export default function TimePickerDropdown({
         <div
           ref={listRef}
           className="
-            absolute z-50 mt-1 w-full
-            bg-white border border-gray-200 rounded-lg shadow-lg
+            absolute z-[9999] mt-1 w-full
+            bg-white border border-gray-200 rounded-lg shadow-xl
             max-h-60 overflow-y-auto
             py-1
           "
+          style={{ position: 'absolute' }}
           role="listbox"
           aria-label="Time Options"
         >

@@ -2143,7 +2143,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-48">
               {days.map(({ key, label, shortLabel }) => (
                 <div 
                   key={key}
@@ -2173,8 +2173,8 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                       ) : (
                         <div className="space-y-2 mt-2">
                           {availability[key].intervals.map((interval, idx) => (
-                            <div key={interval.id} className="flex items-center gap-2 flex-wrap">
-                              <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg border border-gray-200 shadow-sm p-1">
+                            <div key={interval.id} className="flex items-center gap-2 flex-wrap relative" style={{ zIndex: 100 - idx }}>
+                              <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-lg border border-gray-200 shadow-sm p-1 overflow-visible">
                                 <TimePickerDropdown
                                   value={interval.start}
                                   onChange={(value) => updateInterval(key, interval.id, 'start', value)}
