@@ -349,16 +349,29 @@ export default function PostServicePaymentPage() {
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
 
   // Check if current user is barber or consumer
-  // Debug: log the IDs to verify matching
+  // Use BOTH user_type AND ID matching for safety
+  // This prevents issues if localStorage has stale role data
+  const isBarberByRole = user?.user_type === 'barber' || user?.user_type === 'campus_manager';
+  const isBarberById = user?.id === booking?.barber?.id;
+  const isConsumerById = user?.id === booking?.consumer?.id;
+  
+  // User must BOTH have barber role AND match the booking's barber ID
+  // OR if checking consumer, must match the consumer ID
+  const isBarber = isBarberByRole && isBarberById;
+  const isConsumer = isConsumerById;
+  
+  // Debug logging
   console.log('Payment page user check:', {
     userId: user?.id,
     barberId: booking?.barber?.id,
     consumerId: booking?.consumer?.id,
     userType: user?.user_type,
+    isBarberByRole,
+    isBarberById,
+    isConsumerById,
+    finalIsBarber: isBarber,
+    finalIsConsumer: isConsumer,
   });
-  
-  const isBarber = user?.id === booking?.barber?.id;
-  const isConsumer = user?.id === booking?.consumer?.id;
 
   useEffect(() => {
     fetchBooking();
