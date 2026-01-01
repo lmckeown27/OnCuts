@@ -604,48 +604,46 @@ export default function ConsumerBookingStatusPage() {
         {/* Edits Alert */}
         {booking.hasEdits && !booking.editsAcknowledged && (
           <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-300 p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
                 <Edit3 className="w-6 h-6 text-amber-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900 mb-2">Barber Made Changes</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  {booking.barberName} has updated some details of your booking. Please review the changes below.
-                </p>
-                
-                {/* Show what changed */}
-                <div className="space-y-2 mb-4">
-                  {booking.originalScheduledTime && 
-                   new Date(booking.scheduledTime).getTime() !== new Date(booking.originalScheduledTime).getTime() && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-amber-500" />
-                      <span className="text-gray-500 line-through">
-                        {formatDate(booking.originalScheduledTime)} at {formatTime(booking.originalScheduledTime)}
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        → {formatDate(booking.scheduledTime)} at {formatTime(booking.scheduledTime)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleAcknowledgeEdits}
-                    className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Check className="w-4 h-4" />
-                    OK with Changes
-                  </button>
-                  <button
-                    onClick={handleMessageBarber}
-                    className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Message Barber
-                  </button>
-                </div>
+              <h3 className="font-bold text-gray-900 mb-2">Barber Made Changes</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                {booking.barberName} has updated some details of your booking. Please review the changes below.
+              </p>
+              
+              {/* Show what changed */}
+              <div className="space-y-2 mb-4">
+                {booking.originalScheduledTime && 
+                 new Date(booking.scheduledTime).getTime() !== new Date(booking.originalScheduledTime).getTime() && (
+                  <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
+                    <Calendar className="w-4 h-4 text-amber-500" />
+                    <span className="text-gray-500 line-through">
+                      {formatDate(booking.originalScheduledTime)} at {formatTime(booking.originalScheduledTime)}
+                    </span>
+                    <span className="text-gray-900 font-medium">
+                      → {formatDate(booking.scheduledTime)} at {formatTime(booking.scheduledTime)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 w-full max-w-md">
+                <button
+                  onClick={handleAcknowledgeEdits}
+                  className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  OK with Changes
+                </button>
+                <button
+                  onClick={handleMessageBarber}
+                  className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Message Barber
+                </button>
               </div>
             </div>
           </div>
