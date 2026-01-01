@@ -965,28 +965,40 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setDayOffset(prev => prev - 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
-                    {dayLabel ? `${dayLabel} - ` : ''}{dateFormatted}
-                  </h3>
-                  <button 
-                    onClick={() => setDayOffset(prev => prev + 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
+                <div className="flex flex-col items-center sm:flex-row gap-2">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setDayOffset(prev => prev - 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+                      {dayLabel ? `${dayLabel} - ` : ''}{dateFormatted}
+                    </h3>
+                    <button 
+                      onClick={() => setDayOffset(prev => prev + 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    </button>
+                    {/* Desktop: inline Today button */}
+                    {dayOffset !== 0 && (
+                      <button 
+                        onClick={() => setDayOffset(0)}
+                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+                  {/* Mobile: Today's Schedule button below header */}
                   {dayOffset !== 0 && (
                     <button 
                       onClick={() => setDayOffset(0)}
-                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
                     >
-                      Today
+                      Today's Schedule
                     </button>
                   )}
                 </div>
@@ -1273,26 +1285,38 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
           return (
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setMonthOffset(prev => prev - 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">{monthName}</h3>
-                  <button 
-                    onClick={() => setMonthOffset(prev => prev + 1)}
-                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
-                  </button>
+                <div className="flex flex-col items-center sm:flex-row gap-2">
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setMonthOffset(prev => prev - 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">{monthName}</h3>
+                    <button 
+                      onClick={() => setMonthOffset(prev => prev + 1)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    </button>
+                    {/* Desktop: inline Today button */}
+                    {monthOffset !== 0 && (
+                      <button 
+                        onClick={() => setMonthOffset(0)}
+                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      >
+                        Today
+                      </button>
+                    )}
+                  </div>
+                  {/* Mobile: Today's Schedule button below header */}
                   {monthOffset !== 0 && (
                     <button 
                       onClick={() => setMonthOffset(0)}
-                      className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
                     >
-                      Today
+                      Today's Schedule
                     </button>
                   )}
                 </div>
