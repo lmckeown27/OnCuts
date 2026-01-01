@@ -181,11 +181,20 @@ export class BookingRequestService {
         };
         
         // Format time: ISO string -> "6:15 PM"
+        // Use UTC-based formatting to match how the frontend interprets times
         const formatTime = (date: Date | string) => {
           if (!date) return '';
           const d = new Date(date);
-          return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          // Use explicit timezone-aware formatting
+          return d.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true,
+            timeZone: 'America/Los_Angeles' // Use Pacific Time to match user expectations
+          });
         };
+        
+        logger.info(`Pending request time: raw=${row.requested_time}, formatted=${formatTime(row.requested_time)}`);
         
         // Prefer original service name from conversation, fallback to formatted enum
         const displayServiceType = row.original_service_name || formatServiceType(row.service_type);

@@ -182,8 +182,9 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
 
   const fetchRequests = async () => {
     try {
+      // Add cache buster to ensure fresh data
       const response = await api.get<{ requests: BookingRequest[] }>(
-        `/booking-requests/barber/${barberId}/pending`
+        `/booking-requests/barber/${barberId}/pending?_t=${Date.now()}`
       );
       setRequests(response.requests || []);
     } catch (error) {

@@ -66,6 +66,11 @@ export async function getBarberPendingRequests(req: Request, res: Response) {
 
     const requests = await bookingRequestService.getBarberPendingRequests(barberId);
 
+    // Prevent caching to ensure fresh data
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.json({
       success: true,
       count: requests.length,
