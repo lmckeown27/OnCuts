@@ -89,15 +89,22 @@ export default function AvailableTimePickerDropdown({
     setError(null);
     
     try {
-      const response = await api.get<{ data: AvailabilityResponse }>(`/barbers/${barberId}/availability?date=${date}`);
+      // api.get already extracts response.data.data, so we get the AvailabilityResponse directly
+      const response = await api.get<AvailabilityResponse>(`/barbers/${barberId}/availability?date=${date}`);
       
-      if (response.data) {
-        const { available, slots: apiSlots, intervals: apiIntervals } = response.data;
+      console.log('[AvailableTimePickerDropdown] Fetched availability:', response);
+      
+      if (response) {
+        const { available, slots: apiSlots, intervals: apiIntervals } = response;
         
         if (!available) {
           setSlots([]);
           setIntervals([]);
           setError('Barber is not available on this day');
+        } else if (!apiSlots || apiSlots.length === 0) {
+          setSlots([]);
+          setIntervals([]);
+          setError('No time slots available');
         } else {
           // Convert API slots to our format
           const formattedSlots: TimeSlot[] = apiSlots.map(slot => ({
@@ -118,6 +125,10 @@ export default function AvailableTimePickerDropdown({
             }
           }
         }
+      } else {
+        setSlots([]);
+        setIntervals([]);
+        setError('No availability data received');
       }
     } catch (err) {
       console.error('Failed to fetch availability:', err);
