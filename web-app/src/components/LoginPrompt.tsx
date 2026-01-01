@@ -27,7 +27,12 @@ export default function LoginPrompt({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
+      // Lock body scroll with position fixed to prevent mobile viewport issues
+      const scrollY = window.scrollY;
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.top = `-${scrollY}px`;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setIsVisible(true);
@@ -35,7 +40,15 @@ export default function LoginPrompt({
       });
     } else {
       setIsVisible(false);
+      // Restore body scroll
+      const scrollY = document.body.style.top;
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
       const timer = setTimeout(() => {
         setShouldRender(false);
       }, 150);
@@ -44,6 +57,9 @@ export default function LoginPrompt({
 
     return () => {
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
     };
   }, [isOpen]);
 
@@ -72,13 +88,14 @@ export default function LoginPrompt({
 
   return (
     <div
-      className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6 transition-all duration-150 ease-out ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
+      style={{ height: '100dvh' }}
       onClick={handleClose}
     >
       <div
-        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
