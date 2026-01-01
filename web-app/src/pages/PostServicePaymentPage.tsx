@@ -349,6 +349,14 @@ export default function PostServicePaymentPage() {
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
 
   // Check if current user is barber or consumer
+  // Debug: log the IDs to verify matching
+  console.log('Payment page user check:', {
+    userId: user?.id,
+    barberId: booking?.barber?.id,
+    consumerId: booking?.consumer?.id,
+    userType: user?.user_type,
+  });
+  
   const isBarber = user?.id === booking?.barber?.id;
   const isConsumer = user?.id === booking?.consumer?.id;
 
