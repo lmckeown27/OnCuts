@@ -141,9 +141,11 @@ export default function ConsumerBookingStatusPage() {
   const fetchActiveBooking = async () => {
     try {
       // Fetch consumer's active bookings (PENDING or ACCEPTED)
+      // Add timestamp to bust cache after edits
       const response = await api.get('/bookings-simple', { 
         role: 'consumer',
-        status: 'PENDING,ACCEPTED' 
+        status: 'PENDING,ACCEPTED',
+        _t: Date.now() // Cache buster
       });
       
       const bookings = response.bookings || [];
