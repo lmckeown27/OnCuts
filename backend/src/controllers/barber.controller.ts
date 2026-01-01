@@ -339,8 +339,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
-        u."campusId" as campus_id,
-        u."isVerified" as is_verified
+        u."campusId" as campus_id
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b.id = $1`,
