@@ -1053,8 +1053,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const isBarber = booking.barber_user_id === userId;
     const isConsumer = booking.consumerId === userId;
 
-    // Only allow editing ACCEPTED bookings
-    if (booking.status !== 'ACCEPTED') {
+    // Only allow editing PENDING or ACCEPTED bookings
+    if (booking.status !== 'ACCEPTED' && booking.status !== 'PENDING') {
       return res.status(400).json({ 
         success: false, 
         error: `Cannot edit a ${booking.status.toLowerCase()} booking` 
