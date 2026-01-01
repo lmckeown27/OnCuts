@@ -819,13 +819,22 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     
     // If a specific date is provided, return available slots for that date
     if (date && typeof date === 'string') {
-      const targetDate = new Date(date);
+      // Parse date string (YYYY-MM-DD) manually to avoid timezone issues
+      // We want to get the day of week for the date as the USER sees it, not UTC
+      const [year, month, day] = date.split('-').map(Number);
+      // Create date at noon to avoid DST edge cases
+      const targetDate = new Date(year, month - 1, day, 12, 0, 0);
       const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-      const dayName = dayNames[targetDate.getUTCDay()];
+      const dayName = dayNames[targetDate.getDay()];
+      
+      console.log(`[Availability] Date: ${date}, Parsed day: ${dayName}, weeklySchedule keys:`, Object.keys(weeklySchedule));
       
       const daySchedule = weeklySchedule[dayName];
       
+      console.log(`[Availability] Day schedule for ${dayName}:`, JSON.stringify(daySchedule));
+      
       if (!daySchedule || !daySchedule.enabled) {
+        console.log(`[Availability] Day ${dayName} is not available - enabled: ${daySchedule?.enabled}`);
         return res.json({
           success: true,
           data: {
@@ -845,6 +854,23 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       } else if (daySchedule.start && daySchedule.end) {
         // Legacy format - single interval
         intervals = [{ id: 'legacy', start: daySchedule.start, end: daySchedule.end }];
+      }
+      
+      console.log(`[Availability] Found ${intervals.length} intervals for ${dayName}`);
+
+      // If no intervals defined, day is effectively unavailable
+      if (intervals.length === 0) {
+        console.log(`[Availability] No intervals for ${dayName}, returning unavailable`);
+        return res.json({
+          success: true,
+          data: {
+            date,
+            dayOfWeek: dayName,
+            available: false,
+            intervals: [],
+            slots: []
+          }
+        });
       }
 
       // Get booked slots for this date
