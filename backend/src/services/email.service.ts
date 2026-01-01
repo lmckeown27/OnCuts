@@ -1119,3 +1119,240 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     logger.error(`Failed to send booking edit email to barber:`, error.message);
   }
 }
+
+/**
+ * Booking Completed Email Details Interface
+ */
+interface BookingCompletedEmailDetails {
+  bookingId: string;
+  serviceName: string;
+  price: number; // in dollars
+  scheduledDate: string;
+  scheduledTime: string;
+  location?: string;
+  consumerName: string;
+  consumerEmail: string;
+  barberName: string;
+  barberEmail: string;
+  paymentUrl: string;
+}
+
+/**
+ * Send Booking Completed Emails
+ * 
+ * Sends emails to both consumer and barber when a booking is marked as complete.
+ * Consumer email includes a link to the payment page.
+ * 
+ * @param details - Booking completed details
+ */
+export async function sendBookingCompletedEmails(details: BookingCompletedEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping booking completed emails for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  // Send to consumer - Payment Request
+  try {
+    const transporter = createTransporter();
+    
+    const consumerMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject: `Payment Required: Your ${details.serviceName} is Complete!`,
+      text: generateBookingCompletedText(details, 'consumer'),
+      html: generateBookingCompletedHtml(details, 'consumer', frontendUrl)
+    };
+
+    await transporter.sendMail(consumerMailOptions);
+    logger.info(`Booking completed email sent to consumer: ${details.consumerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking completed email to consumer ${details.consumerEmail}:`, error.message);
+  }
+
+  // Send to barber - Service Complete Confirmation
+  try {
+    const transporter = createTransporter();
+    
+    const barberMailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject: `Service Complete: ${details.serviceName} with ${details.consumerName}`,
+      text: generateBookingCompletedText(details, 'barber'),
+      html: generateBookingCompletedHtml(details, 'barber', frontendUrl)
+    };
+
+    await transporter.sendMail(barberMailOptions);
+    logger.info(`Booking completed email sent to barber: ${details.barberEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking completed email to barber ${details.barberEmail}:`, error.message);
+  }
+}
+
+/**
+ * Generate Booking Completed Plain Text
+ */
+function generateBookingCompletedText(
+  details: BookingCompletedEmailDetails, 
+  recipient: 'consumer' | 'barber'
+): string {
+  const isConsumer = recipient === 'consumer';
+  const firstName = isConsumer 
+    ? details.consumerName.split(' ')[0] 
+    : details.barberName.split(' ')[0];
+
+  if (isConsumer) {
+    return `
+Hi ${firstName}!
+
+Your ${details.serviceName} with ${details.barberName} is complete!
+
+BOOKING DETAILS
+---------------
+Service: ${details.serviceName}
+Date: ${details.scheduledDate}
+Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Barber: ${details.barberName}
+
+PAYMENT REQUIRED
+----------------
+Amount Due: $${details.price.toFixed(2)}
+
+Please complete your payment by visiting:
+${details.paymentUrl}
+
+Thank you for choosing CampusCut!
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut - Campus Haircuts Made Easy
+`.trim();
+  } else {
+    return `
+Hi ${firstName}!
+
+Great job! You've completed a service.
+
+SERVICE DETAILS
+---------------
+Service: ${details.serviceName}
+Customer: ${details.consumerName}
+Date: ${details.scheduledDate}
+Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Amount: $${details.price.toFixed(2)}
+
+A payment request has been sent to ${details.consumerName}. You'll be notified when payment is received.
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut - Campus Haircuts Made Easy
+`.trim();
+  }
+}
+
+/**
+ * Generate Booking Completed HTML Email
+ */
+function generateBookingCompletedHtml(
+  details: BookingCompletedEmailDetails, 
+  recipient: 'consumer' | 'barber',
+  frontendUrl: string
+): string {
+  const isConsumer = recipient === 'consumer';
+  const firstName = isConsumer 
+    ? details.consumerName.split(' ')[0] 
+    : details.barberName.split(' ')[0];
+
+  const headerColor = isConsumer ? '#22c55e' : '#3b82f6'; // Green for consumer (pay), Blue for barber
+  const headerText = isConsumer ? 'Payment Required' : 'Service Complete';
+  const headerEmoji = isConsumer ? '💳' : '✅';
+
+  const ctaButton = isConsumer
+    ? `<a href="${details.paymentUrl}" style="display: inline-block; background-color: #22c55e; color: white; padding: 16px 48px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">Pay $${details.price.toFixed(2)} Now</a>`
+    : `<a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Dashboard</a>`;
+
+  const introText = isConsumer
+    ? `Your <strong>${details.serviceName}</strong> with <strong>${details.barberName}</strong> is complete! Please complete your payment to finish the booking.`
+    : `Great job! You've completed a <strong>${details.serviceName}</strong> with <strong>${details.consumerName}</strong>. A payment request has been sent.`;
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background-color: ${headerColor}; padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">${headerEmoji}</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">${headerText}</h1>
+    </div>
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">${introText}</p>
+      
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">${isConsumer ? 'Barber' : 'Customer'}</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${isConsumer ? details.barberName : details.consumerName}</td>
+          </tr>
+        </table>
+        <div style="border-top: 2px solid #e5e7eb; margin-top: 15px; padding-top: 15px;">
+          <table style="width: 100%;">
+            <tr>
+              <td style="color: #1f2937; font-size: 18px; font-weight: 700;">${isConsumer ? 'Amount Due' : 'Amount'}</td>
+              <td style="color: #22c55e; font-size: 24px; font-weight: 700; text-align: right;">$${details.price.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        ${ctaButton}
+      </div>
+
+      ${isConsumer ? `
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        You can also pay by opening the CampusCut app and navigating to your booking.
+      </p>` : `
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        You'll receive a notification when ${details.consumerName.split(' ')[0]} completes their payment.
+      </p>`}
+
+      <div style="text-align: center; margin: 25px 0 0 0;">
+        <p style="color: #9ca3af; font-size: 12px; margin: 0;">Booking Reference</p>
+        <p style="color: #1f2937; font-size: 16px; font-weight: 700; margin: 5px 0 0 0;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+    </div>
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+}

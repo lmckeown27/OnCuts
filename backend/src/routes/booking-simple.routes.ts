@@ -10,7 +10,7 @@ import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
-import { sendPendingBookingEmails, sendBookingEditEmails } from '../services/email.service';
+import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 
 const router = express.Router();
 
@@ -441,13 +441,16 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
 
-    // Verify user is the barber for this booking
+    // Verify user is the barber for this booking - also fetch email addresses for notifications
     const barberCheck = await pool.query(
-      `SELECT b.id, b."consumerId", b."priceUsdCents", b."serviceType",
+      `SELECT b.id, b."consumerId", b."priceUsdCents", b."serviceType", b."requestedAt",
               barber."userId" as barber_user_id,
               consumer.first_name || ' ' || consumer.last_name as consumer_name,
+              consumer.email as consumer_email,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
-              c.service_name as original_service_name
+              barber_user.email as barber_email,
+              c.service_name as original_service_name,
+              c.location
        FROM bookings b
        JOIN barbers barber ON b."barberId" = barber.id
        JOIN users consumer ON b."consumerId" = consumer.id
@@ -486,6 +489,18 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
+    
+    // Format scheduled date/time for emails
+    const scheduledDate = booking.requestedAt 
+      ? new Date(booking.requestedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      : 'N/A';
+    const scheduledTime = booking.requestedAt
+      ? new Date(booking.requestedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      : 'N/A';
+    
+    // Build payment URL
+    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const paymentUrl = `${frontendUrl}/web/payment/${id}`;
 
     // Send payment request notification to consumer
     await notificationService.saveNotification({
@@ -500,6 +515,27 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
         serviceName,
       },
     });
+
+    // Send booking completed emails to both consumer and barber
+    try {
+      await sendBookingCompletedEmails({
+        bookingId: id,
+        serviceName,
+        price: booking.priceUsdCents / 100,
+        scheduledDate,
+        scheduledTime,
+        location: booking.location,
+        consumerName: booking.consumer_name,
+        consumerEmail: booking.consumer_email,
+        barberName: booking.barber_name,
+        barberEmail: booking.barber_email,
+        paymentUrl,
+      });
+      logger.info(`Booking completed emails sent for booking ${id}`);
+    } catch (emailError: any) {
+      // Don't fail the request if emails fail - just log it
+      logger.error(`Failed to send booking completed emails for ${id}:`, emailError.message);
+    }
 
     logger.info(`Booking ${id} marked as COMPLETED by barber ${userId}. Payment request sent to consumer ${booking.consumerId}`);
 
