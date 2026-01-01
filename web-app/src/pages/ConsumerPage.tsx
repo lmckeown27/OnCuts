@@ -1228,17 +1228,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Barber Profile Modal */}
       {selectedBarber && (
         <div 
-          className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 animate-fade-in overscroll-contain"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
-          style={{ minHeight: '100dvh' }}
+          style={{ height: '100dvh' }}
         >
           <div 
-            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-slide-up sm:m-4"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[70vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Mobile drag handle indicator */}
-            <div className="sm:hidden w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-1" />
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
               </h2>
