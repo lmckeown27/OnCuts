@@ -223,21 +223,11 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Switch to Consumer + Campus Manager Badge */}
+            {/* Left section - Campus Manager Badge */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Switch to Consumer - always on left */}
-              <button
-                onClick={() => navigate(`${platformPrefix}/consumer`)}
-                className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                title="Switch to Consumer view"
-              >
-                <Calendar className="w-4 h-4 text-primary-600" />
-                <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
-              </button>
-              
               {/* Campus Manager Badge */}
               {isCampusManager && (
-                <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
+                <div className="flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
                   <span className="text-xs font-semibold text-gray-600">Campus Manager</span>
                 </div>
               )}
@@ -279,6 +269,17 @@ export default function BarberPage() {
 
               {showProfileDropdown && (
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
+                  <button
+                    onClick={() => {
+                      navigate(`${platformPrefix}/consumer`);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50 flex items-center gap-3"
+                  >
+                    <Calendar className="w-4 h-4 text-primary-500" />
+                    Switch to Consumer
+                  </button>
+                  <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {
                       openProfileEditor();
