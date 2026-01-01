@@ -1112,23 +1112,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     {barber.distance_miles !== undefined && barber.distance_miles !== null && (
                       <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
                     )}
-                    {barber.distance_miles !== undefined && barber.distance_miles !== null && barber.instagram_handle && (
-                      <span className="text-gray-400 text-sm">•</span>
-                    )}
-                    {barber.instagram_handle && (
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Instagram className="w-4 h-4 flex-shrink-0" />
-                        <span>@{barber.instagram_handle}</span>
-                      </div>
-                    )}
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {(Array.isArray(barber.specialties) ? barber.specialties : []).map((s, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-primary-50 text-primary-700 text-sm rounded-full">
-                        {s}
-                      </span>
-                    ))}
-                  </div>
+                  {barber.instagram_handle && (
+                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
+                      <Instagram className="w-4 h-4 flex-shrink-0" />
+                      <span>@{barber.instagram_handle}</span>
+                    </div>
+                  )}
                 </div>
               </Card>
             );
@@ -1183,21 +1173,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   </div>
                 )}
 
-                {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {(Array.isArray(barber.specialties) ? barber.specialties : []).map((specialty, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-
                 {/* Instagram */}
                 {barber.instagram_handle && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mb-2">
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mt-1">
                     <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span className="truncate max-w-[100px] sm:max-w-none">@{barber.instagram_handle}</span>
                   </div>
