@@ -140,8 +140,8 @@ export default function ConsumerBookingStatusPage() {
 
   useEffect(() => {
     fetchActiveBooking();
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchActiveBooking, 30000);
+    // Poll for updates every 10 seconds (faster for payment request detection)
+    const interval = setInterval(fetchActiveBooking, 10000);
     return () => clearInterval(interval);
   }, []);
 
