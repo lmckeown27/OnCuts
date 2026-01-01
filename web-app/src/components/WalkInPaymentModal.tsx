@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { X, DollarSign, User, Scissors, CreditCard, Banknote, CheckCircle, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { X, DollarSign, User, Scissors, CreditCard, CheckCircle, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import { SERVICE_TYPES, findService } from '../config/services';
@@ -18,8 +18,7 @@ interface WalkInPaymentModalProps {
   barberSpecialties?: string[]; // Barber's selected services
 }
 
-type PaymentMethod = 'digital' | 'cash' | null;
-type Step = 'details' | 'method' | 'digital-payment' | 'processing' | 'success';
+type Step = 'details' | 'confirm' | 'payment' | 'success';
 
 // Card Payment Form Component
 function CardPaymentForm({
@@ -28,12 +27,14 @@ function CardPaymentForm({
   serviceName,
   onSuccess,
   onError,
+  onBack,
 }: {
   amount: number;
   customerName: string;
   serviceName: string;
   onSuccess: (transactionId: string) => void;
   onError: (error: string) => void;
+  onBack: () => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -41,6 +42,7 @@ function CardPaymentForm({
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [walkInId, setWalkInId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Create payment intent when component mounts
   useEffect(() => {
@@ -63,6 +65,8 @@ function CardPaymentForm({
         console.error('Failed to create payment intent:', err);
         setError(err.message || 'Failed to initialize payment');
         onError(err.message || 'Failed to initialize payment');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -115,10 +119,10 @@ function CardPaymentForm({
     }
   };
 
-  if (!clientSecret) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-4" />
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="w-10 h-10 animate-spin text-primary-500 mb-4" />
         <p className="text-gray-600">Preparing payment...</p>
       </div>
     );
@@ -127,15 +131,18 @@ function CardPaymentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Amount Display */}
-      <div className="text-center py-4">
-        <p className="text-sm text-gray-600">Amount Due</p>
+      <div className="text-center py-4 bg-gradient-to-r from-green-50 to-primary-50 rounded-xl border-2 border-green-200">
+        <p className="text-sm text-gray-600">Charging {customerName}</p>
         <p className="text-4xl font-bold text-green-600">${amount.toFixed(2)}</p>
-        <p className="text-gray-500">{serviceName} for {customerName}</p>
+        <p className="text-gray-500">{serviceName}</p>
       </div>
 
       {/* Card Input */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Card Details</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <CreditCard className="w-4 h-4 inline mr-2" />
+          Card Details
+        </label>
         <div className="p-4 border border-gray-300 rounded-lg bg-white">
           <CardElement
             options={{
@@ -161,7 +168,7 @@ function CardPaymentForm({
 
       <Button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || !clientSecret}
         className="w-full py-4 text-lg"
       >
         {isProcessing ? (
@@ -180,6 +187,18 @@ function CardPaymentForm({
       <p className="text-center text-xs text-gray-500">
         Secured by Stripe. Payment information is encrypted.
       </p>
+
+      {/* Back Button */}
+      <Button
+        type="button"
+        onClick={onBack}
+        variant="secondary"
+        className="w-full"
+        disabled={isProcessing}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
+      </Button>
     </form>
   );
 }
@@ -219,9 +238,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
   const [customerName, setCustomerName] = useState('');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [customPrice, setCustomPrice] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
   const [transactionId, setTransactionId] = useState<string | null>(null);
-  const [isRecordingCash, setIsRecordingCash] = useState(false);
   
   useEffect(() => {
     if (isOpen) {
@@ -240,9 +257,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
         setCustomerName('');
         setSelectedService(null);
         setCustomPrice('');
-        setPaymentMethod(null);
         setTransactionId(null);
-        setIsRecordingCash(false);
       }, 150);
       return () => clearTimeout(timer);
     }
@@ -268,35 +283,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
 
   const price = getServicePrice();
   const isDetailsValid = customerName.trim() && selectedService && price > 0;
-
-  const handleCashPayment = async () => {
-    setIsRecordingCash(true);
-    try {
-      const response = await api.post<{
-        transactionId: string;
-        amountPaid: number;
-      }>('/bookings-simple/walk-in/record-cash', {
-        customerName: customerName.trim(),
-        serviceName: getServiceName(),
-        priceUsdCents: Math.round(price * 100),
-      });
-
-      setTransactionId(response.transactionId);
-      setPaymentMethod('cash');
-      setStep('success');
-      toast.success('Cash payment recorded!');
-    } catch (error: any) {
-      console.error('Failed to record cash payment:', error);
-      toast.error(error.message || 'Failed to record payment');
-    } finally {
-      setIsRecordingCash(false);
-    }
-  };
-
-  const handleDigitalPayment = () => {
-    setPaymentMethod('digital');
-    setStep('digital-payment');
-  };
 
   const handlePaymentSuccess = (txId: string) => {
     setTransactionId(txId);
@@ -428,104 +414,73 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
 
               {/* Continue Button */}
               <Button
-                onClick={() => setStep('method')}
+                onClick={() => setStep('confirm')}
                 disabled={!isDetailsValid}
                 className="w-full py-4 text-lg"
               >
-                Continue to Payment
+                Continue
               </Button>
             </div>
           )}
 
-          {/* Step 2: Payment Method */}
-          {step === 'method' && (
+          {/* Step 2: Confirm Details */}
+          {step === 'confirm' && (
             <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-900 text-center">Confirm Payment Details</h3>
+
               {/* Summary Card */}
-              <Card className="bg-gradient-to-r from-green-50 to-primary-50 p-4 border-2 border-green-200">
-                <div className="flex justify-between items-center">
+              <Card className="bg-gradient-to-r from-green-50 to-primary-50 p-6 border-2 border-green-200">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CreditCard className="w-8 h-8 text-green-600" />
+                  </div>
                   <div>
-                    <p className="text-sm text-gray-600">Charging {customerName}</p>
-                    <p className="text-3xl font-bold text-green-600">${price.toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">{getServiceName()}</p>
+                    <p className="text-sm text-gray-600">Charging</p>
+                    <p className="text-xl font-bold text-gray-900">{customerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-4xl font-bold text-green-600">${price.toFixed(2)}</p>
+                    <p className="text-gray-500">{getServiceName()}</p>
                   </div>
                 </div>
               </Card>
 
-              <h3 className="text-lg font-semibold text-gray-900">How will they pay?</h3>
+              <p className="text-center text-sm text-gray-600">
+                Customer will enter their card details on the next screen.
+              </p>
 
-              {/* Digital Payment */}
-              <Card 
-                className="p-4 cursor-pointer border-2 border-gray-200 hover:border-primary-300 transition-all"
-                onClick={handleDigitalPayment}
+              {/* Action Buttons */}
+              <Button
+                onClick={() => setStep('payment')}
+                className="w-full py-4 text-lg"
               >
-                <div className="flex items-center gap-4">
-                  <div className="bg-primary-100 rounded-full p-3">
-                    <CreditCard className="w-6 h-6 text-primary-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Card Payment</h4>
-                    <p className="text-sm text-gray-600">Customer pays with credit/debit card</p>
-                  </div>
-                </div>
-              </Card>
+                <CreditCard className="w-5 h-5 mr-2" />
+                Proceed to Card Payment
+              </Button>
 
-              {/* Cash Payment */}
-              <Card 
-                className={`p-4 cursor-pointer border-2 border-gray-200 hover:border-green-300 transition-all ${
-                  isRecordingCash ? 'opacity-50 pointer-events-none' : ''
-                }`}
-                onClick={handleCashPayment}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="bg-green-100 rounded-full p-3">
-                    {isRecordingCash ? (
-                      <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
-                    ) : (
-                      <Banknote className="w-6 h-6 text-green-600" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">Cash Payment</h4>
-                    <p className="text-sm text-gray-600">Record cash payment for your records</p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Back Button */}
               <Button
                 onClick={() => setStep('details')}
                 variant="secondary"
                 className="w-full"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                Back to Edit
               </Button>
             </div>
           )}
 
-          {/* Step 3: Digital Payment with Stripe */}
-          {step === 'digital-payment' && (
-            <div className="space-y-6">
-              <Elements stripe={stripePromise}>
-                <CardPaymentForm
-                  amount={price}
-                  customerName={customerName}
-                  serviceName={getServiceName()}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                />
-              </Elements>
-
-              {/* Back Button */}
-              <Button
-                onClick={() => setStep('method')}
-                variant="secondary"
-                className="w-full"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </div>
+          {/* Step 3: Card Payment with Stripe */}
+          {step === 'payment' && (
+            <Elements stripe={stripePromise}>
+              <CardPaymentForm
+                amount={price}
+                customerName={customerName}
+                serviceName={getServiceName()}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                onBack={() => setStep('confirm')}
+              />
+            </Elements>
           )}
 
           {/* Step 4: Success */}
@@ -537,11 +492,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
               
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Complete!</h3>
-                <p className="text-gray-600">
-                  {paymentMethod === 'cash' 
-                    ? 'Cash payment recorded successfully.'
-                    : 'Card payment processed successfully.'}
-                </p>
+                <p className="text-gray-600">Card payment processed successfully.</p>
               </div>
 
               <Card className="bg-gray-50 p-4 text-left">
@@ -556,7 +507,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Method:</span>
-                    <span className="font-medium">{paymentMethod === 'cash' ? 'Cash' : 'Card'}</span>
+                    <span className="font-medium">Card</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-2 mt-2">
                     <span>Total:</span>
