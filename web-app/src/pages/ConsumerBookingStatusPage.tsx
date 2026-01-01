@@ -673,7 +673,14 @@ export default function ConsumerBookingStatusPage() {
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+          <form 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" 
+            onClick={e => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSaveEdit();
+            }}
+          >
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Edit3 className="w-5 h-5 text-primary-500" />
               Edit Booking
@@ -725,13 +732,14 @@ export default function ConsumerBookingStatusPage() {
             
             <div className="flex gap-3 mt-6">
               <button
+                type="button"
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSaveEdit}
+                type="submit"
                 disabled={isSaving}
                 className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
@@ -745,7 +753,7 @@ export default function ConsumerBookingStatusPage() {
                 )}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 
