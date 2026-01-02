@@ -339,10 +339,10 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         saturday: { enabled: false, intervals: [] },
       };
       
-      // Use upsert pattern - specialties is TEXT[] array type, use PostgreSQL array literal
+      // Use upsert pattern - explicitly generate UUID for id since table lacks default
       const createResult = await pool.query(
-        `INSERT INTO barbers ("userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
-         VALUES ($1, ARRAY[]::text[], true, $2, NOW(), NOW())
+        `INSERT INTO barbers (id, "userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, ARRAY[]::text[], true, $2, NOW(), NOW())
          ON CONFLICT ("userId") DO UPDATE SET 
            "isActive" = true,
            "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
