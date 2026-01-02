@@ -339,15 +339,19 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         saturday: { enabled: false, intervals: [] },
       };
       
+      // Use upsert pattern matching barber-application.controller.ts
       const createResult = await pool.query(
-        `INSERT INTO barbers (id, "userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
+        `INSERT INTO barbers ("userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
+         VALUES ($1, $2, true, $3, NOW(), NOW())
+         ON CONFLICT ("userId") DO UPDATE SET 
+           "isActive" = true,
+           "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
+           "updatedAt" = NOW()
          RETURNING id, "userId" as user_id, bio, specialties, 
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
-          [], // Empty specialties array (pg driver handles array conversion)
-          true, // isActive
+          JSON.stringify([]), // Empty specialties as JSONB
           JSON.stringify(defaultSchedule)
         ]
       );
