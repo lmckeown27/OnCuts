@@ -158,9 +158,16 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
+    // Validate file type - must be an image
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate specific allowed formats
+    const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedFormats.includes(file.type)) {
+      toast.error('Only JPG, PNG, and WebP images are allowed. Please convert your image and try again.');
       return;
     }
 
