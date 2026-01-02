@@ -346,7 +346,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
-          '[]', // Empty specialties array as JSON string
+          [], // Empty specialties array (pg driver handles array conversion)
           true, // isActive
           JSON.stringify(defaultSchedule)
         ]
