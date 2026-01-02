@@ -263,12 +263,13 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
 
 /**
  * Get barber by user ID
+ * Auto-creates a barber record if the user is a barber but doesn't have one yet
  */
 export const getBarberByUserId = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
 
-    const barberResult = await pool.query(
+    let barberResult = await pool.query(
       `SELECT 
         b.id,
         b."userId" as user_id,
@@ -286,17 +287,86 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle,
-        u."campusId" as campus_id
+        u."campusId" as campus_id,
+        u.user_type
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
       [userId]
     );
 
+    // If no barber record exists, check if this is a barber user and auto-create one
     if (barberResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Barber not found for this user',
+      // Check if user exists and is a barber
+      const userResult = await pool.query(
+        `SELECT id, first_name, last_name, email, "displayName" as display_name, 
+                "avatarUrl" as profile_picture_url, "instagramHandle" as instagram_handle, 
+                "campusId" as campus_id, user_type
+         FROM users WHERE id = $1`,
+        [userId]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+
+      const user = userResult.rows[0];
+
+      // Only auto-create if user is a barber or campus_manager
+      if (user.user_type !== 'barber' && user.user_type !== 'campus_manager') {
+        return res.status(404).json({
+          success: false,
+          message: 'User is not a barber',
+        });
+      }
+
+      // Auto-create barber record with defaults
+      logger.info(`Auto-creating barber record for user ${userId}`);
+      
+      const createResult = await pool.query(
+        `INSERT INTO barbers ("userId", bio, specialties, "isActive", "avgRating", "totalReviews", "totalBookings", "weeklySchedule")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, "userId" as user_id, bio, specialties, "avgRating" as average_rating, 
+                   "totalReviews" as total_reviews, "totalBookings" as total_bookings, 
+                   "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
+        [
+          userId,
+          '', // Empty bio
+          '[]', // Empty specialties array
+          true, // isActive
+          0, // avgRating
+          0, // totalReviews
+          0, // totalBookings
+          JSON.stringify({
+            sunday: { enabled: false, intervals: [] },
+            monday: { enabled: true, intervals: [{ id: 'default-1', start: '09:00', end: '17:00' }] },
+            tuesday: { enabled: true, intervals: [{ id: 'default-2', start: '09:00', end: '17:00' }] },
+            wednesday: { enabled: true, intervals: [{ id: 'default-3', start: '09:00', end: '17:00' }] },
+            thursday: { enabled: true, intervals: [{ id: 'default-4', start: '09:00', end: '17:00' }] },
+            friday: { enabled: true, intervals: [{ id: 'default-5', start: '09:00', end: '17:00' }] },
+            saturday: { enabled: false, intervals: [] },
+          })
+        ]
+      );
+
+      const barber = createResult.rows[0];
+      
+      return res.json({
+        success: true,
+        data: {
+          ...barber,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          display_name: user.display_name,
+          profile_picture_url: user.profile_picture_url,
+          instagram_handle: user.instagram_handle,
+          campus_id: user.campus_id,
+          name: user.display_name || `${user.first_name} ${user.last_name}`,
+        },
       });
     }
 
