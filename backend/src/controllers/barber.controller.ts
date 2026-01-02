@@ -288,7 +288,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id,
-        u.user_type
+        u.role as user_type
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
@@ -301,7 +301,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       const userResult = await pool.query(
         `SELECT id, first_name, last_name, email, "displayName" as display_name, 
                 "avatarUrl" as profile_picture_url, "instagramHandle" as instagram_handle, 
-                "campusId" as campus_id, user_type
+                "campusId" as campus_id, role as user_type
          FROM users WHERE id = $1`,
         [userId]
       );
@@ -316,7 +316,9 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       const user = userResult.rows[0];
 
       // Only auto-create if user is a barber or campus_manager
-      if (user.user_type !== 'barber' && user.user_type !== 'campus_manager') {
+      // Role values are uppercase in the database
+      const userRole = (user.user_type || '').toUpperCase();
+      if (userRole !== 'BARBER' && userRole !== 'CAMPUS_MANAGER') {
         return res.status(404).json({
           success: false,
           message: 'User is not a barber',
