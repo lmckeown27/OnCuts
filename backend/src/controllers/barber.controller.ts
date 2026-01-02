@@ -318,7 +318,10 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       // Only auto-create if user is a barber or campus_manager
       // Role values are uppercase in the database
       const userRole = (user.user_type || '').toUpperCase();
+      logger.info(`Auto-create role check: user_type=${user.user_type}, normalized=${userRole}, campus_id=${user.campus_id}`);
+      
       if (userRole !== 'BARBER' && userRole !== 'CAMPUS_MANAGER') {
+        logger.warn(`User ${userId} has role ${userRole}, not allowed to auto-create barber profile`);
         return res.status(404).json({
           success: false,
           message: 'User is not a barber',
