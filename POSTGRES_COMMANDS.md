@@ -117,6 +117,15 @@ sudo -u postgres psql -d campuscuts -c "SELECT id FROM users WHERE email = 'user
 
 ## BARBERS
 
+### View Barber Info Requirements
+'''bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT column_name, data_type, is_nullable, column_default 
+FROM information_schema.columns 
+WHERE table_name = 'barbers' AND is_nullable = 'NO'
+ORDER BY ordinal_position;
+"
+
 ### View All Barbers
 ```bash
 sudo -u postgres psql -d campuscuts -c "SELECT b.id, u.email, u.first_name, u.last_name, b.bio, b.\"averageRating\", b.\"isActive\" FROM barbers b JOIN users u ON b.\"userId\" = u.id;"
