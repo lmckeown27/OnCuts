@@ -340,9 +340,10 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       };
       
       // Use upsert pattern - explicitly generate UUID for id since table lacks default
+      // Include campusId from user's profile (required NOT NULL column)
       const createResult = await pool.query(
-        `INSERT INTO barbers (id, "userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, ARRAY[]::text[], true, $2, NOW(), NOW())
+        `INSERT INTO barbers (id, "userId", "campusId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, ARRAY[]::text[], true, $3, NOW(), NOW())
          ON CONFLICT ("userId") DO UPDATE SET 
            "isActive" = true,
            "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
@@ -351,6 +352,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
+          user.campus_id,
           JSON.stringify(defaultSchedule)
         ]
       );
