@@ -324,31 +324,29 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       }
 
       // Auto-create barber record with defaults
+      // Using only columns that are guaranteed to exist in the barbers table
       logger.info(`Auto-creating barber record for user ${userId}`);
       
+      const defaultSchedule = {
+        sunday: { enabled: false, intervals: [] },
+        monday: { enabled: true, intervals: [{ id: 'default-1', start: '09:00', end: '17:00' }] },
+        tuesday: { enabled: true, intervals: [{ id: 'default-2', start: '09:00', end: '17:00' }] },
+        wednesday: { enabled: true, intervals: [{ id: 'default-3', start: '09:00', end: '17:00' }] },
+        thursday: { enabled: true, intervals: [{ id: 'default-4', start: '09:00', end: '17:00' }] },
+        friday: { enabled: true, intervals: [{ id: 'default-5', start: '09:00', end: '17:00' }] },
+        saturday: { enabled: false, intervals: [] },
+      };
+      
       const createResult = await pool.query(
-        `INSERT INTO barbers ("userId", bio, specialties, "isActive", "avgRating", "totalReviews", "totalBookings", "weeklySchedule")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, "userId" as user_id, bio, specialties, "avgRating" as average_rating, 
-                   "totalReviews" as total_reviews, "totalBookings" as total_bookings, 
+        `INSERT INTO barbers ("userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         RETURNING id, "userId" as user_id, bio, specialties, 
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
           userId,
-          '', // Empty bio
-          '[]', // Empty specialties array
+          '[]', // Empty specialties array as JSON string
           true, // isActive
-          0, // avgRating
-          0, // totalReviews
-          0, // totalBookings
-          JSON.stringify({
-            sunday: { enabled: false, intervals: [] },
-            monday: { enabled: true, intervals: [{ id: 'default-1', start: '09:00', end: '17:00' }] },
-            tuesday: { enabled: true, intervals: [{ id: 'default-2', start: '09:00', end: '17:00' }] },
-            wednesday: { enabled: true, intervals: [{ id: 'default-3', start: '09:00', end: '17:00' }] },
-            thursday: { enabled: true, intervals: [{ id: 'default-4', start: '09:00', end: '17:00' }] },
-            friday: { enabled: true, intervals: [{ id: 'default-5', start: '09:00', end: '17:00' }] },
-            saturday: { enabled: false, intervals: [] },
-          })
+          JSON.stringify(defaultSchedule)
         ]
       );
 
@@ -358,6 +356,10 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         success: true,
         data: {
           ...barber,
+          bio: barber.bio || '',
+          average_rating: 0,
+          total_reviews: 0,
+          total_bookings: 0,
           email: user.email,
           first_name: user.first_name,
           last_name: user.last_name,
