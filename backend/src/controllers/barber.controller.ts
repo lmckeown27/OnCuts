@@ -343,10 +343,24 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       };
       
       // Use upsert pattern - explicitly generate UUID for id since table lacks default
-      // Include all required NOT NULL columns: campusId, currentMinPriceUsdCents, currentMaxPriceUsdCents
+      // Include ALL required NOT NULL columns from barbers table schema
+      const isCampusManager = userRole === 'CAMPUS_MANAGER';
+      
       const createResult = await pool.query(
-        `INSERT INTO barbers (id, "userId", "campusId", specialties, "isActive", "weeklySchedule", "currentMinPriceUsdCents", "currentMaxPriceUsdCents", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, ARRAY[]::text[], true, $3, 0, 0, NOW(), NOW())
+        `INSERT INTO barbers (
+           id, "userId", "campusId", specialties, "isActive", "weeklySchedule",
+           "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+           "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+           "pricingMultiplier", "isCampusManager", "isOnboarded",
+           "createdAt", "updatedAt"
+         )
+         VALUES (
+           gen_random_uuid(), $1, $2, ARRAY[]::text[], true, $3,
+           0, 0,
+           0, 0, 0, 0,
+           1.00, $4, false,
+           NOW(), NOW()
+         )
          ON CONFLICT ("userId") DO UPDATE SET 
            "isActive" = true,
            "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
@@ -356,7 +370,8 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         [
           userId,
           user.campus_id,
-          JSON.stringify(defaultSchedule)
+          JSON.stringify(defaultSchedule),
+          isCampusManager
         ]
       );
 
