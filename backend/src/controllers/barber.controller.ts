@@ -341,7 +341,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       
       const createResult = await pool.query(
         `INSERT INTO barbers (id, "userId", specialties, "isActive", "weeklySchedule", "createdAt", "updatedAt")
-         VALUES (uuid_generate_v4(), $1, $2, $3, $4, NOW(), NOW())
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
          RETURNING id, "userId" as user_id, bio, specialties, 
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,
         [
