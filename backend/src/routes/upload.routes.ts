@@ -198,6 +198,17 @@ router.post(
       const userId = (req as any).user.userId;
       const file = (req as any).file;
 
+      logger.info(`[Upload] Profile photo upload started for user: ${userId}`);
+      logger.info(`[Upload] File received: ${file ? `${file.originalname} (${file.size} bytes, ${file.mimetype})` : 'No file'}`);
+
+      if (!userId) {
+        logger.error('[Upload] No userId found in JWT token');
+        return res.status(401).json({
+          success: false,
+          error: { message: 'User ID not found in token' },
+        });
+      }
+
       if (!file) {
         return res.status(400).json({
           success: false,
@@ -205,15 +216,38 @@ router.post(
         });
       }
 
+      // Validate file type on server side as well
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedMimeTypes.includes(file.mimetype)) {
+        logger.warn(`[Upload] Rejected file with unsupported type: ${file.mimetype}`);
+        return res.status(400).json({
+          success: false,
+          error: { message: `Unsupported image format: ${file.mimetype}. Only JPG, PNG, and WebP are allowed.` },
+        });
+      }
+
       // Process image locally - now generates original, medium, and thumbnail
+      logger.info(`[Upload] Processing image...`);
       const result = await imageService.processProfilePicture(file.buffer);
       const imageUrl = imageService.generateImageUrl(result.original);
+      logger.info(`[Upload] Image processed successfully: ${result.original}`);
+      logger.info(`[Upload] Generated URL: ${imageUrl}`);
 
       // Update user's avatarUrl in database
-      await pool.query(
-        'UPDATE users SET "avatarUrl" = $1, "updatedAt" = NOW() WHERE id = $2',
+      const updateResult = await pool.query(
+        'UPDATE users SET "avatarUrl" = $1, "updatedAt" = NOW() WHERE id = $2 RETURNING id',
         [imageUrl, userId]
       );
+
+      if (updateResult.rowCount === 0) {
+        logger.error(`[Upload] Database update failed - no user found with id: ${userId}`);
+        return res.status(404).json({
+          success: false,
+          error: { message: 'User not found' },
+        });
+      }
+
+      logger.info(`[Upload] Database updated successfully for user: ${userId}`);
 
       // Return all sizes for frontend flexibility
       const responseData: any = {
@@ -228,7 +262,8 @@ router.post(
         message: 'Profile photo uploaded successfully',
         data: responseData,
       });
-    } catch (error) {
+    } catch (error: any) {
+      logger.error(`[Upload] Profile photo upload failed:`, error.message);
       next(error);
     }
   }
