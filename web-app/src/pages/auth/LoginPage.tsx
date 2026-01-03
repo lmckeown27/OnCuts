@@ -85,9 +85,12 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;
+      const statusCode = err.response?.status;
       let errorMessage: string;
       
-      if (errorCode === 'ACCOUNT_NOT_FOUND') {
+      if (statusCode === 429 || err.isRateLimitError) {
+        errorMessage = 'Rate limit reached. Please wait a moment and reload the page.';
+      } else if (errorCode === 'ACCOUNT_NOT_FOUND') {
         errorMessage = 'Account not in the system. Please sign up first.';
       } else if (errorCode === 'INVALID_PASSWORD') {
         errorMessage = 'Incorrect password. Please try again.';

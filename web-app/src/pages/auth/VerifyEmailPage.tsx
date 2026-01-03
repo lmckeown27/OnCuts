@@ -121,7 +121,12 @@ export default function VerifyEmailPage() {
       toast.success('Email verified successfully! Welcome to CampusCut!');
       navigate('/web/consumer');
     } catch (err: any) {
-      toast.error(err.message || 'Verification failed. Please try again.');
+      const statusCode = err.response?.status;
+      if (statusCode === 429 || err.isRateLimitError) {
+        toast.error('Rate limit reached. Please wait a moment and reload the page.');
+      } else {
+        toast.error(err.message || 'Verification failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +146,12 @@ export default function VerifyEmailPage() {
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to resend code. Please try again.');
+      const statusCode = err.response?.status;
+      if (statusCode === 429 || err.isRateLimitError) {
+        toast.error('Rate limit reached. Please wait a moment and reload the page.');
+      } else {
+        toast.error(err.message || 'Failed to resend code. Please try again.');
+      }
     } finally {
       setIsResending(false);
     }

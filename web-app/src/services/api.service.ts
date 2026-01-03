@@ -34,6 +34,14 @@ class ApiService {
       async (error: AxiosError) => {
         const requestUrl = error.config?.url || '';
         
+        // Handle rate limit errors with a user-friendly message
+        if (error.response?.status === 429) {
+          const rateLimitError = new Error('Rate limit reached. Please wait a moment and reload the page.');
+          (rateLimitError as any).response = error.response;
+          (rateLimitError as any).isRateLimitError = true;
+          return Promise.reject(rateLimitError);
+        }
+        
         // Don't redirect for auth endpoints (login, register, etc.) - let the UI handle those errors
         const isAuthEndpoint = requestUrl.includes('/auth/login') || 
                                requestUrl.includes('/auth/register') ||

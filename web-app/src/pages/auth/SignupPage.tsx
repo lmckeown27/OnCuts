@@ -166,7 +166,14 @@ export default function SignupPage() {
       // Redirect to email verification page
       navigate('/web/verify-email');
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Signup failed. Please try again.';
+      const statusCode = err.response?.status;
+      let errorMessage: string;
+      
+      if (statusCode === 429 || err.isRateLimitError) {
+        errorMessage = 'Rate limit reached. Please wait a moment and reload the page.';
+      } else {
+        errorMessage = err.response?.data?.message || err.message || 'Signup failed. Please try again.';
+      }
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
