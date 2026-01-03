@@ -220,13 +220,20 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Auth endpoints: Stricter limits to prevent brute force (20 per 15 min)
+// Auth endpoints: Stricter limits to prevent brute force
+// Login/register: 30 per 15 min (allows for typos and multiple attempts)
+// /me endpoint is excluded as it's called frequently on page loads
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 auth attempts per window
+  max: 30, // 30 auth attempts per window (increased from 20)
   message: { error: 'Too many authentication attempts, please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for /me endpoint (called on every page load)
+    // These are authenticated requests, not login attempts
+    return req.path === '/me' && req.method === 'GET';
+  },
 });
 
 // Apply rate limiters
