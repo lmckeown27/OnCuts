@@ -30,7 +30,7 @@ const router: Router = express.Router();
 router.get(
   '/',
   [
-    query('campusId').optional().isInt(),
+    query('campusId').optional().isUUID(),
     query('minRating').optional().isFloat({ min: 0, max: 5 }),
     query('maxPrice').optional().isInt(),
     query('specialty').optional().isString(),
