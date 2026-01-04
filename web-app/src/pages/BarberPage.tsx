@@ -271,7 +271,7 @@ export default function BarberPage() {
   }, []);
 
   return (
-    <PullToRefresh onRefresh={handlePullToRefresh} className="bg-gray-50" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
