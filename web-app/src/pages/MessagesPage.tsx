@@ -922,7 +922,7 @@ export default function MessagesPage() {
       <div className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Dashboard + Switch button */}
+            {/* Left section - Dashboard button only */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Dashboard Button */}
               <button
@@ -936,30 +936,6 @@ export default function MessagesPage() {
                 <LayoutDashboard className="w-4 h-4 text-gray-600" />
                 <span className="hidden lg:inline text-sm font-medium text-gray-700">Dashboard</span>
               </button>
-              
-              {/* Switch View Button */}
-              {isBarberView ? (
-                <button
-                  onClick={() => navigate(`${platformPrefix}/consumer`)}
-                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                  title="Switch to Consumer view"
-                >
-                  <Calendar className="w-4 h-4 text-primary-600" />
-                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Consumer</span>
-                </button>
-              ) : (
-                // Only show "Switch to Barber" if user is a barber or campus manager
-                (user?.user_type === 'barber' || user?.user_type === 'campus_manager' || user?.has_barber_profile) ? (
-                  <button
-                    onClick={() => navigate(`${platformPrefix}/barber`)}
-                    className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
-                    title="Switch to Barber view"
-                  >
-                    <Scissors className="w-4 h-4 text-primary-600" />
-                    <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
-                  </button>
-                ) : null
-              )}
             </div>
             
             {/* Center section - Logo always centered */}
@@ -985,6 +961,50 @@ export default function MessagesPage() {
 
                 {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
+                    {/* Switch View - matches BarberPage dropdown */}
+                    {isBarberView ? (
+                      <button
+                        onClick={() => {
+                          navigate(`${platformPrefix}/consumer`);
+                          setShowProfileDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50 flex items-center gap-3"
+                      >
+                        <Calendar className="w-4 h-4 text-primary-500" />
+                        Switch to Consumer
+                      </button>
+                    ) : (
+                      (user?.user_type === 'barber' || user?.user_type === 'campus_manager' || user?.has_barber_profile) && (
+                        <button
+                          onClick={() => {
+                            navigate(`${platformPrefix}/barber`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50 flex items-center gap-3"
+                        >
+                          <Scissors className="w-4 h-4 text-primary-500" />
+                          Switch to Barber
+                        </button>
+                      )
+                    )}
+                    <div className="border-t border-gray-200 my-1"></div>
+                    
+                    {/* Barber-specific options */}
+                    {isBarberView && (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate(`${platformPrefix}/barber`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-gray-500" />
+                          Dashboard
+                        </button>
+                      </>
+                    )}
+                    
                     {/* Notifications */}
                     <button
                       onClick={() => {
@@ -1001,6 +1021,7 @@ export default function MessagesPage() {
                         </span>
                       )}
                     </button>
+                    
                     <div className="border-t border-gray-200 my-1"></div>
                     
                     {(user?.user_type === 'admin' || user?.is_admin) && (
