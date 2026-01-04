@@ -295,11 +295,11 @@ export default function AdminCampusesPage() {
                 {/* Barber Actions Popup */}
                 {selectedBarber && (
                   <div 
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                    className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
                     onClick={() => setSelectedBarber(null)}
                   >
                     <div 
-                      className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in"
+                      className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] sm:max-h-[90vh] overflow-hidden overflow-y-auto animate-fade-in"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* Header */}

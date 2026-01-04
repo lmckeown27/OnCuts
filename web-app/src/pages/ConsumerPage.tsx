@@ -1251,10 +1251,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         <div 
           className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
-          style={{ height: '100dvh' }}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[70dvh] sm:max-h-[70vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[85dvh] sm:max-h-[70vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">

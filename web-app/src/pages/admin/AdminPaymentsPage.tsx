@@ -358,7 +358,7 @@ export default function AdminPaymentsPage() {
                     <>
                       {/* Mobile Modal */}
                       <div 
-                        className={`md:hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
+                        className={`md:hidden fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
                           servicePopupVisible ? 'opacity-100' : 'opacity-0'
                         }`}
                         onClick={(e) => {
@@ -367,7 +367,7 @@ export default function AdminPaymentsPage() {
                       >
                         <div 
                           ref={serviceModalContentRef}
-                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden transition-all duration-200 ${
+                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs max-h-[85dvh] overflow-hidden overflow-y-auto transition-all duration-200 ${
                             servicePopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
                           }`}
                         >
@@ -445,7 +445,7 @@ export default function AdminPaymentsPage() {
                     <>
                       {/* Mobile Modal */}
                       <div 
-                        className={`md:hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
+                        className={`md:hidden fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
                           timePopupVisible ? 'opacity-100' : 'opacity-0'
                         }`}
                         onClick={(e) => {
@@ -454,7 +454,7 @@ export default function AdminPaymentsPage() {
                       >
                         <div 
                           ref={timeModalContentRef}
-                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden transition-all duration-200 ${
+                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs max-h-[85dvh] overflow-hidden overflow-y-auto transition-all duration-200 ${
                             timePopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
                           }`}
                         >
@@ -532,7 +532,7 @@ export default function AdminPaymentsPage() {
                     <>
                       {/* Mobile Modal */}
                       <div 
-                        className={`md:hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
+                        className={`md:hidden fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-6 transition-opacity duration-200 ${
                           campusPopupVisible ? 'opacity-100' : 'opacity-0'
                         }`}
                         onClick={(e) => {
@@ -541,7 +541,7 @@ export default function AdminPaymentsPage() {
                       >
                         <div 
                           ref={campusModalContentRef}
-                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden transition-all duration-200 ${
+                          className={`bg-white rounded-2xl shadow-2xl w-full max-w-xs max-h-[85dvh] overflow-hidden overflow-y-auto transition-all duration-200 ${
                             campusPopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
                           }`}
                         >

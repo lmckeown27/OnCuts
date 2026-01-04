@@ -823,9 +823,9 @@ export default function ConsumerBookingStatusPage() {
 
       {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+        <div className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
           <form 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" 
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto p-6" 
             onClick={e => e.stopPropagation()}
             onSubmit={(e) => {
               e.preventDefault();
@@ -910,8 +910,8 @@ export default function ConsumerBookingStatusPage() {
 
       {/* Cancel Confirmation Modal */}
       {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCancelConfirm(false)}>
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCancelConfirm(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-red-500" />
               Cancel Booking
@@ -961,11 +961,11 @@ export default function ConsumerBookingStatusPage() {
       {/* Notifications Modal */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowNotifications(false)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[85dvh] sm:max-h-[80vh] overflow-hidden transform transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

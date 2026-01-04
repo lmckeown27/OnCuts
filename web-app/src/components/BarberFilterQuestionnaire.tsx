@@ -240,13 +240,13 @@ export default function BarberFilterQuestionnaire({
       {/* Popup Modal */}
       {isOpen && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
             isVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closePopup}
         >
           <div 
-            className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden transition-all duration-150 ease-out ${
+            className={`bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85dvh] sm:max-h-[85vh] overflow-hidden transition-all duration-150 ease-out ${
               isVisible 
                 ? 'opacity-100 scale-100 translate-y-0' 
                 : 'opacity-0 scale-95 translate-y-4'

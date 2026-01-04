@@ -380,11 +380,11 @@ export default function AdminFraudDetectionPage() {
       {/* Flag Detail Modal */}
       {selectedFlag && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedFlag(null)}
         >
           <Card 
-            className="max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="max-w-2xl w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto"
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <div className="p-6">

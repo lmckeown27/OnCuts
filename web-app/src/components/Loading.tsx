@@ -22,7 +22,7 @@ export default function Loading({ fullScreen = false, size = 'md', text }: Loadi
   
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white/80 z-50">
+      <div className="fixed inset-0 min-h-[100dvh] flex items-center justify-center bg-white/80 z-50">
         {content}
       </div>
     );

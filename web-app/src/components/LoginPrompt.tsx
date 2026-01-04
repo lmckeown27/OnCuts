@@ -88,14 +88,13 @@ export default function LoginPrompt({
 
   return (
     <div
-      className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-6 transition-all duration-150 ease-out ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
-      style={{ height: '100dvh' }}
       onClick={handleClose}
     >
       <div
-        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}

@@ -241,11 +241,11 @@ export default function MobileAppDownloadPage() {
       {/* iOS Instructions Bottom Sheet */}
       {showIOSInstructions && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 animate-fade-in"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 animate-fade-in"
           onClick={() => setShowIOSInstructions(false)}
         >
           <div
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-slide-up safe-area-inset-bottom"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto animate-slide-up safe-area-inset-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
@@ -308,11 +308,11 @@ export default function MobileAppDownloadPage() {
       {/* Android Instructions Bottom Sheet */}
       {showAndroidInstructions && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 animate-fade-in"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 animate-fade-in"
           onClick={() => setShowAndroidInstructions(false)}
         >
           <div
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-slide-up safe-area-inset-bottom"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto animate-slide-up safe-area-inset-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
