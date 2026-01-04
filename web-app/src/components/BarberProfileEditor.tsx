@@ -140,11 +140,23 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[ProfileEditor] File input changed');
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log('[ProfileEditor] No file selected');
+      return;
+    }
+
+    console.log('[ProfileEditor] File selected:', { 
+      name: file.name, 
+      size: file.size, 
+      type: file.type,
+      lastModified: file.lastModified 
+    });
 
     // Validate file type - must be an image
     if (!file.type.startsWith('image/')) {
+      console.warn('[ProfileEditor] File rejected: not an image type:', file.type);
       toast.error('Please select an image file');
       return;
     }
@@ -152,21 +164,36 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     // Validate specific allowed formats
     const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedFormats.includes(file.type)) {
+      console.warn('[ProfileEditor] File rejected: unsupported format:', file.type);
       toast.error('Only JPG, PNG, and WebP images are allowed. Please convert your image and try again.');
       return;
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
+      console.warn('[ProfileEditor] File rejected: too large:', file.size);
       toast.error('Image must be less than 5MB');
       return;
     }
 
+    console.log('[ProfileEditor] File validation passed, proceeding with upload');
+
     try {
       setIsUploading(true);
       
+      const uploadUserId = userId || barber?.user_id || '';
+      console.log('[ProfileEditor] Starting upload for userId:', uploadUserId);
+      console.log('[ProfileEditor] File details:', { name: file.name, size: file.size, type: file.type });
+      
+      if (!uploadUserId) {
+        console.error('[ProfileEditor] No userId available for upload');
+        toast.error('Unable to upload: User ID not found. Please refresh the page.');
+        return;
+      }
+      
       // Upload the file
-      const response = await userService.uploadProfilePhoto(userId || barber?.user_id || '', file);
+      const response = await userService.uploadProfilePhoto(uploadUserId, file);
+      console.log('[ProfileEditor] Upload response:', response);
       
       if (response.url) {
         setProfilePhoto(response.url);
@@ -180,10 +207,15 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         }
         
         toast.success('Photo uploaded successfully!');
+      } else {
+        console.error('[ProfileEditor] No URL in response:', response);
+        toast.error('Upload completed but no image URL received');
       }
     } catch (error: any) {
-      console.error('Failed to upload photo:', error);
-      toast.error('Failed to upload photo');
+      console.error('[ProfileEditor] Failed to upload photo:', error);
+      console.error('[ProfileEditor] Error details:', error.response?.data || error.message);
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to upload photo';
+      toast.error(errorMessage);
     } finally {
       setIsUploading(false);
       // Reset the input so the same file can be selected again
