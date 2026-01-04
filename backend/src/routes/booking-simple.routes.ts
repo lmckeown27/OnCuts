@@ -865,6 +865,9 @@ router.get('/', authenticate, async (req, res, next) => {
         b."createdAt",
         b."paymentRequestedAt",
         b."paidAt",
+        b."reviewRating",
+        b."reviewComment",
+        b."reviewedAt",
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
         consumer."avatarUrl" as consumer_avatar,
@@ -921,6 +924,12 @@ router.get('/', authenticate, async (req, res, next) => {
           // Payment tracking fields
           paymentRequestedAt: row.paymentRequestedAt || null,
           paidAt: row.paidAt || null,
+          // Review data (from consumer after service completion)
+          review: row.reviewRating ? {
+            rating: row.reviewRating,
+            comment: row.reviewComment || null,
+            reviewedAt: row.reviewedAt,
+          } : null,
           // Full barber name for display
           barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
           barberAvatar: row.barber_avatar || null,
