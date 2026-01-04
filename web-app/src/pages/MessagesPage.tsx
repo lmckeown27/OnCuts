@@ -920,7 +920,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
       {/* Main Header - Same as BarberPage/ConsumerPage */}
       <div className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
