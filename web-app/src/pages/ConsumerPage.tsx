@@ -1138,6 +1138,14 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     {barber.distance_miles !== undefined && barber.distance_miles !== null && (
                       <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
                     )}
+                    {/* Star Rating - only show if barber has reviews */}
+                    {barber.average_rating > 0 && barber.total_reviews > 0 && (
+                      <span className="flex items-center gap-1 text-sm">
+                        <span className="text-yellow-500">★</span>
+                        <span className="text-gray-700 font-medium">{barber.average_rating.toFixed(1)}</span>
+                        <span className="text-gray-400">({barber.total_reviews})</span>
+                      </span>
+                    )}
                   </div>
                   {barber.instagram_handle && (
                     <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
@@ -1196,6 +1204,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   <div className="flex items-center gap-1 text-xs sm:text-sm text-primary-600 font-medium mt-1 mb-1">
                     <MapPin className="w-3 h-3" />
                     {barber.distance_miles} mi
+                  </div>
+                )}
+
+                {/* Star Rating - only show if barber has reviews */}
+                {barber.average_rating > 0 && barber.total_reviews > 0 && (
+                  <div className="flex items-center gap-1 text-xs sm:text-sm mt-1 mb-1">
+                    <span className="text-yellow-500">★</span>
+                    <span className="text-gray-700 font-medium">{barber.average_rating.toFixed(1)}</span>
+                    <span className="text-gray-400">({barber.total_reviews})</span>
                   </div>
                 )}
 
