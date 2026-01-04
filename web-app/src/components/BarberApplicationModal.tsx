@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
+import campusService from '../services/campus.service';
+import type { Campus } from '../types';
 import toast from 'react-hot-toast';
 
 interface BarberApplicationModalProps {
@@ -12,6 +14,7 @@ interface BarberApplicationModalProps {
 }
 
 interface ApplicationForm {
+  campusId: string;
   yearsExperience: string;
   hasLicense: boolean;
   licenseNumber: string;
@@ -33,6 +36,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [shouldRender, setShouldRender] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [successPopupVisible, setSuccessPopupVisible] = useState(false);
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [loadingCampuses, setLoadingCampuses] = useState(true);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -67,7 +72,28 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setTimeout(onClose, 150);
   };
 
+  // Load campuses on mount
+  useEffect(() => {
+    const loadCampuses = async () => {
+      try {
+        setLoadingCampuses(true);
+        const campusList = await campusService.getCampuses();
+        setCampuses(campusList);
+      } catch (error) {
+        console.error('Failed to load campuses:', error);
+        toast.error('Failed to load campuses');
+      } finally {
+        setLoadingCampuses(false);
+      }
+    };
+    
+    if (isOpen) {
+      loadCampuses();
+    }
+  }, [isOpen]);
+
   const [form, setForm] = useState<ApplicationForm>({
+    campusId: '',
     yearsExperience: '',
     hasLicense: false,
     licenseNumber: '',
@@ -95,6 +121,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     
     try {
       const result = await barberApplicationService.submit({
+        campusId: form.campusId,
         yearsExperience: form.yearsExperience,
         hasLicense: form.hasLicense,
         licenseNumber: form.licenseNumber || undefined,
@@ -134,7 +161,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     }
   };
 
-  const canProceedStep1 = form.yearsExperience && form.specialties.length > 0;
+  const canProceedStep1 = form.campusId && form.yearsExperience && form.specialties.length > 0;
   const canProceedStep2 = form.whyBeBarber.trim().length > 0 && form.availableHours;
   const canSubmit = canProceedStep1 && canProceedStep2;
 
@@ -212,8 +239,38 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
           {step === 1 ? (
-            /* Step 1: Experience & Skills */
+            /* Step 1: Campus Selection, Experience & Skills */
             <div className="space-y-6">
+              {/* Campus Selection - First Question */}
+              <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <MapPin className="w-4 h-4 inline mr-2 text-primary-600" />
+                  Which campus do you want to cut at? *
+                </label>
+                <p className="text-xs text-gray-600 mb-3">
+                  Your application will be sent to the campus manager at this location.
+                </p>
+                {loadingCampuses ? (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <span className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                    Loading campuses...
+                  </div>
+                ) : (
+                  <select
+                    value={form.campusId}
+                    onChange={(e) => setForm({ ...form, campusId: e.target.value })}
+                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                  >
+                    <option value="">Select your campus</option>
+                    {campuses.map((campus) => (
+                      <option key={campus.id} value={campus.id}>
+                        {campus.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
               {/* Experience and Tools - Side by side */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
@@ -395,6 +452,14 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
                     <p className="font-medium">{user?.email}</p>
                   </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
+                  <p className="font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary-600" />
+                    {campuses.find(c => c.id === form.campusId)?.name || 'Not selected'}
+                  </p>
                 </div>
 
                 <div className="border-t pt-4">

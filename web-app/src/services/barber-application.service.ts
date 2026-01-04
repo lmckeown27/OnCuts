@@ -1,6 +1,7 @@
 import api from './api.service';
 
 export interface BarberApplicationForm {
+  campusId: string;
   yearsExperience: string;
   hasLicense: boolean;
   licenseNumber?: string;

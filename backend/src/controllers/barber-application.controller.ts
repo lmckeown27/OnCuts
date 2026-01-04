@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification } from '../services/email.service';
 
 interface BarberApplicationBody {
+  campusId: string;
   yearsExperience: string;
   hasLicense: boolean;
   licenseNumber?: string;
@@ -31,6 +32,7 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     }
 
     const {
+      campusId,
       yearsExperience,
       hasLicense,
       licenseNumber,
@@ -44,13 +46,19 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     }: BarberApplicationBody = req.body;
 
     // Validate required fields
-    if (!yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
-      throw new ApiError(400, 'Missing required fields: yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
+      throw new ApiError(400, 'Missing required fields: campusId, yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
-    // Get user's campus ID
+    // Verify the campus exists
+    const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId]);
+    if (campusCheck.rows.length === 0) {
+      throw new ApiError(400, 'Invalid campus selected');
+    }
+
+    // Get user's role
     const userResult = await pool.query(
-      'SELECT "campusId", role FROM users WHERE id = $1',
+      'SELECT role FROM users WHERE id = $1',
       [userId]
     );
 
@@ -59,6 +67,8 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     }
 
     const user = userResult.rows[0];
+    // Use the campus selected in the application form
+    user.campusId = campusId;
 
     // Check if user is already a barber
     if (user.role === 'BARBER') {
