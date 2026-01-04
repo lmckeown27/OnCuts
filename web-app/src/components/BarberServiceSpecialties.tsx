@@ -277,23 +277,33 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
             return (
               <div
                 key={service.serviceId}
+                onClick={() => {
+                  // Only allow clicking entire card to SELECT (not deselect)
+                  if (!service.isOffered && !saving) {
+                    toggleService(service.serviceId);
+                  }
+                }}
                 className={`p-4 rounded-lg border-2 transition-all ${
                   service.isOffered
                     ? 'border-primary-400 bg-primary-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                 } ${saving ? 'opacity-70' : ''}`}
               >
                 <div className="flex items-start justify-between gap-4">
-                  {/* Service Info - Clickable to toggle */}
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={() => toggleService(service.serviceId)}
-                  >
+                  {/* Service Info */}
+                  <div className="flex-1">
                     <div className="flex items-center gap-3">
+                      {/* Checkbox - only this can deselect when service is offered */}
                       <div
+                        onClick={(e) => {
+                          if (service.isOffered && !saving) {
+                            e.stopPropagation();
+                            toggleService(service.serviceId);
+                          }
+                        }}
                         className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                           service.isOffered
-                            ? 'bg-primary-400 border-primary-400'
+                            ? 'bg-primary-400 border-primary-400 cursor-pointer hover:bg-primary-500'
                             : 'border-gray-300'
                         }`}
                       >
@@ -360,10 +370,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         )}
                       </div>
                     ) : (
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => toggleService(service.serviceId)}
-                      >
+                      <div>
                         <p className="text-xs text-primary-500">
                           Click to add
                         </p>
