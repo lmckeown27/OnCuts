@@ -165,7 +165,8 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
     }
 
     // Validate specific allowed formats
-    const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
+    // Note: 'image/jpg' is not standard but some browsers may report it
+    const allowedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedFormats.includes(file.type)) {
       toast.error('Only JPG, PNG, and WebP images are allowed. Please convert your image and try again.');
       return;
