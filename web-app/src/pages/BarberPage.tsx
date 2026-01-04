@@ -147,6 +147,8 @@ export default function BarberPage() {
   
   // Generic modal animation helpers
   const openModal = (setShow: (v: boolean) => void, setVisible: (v: boolean) => void) => {
+    // Scroll to top first to prevent white space issues on mobile
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setShow(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -244,6 +246,7 @@ export default function BarberPage() {
   const openBookingDetails = (booking: any) => {
     console.log('🔍 Opening booking details for:', booking.id);
     setSelectedBookingForDetails(booking);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setShowBookingDetailsModal(true);
   };
 
@@ -369,6 +372,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'instant' });
                       setShowNotifications(true);
                       setShowProfileDropdown(false);
                     }}
@@ -433,7 +437,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onWalkInClick={() => setShowWalkInPayment(true)} refreshKey={bookingsRefreshKey} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onWalkInClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowWalkInPayment(true); }} refreshKey={bookingsRefreshKey} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -878,6 +882,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
   // Day modal open/close handlers with animation
   const openDayModal = (date: Date) => {
     setSelectedDate(date);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDayModal(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1768,6 +1773,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                     }`}
                     onClick={() => {
                       setSelectedBooking(booking);
+                      window.scrollTo({ top: 0, behavior: 'instant' });
                       setShowBookingDetails(true);
                     }}
                   >

@@ -149,14 +149,22 @@ export default function ConsumerPage() {
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
   
+  // Helper to scroll to top before opening modals (prevents white space on mobile)
+  const scrollToTopAndOpen = (setShow: (v: boolean) => void, setVisible?: (v: boolean) => void) => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShow(true);
+    if (setVisible) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setVisible(true);
+        });
+      });
+    }
+  };
+  
   // Profile editor open/close with animation
   const openProfileEditor = () => {
-    setShowProfileEditor(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsProfileEditorVisible(true);
-      });
-    });
+    scrollToTopAndOpen(setShowProfileEditor, setIsProfileEditorVisible);
   };
   
   const closeProfileEditor = () => {
@@ -251,12 +259,7 @@ export default function ConsumerPage() {
 
   // Pending application popup handlers
   const openPendingPopup = () => {
-    setShowPendingPopup(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsPendingPopupVisible(true);
-      });
-    });
+    scrollToTopAndOpen(setShowPendingPopup, setIsPendingPopupVisible);
   };
 
   const closePendingPopup = () => {
@@ -268,12 +271,7 @@ export default function ConsumerPage() {
 
   // Rejected application popup handlers
   const openRejectedPopup = () => {
-    setShowRejectedPopup(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setIsRejectedPopupVisible(true);
-      });
-    });
+    scrollToTopAndOpen(setShowRejectedPopup, setIsRejectedPopupVisible);
   };
 
   const closeRejectedPopup = () => {
@@ -287,7 +285,7 @@ export default function ConsumerPage() {
   const handleBecomeBarberClick = () => {
     // Check if user is authenticated first
     if (!user) {
-      setShowLoginPrompt(true);
+      scrollToTopAndOpen(setShowLoginPrompt);
       return;
     }
     
@@ -296,7 +294,7 @@ export default function ConsumerPage() {
     } else if (hasRejectedApplication) {
       openRejectedPopup();
     } else {
-      setShowBarberApplication(true);
+      scrollToTopAndOpen(setShowBarberApplication);
     }
   };
   
@@ -467,6 +465,7 @@ export default function ConsumerPage() {
                         {/* Notifications */}
                         <button
                           onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'instant' });
                             setShowNotifications(true);
                             setShowProfileDropdown(false);
                           }}
@@ -743,6 +742,7 @@ export default function ConsumerPage() {
                           serviceName: data.serviceName || 'Service',
                           amount: data.amount || 0,
                         });
+                        window.scrollTo({ top: 0, behavior: 'instant' });
                         setShowPaymentModal(true);
                         setShowNotifications(false);
                       } else {
@@ -921,7 +921,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const handleScheduleClick = (barber: Barber) => {
     if (!isAuthenticated) {
       setLoginPromptAction('schedule');
-      setShowLoginPrompt(true);
+      scrollToTopAndOpen(setShowLoginPrompt);
       return;
     }
     // Navigate to booking

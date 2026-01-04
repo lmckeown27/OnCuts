@@ -261,6 +261,7 @@ export default function MessagesPage() {
   const openDeleteConfirm = (conv: ConversationWithDetails, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent selecting the conversation
     setDeletingConversation(conv);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDeleteConfirm(true);
   };
 
@@ -381,6 +382,7 @@ export default function MessagesPage() {
       if (conv) {
         setSelectedConversation(conv);
         fetchMessages(conversationId);
+        window.scrollTo({ top: 0, behavior: 'instant' });
         setShowMobileChat(true);
       }
     }
@@ -440,6 +442,7 @@ export default function MessagesPage() {
   const handleSelectConversation = (conv: ConversationWithDetails) => {
     setSelectedConversation(conv);
     fetchMessages(conv.id);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setShowMobileChat(true);
     const messagesPath = isBarberView ? 'barber/messages' : 'consumer/messages';
     navigate(`${platformPrefix}/${messagesPath}/${conv.id}`, { replace: true });
@@ -726,7 +729,7 @@ export default function MessagesPage() {
 
             {/* Service Details Button - Mobile Only (panel is visible on desktop) */}
             <button 
-              onClick={() => setShowServiceDetails(true)}
+              onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowServiceDetails(true); }}
               className="md:hidden p-2 hover:bg-primary-50 rounded-lg transition-colors"
               title="View Service Details"
             >
@@ -751,7 +754,7 @@ export default function MessagesPage() {
             <>
               {/* Mobile - Interactive button to open service details modal */}
               <button 
-                onClick={() => setShowServiceDetails(true)}
+                onClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowServiceDetails(true); }}
                 className="md:hidden mt-3 w-full p-3 bg-primary-50 border border-primary-200 rounded-lg hover:bg-primary-100 transition-colors text-left"
               >
                 <div className="flex items-center justify-between text-sm">
@@ -1008,6 +1011,7 @@ export default function MessagesPage() {
                     {/* Notifications */}
                     <button
                       onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'instant' });
                         setShowNotifications(true);
                         setShowProfileDropdown(false);
                       }}
