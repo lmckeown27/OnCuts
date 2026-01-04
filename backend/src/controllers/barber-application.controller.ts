@@ -304,10 +304,22 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       const specialties = fullApp.rows[0]?.specialties || [];
 
       // Create barber profile with specialties
-      // Note: id must be explicitly provided as table lacks DEFAULT uuid generator
+      // Note: Must include ALL required NOT NULL columns from barbers table
       await pool.query(
-        `INSERT INTO barbers (id, "userId", specialties, "isActive", "createdAt", "updatedAt", "campusId")
-         VALUES (gen_random_uuid(), $1, $2, true, NOW(), NOW(), $3)
+        `INSERT INTO barbers (
+           id, "userId", "campusId", specialties, "isActive", "weeklySchedule",
+           "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+           "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+           "pricingMultiplier", "isCampusManager", "isOnboarded",
+           "createdAt", "updatedAt"
+         )
+         VALUES (
+           gen_random_uuid(), $1, $2, $3, true, '{}',
+           0, 0,
+           0, 0, 0, 0,
+           1.00, false, false,
+           NOW(), NOW()
+         )
          ON CONFLICT ("userId") DO UPDATE SET 
            specialties = EXCLUDED.specialties,
            "isActive" = true,
@@ -315,8 +327,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
            "updatedAt" = NOW()`,
         [
           updatedApplication.user_id,
-          specialties,  // Pass array directly, pg driver handles TEXT[] conversion
-          updatedApplication.campus_id
+          updatedApplication.campus_id,
+          specialties  // Pass array directly, pg driver handles TEXT[] conversion
         ]
       );
 
