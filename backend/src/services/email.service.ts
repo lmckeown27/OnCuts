@@ -1358,6 +1358,284 @@ function generateBookingCompletedHtml(
 }
 
 /**
+ * Barber Application Email Details Interface
+ */
+interface BarberApplicationEmailDetails {
+  applicantName: string;
+  applicantEmail: string;
+  campusName: string;
+  yearsExperience: string;
+  hasLicense: boolean;
+  licenseNumber?: string;
+  specialties: string[];
+  hasOwnTools: boolean;
+  availableHours: string;
+  whyBeBarber: string;
+  portfolioDescription?: string;
+  socialMedia?: string;
+  additionalNotes?: string;
+  applicationId: string;
+  submittedAt: string;
+}
+
+/**
+ * Send Barber Application Notification to Campus Manager
+ * 
+ * Sends an email to the campus manager when a new barber application is submitted.
+ * Includes the full application details and incentive to schedule an interview.
+ * 
+ * @param campusManagerEmail - Campus manager's email address
+ * @param campusManagerName - Campus manager's name
+ * @param details - Full barber application details
+ */
+export async function sendBarberApplicationNotification(
+  campusManagerEmail: string,
+  campusManagerName: string,
+  details: BarberApplicationEmailDetails
+): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping barber application notification for ${details.applicantName}`);
+    return;
+  }
+
+  try {
+    const transporter = createTransporter();
+    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: campusManagerEmail,
+      subject: `🎉 New Barber Application: ${details.applicantName} wants to join ${details.campusName}!`,
+      text: generateBarberApplicationText(campusManagerName, details),
+      html: generateBarberApplicationHtml(campusManagerName, details, frontendUrl)
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Barber application notification sent to campus manager: ${campusManagerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send barber application notification to ${campusManagerEmail}:`, error.message);
+    // Don't throw - application notification is non-critical
+  }
+}
+
+/**
+ * Generate Barber Application Plain Text Email
+ */
+function generateBarberApplicationText(
+  campusManagerName: string,
+  details: BarberApplicationEmailDetails
+): string {
+  const firstName = campusManagerName.split(' ')[0];
+  
+  return `
+Hi ${firstName}!
+
+Great news! You have a new barber application on CampusCut.
+
+APPLICANT INFORMATION
+---------------------
+Name: ${details.applicantName}
+Email: ${details.applicantEmail}
+Campus: ${details.campusName}
+Submitted: ${details.submittedAt}
+
+APPLICATION DETAILS
+-------------------
+Years of Experience: ${details.yearsExperience}
+Licensed: ${details.hasLicense ? 'Yes' : 'No'}${details.licenseNumber ? ` (License #: ${details.licenseNumber})` : ''}
+Has Own Tools: ${details.hasOwnTools ? 'Yes' : 'No'}
+Available Hours: ${details.availableHours}
+
+Services/Specialties: ${details.specialties.join(', ')}
+
+Why They Want to Be a Barber:
+"${details.whyBeBarber}"
+
+${details.portfolioDescription ? `Portfolio/Experience:\n"${details.portfolioDescription}"\n` : ''}
+${details.socialMedia ? `Social Media: ${details.socialMedia}\n` : ''}
+${details.additionalNotes ? `Additional Notes:\n"${details.additionalNotes}"\n` : ''}
+
+ACTION REQUIRED
+---------------
+Review this application and consider scheduling an interview with ${details.applicantName.split(' ')[0]}.
+
+To schedule an interview, simply reply to this email or send an email to:
+${details.applicantEmail}
+
+Suggested interview topics:
+- Verify their experience and skills
+- Discuss availability and commitment
+- Review any portfolio or previous work
+- Explain CampusCut policies and expectations
+
+Application Reference: ${details.applicationId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut - Campus Haircuts Made Easy
+`.trim();
+}
+
+/**
+ * Generate Barber Application HTML Email
+ */
+function generateBarberApplicationHtml(
+  campusManagerName: string,
+  details: BarberApplicationEmailDetails,
+  frontendUrl: string
+): string {
+  const firstName = campusManagerName.split(' ')[0];
+  const applicantFirstName = details.applicantName.split(' ')[0];
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 600px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">✂️</span>
+      <h1 style="color: white; margin: 10px 0 5px 0; font-size: 24px;">New Barber Application!</h1>
+      <p style="color: #4ade80; margin: 0; font-size: 14px;">Someone wants to join your campus</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+        Great news! <strong>${details.applicantName}</strong> has submitted an application to become a barber at <strong>${details.campusName}</strong>.
+      </p>
+      
+      <!-- Applicant Card -->
+      <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+          <div style="width: 50px; height: 50px; background-color: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">
+            ${details.applicantName.charAt(0).toUpperCase()}
+          </div>
+          <div style="margin-left: 15px;">
+            <h3 style="color: #166534; margin: 0; font-size: 18px;">${details.applicantName}</h3>
+            <p style="color: #15803d; margin: 5px 0 0 0; font-size: 14px;">
+              <a href="mailto:${details.applicantEmail}" style="color: #15803d;">${details.applicantEmail}</a>
+            </p>
+          </div>
+        </div>
+        <p style="color: #6b7280; font-size: 12px; margin: 0;">Submitted ${details.submittedAt}</p>
+      </div>
+      
+      <!-- Application Details -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 25px; margin: 20px 0;">
+        <h3 style="color: #1f2937; margin: 0 0 20px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">📋 Application Details</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; width: 40%;">Years of Experience</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600;">${details.yearsExperience}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Licensed Barber</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasLicense ? '#22c55e' : '#6b7280'}; font-weight: 600;">
+              ${details.hasLicense ? '✓ Yes' : 'No'}${details.licenseNumber ? ` (#${details.licenseNumber})` : ''}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Has Own Tools</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasOwnTools ? '#22c55e' : '#6b7280'}; font-weight: 600;">
+              ${details.hasOwnTools ? '✓ Yes' : 'No'}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Available Hours</td>
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600;">${details.availableHours}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- Specialties -->
+      <div style="margin: 20px 0;">
+        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">Services/Specialties:</h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${details.specialties.map(s => `<span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">${s}</span>`).join('')}
+        </div>
+      </div>
+      
+      <!-- Why They Want to Be a Barber -->
+      <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">💬 Why They Want to Be a CampusCut Barber:</h4>
+        <p style="color: #78350f; margin: 0; font-style: italic; line-height: 1.6;">"${details.whyBeBarber}"</p>
+      </div>
+      
+      ${details.portfolioDescription ? `
+      <div style="background-color: #f3f4f6; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">📸 Portfolio/Experience:</h4>
+        <p style="color: #4b5563; margin: 0; line-height: 1.6;">"${details.portfolioDescription}"</p>
+      </div>
+      ` : ''}
+      
+      ${details.socialMedia ? `
+      <div style="margin: 15px 0;">
+        <p style="color: #6b7280; margin: 0; font-size: 14px;">
+          <strong>Social Media:</strong> 
+          <a href="${details.socialMedia.startsWith('http') ? details.socialMedia : 'https://' + details.socialMedia}" style="color: #2563eb;">${details.socialMedia}</a>
+        </p>
+      </div>
+      ` : ''}
+      
+      ${details.additionalNotes ? `
+      <div style="background-color: #f3f4f6; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">📝 Additional Notes:</h4>
+        <p style="color: #4b5563; margin: 0; line-height: 1.6;">"${details.additionalNotes}"</p>
+      </div>
+      ` : ''}
+      
+      <!-- Action Required -->
+      <div style="background-color: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+        <h3 style="color: #166534; margin: 0 0 15px 0;">🎯 Ready to Schedule an Interview?</h3>
+        <p style="color: #15803d; margin: 0 0 20px 0; font-size: 14px; line-height: 1.6;">
+          ${applicantFirstName} is excited to join your campus! Consider reaching out to schedule a quick interview to verify their skills and discuss expectations.
+        </p>
+        <a href="mailto:${details.applicantEmail}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${encodeURIComponent(applicantFirstName)}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%0A%0ABest%2C%0A${encodeURIComponent(firstName)}" 
+           style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          📧 Email ${applicantFirstName} for Interview
+        </a>
+      </div>
+      
+      <!-- Interview Tips -->
+      <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px;">💡 Interview Tips:</h4>
+        <ul style="color: #4b5563; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+          <li>Ask about specific haircut styles they're comfortable with</li>
+          <li>Discuss their availability and commitment level</li>
+          <li>Request to see any portfolio photos or previous work</li>
+          <li>Explain CampusCut policies, pricing, and expectations</li>
+          <li>Gauge their professionalism and communication skills</li>
+        </ul>
+      </div>
+      
+      <!-- Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Application Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.applicationId.slice(0, 8).toUpperCase()}</p>
+      </div>
+      
+      <!-- Dashboard Link -->
+      <p style="text-align: center; margin: 25px 0;">
+        <a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #1f2937; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+          View in Dashboard
+        </a>
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+}
+
+/**
  * Booking Cancellation Email Details Interface
  */
 interface BookingCancellationEmailDetails {

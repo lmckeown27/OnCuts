@@ -3,6 +3,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { sendBarberApplicationNotification } from '../services/email.service';
 
 interface BarberApplicationBody {
   yearsExperience: string;
@@ -103,6 +104,71 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     const application = result.rows[0];
 
     logger.info(`New barber application submitted: ${application.id} by user ${userId}`);
+
+    // Get applicant details and campus manager info for email notification
+    try {
+      const applicantInfo = await pool.query(
+        `SELECT u.first_name, u.last_name, u.email, c.name as campus_name
+         FROM users u
+         LEFT JOIN campuses c ON u."campusId" = c.id
+         WHERE u.id = $1`,
+        [userId]
+      );
+
+      const applicant = applicantInfo.rows[0];
+
+      // Find campus manager(s) for this campus
+      const campusManagers = await pool.query(
+        `SELECT u.id, u.first_name, u.last_name, u.email
+         FROM users u
+         JOIN barbers b ON u.id = b."userId"
+         WHERE b."campusId" = $1 AND b."isCampusManager" = true AND u.role = 'CAMPUS_MANAGER'`,
+        [user.campusId]
+      );
+
+      // Send email to each campus manager
+      for (const manager of campusManagers.rows) {
+        const managerName = `${manager.first_name} ${manager.last_name}`.trim();
+        
+        await sendBarberApplicationNotification(
+          manager.email,
+          managerName,
+          {
+            applicantName: `${applicant.first_name} ${applicant.last_name}`.trim(),
+            applicantEmail: applicant.email,
+            campusName: applicant.campus_name || 'Unknown Campus',
+            yearsExperience,
+            hasLicense: hasLicense || false,
+            licenseNumber: licenseNumber || undefined,
+            specialties,
+            hasOwnTools: hasOwnTools || false,
+            availableHours,
+            whyBeBarber,
+            portfolioDescription: portfolioDescription || undefined,
+            socialMedia: socialMedia || undefined,
+            additionalNotes: additionalNotes || undefined,
+            applicationId: application.id,
+            submittedAt: new Date(application.created_at).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            })
+          }
+        );
+        
+        logger.info(`Barber application notification sent to campus manager: ${manager.email}`);
+      }
+
+      if (campusManagers.rows.length === 0) {
+        logger.warn(`No campus manager found for campus ${user.campusId} to notify about application ${application.id}`);
+      }
+    } catch (emailError: any) {
+      // Don't fail the application submission if email fails
+      logger.error(`Failed to send barber application notification email:`, emailError.message);
+    }
 
     res.status(201).json({
       success: true,
