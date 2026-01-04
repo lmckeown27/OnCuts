@@ -447,7 +447,7 @@ export default function BarberPage() {
           onClick={closeProfileEditor}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out
               ${isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -474,7 +474,7 @@ export default function BarberPage() {
           onClick={closeServiceSpecialties}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95dvh] sm:max-h-[90vh] overflow-y-auto transition-all duration-150 ease-out
               ${isServiceSpecialtiesVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -577,7 +577,7 @@ export default function BarberPage() {
           onClick={() => setShowNotifications(false)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transform transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1476,7 +1476,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
         >
           <div 
             ref={modalRef} 
-            className={`bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden transition-all duration-150 ease-out ${
+            className={`bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transition-all duration-150 ease-out ${
               isDayModalVisible 
                 ? 'opacity-100 scale-100 translate-y-0' 
                 : 'opacity-0 scale-95 translate-y-4'
@@ -1696,7 +1696,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
       onClick={onClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
           isVisible 
             ? 'opacity-100 scale-100 translate-y-0' 
             : 'opacity-0 scale-95 translate-y-4'
@@ -2203,7 +2203,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
       onClick={onClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}

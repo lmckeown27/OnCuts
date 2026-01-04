@@ -1226,7 +1226,7 @@ export default function MessagesPage() {
           onClick={() => setShowServiceDetails(false)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1244,7 +1244,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[60dvh] sm:max-h-[60vh]">
               {/* Service Name & Price */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -1445,7 +1445,7 @@ export default function MessagesPage() {
           onClick={() => setShowNotifications(false)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transform transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1483,7 +1483,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60dvh] sm:max-h-[60vh] overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />

@@ -550,7 +550,7 @@ export default function ConsumerPage() {
           onClick={closeProfileEditor}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
               isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -650,7 +650,7 @@ export default function ConsumerPage() {
           onClick={() => setShowNotifications(false)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all"
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transform transition-all"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -688,7 +688,7 @@ export default function ConsumerPage() {
             </div>
 
             {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60dvh] sm:max-h-[60vh] overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -1251,7 +1251,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           style={{ height: '100dvh' }}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[70vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[70dvh] sm:max-h-[70vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
