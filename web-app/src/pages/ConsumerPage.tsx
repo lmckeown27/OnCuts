@@ -920,6 +920,12 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     };
   }, [selectedBarber]);
 
+  // Helper to scroll to top before opening modals (prevents white space on mobile)
+  const scrollToTopAndOpen = (setShow: (v: boolean) => void) => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShow(true);
+  };
+
   // Handle schedule click - check auth first
   const handleScheduleClick = (barber: Barber) => {
     if (!isAuthenticated) {
