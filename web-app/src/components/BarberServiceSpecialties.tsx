@@ -251,17 +251,14 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
       {/* Summary */}
       {offeredServices.length > 0 && (
-        <Card className="bg-green-50 border-green-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-green-900">
-                {offeredServices.length} Service{offeredServices.length !== 1 ? 's' : ''} Offered
-              </h3>
-              <p className="text-sm text-green-700">
-                Price range: ${Math.min(...offeredServices.map(s => s.price))} - ${Math.max(...offeredServices.map(s => s.price))}
-              </p>
-            </div>
-            <Scissors className="w-8 h-8 text-green-400" />
+        <Card>
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900">
+              {offeredServices.length} Service{offeredServices.length !== 1 ? 's' : ''} Offered
+            </h3>
+            <p className="text-lg text-gray-600 mt-1">
+              Price range: ${Math.min(...offeredServices.map(s => s.price))} - ${Math.max(...offeredServices.map(s => s.price))}
+            </p>
           </div>
         </Card>
       )}
