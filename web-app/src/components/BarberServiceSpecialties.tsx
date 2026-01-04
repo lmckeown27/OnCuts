@@ -319,21 +319,20 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         <div className="flex items-center justify-end gap-1">
                           <DollarSign className="w-5 h-5 text-gray-400" />
                           <input
-                            type="number"
-                            min="5"
-                            max="500"
-                            step="1"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             value={service.price}
-                            onChange={(e) => updatePrice(service.serviceId, Number(e.target.value))}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              updatePrice(service.serviceId, val ? Number(val) : 0);
+                            }}
                             onClick={(e) => e.stopPropagation()}
                             className={`w-20 text-2xl font-bold text-gray-900 text-right border-b-2 focus:outline-none bg-transparent ${
                               priceChanged ? 'border-orange-400' : 'border-primary-300 focus:border-primary-500'
                             }`}
                           />
                         </div>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Suggested: ${service.suggestedPrice}
-                        </p>
                         
                         {/* Confirm/Cancel buttons when price changed */}
                         {priceChanged && (
@@ -368,11 +367,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         className="cursor-pointer"
                         onClick={() => toggleService(service.serviceId)}
                       >
-                        <p className="text-xs text-gray-500 mb-1">Suggested Price</p>
-                        <p className="text-lg font-semibold text-gray-400">
-                          ${service.suggestedPrice}
-                        </p>
-                        <p className="text-xs text-primary-500 mt-1">
+                        <p className="text-xs text-primary-500">
                           Click to add
                         </p>
                       </div>
