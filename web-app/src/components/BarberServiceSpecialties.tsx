@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { Check, Info, DollarSign, Scissors } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
+import Button from './Button';
 import toast from 'react-hot-toast';
 import { SERVICE_TYPES } from '../config/services';
 import barberService from '../services/barber.service';
@@ -19,6 +20,8 @@ interface BarberService {
   isOffered: boolean;
   price: number; // Barber's custom price in dollars
   suggestedPrice: number; // Suggested price from config
+  originalPrice: number; // Price before editing (to detect changes)
+  isEditing: boolean; // Whether price is being edited
 }
 
 interface Props {
@@ -68,6 +71,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           isOffered,
           price,
           suggestedPrice: service.basePrice || 25,
+          originalPrice: price,
+          isEditing: false,
         };
       });
 
@@ -84,6 +89,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         isOffered: false,
         price: service.basePrice || 25,
         suggestedPrice: service.basePrice || 25,
+        originalPrice: service.basePrice || 25,
+        isEditing: false,
       }));
       setBarberServices(defaultServices);
     } finally {
@@ -121,38 +128,53 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     setBarberServices(prev =>
       prev.map(service =>
         service.serviceId === serviceId
-          ? { ...service, price: newPrice }
+          ? { ...service, price: newPrice, isEditing: true }
           : service
       )
     );
   };
 
-  const handlePriceBlur = async (serviceId: string) => {
+  const confirmPrice = async (serviceId: string) => {
     const service = barberServices.find(s => s.serviceId === serviceId);
     if (!service || !service.isOffered) return;
     
     // Validate price
+    let validatedPrice = service.price;
     if (service.price < 5) {
       toast.error('Minimum price is $5');
-      setBarberServices(prev =>
-        prev.map(s =>
-          s.serviceId === serviceId ? { ...s, price: 5 } : s
-        )
-      );
-      return;
-    }
-    if (service.price > 500) {
+      validatedPrice = 5;
+    } else if (service.price > 500) {
       toast.error('Maximum price is $500');
-      setBarberServices(prev =>
-        prev.map(s =>
-          s.serviceId === serviceId ? { ...s, price: 500 } : s
-        )
-      );
-      return;
+      validatedPrice = 500;
     }
     
+    // Update with validated price and mark as not editing
+    setBarberServices(prev =>
+      prev.map(s =>
+        s.serviceId === serviceId 
+          ? { ...s, price: validatedPrice, originalPrice: validatedPrice, isEditing: false } 
+          : s
+      )
+    );
+    
     // Save to database
-    await saveServices(barberServices);
+    await saveServices(
+      barberServices.map(s =>
+        s.serviceId === serviceId 
+          ? { ...s, price: validatedPrice, originalPrice: validatedPrice, isEditing: false }
+          : s
+      )
+    );
+  };
+
+  const cancelPriceEdit = (serviceId: string) => {
+    setBarberServices(prev =>
+      prev.map(service =>
+        service.serviceId === serviceId
+          ? { ...service, price: service.originalPrice, isEditing: false }
+          : service
+      )
+    );
   };
 
   const saveServices = async (services: BarberService[]) => {
@@ -216,11 +238,11 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
               <ul className="list-disc ml-5 space-y-1">
                 <li>Click on a service to add it to your offerings</li>
                 <li>Enter the price you want to charge for each service</li>
+                <li>Click "Confirm Price" to save your changes</li>
                 <li>Suggested prices are shown as a starting point</li>
-                <li>You can update your prices anytime</li>
               </ul>
               <p className="text-primary-700 font-medium mt-2">
-                💡 Tip: Competitive pricing helps attract more customers while you build reviews!
+                Tip: Competitive pricing helps attract more customers while you build reviews!
               </p>
             </div>
           </div>
@@ -248,85 +270,118 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       <Card>
         <h3 className="text-xl font-bold text-gray-900 mb-4">My Services & Pricing</h3>
         <p className="text-sm text-gray-600 mb-6">
-          Select services and set your prices. Changes are saved automatically.
+          Select services and set your prices. Click "Confirm Price" after editing.
         </p>
 
         <div className="space-y-3">
-          {barberServices.map((service) => (
-            <div
-              key={service.serviceId}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                service.isOffered
-                  ? 'border-primary-400 bg-primary-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-              } ${saving ? 'opacity-70' : ''}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                {/* Service Info - Clickable to toggle */}
-                <div 
-                  className="flex-1 cursor-pointer"
-                  onClick={() => toggleService(service.serviceId)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                        service.isOffered
-                          ? 'bg-primary-400 border-primary-400'
-                          : 'border-gray-300'
-                      }`}
-                    >
-                      {service.isOffered && (
-                        <Check className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{service.serviceName}</h4>
-                      <p className="text-xs text-gray-500">{service.description}</p>
+          {barberServices.map((service) => {
+            const priceChanged = service.isEditing && service.price !== service.originalPrice;
+            
+            return (
+              <div
+                key={service.serviceId}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  service.isOffered
+                    ? 'border-primary-400 bg-primary-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                } ${saving ? 'opacity-70' : ''}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  {/* Service Info - Clickable to toggle */}
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => toggleService(service.serviceId)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                          service.isOffered
+                            ? 'bg-primary-400 border-primary-400'
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        {service.isOffered && (
+                          <Check className="w-4 h-4 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{service.serviceName}</h4>
+                        <p className="text-xs text-gray-500">{service.description}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Pricing */}
-                <div className="text-right min-w-[140px]">
-                  {service.isOffered ? (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Your Price</p>
-                      <div className="flex items-center justify-end gap-1">
-                        <DollarSign className="w-5 h-5 text-gray-400" />
-                        <input
-                          type="number"
-                          min="5"
-                          max="500"
-                          step="1"
-                          value={service.price}
-                          onChange={(e) => updatePrice(service.serviceId, Number(e.target.value))}
-                          onBlur={() => handlePriceBlur(service.serviceId)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-20 text-2xl font-bold text-gray-900 text-right border-b-2 border-primary-300 focus:border-primary-500 focus:outline-none bg-transparent"
-                        />
+                  {/* Pricing */}
+                  <div className="text-right min-w-[160px]">
+                    {service.isOffered ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Your Price</p>
+                        <div className="flex items-center justify-end gap-1">
+                          <DollarSign className="w-5 h-5 text-gray-400" />
+                          <input
+                            type="number"
+                            min="5"
+                            max="500"
+                            step="1"
+                            value={service.price}
+                            onChange={(e) => updatePrice(service.serviceId, Number(e.target.value))}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`w-20 text-2xl font-bold text-gray-900 text-right border-b-2 focus:outline-none bg-transparent ${
+                              priceChanged ? 'border-orange-400' : 'border-primary-300 focus:border-primary-500'
+                            }`}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Suggested: ${service.suggestedPrice}
+                        </p>
+                        
+                        {/* Confirm/Cancel buttons when price changed */}
+                        {priceChanged && (
+                          <div className="flex gap-2 mt-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmPrice(service.serviceId);
+                              }}
+                              disabled={saving}
+                            >
+                              Confirm Price
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelPriceEdit(service.serviceId);
+                              }}
+                              disabled={saving}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Suggested: ${service.suggestedPrice}
-                      </p>
-                    </div>
-                  ) : (
-                    <div 
-                      className="cursor-pointer"
-                      onClick={() => toggleService(service.serviceId)}
-                    >
-                      <p className="text-xs text-gray-500 mb-1">Suggested Price</p>
-                      <p className="text-lg font-semibold text-gray-400">
-                        ${service.suggestedPrice}
-                      </p>
-                      <p className="text-xs text-primary-500 mt-1">
-                        Click to add
-                      </p>
-                    </div>
-                  )}
+                    ) : (
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => toggleService(service.serviceId)}
+                      >
+                        <p className="text-xs text-gray-500 mb-1">Suggested Price</p>
+                        <p className="text-lg font-semibold text-gray-400">
+                          ${service.suggestedPrice}
+                        </p>
+                        <p className="text-xs text-primary-500 mt-1">
+                          Click to add
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 
@@ -336,25 +391,25 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         <div className="space-y-4 text-sm text-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">🎯 Start Competitive</p>
+              <p className="font-semibold text-gray-900 mb-1">Start Competitive</p>
               <p className="text-gray-600">
                 New barbers often start slightly below suggested prices to attract early customers and build reviews.
               </p>
             </div>
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">⭐ Increase With Reviews</p>
+              <p className="font-semibold text-gray-900 mb-1">Increase With Reviews</p>
               <p className="text-gray-600">
                 As you get 5-star reviews, you can gradually increase prices. Quality builds reputation!
               </p>
             </div>
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">📊 Know Your Market</p>
+              <p className="font-semibold text-gray-900 mb-1">Know Your Market</p>
               <p className="text-gray-600">
                 Check what other barbers on campus charge. Price fairly for your skill level.
               </p>
             </div>
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">💪 Value Your Time</p>
+              <p className="font-semibold text-gray-900 mb-1">Value Your Time</p>
               <p className="text-gray-600">
                 Consider time, supplies, and effort for each service when setting prices.
               </p>
