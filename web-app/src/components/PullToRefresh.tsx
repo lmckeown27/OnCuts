@@ -13,6 +13,7 @@ interface PullToRefreshProps {
   children: ReactNode;
   onRefresh: () => Promise<void> | void;
   className?: string;
+  style?: React.CSSProperties;
   disabled?: boolean;
 }
 
@@ -20,6 +21,7 @@ export default function PullToRefresh({
   children,
   onRefresh,
   className = '',
+  style,
   disabled = false,
 }: PullToRefreshProps) {
   const {
@@ -36,11 +38,11 @@ export default function PullToRefresh({
   const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   if (!isTouchDevice || disabled) {
-    return <div className={className}>{children}</div>;
+    return <div className={className} style={style}>{children}</div>;
   }
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative ${className}`} style={style}>
       {/* Pull Indicator */}
       <div
         className="absolute left-0 right-0 flex justify-center pointer-events-none z-50"
