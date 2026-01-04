@@ -304,9 +304,10 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       const specialties = fullApp.rows[0]?.specialties || [];
 
       // Create barber profile with specialties
+      // Note: id must be explicitly provided as table lacks DEFAULT uuid generator
       await pool.query(
-        `INSERT INTO barbers ("userId", specialties, "isActive", "createdAt", "updatedAt", "campusId")
-         VALUES ($1, $2, true, NOW(), NOW(), $3)
+        `INSERT INTO barbers (id, "userId", specialties, "isActive", "createdAt", "updatedAt", "campusId")
+         VALUES (gen_random_uuid(), $1, $2, true, NOW(), NOW(), $3)
          ON CONFLICT ("userId") DO UPDATE SET 
            specialties = EXCLUDED.specialties,
            "isActive" = true,
