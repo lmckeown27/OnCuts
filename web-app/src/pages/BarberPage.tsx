@@ -443,7 +443,7 @@ export default function BarberPage() {
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeProfileEditor}
         >
           <div 
@@ -470,7 +470,7 @@ export default function BarberPage() {
       {/* Service Specialties Modal */}
       {showServiceSpecialties && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isServiceSpecialtiesVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeServiceSpecialties}
         >
           <div 
@@ -497,7 +497,7 @@ export default function BarberPage() {
       {/* Campus Manager Dashboard Modal (conditional) */}
       {isCampusManager && showCampusManagerDashboard && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
           onClick={closeCampusManager}
         >
           <div 
@@ -573,7 +573,7 @@ export default function BarberPage() {
       {/* Notifications Modal */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowNotifications(false)}
         >
           <div 
@@ -1469,7 +1469,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
       {/* Day Detail Modal */}
       {showDayModal && selectedDate !== null && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
             isDayModalVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeDayModal}
@@ -1690,7 +1690,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
 
   return (
     <div 
-      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
         isVisible ? 'bg-black/50' : 'bg-black/0'
       }`}
       onClick={onClose}
@@ -2199,7 +2199,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
 
   return (
     <div 
-      className={`fixed inset-0 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
+      className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isVisible ? 'bg-black/50' : 'bg-black/0'}`}
       onClick={onClose}
     >
       <div 

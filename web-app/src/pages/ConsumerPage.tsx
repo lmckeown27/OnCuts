@@ -544,7 +544,7 @@ export default function ConsumerPage() {
       {/* Profile Editor Modal */}
       {showProfileEditor && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
             isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
           onClick={closeProfileEditor}
@@ -580,7 +580,7 @@ export default function ConsumerPage() {
       {/* Pending Application Popup */}
       {showPendingPopup && (
         <div 
-          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isPendingPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isPendingPopupVisible ? 'opacity-100' : 'opacity-0'}`}
           onClick={closePendingPopup}
         >
           <div 
@@ -608,7 +608,7 @@ export default function ConsumerPage() {
       {/* Rejected Application Popup */}
       {showRejectedPopup && (
         <div 
-          className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isRejectedPopupVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${isRejectedPopupVisible ? 'opacity-100' : 'opacity-0'}`}
           onClick={closeRejectedPopup}
         >
           <div 
@@ -646,7 +646,7 @@ export default function ConsumerPage() {
       {/* Notifications Modal */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowNotifications(false)}
         >
           <div 
@@ -1246,7 +1246,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Barber Profile Modal */}
       {selectedBarber && (
         <div 
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
+          className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
           style={{ height: '100dvh' }}
         >

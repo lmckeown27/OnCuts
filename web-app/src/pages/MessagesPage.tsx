@@ -1222,7 +1222,7 @@ export default function MessagesPage() {
       {/* Service Details Modal - Mobile Only */}
       {showServiceDetails && selectedConversation?.booking && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 md:hidden"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4 md:hidden"
           onClick={() => setShowServiceDetails(false)}
         >
           <div 
@@ -1383,7 +1383,7 @@ export default function MessagesPage() {
       {/* Delete Conversation Confirmation Modal */}
       {showDeleteConfirm && deletingConversation && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => {
             setShowDeleteConfirm(false);
             setDeletingConversation(null);
@@ -1441,7 +1441,7 @@ export default function MessagesPage() {
       {/* Notifications Modal */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
           onClick={() => setShowNotifications(false)}
         >
           <div 
