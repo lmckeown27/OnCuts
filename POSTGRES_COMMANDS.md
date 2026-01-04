@@ -117,14 +117,15 @@ sudo -u postgres psql -d campuscuts -c "SELECT id FROM users WHERE email = 'user
 
 ## BARBERS
 
-### View Barber Info Requirements
-'''bash
+### View Barber Info Requirements (NOT NULL columns)
+```bash
 sudo -u postgres psql -d campuscuts -c "
 SELECT column_name, data_type, is_nullable, column_default 
 FROM information_schema.columns 
 WHERE table_name = 'barbers' AND is_nullable = 'NO'
 ORDER BY ordinal_position;
 "
+```
 
 ### View All Barbers
 ```bash
@@ -1199,11 +1200,175 @@ sudo -u postgres psql -d campuscuts -c "ALTER SEQUENCE messages_id_seq RESTART W
 
 ---
 
+## SERVICE TYPES (ENUM)
+
+### View All ServiceType Enum Values
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT unnest(enum_range(NULL::\"ServiceType\"));"
+```
+
+### Add New ServiceType to Enum
+```bash
+# Example: Add TAPER to ServiceType enum
+sudo -u postgres psql -d campuscuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
+```
+
+---
+
+## BARBER DISCOVERY & VISIBILITY
+
+### Check Why a Barber Isn't Showing to Consumers
+```bash
+# Check barber record status (isActive, isOnboarded, campusId)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    u.role,
+    u.\"campusId\" as user_campus_id,
+    b.id as barber_id,
+    b.\"isActive\",
+    b.\"isOnboarded\",
+    b.\"campusId\" as barber_campus_id
+FROM users u
+LEFT JOIN barbers b ON u.id = b.\"userId\"
+WHERE u.email = 'barber@example.com';
+"
+```
+
+### View All Active Barbers with Campus Info
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    b.\"isActive\",
+    b.\"campusId\",
+    c.name as campus_name
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+LEFT JOIN campuses c ON b.\"campusId\" = c.id
+WHERE b.\"isActive\" = true;
+"
+```
+
+### View Barbers by Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    b.\"isActive\",
+    b.\"isOnboarded\"
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.\"campusId\" = 'CAMPUS_UUID_HERE';
+"
+```
+
+### Activate a Barber Profile
+```bash
+sudo -u postgres psql -d campuscuts -c "
+UPDATE barbers SET \"isActive\" = true 
+WHERE \"userId\" = (SELECT id FROM users WHERE email = 'barber@example.com');
+"
+```
+
+---
+
+## BARBER & USER LOCATIONS
+
+### View All Barbers with Location Data
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.latitude,
+    u.longitude,
+    b.service_latitude,
+    b.service_longitude,
+    u.location_updated_at
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.\"isActive\" = true;
+"
+```
+
+### Check Location Auto-Update Status for Barbers
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    email, 
+    first_name,
+    last_name,
+    latitude, 
+    longitude, 
+    location_permission,
+    location_updated_at 
+FROM users 
+WHERE role IN ('BARBER', 'CAMPUS_MANAGER')
+ORDER BY location_updated_at DESC NULLS LAST;
+"
+```
+
+### Manually Update Barber's Location (When GPS Not Working)
+```bash
+# Set to specific coordinates (e.g., Cal Poly SLO)
+sudo -u postgres psql -d campuscuts -c "
+UPDATE users 
+SET latitude = 35.30500000, 
+    longitude = -120.66250000,
+    location_updated_at = NOW(),
+    location_permission = 'granted'
+WHERE email = 'barber@example.com';
+"
+```
+
+### Find Barbers Within Distance of Coordinates
+```bash
+# Find barbers within 8km of Cal Poly SLO (35.3050, -120.6625)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    u.latitude,
+    u.longitude,
+    ROUND((
+        6371 * acos(
+            LEAST(1.0, GREATEST(-1.0,
+                cos(radians(35.3050)) * 
+                cos(radians(u.latitude)) * 
+                cos(radians(u.longitude) - radians(-120.6625)) + 
+                sin(radians(35.3050)) * 
+                sin(radians(u.latitude))
+            ))
+        )
+    )::numeric, 2) as distance_km
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.\"isActive\" = true
+  AND u.latitude IS NOT NULL
+ORDER BY distance_km;
+"
+```
+
+---
+
 ## PENDING MIGRATIONS
 
 ### Add paymentRequestedAt column to bookings (Required for payment flow)
 ```bash
 sudo -u postgres psql -d campuscuts -c 'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS "paymentRequestedAt" TIMESTAMPTZ;'
+```
+
+### Add TAPER to ServiceType enum (Required for Taper service bookings)
+```bash
+sudo -u postgres psql -d campuscuts -c "ALTER TYPE \"ServiceType\" ADD VALUE IF NOT EXISTS 'TAPER';"
 ```
 
 ---
