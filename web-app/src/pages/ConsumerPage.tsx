@@ -91,15 +91,16 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
 function rankBarbers(barbers: Barber[]): Barber[] {
   return barbers
     .map((barber) => {
-      // Base score: rating weighted heavily
-      let score = barber.average_rating * 100;
+      // Base score: rating weighted heavily (default to 0 if null)
+      const rating = Number(barber.average_rating) || 0;
+      let score = rating * 100;
       
       // Bonus for experience and bookings
-      score += Math.log(barber.total_bookings + 1) * 10;
-      score += barber.years_experience * 5;
+      score += Math.log((barber.total_bookings || 0) + 1) * 10;
+      score += (barber.years_experience || 0) * 5;
       
       // Newcomer adjustment: if low bookings but high rating, boost slightly
-      if (barber.total_bookings < 20 && barber.average_rating >= 4.5) {
+      if ((barber.total_bookings || 0) < 20 && rating >= 4.5) {
         score += 20; // Give new high-rated barbers a chance
       }
       
@@ -996,7 +997,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     // Backend already sorts by distance when location is provided
     // Only apply client-side sorting if no location (fallback to rating)
     if (!latitude || !longitude) {
-      filtered.sort((a, b) => b.average_rating - a.average_rating);
+      filtered.sort((a, b) => (Number(b.average_rating) || 0) - (Number(a.average_rating) || 0));
     }
     // When location is available, barbers are already sorted by distance from backend
 
@@ -1139,10 +1140,10 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
                     )}
                     {/* Star Rating - only show if barber has reviews */}
-                    {barber.average_rating > 0 && barber.total_reviews > 0 && (
+                    {barber.average_rating != null && Number(barber.average_rating) > 0 && barber.total_reviews > 0 && (
                       <span className="flex items-center gap-1 text-sm">
                         <span className="text-yellow-500">★</span>
-                        <span className="text-gray-700 font-medium">{barber.average_rating.toFixed(1)}</span>
+                        <span className="text-gray-700 font-medium">{Number(barber.average_rating).toFixed(1)}</span>
                         <span className="text-gray-400">({barber.total_reviews})</span>
                       </span>
                     )}
@@ -1208,10 +1209,10 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 )}
 
                 {/* Star Rating - only show if barber has reviews */}
-                {barber.average_rating > 0 && barber.total_reviews > 0 && (
+                {barber.average_rating != null && Number(barber.average_rating) > 0 && barber.total_reviews > 0 && (
                   <div className="flex items-center gap-1 text-xs sm:text-sm mt-1 mb-1">
                     <span className="text-yellow-500">★</span>
-                    <span className="text-gray-700 font-medium">{barber.average_rating.toFixed(1)}</span>
+                    <span className="text-gray-700 font-medium">{Number(barber.average_rating).toFixed(1)}</span>
                     <span className="text-gray-400">({barber.total_reviews})</span>
                   </div>
                 )}
