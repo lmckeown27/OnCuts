@@ -1659,7 +1659,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."scheduledTime", b.location,
+      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt" as "scheduledTime", b.location,
               bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
               u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
