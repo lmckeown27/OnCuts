@@ -162,7 +162,8 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     }
 
     // Validate specific allowed formats
-    const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
+    // Note: 'image/jpg' is not standard but some browsers may report it
+    const allowedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedFormats.includes(file.type)) {
       console.warn('[ProfileEditor] File rejected: unsupported format:', file.type);
       toast.error('Only JPG, PNG, and WebP images are allowed. Please convert your image and try again.');
@@ -250,7 +251,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
             onChange={handleFileSelect}
             className="hidden"
           />
