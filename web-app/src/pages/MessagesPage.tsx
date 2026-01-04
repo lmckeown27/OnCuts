@@ -35,6 +35,7 @@ import messageService from '../services/message.service';
 import notificationService, { Notification } from '../services/notification.service';
 import socketService from '../services/socket.service';
 import { usePlatform } from '../utils/platform';
+import { useDynamicViewportHeight } from '../hooks';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -111,6 +112,9 @@ export default function MessagesPage() {
   const { user } = useAuthStore();
   const platform = usePlatform();
   const platformPrefix = `/${platform}`;
+  
+  // Handle dynamic viewport height for mobile browser bar changes
+  useDynamicViewportHeight();
   
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithDetails | null>(null);
@@ -920,7 +924,7 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="h-[100dvh] bg-gray-50 flex flex-col overflow-hidden">
+    <div className="bg-gray-50 flex flex-col overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Main Header - Same as BarberPage/ConsumerPage */}
       <div className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">

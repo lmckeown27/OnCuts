@@ -19,7 +19,7 @@ import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
-import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles } from '../hooks';
+import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynamicViewportHeight } from '../hooks';
 import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -113,6 +113,9 @@ function rankBarbers(barbers: Barber[]): Barber[] {
 export default function ConsumerPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Handle dynamic viewport height for mobile browser bar changes
+  useDynamicViewportHeight();
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
@@ -398,7 +401,7 @@ export default function ConsumerPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-[100dvh] bg-gray-50">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="bg-gray-50" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">

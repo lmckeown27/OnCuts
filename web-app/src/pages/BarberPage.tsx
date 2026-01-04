@@ -23,7 +23,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import { useMessageStore } from '../store/useMessageStore';
-import { useViewport, useBodyScrollLock, useGeolocation } from '../hooks';
+import { useViewport, useBodyScrollLock, useGeolocation, useDynamicViewportHeight } from '../hooks';
 import toast from 'react-hot-toast';
 
 const COMPONENT_VERSION = 'v4.0-modal-fix';
@@ -36,6 +36,9 @@ export default function BarberPage() {
   
   // Viewport detection for responsive behavior
   const { isMobile, isTablet, viewport } = useViewport();
+  
+  // Handle dynamic viewport height for mobile browser bar changes
+  useDynamicViewportHeight();
   
   // Auto-update barber's location when they access the dashboard
   // This ensures their location stays current for consumer discovery
@@ -268,7 +271,7 @@ export default function BarberPage() {
   }, []);
 
   return (
-    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="bg-gray-50" style={{ minHeight: 'calc(var(--vh, 1vh) * 100)' }}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
