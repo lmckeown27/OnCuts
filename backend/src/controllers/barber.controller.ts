@@ -29,6 +29,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."userId" as user_id,
         b.bio,
         b.specialties,
+        b.pricing,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -127,6 +128,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     
     // Get services/pricing for each barber
     const barbers = await Promise.all(filteredRows.map(async (barber) => {
+      // Get fallback pricing from barber_services table
       const servicesResult = await pool.query(
         `SELECT id, name, description, "priceUsdCents" as price, "durationMinutes" as duration_minutes
          FROM barber_services 
@@ -143,6 +145,13 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         [barber.id]
       );
       
+      // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services
+      const customPricing = barber.pricing || [];
+      const servicePricing = servicesResult.rows.map(s => ({
+        ...s,
+        price: s.price / 100 // Convert cents to dollars for frontend
+      }));
+      
       return {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
@@ -150,10 +159,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         distance_km: barber.distance_km !== null ? Math.round(barber.distance_km * 10) / 10 : null,
         // Convert km to miles for US users
         distance_miles: barber.distance_km !== null ? Math.round(barber.distance_km * 0.621371 * 10) / 10 : null,
-        pricing: servicesResult.rows.map(s => ({
-          ...s,
-          price: s.price / 100 // Convert cents to dollars for frontend
-        })),
+        pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
       };
     }));
@@ -208,6 +214,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         b."userId" as user_id,
         b.bio,
         b.specialties,
+        b.pricing,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -275,6 +282,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."userId" as user_id,
         b.bio,
         b.specialties,
+        b.pricing,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -424,6 +432,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."userId" as user_id,
         b.bio,
         b.specialties,
+        b.pricing,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -484,15 +493,19 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       [id]
     );
 
+    // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services table
+    const customPricing = barber.pricing || [];
+    const servicePricing = servicesResult.rows.map(s => ({
+      ...s,
+      price: s.price / 100 // Convert cents to dollars
+    }));
+
     res.json({
       success: true,
       data: {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-        pricing: servicesResult.rows.map(s => ({
-          ...s,
-          price: s.price / 100 // Convert cents to dollars
-        })),
+        pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
       },
@@ -560,7 +573,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 export const updateBarberProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule, is_active } = req.body;
+    const { bio, instagram_handle, display_name, specialties, yearsExperience, weekly_schedule, is_active, pricing } = req.body;
     const userId = req.user!.userId;
 
     // Verify ownership
@@ -598,6 +611,12 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     if (is_active !== undefined) {
       barberUpdateFields.push(`"isActive" = $${paramIndex}`);
       barberValues.push(is_active);
+      paramIndex++;
+    }
+    if (pricing !== undefined) {
+      // Pricing is an array of {name: string, price: number} objects
+      barberUpdateFields.push(`pricing = $${paramIndex}`);
+      barberValues.push(JSON.stringify(pricing));
       paramIndex++;
     }
 

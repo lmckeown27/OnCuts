@@ -132,7 +132,7 @@ export interface Service {
   name: string;
   description?: string;
   price: number;
-  duration_minutes: number;
+  duration_minutes?: number; // Optional for custom barber pricing
 }
 
 export interface AvailabilityTemplate {
