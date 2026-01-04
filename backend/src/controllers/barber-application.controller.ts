@@ -305,15 +305,17 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
 
       // Create barber profile with specialties
       await pool.query(
-        `INSERT INTO barbers ("userId", specialties, "isActive", "createdAt", "updatedAt")
-         VALUES ($1, $2, true, NOW(), NOW())
+        `INSERT INTO barbers ("userId", specialties, "isActive", "createdAt", "updatedAt", "campusId")
+         VALUES ($1, $2, true, NOW(), NOW(), $3)
          ON CONFLICT ("userId") DO UPDATE SET 
            specialties = EXCLUDED.specialties,
            "isActive" = true,
+           "campusId" = EXCLUDED."campusId",
            "updatedAt" = NOW()`,
         [
           updatedApplication.user_id,
-          JSON.stringify(specialties)
+          specialties,  // Pass array directly, pg driver handles TEXT[] conversion
+          updatedApplication.campus_id
         ]
       );
 
