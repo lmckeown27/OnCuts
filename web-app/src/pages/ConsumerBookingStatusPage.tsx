@@ -145,9 +145,9 @@ export default function ConsumerBookingStatusPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Lock body scroll when modals are open
+  // Lock body scroll when modals are open (except cancel confirm which allows scrolling)
   useEffect(() => {
-    if (showEditModal || showCancelConfirm || showNotifications) {
+    if (showEditModal || showNotifications) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -155,7 +155,7 @@ export default function ConsumerBookingStatusPage() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [showEditModal, showCancelConfirm, showNotifications]);
+  }, [showEditModal, showNotifications]);
 
   // Fetch notifications
   useEffect(() => {
