@@ -187,7 +187,8 @@ export default function BarberPage() {
   const { user } = useAuthStore();
   const barberId = user?.id || '';
   const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
-  const campusId = user?.campus_id || '';
+  // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
+  const campusId = barberProfile?.campusId || user?.campus_id || '';
   const campusName = ''; // TODO: Fetch campus name from API
   
   // Role-based access control: Only barbers, campus managers, and admins can access this page
@@ -215,10 +216,10 @@ export default function BarberPage() {
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
-  // State for barber profile data (for walk-in services)
-  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[] } | null>(null);
+  // State for barber profile data (for walk-in services and campus manager)
+  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string } | null>(null);
 
-  // Fetch barber profile data for walk-in modal
+  // Fetch barber profile data for walk-in modal and campus manager
   useEffect(() => {
     const fetchBarberProfile = async () => {
       if (!barberId) return;
@@ -228,7 +229,8 @@ export default function BarberPage() {
           const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber';
           setBarberProfile({
             name: response.name || fullName || 'Barber',
-            specialties: response.specialties || []
+            specialties: response.specialties || [],
+            campusId: response.campus_id || ''
           });
         }
       } catch (error) {
