@@ -883,9 +883,19 @@ const minutesToTime = (minutes: number): string => {
 const generateTimeSlots = (
   intervals: TimeInterval[],
   bookedSlots: { start: string; end: string }[],
-  slotDuration: number = 15 // minutes
+  slotDuration: number = 15, // minutes
+  isToday: boolean = false // If true, filter out past times
 ): { time: string; available: boolean }[] => {
   const slots: { time: string; available: boolean }[] = [];
+  
+  // Get current time in minutes if booking for today
+  let currentTimeMinutes = 0;
+  if (isToday) {
+    const now = new Date();
+    currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+    // Add a small buffer (15 mins) so users can't book slots that are about to start
+    currentTimeMinutes += 15;
+  }
   
   for (const interval of intervals) {
     const startMins = timeToMinutes(interval.start);
@@ -894,6 +904,12 @@ const generateTimeSlots = (
     for (let mins = startMins; mins < endMins; mins += slotDuration) {
       const time = minutesToTime(mins);
       const slotEnd = minutesToTime(mins + slotDuration);
+      
+      // Check if this slot is in the past (for same-day bookings)
+      let isPast = false;
+      if (isToday && mins < currentTimeMinutes) {
+        isPast = true;
+      }
       
       // Check if this slot overlaps with any booked slots
       let isBooked = false;
@@ -908,7 +924,7 @@ const generateTimeSlots = (
         }
       }
       
-      slots.push({ time, available: !isBooked });
+      slots.push({ time, available: !isBooked && !isPast });
     }
   }
   
@@ -1014,8 +1030,13 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         end: row.end_time
       }));
 
-      // Generate available time slots
-      const slots = generateTimeSlots(intervals, bookedSlots);
+      // Check if the selected date is today (to filter out past times)
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const isToday = date === todayStr;
+
+      // Generate available time slots (filter past times if booking for today)
+      const slots = generateTimeSlots(intervals, bookedSlots, 15, isToday);
       
       console.log(`[Availability] Generated ${slots.length} slots, ${slots.filter(s => s.available).length} available`);
 
