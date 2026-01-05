@@ -187,9 +187,6 @@ export default function BarberPage() {
   const { user } = useAuthStore();
   const barberId = user?.id || '';
   const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
-  // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
-  const campusId = barberProfile?.campusId || user?.campus_id || '';
-  const campusName = ''; // TODO: Fetch campus name from API
   
   // Role-based access control: Only barbers, campus managers, and admins can access this page
   // Consumers/students should be redirected to the consumer page
@@ -218,6 +215,10 @@ export default function BarberPage() {
   
   // State for barber profile data (for walk-in services and campus manager)
   const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string } | null>(null);
+
+  // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
+  const campusId = barberProfile?.campusId || user?.campus_id || '';
+  const campusName = ''; // TODO: Fetch campus name from API
 
   // Fetch barber profile data for walk-in modal and campus manager
   useEffect(() => {
