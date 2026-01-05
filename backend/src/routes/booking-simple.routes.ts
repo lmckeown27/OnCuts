@@ -499,6 +499,145 @@ router.post('/walk-in/record-cash', authenticate, async (req, res, next) => {
 });
 
 // ============================================================================
+// CAMPUS MANAGER ENDPOINT
+// ============================================================================
+
+/**
+ * GET /api/v1/bookings-simple/campus/:campusId
+ * Get all completed bookings for a campus (Campus Managers only)
+ * Query params:
+ *   - barberId: filter by specific barber
+ *   - limit: max number of results (default 100)
+ */
+router.get('/campus/:campusId', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { campusId } = req.params;
+    const { barberId, limit = '100' } = req.query;
+
+    // Verify user is a campus manager for this campus
+    const managerCheck = await pool.query(
+      `SELECT b.id FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       WHERE b."userId" = $1 
+         AND b."isCampusManager" = true 
+         AND b."campusId" = $2`,
+      [userId, campusId]
+    );
+
+    if (managerCheck.rows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'You are not a campus manager for this campus'
+      });
+    }
+
+    // Build query to get completed bookings for all barbers on this campus
+    let whereClause = `barber."campusId" = $1 AND b.status = 'COMPLETED'`;
+    const params: any[] = [campusId];
+    let paramIndex = 2;
+
+    // Optionally filter by specific barber
+    if (barberId) {
+      whereClause += ` AND barber.id = $${paramIndex}`;
+      params.push(barberId);
+      paramIndex++;
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        b.id,
+        b."consumerId",
+        b."barberId",
+        b."serviceType",
+        b."priceUsdCents",
+        b."requestedAt" as "scheduledTime",
+        b.status,
+        b."createdAt",
+        b."paidAt",
+        b."reviewRating",
+        b."reviewComment",
+        b."reviewedAt",
+        consumer.first_name as consumer_first_name,
+        consumer.last_name as consumer_last_name,
+        consumer."avatarUrl" as consumer_avatar,
+        barber_user.first_name as barber_first_name,
+        barber_user.last_name as barber_last_name,
+        barber_user."avatarUrl" as barber_avatar,
+        barber.id as barber_record_id,
+        c.location as conv_location,
+        c.notes as conv_notes,
+        c.service_name as conv_service_name
+      FROM bookings b
+      LEFT JOIN users consumer ON b."consumerId" = consumer.id
+      LEFT JOIN barbers barber ON b."barberId" = barber.id
+      LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+      LEFT JOIN conversations c ON c.booking_id = b.id
+      WHERE ${whereClause}
+      ORDER BY b."requestedAt" DESC
+      LIMIT $${paramIndex}`,
+      [...params, parseInt(limit as string)]
+    );
+
+    // Get list of barbers for the filter dropdown
+    const barbersResult = await pool.query(
+      `SELECT b.id, u.first_name, u.last_name
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       WHERE b."campusId" = $1 AND b."isActive" = true
+       ORDER BY u.first_name, u.last_name`,
+      [campusId]
+    );
+
+    // Helper to format service type
+    const formatServiceType = (type: string) => {
+      if (!type) return 'Haircut';
+      return type
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    };
+
+    res.json({
+      success: true,
+      data: {
+        bookings: result.rows.map(row => ({
+          id: row.id,
+          consumerId: row.consumerId,
+          barberId: row.barberId,
+          barberRecordId: row.barber_record_id,
+          serviceType: row.conv_service_name || formatServiceType(row.serviceType),
+          priceUsdCents: row.priceUsdCents,
+          scheduledTime: row.scheduledTime,
+          status: row.status,
+          createdAt: row.createdAt,
+          paidAt: row.paidAt,
+          location: row.conv_location || null,
+          notes: row.conv_notes || null,
+          review: row.reviewRating ? {
+            rating: row.reviewRating,
+            comment: row.reviewComment || null,
+            reviewedAt: row.reviewedAt,
+          } : null,
+          barberName: `${row.barber_first_name || ''} ${row.barber_last_name || ''}`.trim() || 'Barber',
+          barberAvatar: row.barber_avatar || null,
+          consumerName: `${row.consumer_first_name || ''} ${row.consumer_last_name || ''}`.trim() || 'Customer',
+          consumerAvatar: row.consumer_avatar || null,
+        })),
+        barbers: barbersResult.rows.map(row => ({
+          id: row.id,
+          name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        })),
+      },
+      count: result.rows.length,
+    });
+  } catch (error: any) {
+    logger.error('Error fetching campus bookings:', error.message || error);
+    next(error);
+  }
+});
+
+// ============================================================================
 // BOOKING-SPECIFIC ENDPOINTS (with :id parameter)
 // ============================================================================
 
