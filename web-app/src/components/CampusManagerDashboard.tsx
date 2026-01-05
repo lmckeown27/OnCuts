@@ -517,7 +517,8 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       setLoading(true);
       const barberServiceModule = await import('../services/barber.service');
       const barberService = barberServiceModule.default;
-      const response = await barberService.getBarbers({});
+      // Filter by campus_id to only show barbers for this campus
+      const response = await barberService.getBarbers({ campus_id: campusId });
       
       // Extract barbers array from response - handle both paginated and direct array responses
       const barbersArray = Array.isArray(response) ? response : (response?.data || []);
