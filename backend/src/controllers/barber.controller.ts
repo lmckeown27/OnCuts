@@ -880,22 +880,14 @@ const minutesToTime = (minutes: number): string => {
 };
 
 // Generate available time slots in 15-minute increments
-const generateTimeSlots = (
+// currentTimeMinutes: if > 0, filter out slots before this time (for same-day bookings)
+const generateTimeSlotsWithCurrentTime = (
   intervals: TimeInterval[],
   bookedSlots: { start: string; end: string }[],
   slotDuration: number = 15, // minutes
-  isToday: boolean = false // If true, filter out past times
+  currentTimeMinutes: number = 0 // Current time in minutes (0 = don't filter past times)
 ): { time: string; available: boolean }[] => {
   const slots: { time: string; available: boolean }[] = [];
-  
-  // Get current time in minutes if booking for today
-  let currentTimeMinutes = 0;
-  if (isToday) {
-    const now = new Date();
-    currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-    // Add a small buffer (15 mins) so users can't book slots that are about to start
-    currentTimeMinutes += 15;
-  }
   
   for (const interval of intervals) {
     const startMins = timeToMinutes(interval.start);
@@ -903,13 +895,9 @@ const generateTimeSlots = (
     
     for (let mins = startMins; mins < endMins; mins += slotDuration) {
       const time = minutesToTime(mins);
-      const slotEnd = minutesToTime(mins + slotDuration);
       
       // Check if this slot is in the past (for same-day bookings)
-      let isPast = false;
-      if (isToday && mins < currentTimeMinutes) {
-        isPast = true;
-      }
+      const isPast = currentTimeMinutes > 0 && mins < currentTimeMinutes;
       
       // Check if this slot overlaps with any booked slots
       let isBooked = false;
@@ -1031,12 +1019,19 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       }));
 
       // Check if the selected date is today (to filter out past times)
-      const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      // Use Pacific timezone since all barbers are at Cal Poly SLO
+      const pacificTime = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
+      const pacificNow = new Date(pacificTime);
+      const todayStr = `${pacificNow.getFullYear()}-${String(pacificNow.getMonth() + 1).padStart(2, '0')}-${String(pacificNow.getDate()).padStart(2, '0')}`;
       const isToday = date === todayStr;
+      
+      // Get current time in Pacific for filtering past slots
+      const currentHour = pacificNow.getHours();
+      const currentMinute = pacificNow.getMinutes();
+      const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + 15) : 0; // 15 min buffer
 
       // Generate available time slots (filter past times if booking for today)
-      const slots = generateTimeSlots(intervals, bookedSlots, 15, isToday);
+      const slots = generateTimeSlotsWithCurrentTime(intervals, bookedSlots, 15, currentTimeMinutes);
       
       console.log(`[Availability] Generated ${slots.length} slots, ${slots.filter(s => s.available).length} available`);
 
