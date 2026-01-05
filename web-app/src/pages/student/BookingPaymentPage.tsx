@@ -102,7 +102,7 @@ export default function BookingPaymentPage() {
   // No booking details
   if (!bookingDetails) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900 mb-2">No Booking Details</h2>
@@ -134,7 +134,7 @@ export default function BookingPaymentPage() {
   // Success Screen
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <div className="bg-green-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <CheckCircle className="w-8 h-8 text-green-600" />
@@ -217,7 +217,7 @@ export default function BookingPaymentPage() {
   // Error Screen
   if (step === 'error') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <div className="bg-red-100 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-600" />
@@ -240,7 +240,7 @@ export default function BookingPaymentPage() {
   // Processing Screen
   if (step === 'processing') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-6">
         <Card className="text-center max-w-md">
           <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirming Booking...</h2>
@@ -252,7 +252,7 @@ export default function BookingPaymentPage() {
 
   // Confirmation Screen (Receipt)
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-[100dvh] bg-gray-50 p-6">
       <div className="max-w-lg mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center gap-4">

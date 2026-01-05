@@ -430,7 +430,7 @@ export default function ConsumerBookingStatusPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading your booking...</p>
@@ -441,7 +441,7 @@ export default function ConsumerBookingStatusPage() {
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-[100dvh] bg-gray-50">
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -484,7 +484,7 @@ export default function ConsumerBookingStatusPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={fetchActiveBooking} className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={fetchActiveBooking} className="min-h-[100dvh] bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">

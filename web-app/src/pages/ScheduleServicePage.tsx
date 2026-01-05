@@ -132,7 +132,7 @@ export default function ScheduleServicePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Loading barber info...</p>
         </div>
@@ -142,7 +142,7 @@ export default function ScheduleServicePage() {
 
   if (!barber) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Barber not found</p>
           <Button onClick={() => navigate('/web/consumer')}>
@@ -154,7 +154,7 @@ export default function ScheduleServicePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[100dvh] bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-4">
