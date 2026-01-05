@@ -782,7 +782,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const barberFilter = selectedBarberId !== 'all' ? `&barberId=${selectedBarberId}` : '';
       const response = await fetch(
         `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}`,
@@ -795,6 +795,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         const data = await response.json();
         setBookings(data.data.bookings || []);
         setBarbers(data.data.barbers || []);
+      } else {
+        console.error('Failed to fetch campus bookings:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch campus bookings:', error);
