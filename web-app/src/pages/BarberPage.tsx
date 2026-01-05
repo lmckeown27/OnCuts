@@ -1943,13 +1943,18 @@ const migrateSchedule = (schedule: Record<string, unknown>): WeeklyAvailability 
     
     // If already has intervals array, use it
     if (dayData.intervals && Array.isArray(dayData.intervals) && dayData.intervals.length > 0) {
-      migrated[day] = {
-        enabled: dayData.enabled ?? true,
-        intervals: dayData.intervals.map(i => ({
+      // Filter out invalid intervals and provide defaults for missing fields
+      const validIntervals = dayData.intervals
+        .filter(i => i && (i.start || i.end)) // Keep intervals that have at least one time
+        .map(i => ({
           id: i.id || generateId(),
-          start: i.start,
-          end: i.end
-        }))
+          start: i.start || '09:00',
+          end: i.end || '17:00'
+        }));
+      
+      migrated[day] = {
+        enabled: dayData.enabled ?? (validIntervals.length > 0),
+        intervals: validIntervals
       };
     } 
     // Migrate from old single start/end format
@@ -1984,8 +1989,12 @@ type ValidationErrors = {
 };
 
 // Helper to convert time string to minutes
-const timeToMinutes = (time: string): number => {
+const timeToMinutes = (time: string | undefined | null): number => {
+  if (!time || typeof time !== 'string' || !time.includes(':')) {
+    return 0;
+  }
   const [hours, minutes] = time.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes)) return 0;
   return hours * 60 + minutes;
 };
 
@@ -2104,10 +2113,12 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
       
       // Calculate next interval start (end of last interval + 1 hour)
       let newStart = '09:00';
-      if (lastInterval) {
+      if (lastInterval && lastInterval.end && lastInterval.end.includes(':')) {
         const [hours] = lastInterval.end.split(':').map(Number);
-        const nextHour = Math.min(hours + 1, 23);
-        newStart = `${nextHour.toString().padStart(2, '0')}:00`;
+        if (!isNaN(hours)) {
+          const nextHour = Math.min(hours + 1, 23);
+          newStart = `${nextHour.toString().padStart(2, '0')}:00`;
+        }
       }
       
       // End time is 2 hours after start
@@ -2192,9 +2203,13 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
   };
 
   // Format time for display (12-hour format)
-  const formatTime = (time24: string): string => {
+  const formatTime = (time24: string | undefined | null): string => {
+    if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) {
+      return 'N/A';
+    }
     const [hourStr, minuteStr] = time24.split(':');
     const hour = parseInt(hourStr, 10);
+    if (isNaN(hour)) return 'N/A';
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     const period = hour < 12 ? 'am' : 'pm';
     return `${displayHour}:${minuteStr}${period}`;

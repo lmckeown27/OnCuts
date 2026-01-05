@@ -30,10 +30,14 @@ const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 const FILTER_STORAGE_KEY = 'campuscut_filter_criteria';
 
 // Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
-function formatTime(time24: string): string {
+function formatTime(time24: string | undefined | null): string {
+  if (!time24 || typeof time24 !== 'string' || !time24.includes(':')) {
+    return 'N/A';
+  }
   const [hourStr, minuteStr] = time24.split(':');
   let hour = parseInt(hourStr, 10);
   const minute = parseInt(minuteStr, 10);
+  if (isNaN(hour) || isNaN(minute)) return 'N/A';
   const ampm = hour >= 12 ? 'pm' : 'am';
   hour = hour % 12 || 12;
   return minute === 0 ? `${hour}${ampm}` : `${hour}:${minuteStr}${ampm}`;
@@ -69,10 +73,13 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
       
       // Check for new multi-interval format
       if (daySchedule.intervals && Array.isArray(daySchedule.intervals) && daySchedule.intervals.length > 0) {
-        // Show all intervals (e.g., "9am-12pm, 2pm-6pm")
-        times = daySchedule.intervals
-          .map(interval => `${formatTime(interval.start)}-${formatTime(interval.end)}`)
-          .join(', ');
+        // Filter out invalid intervals and show all valid ones (e.g., "9am-12pm, 2pm-6pm")
+        const validIntervals = daySchedule.intervals.filter(
+          interval => interval && interval.start && interval.end
+        );
+        times = validIntervals.length > 0
+          ? validIntervals.map(interval => `${formatTime(interval.start)}-${formatTime(interval.end)}`).join(', ')
+          : 'Available';
       } else if (daySchedule.start && daySchedule.end) {
         // Legacy format
         times = `${formatTime(daySchedule.start)}-${formatTime(daySchedule.end)}`;
