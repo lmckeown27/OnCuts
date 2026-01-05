@@ -880,7 +880,7 @@ const minutesToTime = (minutes: number): string => {
 };
 
 // Generate available time slots in 15-minute increments
-// currentTimeMinutes: if > 0, filter out slots before this time (for same-day bookings)
+// currentTimeMinutes: if > 0, exclude slots before this time (for same-day bookings)
 const generateTimeSlotsWithCurrentTime = (
   intervals: TimeInterval[],
   bookedSlots: { start: string; end: string }[],
@@ -894,10 +894,12 @@ const generateTimeSlotsWithCurrentTime = (
     const endMins = timeToMinutes(interval.end);
     
     for (let mins = startMins; mins < endMins; mins += slotDuration) {
-      const time = minutesToTime(mins);
+      // Skip past times entirely - don't include them in the list
+      if (currentTimeMinutes > 0 && mins < currentTimeMinutes) {
+        continue;
+      }
       
-      // Check if this slot is in the past (for same-day bookings)
-      const isPast = currentTimeMinutes > 0 && mins < currentTimeMinutes;
+      const time = minutesToTime(mins);
       
       // Check if this slot overlaps with any booked slots
       let isBooked = false;
@@ -912,7 +914,7 @@ const generateTimeSlotsWithCurrentTime = (
         }
       }
       
-      slots.push({ time, available: !isBooked && !isPast });
+      slots.push({ time, available: !isBooked });
     }
   }
   
