@@ -280,20 +280,45 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
             <div className="grid grid-cols-7 gap-2">
               {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
                 const schedule = (barber.weekly_schedule as any)?.[day];
-                const formatTime = (time: string) => {
+                const formatTime = (time: string | undefined | null): string => {
+                  if (!time || typeof time !== 'string' || !time.includes(':')) {
+                    return 'N/A';
+                  }
                   const [hours, minutes] = time.split(':').map(Number);
+                  if (isNaN(hours)) return 'N/A';
                   const period = hours >= 12 ? 'PM' : 'AM';
                   const hour12 = hours % 12 || 12;
                   return `${hour12}${period}`;
                 };
+                
+                // Get display times - handle both new intervals format and legacy start/end format
+                const getScheduleDisplay = (): string => {
+                  if (!schedule?.enabled) return 'Off';
+                  
+                  // New intervals format
+                  if (schedule.intervals && Array.isArray(schedule.intervals) && schedule.intervals.length > 0) {
+                    const validIntervals = schedule.intervals.filter(
+                      (i: any) => i && i.start && i.end
+                    );
+                    if (validIntervals.length === 0) return 'Available';
+                    return validIntervals.map((i: any) => 
+                      `${formatTime(i.start)}-${formatTime(i.end)}`
+                    ).join(', ');
+                  }
+                  
+                  // Legacy format
+                  if (schedule.start && schedule.end) {
+                    return `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`;
+                  }
+                  
+                  return 'Available';
+                };
+                
                 return (
                   <div key={day} className="text-center">
                     <span className="font-medium text-gray-900 text-xs uppercase">{day.slice(0, 3)}</span>
                     <p className={`text-xs mt-1 ${schedule?.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {schedule?.enabled 
-                        ? `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`
-                        : 'Off'
-                      }
+                      {getScheduleDisplay()}
                     </p>
                   </div>
                 );
