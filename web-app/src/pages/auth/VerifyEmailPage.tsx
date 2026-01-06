@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, AlertCircle, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
@@ -8,18 +8,29 @@ import { useViewport } from '../../hooks/useViewport';
 
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
-  const { verifyEmail, resendVerificationCode, isLoading, error, clearError, getPendingVerificationEmail, isAuthenticated } = useAuthStore();
+  const { verifyEmail, resendVerificationCode, isLoading, error, clearError, isAuthenticated, pendingVerificationEmail } = useAuthStore();
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [email, setEmail] = useState<string | null>(null);
+  const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
-  const email = getPendingVerificationEmail();
 
-  // Helper to check and use post-login redirect - memoized to avoid React error #300
-  const handlePostLoginRedirect = useCallback(() => {
+  // Get email from store or localStorage on mount (not during render)
+  useEffect(() => {
+    const storedEmail = pendingVerificationEmail || localStorage.getItem('pendingVerificationEmail');
+    setEmail(storedEmail);
+  }, [pendingVerificationEmail]);
+
+  // Handle post-login redirect after authentication
+  useEffect(() => {
+    if (!isAuthenticated || hasCheckedRedirect) return;
+    
+    setHasCheckedRedirect(true);
+    
+    // Check for post-login redirect
     const postLoginRedirect = localStorage.getItem('postLoginRedirect');
     if (postLoginRedirect) {
       try {
@@ -30,30 +41,24 @@ export default function VerifyEmailPage() {
           navigate(`/web/consumer/book/${redirect.barberId}`, {
             state: { barber: redirect.barber }
           });
-          return true;
+          return;
         }
       } catch (e) {
         localStorage.removeItem('postLoginRedirect');
       }
     }
-    return false;
-  }, [navigate]);
-
-  // Redirect if no pending email or already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Check for post-login redirect first
-      if (!handlePostLoginRedirect()) {
-        navigate('/web/consumer');
-      }
-      return;
-    }
     
-    if (!email) {
+    // Default redirect to consumer page
+    navigate('/web/consumer');
+  }, [isAuthenticated, hasCheckedRedirect, navigate]);
+
+  // Redirect if no pending email (after email state is initialized)
+  useEffect(() => {
+    if (email === null) return; // Still loading
+    if (!email && !isAuthenticated) {
       navigate('/web');
-      return;
     }
-  }, [email, isAuthenticated, navigate, handlePostLoginRedirect]);
+  }, [email, isAuthenticated, navigate]);
 
   // Scroll to top on mount
   useEffect(() => {
