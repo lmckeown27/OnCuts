@@ -848,6 +848,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   });
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
+  const [loginRedirectBarber, setLoginRedirectBarber] = useState<Barber | null>(null);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -937,6 +938,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
   const handleScheduleClick = (barber: Barber) => {
     if (!isAuthenticated) {
       setLoginPromptAction('schedule');
+      setLoginRedirectBarber(barber); // Store barber for post-login redirect
       scrollToTopAndOpen(setShowLoginPrompt);
       return;
     }
@@ -1375,8 +1377,12 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Login Prompt for unauthenticated users */}
       <LoginPrompt
         isOpen={showLoginPrompt}
-        onClose={() => setShowLoginPrompt(false)}
+        onClose={() => {
+          setShowLoginPrompt(false);
+          setLoginRedirectBarber(null); // Clear redirect barber on close
+        }}
         action={loginPromptAction}
+        redirectBarber={loginRedirectBarber}
       />
     </>
   );

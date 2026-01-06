@@ -138,7 +138,26 @@ export default function AuthPage() {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
       
-      // Redirect based on user role
+      // Check for post-login redirect (e.g., scheduling a service)
+      const postLoginRedirect = localStorage.getItem('postLoginRedirect');
+      if (postLoginRedirect) {
+        try {
+          const redirect = JSON.parse(postLoginRedirect);
+          localStorage.removeItem('postLoginRedirect');
+          
+          if (redirect.type === 'schedule' && redirect.barber) {
+            // Redirect to schedule service page with barber data
+            navigate(`/web/consumer/book/${redirect.barberId}`, {
+              state: { barber: redirect.barber }
+            });
+            return;
+          }
+        } catch (e) {
+          localStorage.removeItem('postLoginRedirect');
+        }
+      }
+      
+      // Default redirect based on user role
       const currentUser = useAuthStore.getState().user;
       
       if (result.isAdmin) {

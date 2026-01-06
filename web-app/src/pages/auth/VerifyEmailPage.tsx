@@ -18,10 +18,34 @@ export default function VerifyEmailPage() {
   
   const email = getPendingVerificationEmail();
 
+  // Helper to check and use post-login redirect
+  const handlePostLoginRedirect = () => {
+    const postLoginRedirect = localStorage.getItem('postLoginRedirect');
+    if (postLoginRedirect) {
+      try {
+        const redirect = JSON.parse(postLoginRedirect);
+        localStorage.removeItem('postLoginRedirect');
+        
+          if (redirect.type === 'schedule' && redirect.barber) {
+          navigate(`/web/consumer/book/${redirect.barberId}`, {
+            state: { barber: redirect.barber }
+          });
+          return true;
+        }
+      } catch (e) {
+        localStorage.removeItem('postLoginRedirect');
+      }
+    }
+    return false;
+  };
+
   // Redirect if no pending email or already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/web/consumer');
+      // Check for post-login redirect first
+      if (!handlePostLoginRedirect()) {
+        navigate('/web/consumer');
+      }
       return;
     }
     
@@ -119,7 +143,11 @@ export default function VerifyEmailPage() {
     try {
       await verifyEmail(email, verificationCode);
       toast.success('Email verified successfully! Welcome to CampusCut!');
-      navigate('/web/consumer');
+      
+      // Check for post-login redirect first, otherwise go to consumer page
+      if (!handlePostLoginRedirect()) {
+        navigate('/web/consumer');
+      }
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {

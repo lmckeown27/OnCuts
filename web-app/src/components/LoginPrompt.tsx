@@ -3,22 +3,28 @@
  * 
  * Prompts unauthenticated users to sign in or create an account
  * when they try to access protected features.
+ * 
+ * Supports redirect after login with barber context for scheduling flow.
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, X, LogIn } from 'lucide-react';
+import type { Barber } from '../types';
 
 interface LoginPromptProps {
   isOpen: boolean;
   onClose: () => void;
   action?: 'schedule' | 'become_barber' | 'general';
+  /** Barber to redirect to after login (for schedule flow) */
+  redirectBarber?: Barber | null;
 }
 
 export default function LoginPrompt({
   isOpen,
   onClose,
   action = 'general',
+  redirectBarber,
 }: LoginPromptProps) {
   const navigate = useNavigate();
   const [isVisible, setIsVisible] = useState(false);
@@ -69,6 +75,14 @@ export default function LoginPrompt({
   };
 
   const handleSignIn = () => {
+    // If there's a barber to redirect to after login, store in localStorage
+    if (redirectBarber && action === 'schedule') {
+      localStorage.setItem('postLoginRedirect', JSON.stringify({
+        type: 'schedule',
+        barberId: redirectBarber.id,
+        barber: redirectBarber,
+      }));
+    }
     handleClose();
     navigate('/web');
   };
