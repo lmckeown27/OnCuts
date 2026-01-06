@@ -101,7 +101,40 @@ router.post('/', authenticate, async (req, res, next) => {
     const price = priceUsdCents || 0;
     const platformFee = Math.round(price * 0.05);
     const barberEarnings = price - platformFee;
-    const requestedTime = scheduledTime ? new Date(scheduledTime) : new Date();
+    
+    // Parse scheduled time - all times are in Pacific timezone (Cal Poly SLO)
+    // The frontend sends time like "2026-01-07T16:45:00" without timezone
+    // We need to interpret this as Pacific time and convert to UTC for storage
+    let requestedTime: Date;
+    if (scheduledTime) {
+      // Check if already has timezone (ISO format with Z or offset)
+      if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
+        // Already in UTC/ISO format - parse directly
+        requestedTime = new Date(scheduledTime);
+      } else {
+        // No timezone specified - interpret as Pacific time
+        // Parse the date/time components
+        const [datePart, timePart] = scheduledTime.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, minute] = (timePart || '12:00').split(':').map(Number);
+        
+        // Check if DST is in effect for this date (PDT = UTC-7, PST = UTC-8)
+        const testDate = new Date(year, month - 1, day);
+        const isDST = testDate.toLocaleString('en-US', { 
+          timeZone: 'America/Los_Angeles', 
+          timeZoneName: 'short' 
+        }).includes('PDT');
+        const offsetHours = isDST ? 7 : 8;
+        
+        // Create UTC date by adding the Pacific offset
+        // e.g., 4:45 PM Pacific + 8 hours = 12:45 AM next day UTC
+        requestedTime = new Date(Date.UTC(year, month - 1, day, hour + offsetHours, minute || 0));
+        
+        logger.info(`Parsed Pacific time: ${scheduledTime} (${isDST ? 'PDT' : 'PST'}) -> UTC: ${requestedTime.toISOString()}`);
+      }
+    } else {
+      requestedTime = new Date();
+    }
     
     // Get or create location (requires campus -> location chain)
     let locationId: string;

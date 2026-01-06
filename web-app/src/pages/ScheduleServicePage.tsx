@@ -98,7 +98,10 @@ export default function ScheduleServicePage() {
       )?.price || 30;
 
       // Combine date and time for scheduled datetime
-      const scheduledAt = new Date(`${date}T${time}`).toISOString();
+      // IMPORTANT: All times are in Pacific timezone (Cal Poly SLO)
+      // We pass date and time separately so the backend can correctly interpret as Pacific time
+      // This avoids browser timezone issues
+      const scheduledAt = `${date}T${time}:00`; // ISO format without timezone - backend will interpret as Pacific
 
       // Build barber name from available properties
       const barberName = barber?.name 
