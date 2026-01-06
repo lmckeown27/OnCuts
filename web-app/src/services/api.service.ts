@@ -64,19 +64,31 @@ class ApiService {
                 }
               }
             } catch (refreshError) {
-              // Refresh failed, logout user
-              localStorage.clear();
+              // Refresh failed, logout user - only clear auth items, preserve app state
+              this.clearAuthStorage();
               window.location.href = '/';
             }
           } else {
-            // No refresh token, logout
-            localStorage.clear();
+            // No refresh token, logout - only clear auth items, preserve app state
+            this.clearAuthStorage();
             window.location.href = '/';
           }
         }
         return Promise.reject(error);
       }
     );
+  }
+
+  /**
+   * Clear only auth-related localStorage items
+   * Preserves app state like selected university, filters, etc.
+   */
+  private clearAuthStorage(): void {
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem('pendingVerificationEmail');
+    localStorage.removeItem('postLoginRedirect');
   }
 
   async get<T = any>(url: string, params?: any): Promise<T> {
