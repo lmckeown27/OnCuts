@@ -647,9 +647,6 @@ export default function ConsumerBookingStatusPage() {
           return (
             <div className="bg-white rounded-2xl shadow-sm border-2 border-green-400 p-6 mb-6">
               <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <DollarSign className="w-6 h-6 text-green-600" />
-                </div>
                 <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
                 <p className="text-gray-600 text-sm mb-4">
                   {booking.paymentRequestedAt 
