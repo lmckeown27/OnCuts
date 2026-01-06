@@ -396,8 +396,9 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             }`}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 text-white p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-gradient-to-r from-primary-500 to-primary-400 text-white p-4 sm:p-6">
+              {/* Desktop: Show title row */}
+              <div className="hidden sm:flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold">Customer Details</h2>
                 <button
                   onClick={closeModal}
@@ -406,13 +407,21 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+              {/* Customer info with X button on mobile */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl flex-shrink-0">
                   {viewingRequest.customerName.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{viewingRequest.customerName}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg sm:text-xl font-semibold truncate">{viewingRequest.customerName}</h3>
                 </div>
+                {/* Mobile: X button next to name */}
+                <button
+                  onClick={closeModal}
+                  className="sm:hidden text-white hover:bg-white/20 rounded-full p-2 transition-colors flex-shrink-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
