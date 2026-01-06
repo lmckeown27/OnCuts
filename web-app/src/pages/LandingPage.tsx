@@ -249,7 +249,7 @@ export default function LandingPage() {
       <div className="pt-32 pb-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50">
         <div className="max-w-5xl mx-auto text-center">
           <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Earn More, Pay Less
+            Earn More,<br className="md:hidden" /> Pay Less
           </h1>
           
           {/* CTA Button */}
