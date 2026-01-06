@@ -264,25 +264,55 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Why CampusCut Section - Video */}
+      {/* Portfolio Section - Video Showcase */}
       <div className="py-20 px-4 bg-white" id="how-it-works">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Why CampusCut?
+              See Our Work
             </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Check out some of the amazing cuts from our talented campus barbers
+            </p>
           </div>
           
-          {/* Video Container */}
-          <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-            <iframe
-              className="absolute top-0 left-0 w-full h-full rounded-2xl shadow-2xl"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-              title="CampusCut Platform Overview"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
+          {/* Video Grid - 3 YouTube Shorts */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {/* Video 1 */}
+            <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/I9MlYYn4wUM"
+                title="CampusCut Showcase 1"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+            
+            {/* Video 2 */}
+            <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/aPAqtReSjX0"
+                title="CampusCut Showcase 2"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+            
+            {/* Video 3 */}
+            <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/yi4qTTBbhx8"
+                title="CampusCut Showcase 3"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
           </div>
 
         </div>
