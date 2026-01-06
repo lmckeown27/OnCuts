@@ -657,9 +657,8 @@ export default function ConsumerBookingStatusPage() {
                 
                 <button
                   onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
-                  className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center"
                 >
-                  <DollarSign className="w-5 h-5" />
                   Pay ${(booking.priceUsdCents / 100).toFixed(2)}
                 </button>
               </div>
