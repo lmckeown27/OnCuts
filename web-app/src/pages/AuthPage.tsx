@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import authService from '../services/auth.service';
 import TabChairLogo from '../assets/logos/Tab_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
 
@@ -47,6 +48,12 @@ export default function AuthPage() {
   });
 
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {
@@ -233,6 +240,36 @@ export default function AuthPage() {
     }
   };
 
+  // Handle forgot password request
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!forgotPasswordEmail.trim()) {
+      toast.error('Please enter your email address');
+      return;
+    }
+    
+    setIsSendingReset(true);
+    
+    try {
+      await authService.requestPasswordReset(forgotPasswordEmail);
+      setResetEmailSent(true);
+      toast.success('Password reset email sent!');
+    } catch (err: any) {
+      // Don't reveal if email exists or not for security
+      setResetEmailSent(true);
+      toast.success('If an account exists with this email, you will receive a password reset link.');
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
+
+  const closeForgotPassword = () => {
+    setShowForgotPassword(false);
+    setForgotPasswordEmail('');
+    setResetEmailSent(false);
+  };
+
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     setError(null);
@@ -398,6 +435,7 @@ export default function AuthPage() {
               <div className="text-center">
                 <button 
                   type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-primary-500 hover:text-primary-600 text-sm font-medium transition-colors"
                 >
                   Forgot your password?
@@ -655,6 +693,87 @@ export default function AuthPage() {
           </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={closeForgotPassword}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Reset Password</h2>
+              <button 
+                onClick={closeForgotPassword}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {!resetEmailSent ? (
+              <form onSubmit={handleForgotPassword}>
+                <p className="text-gray-600 mb-4">
+                  Enter your email address and we'll send you a link to reset your password.
+                </p>
+                
+                <div className="relative mb-4">
+                  <label 
+                    htmlFor="forgot-email" 
+                    className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                  >
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="forgot-email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 transition-all duration-200 text-gray-900 placeholder-gray-400"
+                    placeholder="you@example.com"
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSendingReset}
+                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {isSendingReset ? 'Sending...' : 'Send Reset Link'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={closeForgotPassword}
+                  className="w-full mt-3 py-3 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Back to Sign In
+                </button>
+              </form>
+            ) : (
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Check Your Email</h3>
+                <p className="text-gray-600 mb-6">
+                  If an account exists for <strong>{forgotPasswordEmail}</strong>, you will receive a password reset link shortly.
+                </p>
+                <button
+                  onClick={closeForgotPassword}
+                  className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

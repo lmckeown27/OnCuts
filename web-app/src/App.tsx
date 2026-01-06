@@ -13,6 +13,7 @@ import AuthPage from './pages/AuthPage';
 // Lazy load everything else for code splitting
 // Authentication
 const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 const AdminRoleSelectPage = lazy(() => import('./pages/auth/AdminRoleSelectPage'));
 const AppInstallPage = lazy(() => import('./pages/AppInstallPage'));
 const MobileAppDownloadPage = lazy(() => import('./pages/MobileAppDownloadPage'));
@@ -112,6 +113,7 @@ function AppContent() {
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/web" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
         <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/reset-password" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ResetPasswordPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/admin-role-select" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminRoleSelectPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
         

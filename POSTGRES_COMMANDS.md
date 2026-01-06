@@ -156,12 +156,11 @@ BEGIN
     
     RAISE NOTICE 'Deleting user: %', target_user_id;
     
-    -- Delete related records
-    DELETE FROM notifications WHERE \"userId\" = target_user_id;
+    -- Delete related records (using correct column names)
+    DELETE FROM notifications WHERE user_id = target_user_id;
     DELETE FROM bookings WHERE \"consumerId\" = target_user_id OR \"barberId\" = target_user_id;
-    DELETE FROM messages WHERE \"senderId\" = target_user_id OR \"receiverId\" = target_user_id;
-    DELETE FROM conversations WHERE \"consumerId\" = target_user_id OR \"barberId\" = target_user_id;
-    DELETE FROM barber_applications WHERE \"userId\" = target_user_id;
+    DELETE FROM messages WHERE sender_id = target_user_id;
+    DELETE FROM barber_applications WHERE user_id = target_user_id;
     DELETE FROM barbers WHERE \"userId\" = target_user_id;
     DELETE FROM users WHERE id = target_user_id;
     
@@ -179,11 +178,10 @@ DECLARE uid UUID;
 BEGIN
     SELECT id INTO uid FROM users WHERE email = '$EMAIL';
     IF uid IS NOT NULL THEN
-        DELETE FROM notifications WHERE \"userId\" = uid;
+        DELETE FROM notifications WHERE user_id = uid;
         DELETE FROM bookings WHERE \"consumerId\" = uid OR \"barberId\" = uid;
-        DELETE FROM messages WHERE \"senderId\" = uid OR \"receiverId\" = uid;
-        DELETE FROM conversations WHERE \"consumerId\" = uid OR \"barberId\" = uid;
-        DELETE FROM barber_applications WHERE \"userId\" = uid;
+        DELETE FROM messages WHERE sender_id = uid;
+        DELETE FROM barber_applications WHERE user_id = uid;
         DELETE FROM barbers WHERE \"userId\" = uid;
         DELETE FROM users WHERE id = uid;
         RAISE NOTICE 'Deleted: %', uid;

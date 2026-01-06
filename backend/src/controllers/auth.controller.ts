@@ -644,9 +644,16 @@ export const requestPasswordReset = async (req: AuthRequest, res: Response, next
       return;
     }
 
-    // Generate reset token (implement email sending separately)
-    // const resetToken = generateResetToken(result.rows[0].id);
-    // await sendPasswordResetEmail(email, resetToken);
+    // Generate reset token and send email
+    const userId = result.rows[0].id;
+    const resetToken = generatePasswordResetToken(userId);
+    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const resetLink = `${frontendUrl}/web/reset-password?token=${resetToken}`;
+    
+    // Send password reset email (non-blocking)
+    sendPasswordResetEmail(email, resetLink).catch((err) => {
+      logger.error('Failed to send password reset email:', err.message);
+    });
 
     res.json({
       success: true,
