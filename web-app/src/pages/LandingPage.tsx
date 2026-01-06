@@ -276,13 +276,13 @@ export default function LandingPage() {
             </p>
           </div>
           
-          {/* Video Grid - 3 YouTube Shorts */}
+          {/* Video Grid - 3 YouTube Shorts (autoplay, muted, looping) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {/* Video 1 */}
             <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/I9MlYYn4wUM"
+                src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0"
                 title="CampusCut Showcase 1"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -294,7 +294,7 @@ export default function LandingPage() {
             <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/aPAqtReSjX0"
+                src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0"
                 title="CampusCut Showcase 2"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -306,7 +306,7 @@ export default function LandingPage() {
             <div className="relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/yi4qTTBbhx8"
+                src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0"
                 title="CampusCut Showcase 3"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
