@@ -657,7 +657,7 @@ export default function ConsumerBookingStatusPage() {
                 
                 <button
                   onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
-                  className="w-full max-w-xs py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center"
+                  className="px-12 py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
                   Pay ${(booking.priceUsdCents / 100).toFixed(2)}
                 </button>
