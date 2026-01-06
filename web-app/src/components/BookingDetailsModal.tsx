@@ -262,11 +262,11 @@ export default function BookingDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[60] flex items-start sm:items-center justify-center p-2 pt-4 sm:p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92dvh] sm:max-h-[90vh] overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -285,7 +285,7 @@ export default function BookingDetailsModal({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div className="p-6 overflow-y-auto max-h-[calc(92dvh-80px)] sm:max-h-[calc(90vh-80px)]">
           {/* Delete Confirmation View */}
           {isDeleting ? (
             <div className="space-y-4">

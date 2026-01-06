@@ -381,13 +381,13 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
       {/* Customer Details Modal */}
       {viewingRequest && (
         <div 
-          className={`fixed inset-0 flex items-center justify-center z-[100] p-4 transition-all duration-150 ease-out ${
+          className={`fixed inset-0 min-h-[100dvh] flex items-start sm:items-center justify-center z-[100] p-2 pt-4 sm:p-4 overflow-y-auto transition-all duration-150 ease-out ${
             isModalVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
         >
           <div 
             ref={modalRef} 
-            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[92dvh] sm:max-h-[90vh] overflow-hidden my-auto transition-all duration-150 ease-out ${
               isModalVisible 
                 ? 'opacity-100 scale-100 translate-y-0' 
                 : 'opacity-0 scale-95 translate-y-4'
@@ -415,7 +415,7 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
             </div>
 
             {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-280px)]">
+            <div className="p-6 overflow-y-auto max-h-[calc(92dvh-200px)] sm:max-h-[calc(90vh-200px)]">
               <div className="space-y-4">
                 {/* Service Request Details */}
                 <div>
