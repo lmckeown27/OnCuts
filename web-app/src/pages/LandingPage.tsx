@@ -446,7 +446,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Browse barber profiles, pick one you like, and send a booking request with your preferred date, time, and location. The barber will accept or suggest an alternative.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Tap "Find Barber," browse barbers at your campus, view their Instagram portfolio, then select a service, pick an available date and time, enter your preferred location, and submit your request. You'll get a notification when the barber accepts!</p>
                     </div>
                   </div>
                 </div>
@@ -456,12 +456,12 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('c2')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I pay?</h4>
+                    <h4 className="font-medium text-gray-900">When and how do I pay?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c2' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Pay securely through the app—no cash needed. Payment is only released to the barber after they mark your booking as complete.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You pay after your haircut is complete. Once the barber marks the service as done, you'll see a payment prompt. Pay securely with card, Apple Pay, or Google Pay—and add a tip if you'd like (15%, 20%, or 25%).</p>
                     </div>
                   </div>
                 </div>
@@ -476,7 +476,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You and the barber agree on a location—usually on campus in dorms, apartments, or common areas. It's all coordinated through the booking.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You choose the location when booking—your dorm, apartment, or a common area on campus. Enter your preferred spot, and the barber will come to you.</p>
                     </div>
                   </div>
                 </div>
@@ -486,12 +486,27 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('c4')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">What if I need to cancel?</h4>
+                    <h4 className="font-medium text-gray-900">Can I edit or cancel my booking?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c4' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You can cancel anytime before the barber confirms completion. Just be respectful of their time—frequent no-shows affect your reliability score.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can edit the time, date, or location, or cancel entirely—just do it before the barber marks the service as complete. Find these options in your booking details.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c5')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">How do I contact my barber?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c5' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Use the in-app messaging feature to chat directly with your barber. Coordinate details, share reference photos, or ask questions—all in one place.</p>
                     </div>
                   </div>
                 </div>
@@ -509,12 +524,12 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b1')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I start cutting on CampusCut?</h4>
+                    <h4 className="font-medium text-gray-900">How do I become a CampusCut barber?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b1' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Create your profile, add your services and prices, link your Instagram portfolio, and start accepting booking requests. You're in control.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Tap "Become a Barber" and submit your application. Once approved, set up your profile with services, prices, availability, and link your Instagram portfolio. Connect Stripe to receive payments, and you're ready to start accepting bookings!</p>
                     </div>
                   </div>
                 </div>
@@ -529,7 +544,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 95% of every payment. We only take a 5% platform fee—way less than the 40-60% traditional shops take.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 95% of every payment, plus 100% of tips. We only take a 5% platform fee—way less than the 40-60% traditional barbershops take.</p>
                     </div>
                   </div>
                 </div>
@@ -539,12 +554,12 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b3')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">When do I get paid?</h4>
+                    <h4 className="font-medium text-gray-900">How does payment work?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b3' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Instantly. As soon as you mark a booking as complete, the payment is released to you. No waiting periods.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">After you complete a haircut, mark the booking as "Complete." The customer pays through the app, and funds are deposited directly to your connected Stripe account—no chasing payments.</p>
                     </div>
                   </div>
                 </div>
@@ -554,12 +569,27 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b4')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">Can I decline requests?</h4>
+                    <h4 className="font-medium text-gray-900">How do I manage my schedule?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b4' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Absolutely. You choose which requests to accept based on timing, location, and customer reliability scores. Your schedule, your rules.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile—choose which days and hours you're open for bookings. Customers can only request times you've made available. Update it anytime as your schedule changes.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b5')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Can I decline booking requests?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b5' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Absolutely. When you receive a booking request, you can accept or decline. You're in full control of which jobs you take on.</p>
                     </div>
                   </div>
                 </div>
