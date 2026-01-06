@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, AlertCircle, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react';
@@ -18,15 +18,15 @@ export default function VerifyEmailPage() {
   
   const email = getPendingVerificationEmail();
 
-  // Helper to check and use post-login redirect
-  const handlePostLoginRedirect = () => {
+  // Helper to check and use post-login redirect - memoized to avoid React error #300
+  const handlePostLoginRedirect = useCallback(() => {
     const postLoginRedirect = localStorage.getItem('postLoginRedirect');
     if (postLoginRedirect) {
       try {
         const redirect = JSON.parse(postLoginRedirect);
         localStorage.removeItem('postLoginRedirect');
         
-          if (redirect.type === 'schedule' && redirect.barber) {
+        if (redirect.type === 'schedule' && redirect.barber) {
           navigate(`/web/consumer/book/${redirect.barberId}`, {
             state: { barber: redirect.barber }
           });
@@ -37,7 +37,7 @@ export default function VerifyEmailPage() {
       }
     }
     return false;
-  };
+  }, [navigate]);
 
   // Redirect if no pending email or already authenticated
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function VerifyEmailPage() {
       navigate('/web');
       return;
     }
-  }, [email, isAuthenticated, navigate]);
+  }, [email, isAuthenticated, navigate, handlePostLoginRedirect]);
 
   // Scroll to top on mount
   useEffect(() => {
