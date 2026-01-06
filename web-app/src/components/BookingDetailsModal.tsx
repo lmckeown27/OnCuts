@@ -262,11 +262,11 @@ export default function BookingDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[60] flex items-start sm:items-center justify-center p-2 pt-4 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[60] flex items-start justify-center p-2 pt-8 sm:pt-4 sm:items-center sm:p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92dvh] sm:max-h-[90vh] overflow-hidden my-auto"
+        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] sm:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
