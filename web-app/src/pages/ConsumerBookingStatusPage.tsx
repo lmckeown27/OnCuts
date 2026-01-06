@@ -789,8 +789,8 @@ export default function ConsumerBookingStatusPage() {
             Message {booking.barberName}
           </button>
           
-          {/* Edit and Cancel buttons for pending and accepted bookings */}
-          {(isPending || isAccepted) && (
+          {/* Edit and Cancel buttons for pending and accepted bookings (hidden if payment requested) */}
+          {(isPending || isAccepted) && !booking.paymentRequestedAt && (
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={handleOpenEditModal}
