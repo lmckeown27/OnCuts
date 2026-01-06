@@ -39,7 +39,8 @@ interface VerifyEmailUserData {
 
 interface VerifyEmailResponse {
   user: VerifyEmailUserData;
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   aptosAddress?: string;
 }
 
@@ -77,9 +78,14 @@ class AuthService {
     const response = await api.post<VerifyEmailResponse>('/auth/verify-email', { email, code });
     
     // Save auth data after successful verification
-    if (response.user && response.token) {
-      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.token);
+    // Backend returns accessToken and refreshToken (not just "token")
+    if (response.user && response.accessToken) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
+      // Also save refresh token if provided
+      if (response.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
+      }
     }
     
     // Clear pending verification email
