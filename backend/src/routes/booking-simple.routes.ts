@@ -11,6 +11,7 @@ import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails, sendBookingCancellationEmails } from '../services/email.service';
+import { DateTime } from 'luxon';
 
 const router = express.Router();
 
@@ -111,26 +112,20 @@ router.post('/', authenticate, async (req, res, next) => {
       if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
         // Already in UTC/ISO format - parse directly
         requestedTime = new Date(scheduledTime);
+        logger.info(`Parsed UTC time directly: ${scheduledTime} -> ${requestedTime.toISOString()}`);
       } else {
-        // No timezone specified - interpret as Pacific time
-        // Parse the date/time components
-        const [datePart, timePart] = scheduledTime.split('T');
-        const [year, month, day] = datePart.split('-').map(Number);
-        const [hour, minute] = (timePart || '12:00').split(':').map(Number);
+        // No timezone specified - interpret as Pacific time using luxon
+        // This correctly handles DST automatically
+        const pacificTime = DateTime.fromISO(scheduledTime, { zone: 'America/Los_Angeles' });
         
-        // Check if DST is in effect for this date (PDT = UTC-7, PST = UTC-8)
-        const testDate = new Date(year, month - 1, day);
-        const isDST = testDate.toLocaleString('en-US', { 
-          timeZone: 'America/Los_Angeles', 
-          timeZoneName: 'short' 
-        }).includes('PDT');
-        const offsetHours = isDST ? 7 : 8;
-        
-        // Create UTC date by adding the Pacific offset
-        // e.g., 4:45 PM Pacific + 8 hours = 12:45 AM next day UTC
-        requestedTime = new Date(Date.UTC(year, month - 1, day, hour + offsetHours, minute || 0));
-        
-        logger.info(`Parsed Pacific time: ${scheduledTime} (${isDST ? 'PDT' : 'PST'}) -> UTC: ${requestedTime.toISOString()}`);
+        if (!pacificTime.isValid) {
+          logger.error(`Invalid scheduled time format: ${scheduledTime}`);
+          requestedTime = new Date();
+        } else {
+          // Convert to UTC for database storage
+          requestedTime = pacificTime.toUTC().toJSDate();
+          logger.info(`Parsed Pacific time: ${scheduledTime} (${pacificTime.offsetNameShort}) -> UTC: ${requestedTime.toISOString()}`);
+        }
       }
     } else {
       requestedTime = new Date();
