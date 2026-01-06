@@ -148,11 +148,7 @@ export default function VerifyEmailPage() {
     try {
       await verifyEmail(email, verificationCode);
       toast.success('Email verified successfully! Welcome to CampusCut!');
-      
-      // Check for post-login redirect first, otherwise go to consumer page
-      if (!handlePostLoginRedirect()) {
-        navigate('/web/consumer');
-      }
+      // Redirect is handled by the useEffect that watches isAuthenticated
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
