@@ -266,7 +266,7 @@ export default function LandingPage() {
 
       {/* Portfolio Section - Video Showcase */}
       <div className="py-20 px-4 bg-white" id="how-it-works">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto bg-white">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               See Our Work
@@ -278,9 +278,9 @@ export default function LandingPage() {
           
           {/* Video Grid - 3 YouTube Shorts (autoplay, muted, looping) */}
           {/* Mobile: 1 video centered, Desktop: 3 videos in grid */}
-          <div className="flex justify-center md:grid md:grid-cols-3 gap-6 md:gap-8">
+          <div className="flex justify-center md:grid md:grid-cols-3 gap-6 md:gap-8 bg-white">
             {/* Video 1 - Always visible */}
-            <div className="relative w-full max-w-xs md:max-w-none rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+            <div className="relative w-full max-w-xs md:max-w-none rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
                 src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0"
@@ -292,7 +292,7 @@ export default function LandingPage() {
             </div>
             
             {/* Video 2 - Hidden on mobile */}
-            <div className="hidden md:block relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
                 src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0"
@@ -304,7 +304,7 @@ export default function LandingPage() {
             </div>
             
             {/* Video 3 - Hidden on mobile */}
-            <div className="hidden md:block relative w-full rounded-2xl shadow-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '9/16' }}>
+            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
                 className="absolute top-0 left-0 w-full h-full"
                 src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0"
