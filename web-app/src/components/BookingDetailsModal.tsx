@@ -312,7 +312,7 @@ export default function BookingDetailsModal({
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 pb-4 sm:pb-0">
                 <button
                   onClick={() => setIsDeleting(false)}
                   className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
@@ -394,7 +394,7 @@ export default function BookingDetailsModal({
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-2 pb-4 sm:pb-0">
                 <button
                   onClick={() => setIsEditing(false)}
                   className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
@@ -585,7 +585,7 @@ export default function BookingDetailsModal({
                   
                   {/* Edit & Cancel Buttons */}
                   {(canEdit || canCancel) && (
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 pb-4 sm:pb-0">
                       {canEdit && (
                         <button
                           onClick={() => setIsEditing(true)}
