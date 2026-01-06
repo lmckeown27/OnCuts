@@ -282,37 +282,43 @@ export default function LandingPage() {
             {/* Video 1 - Always visible */}
             <div className="relative w-full max-w-xs md:max-w-none rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
-                className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0"
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
                 title="CampusCut Showcase 1"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+                loading="lazy"
               ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
             </div>
             
             {/* Video 2 - Hidden on mobile */}
             <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
-                className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0"
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
                 title="CampusCut Showcase 2"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+                loading="lazy"
               ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
             </div>
             
             {/* Video 3 - Hidden on mobile */}
             <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
               <iframe
-                className="absolute top-0 left-0 w-full h-full"
-                src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0"
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
                 title="CampusCut Showcase 3"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+                loading="lazy"
               ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
             </div>
           </div>
 
