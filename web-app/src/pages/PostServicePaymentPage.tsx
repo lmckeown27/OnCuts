@@ -65,12 +65,9 @@ function PaymentForm({
   const totalAmount = baseAmount + tipAmount;
 
   const tipOptions = [
-    { label: 'No Tip', value: 0 },
-    { label: '$2', value: 2 },
-    { label: '$5', value: 5 },
-    { label: '$10', value: 10 },
     { label: '15%', value: Math.round(baseAmount * 0.15 * 100) / 100 },
     { label: '20%', value: Math.round(baseAmount * 0.20 * 100) / 100 },
+    { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
