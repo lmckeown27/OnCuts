@@ -9,6 +9,7 @@ import { useViewport } from '../../hooks/useViewport';
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
   const { verifyEmail, resendVerificationCode, isLoading, error, clearError, isAuthenticated, pendingVerificationEmail } = useAuthStore();
+  const { isMobile } = useViewport();
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,9 +191,6 @@ export default function VerifyEmailPage() {
     return null; // Will redirect in useEffect
   }
 
-  // Viewport detection
-  const { isMobile } = useViewport();
-  
   return (
     <div 
       className="min-h-screen flex items-center justify-center py-6 sm:py-12 px-3 sm:px-4"
