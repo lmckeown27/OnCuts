@@ -98,9 +98,100 @@ sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = true WH
 sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = false WHERE email = 'user@example.com';"
 ```
 
-### Delete User
+### Delete User (Simple)
 ```bash
 sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE email = 'user@example.com';"
+```
+
+### Delete Account Completely (For Testing)
+Use this to fully delete an account so you can test account creation again.
+This deletes the user AND all related records in other tables.
+
+```bash
+# Step 1: Find the user ID
+sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, role FROM users WHERE email = 'test@example.com';"
+
+# Step 2: Delete all related records (replace USER_ID with actual UUID)
+# Delete in order to avoid foreign key constraints
+
+# Delete notifications
+sudo -u postgres psql -d campuscuts -c "DELETE FROM notifications WHERE \"userId\" = 'USER_ID';"
+
+# Delete bookings (as consumer or barber)
+sudo -u postgres psql -d campuscuts -c "DELETE FROM bookings WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
+
+# Delete messages
+sudo -u postgres psql -d campuscuts -c "DELETE FROM messages WHERE \"senderId\" = 'USER_ID' OR \"receiverId\" = 'USER_ID';"
+
+# Delete conversations
+sudo -u postgres psql -d campuscuts -c "DELETE FROM conversations WHERE \"consumerId\" = 'USER_ID' OR \"barberId\" = 'USER_ID';"
+
+# Delete barber application (if any)
+sudo -u postgres psql -d campuscuts -c "DELETE FROM barber_applications WHERE \"userId\" = 'USER_ID';"
+
+# Delete barber profile (if any)
+sudo -u postgres psql -d campuscuts -c "DELETE FROM barbers WHERE \"userId\" = 'USER_ID';"
+
+# Delete the user
+sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE id = 'USER_ID';"
+```
+
+### Delete Account by Email (One Command)
+Deletes everything in the correct order using the email address directly.
+Replace `test@example.com` with the actual email.
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+DO \$\$
+DECLARE
+    target_user_id UUID;
+BEGIN
+    -- Get user ID
+    SELECT id INTO target_user_id FROM users WHERE email = 'test@example.com';
+    
+    IF target_user_id IS NULL THEN
+        RAISE NOTICE 'User not found';
+        RETURN;
+    END IF;
+    
+    RAISE NOTICE 'Deleting user: %', target_user_id;
+    
+    -- Delete related records
+    DELETE FROM notifications WHERE \"userId\" = target_user_id;
+    DELETE FROM bookings WHERE \"consumerId\" = target_user_id OR \"barberId\" = target_user_id;
+    DELETE FROM messages WHERE \"senderId\" = target_user_id OR \"receiverId\" = target_user_id;
+    DELETE FROM conversations WHERE \"consumerId\" = target_user_id OR \"barberId\" = target_user_id;
+    DELETE FROM barber_applications WHERE \"userId\" = target_user_id;
+    DELETE FROM barbers WHERE \"userId\" = target_user_id;
+    DELETE FROM users WHERE id = target_user_id;
+    
+    RAISE NOTICE 'User deleted successfully';
+END \$\$;
+"
+```
+
+### Quick Delete Test Account
+```bash
+# Replace EMAIL with the test email address
+EMAIL='test@example.com' && sudo -u postgres psql -d campuscuts -c "
+DO \$\$
+DECLARE uid UUID;
+BEGIN
+    SELECT id INTO uid FROM users WHERE email = '$EMAIL';
+    IF uid IS NOT NULL THEN
+        DELETE FROM notifications WHERE \"userId\" = uid;
+        DELETE FROM bookings WHERE \"consumerId\" = uid OR \"barberId\" = uid;
+        DELETE FROM messages WHERE \"senderId\" = uid OR \"receiverId\" = uid;
+        DELETE FROM conversations WHERE \"consumerId\" = uid OR \"barberId\" = uid;
+        DELETE FROM barber_applications WHERE \"userId\" = uid;
+        DELETE FROM barbers WHERE \"userId\" = uid;
+        DELETE FROM users WHERE id = uid;
+        RAISE NOTICE 'Deleted: %', uid;
+    ELSE
+        RAISE NOTICE 'User not found: $EMAIL';
+    END IF;
+END \$\$;
+"
 ```
 
 ### Count Users by Role
