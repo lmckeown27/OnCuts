@@ -50,6 +50,8 @@ class ApiService {
         if (error.response?.status === 401 && !isAuthEndpoint) {
           // Token expired, try to refresh
           const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+          const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+          
           if (refreshToken) {
             try {
               const response = await this.post<{ accessToken: string }>('/auth/refresh-token', {
@@ -68,11 +70,13 @@ class ApiService {
               this.clearAuthStorage();
               window.location.href = '/';
             }
-          } else {
-            // No refresh token, logout - only clear auth items, preserve app state
+          } else if (accessToken) {
+            // Had access token but no refresh token - session is invalid, logout
             this.clearAuthStorage();
             window.location.href = '/';
           }
+          // If no access token and no refresh token, user was never logged in
+          // Don't redirect - let the calling code handle the 401 gracefully
         }
         return Promise.reject(error);
       }
