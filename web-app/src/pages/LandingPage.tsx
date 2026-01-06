@@ -183,7 +183,7 @@ export default function LandingPage() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
               <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                How It Works
+                See Our Work
               </button>
               <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 Pricing Explained
@@ -221,7 +221,7 @@ export default function LandingPage() {
               mobileMenuVisible ? 'translate-y-0' : '-translate-y-2'
             }`}>
               <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                How It Works
+                See Our Work
               </button>
               <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 Pricing Explained
@@ -746,7 +746,7 @@ export default function LandingPage() {
               <ul className="space-y-2">
                 <li>
                   <button onClick={() => scrollToSection('how-it-works')} className="text-gray-400 hover:text-white transition-colors">
-                    How It Works
+                    See Our Work
                   </button>
                 </li>
                 <li>
