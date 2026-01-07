@@ -1531,18 +1531,29 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {getAppointmentsForDate(selectedDate).map((apt) => (
+                  {getAppointmentsForDate(selectedDate).map((apt) => {
+                    const isCompleted = apt.status === 'COMPLETED';
+                    return (
                     <div 
                       key={apt.id} 
                       onClick={() => {
                         closeDayModal();
                         onViewDetails(apt);
                       }}
-                      className="p-5 bg-gray-50 rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-100 transition-colors cursor-pointer"
+                      className={`p-5 rounded-lg border transition-colors cursor-pointer ${
+                        isCompleted 
+                          ? 'bg-green-50 border-green-200 hover:border-green-400' 
+                          : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
+                      }`}
                     >
                       {/* Top row: Client name + Price */}
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                          {isCompleted && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
+                          )}
+                        </div>
                         <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
                       </div>
                       {/* Service - prefer serviceName from input, fallback to serviceType */}
@@ -1571,7 +1582,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                         <span className="text-sm text-gray-500">Tap for details →</span>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
