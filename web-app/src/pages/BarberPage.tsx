@@ -781,10 +781,10 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        // Fetch ACCEPTED bookings for the barber's schedule
+        // Fetch ACCEPTED and COMPLETED bookings for the barber's schedule
         const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
           role: 'barber',
-          status: 'ACCEPTED',
+          status: 'ACCEPTED,COMPLETED',
         });
         
         setConfirmedBookings(response.bookings || []);
@@ -1077,15 +1077,26 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                       </div>
               ) : (
                 <div className="space-y-3 sm:space-y-4">
-                  {dailyAppointments.map((apt) => (
+                  {dailyAppointments.map((apt) => {
+                    const isCompleted = apt.status === 'COMPLETED';
+                    return (
                     <div 
                       key={apt.id} 
                       onClick={() => onViewDetails(apt)}
-                      className="p-5 sm:p-6 lg:p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-primary-300 hover:bg-gray-100 active:scale-98 transition-all cursor-pointer max-w-2xl mx-auto"
+                      className={`p-5 sm:p-6 lg:p-4 rounded-xl border active:scale-98 transition-all cursor-pointer max-w-2xl mx-auto ${
+                        isCompleted 
+                          ? 'bg-green-50 border-green-200 hover:border-green-400' 
+                          : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
+                      }`}
                     >
-                      {/* Top row: Client name + Price */}
+                      {/* Top row: Client name + Status/Price */}
                       <div className="flex items-start justify-between mb-1.5">
-                        <p className="font-bold text-gray-900 text-lg sm:text-xl lg:text-2xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-gray-900 text-lg sm:text-xl lg:text-2xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                          {isCompleted && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
+                          )}
+                        </div>
                         <p className="font-bold text-green-600 text-xl sm:text-2xl lg:text-3xl">{formatPrice(apt.priceUsdCents)}</p>
                       </div>
                       {/* Service - prefer serviceName from input, fallback to serviceType */}
@@ -1114,7 +1125,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
                         <span className="text-sm sm:text-base lg:text-lg text-gray-500">Tap for details →</span>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
