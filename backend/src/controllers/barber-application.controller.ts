@@ -5,6 +5,37 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification } from '../services/email.service';
 
+/**
+ * Service base prices (in dollars) - used to generate initial pricing for new barbers
+ * Synced with web-app/src/config/services.ts
+ */
+const SERVICE_BASE_PRICES: Record<string, number> = {
+  'Buzz Cut': 23,
+  'Line Up': 23,
+  'Beard Trim': 23,
+  'Haircut': 28,
+  'Taper': 28,
+  'Hot Shave': 28,
+  'Kids Cut': 28,
+  'Fade': 35,
+  'Haircut & Fade': 35,
+  'Design/Art': 38,
+  'Afro Textures': 38,
+  "Women's Cut": 40,
+  'Color Treatment': 45,
+  'Perm': 45,
+};
+
+/**
+ * Generate pricing array from specialties using base prices
+ */
+function generatePricingFromSpecialties(specialties: string[]): { name: string; price: number }[] {
+  return specialties.map(specialty => ({
+    name: specialty,
+    price: SERVICE_BASE_PRICES[specialty] || 25, // Default to $25 if not found
+  }));
+}
+
 interface BarberApplicationBody {
   campusId: string;
   yearsExperience: string;
@@ -378,19 +409,22 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
         [id]
       );
       const specialties = fullApp.rows[0]?.specialties || [];
+      
+      // Generate pricing from specialties with base prices
+      const pricing = generatePricingFromSpecialties(specialties);
 
-      // Create barber profile with specialties
+      // Create barber profile with specialties AND pricing
       // Note: Must include ALL required NOT NULL columns from barbers table
       await pool.query(
         `INSERT INTO barbers (
-           id, "userId", "campusId", specialties, "isActive", "weeklySchedule",
+           id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
            "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
            "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
            "pricingMultiplier", "isCampusManager", "isOnboarded",
            "createdAt", "updatedAt"
          )
          VALUES (
-           gen_random_uuid(), $1, $2, $3, true, '{}',
+           gen_random_uuid(), $1, $2, $3, $4, true, '{}',
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
@@ -398,13 +432,15 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
          )
          ON CONFLICT ("userId") DO UPDATE SET 
            specialties = EXCLUDED.specialties,
+           pricing = EXCLUDED.pricing,
            "isActive" = true,
            "campusId" = EXCLUDED."campusId",
            "updatedAt" = NOW()`,
         [
           updatedApplication.user_id,
           updatedApplication.campus_id,
-          specialties  // Pass array directly, pg driver handles TEXT[] conversion
+          specialties,  // Pass array directly, pg driver handles TEXT[] conversion
+          JSON.stringify(pricing)  // JSONB column needs JSON string
         ]
       );
 
