@@ -1405,7 +1405,7 @@ export async function sendBarberApplicationNotification(
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
       to: campusManagerEmail,
-      subject: `🎉 New Barber Application: ${details.applicantName} wants to join ${details.campusName}!`,
+      subject: `New Barber Application: ${details.applicantName} wants to join ${details.campusName}`,
       text: generateBarberApplicationText(campusManagerName, details),
       html: generateBarberApplicationHtml(campusManagerName, details, frontendUrl)
     };
@@ -1497,8 +1497,7 @@ function generateBarberApplicationHtml(
   <div style="max-width: 600px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">✂️</span>
-      <h1 style="color: white; margin: 10px 0 5px 0; font-size: 24px;">New Barber Application!</h1>
+      <h1 style="color: white; margin: 10px 0 5px 0; font-size: 24px;">New Barber Application</h1>
       <p style="color: #4ade80; margin: 0; font-size: 14px;">Someone wants to join your campus</p>
     </div>
     
@@ -1526,7 +1525,7 @@ function generateBarberApplicationHtml(
       
       <!-- Application Details -->
       <div style="background-color: #f9fafb; border-radius: 12px; padding: 25px; margin: 20px 0;">
-        <h3 style="color: #1f2937; margin: 0 0 20px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">📋 Application Details</h3>
+        <h3 style="color: #1f2937; margin: 0 0 20px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.5px;">Application Details</h3>
         
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
@@ -1562,13 +1561,13 @@ function generateBarberApplicationHtml(
       
       <!-- Why They Want to Be a Barber -->
       <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">💬 Why They Want to Be a CampusCut Barber:</h4>
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">Why They Want to Be a CampusCut Barber:</h4>
         <p style="color: #78350f; margin: 0; font-style: italic; line-height: 1.6;">"${details.whyBeBarber}"</p>
       </div>
       
       ${details.portfolioDescription ? `
       <div style="background-color: #f3f4f6; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">📸 Portfolio/Experience:</h4>
+        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">Portfolio/Experience:</h4>
         <p style="color: #4b5563; margin: 0; line-height: 1.6;">"${details.portfolioDescription}"</p>
       </div>
       ` : ''}
@@ -1584,26 +1583,26 @@ function generateBarberApplicationHtml(
       
       ${details.additionalNotes ? `
       <div style="background-color: #f3f4f6; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">📝 Additional Notes:</h4>
+        <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">Additional Notes:</h4>
         <p style="color: #4b5563; margin: 0; line-height: 1.6;">"${details.additionalNotes}"</p>
       </div>
       ` : ''}
       
       <!-- Action Required -->
       <div style="background-color: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-        <h3 style="color: #166534; margin: 0 0 15px 0;">🎯 Ready to Schedule an Interview?</h3>
+        <h3 style="color: #166534; margin: 0 0 15px 0;">Ready to Schedule an Interview?</h3>
         <p style="color: #15803d; margin: 0 0 20px 0; font-size: 14px; line-height: 1.6;">
           ${applicantFirstName} is excited to join your campus! Consider reaching out to schedule a quick interview to verify their skills and discuss expectations.
         </p>
         <a href="mailto:${details.applicantEmail}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${encodeURIComponent(applicantFirstName)}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%0A%0ABest%2C%0A${encodeURIComponent(firstName)}" 
            style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-          📧 Email ${applicantFirstName} for Interview
+          Email ${applicantFirstName} for Interview
         </a>
       </div>
       
       <!-- Interview Tips -->
       <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px;">💡 Interview Tips:</h4>
+        <h4 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px;">Interview Tips:</h4>
         <ul style="color: #4b5563; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Ask about specific haircut styles they're comfortable with</li>
           <li>Discuss their availability and commitment level</li>
