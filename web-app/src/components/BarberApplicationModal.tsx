@@ -262,7 +262,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
                   >
                     <option value="">Select your campus</option>
-                    {campuses.map((campus) => (
+                    {(campuses || []).map((campus) => (
                       <option key={campus.id} value={campus.id}>
                         {campus.name}
                       </option>
@@ -458,7 +458,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
                   <p className="font-medium flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-primary-600" />
-                    {campuses.find(c => c.id === form.campusId)?.name || 'Not selected'}
+                    {(campuses || []).find(c => c.id === form.campusId)?.name || 'Not selected'}
                   </p>
                 </div>
 
@@ -474,7 +474,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Specialties</p>
                   <div className="flex flex-wrap gap-1">
-                    {form.specialties.map((s) => (
+                    {(form.specialties || []).map((s) => (
                       <span key={s} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-sm">{s}</span>
                     ))}
                   </div>

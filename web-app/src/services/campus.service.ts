@@ -3,8 +3,10 @@ import type { Campus, PaginatedResponse, Barber } from '../types';
 
 class CampusService {
   async getCampuses(search?: string): Promise<Campus[]> {
-    const response = await api.get<PaginatedResponse<Campus>>('/campus', { search, limit: 100 });
-    return response.data;
+    // api.get extracts response.data.data when no pagination is present
+    // so the response is already the campuses array
+    const campuses = await api.get<Campus[]>('/campus', { search, limit: 100 });
+    return campuses || [];
   }
 
   async getCampusById(id: string): Promise<Campus> {
