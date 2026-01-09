@@ -118,7 +118,7 @@ import {
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
-import educationalDomainService from '../services/educationalDomain.service';
+// Note: educationalDomainService removed - campus is now determined by user selection, not email domain
 
 /**
  * Register New User - Step 1: Create Pending Registration
@@ -164,79 +164,47 @@ import educationalDomainService from '../services/educationalDomain.service';
  */
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, password, firstName, lastName, role, campusId: requestedCampusId } = req.body;
 
-    // Validate input (campusId is now auto-detected from email domain)
+    // Validate input
     if (!email || !password || !firstName || !lastName || !role) {
       throw new ApiError(400, 'All fields are required');
     }
 
-    // Step 1: Extract email domain (allow any email for testing)
+    // Validate email format
     const emailDomain = email.split('@')[1];
-    
     if (!emailDomain) {
       throw new ApiError(400, 'Please provide a valid email address');
     }
 
-    // Step 2: For .edu emails, validate educational domain; for others, skip validation
-    let domainValidation: { isValid: boolean; university?: string; isUnsupportedUniversity?: boolean } = { isValid: true };
-    if (emailDomain.endsWith('.edu')) {
-      const validationResult = await educationalDomainService.validateEducationalDomain(email);
-      domainValidation = validationResult;
-      
-      if (!validationResult.isValid) {
-        if (validationResult.isUnsupportedUniversity) {
-          throw new ApiError(400, 
-            `Your university (${emailDomain}) is not currently supported on CampusCut. ` +
-            `Please email campuscuthelp@gmail.com to request that your university be added.`
-          );
-        }
-        throw new ApiError(400, 'Please use a valid university email address (.edu)');
-      }
-    }
-
-    // Step 3: Look up or create campus based on email domain
-    // Block auto-creation for common consumer email domains
-    const CONSUMER_EMAIL_DOMAINS = [
-      'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com',
-      'aol.com', 'protonmail.com', 'mail.com', 'zoho.com', 'yandex.com',
-      'live.com', 'msn.com', 'me.com', 'comcast.net', 'att.net', 'verizon.net'
-    ];
-    const isConsumerDomain = CONSUMER_EMAIL_DOMAINS.includes(emailDomain.toLowerCase());
-    
+    // Campus assignment: Use user-provided campusId if valid, otherwise use default
+    // Email domain is NOT used to determine campus - users select their campus manually
     let campusId: string | null = null;
     
-    // First, try to find an existing campus with this domain
-    const existingCampus = await pool.query(
-      'SELECT id, name FROM campuses WHERE domain = $1 AND is_active = TRUE',
-      [emailDomain]
-    );
-
-    if (existingCampus.rows.length > 0) {
-      campusId = existingCampus.rows[0].id;
-      logger.info(`Found existing campus: ${existingCampus.rows[0].name} (ID: ${campusId})`);
-    } else if (!isConsumerDomain && emailDomain.endsWith('.edu')) {
-      // Only auto-create campuses for .edu domains (not consumer email providers)
-      const slug = emailDomain.replace('.edu', '').replace(/\./g, '-');
-      const universityName = domainValidation.university || emailDomain.split('.')[0].toUpperCase();
-      
-      const newCampus = await pool.query(
-        `INSERT INTO campuses (id, slug, name, city, state, country, timezone, domain, "isActive", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, 'Unknown', 'XX', 'US', 'America/Los_Angeles', $3, TRUE, NOW())
-         RETURNING id`,
-        [slug, universityName, emailDomain]
+    if (requestedCampusId) {
+      // Validate that the provided campusId exists and is active
+      const validCampus = await pool.query(
+        'SELECT id, name FROM campuses WHERE id = $1 AND is_active = TRUE',
+        [requestedCampusId]
       );
-      campusId = newCampus.rows[0].id;
-      logger.info(`Created new campus for .edu domain: ${emailDomain} (ID: ${campusId})`);
-    } else {
-      // For consumer email domains without a matching campus, use default (Cal Poly SLO for now)
-      // Users can update their campus later in their profile
+      
+      if (validCampus.rows.length > 0) {
+        campusId = validCampus.rows[0].id;
+        logger.info(`User selected campus: ${validCampus.rows[0].name} (ID: ${campusId})`);
+      } else {
+        logger.warn(`Invalid or inactive campusId provided: ${requestedCampusId}`);
+      }
+    }
+    
+    // If no campusId was provided or it was invalid, use default (Cal Poly SLO)
+    // Users can update their campus later in their profile or during barber application
+    if (!campusId) {
       const defaultCampus = await pool.query(
         `SELECT id, name FROM campuses WHERE name = 'Cal Poly SLO' AND is_active = TRUE LIMIT 1`
       );
       if (defaultCampus.rows.length > 0) {
         campusId = defaultCampus.rows[0].id;
-        logger.info(`Using default campus for ${emailDomain}: ${defaultCampus.rows[0].name}`);
+        logger.info(`Using default campus: ${defaultCampus.rows[0].name} (ID: ${campusId})`);
       } else {
         // Fallback: get the first active campus
         const fallbackCampus = await pool.query(
@@ -244,7 +212,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
         );
         if (fallbackCampus.rows.length > 0) {
           campusId = fallbackCampus.rows[0].id;
-          logger.info(`Using fallback campus for ${emailDomain}: ${fallbackCampus.rows[0].name}`);
+          logger.info(`Using fallback campus: ${fallbackCampus.rows[0].name} (ID: ${campusId})`);
         }
       }
     }

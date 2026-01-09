@@ -13,6 +13,7 @@ interface SignupData {
   first_name: string;
   last_name: string;
   user_type: 'student' | 'barber';
+  campusId?: string; // User-selected campus
 }
 
 interface AuthResponse {
@@ -56,12 +57,30 @@ class AuthService {
    * Does NOT authenticate the user - they must verify email first
    */
   async signup(data: SignupData): Promise<RegistrationPendingResponse> {
+    // Get user's selected university from localStorage (set in FindBarberPage)
+    const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+    let campusId = data.campusId;
+    
+    // If no campusId provided, try to get from localStorage (user's selected university)
+    if (!campusId) {
+      const savedUniversity = localStorage.getItem(UNIVERSITY_STORAGE_KEY);
+      if (savedUniversity) {
+        try {
+          const university = JSON.parse(savedUniversity);
+          campusId = university.id;
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+    
     const response = await api.post<RegistrationPendingResponse>('/auth/register', {
       email: data.email,
       password: data.password,
       firstName: data.first_name,
       lastName: data.last_name,
       role: data.user_type,
+      campusId, // Pass user-selected campus
     });
     
     // Store email for verification page
