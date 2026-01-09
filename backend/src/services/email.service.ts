@@ -1533,12 +1533,6 @@ function generateBarberApplicationHtml(
             <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600;">${details.yearsExperience}</td>
           </tr>
           <tr>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Licensed Barber</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasLicense ? '#22c55e' : '#6b7280'}; font-weight: 600;">
-              ${details.hasLicense ? '✓ Yes' : 'No'}${details.licenseNumber ? ` (#${details.licenseNumber})` : ''}
-            </td>
-          </tr>
-          <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Has Own Tools</td>
             <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasOwnTools ? '#22c55e' : '#6b7280'}; font-weight: 600;">
               ${details.hasOwnTools ? '✓ Yes' : 'No'}
