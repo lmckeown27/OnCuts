@@ -629,19 +629,32 @@ export default function ConsumerPage() {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
               <Scissors className="w-8 h-8 text-red-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Application Rejected</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Previous Application Rejected</h3>
             <p className="text-gray-600 mb-4">
-              You have been rejected. If you believe the decision made by your campus manager was unfair, please contact support at:
+              Your previous application was not approved. You can submit a new application with updated information.
             </p>
-            <p className="text-primary-600 font-semibold mb-6 select-all">
-              campuscuthelp@gmail.com
+            <p className="text-sm text-gray-500 mb-6">
+              If you have questions about why your application was rejected, please contact <span className="text-primary-600 font-medium">campuscuthelp@gmail.com</span>
             </p>
-            <button
-              onClick={closeRejectedPopup}
-              className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-            >
-              Got it
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={closeRejectedPopup}
+                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={() => {
+                  closeRejectedPopup();
+                  // Clear the rejected status so they can apply again
+                  setHasRejectedApplication(false);
+                  scrollToTopAndOpen(setShowBarberApplication);
+                }}
+                className="px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+              >
+                Apply Again
+              </button>
+            </div>
           </div>
         </div>
       )}
