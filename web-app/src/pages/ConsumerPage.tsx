@@ -419,20 +419,20 @@ export default function ConsumerPage() {
               {user?.user_type === 'barber' || user?.user_type === 'admin' || user?.has_barber_profile ? (
                 <button
                   onClick={() => navigate('/web/barber')}
-                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  className="flex items-center gap-1.5 px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                   title="Switch to barber view"
                 >
                   <Scissors className="w-4 h-4 text-primary-600" />
-                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Switch to Barber</span>
+                  <span className="text-xs sm:text-sm font-medium text-primary-700">Barber View</span>
                 </button>
               ) : (
                 <button
                   onClick={handleBecomeBarberClick}
-                  className="flex items-center gap-2 p-2 sm:px-4 sm:py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  className="flex items-center gap-1.5 px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                   title="Apply to become a barber"
                 >
                   <Scissors className="w-4 h-4 text-primary-600" />
-                  <span className="hidden sm:inline text-sm font-medium text-primary-700">Become a Barber</span>
+                  <span className="text-xs sm:text-sm font-medium text-primary-700">Become a Barber</span>
                 </button>
               )}
             </div>
