@@ -699,14 +699,14 @@ export default function ConsumerPage() {
 
             {/* Content */}
             <div className="max-h-[60dvh] sm:max-h-[60vh] overflow-y-auto">
-              {notifications.length === 0 ? (
+              {!notifications || notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">No notifications yet</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {notifications.map((notification) => {
+                  {(notifications || []).map((notification) => {
                     // Normalize type for matching (handle case/whitespace variations)
                     const notifType = (notification.type || '').toLowerCase().trim();
                     const isMessageNotification = notifType === 'new_message' || notification.title?.toLowerCase().includes('message');
@@ -1071,7 +1071,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         </div>
         
         {/* Results count */}
-        {filteredBarbers.length > 0 && (
+        {filteredBarbers && filteredBarbers.length > 0 && (
           <p className="text-center text-xs text-gray-500 mt-2">
             {filteredBarbers.length} barber{filteredBarbers.length !== 1 ? 's' : ''} found
           </p>
@@ -1079,7 +1079,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       </div>
 
       {/* No Results - University Based */}
-      {filteredBarbers.length === 0 && selectedUniversity && !filterCriteria.serviceType && (
+      {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
           <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers near {selectedUniversity.shortName || selectedUniversity.name}</p>
@@ -1101,7 +1101,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       )}
 
       {/* No Results - Filter Based */}
-      {filteredBarbers.length === 0 && filterCriteria.serviceType && (
+      {(!filteredBarbers || filteredBarbers.length === 0) && filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
           <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers match your criteria</p>
           <p className="text-xs sm:text-sm text-gray-500">Try adjusting your filters or check back later</p>
@@ -1115,7 +1115,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           ? 'grid-cols-1' 
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
-        {filteredBarbers.map((barber) => {
+        {(filteredBarbers || []).map((barber) => {
           const lowestPrice = barber.pricing && barber.pricing.length > 0
             ? Math.min(...barber.pricing.map(p => p.price))
             : undefined;
@@ -1250,7 +1250,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       </div>
 
       {/* Empty State */}
-      {filteredBarbers.length === 0 && (
+      {(!filteredBarbers || filteredBarbers.length === 0) && (
         <div className="text-center py-12">
           <UsersIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No barbers found</h3>
