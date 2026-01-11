@@ -443,7 +443,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <h3 className="text-lg font-semibold text-gray-900">Review Your Application</h3>
               
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Applicant</p>
                     <p className="font-medium">{user?.first_name} {user?.last_name}</p>
