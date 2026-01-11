@@ -214,13 +214,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       onClick={handleClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative">
+        <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
             <div className="p-2 bg-white/20 rounded-lg mb-2">
               <Scissors className="w-6 h-6 text-white" />
@@ -237,7 +237,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {step === 1 ? (
             /* Step 1: Campus Selection, Experience & Skills */
             <div className="space-y-6">
@@ -502,7 +502,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t flex justify-between">
+        <div className="px-6 py-4 bg-gray-50 border-t flex justify-between flex-shrink-0">
             {step > 1 ? (
               <button
                 onClick={() => setStep(step - 1)}
