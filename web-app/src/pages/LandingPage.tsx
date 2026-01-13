@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, Users, UserCheck, MessageCircle, Shield, Check } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -322,6 +322,109 @@ export default function LandingPage() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Campus Manager Section */}
+      <div className="py-20 px-4 bg-white" id="campus-manager">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+              <Users className="w-4 h-4" />
+              Real People, Real Support
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Meet Your Campus Manager
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              While other platforms rely on algorithms and chatbots, we believe in the power of human connection.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Left side - What a Campus Manager does */}
+            <div className="space-y-6">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Personally Vets Every Barber</h3>
+                  <p className="text-gray-600">Your Campus Manager reviews applications, conducts interviews, and ensures only skilled, reliable barbers join your campus.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Handles Disputes & Questions</h3>
+                  <p className="text-gray-600">Got an issue with a booking? Need help? A real person who understands your campus community is just a message away.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Maintains Quality Standards</h3>
+                  <p className="text-gray-600">Your Campus Manager monitors reviews, addresses concerns, and ensures every barber maintains the high standards you expect.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Human vs AI comparison */}
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold mb-2">Why Human Over A.I.?</h3>
+                <p className="text-gray-400">Some things can't be automated</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Understands Context</p>
+                    <p className="text-sm text-gray-400">Knows your campus culture, dorms, and community</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Shows Empathy</p>
+                    <p className="text-sm text-gray-400">Resolves issues with genuine care, not scripted responses</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Makes Judgment Calls</p>
+                    <p className="text-sm text-gray-400">Handles nuanced situations that algorithms can't solve</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Builds Relationships</p>
+                    <p className="text-sm text-gray-400">Creates a trusted community, not just transactions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
