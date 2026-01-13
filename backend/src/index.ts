@@ -79,6 +79,9 @@ import bookingRequestRoutes from './routes/booking-request.routes';
 import locationRoutes from './routes/location.routes';
 import locationAdminRoutes from './routes/admin/location-admin.routes';
 
+// Campus Manager Routes (Public landing page + management)
+import campusManagerRoutes from './routes/campus-manager.routes';
+
 // =============================================================================
 // BLOCKCHAIN ROUTES - DISABLED (Platform uses Stripe for off-chain payments)
 // =============================================================================
@@ -360,6 +363,7 @@ app.use('/api/booking-requests', bookingRequestRoutes);  // Legacy route
 
 // Barber Applications (Consumer -> Barber flow)
 app.use('/api/v1/barber-applications', barberApplicationRoutes);  // Submit and track barber applications
+app.use('/api/v1/campus-manager', campusManagerRoutes);  // Campus manager info (public) + management
 app.use('/api/barber-applications', barberApplicationRoutes);  // Legacy route
 
 logger.info('✅ V2 routes enabled:');
