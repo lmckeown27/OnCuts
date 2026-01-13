@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -50,6 +50,8 @@ export default function LandingPage() {
   // Campus Manager section state
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
+  const [campusSearchQuery, setCampusSearchQuery] = useState('');
+  const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -388,18 +390,75 @@ export default function LandingPage() {
                 {/* Campus Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
-                  <select
-                    value={selectedCampusId || ''}
-                    onChange={(e) => setSelectedCampusId(e.target.value || null)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
-                  >
-                    <option value="">Choose your campus...</option>
-                    {campusesWithManagers.map((campus) => (
-                      <option key={campus.campusId} value={campus.campusId}>
-                        {campus.campusName} — {campus.city}, {campus.state}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <div 
+                      className={`relative flex items-center bg-white border-2 rounded-xl transition-all ${
+                        campusDropdownOpen ? 'border-primary-500 shadow-lg' : 'border-gray-300'
+                      }`}
+                    >
+                      <div className="pl-4 text-gray-400">
+                        <GraduationCap className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search for your university..."
+                        value={campusSearchQuery}
+                        onChange={(e) => {
+                          setCampusSearchQuery(e.target.value);
+                          setCampusDropdownOpen(true);
+                        }}
+                        onFocus={() => setCampusDropdownOpen(true)}
+                        className="flex-1 px-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
+                        className="pr-4 text-gray-400"
+                      >
+                        <ChevronDown className={`w-5 h-5 transition-transform ${campusDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                    
+                    {campusDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto">
+                        {campusesWithManagers
+                          .filter(campus => 
+                            campus.campusName.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
+                            campus.city.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
+                            campus.state.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                          )
+                          .map((campus) => (
+                            <button
+                              key={campus.campusId}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCampusId(campus.campusId);
+                                setCampusSearchQuery(`${campus.campusName} — ${campus.city}, ${campus.state}`);
+                                setCampusDropdownOpen(false);
+                              }}
+                              className={`w-full px-4 py-3 text-left hover:bg-primary-50 transition-colors flex items-center justify-between ${
+                                selectedCampusId === campus.campusId ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
+                              }`}
+                            >
+                              <span>{campus.campusName} — {campus.city}, {campus.state}</span>
+                              {campus.manager && (
+                                <span className="text-xs bg-primary-100 text-primary-600 px-2 py-1 rounded-full">Has Manager</span>
+                              )}
+                            </button>
+                          ))}
+                        {campusesWithManagers.filter(campus => 
+                          campus.campusName.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
+                          campus.city.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
+                          campus.state.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                        ).length === 0 && (
+                          <div className="p-4 text-center text-gray-500">
+                            <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p>No campuses found</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* What Campus Managers do */}
@@ -453,7 +512,7 @@ export default function LandingPage() {
                     /* No campus selected yet - prompt user */
                     <>
                       <div className="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700/50 ring-4 ring-gray-600/30 flex items-center justify-center">
-                        <span className="text-5xl text-gray-500">👤</span>
+                        <span className="text-4xl text-gray-500">?</span>
                       </div>
                       <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
                       <p className="text-gray-400 text-sm max-w-xs mx-auto">
