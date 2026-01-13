@@ -382,7 +382,7 @@ export default function LandingPage() {
           </div>
 
           {campusesWithManagers.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-12 items-start">
+            <div className="grid md:grid-cols-2 gap-12 items-stretch">
               {/* Left side - Campus selector and what they do */}
               <div className="space-y-8">
                 {/* Campus Selector */}
@@ -447,7 +447,7 @@ export default function LandingPage() {
 
               {/* Right side - Campus Manager Profile */}
               {selectedCampus && (
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white">
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
                   <div className="text-center">
                     {selectedCampus.manager ? (
                       <>
