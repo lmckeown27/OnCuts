@@ -25,15 +25,15 @@ router.get('/with-managers', async (req: Request, res: Response, next: NextFunct
         c.city,
         c.state,
         b.id as barber_id,
-        b.user_id,
+        b."userId" as user_id,
         u.first_name,
         u.last_name,
         b.bio,
-        b.profile_image_url,
-        b.campus_manager_since
+        b."profileImageUrl" as profile_image_url,
+        b."campusManagerSince" as campus_manager_since
       FROM campuses c
-      INNER JOIN barbers b ON b.campus_id = c.id AND b.is_campus_manager = true AND b.is_active = true
-      INNER JOIN users u ON b.user_id = u.id
+      INNER JOIN barbers b ON b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true
+      INNER JOIN users u ON b."userId" = u.id
       WHERE c.is_active = true
       ORDER BY c.name
     `);
