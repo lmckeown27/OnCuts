@@ -14,7 +14,7 @@ const router = Router();
 
 /**
  * GET /api/campus-manager/with-managers
- * Get all campuses that have campus managers (PUBLIC - for landing page)
+ * Get all active campuses with their campus managers (if any) - PUBLIC for landing page
  */
 router.get('/with-managers', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -29,11 +29,10 @@ router.get('/with-managers', async (req: Request, res: Response, next: NextFunct
         u.first_name,
         u.last_name,
         b.bio,
-        b."profileImageUrl" as profile_image_url,
-        b."campusManagerSince" as campus_manager_since
+        u."avatarUrl" as profile_image_url
       FROM campuses c
-      INNER JOIN barbers b ON b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true
-      INNER JOIN users u ON b."userId" = u.id
+      LEFT JOIN barbers b ON b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true
+      LEFT JOIN users u ON b."userId" = u.id
       WHERE c.is_active = true
       ORDER BY c.name
     `);
@@ -43,15 +42,14 @@ router.get('/with-managers', async (req: Request, res: Response, next: NextFunct
       campusName: row.campus_name,
       city: row.city,
       state: row.state,
-      manager: {
+      manager: row.barber_id ? {
         barberId: row.barber_id,
         userId: row.user_id,
         firstName: row.first_name,
         lastName: row.last_name,
         bio: row.bio,
         profileImageUrl: row.profile_image_url,
-        since: row.campus_manager_since,
-      }
+      } : null
     }));
 
     res.json({

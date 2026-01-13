@@ -19,9 +19,9 @@ import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
 import { API_BASE_URL } from '../config/constants';
 
-// Type for campus with manager data
+// Type for campus with optional manager data
 interface CampusWithManager {
-  campusId: number;
+  campusId: string;
   campusName: string;
   city: string;
   state: string;
@@ -32,8 +32,7 @@ interface CampusWithManager {
     lastName: string;
     bio: string | null;
     profileImageUrl: string | null;
-    since: string | null;
-  };
+  } | null;
 }
 
 export default function LandingPage() {
@@ -449,42 +448,55 @@ export default function LandingPage() {
               {selectedCampus && (
                 <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white">
                   <div className="text-center">
-                    {/* Profile Image */}
-                    <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
-                      {selectedCampus.manager.profileImageUrl ? (
-                        <img
-                          src={selectedCampus.manager.profileImageUrl}
-                          alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400">
-                          {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
+                    {selectedCampus.manager ? (
+                      <>
+                        {/* Profile Image */}
+                        <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
+                          {selectedCampus.manager.profileImageUrl ? (
+                            <img
+                              src={selectedCampus.manager.profileImageUrl}
+                              alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400">
+                              {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Name and Role */}
-                    <h3 className="text-2xl font-bold mb-1">
-                      {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
-                    </h3>
-                    <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
-                    <p className="text-gray-400 text-sm mb-6">{selectedCampus.campusName}</p>
+                        {/* Name and Role */}
+                        <h3 className="text-2xl font-bold mb-1">
+                          {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
+                        </h3>
+                        <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
+                        <p className="text-gray-400 text-sm mb-6">{selectedCampus.campusName}</p>
 
-                    {/* Bio */}
-                    {selectedCampus.manager.bio && (
-                      <div className="bg-white/10 rounded-xl p-4 text-left">
-                        <p className="text-gray-300 text-sm leading-relaxed">
-                          {selectedCampus.manager.bio}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Since date */}
-                    {selectedCampus.manager.since && (
-                      <p className="text-gray-500 text-xs mt-6">
-                        Campus Manager since {new Date(selectedCampus.manager.since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                      </p>
+                        {/* Bio */}
+                        {selectedCampus.manager.bio && (
+                          <div className="bg-white/10 rounded-xl p-4 text-left">
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                              {selectedCampus.manager.bio}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      /* No manager for this campus yet */
+                      <>
+                        <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
+                          <span className="text-4xl text-gray-500">?</span>
+                        </div>
+                        <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
+                        <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
+                        <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
+                        <div className="bg-white/10 rounded-xl p-4">
+                          <p className="text-gray-400 text-sm">
+                            We're currently searching for a Campus Manager for this location. 
+                            Check back soon!
+                          </p>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
