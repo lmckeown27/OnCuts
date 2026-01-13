@@ -479,8 +479,94 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* What Campus Managers do */}
-                <div className="space-y-4">
+                {/* Mobile: Show placeholder card when no campus selected */}
+                {!selectedCampus && (
+                  <div className="md:hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
+                    <div className="text-center">
+                      <div className="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700/50 ring-4 ring-gray-600/30 flex items-center justify-center">
+                        <span className="text-4xl text-gray-500">?</span>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
+                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                        Choose your campus from the dropdown to meet your dedicated human Campus Manager.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile: Show profile card when campus is selected */}
+                {selectedCampus && (
+                  <div className="md:hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
+                    <div className="text-center">
+                      {selectedCampus.manager ? (
+                        <>
+                          {/* Profile Image - Square */}
+                          <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
+                            {selectedCampus.manager.profileImageUrl ? (
+                              <img
+                                src={selectedCampus.manager.profileImageUrl}
+                                alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400">
+                                {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Name and Role */}
+                          <h3 className="text-2xl font-bold mb-1">
+                            {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
+                          </h3>
+                          <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
+                          <p className="text-gray-400 text-sm mb-4">{selectedCampus.campusName}</p>
+
+                          {/* Instagram Handle */}
+                          {selectedCampus.manager.instagramHandle && (
+                            <a
+                              href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 text-gray-300 hover:text-primary-400 transition-colors mb-6"
+                            >
+                              <Instagram className="w-5 h-5" />
+                              <span>@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
+                            </a>
+                          )}
+
+                          {/* Bio */}
+                          {selectedCampus.manager.bio && (
+                            <div className="bg-white/10 rounded-xl p-4 text-left mt-4">
+                              <p className="text-gray-300 text-sm leading-relaxed">
+                                {selectedCampus.manager.bio}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        /* No manager for this campus yet */
+                        <>
+                          <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
+                            <span className="text-4xl text-gray-500">?</span>
+                          </div>
+                          <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
+                          <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
+                          <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
+                          <div className="bg-white/10 rounded-xl p-4">
+                            <p className="text-gray-400 text-sm">
+                              We're currently searching for a Campus Manager for this location. 
+                              Check back soon!
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* What Campus Managers do - Hidden on mobile when no campus selected */}
+                <div className={`space-y-4 ${!selectedCampus ? 'hidden md:block' : ''}`}>
                   <h3 className="text-xl font-bold text-gray-900">What Your Campus Manager Does</h3>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
@@ -498,8 +584,8 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Why Human Over AI */}
-                <div className="bg-gray-50 rounded-2xl p-6">
+                {/* Why Human Over AI - Hidden on mobile when no campus selected */}
+                <div className={`bg-gray-50 rounded-2xl p-6 ${!selectedCampus ? 'hidden md:block' : ''}`}>
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Why Human Over A.I.?</h3>
                   <p className="text-gray-600 mb-4">Some things can't be automated:</p>
                   <ul className="space-y-2 text-gray-600">
@@ -523,8 +609,8 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right side - Campus Manager Profile */}
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
+              {/* Right side - Campus Manager Profile (Desktop only) */}
+              <div className="hidden md:flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex-col justify-center">
                 <div className="text-center">
                   {!selectedCampus ? (
                     /* No campus selected yet - prompt user */
