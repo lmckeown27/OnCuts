@@ -48,7 +48,7 @@ export default function LandingPage() {
   
   // Campus Manager section state
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
-  const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
+  const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -389,7 +389,7 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
                   <select
                     value={selectedCampusId || ''}
-                    onChange={(e) => setSelectedCampusId(Number(e.target.value))}
+                    onChange={(e) => setSelectedCampusId(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   >
                     {campusesWithManagers.map((campus) => (
