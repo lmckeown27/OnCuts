@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, Users, UserCheck, MessageCircle, Shield, Check } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -17,6 +17,24 @@ import MainChairLogo from '../assets/logos/Main_Chair.webp';
 import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.webp';
 import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
+import { API_BASE_URL } from '../config/constants';
+
+// Type for campus with manager data
+interface CampusWithManager {
+  campusId: number;
+  campusName: string;
+  city: string;
+  state: string;
+  manager: {
+    barberId: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    bio: string | null;
+    profileImageUrl: string | null;
+    since: string | null;
+  };
+}
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -28,6 +46,10 @@ export default function LandingPage() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  
+  // Campus Manager section state
+  const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
+  const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -100,6 +122,25 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Fetch campuses with campus managers for the Campus Manager section
+  useEffect(() => {
+    const fetchCampusesWithManagers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/campus-manager/with-managers`);
+        const data = await response.json();
+        if (data.success && data.data.length > 0) {
+          setCampusesWithManagers(data.data);
+          setSelectedCampusId(data.data[0].campusId);
+        }
+      } catch (error) {
+        console.error('Failed to fetch campuses with managers:', error);
+      }
+    };
+    fetchCampusesWithManagers();
+  }, []);
+
+  const selectedCampus = campusesWithManagers.find(c => c.campusId === selectedCampusId);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -330,7 +371,6 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-              <Users className="w-4 h-4" />
               Real People, Real Support
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -341,90 +381,127 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            {/* Left side - What a Campus Manager does */}
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                  <UserCheck className="w-6 h-6 text-primary-600" />
-                </div>
+          {campusesWithManagers.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+              {/* Left side - Campus selector and what they do */}
+              <div className="space-y-8">
+                {/* Campus Selector */}
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Personally Vets Every Barber</h3>
-                  <p className="text-gray-600">Your Campus Manager reviews applications, conducts interviews, and ensures only skilled, reliable barbers join your campus.</p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
+                  <select
+                    value={selectedCampusId || ''}
+                    onChange={(e) => setSelectedCampusId(Number(e.target.value))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                  >
+                    {campusesWithManagers.map((campus) => (
+                      <option key={campus.campusId} value={campus.campusId}>
+                        {campus.campusName} — {campus.city}, {campus.state}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* What Campus Managers do */}
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-gray-900">What Your Campus Manager Does</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
+                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Personally vets every barber</span> — reviews applications, conducts interviews, and ensures only skilled, reliable barbers join your campus.</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
+                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Handles disputes & questions</span> — a real person who understands your campus community is just a message away.</p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
+                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Maintains quality standards</span> — monitors reviews, addresses concerns, and ensures barbers meet the high standards you expect.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Why Human Over AI */}
+                <div className="bg-gray-50 rounded-2xl p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Why Human Over A.I.?</h3>
+                  <p className="text-gray-600 mb-4">Some things can't be automated:</p>
+                  <ul className="space-y-2 text-gray-600">
+                    <li className="flex items-center gap-2">
+                      <span className="text-primary-600 font-bold">✓</span>
+                      <span><strong>Understands context</strong> — knows your campus culture, dorms, and community</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-primary-600 font-bold">✓</span>
+                      <span><strong>Shows empathy</strong> — resolves issues with genuine care, not scripted responses</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-primary-600 font-bold">✓</span>
+                      <span><strong>Makes judgment calls</strong> — handles nuanced situations algorithms can't solve</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-primary-600 font-bold">✓</span>
+                      <span><strong>Builds relationships</strong> — creates a trusted community, not just transactions</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                  <MessageCircle className="w-6 h-6 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Handles Disputes & Questions</h3>
-                  <p className="text-gray-600">Got an issue with a booking? Need help? A real person who understands your campus community is just a message away.</p>
-                </div>
-              </div>
+              {/* Right side - Campus Manager Profile */}
+              {selectedCampus && (
+                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white">
+                  <div className="text-center">
+                    {/* Profile Image */}
+                    <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
+                      {selectedCampus.manager.profileImageUrl ? (
+                        <img
+                          src={selectedCampus.manager.profileImageUrl}
+                          alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400">
+                          {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
 
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                  <Shield className="w-6 h-6 text-primary-600" />
+                    {/* Name and Role */}
+                    <h3 className="text-2xl font-bold mb-1">
+                      {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
+                    </h3>
+                    <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
+                    <p className="text-gray-400 text-sm mb-6">{selectedCampus.campusName}</p>
+
+                    {/* Bio */}
+                    {selectedCampus.manager.bio && (
+                      <div className="bg-white/10 rounded-xl p-4 text-left">
+                        <p className="text-gray-300 text-sm leading-relaxed">
+                          {selectedCampus.manager.bio}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Since date */}
+                    {selectedCampus.manager.since && (
+                      <p className="text-gray-500 text-xs mt-6">
+                        Campus Manager since {new Date(selectedCampus.manager.since).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Maintains Quality Standards</h3>
-                  <p className="text-gray-600">Your Campus Manager monitors reviews, addresses concerns, and ensures every barber maintains the high standards you expect.</p>
-                </div>
+              )}
+            </div>
+          ) : (
+            /* Fallback when no campuses with managers */
+            <div className="text-center py-12">
+              <div className="bg-gray-50 rounded-2xl p-8 max-w-2xl mx-auto">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Campus Managers Coming Soon</h3>
+                <p className="text-gray-600">
+                  We're actively expanding to more campuses. Each campus will have a dedicated human Campus Manager 
+                  to personally vet barbers, handle disputes, and maintain quality standards.
+                </p>
               </div>
             </div>
-
-            {/* Right side - Human vs AI comparison */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">Why Human Over A.I.?</h3>
-                <p className="text-gray-400">Some things can't be automated</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
-                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Understands Context</p>
-                    <p className="text-sm text-gray-400">Knows your campus culture, dorms, and community</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
-                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Shows Empathy</p>
-                    <p className="text-sm text-gray-400">Resolves issues with genuine care, not scripted responses</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
-                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Makes Judgment Calls</p>
-                    <p className="text-sm text-gray-400">Handles nuanced situations that algorithms can't solve</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 bg-white/10 rounded-xl p-4">
-                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Check className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Builds Relationships</p>
-                    <p className="text-sm text-gray-400">Creates a trusted community, not just transactions</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 

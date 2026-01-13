@@ -7,9 +7,63 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { campusManagerService } from '../services/campus-manager.service';
+import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+/**
+ * GET /api/campus-manager/with-managers
+ * Get all campuses that have campus managers (PUBLIC - for landing page)
+ */
+router.get('/with-managers', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id as campus_id,
+        c.name as campus_name,
+        c.city,
+        c.state,
+        b.id as barber_id,
+        b.user_id,
+        u.first_name,
+        u.last_name,
+        b.bio,
+        b.profile_image_url,
+        b.campus_manager_since
+      FROM campuses c
+      INNER JOIN barbers b ON b.campus_id = c.id AND b.is_campus_manager = true AND b.is_active = true
+      INNER JOIN users u ON b.user_id = u.id
+      WHERE c.is_active = true
+      ORDER BY c.name
+    `);
+
+    const campusesWithManagers = result.rows.map(row => ({
+      campusId: row.campus_id,
+      campusName: row.campus_name,
+      city: row.city,
+      state: row.state,
+      manager: {
+        barberId: row.barber_id,
+        userId: row.user_id,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        bio: row.bio,
+        profileImageUrl: row.profile_image_url,
+        since: row.campus_manager_since,
+      }
+    }));
+
+    res.json({
+      success: true,
+      data: campusesWithManagers,
+      count: campusesWithManagers.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching campuses with managers:', error);
+    next(error);
+  }
+});
 
 /**
  * GET /api/campus-manager/check/:barberId
