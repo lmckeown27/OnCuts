@@ -853,7 +853,7 @@ export default function LandingPage() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/web')} className="text-gray-400 hover:text-white transition-colors">
+                  <button onClick={() => scrollToSection('campus-manager')} className="text-gray-400 hover:text-white transition-colors">
                     Campus Manager
                   </button>
                 </li>
