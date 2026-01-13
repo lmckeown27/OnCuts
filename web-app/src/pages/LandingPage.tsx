@@ -131,7 +131,7 @@ export default function LandingPage() {
         const data = await response.json();
         if (data.success && data.data.length > 0) {
           setCampusesWithManagers(data.data);
-          setSelectedCampusId(data.data[0].campusId);
+          // Don't auto-select - let user choose their campus
         }
       } catch (error) {
         console.error('Failed to fetch campuses with managers:', error);
@@ -390,9 +390,10 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
                   <select
                     value={selectedCampusId || ''}
-                    onChange={(e) => setSelectedCampusId(e.target.value)}
+                    onChange={(e) => setSelectedCampusId(e.target.value || null)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                   >
+                    <option value="">Choose your campus...</option>
                     {campusesWithManagers.map((campus) => (
                       <option key={campus.campusId} value={campus.campusId}>
                         {campus.campusName} — {campus.city}, {campus.state}
@@ -446,10 +447,20 @@ export default function LandingPage() {
               </div>
 
               {/* Right side - Campus Manager Profile */}
-              {selectedCampus && (
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
-                  <div className="text-center">
-                    {selectedCampus.manager ? (
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
+                <div className="text-center">
+                  {!selectedCampus ? (
+                    /* No campus selected yet - prompt user */
+                    <>
+                      <div className="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700/50 ring-4 ring-gray-600/30 flex items-center justify-center">
+                        <span className="text-5xl text-gray-500">👤</span>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
+                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                        Choose your campus from the dropdown to meet your dedicated human Campus Manager.
+                      </p>
+                    </>
+                  ) : selectedCampus.manager ? (
                       <>
                         {/* Profile Image - Square */}
                         <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
@@ -497,24 +508,23 @@ export default function LandingPage() {
                       </>
                     ) : (
                       /* No manager for this campus yet */
-                      <>
-                        <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
-                          <span className="text-4xl text-gray-500">?</span>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
-                        <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
-                        <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
-                        <div className="bg-white/10 rounded-xl p-4">
-                          <p className="text-gray-400 text-sm">
-                            We're currently searching for a Campus Manager for this location. 
-                            Check back soon!
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                    <>
+                      <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
+                        <span className="text-4xl text-gray-500">?</span>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
+                      <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
+                      <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
+                      <div className="bg-white/10 rounded-xl p-4">
+                        <p className="text-gray-400 text-sm">
+                          We're currently searching for a Campus Manager for this location. 
+                          Check back soon!
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           ) : (
             /* Fallback when no campuses with managers */
