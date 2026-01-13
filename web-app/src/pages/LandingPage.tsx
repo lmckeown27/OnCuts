@@ -839,7 +839,7 @@ export default function LandingPage() {
 
               {/* Social Links */}
               <div className="flex items-center gap-4">
-                <a href="https://www.instagram.com/campuscutsslo/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                <a href="https://www.instagram.com/campuscut.c0m/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
                   <Instagram className="w-5 h-5" />
                 </a>
                 <button className="text-gray-400 hover:text-white transition-colors cursor-not-allowed">
