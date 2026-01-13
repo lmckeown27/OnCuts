@@ -5,7 +5,7 @@
  * Inspired by modern SaaS landing pages
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search } from 'lucide-react';
 import Button from '../components/Button';
@@ -52,6 +52,7 @@ export default function LandingPage() {
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
+  const campusDropdownRef = useRef<HTMLDivElement>(null);
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
@@ -141,6 +142,23 @@ export default function LandingPage() {
     };
     fetchCampusesWithManagers();
   }, []);
+
+  // Close campus dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (campusDropdownRef.current && !campusDropdownRef.current.contains(event.target as Node)) {
+        setCampusDropdownOpen(false);
+      }
+    };
+
+    if (campusDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [campusDropdownOpen]);
 
   const selectedCampus = campusesWithManagers.find(c => c.campusId === selectedCampusId);
 
@@ -390,7 +408,7 @@ export default function LandingPage() {
                 {/* Campus Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
-                  <div className="relative">
+                  <div className="relative" ref={campusDropdownRef}>
                     <div 
                       className={`relative flex items-center bg-white border-2 rounded-xl transition-all ${
                         campusDropdownOpen ? 'border-primary-500 shadow-lg' : 'border-gray-300'
