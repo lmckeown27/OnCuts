@@ -451,8 +451,8 @@ export default function LandingPage() {
                   <div className="text-center">
                     {selectedCampus.manager ? (
                       <>
-                        {/* Profile Image - Large */}
-                        <div className="w-44 h-44 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
+                        {/* Profile Image - Square */}
+                        <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
                           {selectedCampus.manager.profileImageUrl ? (
                             <img
                               src={selectedCampus.manager.profileImageUrl}
