@@ -30,8 +30,8 @@ ENV VITE_APP_VERSION=$VITE_APP_VERSION
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --ignore-scripts
+# Install dependencies (including dev deps for build)
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
