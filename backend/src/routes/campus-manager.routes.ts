@@ -29,7 +29,8 @@ router.get('/with-managers', async (req: Request, res: Response, next: NextFunct
         u.first_name,
         u.last_name,
         b.bio,
-        u."avatarUrl" as profile_image_url
+        u."avatarUrl" as profile_image_url,
+        u."instagramHandle" as instagram_handle
       FROM campuses c
       LEFT JOIN barbers b ON b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true
       LEFT JOIN users u ON b."userId" = u.id
@@ -49,6 +50,7 @@ router.get('/with-managers', async (req: Request, res: Response, next: NextFunct
         lastName: row.last_name,
         bio: row.bio,
         profileImageUrl: row.profile_image_url,
+        instagramHandle: row.instagram_handle,
       } : null
     }));
 

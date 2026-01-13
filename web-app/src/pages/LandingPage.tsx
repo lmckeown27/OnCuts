@@ -32,6 +32,7 @@ interface CampusWithManager {
     lastName: string;
     bio: string | null;
     profileImageUrl: string | null;
+    instagramHandle: string | null;
   } | null;
 }
 
@@ -450,8 +451,8 @@ export default function LandingPage() {
                   <div className="text-center">
                     {selectedCampus.manager ? (
                       <>
-                        {/* Profile Image */}
-                        <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
+                        {/* Profile Image - Large */}
+                        <div className="w-44 h-44 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
                           {selectedCampus.manager.profileImageUrl ? (
                             <img
                               src={selectedCampus.manager.profileImageUrl}
@@ -459,7 +460,7 @@ export default function LandingPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-400">
+                            <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400">
                               {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
                             </div>
                           )}
@@ -470,11 +471,24 @@ export default function LandingPage() {
                           {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
                         </h3>
                         <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
-                        <p className="text-gray-400 text-sm mb-6">{selectedCampus.campusName}</p>
+                        <p className="text-gray-400 text-sm mb-4">{selectedCampus.campusName}</p>
+
+                        {/* Instagram Handle */}
+                        {selectedCampus.manager.instagramHandle && (
+                          <a
+                            href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-gray-300 hover:text-primary-400 transition-colors mb-6"
+                          >
+                            <Instagram className="w-5 h-5" />
+                            <span>@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
+                          </a>
+                        )}
 
                         {/* Bio */}
                         {selectedCampus.manager.bio && (
-                          <div className="bg-white/10 rounded-xl p-4 text-left">
+                          <div className="bg-white/10 rounded-xl p-4 text-left mt-4">
                             <p className="text-gray-300 text-sm leading-relaxed">
                               {selectedCampus.manager.bio}
                             </p>
