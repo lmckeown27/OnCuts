@@ -79,6 +79,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const rawRole = ((response.user as any).role || response.user.user_type || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole; // Map CONSUMER to student for frontend
       
+      // Admins have all privileges including campus manager at all campuses
+      const isAdmin = mappedRole === 'admin';
+      const isCampusManager = mappedRole === 'campus_manager' || isAdmin;
+      
       const user = {
         id: response.user.id || (response as any).user.userId,
         email: response.user.email,
@@ -86,8 +90,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         last_name: (response.user as any).lastName || response.user.last_name,
         user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
         is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
-        is_admin: mappedRole === 'admin',
-        is_campus_manager: mappedRole === 'campus_manager',
+        is_admin: isAdmin,
+        is_campus_manager: isCampusManager,
         has_barber_profile: (response.user as any).hasBarberProfile ?? false,
         created_at: response.user.created_at || new Date().toISOString(),
         campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
@@ -150,6 +154,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const rawRole = (response.user.role || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
       
+      // Admins have all privileges including campus manager at all campuses
+      const isAdminRole = mappedRole === 'admin';
+      const isCampusManagerRole = mappedRole === 'campus_manager' || isAdminRole;
+      
       const user = {
         id: response.user.id,
         email: response.user.email,
@@ -157,8 +165,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         last_name: response.user.lastName,
         user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
         is_verified: response.user.emailVerified,
-        is_admin: mappedRole === 'admin',
-        is_campus_manager: mappedRole === 'campus_manager',
+        is_admin: isAdminRole,
+        is_campus_manager: isCampusManagerRole,
         created_at: new Date().toISOString(),
         campus_id: response.user.campusId?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,

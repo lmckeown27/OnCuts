@@ -156,13 +156,28 @@ export class CampusManagerService {
 
   /**
    * Verify Campus Manager has permission for an action on a specific campus
+   * Note: Admins have campus manager privileges at ALL campuses
    */
   async verifyPermission(
     barberId: string,
     campusId: string,
-    action: string
+    action: string,
+    userId?: string
   ): Promise<boolean> {
     try {
+      // First check if user is an admin (admins have campus manager permissions at all campuses)
+      if (userId) {
+        const adminCheck = await pool.query(
+          'SELECT role FROM users WHERE id = $1',
+          [userId]
+        );
+        if (adminCheck.rows.length > 0 && adminCheck.rows[0].role === 'ADMIN') {
+          // Admins have all campus manager permissions at all campuses
+          const allowedPermissions = this.getCampusManagerPermissions();
+          return allowedPermissions.includes(action);
+        }
+      }
+
       // Check if barber is Campus Manager for this campus
       const result = await pool.query(`
         SELECT id
@@ -188,6 +203,22 @@ export class CampusManagerService {
       return allowedPermissions.includes(action);
     } catch (error) {
       logger.error('Error verifying Campus Manager permission:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Check if a user is an admin (admin has campus manager privileges at all campuses)
+   */
+  async isAdmin(userId: string): Promise<boolean> {
+    try {
+      const result = await pool.query(
+        'SELECT role FROM users WHERE id = $1',
+        [userId]
+      );
+      return result.rows[0]?.role === 'ADMIN';
+    } catch (error) {
+      logger.error('Error checking admin status:', error);
       return false;
     }
   }

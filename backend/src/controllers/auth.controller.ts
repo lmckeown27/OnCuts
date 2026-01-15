@@ -779,6 +779,10 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         frontendRole = 'student';
     }
 
+    // Admins have all privileges including campus manager at all campuses
+    const isAdmin = frontendRole === 'admin';
+    const isCampusManager = frontendRole === 'campus_manager' || isAdmin;
+    
     res.json({
       success: true,
       data: {
@@ -787,8 +791,8 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         first_name: user.first_name,
         last_name: user.last_name,
         user_type: frontendRole,
-        is_admin: frontendRole === 'admin',
-        is_campus_manager: frontendRole === 'campus_manager',
+        is_admin: isAdmin,
+        is_campus_manager: isCampusManager,
         has_barber_profile: hasBarberProfile,
         is_verified: user.email_verified,
         profile_picture_url: user.avatarUrl,

@@ -12,6 +12,29 @@ sudo -u postgres psql -d campuscuts
 
 ---
 
+## Role Hierarchy
+
+CampusCuts uses a role-based permission system with the following hierarchy:
+
+| Role | Description | Privileges |
+|------|-------------|------------|
+| **ADMIN** | Platform administrator | Highest privileges. Campus manager at ALL campuses. Manages platform via PostgreSQL commands. No admin UI pages (security measure). |
+| **CAMPUS_MANAGER** | Campus-specific manager | Manages barber applications, campus metrics, incidents for their specific campus. Typically 2 per campus (1 dedicated + admin). |
+| **BARBER** | Service provider | Can offer haircut services, manage bookings, set availability and pricing. |
+| **CONSUMER** | Customer | Can browse barbers, book services, make payments. Also referred to as "student" in frontend. |
+
+### Admin Privileges
+- Admin users have **campus manager privileges at ALL campuses**
+- Each campus typically has 2 campus managers: one dedicated campus manager + the admin
+- Admin functions are managed via PostgreSQL commands (no UI pages for security)
+- When admin logs in, they are redirected to the barber page with full platform access
+
+### Current Admin
+- **Email**: `liam.mckeown38415@gmail.com`
+- **Role**: `ADMIN`
+
+---
+
 ## USERS
 
 ### View All Users (Table Format)
