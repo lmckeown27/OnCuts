@@ -54,7 +54,7 @@ export const US_UNIVERSITIES: University[] = [
   { id: "butler", name: "Butler University", city: "Indianapolis", state: "IN", latitude: 39.8407, longitude: -86.1698 },
   
   // C
-  { id: "cal-poly", name: "California Polytechnic State University", city: "San Luis Obispo", state: "CA", latitude: 35.3050, longitude: -120.6625, shortName: "Cal Poly" },
+  { id: "cal-poly", name: "California Polytechnic State University", city: "San Luis Obispo", state: "CA", latitude: 35.3050, longitude: -120.6625, shortName: "Cal Poly SLO" },
   { id: "cal-poly-pomona", name: "California State Polytechnic University, Pomona", city: "Pomona", state: "CA", latitude: 34.0565, longitude: -117.8215, shortName: "Cal Poly Pomona" },
   { id: "cal-state-fullerton", name: "California State University, Fullerton", city: "Fullerton", state: "CA", latitude: 33.8829, longitude: -117.8869, shortName: "CSUF" },
   { id: "cal-state-la", name: "California State University, Los Angeles", city: "Los Angeles", state: "CA", latitude: 34.0664, longitude: -118.1684, shortName: "Cal State LA" },
