@@ -565,49 +565,6 @@ export default function LandingPage() {
                     </div>
                   </div>
                 )}
-
-                {/* What Campus Managers do - Hidden on mobile when no campus selected */}
-                <div className={`space-y-4 ${!selectedCampus ? 'hidden md:block' : ''}`}>
-                  <h3 className="text-xl font-bold text-gray-900">What Your Campus Manager Does</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Personally vets every barber</span> — reviews applications, conducts interviews, and ensures only skilled, reliable barbers join your campus.</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Handles disputes & questions</span> — a real person who understands your campus community is just a message away.</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-gray-600"><span className="font-semibold text-gray-900">Maintains quality standards</span> — monitors reviews, addresses concerns, and ensures barbers meet the high standards you expect.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Why Human Over AI - Hidden on mobile when no campus selected */}
-                <div className={`bg-gray-50 rounded-2xl p-6 ${!selectedCampus ? 'hidden md:block' : ''}`}>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Why Human Over A.I.?</h3>
-                  <p className="text-gray-600 mb-4">Some things can't be automated:</p>
-                  <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <span className="text-primary-600 font-bold">✓</span>
-                      <span><strong>Understands context</strong> — knows your campus culture, dorms, and community</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-primary-600 font-bold">✓</span>
-                      <span><strong>Shows empathy</strong> — resolves issues with genuine care, not scripted responses</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-primary-600 font-bold">✓</span>
-                      <span><strong>Makes judgment calls</strong> — handles nuanced situations algorithms can't solve</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-primary-600 font-bold">✓</span>
-                      <span><strong>Builds relationships</strong> — creates a trusted community, not just transactions</span>
-                    </li>
-                  </ul>
-                </div>
               </div>
 
               {/* Right side - Campus Manager Profile (Desktop only) */}
