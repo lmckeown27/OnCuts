@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
@@ -38,6 +38,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [successPopupVisible, setSuccessPopupVisible] = useState(false);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [loadingCampuses, setLoadingCampuses] = useState(true);
+  const [campusSearchQuery, setCampusSearchQuery] = useState('');
+  const [showCampusDropdown, setShowCampusDropdown] = useState(false);
+  const campusSelectorRef = useRef<HTMLDivElement>(null);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -256,18 +259,75 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     Loading campuses...
                   </div>
                 ) : (
-                  <select
-                    value={form.campusId}
-                    onChange={(e) => setForm({ ...form, campusId: e.target.value })}
-                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
-                  >
-                    <option value="">Select your campus</option>
-                    {(campuses || []).map((campus) => (
-                      <option key={campus.id} value={campus.id}>
-                        {campus.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" ref={campusSelectorRef}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={campusSearchQuery}
+                        onChange={(e) => {
+                          setCampusSearchQuery(e.target.value);
+                          setShowCampusDropdown(true);
+                        }}
+                        onFocus={() => setShowCampusDropdown(true)}
+                        onBlur={(e) => {
+                          // Delay to allow click on dropdown items to register first
+                          setTimeout(() => {
+                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
+                              setShowCampusDropdown(false);
+                              // Revert to selected campus name if no new selection
+                              if (form.campusId) {
+                                const selectedCampus = campuses.find(c => c.id === form.campusId);
+                                setCampusSearchQuery(selectedCampus?.name || '');
+                              } else {
+                                setCampusSearchQuery('');
+                              }
+                            }
+                          }, 150);
+                        }}
+                        placeholder="Search and select your campus..."
+                        className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                      />
+                      <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    
+                    {/* Campus Dropdown */}
+                    {showCampusDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[250px] overflow-y-auto overscroll-contain">
+                        <div className="p-1">
+                          {campuses
+                            .filter(campus => 
+                              campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                            )
+                            .slice(0, 50) // Limit to 50 results for performance
+                            .map(campus => (
+                              <button
+                                key={campus.id}
+                                type="button"
+                                onClick={() => {
+                                  setForm({ ...form, campusId: campus.id });
+                                  setCampusSearchQuery(campus.name);
+                                  setShowCampusDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
+                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                                }`}
+                              >
+                                {campus.name}
+                              </button>
+                            ))
+                          }
+                          {campuses.filter(campus => 
+                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              No campuses found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
