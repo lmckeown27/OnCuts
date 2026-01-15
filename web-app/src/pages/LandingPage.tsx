@@ -170,10 +170,9 @@ export default function LandingPage() {
     }
   };
 
-  // Pull-to-refresh handler for mobile
+  // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
-    // For landing page, just scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.location.reload();
   };
 
   return (

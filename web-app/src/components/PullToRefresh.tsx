@@ -1,12 +1,11 @@
 /**
  * PullToRefresh Component
  * 
- * Wraps content and provides pull-to-refresh functionality for mobile devices.
- * Shows a loading indicator when pulling down from the top of the page.
+ * Native-style pull-to-refresh functionality for mobile devices.
+ * Matches iOS/Android native behavior with a spinner that appears when pulling down.
  */
 
 import { ReactNode } from 'react';
-import { RefreshCw } from 'lucide-react';
 import usePullToRefresh from '../hooks/usePullToRefresh';
 
 interface PullToRefreshProps {
@@ -32,6 +31,7 @@ export default function PullToRefresh({
     containerRef,
   } = usePullToRefresh({
     onRefresh: disabled ? async () => {} : onRefresh,
+    threshold: 70,
   });
 
   // Only show on touch devices
@@ -41,55 +41,107 @@ export default function PullToRefresh({
     return <div className={className} style={style}>{children}</div>;
   }
 
+  // Calculate spinner rotation based on pull progress
+  const spinnerRotation = pullProgress * 360;
+  
+  // Show spinner when pulling or refreshing
+  const showSpinner = pullDistance > 10 || isRefreshing;
+  
+  // Spinner stays at fixed position during refresh
+  const spinnerTranslateY = isRefreshing ? 60 : Math.min(pullDistance, 80);
+
   return (
     <div ref={containerRef} className={`relative ${className}`} style={style}>
-      {/* Pull Indicator */}
+      {/* Native-style Pull Indicator - appears from top center */}
       <div
-        className="absolute left-0 right-0 flex justify-center pointer-events-none z-50"
+        className="fixed left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
         style={{
-          top: -60,
-          transform: `translateY(${pullDistance}px)`,
-          opacity: pullProgress,
-          transition: isPulling ? 'none' : 'transform 0.3s ease-out, opacity 0.3s ease-out',
+          top: 0,
+          transform: `translateX(-50%) translateY(${spinnerTranslateY - 50}px)`,
+          opacity: showSpinner ? 1 : 0,
+          transition: isPulling ? 'opacity 0.1s ease-out' : 'all 0.3s ease-out',
         }}
       >
         <div
           className={`
             w-10 h-10 rounded-full bg-white shadow-lg 
             flex items-center justify-center
-            border border-gray-200
+            border border-gray-100
           `}
+          style={{
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
+          }}
         >
-          <RefreshCw
-            className={`w-5 h-5 text-primary-500 transition-transform ${
-              isRefreshing ? 'animate-spin' : ''
-            }`}
+          {/* Native-style spinner */}
+          <svg
+            className="w-6 h-6"
+            viewBox="0 0 24 24"
             style={{
-              transform: isRefreshing ? 'none' : `rotate(${pullProgress * 180}deg)`,
+              transform: isRefreshing ? 'none' : `rotate(${spinnerRotation}deg)`,
+              transition: isPulling ? 'none' : 'transform 0.1s linear',
             }}
-          />
+          >
+            {isRefreshing ? (
+              // Animated spinning loader during refresh
+              <g>
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="2.5"
+                />
+                <path
+                  d="M12 3a9 9 0 0 1 9 9"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 12 12"
+                    to="360 12 12"
+                    dur="0.8s"
+                    repeatCount="indefinite"
+                  />
+                </path>
+              </g>
+            ) : (
+              // Static progress indicator while pulling
+              <g>
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="2.5"
+                />
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeDasharray={`${pullProgress * 56.5} 56.5`}
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    transformOrigin: 'center',
+                  }}
+                />
+              </g>
+            )}
+          </svg>
         </div>
       </div>
 
-      {/* Content with pull transform */}
-      <div
-        style={{
-          transform: `translateY(${pullDistance > 0 ? Math.min(pullDistance, 60) : 0}px)`,
-          transition: isPulling ? 'none' : 'transform 0.3s ease-out',
-        }}
-      >
-        {children}
-      </div>
-
-      {/* Refreshing overlay */}
-      {isRefreshing && (
-        <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 pointer-events-none">
-          <div className="px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-full shadow-lg flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 animate-spin" />
-            Refreshing...
-          </div>
-        </div>
-      )}
+      {/* Content - no transform needed for native feel */}
+      {children}
     </div>
   );
 }
