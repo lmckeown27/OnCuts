@@ -47,6 +47,7 @@ export default function LandingPage() {
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
+  const [pricingCategory, setPricingCategory] = useState<'traditional' | 'campuscut'>('traditional');
   
   // Campus Manager section state
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
@@ -713,11 +714,37 @@ export default function LandingPage() {
             </h2>
           </div>
 
+          {/* Mobile Toggle Slider */}
+          <div className="md:hidden flex justify-center mb-8">
+            <div className="inline-flex bg-white rounded-full p-1 shadow-sm">
+              <button
+                onClick={() => setPricingCategory('traditional')}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  pricingCategory === 'traditional'
+                    ? 'bg-red-100 text-red-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Traditional
+              </button>
+              <button
+                onClick={() => setPricingCategory('campuscut')}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  pricingCategory === 'campuscut'
+                    ? 'bg-green-100 text-green-700'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                CampusCut
+              </button>
+            </div>
+          </div>
+
           {/* The Numbers */}
           <div className="max-w-6xl mx-auto mb-12">
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Traditional Barbershop */}
-              <Card className="border-2 border-red-200 bg-red-50">
+              {/* Traditional Barbershop - Hidden on mobile when CampusCut selected */}
+              <Card className={`border-2 border-red-200 bg-red-50 ${pricingCategory === 'campuscut' ? 'hidden md:block' : ''}`}>
                 <div className="p-6">
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">Traditional Barbershop</h3>
@@ -755,8 +782,8 @@ export default function LandingPage() {
                 </div>
               </Card>
 
-              {/* CampusCut Model */}
-              <Card className="border-2 border-green-300 bg-green-50">
+              {/* CampusCut Model - Hidden on mobile when Traditional selected */}
+              <Card className={`border-2 border-green-300 bg-green-50 ${pricingCategory === 'traditional' ? 'hidden md:block' : ''}`}>
                 <div className="p-6">
                   <div className="text-center mb-6">
                     <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCut</h3>
