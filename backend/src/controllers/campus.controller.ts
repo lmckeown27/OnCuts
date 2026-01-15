@@ -6,7 +6,7 @@ import { AuthRequest } from '../middleware/auth';
 export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, city, state, domain FROM campuses WHERE is_active = TRUE ORDER BY name'
+      'SELECT id, name, city, state, domain, instagram_handle FROM campuses WHERE is_active = TRUE ORDER BY name'
     );
 
     res.json({
