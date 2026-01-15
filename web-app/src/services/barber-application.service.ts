@@ -83,11 +83,17 @@ class BarberApplicationService {
 
   /**
    * Get all barber applications (admin/campus manager only)
+   * @param campusId - Optional campus ID to filter applications by campus
    */
-  async getAllApplications(): Promise<BarberApplication[]> {
+  async getAllApplications(campusId?: string): Promise<BarberApplication[]> {
     // Backend returns { applications: [...], pagination: {...} }
     // api.get returns response.data when pagination is present
-    const response = await api.get<{ applications: BarberApplication[]; pagination: any }>('/barber-applications');
+    const params: Record<string, string> = {};
+    if (campusId) {
+      params.campusId = campusId;
+    }
+    
+    const response = await api.get<{ applications: BarberApplication[]; pagination: any }>('/barber-applications', params);
     
     // Handle different response formats
     if (Array.isArray(response)) {

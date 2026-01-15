@@ -297,7 +297,9 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       </div>
 
       {/* Tab Content with smooth transition */}
+      {/* Key on campusId forces re-mount and data refresh when campus changes */}
       <div 
+        key={campusId}
         className={`transition-all duration-150 ease-out ${
           isTransitioning 
             ? 'opacity-0 translate-y-2' 
@@ -325,7 +327,8 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const applications = await barberApplicationService.getAllApplications();
+      // Pass campusId to filter applications by the selected campus
+      const applications = await barberApplicationService.getAllApplications(campusId);
       setApplications(applications);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
@@ -337,7 +340,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 
   useEffect(() => {
     fetchApplications();
-  }, []);
+  }, [campusId]); // Re-fetch when campusId changes
 
   const handleAction = async (applicationId: string, action: 'approve' | 'reject' | 'interview') => {
     try {
