@@ -29,7 +29,6 @@ export interface Campus {
   country: string;
   timezone: string;
   is_active: boolean;
-  instagram_handle?: string;
 }
 
 // Time interval for availability (Calendly-style)

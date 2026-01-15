@@ -5,25 +5,12 @@ import { AuthRequest } from '../middleware/auth';
 
 export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    let result;
-    
-    // Try with instagram_handle column first
-    try {
-      result = await pool.query(
-        `SELECT id, name, city, state, domain, instagram_handle 
-         FROM campuses 
-         WHERE "isActive" = TRUE 
-         ORDER BY name`
-      );
-    } catch {
-      // Fallback if instagram_handle column doesn't exist yet
-      result = await pool.query(
-        `SELECT id, name, city, state, domain, NULL as instagram_handle 
-         FROM campuses 
-         WHERE "isActive" = TRUE 
-         ORDER BY name`
-      );
-    }
+    const result = await pool.query(
+      `SELECT id, name, city, state, domain 
+       FROM campuses 
+       WHERE "isActive" = TRUE 
+       ORDER BY name`
+    );
 
     res.json({
       success: true,

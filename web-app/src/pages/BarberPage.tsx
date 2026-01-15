@@ -651,7 +651,7 @@ export default function BarberPage() {
               </button>
             </div>
             <div className="p-4 sm:p-6">
-              <CampusManagerDashboard campusId={campusId} campusName={campusName} instagramHandle={currentCampus?.instagram_handle} />
+              <CampusManagerDashboard campusId={campusId} campusName={campusName} />
             </div>
           </div>
         </div>

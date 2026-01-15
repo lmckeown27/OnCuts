@@ -374,26 +374,6 @@ sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"isActive\" = false
 sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"basePriceUsdCents\" = 2500, \"averagePriceUsdCents\" = 4000 WHERE slug = 'campus-slug';"
 ```
 
-### Campus Instagram Handle
-Each campus can have its own Instagram handle for content management in the Campus Manager Dashboard.
-
-```bash
-# View campus with Instagram handle
-sudo -u postgres psql -d campuscuts -c "SELECT id, name, city, state, instagram_handle FROM campuses WHERE instagram_handle IS NOT NULL;"
-
-# Set Instagram handle for a campus (without the @ symbol)
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET instagram_handle = 'campuscutsslo' WHERE slug = 'cal-poly';"
-
-# Set Instagram handle by campus name
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET instagram_handle = 'campuscutsucla' WHERE name ILIKE '%UCLA%';"
-
-# Remove Instagram handle
-sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET instagram_handle = NULL WHERE slug = 'campus-slug';"
-
-# Add instagram_handle column if not exists (run migration first)
-sudo -u postgres psql -d campuscuts -c "ALTER TABLE campuses ADD COLUMN IF NOT EXISTS instagram_handle VARCHAR(100);"
-```
-
 ### Delete Invalid Campuses
 ```bash
 # Delete non-university entries (like GMAIL, ICLOUD)
