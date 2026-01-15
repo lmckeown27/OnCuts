@@ -461,18 +461,6 @@ export default function BarberPage() {
                   )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
-                  {(user?.user_type === 'admin' || user?.is_admin) && (
-                  <button
-                    onClick={() => {
-                        navigate(`${platformPrefix}/admin-role-select`);
-                      setShowProfileDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                  >
-                      <ArrowLeft className="w-4 h-4 text-gray-500" />
-                    Back to Roles
-                    </button>
-                  )}
                   <button
                     onClick={() => {
                       useAuthStore.getState().logout();
