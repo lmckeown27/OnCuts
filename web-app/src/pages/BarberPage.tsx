@@ -2376,13 +2376,13 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
       onClick={onClose}
     >
       <div 
-        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-150 ease-out ${
+        className={`bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85dvh] sm:max-h-[90vh] flex flex-col overflow-hidden transition-all duration-150 ease-out ${
           isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between z-10">
+        <div className="flex-shrink-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Set Your Availability</h2>
             <p className="text-white/80 text-sm">Add multiple time slots per day</p>
@@ -2396,7 +2396,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+        <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain flex-1 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500" />
@@ -2497,7 +2497,7 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between">
           <Button variant="secondary" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
