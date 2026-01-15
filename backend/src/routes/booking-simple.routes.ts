@@ -543,21 +543,30 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     const { campusId } = req.params;
     const { barberId, limit = '100' } = req.query;
 
-    // Verify user is a campus manager for this campus
-    const managerCheck = await pool.query(
-      `SELECT b.id FROM barbers b
-       JOIN users u ON b."userId" = u.id
-       WHERE b."userId" = $1 
-         AND b."isCampusManager" = true 
-         AND b."campusId" = $2`,
-      [userId, campusId]
+    // Check if user is an admin (admins have campus manager access to all campuses)
+    const adminCheck = await pool.query(
+      `SELECT role FROM users WHERE id = $1`,
+      [userId]
     );
+    const isAdmin = adminCheck.rows[0]?.role === 'ADMIN';
 
-    if (managerCheck.rows.length === 0) {
-      return res.status(403).json({
-        success: false,
-        error: 'You are not a campus manager for this campus'
-      });
+    // If not admin, verify user is a campus manager for this specific campus
+    if (!isAdmin) {
+      const managerCheck = await pool.query(
+        `SELECT b.id FROM barbers b
+         JOIN users u ON b."userId" = u.id
+         WHERE b."userId" = $1 
+           AND b."isCampusManager" = true 
+           AND b."campusId" = $2`,
+        [userId, campusId]
+      );
+
+      if (managerCheck.rows.length === 0) {
+        return res.status(403).json({
+          success: false,
+          error: 'You are not a campus manager for this campus'
+        });
+      }
     }
 
     // Build query to get completed bookings for all barbers on this campus

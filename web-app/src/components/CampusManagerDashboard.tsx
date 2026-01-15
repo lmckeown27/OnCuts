@@ -520,8 +520,9 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       setLoading(true);
       const barberServiceModule = await import('../services/barber.service');
       const barberService = barberServiceModule.default;
-      // Filter by campus_id to only show barbers for this campus
-      const response = await barberService.getBarbers({ campus_id: campusId });
+      // Filter by campusId to only show barbers for this campus
+      // Note: Backend expects camelCase 'campusId' parameter
+      const response = await barberService.getBarbers({ campusId } as any);
       
       // Extract barbers array from response - handle both paginated and direct array responses
       const barbersArray = Array.isArray(response) ? response : (response?.data || []);
@@ -549,7 +550,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   useEffect(() => {
     fetchBarbers();
-  }, [campusId]);
+  }, [campusId]); // Re-fetch when campusId changes
 
   // Filter barbers based on search
   const filteredBarbers = barbers.filter((barber) => {
