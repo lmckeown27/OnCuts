@@ -18,7 +18,6 @@ export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
   CAMPUS_SELECT: '/campus-select',
-  ADMIN: '/admin',
   CONSUMER: '/consumer',
   BARBER: '/barber',
   WALLET: '/wallet',

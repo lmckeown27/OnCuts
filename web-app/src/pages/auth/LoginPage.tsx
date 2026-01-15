@@ -27,11 +27,9 @@ export default function LoginPage() {
     if (userType === 'barber' || userType === 'campus_manager') {
       // Barbers and campus managers go to barber dashboard
       navigate('/web/barber');
-    } else if (userType === 'admin') {
-      // Admins go to admin dashboard
-      navigate('/web/admin');
     } else {
-      // Consumers/students go to consumer page
+      // Consumers, students, and admins go to consumer page
+      // (Admins have full privileges and manage via PostgreSQL commands)
       navigate('/web/consumer');
     }
   };
@@ -74,14 +72,12 @@ export default function LoginPage() {
       const currentUser = useAuthStore.getState().user;
       
       // Redirect based on user role
-      if (result.isAdmin) {
-        navigate('/web/admin');
-      } else if (result.isCampusManager) {
-        navigate('/web/barber'); // Campus managers go to barber page
-      } else if (currentUser?.user_type === 'barber') {
-        navigate('/web/barber'); // Barbers go to barber page
+      if (result.isCampusManager || currentUser?.user_type === 'barber') {
+        navigate('/web/barber'); // Barbers and campus managers go to barber page
       } else {
-        navigate('/web/consumer'); // Consumers/students go to consumer page
+        // Consumers, students, and admins go to consumer page
+        // Admins have full privileges and manage via PostgreSQL commands
+        navigate('/web/consumer');
       }
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;

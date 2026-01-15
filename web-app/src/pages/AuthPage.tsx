@@ -167,14 +167,13 @@ export default function AuthPage() {
       // Default redirect based on user role
       const currentUser = useAuthStore.getState().user;
       
-      if (result.isAdmin) {
-        navigate('/web/admin');
-      } else if (result.isCampusManager) {
-        navigate('/web/barber'); // Campus managers go to barber page
-      } else if (currentUser?.user_type === 'barber') {
-        navigate('/web/barber'); // Barbers go to barber page
+      // Redirect based on user role
+      if (result.isCampusManager || currentUser?.user_type === 'barber') {
+        navigate('/web/barber'); // Barbers and campus managers go to barber page
       } else {
-        navigate('/web/consumer'); // Consumers/students go to consumer page
+        // Consumers, students, and admins go to consumer page
+        // Admins have full privileges and manage via PostgreSQL commands
+        navigate('/web/consumer');
       }
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;

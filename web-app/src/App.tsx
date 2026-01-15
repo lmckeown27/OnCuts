@@ -14,18 +14,8 @@ import AuthPage from './pages/AuthPage';
 // Authentication
 const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'));
 const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
-const AdminRoleSelectPage = lazy(() => import('./pages/auth/AdminRoleSelectPage'));
 const AppInstallPage = lazy(() => import('./pages/AppInstallPage'));
 const MobileAppDownloadPage = lazy(() => import('./pages/MobileAppDownloadPage'));
-
-// Admin Pages - Lazy loaded (separate chunk)
-const AdminCampusesPage = lazy(() => import('./pages/admin/AdminCampusesPage'));
-const AdminSystemHealthPage = lazy(() => import('./pages/admin/AdminSystemHealthPage'));
-const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'));
-const AdminMarketplacePage = lazy(() => import('./pages/admin/AdminMarketplacePage'));
-const AdminFraudDetectionPage = lazy(() => import('./pages/admin/AdminFraudDetectionPage'));
-const AdminPricingManagement = lazy(() => import('./pages/AdminPricingManagement'));
-const AdminUserView = lazy(() => import('./pages/admin/AdminUserView'));
 
 // Consumer Pages - Lazy loaded
 const DiscoverBarbers = lazy(() => import('./pages/DiscoverBarbers'));
@@ -48,7 +38,6 @@ const WalletPage = lazy(() => import('./pages/WalletPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 
 // Mobile/App Pages (Touch-Optimized) - Lazy loaded
-const MobileAdminPage = lazy(() => import('./pages/mobile/MobileAdminPage'));
 const MobileBarberPage = lazy(() => import('./pages/mobile/MobileBarberPage'));
 const MobileConsumerPage = lazy(() => import('./pages/mobile/MobileConsumerPage'));
 
@@ -114,17 +103,7 @@ function AppContent() {
         <Route path="/web" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
         <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/reset-password" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ResetPasswordPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin-role-select" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminRoleSelectPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
-        
-        {/* Web - Admin Routes */}
-        <Route path="/web/admin" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminCampusesPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/system-health" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminSystemHealthPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/payments" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminPaymentsPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/marketplace" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminMarketplacePage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/fraud" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminFraudDetectionPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/pricing" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminPricingManagement /></LazyRoute></PlatformGuard>} />
-        <Route path="/web/admin/user/:userId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AdminUserView /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Consumer/Student Routes */}
         <Route path="/web/find-barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><FindBarberPage /></LazyRoute></PlatformGuard>} />
@@ -164,18 +143,8 @@ function AppContent() {
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/app" element={<PlatformGuard requiredPlatform="app"><AuthPage /></PlatformGuard>} />
         <Route path="/app/verify-email" element={<PlatformGuard requiredPlatform="app"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin-role-select" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminRoleSelectPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/install" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
         <Route path="/app/download" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
-        
-        {/* App - Admin Routes (Mobile-Optimized) */}
-        <Route path="/app/admin" element={<PlatformGuard requiredPlatform="app"><LazyRoute><MobileAdminPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/system-health" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminSystemHealthPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/payments" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminPaymentsPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/marketplace" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminMarketplacePage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/fraud" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminFraudDetectionPage /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/pricing" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminPricingManagement /></LazyRoute></PlatformGuard>} />
-        <Route path="/app/admin/user/:userId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><AdminUserView /></LazyRoute></PlatformGuard>} />
         
         {/* App - Consumer/Student Routes (Mobile-Optimized) */}
         <Route path="/app/consumer" element={<PlatformGuard requiredPlatform="app"><LazyRoute><MobileConsumerPage /></LazyRoute></PlatformGuard>} />
@@ -207,7 +176,6 @@ function AppContent() {
             LEGACY REDIRECTS (For backwards compatibility)
             Redirect old routes to web platform by default
         ═══════════════════════════════════════════════════════════ */}
-        <Route path="/admin/*" element={<Navigate to={`/web${location.pathname}`} replace />} />
         <Route path="/consumer" element={<Navigate to="/web/consumer" replace />} />
         <Route path="/barber" element={<Navigate to="/web/barber" replace />} />
         <Route path="/discover" element={<Navigate to="/web/discover" replace />} />
