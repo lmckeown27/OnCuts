@@ -245,10 +245,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Barber </span>Applications
-            </div>
+            <span className="hidden sm:inline">Barber </span>Applications
           </button>
           
           <button
@@ -259,10 +256,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Barber </span>Management
-            </div>
+            <span className="hidden sm:inline">Barber </span>Management
           </button>
           
           <button
@@ -273,10 +267,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <CheckCircle className="w-4 h-4" />
-              Bookings
-            </div>
+            Bookings
           </button>
         </nav>
       </div>
