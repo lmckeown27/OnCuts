@@ -393,18 +393,9 @@ export default function ConsumerPage() {
     return date.toLocaleDateString();
   };
 
-  // Pull-to-refresh handler for mobile
+  // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
-    // Refresh notifications
-    try {
-      const data = await notificationService.getNotifications();
-      setNotifications(data.notifications);
-      setUnreadNotifications(data.unreadCount);
-    } catch (error) {
-      console.error('Failed to refresh notifications:', error);
-    }
-    // Refresh barbers will be triggered by BarberListSection
-    await loadUnreadCount();
+    window.location.reload();
   };
 
   return (

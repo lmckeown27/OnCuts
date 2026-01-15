@@ -241,11 +241,9 @@ export default function BarberPage() {
     fetchBarberProfile();
   }, [barberId, user]);
 
-  // Pull-to-refresh handler for mobile
+  // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
-    await fetchNotifications();
-    await loadUnreadCount();
-    setBookingsRefreshKey(prev => prev + 1);
+    window.location.reload();
   };
 
   // Function to open booking details modal - receives full booking object

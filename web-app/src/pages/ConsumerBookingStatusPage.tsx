@@ -484,7 +484,7 @@ export default function ConsumerBookingStatusPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={fetchActiveBooking} className="min-h-[100dvh] bg-gray-50">
+    <PullToRefresh onRefresh={() => window.location.reload()} className="min-h-[100dvh] bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">

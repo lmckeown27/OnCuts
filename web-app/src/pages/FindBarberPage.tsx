@@ -14,6 +14,7 @@ import UniversitySelector from '../components/UniversitySelector';
 import type { University } from '../data/universities';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import PullToRefresh from '../components/PullToRefresh';
 
 // Storage key
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -49,29 +50,32 @@ export default function FindBarberPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
+    <PullToRefresh onRefresh={() => window.location.reload()} className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50">
       {/* Header */}
       <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-gray-100 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between relative">
           <button 
             onClick={goBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors z-10"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline">Back</span>
           </button>
           
-          <img 
-            src={CampusCutLogo} 
-            alt="CampusCut" 
-            className="h-8"
-          />
+          {/* Centered Logo */}
+          <div className="absolute left-1/2 transform -translate-x-1/2">
+            <img 
+              src={CampusCutLogo} 
+              alt="CampusCut" 
+              className="h-10 sm:h-12 w-auto"
+            />
+          </div>
           
           {/* Sign In Button - only show when not authenticated */}
           {!isAuthenticated ? (
             <button
               onClick={() => navigate('/web')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors z-10"
             >
               Sign In
             </button>
@@ -124,6 +128,6 @@ export default function FindBarberPage() {
           }
         </p>
       </footer>
-    </div>
+    </PullToRefresh>
   );
 }

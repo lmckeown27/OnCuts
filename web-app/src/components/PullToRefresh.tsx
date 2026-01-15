@@ -95,7 +95,7 @@ export default function PullToRefresh({
                 <path
                   d="M12 3a9 9 0 0 1 9 9"
                   fill="none"
-                  stroke="#22c55e"
+                  stroke="#708d81"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 >
@@ -125,7 +125,7 @@ export default function PullToRefresh({
                   cy="12"
                   r="9"
                   fill="none"
-                  stroke="#22c55e"
+                  stroke="#708d81"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={`${pullProgress * 56.5} 56.5`}
