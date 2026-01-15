@@ -580,6 +580,16 @@ export default function BarberPage() {
                           setShowCampusSelector(true);
                           setCampusSearchQuery('');
                         }}
+                        onBlur={(e) => {
+                          // Delay to allow click on dropdown items to register first
+                          setTimeout(() => {
+                            // Only close if focus moved outside the selector container
+                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
+                              setShowCampusSelector(false);
+                              setCampusSearchQuery('');
+                            }
+                          }, 150);
+                        }}
                         placeholder="Search campuses..."
                         className="w-full max-w-xs text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
                       />
