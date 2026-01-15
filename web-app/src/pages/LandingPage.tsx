@@ -46,6 +46,7 @@ export default function LandingPage() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
   
   // Campus Manager section state
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
@@ -807,10 +808,42 @@ export default function LandingPage() {
             </h2>
           </div>
 
+          {/* Mobile Toggle Slider */}
+          <div className="md:hidden flex justify-center mb-8">
+            <div className="inline-flex bg-gray-100 rounded-full p-1">
+              <button
+                onClick={() => {
+                  setFaqCategory('consumers');
+                  setOpenFaq(null);
+                }}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  faqCategory === 'consumers'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                For Consumers
+              </button>
+              <button
+                onClick={() => {
+                  setFaqCategory('barbers');
+                  setOpenFaq(null);
+                }}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                  faqCategory === 'barbers'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                For Barbers
+              </button>
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-8">
-            {/* For Consumers Column */}
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+            {/* For Consumers Column - Hidden on mobile when barbers selected */}
+            <div className={`${faqCategory === 'barbers' ? 'hidden md:block' : ''}`}>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center hidden md:block">
                 For Consumers
               </h3>
               <div className="space-y-3">
@@ -891,9 +924,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* For Barbers Column */}
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+            {/* For Barbers Column - Hidden on mobile when consumers selected */}
+            <div className={`${faqCategory === 'consumers' ? 'hidden md:block' : ''}`}>
+              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center hidden md:block">
                 For Barbers
               </h3>
               <div className="space-y-3">
