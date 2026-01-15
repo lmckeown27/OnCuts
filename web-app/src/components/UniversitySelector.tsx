@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, MapPin, ChevronDown, X, GraduationCap } from 'lucide-react';
+import { Search, ChevronDown, X, GraduationCap } from 'lucide-react';
 import { searchUniversities, type University } from '../data/universities';
 
 interface UniversitySelectorProps {
@@ -114,10 +114,6 @@ export default function UniversitySelector({
           isOpen ? 'border-primary-500 shadow-lg' : 'border-gray-200 hover:border-gray-300'
         }`}
       >
-        <div className="pl-4 text-gray-400">
-          <GraduationCap className="w-5 h-5" />
-        </div>
-        
         <input
           ref={inputRef}
           type="text"
@@ -131,7 +127,7 @@ export default function UniversitySelector({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 px-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
+          className="flex-1 pl-4 pr-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
           readOnly={!!value}
           onClick={() => {
             if (value) {
@@ -159,12 +155,9 @@ export default function UniversitySelector({
       {/* Selected University Display */}
       {value && !isOpen && (
         <div className="mt-2 p-3 bg-primary-50 rounded-lg border border-primary-200">
-          <div className="flex items-start gap-3">
-            <MapPin className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-semibold text-gray-900">{value.name}</p>
-              <p className="text-sm text-gray-600">{value.city}, {value.state}</p>
-            </div>
+          <div>
+            <p className="font-semibold text-gray-900">{value.name}</p>
+            <p className="text-sm text-gray-600">{value.city}, {value.state}</p>
           </div>
         </div>
       )}
@@ -193,28 +186,23 @@ export default function UniversitySelector({
                   <button
                     onClick={() => handleSelect(university)}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full px-4 py-3 text-left transition-colors flex items-start gap-3 ${
+                    className={`w-full px-4 py-3 text-left transition-colors ${
                       index === highlightedIndex
                         ? 'bg-primary-50 text-primary-900'
                         : 'hover:bg-gray-50'
                     }`}
                   >
-                    <MapPin className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                      index === highlightedIndex ? 'text-primary-600' : 'text-gray-400'
-                    }`} />
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {university.shortName ? (
-                          <>
-                            {university.shortName}
-                            <span className="font-normal text-gray-500"> - {university.name}</span>
-                          </>
-                        ) : (
-                          university.name
-                        )}
-                      </p>
-                      <p className="text-sm text-gray-500">{university.city}, {university.state}</p>
-                    </div>
+                    <p className="font-medium text-gray-900">
+                      {university.shortName ? (
+                        <>
+                          {university.shortName}
+                          <span className="font-normal text-gray-500"> - {university.name}</span>
+                        </>
+                      ) : (
+                        university.name
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-500">{university.city}, {university.state}</p>
                   </button>
                 </li>
               ))}
