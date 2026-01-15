@@ -609,18 +609,6 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                   {/* Header Row */}
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
-                    <span className={`px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                      barber.isActive
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {barber.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                    {barber.avgRating >= 4.8 && (
-                      <span className="px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                        ⭐ Top Rated
-                      </span>
-                    )}
                   </div>
 
                   {/* Contact Info */}

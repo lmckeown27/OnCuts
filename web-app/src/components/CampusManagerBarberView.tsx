@@ -188,13 +188,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-lg font-bold text-gray-900">{getBarberName()}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                barber.is_active
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-700'
-              }`}>
-                {barber.is_active ? 'Active' : 'Inactive'}
-              </span>
             </div>
             {barber.bio && (
               <p className="text-sm text-gray-600">{barber.bio}</p>
