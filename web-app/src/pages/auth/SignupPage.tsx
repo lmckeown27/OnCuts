@@ -726,7 +726,7 @@ export default function SignupPage() {
             {!hasScrolledToBottom && (
               <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex-shrink-0">
                 <p className="text-amber-800 text-sm text-center">
-                  ⬇️ Please scroll to the bottom to read the entire Terms of Service
+                  Please scroll to the bottom to read the entire Terms of Service
                 </p>
               </div>
             )}
