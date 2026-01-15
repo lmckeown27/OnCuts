@@ -156,6 +156,9 @@ export default function ConsumerPage() {
   // Viewport detection for responsive behavior
   const { isMobile, isTablet, viewport } = useViewport();
   
+  // Track if any modal is open for disabling pull-to-refresh
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || !!selectedBarber;
+  
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
   
@@ -399,7 +402,7 @@ export default function ConsumerPage() {
   };
 
   return (
-    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50">
+    <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
