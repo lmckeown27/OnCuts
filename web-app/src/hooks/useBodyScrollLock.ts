@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 /**
  * Hook to lock body scroll when a modal/popup is open
  * Prevents users from scrolling or interacting with background content
+ * Also prevents pull-to-refresh behavior on mobile
  */
 export function useBodyScrollLock(isLocked: boolean) {
   useEffect(() => {
@@ -23,6 +24,10 @@ export function useBodyScrollLock(isLocked: boolean) {
       document.body.style.left = '0';
       document.body.style.right = '0';
       
+      // Prevent pull-to-refresh on mobile
+      document.body.style.overscrollBehavior = 'none';
+      document.documentElement.style.overscrollBehavior = 'none';
+      
       return () => {
         // Restore original styles
         document.body.style.overflow = originalStyle;
@@ -31,6 +36,10 @@ export function useBodyScrollLock(isLocked: boolean) {
         document.body.style.top = '';
         document.body.style.left = '';
         document.body.style.right = '';
+        
+        // Restore pull-to-refresh behavior
+        document.body.style.overscrollBehavior = '';
+        document.documentElement.style.overscrollBehavior = '';
         
         // Restore scroll position
         window.scrollTo(0, scrollY);
