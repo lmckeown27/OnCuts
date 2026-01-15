@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Building2 } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import Avatar from '../components/Avatar';
@@ -22,6 +22,8 @@ import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
+import campusService from '../services/campus.service';
+import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useGeolocation, useDynamicViewportHeight } from '../hooks';
 import toast from 'react-hot-toast';
@@ -216,9 +218,40 @@ export default function BarberPage() {
   // State for barber profile data (for walk-in services and campus manager)
   const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string } | null>(null);
 
+  // Admin campus management - admins can manage any campus
+  const isAdmin = user?.is_admin || user?.user_type === 'admin';
+  const [allCampuses, setAllCampuses] = useState<Campus[]>([]);
+  const [selectedAdminCampusId, setSelectedAdminCampusId] = useState<string>('');
+  const [showCampusSelector, setShowCampusSelector] = useState(false);
+
   // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
-  const campusId = barberProfile?.campusId || user?.campus_id || '';
-  const campusName = ''; // TODO: Fetch campus name from API
+  // For admins, use the selected campus (or first available campus)
+  const defaultCampusId = barberProfile?.campusId || user?.campus_id || '';
+  const campusId = isAdmin && selectedAdminCampusId ? selectedAdminCampusId : defaultCampusId;
+  
+  // Find the current campus name from the list
+  const currentCampus = allCampuses.find(c => c.id?.toString() === campusId);
+  const campusName = currentCampus?.name || '';
+
+  // Fetch all campuses for admin users
+  useEffect(() => {
+    const fetchCampuses = async () => {
+      if (!isAdmin) return;
+      try {
+        const campuses = await campusService.getCampuses();
+        setAllCampuses(campuses);
+        // Set initial selected campus if not already set
+        if (!selectedAdminCampusId && campuses.length > 0) {
+          // Default to user's campus if available, otherwise first campus
+          const userCampus = campuses.find(c => c.id?.toString() === (user?.campus_id || ''));
+          setSelectedAdminCampusId(userCampus?.id?.toString() || campuses[0]?.id?.toString() || '');
+        }
+      } catch (error) {
+        console.error('Failed to fetch campuses for admin:', error);
+      }
+    };
+    fetchCampuses();
+  }, [isAdmin, user?.campus_id]);
 
   // Fetch barber profile data for walk-in modal and campus manager
   useEffect(() => {
@@ -510,7 +543,57 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
+              <div className="flex-1">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
+                {/* Campus Selector for Admins */}
+                {isAdmin && allCampuses.length > 0 && (
+                  <div className="mt-2 relative">
+                    <button
+                      onClick={() => setShowCampusSelector(!showCampusSelector)}
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Building2 className="w-4 h-4" />
+                      <span className="font-medium">{campusName || 'Select Campus'}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${showCampusSelector ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {/* Campus Dropdown */}
+                    {showCampusSelector && (
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[250px] max-h-[300px] overflow-y-auto">
+                        <div className="p-2">
+                          <p className="text-xs text-gray-500 px-2 py-1 mb-1">Select campus to manage:</p>
+                          {allCampuses.map((campus) => (
+                            <button
+                              key={campus.id}
+                              onClick={() => {
+                                setSelectedAdminCampusId(campus.id?.toString() || '');
+                                setShowCampusSelector(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                                campus.id?.toString() === campusId
+                                  ? 'bg-primary-100 text-primary-700 font-medium'
+                                  : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              <div className="font-medium">{campus.name}</div>
+                              {campus.city && campus.state && (
+                                <div className="text-xs text-gray-500">{campus.city}, {campus.state}</div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Show campus name for non-admin campus managers */}
+                {!isAdmin && campusName && (
+                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4" />
+                    {campusName}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={closeCampusManager}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
