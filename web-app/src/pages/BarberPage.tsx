@@ -558,7 +558,7 @@ export default function BarberPage() {
           onClick={closeCampusManager}
         >
           <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full h-[95vh] sm:h-[92vh] overflow-y-auto transition-all duration-150 ease-out
+            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto overscroll-contain transition-all duration-150 ease-out
               ${isCampusManagerVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
@@ -598,7 +598,7 @@ export default function BarberPage() {
                     
                     {/* Campus Dropdown */}
                     {showCampusSelector && (
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[300px] max-h-[300px] overflow-y-auto">
+                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[300px] max-h-[300px] overflow-y-auto overscroll-contain">
                         <div className="p-2">
                           {allCampuses
                             .filter(campus => {

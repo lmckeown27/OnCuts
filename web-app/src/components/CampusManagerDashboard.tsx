@@ -77,7 +77,7 @@ const IncidentDetailsModal: React.FC<{
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
