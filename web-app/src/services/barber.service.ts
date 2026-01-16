@@ -88,6 +88,13 @@ class BarberService {
   async toggleVacationMode(barberId: string, isActive: boolean): Promise<Barber> {
     return await api.put<Barber>(`/barbers/${barberId}`, { is_active: isActive });
   }
+
+  /**
+   * Remove barber (demote to consumer) - Campus Manager only
+   */
+  async removeBarber(barberId: string): Promise<{ success: boolean; message: string }> {
+    return await api.post<{ success: boolean; message: string }>(`/barbers/${barberId}/remove`, {});
+  }
 }
 
 export default new BarberService();

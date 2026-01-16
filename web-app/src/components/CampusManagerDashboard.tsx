@@ -488,6 +488,25 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
+  const [removeConfirmBarber, setRemoveConfirmBarber] = useState<CampusBarber | null>(null);
+  const [removeLoading, setRemoveLoading] = useState(false);
+
+  const handleRemoveBarber = async (barber: CampusBarber) => {
+    try {
+      setRemoveLoading(true);
+      const barberServiceModule = await import('../services/barber.service');
+      const barberService = barberServiceModule.default;
+      await barberService.removeBarber(barber.id);
+      toast.success(`${barber.name} has been removed and demoted to consumer`);
+      setRemoveConfirmBarber(null);
+      fetchBarbers(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to remove barber:', error);
+      toast.error('Failed to remove barber');
+    } finally {
+      setRemoveLoading(false);
+    }
+  };
 
   const fetchBarbers = async () => {
     try {
@@ -594,27 +613,91 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                 </div>
 
                 {/* Actions - Full width on mobile */}
-                <div className="flex sm:flex-col gap-2 sm:ml-4">
+                <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedBarberId(barber.id)}
+                      className="flex-1 sm:flex-none text-xs sm:text-sm"
+                    >
+                      View Profile
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => window.location.href = `mailto:${barber.email}`}
+                      className="flex-1 sm:flex-none text-xs sm:text-sm"
+                    >
+                      Contact
+                    </Button>
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setSelectedBarberId(barber.id)}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm"
+                    onClick={() => setRemoveConfirmBarber(barber)}
+                    className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm w-full sm:w-auto"
                   >
-                    View Profile
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.location.href = `mailto:${barber.email}`}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm"
-                  >
-                    Contact
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Remove
                   </Button>
                 </div>
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Remove Confirmation Modal */}
+      {removeConfirmBarber && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => !removeLoading && setRemoveConfirmBarber(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-red-50 px-6 py-4 border-b border-red-100">
+              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Remove Barber
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to remove <strong>{removeConfirmBarber.name}</strong> as a barber?
+              </p>
+              <p className="text-sm text-gray-500 mb-6">
+                This will demote them to a regular consumer. They will no longer appear as a barber on the platform and cannot accept bookings.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setRemoveConfirmBarber(null)}
+                  disabled={removeLoading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => handleRemoveBarber(removeConfirmBarber)}
+                  disabled={removeLoading}
+                  className="flex-1 bg-red-600 hover:bg-red-700 border-red-600"
+                >
+                  {removeLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Removing...
+                    </>
+                  ) : (
+                    'Remove Barber'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

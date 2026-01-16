@@ -8,6 +8,7 @@ import {
   createBarberProfile,
   updateBarberProfile,
   deleteBarberProfile,
+  removeBarber,
   getBarberPortfolio,
   addPortfolioImage,
   deletePortfolioImage,
@@ -103,6 +104,18 @@ router.delete(
   requireRole('barber'),
   [param('id').isUUID(), validate],
   deleteBarberProfile
+);
+
+/**
+ * @route   POST /api/barbers/:id/remove
+ * @desc    Remove barber (demote to consumer) - Campus Manager only
+ * @access  Private (Campus Manager or Admin)
+ */
+router.post(
+  '/:id/remove',
+  authenticate,
+  [param('id').isUUID(), validate],
+  removeBarber
 );
 
 /**

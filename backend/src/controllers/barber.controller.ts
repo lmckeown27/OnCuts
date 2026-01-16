@@ -1147,3 +1147,79 @@ export const getBarberAnalytics = async (req: AuthRequest, res: Response, next: 
   }
 };
 
+/**
+ * Remove barber (demote to consumer) - Campus Manager only
+ * This doesn't delete the user, just changes their role from 'barber' to 'consumer'
+ */
+export const removeBarber = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params; // barber ID
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+
+    // Get the barber's details including their campus
+    const barberResult = await pool.query(
+      `SELECT b.id, b."userId", u."campusId", u.email, u.first_name, u.last_name
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       WHERE b.id = $1`,
+      [id]
+    );
+
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    const barber = barberResult.rows[0];
+    const barberCampusId = barber.campusId;
+    const barberUserId = barber.userId;
+
+    // Check if requester is admin or campus manager for this barber's campus
+    if (userRole !== 'admin') {
+      // Check if user is a campus manager for this barber's campus
+      const campusManagerCheck = await pool.query(
+        `SELECT id FROM campus_managers WHERE user_id = $1 AND campus_id = $2`,
+        [userId, barberCampusId]
+      );
+
+      if (campusManagerCheck.rows.length === 0) {
+        throw new ApiError(403, 'Not authorized to remove barbers from this campus');
+      }
+    }
+
+    // Begin transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update user role from 'barber' to 'consumer'
+      await client.query(
+        `UPDATE users SET role = 'consumer', "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
+        [barberUserId]
+      );
+
+      // Deactivate the barber profile (keep it for records, but mark inactive)
+      await client.query(
+        `UPDATE barbers SET "isActive" = false, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
+        [id]
+      );
+
+      await client.query('COMMIT');
+
+      logger.info(`Barber ${id} (user ${barberUserId}) demoted to consumer by ${userId}`);
+
+      res.json({
+        success: true,
+        message: `Barber ${barber.first_name} ${barber.last_name} has been removed and demoted to consumer`,
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
