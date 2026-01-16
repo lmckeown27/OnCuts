@@ -481,10 +481,10 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Desktop: Show campus manager profile picture thumbnail below dropdown when selected */}
+                {/* Desktop: Show campus manager profile picture below dropdown when selected */}
                 {selectedCampus?.manager && (
-                  <div className="hidden md:flex items-center gap-4 mt-6 p-4 bg-gray-50 rounded-xl">
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-200 ring-2 ring-primary-500/30 flex-shrink-0">
+                  <div className="hidden md:flex justify-center mt-6">
+                    <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-lg">
                       {selectedCampus.manager.profileImageUrl ? (
                         <img
                           src={selectedCampus.manager.profileImageUrl}
@@ -492,29 +492,11 @@ export default function LandingPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-400">
+                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-400 bg-gray-100">
                           {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-900">
-                        {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
-                      </h4>
-                      <p className="text-sm text-primary-600 font-medium">Campus Manager</p>
-                      <p className="text-sm text-gray-500 truncate">{selectedCampus.campusName}</p>
-                    </div>
-                    {selectedCampus.manager.instagramHandle && (
-                      <a
-                        href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 transition-colors"
-                      >
-                        <Instagram className="w-4 h-4" />
-                        <span className="hidden lg:inline">@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
-                      </a>
-                    )}
                   </div>
                 )}
 
@@ -621,21 +603,6 @@ export default function LandingPage() {
                     </>
                   ) : selectedCampus.manager ? (
                       <>
-                        {/* Profile Image - Square */}
-                        <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
-                          {selectedCampus.manager.profileImageUrl ? (
-                            <img
-                              src={selectedCampus.manager.profileImageUrl}
-                              alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400">
-                              {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
-                            </div>
-                          )}
-                        </div>
-
                         {/* Name and Role */}
                         <h3 className="text-2xl font-bold mb-1">
                           {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
