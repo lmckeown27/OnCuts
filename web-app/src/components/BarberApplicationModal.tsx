@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { barberApplicationService } from '../services/barber-application.service';
+import { barberApplicationService, BarberApplication } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
 import campusService from '../services/campus.service';
 import type { Campus } from '../types';
@@ -41,6 +41,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
   const campusSelectorRef = useRef<HTMLDivElement>(null);
+  const [existingApplication, setExistingApplication] = useState<BarberApplication | null>(null);
+  const [checkingExistingApplication, setCheckingExistingApplication] = useState(true);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -75,8 +77,22 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setTimeout(onClose, 150);
   };
 
-  // Load campuses on mount
+  // Check for existing application and load campuses on mount
   useEffect(() => {
+    const checkExistingApplication = async () => {
+      try {
+        setCheckingExistingApplication(true);
+        const application = await barberApplicationService.getMyApplication();
+        setExistingApplication(application);
+      } catch (error) {
+        console.error('Failed to check existing application:', error);
+        // If error, assume no existing application and let user proceed
+        setExistingApplication(null);
+      } finally {
+        setCheckingExistingApplication(false);
+      }
+    };
+
     const loadCampuses = async () => {
       try {
         setLoadingCampuses(true);
@@ -91,6 +107,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     };
     
     if (isOpen) {
+      checkExistingApplication();
       loadCampuses();
     }
   }, [isOpen]);
@@ -208,6 +225,149 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   }
 
   if (!shouldRender) return null;
+
+  // Show loading while checking for existing application
+  if (checkingExistingApplication) {
+    return (
+      <div 
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+          isVisible ? 'bg-black/50' : 'bg-black/0'
+        }`}
+        onClick={handleClose}
+      >
+        <div 
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center transition-all duration-150 ease-out ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-3 border-primary-400 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show existing application status view
+  if (existingApplication) {
+    const statusMessages: Record<string, { title: string; description: string; color: string }> = {
+      pending: {
+        title: 'Application Under Review',
+        description: 'Your application has been submitted and is currently being reviewed by the campus manager. They will get back to you once they\'ve reviewed your application.',
+        color: 'amber'
+      },
+      under_review: {
+        title: 'Application Under Review',
+        description: 'Your application is actively being reviewed by the campus manager. They will reach out to you soon with next steps.',
+        color: 'blue'
+      },
+      interview_scheduled: {
+        title: 'Interview Scheduled',
+        description: 'Great news! An interview has been scheduled. Please check your email for details.',
+        color: 'green'
+      },
+      approved: {
+        title: 'Application Approved',
+        description: 'Congratulations! Your application has been approved. You should have received an email with next steps.',
+        color: 'green'
+      },
+      rejected: {
+        title: 'Application Not Approved',
+        description: 'Unfortunately, your application was not approved at this time. You may reapply in the future.',
+        color: 'red'
+      }
+    };
+
+    const status = statusMessages[existingApplication.status] || statusMessages.pending;
+    const colorClasses = {
+      amber: 'bg-amber-100 text-amber-600',
+      blue: 'bg-blue-100 text-blue-600',
+      green: 'bg-green-100 text-green-600',
+      red: 'bg-red-100 text-red-600'
+    };
+
+    return (
+      <div 
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+          isVisible ? 'bg-black/50' : 'bg-black/0'
+        }`}
+        onClick={handleClose}
+      >
+        <div 
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-150 ease-out ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-2 bg-white/20 rounded-lg mb-2">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Application Status</h2>
+            </div>
+            <button
+              onClick={handleClose}
+              className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 text-center">
+            <div className={`w-16 h-16 ${colorClasses[status.color as keyof typeof colorClasses]} rounded-full flex items-center justify-center mx-auto mb-5`}>
+              <Clock className="w-8 h-8" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 mb-3">{status.title}</h3>
+            <p className="text-gray-600 mb-6">
+              {status.description}
+            </p>
+
+            {/* Submitted date */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Submitted On</p>
+              <p className="font-medium text-gray-900">
+                {new Date(existingApplication.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+
+            {/* Support section */}
+            <div className="border-t pt-5">
+              <p className="text-sm text-gray-500 mb-2">
+                Having issues or think your application wasn't submitted?
+              </p>
+              <a 
+                href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
+              >
+                <Mail className="w-4 h-4" />
+                campuscuthelp@gmail.com
+              </a>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t">
+            <button
+              onClick={handleClose}
+              className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
