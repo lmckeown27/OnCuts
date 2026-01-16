@@ -1201,9 +1201,9 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
     try {
       await client.query('BEGIN');
 
-      // Update user role from 'barber' to 'consumer'
+      // Update user role from 'BARBER' to 'CONSUMER' (database uses uppercase enum values)
       await client.query(
-        `UPDATE users SET role = 'consumer', "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
+        `UPDATE users SET role = 'CONSUMER', "updatedAt" = CURRENT_TIMESTAMP WHERE id = $1`,
         [barberUserId]
       );
 
