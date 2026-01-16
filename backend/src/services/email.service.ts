@@ -1509,16 +1509,11 @@ function generateBarberApplicationHtml(
       
       <!-- Applicant Card -->
       <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <div style="display: flex; align-items: center; margin-bottom: 15px;">
-          <div style="width: 50px; height: 50px; background-color: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">
-            ${details.applicantName.charAt(0).toUpperCase()}
-          </div>
-          <div style="margin-left: 15px;">
-            <h3 style="color: #166534; margin: 0; font-size: 18px;">${details.applicantName}</h3>
-            <p style="color: #15803d; margin: 5px 0 0 0; font-size: 14px;">
-              <a href="mailto:${details.applicantEmail}" style="color: #15803d;">${details.applicantEmail}</a>
-            </p>
-          </div>
+        <div style="margin-bottom: 15px;">
+          <h3 style="color: #166534; margin: 0; font-size: 18px;">${details.applicantName}</h3>
+          <p style="color: #15803d; margin: 5px 0 0 0; font-size: 14px;">
+            <a href="mailto:${details.applicantEmail}" style="color: #15803d;">${details.applicantEmail}</a>
+          </p>
         </div>
         <p style="color: #6b7280; font-size: 12px; margin: 0;">Submitted ${details.submittedAt}</p>
       </div>
