@@ -377,7 +377,7 @@ SELECT
   u.first_name || ' ' || u.last_name AS name,
   u.email,
   u.role,
-  c.name as campus_name
+  CASE WHEN u.role = 'ADMIN' THEN 'All Campuses' ELSE c.name END as scope
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
