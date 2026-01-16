@@ -426,7 +426,11 @@ export default function LandingPage() {
                           setCampusSearchQuery(e.target.value);
                           setCampusDropdownOpen(true);
                         }}
-                        onFocus={() => setCampusDropdownOpen(true)}
+                        onFocus={(e) => {
+                          setCampusDropdownOpen(true);
+                          // Auto-select text when focused so user can easily retype
+                          e.target.select();
+                        }}
                         className="flex-1 px-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
                       />
                       <button
