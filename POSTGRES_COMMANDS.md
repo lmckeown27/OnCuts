@@ -278,6 +278,103 @@ sudo -u postgres psql -d campuscuts -c "SELECT id FROM users WHERE email = 'user
 
 ---
 
+## CONSUMERS
+
+> **Note:** Consumers are not tied to any university. The `campusId` stored is just where they signed up, not an operational restriction.
+
+### View All Consumers
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  u.first_name || ' ' || u.last_name AS name,
+  u.email,
+  u.email_verified AS verified,
+  u.\"createdAt\"::date AS joined
+FROM users u
+WHERE u.role = 'CONSUMER'
+ORDER BY u.\"createdAt\" DESC;
+"
+```
+
+### View All Consumers (Detailed)
+```bash
+sudo -u postgres psql -d campuscuts -x -c "
+SELECT 
+  u.id,
+  u.first_name,
+  u.last_name,
+  u.email,
+  u.\"displayName\",
+  u.\"avatarUrl\",
+  u.email_verified,
+  u.\"createdAt\",
+  c.name AS signup_campus
+FROM users u
+LEFT JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role = 'CONSUMER'
+ORDER BY u.\"createdAt\" DESC
+LIMIT 20;
+"
+```
+
+### View Consumers by Signup Campus
+```bash
+# Replace 'Cal Poly SLO' with campus name
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  u.first_name || ' ' || u.last_name AS name,
+  u.email,
+  u.email_verified AS verified,
+  u.\"createdAt\"::date AS joined
+FROM users u
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role = 'CONSUMER'
+  AND c.name ILIKE '%Cal Poly SLO%'
+ORDER BY u.\"createdAt\" DESC;
+"
+```
+
+### View Demoted Barbers (Now Consumers)
+```bash
+# Shows consumers who were previously barbers (have barber record with isActive=false)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  u.first_name || ' ' || u.last_name AS name,
+  u.email,
+  u.role,
+  b.\"avgRating\" AS prev_rating,
+  b.\"totalBookings\" AS prev_bookings,
+  c.name AS prev_campus
+FROM users u
+JOIN barbers b ON u.id = b.\"userId\"
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role = 'CONSUMER'
+  AND b.\"isActive\" = false
+ORDER BY u.\"createdAt\" DESC;
+"
+```
+
+### Count Consumers
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS total_consumers FROM users WHERE role = 'CONSUMER';"
+```
+
+### Count Consumers by Signup Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  c.name AS campus,
+  COUNT(*) AS consumer_count
+FROM users u
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role = 'CONSUMER'
+GROUP BY c.name
+ORDER BY consumer_count DESC;
+"
+```
+
+---
+
 ## BARBERS
 
 ### View Barber Info Requirements (NOT NULL columns)
