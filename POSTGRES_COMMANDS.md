@@ -77,18 +77,63 @@ sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, last_name,
 ```
 
 ### Update User Role
+
+**IMPORTANT:** Role changes require updating BOTH the `users` table AND the `barbers` table for full platform consistency.
+
 ```bash
-# Make user a BARBER
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'BARBER' WHERE email = 'user@example.com';"
+# ============================================================================
+# PROMOTE TO BARBER
+# ============================================================================
+# Step 1: Update user role
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
 
-# Make user a CAMPUS_MANAGER
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CAMPUS_MANAGER' WHERE email = 'user@example.com';"
+# Step 2: Activate barber record (if exists) or create one
+# Check if barber record exists first:
+sudo -u postgres psql -d campuscuts -c "SELECT b.id, b.\"isActive\" FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'user@example.com';"
 
-# Make user a CONSUMER
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CONSUMER' WHERE email = 'user@example.com';"
+# If barber record exists, activate it:
+sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
 
-# Make user an ADMIN
-sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'ADMIN' WHERE email = 'user@example.com';"
+# ============================================================================
+# PROMOTE TO CAMPUS_MANAGER
+# ============================================================================
+# Step 1: Update user role AND set their campusId
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CAMPUS_MANAGER', \"campusId\" = 'CAMPUS_UUID_HERE', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+
+# Step 2: Set isCampusManager flag on barber record
+sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isCampusManager\" = true, \"isActive\" = true, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+
+# ============================================================================
+# DEMOTE TO CONSUMER (from BARBER or CAMPUS_MANAGER)
+# ============================================================================
+# Step 1: Update user role
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'CONSUMER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+
+# Step 2: Deactivate barber record and remove campus manager flag
+sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isActive\" = false, \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+
+# Step 3: Delete any CM-barber direct conversations (optional cleanup)
+sudo -u postgres psql -d campuscuts -c "DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'))); DELETE FROM conversations WHERE booking_id IS NULL AND (user1_id = (SELECT id FROM users WHERE email = 'user@example.com') OR user2_id = (SELECT id FROM users WHERE email = 'user@example.com'));"
+
+# ============================================================================
+# PROMOTE TO ADMIN
+# ============================================================================
+# Admins have campus manager privileges at ALL campuses automatically
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'ADMIN', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+
+# ============================================================================
+# REVOKE CAMPUS_MANAGER (keep as BARBER)
+# ============================================================================
+# Step 1: Change role to BARBER
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET role = 'BARBER', \"updatedAt\" = CURRENT_TIMESTAMP WHERE email = 'user@example.com';"
+
+# Step 2: Remove isCampusManager flag but keep barber active
+sudo -u postgres psql -d campuscuts -c "UPDATE barbers SET \"isCampusManager\" = false, \"updatedAt\" = CURRENT_TIMESTAMP WHERE \"userId\" = (SELECT id FROM users WHERE email = 'user@example.com');"
+
+# ============================================================================
+# QUICK REFERENCE: Get Campus IDs
+# ============================================================================
+sudo -u postgres psql -d campuscuts -c "SELECT id, name FROM campuses WHERE name ILIKE '%cal poly%' OR name ILIKE '%your campus%' LIMIT 10;"
 ```
 
 ### Update User Email Verification
