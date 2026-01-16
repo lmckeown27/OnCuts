@@ -46,9 +46,9 @@ class UserService {
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    await api.post(`/users/${userId}/change-password`, {
-      current_password: currentPassword,
-      new_password: newPassword,
+    await api.put(`/users/${userId}/change-password`, {
+      currentPassword,
+      newPassword,
     });
   }
 
