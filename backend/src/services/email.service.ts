@@ -263,7 +263,7 @@ ${frontendUrl}/web/verify-email
 If you didn't create an account with CampusCut, please ignore this email.
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -320,7 +320,7 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     <p style="margin: 5px 0 0 0;">
       <a href="${frontendUrl}/help" style="color: #22c55e; text-decoration: none;">Help Center</a> • 
       <a href="${frontendUrl}/privacy" style="color: #22c55e; text-decoration: none;">Privacy Policy</a>
@@ -348,7 +348,7 @@ This link will expire in 1 hour.
 If you didn't request a password reset, please ignore this email or contact support if you have concerns.
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -400,7 +400,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
   </div>
 </body>
 </html>
@@ -487,7 +487,7 @@ CampusCut Team
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
   </div>
 </body>
 </html>
@@ -610,7 +610,7 @@ ${isConsumer
   : 'Please review the booking details and be ready for your client at the scheduled time.'}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -715,7 +715,7 @@ function generateBookingConfirmationHtml(
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     <p style="margin: 10px 0 0 0;">
       <a href="${frontendUrl}/web" style="color: #9ca3af;">Messages</a> • 
       <a href="${frontendUrl}/help" style="color: #9ca3af;">Help Center</a>
@@ -833,7 +833,7 @@ ${isConsumer
   : 'Please review and respond to this booking request in the CampusCut app.'}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -949,7 +949,7 @@ function generatePendingBookingHtml(
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
   </div>
 </body>
 </html>
@@ -1228,7 +1228,7 @@ Thank you for choosing CampusCut!
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
   } else {
     return `
@@ -1250,7 +1250,7 @@ A payment request has been sent to ${details.consumerName}. You'll be notified w
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
   }
 }
@@ -1350,7 +1350,7 @@ function generateBookingCompletedHtml(
       </div>
     </div>
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     </div>
   </div>
 </body>
@@ -1471,7 +1471,7 @@ Suggested interview topics:
 Application Reference: ${details.applicationId.slice(0, 8).toUpperCase()}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -1616,7 +1616,7 @@ function generateBarberApplicationHtml(
     </div>
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     </div>
   </div>
 </body>
@@ -1745,7 +1745,7 @@ ${isConsumer
     : 'This time slot is now available for other bookings.'}
 
 ---
-CampusCut - Campus Haircuts Made Easy
+CampusCut - Earn More, Pay Less
 `.trim();
 }
 
@@ -1845,7 +1845,7 @@ function generateBookingCancellationHtml(
       </p>
     </div>
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
-      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Campus Haircuts Made Easy</p>
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     </div>
   </div>
 </body>
