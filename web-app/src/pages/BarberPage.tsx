@@ -339,13 +339,14 @@ export default function BarberPage() {
           <div className="flex items-center justify-between relative">
             {/* Left section - Messages + Campus Manager Badge */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Messages Button */}
+              {/* Consumer Chat Button */}
               <button
                 onClick={() => navigate(`${platformPrefix}/barber/messages`)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
-                title="Messages"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                title="Consumer Chat"
               >
                 <MessageCircle className="w-5 h-5 text-gray-600" />
+                <span className="text-xs sm:text-sm font-medium text-gray-600">Consumer Chat</span>
                 {unreadMessages > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {unreadMessages > 99 ? '99+' : unreadMessages}
