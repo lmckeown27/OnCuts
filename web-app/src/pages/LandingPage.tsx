@@ -405,7 +405,7 @@ export default function LandingPage() {
           {campusesWithManagers.length > 0 ? (
             <div className="grid md:grid-cols-5 gap-8 items-stretch">
               {/* Left side - Campus selector and profile picture (3/5 width) */}
-              <div className="md:col-span-3 space-y-8">
+              <div className="md:col-span-3 flex flex-col gap-6">
                 {/* Campus Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
@@ -483,8 +483,8 @@ export default function LandingPage() {
 
                 {/* Desktop: Show campus manager profile picture below dropdown when selected */}
                 {selectedCampus?.manager && (
-                  <div className="hidden md:flex justify-center mt-8">
-                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-xl">
+                  <div className="hidden md:flex flex-1 justify-center items-center">
+                    <div className="w-full max-w-xs aspect-square rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-xl">
                       {selectedCampus.manager.profileImageUrl ? (
                         <img
                           src={selectedCampus.manager.profileImageUrl}
