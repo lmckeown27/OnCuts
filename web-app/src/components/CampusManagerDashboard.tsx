@@ -397,8 +397,8 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                   )}
                 </div>
                 
-                {/* Buttons - Grid on mobile, flex on desktop */}
-                <div className="grid grid-cols-2 sm:flex gap-2 sm:ml-4">
+                {/* Buttons - Stacked on mobile, flex on desktop */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:ml-4 w-full sm:w-auto">
                   {app.status === 'pending' && (
                     <>
                       <Button
@@ -406,9 +406,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
                         disabled={actionLoading === app.id}
-                        className="text-xs sm:text-sm"
+                        className="text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
                       >
-                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
                         Approve
                       </Button>
                       <Button
@@ -416,9 +416,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
                         disabled={actionLoading === app.id}
-                        className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm col-span-2 sm:col-span-1"
+                        className="text-red-600 border-red-300 hover:bg-red-50 text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
                       >
-                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                        <XCircle className="w-4 h-4 mr-1.5" />
                         Reject
                       </Button>
                     </>
@@ -430,9 +430,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         size="sm"
                         onClick={() => handleAction(app.id, 'approve')}
                         disabled={actionLoading === app.id}
-                        className="text-xs sm:text-sm"
+                        className="text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
                       >
-                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                        <CheckCircle className="w-4 h-4 mr-1.5" />
                         Approve
                       </Button>
                       <Button
@@ -440,9 +440,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                         size="sm"
                         onClick={() => handleAction(app.id, 'reject')}
                         disabled={actionLoading === app.id}
-                        className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm"
+                        className="text-red-600 border-red-300 hover:bg-red-50 text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
                       >
-                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                        <XCircle className="w-4 h-4 mr-1.5" />
                         Reject
                       </Button>
                     </>
