@@ -252,12 +252,12 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
 
-    // Get user's campus and barber info
+    // Get user's info including their barber record (if they have one)
     const userResult = await pool.query(
-      `SELECT u.id, u."campusId", u.first_name, u.last_name, u."avatarUrl",
-              b.id as barber_id, b."isCampusManager"
+      `SELECT u.id, u.role, u.first_name, u.last_name, u."avatarUrl",
+              b.id as barber_id, b."campusId" as barber_campus_id, b."isCampusManager"
        FROM users u
-       LEFT JOIN barbers b ON b."userId" = u.id
+       LEFT JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
        WHERE u.id = $1`,
       [userId]
     );
@@ -267,21 +267,30 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
-    const campusId = user.campusId;
+    
+    // Use barber's campus if available
+    const campusId = user.barber_campus_id;
 
     if (!campusId) {
-      return res.status(400).json({ success: false, error: 'User is not associated with a campus' });
+      return res.status(400).json({ success: false, error: 'You must be an active barber associated with a campus to use this feature' });
     }
 
     // Find the campus manager for this campus
+    // Check both barbers.isCampusManager = true AND users.role = 'CAMPUS_MANAGER'
     const cmResult = await pool.query(
       `SELECT u.id as user_id, u.first_name, u.last_name, u."avatarUrl",
-              b.id as barber_id
+              b.id as barber_id, u.role
        FROM barbers b
        JOIN users u ON b."userId" = u.id
-       WHERE b."campusId" = $1 AND b."isCampusManager" = true AND b."isActive" = true
+       WHERE b."campusId" = $1 
+         AND b."isActive" = true
+         AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER')
+         AND b."userId" != $2
+       ORDER BY 
+         CASE WHEN u.role = 'CAMPUS_MANAGER' THEN 0 ELSE 1 END,
+         CASE WHEN b."isCampusManager" = true THEN 0 ELSE 1 END
        LIMIT 1`,
-      [campusId]
+      [campusId, userId]
     );
 
     if (cmResult.rows.length === 0) {
@@ -291,7 +300,7 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     const campusManager = cmResult.rows[0];
 
     // Determine who is the CM and who is the barber
-    const isCM = user.isCampusManager === true;
+    const isCM = user.isCampusManager === true || user.role === 'CAMPUS_MANAGER';
     const otherUserId = isCM ? req.body.barberUserId : campusManager.user_id;
 
     if (!otherUserId) {
@@ -353,10 +362,12 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
 
-    // Verify user is a campus manager
+    // Verify user is a campus manager (check both barbers.isCampusManager AND users.role)
     const cmCheck = await pool.query(
-      `SELECT b.id, b."campusId" FROM barbers b
-       WHERE b."userId" = $1 AND b."isCampusManager" = true`,
+      `SELECT b.id, b."campusId", u.role 
+       FROM users u
+       LEFT JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
+       WHERE u.id = $1 AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER' OR u.role = 'ADMIN')`,
       [userId]
     );
 
@@ -365,6 +376,10 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
     }
 
     const campusId = cmCheck.rows[0].campusId;
+    
+    if (!campusId) {
+      return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
+    }
 
     // Get all barbers in this campus (excluding self)
     const barbersResult = await pool.query(
