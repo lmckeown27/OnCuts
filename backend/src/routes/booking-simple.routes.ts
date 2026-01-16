@@ -570,7 +570,8 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     }
 
     // Build query to get completed bookings for all barbers on this campus
-    let whereClause = `barber."campusId" = $1 AND b.status = 'COMPLETED'`;
+    // Only show bookings from the last 7 days to keep the view clean
+    let whereClause = `barber."campusId" = $1 AND b.status = 'COMPLETED' AND b."requestedAt" >= NOW() - INTERVAL '7 days'`;
     const params: any[] = [campusId];
     let paramIndex = 2;
 
