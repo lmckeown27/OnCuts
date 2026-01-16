@@ -51,6 +51,7 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentPasswordError, setCurrentPasswordError] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
@@ -132,8 +133,9 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   };
 
   const handleChangePassword = async () => {
-    // Clear previous error
+    // Clear previous states
     setCurrentPasswordError('');
+    setPasswordChangeSuccess(false);
     
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match');
@@ -149,11 +151,11 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       setIsSaving(true);
       await userService.changePassword(userId, currentPassword, newPassword);
       
-      toast.success('Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setCurrentPasswordError('');
+      setPasswordChangeSuccess(true);
     } catch (error: any) {
       console.error('Failed to change password:', error);
       // Try multiple ways to get the error message from the response
@@ -552,7 +554,7 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                 )}
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-col items-end gap-2">
                 <Button 
                   onClick={handleChangePassword} 
                   disabled={isSaving || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
@@ -560,6 +562,9 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                   <Lock className="w-4 h-4 mr-2" />
                   Change Password
                 </Button>
+                {passwordChangeSuccess && (
+                  <p className="text-sm text-green-600 font-medium">Password successfully changed</p>
+                )}
               </div>
             </div>
           </Card>
