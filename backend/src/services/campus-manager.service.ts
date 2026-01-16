@@ -11,15 +11,23 @@ import { logger } from '../utils/logger';
 export class CampusManagerService {
   /**
    * Check if a barber is a Campus Manager
+   * Checks BOTH barbers.isCampusManager AND users.role = 'CAMPUS_MANAGER'
    */
   async isCampusManager(barberId: string): Promise<boolean> {
     try {
-      const result = await pool.query(
-        'SELECT is_campus_manager FROM barbers WHERE id = $1',
-        [barberId]
-      );
+      const result = await pool.query(`
+        SELECT 
+          b."isCampusManager",
+          u.role
+        FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        WHERE b.id = $1
+      `, [barberId]);
       
-      return result.rows[0]?.is_campus_manager || false;
+      if (result.rows.length === 0) return false;
+      
+      const row = result.rows[0];
+      return row.isCampusManager === true || row.role === 'CAMPUS_MANAGER';
     } catch (error) {
       logger.error('Error checking Campus Manager status:', error);
       throw error;
@@ -28,37 +36,63 @@ export class CampusManagerService {
 
   /**
    * Get Campus Manager for a specific campus
+   * Checks BOTH barbers.isCampusManager AND users.role = 'CAMPUS_MANAGER'
    */
   async getCampusManager(campusId: string): Promise<{
-    barberId: string;
+    barberId: string | null;
     userId: string;
     displayName: string;
-    since: Date;
+    since: Date | null;
   } | null> {
     try {
-      const result = await pool.query(`
+      // First try to find by barbers.isCampusManager
+      const barberResult = await pool.query(`
         SELECT 
           b.id as barber_id,
-          b.user_id,
-          u.display_name,
-          b.campus_manager_since
+          b."userId" as user_id,
+          COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as display_name,
+          b."createdAt" as campus_manager_since
         FROM barbers b
-        INNER JOIN users u ON b.user_id = u.id
+        INNER JOIN users u ON b."userId" = u.id
         WHERE 
-          b.campus_id = $1 
-          AND b.is_campus_manager = true
+          b."campusId" = $1 
+          AND b."isCampusManager" = true
+          AND b."isActive" = true
       `, [campusId]);
 
-      if (result.rows.length === 0) {
-        return null;
+      if (barberResult.rows.length > 0) {
+        return {
+          barberId: barberResult.rows[0].barber_id,
+          userId: barberResult.rows[0].user_id,
+          displayName: barberResult.rows[0].display_name,
+          since: barberResult.rows[0].campus_manager_since,
+        };
       }
 
-      return {
-        barberId: result.rows[0].barber_id,
-        userId: result.rows[0].user_id,
-        displayName: result.rows[0].display_name,
-        since: result.rows[0].campus_manager_since,
-      };
+      // Fall back to users with role = CAMPUS_MANAGER
+      const userResult = await pool.query(`
+        SELECT 
+          u.id as user_id,
+          COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as display_name,
+          b.id as barber_id,
+          b."createdAt" as campus_manager_since
+        FROM users u
+        LEFT JOIN barbers b ON b."userId" = u.id
+        WHERE 
+          u."campusId" = $1 
+          AND u.role = 'CAMPUS_MANAGER'
+      `, [campusId]);
+
+      if (userResult.rows.length > 0) {
+        return {
+          barberId: userResult.rows[0].barber_id,
+          userId: userResult.rows[0].user_id,
+          displayName: userResult.rows[0].display_name,
+          since: userResult.rows[0].campus_manager_since,
+        };
+      }
+
+      return null;
     } catch (error) {
       logger.error('Error fetching Campus Manager:', error);
       throw error;
@@ -179,14 +213,16 @@ export class CampusManagerService {
       }
 
       // Check if barber is Campus Manager for this campus
+      // Check BOTH barbers.isCampusManager AND users.role = 'CAMPUS_MANAGER'
       const result = await pool.query(`
-        SELECT id
-        FROM barbers
+        SELECT b.id
+        FROM barbers b
+        JOIN users u ON b."userId" = u.id
         WHERE 
-          id = $1 
-          AND campus_id = $2 
-          AND is_campus_manager = true
-          AND is_active = true
+          b.id = $1 
+          AND b."campusId" = $2 
+          AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER')
+          AND b."isActive" = true
       `, [barberId, campusId]);
 
       if (result.rows.length === 0) {

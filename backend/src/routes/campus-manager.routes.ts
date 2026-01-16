@@ -18,22 +18,45 @@ const router = Router();
  */
 router.get('/with-managers', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Find campus managers by checking BOTH:
+    // 1. barbers.isCampusManager = true on the campus
+    // 2. users.role = 'CAMPUS_MANAGER' with matching users.campusId
+    // Prioritize users with CAMPUS_MANAGER role
     const result = await pool.query(`
       SELECT 
         c.id as campus_id,
         c.name as campus_name,
         c.city,
         c.state,
-        b.id as barber_id,
-        b."userId" as user_id,
-        u.first_name,
-        u.last_name,
-        b.bio,
-        u."avatarUrl" as profile_image_url,
-        u."instagramHandle" as instagram_handle
+        cm.barber_id,
+        cm.user_id,
+        cm.first_name,
+        cm.last_name,
+        cm.bio,
+        cm.profile_image_url,
+        cm.instagram_handle
       FROM campuses c
-      LEFT JOIN barbers b ON b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true
-      LEFT JOIN users u ON b."userId" = u.id
+      LEFT JOIN LATERAL (
+        SELECT 
+          b.id as barber_id,
+          u.id as user_id,
+          u.first_name,
+          u.last_name,
+          b.bio,
+          u."avatarUrl" as profile_image_url,
+          u."instagramHandle" as instagram_handle
+        FROM users u
+        LEFT JOIN barbers b ON b."userId" = u.id
+        WHERE 
+          -- User with CAMPUS_MANAGER role for this campus
+          (u."campusId" = c.id AND u.role = 'CAMPUS_MANAGER')
+          OR
+          -- Barber with isCampusManager flag on this campus
+          (b."campusId" = c.id AND b."isCampusManager" = true AND b."isActive" = true)
+        ORDER BY 
+          CASE WHEN u.role = 'CAMPUS_MANAGER' THEN 0 ELSE 1 END
+        LIMIT 1
+      ) cm ON true
       WHERE c.is_active = true
       ORDER BY c.name
     `);
