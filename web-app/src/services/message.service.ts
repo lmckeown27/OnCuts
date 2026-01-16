@@ -155,6 +155,46 @@ class MessageService {
     }
     return await api.get<{ barbers: any[] }>('/messages/cm-barber/conversations', params);
   }
+
+  // ============================================================================
+  // BARBER-TO-BARBER DIRECT MESSAGING
+  // ============================================================================
+
+  /**
+   * Get all barbers on the same campus for barber-to-barber chat
+   */
+  async getBarberChatBarbers(): Promise<{
+    barbers: Array<{
+      userId: string;
+      barberId: string;
+      name: string;
+      firstName: string;
+      lastName: string;
+      avatarUrl: string | null;
+      email: string;
+      isCampusManager: boolean;
+      conversationId: number | null;
+      lastMessage: string | null;
+      lastMessageAt: string | null;
+      unreadCount: number;
+    }>;
+  }> {
+    return await api.get<{ barbers: any[] }>('/messages/barber-chats/barbers');
+  }
+
+  /**
+   * Start or get a direct conversation with another barber
+   */
+  async startBarberConversation(otherBarberUserId: string): Promise<{ conversationId: number; otherUserId: string; isNew: boolean }> {
+    const response = await api.post<{ conversation: { id: number; otherUserId: string; isNew: boolean } }>('/messages/barber-chats', {
+      otherBarberUserId
+    });
+    return {
+      conversationId: response.conversation.id,
+      otherUserId: response.conversation.otherUserId,
+      isNew: response.conversation.isNew
+    };
+  }
 }
 
 export default new MessageService();

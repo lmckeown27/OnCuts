@@ -17,6 +17,7 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import CMBarberChatsModal from '../components/CMBarberChatsModal';
+import BarberChatsModal from '../components/BarberChatsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -65,6 +66,9 @@ export default function BarberPage() {
   const [showCMBarberChats, setShowCMBarberChats] = useState(false);
   const [isCMBarberChatsVisible, setIsCMBarberChatsVisible] = useState(false);
   
+  const [showBarberChats, setShowBarberChats] = useState(false);
+  const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
+  
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
   
@@ -82,7 +86,7 @@ export default function BarberPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showCMBarberChats || showBookings || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showCMBarberChats || showBarberChats || showBookings || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -185,6 +189,9 @@ export default function BarberPage() {
   
   const openCMBarberChats = () => openModal(setShowCMBarberChats, setIsCMBarberChatsVisible);
   const closeCMBarberChats = () => closeModal(setShowCMBarberChats, setIsCMBarberChatsVisible);
+  
+  const openBarberChats = () => openModal(setShowBarberChats, setIsBarberChatsVisible);
+  const closeBarberChats = () => closeModal(setShowBarberChats, setIsBarberChatsVisible);
   
   const openBookings = () => openModal(setShowBookings, setIsBookingsVisible);
   const closeBookings = () => closeModal(setShowBookings, setIsBookingsVisible);
@@ -451,10 +458,20 @@ export default function BarberPage() {
                       </span>
                     )}
                   </button>
-                  {/* Chat with Campus Manager (for non-CM barbers) */}
+                  {/* Barber Chats & Chat with Campus Manager (for non-CM barbers) */}
                   {!isCampusManager && (
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          openBarberChats();
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      >
+                        <Send className="w-4 h-4 text-primary-600" />
+                        Barber Chats
+                      </button>
                       <button
                         onClick={async () => {
                           try {
@@ -709,6 +726,26 @@ export default function BarberPage() {
               // Start new conversation and navigate
               import('../services/message.service').then(async (mod) => {
                 const result = await mod.default.startCMBarberConversation(barberUserId);
+                navigate(`${platformPrefix}/barber/messages/${result.conversationId}`);
+              }).catch(console.error);
+            }
+          }}
+        />
+      )}
+
+      {/* Barber-to-Barber Chats Modal (for all barbers) */}
+      {showBarberChats && (
+        <BarberChatsModal
+          isVisible={isBarberChatsVisible}
+          onClose={closeBarberChats}
+          onSelectBarber={(barberUserId: string, conversationId: number | null) => {
+            closeBarberChats();
+            if (conversationId) {
+              navigate(`${platformPrefix}/barber/messages/${conversationId}`);
+            } else {
+              // Start new conversation and navigate
+              import('../services/message.service').then(async (mod) => {
+                const result = await mod.default.startBarberConversation(barberUserId);
                 navigate(`${platformPrefix}/barber/messages/${result.conversationId}`);
               }).catch(console.error);
             }

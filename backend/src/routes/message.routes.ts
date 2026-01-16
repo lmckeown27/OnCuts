@@ -449,5 +449,163 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
   }
 });
 
+// ============================================================================
+// BARBER-TO-BARBER DIRECT MESSAGING
+// ============================================================================
+
+/**
+ * GET /api/messages/barber-chats/barbers
+ * Get all other barbers on the same campus for barber-to-barber chat
+ */
+router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    // Get user's barber record to find their campus
+    const userResult = await pool.query(
+      `SELECT b.id as barber_id, b."campusId"
+       FROM barbers b
+       WHERE b."userId" = $1 AND b."isActive" = true`,
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'Only active barbers can access this endpoint' });
+    }
+
+    const campusId = userResult.rows[0].campusId;
+
+    if (!campusId) {
+      return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
+    }
+
+    // Get all active barbers on the same campus (excluding self)
+    const barbersResult = await pool.query(
+      `SELECT 
+         u.id as user_id,
+         u.first_name,
+         u.last_name,
+         u."avatarUrl",
+         u.email,
+         b.id as barber_id,
+         b."isCampusManager",
+         c.id as conversation_id,
+         (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+         (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_at,
+         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false)::int as unread_count
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       LEFT JOIN conversations c ON c.booking_id IS NULL 
+         AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
+       WHERE b."campusId" = $2 
+         AND b."isActive" = true 
+         AND b."userId" != $1
+         AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+       ORDER BY 
+         b."isCampusManager" DESC,
+         COALESCE(c.last_message_at, b."createdAt") DESC`,
+      [userId, campusId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        barbers: barbersResult.rows.map(row => ({
+          userId: row.user_id,
+          barberId: row.barber_id,
+          firstName: row.first_name,
+          lastName: row.last_name,
+          name: `${row.first_name} ${row.last_name}`,
+          avatarUrl: row.avatarUrl,
+          email: row.email,
+          isCampusManager: row.isCampusManager,
+          conversationId: row.conversation_id,
+          lastMessage: row.last_message,
+          lastMessageAt: row.last_message_at,
+          unreadCount: row.unread_count || 0
+        }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/messages/barber-chats
+ * Start or get a direct conversation between two barbers
+ */
+router.post('/barber-chats', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { otherBarberUserId } = req.body;
+
+    if (!otherBarberUserId) {
+      return res.status(400).json({ success: false, error: 'otherBarberUserId is required' });
+    }
+
+    // Verify both users are active barbers on the same campus
+    const verifyResult = await pool.query(
+      `SELECT b1."campusId" as user_campus, b2."campusId" as other_campus
+       FROM barbers b1, barbers b2
+       WHERE b1."userId" = $1 AND b1."isActive" = true
+         AND b2."userId" = $2 AND b2."isActive" = true`,
+      [userId, otherBarberUserId]
+    );
+
+    if (verifyResult.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'Both users must be active barbers' });
+    }
+
+    if (verifyResult.rows[0].user_campus !== verifyResult.rows[0].other_campus) {
+      return res.status(403).json({ success: false, error: 'Both barbers must be on the same campus' });
+    }
+
+    // Check if conversation already exists (booking_id = NULL for direct chats)
+    const existingConv = await pool.query(
+      `SELECT * FROM conversations 
+       WHERE booking_id IS NULL 
+         AND ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
+       LIMIT 1`,
+      [userId, otherBarberUserId]
+    );
+
+    if (existingConv.rows.length > 0) {
+      const conv = existingConv.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          conversation: {
+            id: conv.id,
+            otherUserId: otherBarberUserId,
+            isNew: false
+          }
+        }
+      });
+    }
+
+    // Create new barber-to-barber conversation
+    const newConv = await pool.query(
+      `INSERT INTO conversations (user1_id, user2_id, booking_id, is_active, created_at, updated_at)
+       VALUES ($1, $2, NULL, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [userId, otherBarberUserId]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        conversation: {
+          id: newConv.rows[0].id,
+          otherUserId: otherBarberUserId,
+          isNew: true
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
 
