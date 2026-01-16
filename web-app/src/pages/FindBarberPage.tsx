@@ -13,7 +13,6 @@ import {
 import UniversitySelector from '../components/UniversitySelector';
 import type { University } from '../data/universities';
 import { CampusCutLogo } from '@assets';
-import { useAuthStore } from '../store/useAuthStore';
 import PullToRefresh from '../components/PullToRefresh';
 
 // Storage key
@@ -21,7 +20,6 @@ const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function FindBarberPage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
   // Always start with empty search bar - don't load saved university
@@ -71,17 +69,13 @@ export default function FindBarberPage() {
             />
           </div>
           
-          {/* Sign In Button - only show when not authenticated */}
-          {!isAuthenticated ? (
-            <button
-              onClick={() => navigate('/web')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors z-10"
-            >
-              Sign In
-            </button>
-          ) : (
-            <div className="w-[70px]" /> // Spacer to maintain header balance
-          )}
+          {/* Sign In Button - always visible */}
+          <button
+            onClick={() => navigate('/web')}
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium transition-colors z-10"
+          >
+            Sign In
+          </button>
         </div>
       </header>
 
