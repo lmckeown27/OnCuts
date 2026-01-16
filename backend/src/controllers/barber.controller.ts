@@ -1174,8 +1174,14 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
     const barberCampusId = barber.campusId;
     const barberUserId = barber.userId;
 
-    // Check if requester is admin or campus manager for this barber's campus
-    if (userRole !== 'admin' && userRole !== 'ADMIN') {
+    // Check if requester is admin (from database) or campus manager for this barber's campus
+    const adminCheck = await pool.query(
+      `SELECT role FROM users WHERE id = $1`,
+      [userId]
+    );
+    const isAdmin = adminCheck.rows[0]?.role === 'ADMIN';
+
+    if (!isAdmin) {
       // Check if user is a campus manager for this barber's campus
       const campusManagerCheck = await pool.query(
         `SELECT b.id FROM barbers b
