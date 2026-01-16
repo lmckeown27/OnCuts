@@ -284,9 +284,22 @@ ORDER BY ordinal_position;
 "
 ```
 
-### View All Barbers
+### View All Active Barbers (System-Wide)
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT b.id, u.email, u.first_name, u.last_name, b.bio, b.\"avgRating\", b.\"isActive\", b.\"isCampusManager\" FROM barbers b JOIN users u ON b.\"userId\" = u.id;"
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  u.first_name || ' ' || u.last_name AS name,
+  u.email,
+  c.name AS campus,
+  COALESCE(b.\"avgRating\"::text, '-') AS rating,
+  CASE WHEN b.\"isCampusManager\" THEN 'Yes' ELSE 'No' END AS campus_mgr
+FROM barbers b 
+JOIN users u ON b.\"userId\" = u.id 
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE b.\"isActive\" = true 
+  AND u.role = 'BARBER'
+ORDER BY c.name, u.first_name;
+"
 ```
 
 ### View Barbers at a Specific University (by Campus Name)
