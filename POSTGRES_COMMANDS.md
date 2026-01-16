@@ -297,8 +297,8 @@ FROM barbers b
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE b.\"isActive\" = true 
-  AND u.role = 'BARBER'
-ORDER BY c.name, u.first_name;
+  AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
+ORDER BY c.name, b.\"isCampusManager\" DESC, u.first_name;
 "
 ```
 
