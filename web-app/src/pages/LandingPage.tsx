@@ -415,9 +415,6 @@ export default function LandingPage() {
                         campusDropdownOpen ? 'border-primary-500 shadow-lg' : 'border-gray-300'
                       }`}
                     >
-                      <div className="pl-4 text-gray-400">
-                        <GraduationCap className="w-5 h-5" />
-                      </div>
                       <input
                         type="text"
                         placeholder="Search for your university..."
@@ -431,7 +428,7 @@ export default function LandingPage() {
                           // Auto-select text when focused so user can easily retype
                           e.target.select();
                         }}
-                        className="flex-1 px-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
+                        className="flex-1 pl-4 pr-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
                       />
                       <button
                         type="button"
@@ -483,6 +480,43 @@ export default function LandingPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Desktop: Show campus manager profile picture thumbnail below dropdown when selected */}
+                {selectedCampus?.manager && (
+                  <div className="hidden md:flex items-center gap-4 mt-6 p-4 bg-gray-50 rounded-xl">
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-200 ring-2 ring-primary-500/30 flex-shrink-0">
+                      {selectedCampus.manager.profileImageUrl ? (
+                        <img
+                          src={selectedCampus.manager.profileImageUrl}
+                          alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-400">
+                          {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-900">
+                        {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
+                      </h4>
+                      <p className="text-sm text-primary-600 font-medium">Campus Manager</p>
+                      <p className="text-sm text-gray-500 truncate">{selectedCampus.campusName}</p>
+                    </div>
+                    {selectedCampus.manager.instagramHandle && (
+                      <a
+                        href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-primary-600 transition-colors"
+                      >
+                        <Instagram className="w-4 h-4" />
+                        <span className="hidden lg:inline">@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {/* Mobile: Show placeholder card when no campus selected */}
                 {!selectedCampus && (
