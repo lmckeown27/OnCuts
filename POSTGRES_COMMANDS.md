@@ -292,13 +292,13 @@ SELECT
   u.email,
   c.name AS campus,
   COALESCE(b.\"avgRating\"::text, '-') AS rating,
-  CASE WHEN b.\"isCampusManager\" THEN 'Yes' ELSE 'No' END AS campus_mgr
+  CASE WHEN b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER' THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE b.\"isActive\" = true 
   AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
-ORDER BY c.name, b.\"isCampusManager\" DESC, u.first_name;
+ORDER BY c.name, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
 "
 ```
 
