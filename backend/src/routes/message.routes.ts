@@ -363,10 +363,11 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId;
 
     // Verify user is a campus manager (check both barbers.isCampusManager AND users.role)
+    // Don't require isActive for the CM's own barber record - they need access regardless
     const cmCheck = await pool.query(
-      `SELECT b.id, b."campusId", u.role 
+      `SELECT b.id, b."campusId", u.role, u."campusId" as user_campus_id
        FROM users u
-       LEFT JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
+       LEFT JOIN barbers b ON b."userId" = u.id
        WHERE u.id = $1 AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER' OR u.role = 'ADMIN')`,
       [userId]
     );
@@ -375,7 +376,8 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Only campus managers can access this endpoint' });
     }
 
-    const campusId = cmCheck.rows[0].campusId;
+    // Use barber's campusId if available, otherwise fall back to user's campusId
+    const campusId = cmCheck.rows[0].campusId || cmCheck.rows[0].user_campus_id;
     
     if (!campusId) {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
