@@ -276,16 +276,22 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     }
 
     // Find the campus manager for this campus
-    // Check both barbers.isCampusManager = true AND users.role = 'CAMPUS_MANAGER'
+    // Check BOTH:
+    // 1. Barbers with isCampusManager = true on this campus
+    // 2. Users with role = 'CAMPUS_MANAGER' whose campusId matches (may not have barber record)
     const cmResult = await pool.query(
-      `SELECT u.id as user_id, u.first_name, u.last_name, u."avatarUrl",
-              b.id as barber_id, u.role
-       FROM barbers b
-       JOIN users u ON b."userId" = u.id
-       WHERE b."campusId" = $1 
-         AND b."isActive" = true
-         AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER')
-         AND b."userId" != $2
+      `SELECT u.id as user_id, u.first_name, u.last_name, u."avatarUrl", u.role,
+              b.id as barber_id, b."isCampusManager"
+       FROM users u
+       LEFT JOIN barbers b ON b."userId" = u.id
+       WHERE u.id != $2
+         AND (
+           -- Option 1: Barber with isCampusManager flag on this campus
+           (b."campusId" = $1 AND b."isCampusManager" = true)
+           OR
+           -- Option 2: User with CAMPUS_MANAGER role associated with this campus
+           (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')
+         )
        ORDER BY 
          CASE WHEN u.role = 'CAMPUS_MANAGER' THEN 0 ELSE 1 END,
          CASE WHEN b."isCampusManager" = true THEN 0 ELSE 1 END
