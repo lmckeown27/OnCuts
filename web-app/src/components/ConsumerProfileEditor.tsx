@@ -503,7 +503,11 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+                      confirmPassword && newPassword && confirmPassword !== newPassword
+                        ? 'border-red-500'
+                        : 'border-gray-300'
+                    }`}
                   />
                   <button
                     type="button"
@@ -513,10 +517,16 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                     {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {confirmPassword && newPassword && confirmPassword !== newPassword && (
+                  <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                )}
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handleChangePassword} disabled={isSaving}>
+                <Button 
+                  onClick={handleChangePassword} 
+                  disabled={isSaving || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                >
                   <Lock className="w-4 h-4 mr-2" />
                   Change Password
                 </Button>
