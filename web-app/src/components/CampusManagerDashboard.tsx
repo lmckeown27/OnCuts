@@ -302,8 +302,9 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      // Pass campusId to filter applications by the selected campus
-      const applications = await barberApplicationService.getAllApplications(campusId);
+      // Pass campusId and status='pending' to only show pending applications
+      // Approved/rejected applications are removed from view after decision
+      const applications = await barberApplicationService.getAllApplications(campusId, 'pending');
       setApplications(applications);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
