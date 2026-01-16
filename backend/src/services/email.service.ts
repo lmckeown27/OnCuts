@@ -1609,7 +1609,7 @@ function generateBarberApplicationHtml(
       
       <!-- Dashboard Link -->
       <p style="text-align: center; margin: 25px 0;">
-        <a href="${frontendUrl}/web/login" style="display: inline-block; background-color: #1f2937; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #1f2937; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
           View in Dashboard
         </a>
       </p>
