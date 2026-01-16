@@ -286,12 +286,98 @@ ORDER BY ordinal_position;
 
 ### View All Barbers
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT b.id, u.email, u.first_name, u.last_name, b.bio, b.\"averageRating\", b.\"isActive\" FROM barbers b JOIN users u ON b.\"userId\" = u.id;"
+sudo -u postgres psql -d campuscuts -c "SELECT b.id, u.email, u.first_name, u.last_name, b.bio, b.\"avgRating\", b.\"isActive\", b.\"isCampusManager\" FROM barbers b JOIN users u ON b.\"userId\" = u.id;"
+```
+
+### View Barbers at a Specific University (by Campus Name)
+```bash
+# Replace 'University of Florida' with the campus name
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  b.id,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.role,
+  b.bio,
+  b.\"avgRating\",
+  b.\"isActive\",
+  b.\"isCampusManager\",
+  c.name as campus_name
+FROM barbers b 
+JOIN users u ON b.\"userId\" = u.id 
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE c.name ILIKE '%University of Florida%'
+ORDER BY b.\"isCampusManager\" DESC, u.first_name;
+"
+```
+
+### View Barbers at a Specific University (by Campus ID)
+```bash
+# Replace the UUID with the actual campus ID
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  b.id,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.role,
+  b.bio,
+  b.\"avgRating\",
+  b.\"isActive\",
+  b.\"isCampusManager\"
+FROM barbers b 
+JOIN users u ON b.\"userId\" = u.id 
+WHERE u.\"campusId\" = '9de371b8-6ce6-492e-a716-93cb03ae2f82'
+ORDER BY b.\"isCampusManager\" DESC, u.first_name;
+"
+```
+
+### View All Active Barbers at a University (Excludes Inactive)
+```bash
+# Replace 'University of Florida' with the campus name
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  b.id,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.role,
+  b.\"avgRating\",
+  b.\"isCampusManager\",
+  c.name as campus_name
+FROM barbers b 
+JOIN users u ON b.\"userId\" = u.id 
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE c.name ILIKE '%University of Florida%'
+  AND b.\"isActive\" = true
+  AND u.role = 'BARBER'
+ORDER BY b.\"isCampusManager\" DESC, b.\"avgRating\" DESC;
+"
+```
+
+### View Campus Manager for a University
+```bash
+# Replace 'University of Florida' with the campus name
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  b.id,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.role,
+  c.name as campus_name
+FROM barbers b 
+JOIN users u ON b.\"userId\" = u.id 
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE c.name ILIKE '%University of Florida%'
+  AND (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER');
+"
 ```
 
 ### View Specific Barber by Email
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT b.* FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
+sudo -u postgres psql -d campuscuts -c "SELECT b.*, u.role, u.first_name, u.last_name FROM barbers b JOIN users u ON b.\"userId\" = u.id WHERE u.email = 'barber@example.com';"
 ```
 
 ### View Barber Schedule
