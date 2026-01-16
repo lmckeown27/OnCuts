@@ -132,8 +132,9 @@ class MessageService {
 
   /**
    * Get all CM-barber conversations (for campus managers)
+   * @param campusId - Optional campus ID for admins to view specific campus
    */
-  async getCMBarberConversations(): Promise<{
+  async getCMBarberConversations(campusId?: string): Promise<{
     barbers: Array<{
       userId: string;
       barberId: string;
@@ -148,7 +149,11 @@ class MessageService {
       unreadCount: number;
     }>;
   }> {
-    return await api.get<{ barbers: any[] }>('/messages/cm-barber/conversations');
+    const params: Record<string, string> = {};
+    if (campusId) {
+      params.campusId = campusId;
+    }
+    return await api.get<{ barbers: any[] }>('/messages/cm-barber/conversations', params);
   }
 }
 

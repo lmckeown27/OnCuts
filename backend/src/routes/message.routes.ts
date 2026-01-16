@@ -367,6 +367,7 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
 router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
+    const queryCampusId = req.query.campusId as string | undefined;
 
     // Verify user is a campus manager (check both barbers.isCampusManager AND users.role)
     // Don't require isActive for the CM's own barber record - they need access regardless
@@ -382,8 +383,16 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Only campus managers can access this endpoint' });
     }
 
-    // Use barber's campusId if available, otherwise fall back to user's campusId
-    const campusId = cmCheck.rows[0].campusId || cmCheck.rows[0].user_campus_id;
+    const isAdmin = cmCheck.rows[0].role === 'ADMIN';
+    
+    // Admins can specify any campus via query param, others use their own campus
+    let campusId: string;
+    if (isAdmin && queryCampusId) {
+      campusId = queryCampusId;
+    } else {
+      // Use barber's campusId if available, otherwise fall back to user's campusId
+      campusId = cmCheck.rows[0].campusId || cmCheck.rows[0].user_campus_id;
+    }
     
     if (!campusId) {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });

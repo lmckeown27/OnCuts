@@ -2,12 +2,16 @@
  * CM Barber Chats Modal
  * 
  * Allows campus managers to view and chat with all barbers on their campus.
+ * Admins can switch between campuses using the campus selector.
  */
 
-import { useState, useEffect } from 'react';
-import { X, MessageCircle, Search, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, MessageCircle, Search, RefreshCw, ChevronDown } from 'lucide-react';
 import Avatar from './Avatar';
 import messageService from '../services/message.service';
+import campusService from '../services/campus.service';
+import { useAuthStore } from '../store/useAuthStore';
+import type { Campus } from '../types';
 
 interface Barber {
   userId: string;
@@ -30,20 +34,71 @@ interface CMBarberChatsModalProps {
 }
 
 export default function CMBarberChatsModal({ isVisible, onClose, onSelectBarber }: CMBarberChatsModalProps) {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
+  
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Campus selector state (for admins)
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [selectedCampusId, setSelectedCampusId] = useState<string>('');
+  const [campusSearchQuery, setCampusSearchQuery] = useState('');
+  const [showCampusDropdown, setShowCampusDropdown] = useState(false);
+  const campusSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Fetch campuses for admin
+  useEffect(() => {
+    if (isVisible && isAdmin) {
+      campusService.getCampuses().then(setCampuses).catch(console.error);
+    }
+  }, [isVisible, isAdmin]);
+
+  // Set initial campus
+  useEffect(() => {
+    if (isVisible && campuses.length > 0 && !selectedCampusId) {
+      const userCampus = campuses.find(c => c.id === user?.campus_id);
+      if (userCampus) {
+        setSelectedCampusId(userCampus.id);
+        setCampusSearchQuery(userCampus.name);
+      } else {
+        setSelectedCampusId(campuses[0].id);
+        setCampusSearchQuery(campuses[0].name);
+      }
+    }
+  }, [isVisible, campuses, selectedCampusId, user?.campus_id]);
 
   useEffect(() => {
     if (isVisible) {
-      fetchBarbers();
+      if (isAdmin && selectedCampusId) {
+        fetchBarbers(selectedCampusId);
+      } else if (!isAdmin) {
+        fetchBarbers();
+      }
     }
-  }, [isVisible]);
+  }, [isVisible, selectedCampusId, isAdmin]);
 
-  const fetchBarbers = async () => {
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (campusSelectorRef.current && !campusSelectorRef.current.contains(event.target as Node)) {
+        setShowCampusDropdown(false);
+        // Revert to selected campus name if nothing typed
+        const selected = campuses.find(c => c.id === selectedCampusId);
+        if (selected) {
+          setCampusSearchQuery(selected.name);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [campuses, selectedCampusId]);
+
+  const fetchBarbers = async (campusId?: string) => {
     try {
       setLoading(true);
-      const result = await messageService.getCMBarberConversations();
+      const result = await messageService.getCMBarberConversations(campusId);
       setBarbers(result.barbers);
     } catch (error) {
       console.error('Failed to fetch barbers:', error);
@@ -51,6 +106,16 @@ export default function CMBarberChatsModal({ isVisible, onClose, onSelectBarber 
       setLoading(false);
     }
   };
+
+  const handleCampusSelect = (campus: Campus) => {
+    setSelectedCampusId(campus.id);
+    setCampusSearchQuery(campus.name);
+    setShowCampusDropdown(false);
+  };
+
+  const filteredCampuses = campuses.filter(c => 
+    c.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+  );
 
   const filteredBarbers = barbers.filter(barber =>
     barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -87,12 +152,54 @@ export default function CMBarberChatsModal({ isVisible, onClose, onSelectBarber 
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10 flex-shrink-0">
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-primary-600" />
               Barber Chats
             </h2>
-            <p className="text-sm text-gray-500">Chat with barbers on your campus</p>
+            
+            {/* Campus Selector for Admins */}
+            {isAdmin && campuses.length > 0 ? (
+              <div className="mt-2 relative" ref={campusSelectorRef}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search campuses..."
+                    value={campusSearchQuery}
+                    onChange={(e) => {
+                      setCampusSearchQuery(e.target.value);
+                      setShowCampusDropdown(true);
+                    }}
+                    onFocus={() => setShowCampusDropdown(true)}
+                    className="w-full max-w-xs text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                  />
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {showCampusDropdown && (
+                  <div className="absolute top-full left-0 right-0 max-w-xs mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[200px] overflow-y-auto overscroll-contain">
+                    {filteredCampuses.slice(0, 20).map(campus => (
+                      <button
+                        key={campus.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleCampusSelect(campus)}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-primary-50 transition-colors ${
+                          campus.id === selectedCampusId ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                        }`}
+                      >
+                        {campus.name}
+                      </button>
+                    ))}
+                    {filteredCampuses.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">No campuses found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Chat with barbers on your campus</p>
+            )}
           </div>
           <button
             onClick={onClose}
