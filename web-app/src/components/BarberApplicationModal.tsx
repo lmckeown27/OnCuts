@@ -347,6 +347,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </p>
               <a 
                 href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
               >
                 <Mail className="w-4 h-4" />

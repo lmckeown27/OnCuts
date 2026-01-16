@@ -588,6 +588,8 @@ export default function ConsumerPage() {
               If you suspect your application was not sent, please contact{' '}
               <a 
                 href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
                 campuscuthelp@gmail.com
