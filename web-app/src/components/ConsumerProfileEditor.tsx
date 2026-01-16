@@ -156,13 +156,20 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       setCurrentPasswordError('');
     } catch (error: any) {
       console.error('Failed to change password:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to change password';
+      // Try multiple ways to get the error message from the response
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to change password';
       
-      // Check if error is related to current password being incorrect
-      if (errorMessage.toLowerCase().includes('current password') || 
-          errorMessage.toLowerCase().includes('incorrect password') ||
-          errorMessage.toLowerCase().includes('wrong password') ||
-          errorMessage.toLowerCase().includes('invalid password')) {
+      // Check if error is related to current password being incorrect (401 status or message match)
+      const is401Error = error.response?.status === 401;
+      const isPasswordError = errorMessage.toLowerCase().includes('current password') || 
+                             errorMessage.toLowerCase().includes('incorrect') ||
+                             errorMessage.toLowerCase().includes('wrong password') ||
+                             errorMessage.toLowerCase().includes('invalid password');
+      
+      if (is401Error || isPasswordError) {
         setCurrentPasswordError('Current password is incorrect');
       } else {
         toast.error(errorMessage);

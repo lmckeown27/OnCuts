@@ -42,10 +42,11 @@ class ApiService {
           return Promise.reject(rateLimitError);
         }
         
-        // Don't redirect for auth endpoints (login, register, etc.) - let the UI handle those errors
+        // Don't redirect for auth endpoints or password change - let the UI handle those errors
         const isAuthEndpoint = requestUrl.includes('/auth/login') || 
                                requestUrl.includes('/auth/register') ||
-                               requestUrl.includes('/auth/verify');
+                               requestUrl.includes('/auth/verify') ||
+                               requestUrl.includes('/change-password');
         
         if (error.response?.status === 401 && !isAuthEndpoint) {
           // Token expired, try to refresh
