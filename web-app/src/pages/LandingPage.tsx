@@ -250,6 +250,9 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 Pricing Explained
               </button>
+              <button onClick={() => scrollToSection('campus-manager')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+                Campus Manager
+              </button>
               <button onClick={() => scrollToSection('faq')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 FAQ
               </button>
@@ -287,6 +290,9 @@ export default function LandingPage() {
               </button>
               <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 Pricing Explained
+              </button>
+              <button onClick={() => scrollToSection('campus-manager')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                Campus Manager
               </button>
               <button onClick={() => scrollToSection('faq')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 FAQ
