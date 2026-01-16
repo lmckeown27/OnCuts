@@ -57,10 +57,6 @@ struct StudentProfileView: View {
                 }
                 
                 Section("Support") {
-                    NavigationLink(destination: Text("Help Center")) {
-                        Label("Help Center", systemImage: "questionmark.circle")
-                    }
-                    
                     NavigationLink(destination: Text("Contact Us")) {
                         Label("Contact Us", systemImage: "envelope.fill")
                     }

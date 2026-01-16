@@ -289,12 +289,6 @@ export default function GDPRPage() {
           >
             Privacy Policy
           </Link>
-          <Link 
-            to="/help" 
-            className="text-primary-500 hover:text-primary-600 font-medium transition-colors"
-          >
-            Help Center
-          </Link>
         </div>
       </div>
     </div>

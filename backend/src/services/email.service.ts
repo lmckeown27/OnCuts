@@ -322,7 +322,6 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     <p style="margin: 5px 0 0 0;">
-      <a href="${frontendUrl}/help" style="color: #22c55e; text-decoration: none;">Help Center</a> • 
       <a href="${frontendUrl}/privacy" style="color: #22c55e; text-decoration: none;">Privacy Policy</a>
     </p>
   </div>
@@ -717,8 +716,7 @@ function generateBookingConfirmationHtml(
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
     <p style="margin: 10px 0 0 0;">
-      <a href="${frontendUrl}/web" style="color: #9ca3af;">Messages</a> • 
-      <a href="${frontendUrl}/help" style="color: #9ca3af;">Help Center</a>
+      <a href="${frontendUrl}/web" style="color: #9ca3af;">Messages</a>
     </p>
   </div>
 </body>

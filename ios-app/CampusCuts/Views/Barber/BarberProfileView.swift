@@ -74,10 +74,6 @@ struct BarberProfileView: View {
                 }
                 
                 Section("Support") {
-                    NavigationLink(destination: Text("Help Center")) {
-                        Label("Help Center", systemImage: "questionmark.circle")
-                    }
-                    
                     NavigationLink(destination: Text("Contact Support")) {
                         Label("Contact Support", systemImage: "envelope.fill")
                     }

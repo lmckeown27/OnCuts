@@ -45,7 +45,6 @@ const MobileConsumerPage = lazy(() => import('./pages/mobile/MobileConsumerPage'
 const TermsOfServicePage = lazy(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 const GDPRPage = lazy(() => import('./pages/legal/GDPRPage'));
-const HelpCenterPage = lazy(() => import('./pages/legal/HelpCenterPage'));
 
 // Suspense wrapper for lazy components
 function LazyRoute({ children }: { children: React.ReactNode }) {
@@ -91,7 +90,6 @@ function AppContent() {
         <Route path="/terms" element={<LazyRoute><TermsOfServicePage /></LazyRoute>} />
         <Route path="/privacy" element={<LazyRoute><PrivacyPolicyPage /></LazyRoute>} />
         <Route path="/gdpr" element={<LazyRoute><GDPRPage /></LazyRoute>} />
-        <Route path="/help" element={<LazyRoute><HelpCenterPage /></LazyRoute>} />
         
         {/* Installation Instructions */}
         <Route path="/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />

@@ -1151,11 +1151,6 @@ export default function LandingPage() {
                     Campus Manager
                   </button>
                 </li>
-                <li>
-                  <button onClick={() => navigate('/help')} className="text-gray-400 hover:text-white transition-colors">
-                    Help Center
-                  </button>
-                </li>
               </ul>
             </div>
 
@@ -1180,11 +1175,6 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-2">
-                <li>
-                  <button onClick={() => navigate('/help')} className="text-gray-400 hover:text-white transition-colors">
-                    Help Center
-                  </button>
-                </li>
                 <li>
                   <button onClick={openContactPopup} className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
                     Contact Us <Mail className="w-3 h-3" />

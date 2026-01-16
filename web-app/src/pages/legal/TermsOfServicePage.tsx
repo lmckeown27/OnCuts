@@ -277,12 +277,6 @@ export default function TermsOfServicePage() {
           >
             GDPR →
           </Link>
-          <Link 
-            to="/help" 
-            className="text-primary-500 hover:text-primary-600 font-medium transition-colors"
-          >
-            Help Center →
-          </Link>
         </div>
       </div>
     </div>
