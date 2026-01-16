@@ -403,9 +403,9 @@ export default function LandingPage() {
           </div>
 
           {campusesWithManagers.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-12 items-stretch">
-              {/* Left side - Campus selector and what they do */}
-              <div className="space-y-8">
+            <div className="grid md:grid-cols-5 gap-8 items-stretch">
+              {/* Left side - Campus selector and profile picture (3/5 width) */}
+              <div className="md:col-span-3 space-y-8">
                 {/* Campus Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
@@ -483,8 +483,8 @@ export default function LandingPage() {
 
                 {/* Desktop: Show campus manager profile picture below dropdown when selected */}
                 {selectedCampus?.manager && (
-                  <div className="hidden md:flex justify-center mt-6">
-                    <div className="w-32 h-32 rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-lg">
+                  <div className="hidden md:flex justify-center mt-8">
+                    <div className="w-48 h-48 rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-xl">
                       {selectedCampus.manager.profileImageUrl ? (
                         <img
                           src={selectedCampus.manager.profileImageUrl}
@@ -492,7 +492,7 @@ export default function LandingPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-gray-400 bg-gray-100">
+                        <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400 bg-gray-100">
                           {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
                         </div>
                       )}
@@ -587,8 +587,8 @@ export default function LandingPage() {
                 )}
               </div>
 
-              {/* Right side - Campus Manager Profile (Desktop only) */}
-              <div className="hidden md:flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex-col justify-center">
+              {/* Right side - Campus Manager Profile (Desktop only, 2/5 width) */}
+              <div className="hidden md:col-span-2 md:flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 text-white flex-col justify-center">
                 <div className="text-center">
                   {!selectedCampus ? (
                     /* No campus selected yet - prompt user */
