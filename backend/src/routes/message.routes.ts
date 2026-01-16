@@ -389,7 +389,8 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
     }
 
-    // Get all barbers in this campus (excluding self)
+    // Get all active barbers in this campus (excluding self and demoted users)
+    // Only show users who are still BARBER role AND have isActive = true
     const barbersResult = await pool.query(
       `SELECT 
          u.id as user_id,
@@ -411,6 +412,7 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          AND b."isActive" = true 
          AND b."isCampusManager" = false
          AND b."userId" != $1
+         AND u.role = 'BARBER'
        ORDER BY COALESCE(c.last_message_at, b."createdAt") DESC`,
       [userId, campusId]
     );

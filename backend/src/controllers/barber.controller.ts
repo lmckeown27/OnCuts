@@ -1213,6 +1213,25 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
         [id]
       );
 
+      // Delete CM-barber direct conversations (conversations without a booking_id)
+      // First delete messages, then the conversations
+      await client.query(
+        `DELETE FROM messages 
+         WHERE conversation_id IN (
+           SELECT id FROM conversations 
+           WHERE booking_id IS NULL 
+             AND (user1_id = $1 OR user2_id = $1)
+         )`,
+        [barberUserId]
+      );
+      
+      await client.query(
+        `DELETE FROM conversations 
+         WHERE booking_id IS NULL 
+           AND (user1_id = $1 OR user2_id = $1)`,
+        [barberUserId]
+      );
+
       await client.query('COMMIT');
 
       logger.info(`Barber ${id} (user ${barberUserId}) demoted to consumer by ${userId}`);
