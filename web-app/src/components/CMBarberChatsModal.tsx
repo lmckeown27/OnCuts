@@ -35,7 +35,7 @@ interface CMBarberChatsModalProps {
 
 export default function CMBarberChatsModal({ isVisible, onClose, onSelectBarber }: CMBarberChatsModalProps) {
   const { user } = useAuthStore();
-  const isAdmin = user?.role === 'ADMIN';
+  const isAdmin = user?.is_admin === true || user?.user_type === 'admin';
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
