@@ -371,19 +371,19 @@ ORDER BY b.\"isCampusManager\" DESC, b.\"avgRating\" DESC;
 ### View Campus Manager for a University
 ```bash
 # Replace 'University of Florida' with the campus name
+# Note: ADMINs appear for ALL campuses (platform-wide privileges)
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-  b.id,
+  u.first_name || ' ' || u.last_name AS name,
   u.email,
-  u.first_name,
-  u.last_name,
   u.role,
   c.name as campus_name
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
-WHERE c.name ILIKE '%University of Florida%'
-  AND (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER');
+WHERE (c.name ILIKE '%University of Florida%' AND (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER'))
+   OR u.role = 'ADMIN'
+ORDER BY u.role = 'ADMIN' DESC, u.first_name;
 "
 ```
 
