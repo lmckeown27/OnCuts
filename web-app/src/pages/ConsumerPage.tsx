@@ -581,8 +581,17 @@ export default function ConsumerPage() {
               <Clock className="w-8 h-8 text-primary-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Please be patient as the campus manager goes over your application.
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              If you suspect your application was not sent, please contact{' '}
+              <a 
+                href="mailto:campuscuthelp@gmail.com?subject=Barber Application Issue"
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                campuscuthelp@gmail.com
+              </a>
             </p>
             <button
               onClick={closePendingPopup}
