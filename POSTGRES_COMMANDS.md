@@ -307,6 +307,7 @@ ORDER BY c.name, u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, u.first_
 ### View Barbers at a Specific University (by Campus Name)
 ```bash
 # Replace 'University of Florida' with the campus name
+# Note: ADMINs appear for ALL campuses since they have platform-wide privileges
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
@@ -318,7 +319,7 @@ SELECT
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
-WHERE c.name ILIKE '%University of Florida%'
+WHERE c.name ILIKE '%University of Florida%' OR u.role = 'ADMIN'
 ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
 "
 ```
