@@ -462,15 +462,21 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId;
 
     // Get user's barber record to find their campus
+    // Allow active barbers, campus managers, and admins
     const userResult = await pool.query(
-      `SELECT b.id as barber_id, b."campusId"
-       FROM barbers b
-       WHERE b."userId" = $1 AND b."isActive" = true`,
+      `SELECT b.id as barber_id, COALESCE(b."campusId", u."campusId") as "campusId"
+       FROM users u
+       LEFT JOIN barbers b ON b."userId" = u.id
+       WHERE u.id = $1 
+         AND (
+           (b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
+           OR u.role IN ('CAMPUS_MANAGER', 'ADMIN')
+         )`,
       [userId]
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(403).json({ success: false, error: 'Only active barbers can access this endpoint' });
+      return res.status(403).json({ success: false, error: 'Only barbers can access this endpoint' });
     }
 
     const campusId = userResult.rows[0].campusId;
@@ -544,17 +550,30 @@ router.post('/barber-chats', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'otherBarberUserId is required' });
     }
 
-    // Verify both users are active barbers on the same campus
+    // Verify both users are barbers on the same campus
+    // Allow active barbers, campus managers, and admins
     const verifyResult = await pool.query(
-      `SELECT b1."campusId" as user_campus, b2."campusId" as other_campus
-       FROM barbers b1, barbers b2
-       WHERE b1."userId" = $1 AND b1."isActive" = true
-         AND b2."userId" = $2 AND b2."isActive" = true`,
+      `SELECT 
+         COALESCE(b1."campusId", u1."campusId") as user_campus, 
+         COALESCE(b2."campusId", u2."campusId") as other_campus
+       FROM users u1
+       LEFT JOIN barbers b1 ON b1."userId" = u1.id
+       CROSS JOIN users u2
+       LEFT JOIN barbers b2 ON b2."userId" = u2.id
+       WHERE u1.id = $1 AND u2.id = $2
+         AND (
+           (b1."isActive" = true AND u1.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
+           OR u1.role IN ('CAMPUS_MANAGER', 'ADMIN')
+         )
+         AND (
+           (b2."isActive" = true AND u2.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
+           OR u2.role IN ('CAMPUS_MANAGER', 'ADMIN')
+         )`,
       [userId, otherBarberUserId]
     );
 
     if (verifyResult.rows.length === 0) {
-      return res.status(403).json({ success: false, error: 'Both users must be active barbers' });
+      return res.status(403).json({ success: false, error: 'Both users must be barbers' });
     }
 
     if (verifyResult.rows[0].user_campus !== verifyResult.rows[0].other_campus) {
