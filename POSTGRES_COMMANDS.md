@@ -16,12 +16,18 @@ sudo -u postgres psql -d campuscuts
 
 CampusCuts uses a role-based permission system with the following hierarchy:
 
-| Role | Description | Privileges |
-|------|-------------|------------|
-| **ADMIN** | Platform administrator | Highest privileges. Campus manager at ALL campuses. Manages platform via PostgreSQL commands. No admin UI pages (security measure). |
-| **CAMPUS_MANAGER** | Campus-specific manager | Manages barber applications, campus metrics, incidents for their specific campus. Typically 2 per campus (1 dedicated + admin). |
-| **BARBER** | Service provider | Can offer haircut services, manage bookings, set availability and pricing. |
-| **CONSUMER** | Customer | Can browse barbers, book services, make payments. Also referred to as "student" in frontend. |
+| Role | Description | Privileges | University Affiliation |
+|------|-------------|------------|------------------------|
+| **ADMIN** | Platform administrator | Highest privileges. Campus manager at ALL campuses. Manages platform via PostgreSQL commands. No admin UI pages (security measure). | **All Universities** (platform-wide) |
+| **CAMPUS_MANAGER** | Campus-specific manager | Manages barber applications, campus metrics, incidents for their specific campus. Typically 2 per campus (1 dedicated + admin). | **One University** (their campus) |
+| **BARBER** | Service provider | Can offer haircut services, manage bookings, set availability and pricing. | **One University** (their campus) |
+| **CONSUMER** | Customer | Can browse barbers, book services, make payments. Also referred to as "student" in frontend. | **None** (not tied to any university) |
+
+### University Affiliation Rules
+- **CONSUMER**: Never tied to a specific university, even if they were once a barber (demoted barbers lose campus affiliation)
+- **BARBER**: Tied to one specific university where they provide services
+- **CAMPUS_MANAGER**: Tied to one specific university that they manage
+- **ADMIN**: Has privileges at ALL universities (platform-wide access)
 
 ### Admin Privileges
 - Admin users have **campus manager privileges at ALL campuses**
@@ -286,13 +292,18 @@ ORDER BY ordinal_position;
 
 ### View All Active Barbers (System-Wide)
 ```bash
-# Shows all active barbers. ADMIN = platform-wide privileges, CAMPUS_MANAGER = their campus only
+# Shows all active barbers. Consumers are not tied to any campus.
+# ADMIN = All Campuses, CAMPUS_MANAGER/BARBER = their specific campus
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
-  c.name AS campus,
   u.role,
+  CASE 
+    WHEN u.role = 'ADMIN' THEN 'All Campuses'
+    WHEN u.role = 'CONSUMER' THEN 'N/A'
+    ELSE c.name 
+  END AS campus_scope,
   COALESCE(b.\"avgRating\"::text, '-') AS rating,
   CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
@@ -300,7 +311,7 @@ JOIN users u ON b.\"userId\" = u.id
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE b.\"isActive\" = true 
   AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
-ORDER BY c.name, u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, u.first_name;
+ORDER BY u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, c.name, u.first_name;
 "
 ```
 
@@ -313,6 +324,11 @@ SELECT
   u.first_name || ' ' || u.last_name AS name,
   u.email,
   u.role,
+  CASE 
+    WHEN u.role = 'ADMIN' THEN 'All Campuses'
+    WHEN u.role = 'CONSUMER' THEN 'N/A'
+    ELSE c.name 
+  END AS campus_scope,
   COALESCE(b.\"avgRating\"::text, '-') AS rating,
   CASE WHEN b.\"isActive\" THEN 'Yes' ELSE 'No' END AS active,
   CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
@@ -327,44 +343,49 @@ ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPU
 ### View Barbers at a Specific University (by Campus ID)
 ```bash
 # Replace the UUID with the actual campus ID
+# Note: ADMINs appear for ALL campuses since they have platform-wide privileges
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-  b.id,
+  u.first_name || ' ' || u.last_name AS name,
   u.email,
-  u.first_name,
-  u.last_name,
   u.role,
-  b.bio,
-  b.\"avgRating\",
-  b.\"isActive\",
-  b.\"isCampusManager\"
+  CASE 
+    WHEN u.role = 'ADMIN' THEN 'All Campuses'
+    WHEN u.role = 'CONSUMER' THEN 'N/A'
+    ELSE 'This Campus' 
+  END AS campus_scope,
+  COALESCE(b.\"avgRating\"::text, '-') AS rating,
+  CASE WHEN b.\"isActive\" THEN 'Yes' ELSE 'No' END AS active,
+  CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
-WHERE u.\"campusId\" = '9de371b8-6ce6-492e-a716-93cb03ae2f82'
-ORDER BY b.\"isCampusManager\" DESC, u.first_name;
+WHERE u.\"campusId\" = '9de371b8-6ce6-492e-a716-93cb03ae2f82' OR u.role = 'ADMIN'
+ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
 "
 ```
 
-### View All Active Barbers at a University (Excludes Inactive)
+### View All Active Barbers at a University (Excludes Inactive/Demoted)
 ```bash
 # Replace 'University of Florida' with the campus name
+# Note: ADMINs appear for ALL campuses, Consumers show N/A
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-  b.id,
+  u.first_name || ' ' || u.last_name AS name,
   u.email,
-  u.first_name,
-  u.last_name,
   u.role,
-  b.\"avgRating\",
-  b.\"isCampusManager\",
-  c.name as campus_name
+  CASE 
+    WHEN u.role = 'ADMIN' THEN 'All Campuses'
+    ELSE c.name 
+  END AS campus_scope,
+  COALESCE(b.\"avgRating\"::text, '-') AS rating,
+  CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
-WHERE c.name ILIKE '%University of Florida%'
+WHERE (c.name ILIKE '%University of Florida%' OR u.role = 'ADMIN')
   AND b.\"isActive\" = true
-  AND u.role = 'BARBER'
-ORDER BY b.\"isCampusManager\" DESC, b.\"avgRating\" DESC;
+  AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, b.\"avgRating\" DESC NULLS LAST;
 "
 ```
 
