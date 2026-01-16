@@ -286,19 +286,21 @@ ORDER BY ordinal_position;
 
 ### View All Active Barbers (System-Wide)
 ```bash
+# Shows all active barbers. ADMIN = platform-wide privileges, CAMPUS_MANAGER = their campus only
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
   u.first_name || ' ' || u.last_name AS name,
   u.email,
   c.name AS campus,
+  u.role,
   COALESCE(b.\"avgRating\"::text, '-') AS rating,
-  CASE WHEN b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER' THEN 'Yes' ELSE 'No' END AS campus_mgr
+  CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE b.\"isActive\" = true 
-  AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
-ORDER BY c.name, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
+  AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
+ORDER BY c.name, u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, u.first_name;
 "
 ```
 
@@ -312,12 +314,12 @@ SELECT
   u.role,
   COALESCE(b.\"avgRating\"::text, '-') AS rating,
   CASE WHEN b.\"isActive\" THEN 'Yes' ELSE 'No' END AS active,
-  CASE WHEN b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER' THEN 'Yes' ELSE 'No' END AS campus_mgr
+  CASE WHEN b.\"isCampusManager\" = true OR u.role IN ('CAMPUS_MANAGER', 'ADMIN') THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE c.name ILIKE '%University of Florida%'
-ORDER BY (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
+ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
 "
 ```
 
