@@ -872,13 +872,19 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Also update linked conversation's booking_status
+    // Delete the conversation and its messages when booking is completed
+    // First delete messages (due to foreign key constraint)
     await pool.query(
-      `UPDATE conversations 
-       SET booking_status = 'completed', updated_at = CURRENT_TIMESTAMP
-       WHERE booking_id = $1`,
+      `DELETE FROM messages 
+       WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
       [id]
     );
+    // Then delete the conversation
+    await pool.query(
+      `DELETE FROM conversations WHERE booking_id = $1`,
+      [id]
+    );
+    logger.info(`Deleted conversation for completed booking ${id}`);
 
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
