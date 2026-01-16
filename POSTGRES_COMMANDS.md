@@ -412,6 +412,42 @@ ORDER BY u.role = 'ADMIN' DESC, u.role = 'CAMPUS_MANAGER' DESC, c.name, u.first_
 "
 ```
 
+### View All Campus Managers (System-Wide)
+```bash
+# Shows all campus managers and admins (who have CM privileges at all campuses)
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  u.first_name || ' ' || u.last_name AS name,
+  u.email,
+  u.role,
+  CASE 
+    WHEN u.role = 'ADMIN' THEN 'All Campuses'
+    ELSE c.name 
+  END AS scope,
+  COALESCE(b.\"avgRating\"::text, '-') AS rating
+FROM users u
+LEFT JOIN barbers b ON u.id = b.\"userId\"
+LEFT JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role IN ('CAMPUS_MANAGER', 'ADMIN')
+   OR b.\"isCampusManager\" = true
+ORDER BY u.role = 'ADMIN' DESC, c.name, u.first_name;
+"
+```
+
+### Count Campus Managers by Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+  c.name AS campus,
+  COUNT(*) AS manager_count
+FROM users u
+JOIN campuses c ON u.\"campusId\" = c.id
+WHERE u.role = 'CAMPUS_MANAGER'
+GROUP BY c.name
+ORDER BY manager_count DESC, c.name;
+"
+```
+
 ### View Barbers at a Specific University (by Campus Name)
 ```bash
 # Replace 'University of Florida' with the campus name
