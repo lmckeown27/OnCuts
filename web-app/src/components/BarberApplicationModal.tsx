@@ -275,7 +275,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       },
       rejected: {
         title: 'Application Not Approved',
-        description: 'Unfortunately, your application was not approved at this time. You may reapply in the future.',
+        description: 'Unfortunately, your application was not approved at this time. You can submit a new application below.',
         color: 'red'
       }
     };
@@ -359,12 +359,29 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-50 border-t">
-            <button
-              onClick={handleClose}
-              className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-            >
-              Got it
-            </button>
+            {existingApplication.status === 'rejected' ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={handleClose}
+                  className="flex-1 px-6 py-2.5 text-gray-700 font-medium hover:bg-gray-200 rounded-lg transition-colors border border-gray-300"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => setExistingApplication(null)}
+                  className="flex-1 px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Reapply
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleClose}
+                className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+              >
+                Got it
+              </button>
+            )}
           </div>
         </div>
       </div>
