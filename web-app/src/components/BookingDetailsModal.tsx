@@ -427,9 +427,9 @@ export default function BookingDetailsModal({
               {/* Customer Info */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                 <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                  {booking.consumer?.profileImageUrl ? (
+                  {(booking.consumer?.avatar || booking.consumer?.profileImageUrl) ? (
                     <img 
-                      src={booking.consumer.profileImageUrl} 
+                      src={booking.consumer.avatar || booking.consumer.profileImageUrl} 
                       alt="Customer" 
                       className="w-14 h-14 rounded-full object-cover"
                     />

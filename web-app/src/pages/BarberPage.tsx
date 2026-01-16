@@ -1999,10 +1999,18 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                     {/* Top Row: Customer + Status */}
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-600 font-semibold text-sm">
-                            {booking.consumer?.firstName?.[0]}{booking.consumer?.lastName?.[0]}
-                          </span>
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {(booking.consumer?.avatar || booking.consumer?.profileImageUrl) ? (
+                            <img 
+                              src={booking.consumer.avatar || booking.consumer.profileImageUrl} 
+                              alt="" 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-600 font-semibold text-sm">
+                              {booking.consumer?.firstName?.[0]}{booking.consumer?.lastName?.[0]}
+                            </span>
+                          )}
                       </div>
                         <div>
                           <p className="font-bold text-gray-900">
