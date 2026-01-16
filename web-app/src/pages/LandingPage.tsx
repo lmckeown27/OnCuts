@@ -324,7 +324,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-8">
             <button
               onClick={handleFindBarberClick}
-              className="px-8 py-4 sm:py-5 bg-primary-400 hover:bg-primary-500 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="px-12 py-5 sm:py-6 bg-primary-400 hover:bg-primary-500 text-white font-bold text-xl sm:text-2xl rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-95"
             >
               Find Barber
             </button>
