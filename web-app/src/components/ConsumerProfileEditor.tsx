@@ -50,6 +50,7 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [currentPasswordError, setCurrentPasswordError] = useState('');
 
   useEffect(() => {
     loadUserProfile();
@@ -131,6 +132,9 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   };
 
   const handleChangePassword = async () => {
+    // Clear previous error
+    setCurrentPasswordError('');
+    
     if (newPassword !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -149,9 +153,20 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      setCurrentPasswordError('');
     } catch (error: any) {
       console.error('Failed to change password:', error);
-      toast.error(error.response?.data?.error || 'Failed to change password');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to change password';
+      
+      // Check if error is related to current password being incorrect
+      if (errorMessage.toLowerCase().includes('current password') || 
+          errorMessage.toLowerCase().includes('incorrect password') ||
+          errorMessage.toLowerCase().includes('wrong password') ||
+          errorMessage.toLowerCase().includes('invalid password')) {
+        setCurrentPasswordError('Current password is incorrect');
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -459,8 +474,13 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                   <input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      if (currentPasswordError) setCurrentPasswordError('');
+                    }}
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+                      currentPasswordError ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
                   <button
                     type="button"
@@ -470,6 +490,9 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
                     {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                {currentPasswordError && (
+                  <p className="text-xs text-red-500 mt-1">{currentPasswordError}</p>
+                )}
               </div>
 
               <div>
