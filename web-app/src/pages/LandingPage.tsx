@@ -391,14 +391,11 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="campus-manager">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-              Real People, Real Support
-            </div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Meet Your Campus Manager
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              While other platforms rely on algorithms and chatbots, we believe in the power of human connection.
+              Not a bot, not A.I., but a real human being trusted to manage barbers at your campus.
             </p>
           </div>
 
