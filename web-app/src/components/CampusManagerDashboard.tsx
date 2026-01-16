@@ -614,24 +614,14 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
                 {/* Actions - Full width on mobile */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedBarberId(barber.id)}
-                      className="flex-1 sm:flex-none text-xs sm:text-sm"
-                    >
-                      View Profile
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => window.location.href = `mailto:${barber.email}`}
-                      className="flex-1 sm:flex-none text-xs sm:text-sm"
-                    >
-                      Contact
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setSelectedBarberId(barber.id)}
+                    className="flex-1 sm:flex-none text-xs sm:text-sm"
+                  >
+                    View Profile
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"

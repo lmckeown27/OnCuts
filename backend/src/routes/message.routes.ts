@@ -239,5 +239,181 @@ router.get('/stats', authenticate, async (req, res, next) => {
   }
 });
 
+// ============================================================================
+// CAMPUS MANAGER - BARBER DIRECT MESSAGING
+// ============================================================================
+
+/**
+ * POST /api/messages/cm-barber
+ * Start or get a direct conversation between barber and campus manager
+ * No booking required - this is for general communication
+ */
+router.post('/cm-barber', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    // Get user's campus and barber info
+    const userResult = await pool.query(
+      `SELECT u.id, u."campusId", u.first_name, u.last_name, u."avatarUrl",
+              b.id as barber_id, b."isCampusManager"
+       FROM users u
+       LEFT JOIN barbers b ON b."userId" = u.id
+       WHERE u.id = $1`,
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+    const campusId = user.campusId;
+
+    if (!campusId) {
+      return res.status(400).json({ success: false, error: 'User is not associated with a campus' });
+    }
+
+    // Find the campus manager for this campus
+    const cmResult = await pool.query(
+      `SELECT u.id as user_id, u.first_name, u.last_name, u."avatarUrl",
+              b.id as barber_id
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       WHERE b."campusId" = $1 AND b."isCampusManager" = true AND b."isActive" = true
+       LIMIT 1`,
+      [campusId]
+    );
+
+    if (cmResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'No campus manager found for your campus' });
+    }
+
+    const campusManager = cmResult.rows[0];
+
+    // Determine who is the CM and who is the barber
+    const isCM = user.isCampusManager === true;
+    const otherUserId = isCM ? req.body.barberUserId : campusManager.user_id;
+
+    if (!otherUserId) {
+      return res.status(400).json({ success: false, error: 'Could not determine conversation partner' });
+    }
+
+    // Check if conversation already exists (booking_id = NULL for CM-barber chats)
+    const existingConv = await pool.query(
+      `SELECT * FROM conversations 
+       WHERE booking_id IS NULL 
+         AND ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
+       LIMIT 1`,
+      [userId, otherUserId]
+    );
+
+    if (existingConv.rows.length > 0) {
+      // Return existing conversation
+      const conv = existingConv.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          conversation: {
+            id: conv.id,
+            otherUserId: otherUserId,
+            isNew: false
+          }
+        }
+      });
+    }
+
+    // Create new CM-barber conversation
+    const newConv = await pool.query(
+      `INSERT INTO conversations (user1_id, user2_id, booking_id, is_active, created_at, updated_at)
+       VALUES ($1, $2, NULL, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id`,
+      [userId, otherUserId]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        conversation: {
+          id: newConv.rows[0].id,
+          otherUserId: otherUserId,
+          isNew: true
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/messages/cm-barber/conversations
+ * Get all CM-barber conversations (for campus managers viewing all their barbers)
+ */
+router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+
+    // Verify user is a campus manager
+    const cmCheck = await pool.query(
+      `SELECT b.id, b."campusId" FROM barbers b
+       WHERE b."userId" = $1 AND b."isCampusManager" = true`,
+      [userId]
+    );
+
+    if (cmCheck.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'Only campus managers can access this endpoint' });
+    }
+
+    const campusId = cmCheck.rows[0].campusId;
+
+    // Get all barbers in this campus (excluding self)
+    const barbersResult = await pool.query(
+      `SELECT 
+         u.id as user_id,
+         u.first_name,
+         u.last_name,
+         u."avatarUrl",
+         u.email,
+         b.id as barber_id,
+         b."isCampusManager",
+         c.id as conversation_id,
+         (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+         (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_at,
+         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_id != $1 AND is_read = false)::int as unread_count
+       FROM barbers b
+       JOIN users u ON b."userId" = u.id
+       LEFT JOIN conversations c ON c.booking_id IS NULL 
+         AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
+       WHERE b."campusId" = $2 
+         AND b."isActive" = true 
+         AND b."isCampusManager" = false
+         AND b."userId" != $1
+       ORDER BY COALESCE(c.last_message_at, b."createdAt") DESC`,
+      [userId, campusId]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        barbers: barbersResult.rows.map(row => ({
+          userId: row.user_id,
+          barberId: row.barber_id,
+          firstName: row.first_name,
+          lastName: row.last_name,
+          name: `${row.first_name} ${row.last_name}`,
+          avatarUrl: row.avatarUrl,
+          email: row.email,
+          conversationId: row.conversation_id,
+          lastMessage: row.last_message,
+          lastMessageAt: row.last_message_at,
+          unreadCount: row.unread_count || 0
+        }))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
 

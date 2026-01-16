@@ -110,6 +110,46 @@ class MessageService {
     const response = await api.upload<{ url: string }>('/upload/chat-image', formData);
     return response.url;
   }
+
+  // ============================================================================
+  // CAMPUS MANAGER - BARBER DIRECT MESSAGING
+  // ============================================================================
+
+  /**
+   * Start or get a direct conversation with campus manager (for barbers)
+   * or with a specific barber (for campus managers)
+   */
+  async startCMBarberConversation(barberUserId?: string): Promise<{ conversationId: number; otherUserId: string; isNew: boolean }> {
+    const response = await api.post<{ conversation: { id: number; otherUserId: string; isNew: boolean } }>('/messages/cm-barber', {
+      barberUserId
+    });
+    return {
+      conversationId: response.conversation.id,
+      otherUserId: response.conversation.otherUserId,
+      isNew: response.conversation.isNew
+    };
+  }
+
+  /**
+   * Get all CM-barber conversations (for campus managers)
+   */
+  async getCMBarberConversations(): Promise<{
+    barbers: Array<{
+      userId: string;
+      barberId: string;
+      name: string;
+      firstName: string;
+      lastName: string;
+      avatarUrl: string | null;
+      email: string;
+      conversationId: number | null;
+      lastMessage: string | null;
+      lastMessageAt: string | null;
+      unreadCount: number;
+    }>;
+  }> {
+    return await api.get<{ barbers: any[] }>('/messages/cm-barber/conversations');
+  }
 }
 
 export default new MessageService();

@@ -16,6 +16,7 @@ import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
+import CMBarberChatsModal from '../components/CMBarberChatsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import WalkInPaymentModal from '../components/WalkInPaymentModal';
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -61,6 +62,9 @@ export default function BarberPage() {
   const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
   const [isCampusManagerVisible, setIsCampusManagerVisible] = useState(false);
   
+  const [showCMBarberChats, setShowCMBarberChats] = useState(false);
+  const [isCMBarberChatsVisible, setIsCMBarberChatsVisible] = useState(false);
+  
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
   
@@ -78,7 +82,7 @@ export default function BarberPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBookings || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showCMBarberChats || showBookings || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -178,6 +182,9 @@ export default function BarberPage() {
   
   const openCampusManager = () => openModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
   const closeCampusManager = () => closeModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
+  
+  const openCMBarberChats = () => openModal(setShowCMBarberChats, setIsCMBarberChatsVisible);
+  const closeCMBarberChats = () => closeModal(setShowCMBarberChats, setIsCMBarberChatsVisible);
   
   const openBookings = () => openModal(setShowBookings, setIsBookingsVisible);
   const closeBookings = () => closeModal(setShowBookings, setIsBookingsVisible);
@@ -443,7 +450,30 @@ export default function BarberPage() {
                       </span>
                     )}
                   </button>
-                  {/* Campus Manager Option (conditional) */}
+                  {/* Chat with Campus Manager (for non-CM barbers) */}
+                  {!isCampusManager && (
+                    <>
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            setShowProfileDropdown(false);
+                            const messageService = (await import('../services/message.service')).default;
+                            const result = await messageService.startCMBarberConversation();
+                            navigate(`${platformPrefix}/barber/messages/${result.conversationId}`);
+                          } catch (error: any) {
+                            console.error('Failed to start CM conversation:', error);
+                            toast.error(error.message || 'Failed to start conversation with campus manager');
+                          }
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      >
+                        <MessageCircle className="w-4 h-4 text-primary-600" />
+                        Chat with Campus Manager
+                      </button>
+                    </>
+                  )}
+                  {/* Campus Manager Options (conditional) */}
                   {isCampusManager && (
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
@@ -456,6 +486,16 @@ export default function BarberPage() {
                       >
                         <Shield className="w-4 h-4 text-primary-600" />
                         Campus Manager
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          openCMBarberChats();
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                      >
+                        <MessageCircle className="w-4 h-4 text-primary-600" />
+                        Barber Chats
                       </button>
                     </>
                   )}
@@ -653,6 +693,26 @@ export default function BarberPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* CM Barber Chats Modal */}
+      {isCampusManager && showCMBarberChats && (
+        <CMBarberChatsModal
+          isVisible={isCMBarberChatsVisible}
+          onClose={closeCMBarberChats}
+          onSelectBarber={(barberUserId: string, conversationId: number | null) => {
+            closeCMBarberChats();
+            if (conversationId) {
+              navigate(`${platformPrefix}/barber/messages/${conversationId}`);
+            } else {
+              // Start new conversation and navigate
+              import('../services/message.service').then(async (mod) => {
+                const result = await mod.default.startCMBarberConversation(barberUserId);
+                navigate(`${platformPrefix}/barber/messages/${result.conversationId}`);
+              }).catch(console.error);
+            }
+          }}
+        />
       )}
 
       {/* Service Details Modal */}
