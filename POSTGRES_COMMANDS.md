@@ -307,21 +307,17 @@ ORDER BY c.name, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DES
 # Replace 'University of Florida' with the campus name
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-  b.id,
+  u.first_name || ' ' || u.last_name AS name,
   u.email,
-  u.first_name,
-  u.last_name,
   u.role,
-  b.bio,
-  b.\"avgRating\",
-  b.\"isActive\",
-  b.\"isCampusManager\",
-  c.name as campus_name
+  COALESCE(b.\"avgRating\"::text, '-') AS rating,
+  CASE WHEN b.\"isActive\" THEN 'Yes' ELSE 'No' END AS active,
+  CASE WHEN b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER' THEN 'Yes' ELSE 'No' END AS campus_mgr
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
 WHERE c.name ILIKE '%University of Florida%'
-ORDER BY b.\"isCampusManager\" DESC, u.first_name;
+ORDER BY (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, u.first_name;
 "
 ```
 
