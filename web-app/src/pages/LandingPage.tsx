@@ -327,7 +327,7 @@ export default function LandingPage() {
       </div>
 
       {/* Portfolio Section - Video Showcase */}
-      <div className="py-20 px-4 bg-white" id="how-it-works">
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
         <div className="max-w-6xl mx-auto bg-white">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -388,7 +388,7 @@ export default function LandingPage() {
       </div>
 
       {/* Campus Manager Section */}
-      <div className="py-20 px-4 bg-white" id="campus-manager">
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="campus-manager">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 px-4 py-2 rounded-full text-sm font-semibold mb-6">
@@ -663,7 +663,7 @@ export default function LandingPage() {
       </div>
 
       {/* Economic Comparison Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-gray-50 to-primary-50" id="pricing">
+      <div className="py-20 px-4 bg-gradient-to-br from-gray-50 to-primary-50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="pricing">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -784,7 +784,7 @@ export default function LandingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="py-20 px-4 bg-white" id="faq">
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="faq">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -1007,7 +1007,7 @@ export default function LandingPage() {
       </div>
 
       {/* Final CTA */}
-      <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500">
+      <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Ready to Book?
