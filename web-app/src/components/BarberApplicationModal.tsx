@@ -304,7 +304,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                               <button
                                 key={campus.id}
                                 type="button"
-                                onClick={() => {
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevent blur from firing
                                   setForm({ ...form, campusId: campus.id });
                                   setCampusSearchQuery(campus.name);
                                   setShowCampusDropdown(false);
