@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import Avatar from '../components/Avatar';
@@ -342,11 +342,11 @@ export default function BarberPage() {
               {/* Consumer Chat Button */}
               <button
                 onClick={() => navigate(`${platformPrefix}/barber/messages`)}
-                className="flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-primary-50 hover:bg-primary-100 border border-primary-200 transition-colors relative"
                 title="Consumer Chat"
               >
-                <MessageCircle className="w-5 h-5 text-gray-600" />
-                <span className="text-xs sm:text-sm font-medium text-gray-600">Consumer Chat</span>
+                <Send className="w-5 h-5 text-primary-600" />
+                <span className="text-xs sm:text-sm font-semibold text-primary-700">Chats</span>
                 {unreadMessages > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {unreadMessages > 99 ? '99+' : unreadMessages}
