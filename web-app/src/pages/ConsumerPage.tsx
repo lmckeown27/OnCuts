@@ -1298,12 +1298,17 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
               </h2>
               <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => handleScheduleClick(selectedBarber)}
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base"
-                >
-                  Schedule Service
-                </Button>
+                {selectedBarber.instagram_handle && (
+                  <a
+                    href={`https://instagram.com/${selectedBarber.instagram_handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-gray-600 hover:text-primary-600 transition-colors"
+                  >
+                    <Instagram className="w-5 h-5" />
+                    <span className="hidden sm:inline text-sm">@{selectedBarber.instagram_handle}</span>
+                  </a>
+                )}
                 <button
                   onClick={() => setSelectedBarber(null)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -1338,7 +1343,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     
                     {/* Specialties */}
                     {(Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 0) && (
-                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mb-4 sm:mb-6">
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
                         {selectedBarber.specialties.map((specialty, idx) => (
                           <span
                             key={idx}
@@ -1347,21 +1352,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                             {specialty}
                           </span>
                         ))}
-                      </div>
-                    )}
-                    
-                    {/* Instagram */}
-                    {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
-                        <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
-                        <a
-                          href={`https://instagram.com/${selectedBarber.instagram_handle}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary-600 transition-colors"
-                        >
-                          @{selectedBarber.instagram_handle}
-                        </a>
                       </div>
                     )}
                   </div>
@@ -1388,6 +1378,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   </div>
                 )}
               </div>
+            </div>
+            
+            {/* Footer with Schedule Button */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 sm:px-8 sm:py-5 rounded-b-2xl">
+              <Button
+                onClick={() => handleScheduleClick(selectedBarber)}
+                className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold"
+              >
+                Schedule Service
+              </Button>
             </div>
           </div>
         </div>
