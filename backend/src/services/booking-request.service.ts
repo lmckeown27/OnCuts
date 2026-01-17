@@ -300,7 +300,7 @@ export class BookingRequestService {
             serviceType: row.service_name || 'Haircut',
             requestedDate: row.scheduled_time || row.created_at,
             requestedTime: row.scheduled_time 
-              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
               : '',
             price: parseFloat(row.service_price) || 0,
             location: row.location || null,
@@ -893,12 +893,14 @@ export class BookingRequestService {
           weekday: 'long', 
           year: 'numeric', 
           month: 'long', 
-          day: 'numeric' 
+          day: 'numeric',
+          timeZone: 'America/Los_Angeles'
         }),
         scheduledTime: scheduledTime.toLocaleTimeString('en-US', { 
           hour: 'numeric', 
           minute: '2-digit',
-          hour12: true 
+          hour12: true,
+          timeZone: 'America/Los_Angeles'
         }),
         location: booking.location || undefined,
         notes: booking.notes || undefined,

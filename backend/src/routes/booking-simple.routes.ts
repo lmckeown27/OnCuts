@@ -279,8 +279,8 @@ router.post('/', authenticate, async (req, res, next) => {
           barberEmail: emailDetails.barber_email,
           barberName: emailDetails.barber_full_name,
           serviceName: serviceType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()),
-          scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }),
+          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' }),
           price: price / 100, // Convert cents to dollars
           location: location || undefined,
           notes: notes || undefined,
@@ -890,12 +890,12 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
     
-    // Format scheduled date/time for emails
+    // Format scheduled date/time for emails (use Pacific timezone for consistency)
     const scheduledDate = booking.requestedAt 
-      ? new Date(booking.requestedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      ? new Date(booking.requestedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : 'N/A';
     const scheduledTime = booking.requestedAt
-      ? new Date(booking.requestedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      ? new Date(booking.requestedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
       : 'N/A';
     
     // Build payment URL
@@ -1935,14 +1935,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Send cancellation emails to both parties
+    // Send cancellation emails to both parties (use Pacific timezone for consistency)
     const scheduledDate = new Date(booking.scheduledTime);
     await sendBookingCancellationEmails({
       bookingId: id,
       serviceName: serviceName,
       price: (booking.priceUsdCents || 0) / 100,
-      scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-      scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+      scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }),
+      scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' }),
       location: booking.location,
       consumerName: consumerName,
       consumerEmail: booking.consumer_email,
