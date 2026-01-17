@@ -1138,9 +1138,16 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
         {(filteredBarbers || []).map((barber) => {
-          const lowestPrice = barber.pricing && barber.pricing.length > 0
-            ? Math.min(...barber.pricing.map(p => p.price))
-            : undefined;
+          // Find the haircut price specifically, or fall back to lowest price
+          const haircutService = barber.pricing?.find(p => 
+            p.service_type?.toLowerCase() === 'haircut' || 
+            p.serviceType?.toLowerCase() === 'haircut'
+          );
+          const displayPrice = haircutService?.price ?? (
+            barber.pricing && barber.pricing.length > 0
+              ? Math.min(...barber.pricing.map(p => p.price))
+              : undefined
+          );
 
           // Mobile portrait: Horizontal card layout
           if (isMobilePortrait) {
@@ -1171,8 +1178,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <h3 className="font-bold text-gray-900 text-lg">
                       {barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Barber'}
                     </h3>
-                    {lowestPrice && (
-                      <span className="text-primary-500 font-bold text-2xl flex-shrink-0 mr-2">${lowestPrice}</span>
+                    {displayPrice && (
+                      <span className="text-primary-500 font-bold text-2xl flex-shrink-0 mr-2">${displayPrice}</span>
                     )}
                   </div>
                   {barber.distance_miles !== undefined && barber.distance_miles !== null && (
@@ -1219,11 +1226,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   </h3>
                 </div>
                 {/* Price Overlay - Bottom Left */}
-                {lowestPrice && (
+                {displayPrice && (
                   <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tr-lg rounded-bl-lg">
                     <div className="flex items-center text-white">
                       <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="font-bold text-base sm:text-lg">{lowestPrice}</span>
+                      <span className="font-bold text-base sm:text-lg">{displayPrice}</span>
                     </div>
                   </div>
                 )}
