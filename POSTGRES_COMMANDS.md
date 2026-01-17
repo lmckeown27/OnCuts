@@ -677,6 +677,36 @@ sudo -u postgres psql -d campuscuts -c "UPDATE campuses SET \"basePriceUsdCents\
 sudo -u postgres psql -d campuscuts -c "DELETE FROM campuses WHERE name IN ('GMAIL', 'ICLOUD');"
 ```
 
+### View Campus Timezones
+```bash
+# View timezones for all active campuses
+sudo -u postgres psql -d campuscuts -c "
+SELECT name, city, state, timezone 
+FROM campuses 
+WHERE \"isActive\" = true 
+ORDER BY timezone, state, name;
+"
+```
+
+### Update Campus Timezone
+```bash
+# Update timezone for a specific campus (e.g., fix a campus set to wrong timezone)
+sudo -u postgres psql -d campuscuts -c "
+UPDATE campuses 
+SET timezone = 'America/Los_Angeles' 
+WHERE slug = 'cal-poly';
+"
+
+# Common US timezones:
+# - America/Los_Angeles (Pacific: CA, WA, OR, NV)
+# - America/Denver (Mountain: CO, UT, AZ*, MT, NM, WY)
+# - America/Chicago (Central: TX, IL, MN, WI, OK, NE, KS, IA, MO, AR, LA, MS, TN, AL)
+# - America/New_York (Eastern: NY, MA, PA, FL, GA, NC, SC, VA, MD, NJ, CT, OH, MI, IN, KY, WV)
+# - Pacific/Honolulu (Hawaii)
+# - America/Phoenix (Arizona - no DST)
+# * Arizona uses America/Phoenix (no daylight saving)
+```
+
 ### Seed All Universities
 ```bash
 # Run the seed script (after git pull)
@@ -883,7 +913,7 @@ SELECT
     b.id,
     b.\"serviceType\",
     b.\"priceUsdCents\" / 100.0 as price_usd,
-    c.email as consumer_email,
+    c.email as consumer_email, I 
     c.first_name as consumer_name,
     bar_u.email as barber_email,
     b.\"requestedAt\"

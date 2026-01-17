@@ -143,7 +143,7 @@ export class BookingRequestService {
       }
       
       // Query 1: Get from bookings table (traditional flow)
-      // Also LEFT JOIN conversations to get the original service_name for display
+      // Also LEFT JOIN conversations to get the original service_name for display (include campus timezone)
       const bookingsResult = await pool.query(`
         SELECT 
           b.id as booking_id,
@@ -161,10 +161,13 @@ export class BookingRequestService {
           u.bio,
           u."avatarUrl" as profile_image_url,
           c.location as booking_location,
-          c.notes as booking_notes
+          c.notes as booking_notes,
+          COALESCE(campus.timezone, 'America/New_York') as campus_timezone
         FROM bookings b
         JOIN users u ON b."consumerId" = u.id
+        JOIN barbers bar ON b."barberId" = bar.id
         LEFT JOIN conversations c ON c.booking_id = b.id
+        LEFT JOIN campuses campus ON bar."campusId" = campus.id
         WHERE b."barberId" = $1 
           AND b.status = 'PENDING'
         ORDER BY b."createdAt" DESC
@@ -180,21 +183,23 @@ export class BookingRequestService {
             .replace(/\b\w/g, c => c.toUpperCase());
         };
         
+        // Use the campus timezone for this barber
+        const campusTimezone = row.campus_timezone || 'America/New_York';
+        
         // Format time: ISO string -> "6:15 PM"
-        // Use UTC-based formatting to match how the frontend interprets times
+        // Use campus timezone for correct local time display
         const formatTime = (date: Date | string) => {
           if (!date) return '';
           const d = new Date(date);
-          // Use explicit timezone-aware formatting
           return d.toLocaleTimeString('en-US', { 
             hour: 'numeric', 
             minute: '2-digit', 
             hour12: true,
-            timeZone: 'America/Los_Angeles' // Use Pacific Time to match user expectations
+            timeZone: campusTimezone
           });
         };
         
-        logger.info(`Pending request time: raw=${row.requested_time}, formatted=${formatTime(row.requested_time)}`);
+        logger.info(`Pending request time: raw=${row.requested_time}, formatted=${formatTime(row.requested_time)}, timezone=${campusTimezone}`);
         
         // Prefer original service name from conversation, fallback to formatted enum
         const displayServiceType = row.original_service_name || formatServiceType(row.service_type);
@@ -230,6 +235,16 @@ export class BookingRequestService {
           requestedAt: row.requested_at,
         });
       });
+
+      // First, get the barber's campus timezone
+      const barberCampusResult = await pool.query(`
+        SELECT COALESCE(campus.timezone, 'America/New_York') as campus_timezone
+        FROM barbers bar
+        LEFT JOIN campuses campus ON bar."campusId" = campus.id
+        WHERE bar.id = $1 OR bar."userId" = $1
+        LIMIT 1
+      `, [barberIdOrUserId]);
+      const barberCampusTimezone = barberCampusResult.rows[0]?.campus_timezone || 'America/New_York';
 
       // Query 2: Get from conversations with pending booking_status
       // This handles the case where consumer scheduled a service via messages
@@ -300,7 +315,7 @@ export class BookingRequestService {
             serviceType: row.service_name || 'Haircut',
             requestedDate: row.scheduled_time || row.created_at,
             requestedTime: row.scheduled_time 
-              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
+              ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: barberCampusTimezone })
               : '',
             price: parseFloat(row.service_price) || 0,
             location: row.location || null,
@@ -851,7 +866,7 @@ export class BookingRequestService {
    */
   private async sendBookingConfirmationEmailsAsync(bookingId: string): Promise<void> {
     try {
-      // Fetch complete booking details with consumer and barber info
+      // Fetch complete booking details with consumer and barber info (include campus timezone)
       const result = await pool.query(`
         SELECT 
           b.id,
@@ -868,12 +883,14 @@ export class BookingRequestService {
           u_barber.id as barber_user_id,
           u_barber.first_name as barber_first_name,
           u_barber.last_name as barber_last_name,
-          u_barber.email as barber_email
+          u_barber.email as barber_email,
+          COALESCE(campus.timezone, 'America/New_York') as campus_timezone
         FROM bookings b
         JOIN users u_consumer ON b."consumerId" = u_consumer.id
         JOIN barbers bar ON b."barberId" = bar.id
         JOIN users u_barber ON bar."userId" = u_barber.id
         LEFT JOIN conversations c ON c.booking_id = b.id
+        LEFT JOIN campuses campus ON bar."campusId" = campus.id
         WHERE b.id = $1
       `, [bookingId]);
 
@@ -884,6 +901,7 @@ export class BookingRequestService {
 
       const booking = result.rows[0];
       const scheduledTime = new Date(booking.scheduledTime);
+      const campusTimezone = booking.campus_timezone || 'America/New_York';
 
       await sendBookingConfirmationEmails({
         bookingId: booking.id,
@@ -894,13 +912,13 @@ export class BookingRequestService {
           year: 'numeric', 
           month: 'long', 
           day: 'numeric',
-          timeZone: 'America/Los_Angeles'
+          timeZone: campusTimezone
         }),
         scheduledTime: scheduledTime.toLocaleTimeString('en-US', { 
           hour: 'numeric', 
           minute: '2-digit',
           hour12: true,
-          timeZone: 'America/Los_Angeles'
+          timeZone: campusTimezone
         }),
         location: booking.location || undefined,
         notes: booking.notes || undefined,

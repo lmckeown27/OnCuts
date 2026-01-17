@@ -256,14 +256,18 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Send pending booking emails to both consumer and barber
     try {
-      // Get consumer and barber emails
+      // Get consumer and barber emails, plus campus timezone
       const emailDetailsResult = await pool.query(
         `SELECT 
           u_consumer.email as consumer_email,
           u_consumer.first_name || ' ' || u_consumer.last_name as consumer_full_name,
           u_barber.email as barber_email,
-          u_barber.first_name || ' ' || u_barber.last_name as barber_full_name
-         FROM users u_consumer, users u_barber
+          u_barber.first_name || ' ' || u_barber.last_name as barber_full_name,
+          COALESCE(c.timezone, 'America/New_York') as campus_timezone
+         FROM users u_consumer
+         CROSS JOIN users u_barber
+         LEFT JOIN barbers b ON b."userId" = u_barber.id
+         LEFT JOIN campuses c ON b."campusId" = c.id
          WHERE u_consumer.id = $1 AND u_barber.id = $2`,
         [consumerId, barberUserId]
       );
@@ -271,6 +275,7 @@ router.post('/', authenticate, async (req, res, next) => {
       if (emailDetailsResult.rows.length > 0) {
         const emailDetails = emailDetailsResult.rows[0];
         const scheduledDate = new Date(requestedTime);
+        const campusTimezone = emailDetails.campus_timezone || 'America/New_York';
         
         // Send pending booking emails (non-blocking)
         sendPendingBookingEmails({
@@ -279,8 +284,8 @@ router.post('/', authenticate, async (req, res, next) => {
           barberEmail: emailDetails.barber_email,
           barberName: emailDetails.barber_full_name,
           serviceName: serviceType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()),
-          scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }),
-          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' }),
+          scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: campusTimezone }),
+          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone }),
           price: price / 100, // Convert cents to dollars
           location: location || undefined,
           notes: notes || undefined,
@@ -835,7 +840,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
 
-    // Verify user is the barber for this booking - also fetch email addresses for notifications
+    // Verify user is the barber for this booking - also fetch email addresses and campus timezone for notifications
     const barberCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."priceUsdCents", b."serviceType", b."requestedAt",
               barber."userId" as barber_user_id,
@@ -844,12 +849,14 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
               barber_user.email as barber_email,
               c.service_name as original_service_name,
-              c.location
+              c.location,
+              COALESCE(campus.timezone, 'America/New_York') as campus_timezone
        FROM bookings b
        JOIN barbers barber ON b."barberId" = barber.id
        JOIN users consumer ON b."consumerId" = consumer.id
        JOIN users barber_user ON barber."userId" = barber_user.id
        LEFT JOIN conversations c ON c.booking_id = b.id
+       LEFT JOIN campuses campus ON barber."campusId" = campus.id
        WHERE b.id = $1 AND barber."userId" = $2`,
       [id, userId]
     );
@@ -889,13 +896,14 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
+    const campusTimezone = booking.campus_timezone || 'America/New_York';
     
-    // Format scheduled date/time for emails (use Pacific timezone for consistency)
+    // Format scheduled date/time for emails (use campus timezone)
     const scheduledDate = booking.requestedAt 
-      ? new Date(booking.requestedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
+      ? new Date(booking.requestedAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: campusTimezone })
       : 'N/A';
     const scheduledTime = booking.requestedAt
-      ? new Date(booking.requestedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
+      ? new Date(booking.requestedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone })
       : 'N/A';
     
     // Build payment URL
@@ -1840,18 +1848,20 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId;
     const { reason } = req.body;
 
-    // Check if user is barber or consumer for this booking
+    // Check if user is barber or consumer for this booking (include campus timezone)
     const bookingCheck = await pool.query(
       `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt" as "scheduledTime",
               c.location, c.service_name as original_service_name,
               bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
-              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email
+              u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
+              COALESCE(campus.timezone, 'America/New_York') as campus_timezone
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
        JOIN users u_barber ON bar."userId" = u_barber.id
        LEFT JOIN conversations c ON c.booking_id = b.id
+       LEFT JOIN campuses campus ON bar."campusId" = campus.id
        WHERE b.id = $1 AND (bar."userId" = $2 OR b."consumerId" = $2)`,
       [id, userId]
     );
@@ -1935,14 +1945,15 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Send cancellation emails to both parties (use Pacific timezone for consistency)
+    // Send cancellation emails to both parties (use campus timezone)
     const scheduledDate = new Date(booking.scheduledTime);
+    const campusTimezone = booking.campus_timezone || 'America/New_York';
     await sendBookingCancellationEmails({
       bookingId: id,
       serviceName: serviceName,
       price: (booking.priceUsdCents || 0) / 100,
-      scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }),
-      scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' }),
+      scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: campusTimezone }),
+      scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone }),
       location: booking.location,
       consumerName: consumerName,
       consumerEmail: booking.consumer_email,
