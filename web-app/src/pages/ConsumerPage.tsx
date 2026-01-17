@@ -1205,7 +1205,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               onClick={() => setSelectedBarber(barber)}
             >
               {/* Barber Profile Picture with Name & Price Overlays */}
-              <div className="relative mb-2 sm:mb-3 w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 mx-auto">
+              <div className="relative mb-2 sm:mb-3 w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200 mx-auto">
                 {barber.profile_picture_url ? (
                   <img
                     src={barber.profile_picture_url}
@@ -1322,7 +1322,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {/* Profile Header - Image left, info right */}
                 <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
                   {/* Barber Profile Picture */}
-                  <div className="relative w-48 sm:w-64 lg:w-72 h-48 sm:h-72 lg:h-80 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
+                  <div className="relative w-48 sm:w-64 lg:w-72 aspect-square overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
