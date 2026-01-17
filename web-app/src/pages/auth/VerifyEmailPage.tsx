@@ -157,6 +157,9 @@ export default function VerifyEmailPage() {
       } else {
         toast.error(err.message || 'Verification failed. Please try again.');
       }
+      // Clear the code inputs on error so user can try again
+      setCode(['', '', '', '', '', '']);
+      inputRefs.current[0]?.focus();
     } finally {
       setIsSubmitting(false);
     }
