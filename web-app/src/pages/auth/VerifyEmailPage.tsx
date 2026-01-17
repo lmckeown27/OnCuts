@@ -207,11 +207,6 @@ export default function VerifyEmailPage() {
             />
           </Link>
           
-          {/* Email Icon */}
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary-400/20 rounded-full flex items-center justify-center mb-2 sm:mb-4">
-            <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-primary-400" />
-          </div>
-          
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
             Check Your Email
           </h1>
