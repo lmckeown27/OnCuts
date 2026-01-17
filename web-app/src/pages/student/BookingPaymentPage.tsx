@@ -90,7 +90,8 @@ export default function BookingPaymentPage() {
       }
       
       setBookingId(newBookingId);
-      setStep('success');
+      // Navigate directly to booking status page instead of showing success screen
+      navigate('/web/consumer/booking-status', { replace: true });
     } catch (error: any) {
       console.error('Failed to confirm booking:', error);
       setErrorMessage(error?.response?.data?.error || 'Failed to confirm booking. Please try again.');
