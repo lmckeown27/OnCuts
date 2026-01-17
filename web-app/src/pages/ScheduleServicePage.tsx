@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, Scissors, DollarSign, Instagram } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, Scissors, Instagram } from 'lucide-react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
@@ -359,16 +359,6 @@ export default function ScheduleServicePage() {
                     />
                   </div>
                 </div>
-
-                {/* Pricing Info */}
-                {barber.pricing && barber.pricing.length > 0 && (
-                  <div className="flex items-center gap-2 text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-4 py-3">
-                    <DollarSign className="w-5 h-5" />
-                    <span className="font-bold text-lg">
-                      {Math.min(...barber.pricing.map(p => p.price))}
-                    </span>
-                  </div>
-                )}
 
                 {/* Submit Button */}
                 <div className="flex gap-4 pt-4 border-t border-gray-200">
