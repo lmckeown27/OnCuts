@@ -49,6 +49,18 @@ export function usePullToRefresh({
       return;
     }
     
+    // Don't activate pull-to-refresh if touch started on an interactive element
+    // This prevents accidental triggers when tapping on buttons, cards, links, etc.
+    const target = e.target as HTMLElement;
+    if (target) {
+      // Check if the target or any of its ancestors is an interactive element
+      const interactiveElement = target.closest('button, a, [role="button"], [onclick], .cursor-pointer');
+      if (interactiveElement) {
+        canPull.current = false;
+        return;
+      }
+    }
+    
     canPull.current = true;
     startY.current = e.touches[0].clientY;
     setIsPulling(true);
