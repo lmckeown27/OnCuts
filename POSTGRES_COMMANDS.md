@@ -886,8 +886,7 @@ SELECT
     c.email as consumer_email,
     c.first_name as consumer_name,
     bar_u.email as barber_email,
-    b.\"requestedAt\",
-    b.notes
+    b.\"requestedAt\"
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
