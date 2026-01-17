@@ -1,13 +1,15 @@
 /**
- * Verification Service - In-Memory Verification Code Management
+ * Verification Service - Database-backed Verification Code Management
  * 
  * Manages pending user registrations and email verification codes.
- * Codes expire after 10 minutes.
+ * Uses PostgreSQL for persistence (survives server restarts).
+ * Codes expire after 24 hours.
  * 
  * @module verification.service
  */
 
 import { logger } from '../utils/logger';
+import { pool } from '../config/database';
 
 /**
  * Pending Registration Data
@@ -28,28 +30,44 @@ export interface PendingRegistration {
 export type { PendingRegistration as PendingRegistrationData };
 
 /**
- * In-Memory Storage for Pending Registrations
- * Key: email (lowercase)
- * Value: PendingRegistration
+ * Verification Code Expiration Time (24 hours)
  */
-const pendingRegistrations = new Map<string, PendingRegistration>();
-
-/**
- * Verification Code Expiration Time (10 minutes)
- */
-const VERIFICATION_CODE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+const VERIFICATION_CODE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
  * Generate Random 6-Digit Verification Code
  * 
  * @returns 6-digit numeric string
- * 
- * @example
- * generateVerificationCode() // "123456"
  */
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+/**
+ * Initialize pending_registrations table if it doesn't exist
+ */
+async function ensureTableExists(): Promise<void> {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pending_registrations (
+        email VARCHAR(255) PRIMARY KEY,
+        password_hash TEXT NOT NULL,
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        campus_id UUID,
+        role VARCHAR(50) NOT NULL,
+        verification_code VARCHAR(6) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (error) {
+    logger.error('Failed to create pending_registrations table:', error);
+  }
+}
+
+// Initialize table on module load
+ensureTableExists();
 
 /**
  * Create Pending Registration
@@ -59,48 +77,47 @@ export function generateVerificationCode(): string {
  * 
  * @param registrationData - User registration data
  * @returns Email verification code
- * 
- * @example
- * const code = createPendingRegistration({
- *   email: 'student@university.edu',
- *   password: 'hashed_password',
- *   firstName: 'John',
- *   lastName: 'Doe',
- *   campusId: 1,
- *   role: 'student'
- * });
  */
-export function createPendingRegistration(
+export async function createPendingRegistration(
   registrationData: Omit<PendingRegistration, 'verificationCode' | 'expiresAt' | 'createdAt'>
-): string {
+): Promise<string> {
   const verificationCode = generateVerificationCode();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + VERIFICATION_CODE_EXPIRY_MS);
   
   const emailKey = registrationData.email.toLowerCase();
   
-  const pendingReg: PendingRegistration = {
-    ...registrationData,
-    email: emailKey,
-    verificationCode,
-    expiresAt,
-    createdAt: now
-  };
-  
-  pendingRegistrations.set(emailKey, pendingReg);
-  
-  logger.info(`Created pending registration for ${emailKey}, expires at ${expiresAt.toISOString()}`);
-  
-  // Schedule cleanup after expiration
-  setTimeout(() => {
-    if (pendingRegistrations.has(emailKey)) {
-      const reg = pendingRegistrations.get(emailKey);
-      if (reg && reg.verificationCode === verificationCode) {
-        pendingRegistrations.delete(emailKey);
-        logger.info(`Expired verification code for ${emailKey}`);
-      }
-    }
-  }, VERIFICATION_CODE_EXPIRY_MS);
+  try {
+    // Upsert - insert or update if exists
+    await pool.query(`
+      INSERT INTO pending_registrations (email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (email) DO UPDATE SET
+        password_hash = $2,
+        first_name = $3,
+        last_name = $4,
+        campus_id = $5,
+        role = $6,
+        verification_code = $7,
+        expires_at = $8,
+        created_at = $9
+    `, [
+      emailKey,
+      registrationData.password,
+      registrationData.firstName,
+      registrationData.lastName,
+      registrationData.campusId,
+      registrationData.role,
+      verificationCode,
+      expiresAt,
+      now
+    ]);
+    
+    logger.info(`Created pending registration for ${emailKey}, expires at ${expiresAt.toISOString()}`);
+  } catch (error) {
+    logger.error(`Failed to create pending registration for ${emailKey}:`, error);
+    throw error;
+  }
   
   return verificationCode;
 }
@@ -115,33 +132,56 @@ export function createPendingRegistration(
  * @param code - 6-digit verification code
  * @returns PendingRegistration if valid, null if invalid/expired
  */
-export function verifyCode(email: string, code: string): PendingRegistration | null {
+export async function verifyCode(email: string, code: string): Promise<PendingRegistration | null> {
   const emailKey = email.toLowerCase();
-  const pendingReg = pendingRegistrations.get(emailKey);
   
-  if (!pendingReg) {
-    logger.warn(`No pending registration found for ${emailKey}`);
+  try {
+    const result = await pool.query(`
+      SELECT email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+      FROM pending_registrations
+      WHERE email = $1
+    `, [emailKey]);
+    
+    if (result.rows.length === 0) {
+      logger.warn(`No pending registration found for ${emailKey}`);
+      return null;
+    }
+    
+    const row = result.rows[0];
+    const expiresAt = new Date(row.expires_at);
+    
+    // Check if expired
+    if (new Date() > expiresAt) {
+      await pool.query('DELETE FROM pending_registrations WHERE email = $1', [emailKey]);
+      logger.warn(`Verification code expired for ${emailKey}`);
+      return null;
+    }
+    
+    // Check if code matches
+    if (row.verification_code !== code) {
+      logger.warn(`Invalid verification code for ${emailKey}`);
+      return null;
+    }
+    
+    // Valid! Remove from pending
+    await pool.query('DELETE FROM pending_registrations WHERE email = $1', [emailKey]);
+    logger.info(`Email verified for ${emailKey}, registration complete`);
+    
+    return {
+      email: row.email,
+      password: row.password_hash,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      campusId: row.campus_id,
+      role: row.role,
+      verificationCode: row.verification_code,
+      expiresAt: expiresAt,
+      createdAt: new Date(row.created_at)
+    };
+  } catch (error) {
+    logger.error(`Error verifying code for ${emailKey}:`, error);
     return null;
   }
-  
-  // Check if expired
-  if (new Date() > pendingReg.expiresAt) {
-    pendingRegistrations.delete(emailKey);
-    logger.warn(`Verification code expired for ${emailKey}`);
-    return null;
-  }
-  
-  // Check if code matches
-  if (pendingReg.verificationCode !== code) {
-    logger.warn(`Invalid verification code for ${emailKey}`);
-    return null;
-  }
-  
-  // Valid! Remove from pending
-  pendingRegistrations.delete(emailKey);
-  logger.info(`Email verified for ${emailKey}, registration complete`);
-  
-  return pendingReg;
 }
 
 /**
@@ -150,21 +190,20 @@ export function verifyCode(email: string, code: string): PendingRegistration | n
  * @param email - User's email address
  * @returns true if pending registration exists and not expired
  */
-export function hasPendingRegistration(email: string): boolean {
+export async function hasPendingRegistration(email: string): Promise<boolean> {
   const emailKey = email.toLowerCase();
-  const pendingReg = pendingRegistrations.get(emailKey);
   
-  if (!pendingReg) {
+  try {
+    const result = await pool.query(`
+      SELECT 1 FROM pending_registrations
+      WHERE email = $1 AND expires_at > NOW()
+    `, [emailKey]);
+    
+    return result.rows.length > 0;
+  } catch (error) {
+    logger.error(`Error checking pending registration for ${emailKey}:`, error);
     return false;
   }
-  
-  // Check if expired
-  if (new Date() > pendingReg.expiresAt) {
-    pendingRegistrations.delete(emailKey);
-    return false;
-  }
-  
-  return true;
 }
 
 /**
@@ -176,21 +215,36 @@ export function hasPendingRegistration(email: string): boolean {
  * @param email - User's email address
  * @returns PendingRegistration if exists and not expired, null otherwise
  */
-export function getPendingRegistration(email: string): PendingRegistration | null {
+export async function getPendingRegistration(email: string): Promise<PendingRegistration | null> {
   const emailKey = email.toLowerCase();
-  const pendingReg = pendingRegistrations.get(emailKey);
   
-  if (!pendingReg) {
+  try {
+    const result = await pool.query(`
+      SELECT email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+      FROM pending_registrations
+      WHERE email = $1 AND expires_at > NOW()
+    `, [emailKey]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    const row = result.rows[0];
+    return {
+      email: row.email,
+      password: row.password_hash,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      campusId: row.campus_id,
+      role: row.role,
+      verificationCode: row.verification_code,
+      expiresAt: new Date(row.expires_at),
+      createdAt: new Date(row.created_at)
+    };
+  } catch (error) {
+    logger.error(`Error getting pending registration for ${emailKey}:`, error);
     return null;
   }
-  
-  // Check if expired
-  if (new Date() > pendingReg.expiresAt) {
-    pendingRegistrations.delete(emailKey);
-    return null;
-  }
-  
-  return pendingReg;
 }
 
 /**
@@ -201,86 +255,48 @@ export function getPendingRegistration(email: string): PendingRegistration | nul
  * @param email - User's email address
  * @returns true if removed, false if didn't exist
  */
-export function cancelPendingRegistration(email: string): boolean {
+export async function cancelPendingRegistration(email: string): Promise<boolean> {
   const emailKey = email.toLowerCase();
-  const existed = pendingRegistrations.has(emailKey);
   
-  if (existed) {
-    pendingRegistrations.delete(emailKey);
-    logger.info(`Cancelled pending registration for ${emailKey}`);
-  }
-  
-  return existed;
-}
-
-/**
- * Get All Pending Registrations (Admin/Debug)
- * 
- * Returns all pending registrations with non-expired codes.
- * Useful for monitoring and debugging.
- * 
- * @returns Array of pending registrations
- */
-export function getAllPendingRegistrations(): PendingRegistration[] {
-  const now = new Date();
-  const validRegistrations: PendingRegistration[] = [];
-  
-  pendingRegistrations.forEach((reg, email) => {
-    if (now <= reg.expiresAt) {
-      validRegistrations.push(reg);
-    } else {
-      // Clean up expired
-      pendingRegistrations.delete(email);
+  try {
+    const result = await pool.query(
+      'DELETE FROM pending_registrations WHERE email = $1',
+      [emailKey]
+    );
+    
+    const existed = (result.rowCount ?? 0) > 0;
+    if (existed) {
+      logger.info(`Cancelled pending registration for ${emailKey}`);
     }
-  });
-  
-  return validRegistrations;
-}
-
-/**
- * Clear All Pending Registrations (Testing Only)
- * 
- * Removes all pending registrations from memory.
- * Should only be used in tests.
- */
-export function clearAllPendingRegistrations(): void {
-  const count = pendingRegistrations.size;
-  pendingRegistrations.clear();
-  logger.warn(`Cleared ${count} pending registrations`);
-}
-
-/**
- * Get Pending Registrations Count
- * 
- * @returns Number of pending registrations (including expired)
- */
-export function getPendingRegistrationsCount(): number {
-  return pendingRegistrations.size;
+    
+    return existed;
+  } catch (error) {
+    logger.error(`Error cancelling pending registration for ${emailKey}:`, error);
+    return false;
+  }
 }
 
 /**
  * Cleanup Expired Registrations
  * 
- * Removes all expired pending registrations from memory.
- * Automatically runs every 5 minutes.
+ * Removes all expired pending registrations from database.
  */
-export function cleanupExpiredRegistrations(): void {
-  const now = new Date();
-  let removed = 0;
-  
-  pendingRegistrations.forEach((reg, email) => {
-    if (now > reg.expiresAt) {
-      pendingRegistrations.delete(email);
-      removed++;
+export async function cleanupExpiredRegistrations(): Promise<void> {
+  try {
+    const result = await pool.query(
+      'DELETE FROM pending_registrations WHERE expires_at < NOW()'
+    );
+    
+    const removed = result.rowCount ?? 0;
+    if (removed > 0) {
+      logger.info(`Cleaned up ${removed} expired pending registrations`);
     }
-  });
-  
-  if (removed > 0) {
-    logger.info(`Cleaned up ${removed} expired pending registrations`);
+  } catch (error) {
+    logger.error('Error cleaning up expired registrations:', error);
   }
 }
 
-// Auto-cleanup every 5 minutes
-setInterval(cleanupExpiredRegistrations, 5 * 60 * 1000);
+// Auto-cleanup every hour
+setInterval(cleanupExpiredRegistrations, 60 * 60 * 1000);
 
-logger.info('Verification service initialized');
+logger.info('Verification service initialized (database-backed)');

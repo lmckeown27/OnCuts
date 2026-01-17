@@ -227,15 +227,15 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     }
 
     // Check if there's already a pending registration
-    if (hasPendingRegistration(email)) {
-      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 10 minutes to try again.');
+    if (await hasPendingRegistration(email)) {
+      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 24 hours to try again.');
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create pending registration with email verification code
-    const verificationCode = createPendingRegistration({
+    const verificationCode = await createPendingRegistration({
       email,
       password: passwordHash,
       firstName,
@@ -328,7 +328,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     }
 
     // Verify email code
-    const pendingReg = verifyCode(email, code);
+    const pendingReg = await verifyCode(email, code);
 
     if (!pendingReg) {
       throw new ApiError(400, 'Invalid or expired verification code');
@@ -450,7 +450,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
     }
 
     // Check if there's a pending registration
-    const pendingReg = getPendingRegistration(email);
+    const pendingReg = await getPendingRegistration(email);
 
     if (!pendingReg) {
       throw new ApiError(400, 'No pending registration found for this email. Please register first.');
@@ -464,7 +464,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
     }
 
     // Create new verification code (overwrites previous)
-    const verificationCode = createPendingRegistration({
+    const verificationCode = await createPendingRegistration({
       email: pendingReg.email,
       password: pendingReg.password,
       firstName: pendingReg.firstName,
