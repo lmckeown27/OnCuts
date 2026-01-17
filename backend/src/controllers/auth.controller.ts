@@ -182,11 +182,29 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     let campusId: string | null = null;
     
     if (requestedCampusId) {
-      // Validate that the provided campusId exists and is active
-      const validCampus = await pool.query(
-        'SELECT id, name FROM campuses WHERE id = $1 AND is_active = TRUE',
-        [requestedCampusId]
-      );
+      // Check if it's a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUuid = uuidRegex.test(requestedCampusId);
+      
+      let validCampus;
+      if (isUuid) {
+        // Look up by UUID
+        validCampus = await pool.query(
+          'SELECT id, name FROM campuses WHERE id = $1 AND is_active = TRUE',
+          [requestedCampusId]
+        );
+      } else {
+        // Look up by slug (convert slug to name pattern, e.g., "cal-poly" -> "%cal%poly%")
+        // Or try exact name match first
+        const slugPattern = requestedCampusId.replace(/-/g, '%');
+        validCampus = await pool.query(
+          `SELECT id, name FROM campuses 
+           WHERE is_active = TRUE 
+           AND (LOWER(name) LIKE $1 OR LOWER(REPLACE(name, ' ', '-')) = $2)
+           ORDER BY name LIMIT 1`,
+          [`%${slugPattern}%`, requestedCampusId.toLowerCase()]
+        );
+      }
       
       if (validCampus.rows.length > 0) {
         campusId = validCampus.rows[0].id;
