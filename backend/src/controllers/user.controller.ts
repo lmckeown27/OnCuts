@@ -364,16 +364,27 @@ export const deleteAccount = async (req: Request, res: Response) => {
     // Start transaction for hard delete
     await client.query('BEGIN');
 
-    // Helper function to safely delete from a table (ignores missing table/column errors)
+    // Counter for unique savepoint names
+    let savepointCounter = 0;
+
+    // Helper function to safely delete from a table using SAVEPOINTs
+    // This allows individual queries to fail without aborting the entire transaction
     const safeDelete = async (query: string, params: any[]) => {
+      const savepointName = `sp_${savepointCounter++}`;
       try {
+        await client.query(`SAVEPOINT ${savepointName}`);
         await client.query(query, params);
+        await client.query(`RELEASE SAVEPOINT ${savepointName}`);
       } catch (err: any) {
-        // Ignore errors for missing tables/columns (42P01 = undefined_table, 42703 = undefined_column)
-        if (err.code !== '42P01' && err.code !== '42703') {
-          throw err;
+        // Roll back to savepoint to recover the transaction
+        await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+        // Only log warning for expected errors (missing tables/columns)
+        if (err.code === '42P01' || err.code === '42703') {
+          logger.warn(`Safe delete skipped (table/column not found): ${err.message}`);
+        } else {
+          // For other errors, log but continue (don't throw to avoid breaking the whole delete)
+          logger.warn(`Safe delete failed (continuing): ${err.message}`);
         }
-        logger.warn(`Safe delete skipped (table/column not found): ${err.message}`);
       }
     };
 
