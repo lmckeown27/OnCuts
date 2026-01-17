@@ -3,7 +3,7 @@
  * 
  * Manages pending user registrations and email verification codes.
  * Uses PostgreSQL for persistence (survives server restarts).
- * Codes expire after 24 hours.
+ * Codes expire after 1 hour.
  * 
  * @module verification.service
  */
@@ -30,9 +30,9 @@ export interface PendingRegistration {
 export type { PendingRegistration as PendingRegistrationData };
 
 /**
- * Verification Code Expiration Time (24 hours)
+ * Verification Code Expiration Time (1 hour)
  */
-const VERIFICATION_CODE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+const VERIFICATION_CODE_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
 /**
  * Generate Random 6-Digit Verification Code

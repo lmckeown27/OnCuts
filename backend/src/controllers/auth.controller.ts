@@ -228,7 +228,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 
     // Check if there's already a pending registration
     if (await hasPendingRegistration(email)) {
-      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 24 hours to try again.');
+      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 1 hour to try again.');
     }
 
     // Hash password
