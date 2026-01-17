@@ -17,6 +17,7 @@ export default function VerifyEmailPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [email, setEmail] = useState<string | null>(null);
   const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Get email from store or localStorage on mount (not during render)
@@ -188,10 +189,9 @@ export default function VerifyEmailPage() {
         toast.error('Rate limit reached. Please wait a moment and reload the page.');
       } else if (errorMessage.toLowerCase().includes('no pending registration') || 
                  errorMessage.toLowerCase().includes('register first')) {
-        // Session expired - redirect to signup
-        toast.error('Your session has expired. Please sign up again.');
+        // Session expired - show inline message with signup button
+        setSessionExpired(true);
         localStorage.removeItem('pendingVerificationEmail');
-        setTimeout(() => navigate('/web'), 2000);
       } else {
         toast.error(errorMessage || 'Failed to resend code. Please try again.');
       }
@@ -269,8 +269,28 @@ export default function VerifyEmailPage() {
               </p>
             </div>
 
+            {/* Session Expired Message */}
+            {sessionExpired && (
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
+                <div className="text-center">
+                  <AlertCircle size={32} className="text-amber-600 mx-auto mb-2" />
+                  <p className="text-amber-800 font-medium">Session Expired</p>
+                  <p className="text-amber-700 text-sm mt-1 mb-4">
+                    Your registration session has expired. Please sign up again.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/web/signup')}
+                    className="w-full bg-primary-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors"
+                  >
+                    Sign Up Again
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Error Message */}
-            {error && (
+            {error && !sessionExpired && (
               <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                   <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
