@@ -226,7 +226,9 @@ export default function ConsumerPage() {
       if (user && user.has_barber_profile === undefined) {
         try {
           const barberProfile = await barberService.getBarberByUserId(user.id);
-          if (barberProfile) {
+          // Only consider as having barber profile if it exists AND is active
+          // Demoted barbers have is_active = false
+          if (barberProfile && barberProfile.is_active !== false) {
             setUser({ ...user, has_barber_profile: true });
           } else {
             setUser({ ...user, has_barber_profile: false });

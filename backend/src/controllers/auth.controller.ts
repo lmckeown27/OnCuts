@@ -545,9 +545,9 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     // Update last login
     await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
-    // Check if user has a barber profile
+    // Check if user has an ACTIVE barber profile (demoted barbers have isActive = false)
     const barberCheck = await pool.query(
-      'SELECT id FROM barbers WHERE "userId" = $1',
+      'SELECT id FROM barbers WHERE "userId" = $1 AND "isActive" = true',
       [user.id]
     );
     const hasBarberProfile = barberCheck.rows.length > 0;
@@ -753,9 +753,9 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
 
     const user = result.rows[0];
 
-    // Check if user has a barber profile
+    // Check if user has an ACTIVE barber profile (demoted barbers have isActive = false)
     const barberCheck = await pool.query(
-      'SELECT id FROM barbers WHERE "userId" = $1',
+      'SELECT id FROM barbers WHERE "userId" = $1 AND "isActive" = true',
       [userId]
     );
     const hasBarberProfile = barberCheck.rows.length > 0;
