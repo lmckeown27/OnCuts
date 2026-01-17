@@ -149,6 +149,7 @@ export default function ConsumerPage() {
     serviceName: string;
     amount: number;
   } | null>(null);
+  const [isBarberPopupOpen, setIsBarberPopupOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -158,7 +159,7 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || isBarberPopupOpen;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
@@ -530,7 +531,7 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DiscoveryView navigate={navigate} />
+        <DiscoveryView navigate={navigate} onBarberPopupChange={setIsBarberPopupOpen} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -848,7 +849,7 @@ export default function ConsumerPage() {
   );
 }
 
-function DiscoveryView({ navigate }: { navigate: any }) {
+function DiscoveryView({ navigate, onBarberPopupChange }: { navigate: any; onBarberPopupChange?: (isOpen: boolean) => void }) {
   const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
@@ -949,6 +950,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       document.documentElement.style.overscrollBehavior = '';
     };
   }, [selectedBarber]);
+
+  // Notify parent when barber popup opens/closes (for disabling pull-to-refresh)
+  useEffect(() => {
+    onBarberPopupChange?.(selectedBarber !== null);
+  }, [selectedBarber, onBarberPopupChange]);
 
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void) => {
