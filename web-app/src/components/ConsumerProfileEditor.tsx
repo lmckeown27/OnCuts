@@ -656,22 +656,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
 
             {/* Content */}
             <div className="p-6">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-red-800 font-medium mb-2">⚠️ Warning: This action is permanent!</p>
-                <p className="text-sm text-red-700">
-                  Deleting your account will permanently remove:
-                </p>
-                <ul className="text-sm text-red-700 list-disc list-inside mt-2 space-y-1">
-                  <li>Your profile and personal information</li>
-                  <li>All your booking history</li>
-                  <li>All your messages and conversations</li>
-                  <li>Your reviews and ratings</li>
-                  {authUser?.user_type === 'barber' && (
-                    <li>Your barber profile and services</li>
-                  )}
-                </ul>
-              </div>
-
               {/* Password verification */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
