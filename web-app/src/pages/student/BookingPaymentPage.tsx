@@ -18,8 +18,7 @@ import {
   MapPin,
   User,
   Scissors,
-  MessageCircle,
-  FileText
+  MessageCircle
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -281,17 +280,12 @@ export default function BookingPaymentPage() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Confirm Booking</h1>
-            <p className="text-gray-600 mt-1">Review your appointment details</p>
-          </div>
         </div>
 
         {/* Receipt Card */}
         <Card className="mb-6">
           {/* Receipt Header */}
           <div className="text-center border-b border-gray-200 pb-4 mb-4">
-            <FileText className="w-10 h-10 text-primary-600 mx-auto mb-2" />
             <h2 className="text-xl font-bold text-gray-900">Booking Summary</h2>
           </div>
 
@@ -345,9 +339,6 @@ export default function BookingPaymentPage() {
                 <div>
                   <p className="text-sm text-gray-500">Location</p>
                   <p className="font-medium text-gray-900">{bookingDetails.location}</p>
-                  {bookingDetails.locationDetails && (
-                    <p className="text-xs text-gray-400">{bookingDetails.locationDetails}</p>
-                  )}
                 </div>
               </div>
             )}
