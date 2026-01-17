@@ -1227,27 +1227,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </div>
                   </div>
                 )}
-              </div>
-
-              {/* Barber Info */}
-              <div className="flex-1 flex flex-col pb-2">
-
-                {/* Distance */}
+                {/* Distance Overlay - Bottom Right */}
                 {barber.distance_miles !== undefined && barber.distance_miles !== null && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-primary-600 font-medium mt-1 mb-1">
-                    <MapPin className="w-3 h-3" />
-                    {barber.distance_miles} mi
+                  <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tl-lg rounded-br-lg">
+                    <div className="flex items-center gap-1 text-white">
+                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="font-bold text-sm sm:text-base">{barber.distance_miles} mi</span>
+                    </div>
                   </div>
                 )}
-
-                {/* Instagram */}
-                {barber.instagram_handle && (
-                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-600 mt-1">
-                    <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    <span className="truncate max-w-[100px] sm:max-w-none">@{barber.instagram_handle}</span>
-                  </div>
-                )}
-
               </div>
             </Card>
           );
