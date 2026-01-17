@@ -177,6 +177,9 @@ export default function ConsumerBookingStatusPage() {
     fetchNotifications();
   }, [user?.id]);
 
+  // Lock body scroll when profile editor is open (must be before any early returns)
+  useBodyScrollLock(showProfileEditor);
+
   const handleMarkNotificationRead = async (notificationId: string) => {
     try {
       await notificationService.markAsRead(notificationId);
@@ -490,9 +493,6 @@ export default function ConsumerBookingStatusPage() {
 
   // Track if any modal is open for disabling pull-to-refresh
   const isAnyModalOpen = showEditModal || showNotifications || showCancelConfirm || showProfileEditor;
-  
-  // Lock body scroll when profile editor is open
-  useBodyScrollLock(showProfileEditor);
   
   // Close profile editor with animation
   const closeProfileEditor = () => {
