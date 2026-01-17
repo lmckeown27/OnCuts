@@ -1297,12 +1297,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                 {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
               </h2>
-              <button
-                onClick={() => setSelectedBarber(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <span className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => handleScheduleClick(selectedBarber)}
+                  className="px-4 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base"
+                >
+                  Schedule Service
+                </Button>
+                <button
+                  onClick={() => setSelectedBarber(null)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <span className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</span>
+                </button>
+              </div>
             </div>
             <div className="p-6 sm:p-8">
               {/* Barber Profile Content */}
@@ -1344,7 +1352,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     
                     {/* Instagram */}
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600 mb-4 sm:mb-6">
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600">
                         <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}
@@ -1356,16 +1364,6 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                         </a>
                       </div>
                     )}
-                    
-                    {/* Schedule Button */}
-                    <div className="flex justify-center sm:justify-start">
-                      <Button
-                        onClick={() => handleScheduleClick(selectedBarber)}
-                        className="px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg"
-                      >
-                        Schedule Service
-                      </Button>
-                    </div>
                   </div>
                 </div>
                 
