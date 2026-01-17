@@ -1284,13 +1284,24 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       )}
 
       {/* Barber Profile Modal */}
-      {selectedBarber && (
+      {selectedBarber && (() => {
+        // Determine if barber has rich content that needs wider card
+        const hasAvailability = selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0;
+        const hasManySpecialties = Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 3;
+        const hasBio = !!selectedBarber.bio;
+        const hasRichContent = hasAvailability || hasManySpecialties || hasBio;
+        
+        return (
         <div 
           className="fixed inset-0 min-h-[100dvh] bg-black/60 flex items-center justify-center z-50 p-6 animate-fade-in"
           onClick={() => setSelectedBarber(null)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-2xl lg:max-w-3xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
+            className={`bg-white rounded-2xl shadow-2xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up ${
+              hasRichContent 
+                ? 'max-w-sm sm:max-w-2xl lg:max-w-3xl' 
+                : 'max-w-sm sm:max-w-md lg:max-w-lg'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between rounded-t-2xl z-10">
@@ -1399,7 +1410,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Login Prompt for unauthenticated users */}
       <LoginPrompt
