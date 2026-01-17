@@ -283,16 +283,6 @@ export default function ScheduleServicePage() {
                         );
                       })}
                     </select>
-                    {serviceType && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                        <span>
-                          Price: <strong className="text-green-600">
-                            ${barber?.pricing?.find(p => p.name?.toLowerCase() === serviceType.toLowerCase())?.price || 30}
-                          </strong>
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   {/* Date */}
