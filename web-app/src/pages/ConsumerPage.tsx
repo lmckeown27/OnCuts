@@ -1363,15 +1363,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   <div className="flex-1 flex flex-col justify-center text-center sm:text-left">
                     {/* Specialties */}
                     {(Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 0) && (
-                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mb-4 sm:mb-6">
-                        {selectedBarber.specialties.map((specialty, idx) => (
-                          <span
-                            key={idx}
-                            className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
-                          >
-                            {specialty}
-                          </span>
-                        ))}
+                      <div className="mb-4 sm:mb-6">
+                        <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
+                          <span>Services</span>
+                        </div>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
+                          {selectedBarber.specialties.map((specialty, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-primary-100 text-primary-600 text-sm rounded-full font-medium"
+                            >
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                     
