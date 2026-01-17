@@ -17,6 +17,8 @@ import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import TimePickerDropdown from '../components/TimePickerDropdown';
 import PullToRefresh from '../components/PullToRefresh';
+import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
+import { useBodyScrollLock } from '../hooks';
 import toast from 'react-hot-toast';
 
 interface ActiveBooking {
@@ -52,6 +54,9 @@ export default function ConsumerBookingStatusPage() {
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
+  const profileEditorRef = useRef<ConsumerProfileEditorRef>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [editDate, setEditDate] = useState('');
@@ -484,7 +489,18 @@ export default function ConsumerBookingStatusPage() {
   };
 
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showEditModal || showNotifications || showCancelConfirm;
+  const isAnyModalOpen = showEditModal || showNotifications || showCancelConfirm || showProfileEditor;
+  
+  // Lock body scroll when profile editor is open
+  useBodyScrollLock(showProfileEditor);
+  
+  // Close profile editor with animation
+  const closeProfileEditor = () => {
+    setIsProfileEditorVisible(false);
+    setTimeout(() => {
+      setShowProfileEditor(false);
+    }, 150);
+  };
 
   return (
     <PullToRefresh onRefresh={() => window.location.reload()} className="min-h-[100dvh] bg-gray-50" disabled={isAnyModalOpen}>
@@ -537,7 +553,8 @@ export default function ConsumerBookingStatusPage() {
                 {/* Edit Profile */}
                 <button
                   onClick={() => {
-                    navigate(`${platformPrefix}/consumer`);
+                    setShowProfileEditor(true);
+                    setTimeout(() => setIsProfileEditorVisible(true), 10);
                     setShowProfileDropdown(false);
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -1092,6 +1109,46 @@ export default function ConsumerBookingStatusPage() {
               >
                 Close
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Editor Modal */}
+      {showProfileEditor && (
+        <div 
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${
+            isProfileEditorVisible ? 'bg-black/50' : 'bg-black/0'
+          }`}
+          onClick={closeProfileEditor}
+        >
+          <div 
+            className={`bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto transition-all duration-150 ease-out ${
+              isProfileEditorVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => profileEditorRef.current?.showDeleteModal()}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg px-2 py-1 transition-colors flex items-center gap-1 text-sm"
+                  title="Delete Account"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
+                <button
+                  onClick={closeProfileEditor}
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <ConsumerProfileEditor ref={profileEditorRef} userId={user?.id || ''} />
             </div>
           </div>
         </div>
