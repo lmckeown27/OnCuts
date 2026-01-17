@@ -1310,7 +1310,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {/* Profile Header - Image left, info right */}
                 <div className="flex flex-col sm:flex-row gap-6">
                   {/* Barber Profile Picture */}
-                  <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
+                  <div className="relative w-48 sm:w-56 h-48 sm:h-64 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
