@@ -1290,11 +1290,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           onClick={() => setSelectedBarber(null)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-md w-full max-h-[85dvh] sm:max-h-[70vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-lg lg:max-w-xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between rounded-t-2xl z-10">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
                 {selectedBarber.name || selectedBarber.display_name || `${selectedBarber.first_name || ''} ${selectedBarber.last_name || ''}`.trim() || 'Barber'}
               </h2>
               <button
@@ -1304,13 +1304,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 <span className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</span>
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 sm:p-8">
               {/* Barber Profile Content */}
-              <div className="space-y-6">
+              <div className="space-y-6 sm:space-y-8">
                 {/* Profile Header - Image left, info right */}
-                <div className="flex flex-col sm:flex-row gap-6">
+                <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
                   {/* Barber Profile Picture */}
-                  <div className="relative w-48 sm:w-56 h-48 sm:h-64 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
+                  <div className="relative w-48 sm:w-64 lg:w-72 h-48 sm:h-72 lg:h-80 overflow-hidden rounded-lg bg-gray-200 flex-shrink-0 mx-auto sm:mx-0">
                     {selectedBarber.profile_picture_url ? (
                       <img
                         src={selectedBarber.profile_picture_url}
@@ -1326,11 +1326,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                   
                   {/* Bio, Instagram, Specialties - Right side */}
                   <div className="flex-1 flex flex-col justify-center text-center sm:text-left">
-                    <p className="text-gray-700 mb-4">{selectedBarber.bio || 'Professional barber'}</p>
+                    <p className="text-gray-700 mb-4 sm:mb-6 sm:text-lg">{selectedBarber.bio || 'Professional barber'}</p>
                     
                     {/* Specialties */}
                     {(Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 0) && (
-                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-4">
+                      <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mb-4 sm:mb-6">
                         {selectedBarber.specialties.map((specialty, idx) => (
                           <span
                             key={idx}
@@ -1344,8 +1344,8 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     
                     {/* Instagram */}
                     {selectedBarber.instagram_handle && (
-                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600 mb-4">
-                        <Instagram className="w-5 h-5" />
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-600 mb-4 sm:mb-6">
+                        <Instagram className="w-5 h-5 sm:w-6 sm:h-6" />
                         <a
                           href={`https://instagram.com/${selectedBarber.instagram_handle}`}
                           target="_blank"
@@ -1361,7 +1361,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     <div className="flex justify-center sm:justify-start">
                       <Button
                         onClick={() => handleScheduleClick(selectedBarber)}
-                        className="px-6 py-2 text-base"
+                        className="px-6 py-2 sm:px-8 sm:py-3 text-base sm:text-lg"
                       >
                         Schedule Service
                       </Button>
@@ -1371,15 +1371,15 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 
                 {/* Availability Section - Full width below */}
                 {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-center text-gray-700 font-medium mb-3">
+                  <div className="pt-4 sm:pt-6 border-t border-gray-100">
+                    <div className="flex items-center justify-center text-gray-700 font-medium mb-3 sm:mb-4 sm:text-lg">
                       <span>Availability</span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
-                        <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 text-center">
-                          <div className="font-semibold text-gray-800">{day}</div>
-                          <div className="flex flex-col gap-0.5">
+                        <div key={day} className="bg-gray-50 rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-center">
+                          <div className="font-semibold text-gray-800 sm:text-lg">{day}</div>
+                          <div className="flex flex-col gap-0.5 sm:gap-1">
                             {times.split(', ').map((timeSlot, idx) => (
                               <div key={idx} className="text-xs sm:text-sm text-gray-600">{timeSlot}</div>
                             ))}
