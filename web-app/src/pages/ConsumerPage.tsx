@@ -1,12 +1,12 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap, Check } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap, Check, Trash2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
-import ConsumerProfileEditor from '../components/ConsumerProfileEditor';
+import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService from '../services/barber.service';
@@ -130,6 +130,7 @@ export default function ConsumerPage() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
+  const profileEditorRef = useRef<ConsumerProfileEditorRef>(null);
   const [showBarberApplication, setShowBarberApplication] = useState(false);
   const [hasPendingApplication, setHasPendingApplication] = useState(false);
   const [hasRejectedApplication, setHasRejectedApplication] = useState(false);
@@ -548,15 +549,25 @@ export default function ConsumerPage() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Profile</h2>
-              <button
-                onClick={closeProfileEditor}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => profileEditorRef.current?.showDeleteModal()}
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg px-2 py-1 transition-colors flex items-center gap-1 text-sm"
+                  title="Delete Account"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Delete</span>
+                </button>
+                <button
+                  onClick={closeProfileEditor}
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <div className="p-6">
-              <ConsumerProfileEditor userId={consumerId} />
+              <ConsumerProfileEditor ref={profileEditorRef} userId={consumerId} />
             </div>
           </div>
         </div>

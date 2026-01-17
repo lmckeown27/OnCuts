@@ -10,7 +10,7 @@
  * - Privacy settings
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
@@ -24,7 +24,11 @@ interface ConsumerProfileEditorProps {
   userId: string;
 }
 
-export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorProps) {
+export interface ConsumerProfileEditorRef {
+  showDeleteModal: () => void;
+}
+
+const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfileEditorProps>(({ userId }, ref) => {
   const { user: authUser, setUser: setAuthUser } = useAuthStore();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +64,11 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   const [deletePasswordError, setDeletePasswordError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  // Expose showDeleteModal method to parent via ref
+  useImperativeHandle(ref, () => ({
+    showDeleteModal: () => setShowDeleteModal(true),
+  }));
 
   useEffect(() => {
     loadUserProfile();
@@ -619,25 +628,6 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
               </div>
             </div>
           </Card>
-
-          <Card>
-            <h3 className="text-lg font-semibold mb-4 text-red-600">Danger Zone</h3>
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="font-medium text-gray-900 mb-2">Delete Account</p>
-              <p className="text-sm text-gray-600 mb-4">
-                Permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Account
-              </Button>
-            </div>
-          </Card>
         </div>
       )}
 
@@ -756,5 +746,8 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       )}
     </div>
   );
-}
+});
 
+ConsumerProfileEditor.displayName = 'ConsumerProfileEditor';
+
+export default ConsumerProfileEditor;
