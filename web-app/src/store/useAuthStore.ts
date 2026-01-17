@@ -184,7 +184,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       socketService.connect();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Verification failed';
+      // Extract error message from various response formats
+      let errorMessage = error.response?.data?.error?.message || 
+                         error.response?.data?.message || 
+                         error.message || 
+                         'Verification failed';
+      
+      // Make error messages more user-friendly
+      if (error.response?.status === 400 || errorMessage.toLowerCase().includes('invalid') || errorMessage.toLowerCase().includes('expired')) {
+        errorMessage = 'Wrong verification code. Please check and try again.';
+      }
+      
       set({ 
         error: errorMessage, 
         isLoading: false 
