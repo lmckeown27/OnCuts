@@ -1286,9 +1286,18 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {/* Barber Profile Modal */}
       {selectedBarber && (() => {
         // Determine if barber has rich content that needs wider card
-        const hasAvailability = selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0;
+        const scheduleData = selectedBarber.weekly_schedule ? formatSchedule(selectedBarber.weekly_schedule) : [];
+        const hasAvailability = scheduleData.length > 0;
         const hasManySpecialties = Array.isArray(selectedBarber.specialties) && selectedBarber.specialties.length > 3;
         const hasBio = !!selectedBarber.bio;
+        
+        // Check if availability has long time strings (with minutes like "11:30am")
+        const hasLongTimeStrings = scheduleData.some(({ times }) => 
+          times.includes(':') && times.length > 12
+        );
+        
+        // Determine card width tier
+        const needsExtraWideCard = hasAvailability && (hasLongTimeStrings || scheduleData.length >= 5);
         const hasRichContent = hasAvailability || hasManySpecialties || hasBio;
         
         return (
@@ -1298,9 +1307,11 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         >
           <div 
             className={`bg-white rounded-2xl shadow-2xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up ${
-              hasRichContent 
-                ? 'max-w-sm sm:max-w-2xl lg:max-w-3xl' 
-                : 'max-w-sm sm:max-w-md lg:max-w-lg'
+              needsExtraWideCard
+                ? 'max-w-sm sm:max-w-3xl lg:max-w-4xl'
+                : hasRichContent 
+                  ? 'max-w-sm sm:max-w-2xl lg:max-w-3xl' 
+                  : 'max-w-sm sm:max-w-md lg:max-w-lg'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
