@@ -1290,7 +1290,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           onClick={() => setSelectedBarber(null)}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-lg lg:max-w-xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
+            className="bg-white rounded-2xl shadow-2xl max-w-sm sm:max-w-2xl lg:max-w-3xl w-full max-h-[85dvh] sm:max-h-[80vh] overflow-y-auto animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 sm:px-8 sm:py-5 flex items-center justify-between rounded-t-2xl z-10">
