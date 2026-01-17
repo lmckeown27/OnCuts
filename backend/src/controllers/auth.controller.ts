@@ -177,8 +177,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, 'Please provide a valid email address');
     }
 
-    // Campus assignment: Use user-provided campusId if valid, otherwise use default
-    // Email domain is NOT used to determine campus - users select their campus manually
+    // Campus assignment: Use user-provided campusId if valid, otherwise leave as null
+    // Consumers don't need to be tied to a university - they can browse barbers at any campus
     let campusId: string | null = null;
     
     if (requestedCampusId) {
@@ -210,33 +210,13 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
         campusId = validCampus.rows[0].id;
         logger.info(`User selected campus: ${validCampus.rows[0].name} (ID: ${campusId})`);
       } else {
-        logger.warn(`Invalid or inactive campusId provided: ${requestedCampusId}`);
+        logger.warn(`Invalid or inactive campusId provided: ${requestedCampusId}, proceeding without campus`);
       }
     }
     
-    // If no campusId was provided or it was invalid, use default (Cal Poly SLO)
-    // Users can update their campus later in their profile or during barber application
+    // No fallback campus - consumers can register without a campus affiliation
     if (!campusId) {
-      const defaultCampus = await pool.query(
-        `SELECT id, name FROM campuses WHERE name = 'Cal Poly SLO' AND is_active = TRUE LIMIT 1`
-      );
-      if (defaultCampus.rows.length > 0) {
-        campusId = defaultCampus.rows[0].id;
-        logger.info(`Using default campus: ${defaultCampus.rows[0].name} (ID: ${campusId})`);
-      } else {
-        // Fallback: get the first active campus
-        const fallbackCampus = await pool.query(
-          `SELECT id, name FROM campuses WHERE is_active = TRUE ORDER BY name LIMIT 1`
-        );
-        if (fallbackCampus.rows.length > 0) {
-          campusId = fallbackCampus.rows[0].id;
-          logger.info(`Using fallback campus: ${fallbackCampus.rows[0].name} (ID: ${campusId})`);
-        }
-      }
-    }
-    
-    if (!campusId) {
-      throw new ApiError(400, 'Unable to determine campus. Please contact support.');
+      logger.info('User registering without campus affiliation');
     }
 
     // Check if user already exists in database
