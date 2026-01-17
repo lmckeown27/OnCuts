@@ -1372,8 +1372,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                 {/* Availability Section - Full width below */}
                 {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
                   <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-center gap-2 text-gray-700 font-medium mb-3">
-                      <Clock className="w-5 h-5" />
+                    <div className="flex items-center justify-center text-gray-700 font-medium mb-3">
                       <span>Availability</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
