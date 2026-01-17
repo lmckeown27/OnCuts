@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap, Check, Trash2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
@@ -854,7 +854,16 @@ function DiscoveryView({ navigate, onBarberPopupChange }: { navigate: any; onBar
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [selectedBarberState, setSelectedBarberState] = useState<Barber | null>(null);
+  
+  // Wrapper to notify parent when barber popup opens/closes
+  const setSelectedBarber = useCallback((barber: Barber | null) => {
+    setSelectedBarberState(barber);
+    onBarberPopupChange?.(barber !== null);
+  }, [onBarberPopupChange]);
+  
+  // Alias for reading the state
+  const selectedBarber = selectedBarberState;
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
@@ -950,11 +959,6 @@ function DiscoveryView({ navigate, onBarberPopupChange }: { navigate: any; onBar
       document.documentElement.style.overscrollBehavior = '';
     };
   }, [selectedBarber]);
-
-  // Notify parent when barber popup opens/closes (for disabling pull-to-refresh)
-  useEffect(() => {
-    onBarberPopupChange?.(selectedBarber !== null);
-  }, [selectedBarber, onBarberPopupChange]);
 
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void) => {
