@@ -17,7 +17,7 @@ export interface PendingRegistration {
   password: string;
   firstName: string;
   lastName: string;
-  campusId: string;
+  campusId: string | null;
   role: 'student' | 'barber';
   verificationCode: string;
   expiresAt: Date;
