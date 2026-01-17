@@ -37,6 +37,22 @@ export function usePullToRefresh({
   const startY = useRef(0);
   const currentY = useRef(0);
   const canPull = useRef(false);
+  const pullDistanceRef = useRef(0);
+  const onRefreshRef = useRef(onRefresh);
+  const isRefreshingRef = useRef(false);
+  
+  // Keep refs in sync with state/props
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
+  
+  useEffect(() => {
+    pullDistanceRef.current = pullDistance;
+  }, [pullDistance]);
+  
+  useEffect(() => {
+    isRefreshingRef.current = isRefreshing;
+  }, [isRefreshing]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     // Only activate if at the very top of the page (or nearly so)
@@ -44,7 +60,7 @@ export function usePullToRefresh({
       canPull.current = false;
       return;
     }
-    if (isRefreshing) {
+    if (isRefreshingRef.current) {
       canPull.current = false;
       return;
     }
@@ -64,16 +80,17 @@ export function usePullToRefresh({
     canPull.current = true;
     startY.current = e.touches[0].clientY;
     setIsPulling(true);
-  }, [isRefreshing]);
+  }, []);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!canPull.current || isRefreshing) return;
+    if (!canPull.current || isRefreshingRef.current) return;
     
     // If user scrolled down, cancel pull
     if (window.scrollY > 5) {
       canPull.current = false;
       setIsPulling(false);
       setPullDistance(0);
+      pullDistanceRef.current = 0;
       return;
     }
 
@@ -84,6 +101,7 @@ export function usePullToRefresh({
       // Apply resistance to make it feel natural (like rubber band)
       const resistedDiff = Math.min(diff / resistance, maxPull);
       setPullDistance(resistedDiff);
+      pullDistanceRef.current = resistedDiff;
       
       // Prevent default scroll when pulling down
       if (resistedDiff > 5) {
@@ -92,8 +110,9 @@ export function usePullToRefresh({
     } else {
       // User is scrolling up, reset
       setPullDistance(0);
+      pullDistanceRef.current = 0;
     }
-  }, [isRefreshing, resistance, maxPull]);
+  }, [resistance, maxPull]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!canPull.current) return;
@@ -101,30 +120,44 @@ export function usePullToRefresh({
     setIsPulling(false);
     canPull.current = false;
 
-    if (pullDistance >= threshold && !isRefreshing) {
+    // Use refs to get the latest values, avoiding stale closure issues
+    const currentPullDistance = pullDistanceRef.current;
+    const currentIsRefreshing = isRefreshingRef.current;
+
+    if (currentPullDistance >= threshold && !currentIsRefreshing) {
       setIsRefreshing(true);
+      isRefreshingRef.current = true;
       // Keep spinner visible during refresh
       setPullDistance(threshold);
       
       try {
-        await onRefresh();
+        await onRefreshRef.current();
       } catch (error) {
         console.error('Refresh failed:', error);
       } finally {
         // Small delay before hiding spinner for better UX
         await new Promise(resolve => setTimeout(resolve, 300));
         setIsRefreshing(false);
+        isRefreshingRef.current = false;
         setPullDistance(0);
+        pullDistanceRef.current = 0;
       }
     } else {
       // Snap back to top
       setPullDistance(0);
+      pullDistanceRef.current = 0;
     }
-  }, [pullDistance, threshold, isRefreshing, onRefresh]);
+  }, [threshold]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    // Reset state when container mounts (prevents stale state issues)
+    canPull.current = false;
+    setPullDistance(0);
+    pullDistanceRef.current = 0;
+    setIsPulling(false);
 
     // Use passive: false for touchmove to allow preventDefault
     container.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -137,6 +170,10 @@ export function usePullToRefresh({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
+      // Reset state when container unmounts
+      canPull.current = false;
+      setPullDistance(0);
+      pullDistanceRef.current = 0;
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
