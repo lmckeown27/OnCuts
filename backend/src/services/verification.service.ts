@@ -9,7 +9,7 @@
  */
 
 import { logger } from '../utils/logger';
-import { pool } from '../config/database';
+import { pool } from '../database/connection';
 
 /**
  * Pending Registration Data
