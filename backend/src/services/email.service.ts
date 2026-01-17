@@ -1849,3 +1849,213 @@ function generateBookingCancellationHtml(
 </body>
 </html>`.trim();
 }
+
+// ============================================
+// BOOKING DECLINE EMAIL
+// ============================================
+
+/**
+ * Booking Decline Email Details Interface
+ */
+interface BookingDeclineEmailDetails {
+  consumerEmail: string;
+  consumerName: string;
+  barberName: string;
+  serviceName: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  price: number;
+  location?: string;
+  reason?: string;
+  bookingId: string;
+}
+
+/**
+ * Send Booking Decline Email to Consumer
+ * 
+ * Sends an email to the consumer when a barber declines their booking request.
+ * Includes the reason for decline and contact information for support.
+ */
+export async function sendBookingDeclineEmail(details: BookingDeclineEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping booking decline email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  try {
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject: `Booking Request Declined - ${details.serviceName} with ${details.barberName}`,
+      text: generateBookingDeclineText(details),
+      html: generateBookingDeclineHtml(details, frontendUrl)
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Booking decline email sent to consumer: ${details.consumerEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send booking decline email to ${details.consumerEmail}:`, error.message);
+  }
+}
+
+/**
+ * Generate Booking Decline Plain Text
+ */
+function generateBookingDeclineText(details: BookingDeclineEmailDetails): string {
+  const firstName = details.consumerName.split(' ')[0];
+  
+  return `
+Hi ${firstName},
+
+Unfortunately, ${details.barberName} was unable to accept your booking request.
+
+BOOKING DETAILS
+---------------
+Service: ${details.serviceName}
+Requested Date: ${details.scheduledDate}
+Requested Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+
+${details.reason ? `REASON PROVIDED\n---------------\n${details.reason}\n` : ''}
+We understand this is disappointing. Here are your options:
+
+1. Browse other barbers on CampusCut who may be available
+2. Try booking with ${details.barberName} for a different time
+3. Message the barber to discuss alternative arrangements
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+If you believe a mistake has been made, please contact us at:
+campuscuthelp@gmail.com
+
+We're here to help!
+
+---
+CampusCut - Earn More, Pay Less
+`.trim();
+}
+
+/**
+ * Generate Booking Decline HTML Email
+ */
+function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, frontendUrl: string): string {
+  const firstName = details.consumerName.split(' ')[0];
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
+  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
+    <p style="color: #fca5a5; margin: 10px 0 0 0; font-size: 16px;">Booking Request Declined</p>
+  </div>
+  
+  <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${firstName},</h2>
+    <p style="color: #6b7280; margin: 0 0 20px 0;">Unfortunately, ${details.barberName} was unable to accept your booking request.</p>
+    
+    <!-- Status Badge -->
+    <div style="text-align: center; margin: 20px 0;">
+      <span style="display: inline-block; background-color: #fee2e2; color: #dc2626; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px;">
+        DECLINED
+      </span>
+    </div>
+    
+    <!-- Booking Details -->
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 16px;">Original Booking Request</h3>
+      
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Service</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.serviceName}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Requested Date</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.scheduledDate}</td>
+        </tr>
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Requested Time</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.scheduledTime}</td>
+        </tr>
+        ${details.location ? `
+        <tr>
+          <td style="color: #6b7280; padding: 5px 0;">Location</td>
+          <td style="color: #1f2937; font-weight: 600; text-align: right; padding: 5px 0;">${details.location}</td>
+        </tr>
+        ` : ''}
+      </table>
+      
+      <div style="border-top: 1px dashed #e5e7eb; margin: 15px 0; padding-top: 15px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="color: #6b7280; font-weight: 600;">Price</td>
+            <td style="color: #9ca3af; font-weight: 700; font-size: 18px; text-align: right; text-decoration: line-through;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    ${details.reason ? `
+    <!-- Reason Box -->
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 15px 0;">
+      <p style="color: #991b1b; margin: 0; font-size: 14px;"><strong>Reason provided:</strong></p>
+      <p style="color: #7f1d1d; margin: 8px 0 0 0; font-size: 14px;">${details.reason}</p>
+    </div>
+    ` : ''}
+    
+    <!-- Barber Info -->
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <p style="color: #6b7280; margin: 0; font-size: 14px;">
+        <strong>Barber:</strong> ${details.barberName}
+      </p>
+    </div>
+    
+    <!-- What's Next -->
+    <div style="background-color: #eff6ff; border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <p style="color: #1e40af; margin: 0 0 10px 0; font-weight: 600; font-size: 14px;">What's Next?</p>
+      <ul style="color: #1e3a8a; margin: 0; padding-left: 20px; font-size: 14px;">
+        <li>Browse other barbers on CampusCut</li>
+        <li>Try booking with ${details.barberName} for a different time</li>
+        <li>Message the barber to discuss alternatives</li>
+      </ul>
+    </div>
+    
+    <!-- Booking Reference -->
+    <div style="text-align: center; margin: 20px 0;">
+      <p style="color: #6b7280; margin: 0; font-size: 14px;">Booking Reference</p>
+      <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+    </div>
+    
+    <!-- CTA Button -->
+    <p style="text-align: center; margin: 30px 0 20px 0;">
+      <a href="${frontendUrl}/web/consumer" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        Find Another Barber
+      </a>
+    </p>
+    
+    <!-- Support Box -->
+    <div style="background-color: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <p style="color: #854d0e; margin: 0; font-size: 14px;">
+        <strong>Think a mistake was made?</strong><br>
+        Contact us at <a href="mailto:campuscuthelp@gmail.com" style="color: #ca8a04; font-weight: 600;">campuscuthelp@gmail.com</a> and we'll be happy to help.
+      </p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
+  </div>
+</body>
+</html>`.trim();
+}

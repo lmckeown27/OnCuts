@@ -11,7 +11,7 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
-import { sendBookingConfirmationEmails } from './email.service';
+import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
 interface BookingRequest {
   bookingId: string;
@@ -591,11 +591,18 @@ export class BookingRequestService {
       if (bookingId.startsWith('conv-')) {
         const conversationId = bookingId.replace('conv-', '');
         
-        // Get conversation details before deleting
+        // Get conversation details before deleting (including booking info for email)
         const convResult = await client.query(`
-          SELECT user1_id, user2_id, booking_id
-          FROM conversations
-          WHERE id = $1 AND booking_status = 'pending'
+          SELECT 
+            c.user1_id, c.user2_id, c.booking_id,
+            c.service_name, c.service_price, c.scheduled_time, c.location,
+            b."serviceType", b."priceUsdCents", b."requestedAt",
+            COALESCE(campus.timezone, 'America/New_York') as campus_timezone
+          FROM conversations c
+          LEFT JOIN bookings b ON c.booking_id = b.id
+          LEFT JOIN barbers bar ON b."barberId" = bar.id
+          LEFT JOIN campuses campus ON bar."campusId" = campus.id
+          WHERE c.id = $1 AND c.booking_status = 'pending'
         `, [conversationId]);
 
         if (convResult.rows.length === 0) {
@@ -628,12 +635,19 @@ export class BookingRequestService {
           ? convResult.rows[0].user2_id 
           : convResult.rows[0].user1_id;
         
-        // Get barber name for notification
-        const barberNameResult = await client.query(
-          `SELECT first_name || ' ' || last_name as name FROM users WHERE id = $1`,
-          [barberUserId]
+        // Get barber name for notification and consumer details for email
+        const userDetailsResult = await client.query(
+          `SELECT 
+            barber.first_name || ' ' || barber.last_name as barber_name,
+            consumer.first_name || ' ' || consumer.last_name as consumer_name,
+            consumer.email as consumer_email
+           FROM users barber, users consumer
+           WHERE barber.id = $1 AND consumer.id = $2`,
+          [barberUserId, consumerUserId]
         );
-        const barberName = barberNameResult.rows[0]?.name || 'The barber';
+        const barberName = userDetailsResult.rows[0]?.barber_name || 'The barber';
+        const consumerName = userDetailsResult.rows[0]?.consumer_name || 'Customer';
+        const consumerEmail = userDetailsResult.rows[0]?.consumer_email;
         
         // Send notification to consumer about rejection BEFORE deleting conversation
         await notificationService.saveNotification({
@@ -643,6 +657,33 @@ export class BookingRequestService {
           message: `${barberName} was unable to accept your booking request${reason ? `: ${reason}` : ''}`,
           data: { bookingId: linkedBookingId, reason },
         });
+
+        // Send decline email to consumer
+        if (consumerEmail) {
+          const convData = convResult.rows[0];
+          const campusTimezone = convData.campus_timezone || 'America/New_York';
+          const scheduledTime = convData.requestedAt || convData.scheduled_time || new Date();
+          const scheduledDate = new Date(scheduledTime);
+          
+          sendBookingDeclineEmail({
+            consumerEmail,
+            consumerName,
+            barberName,
+            serviceName: convData.service_name || convData.serviceType || 'Haircut',
+            scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+              timeZone: campusTimezone 
+            }),
+            scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', minute: '2-digit', hour12: true, 
+              timeZone: campusTimezone 
+            }),
+            price: (convData.priceUsdCents || convData.service_price * 100 || 0) / 100,
+            location: convData.location || undefined,
+            reason: reason || undefined,
+            bookingId: linkedBookingId || conversationId,
+          }).catch(err => logger.error('Failed to send decline email:', err));
+        }
 
         // Delete the conversation and its messages (cascading delete should handle messages)
         await client.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
@@ -654,23 +695,41 @@ export class BookingRequestService {
         return { success: true };
       }
 
-      // Traditional booking flow
-      const updateResult = await client.query(`
+      // Traditional booking flow - first get booking details for email
+      const bookingDetailsResult = await client.query(`
+        SELECT 
+          b.id, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt",
+          c.service_name, c.location,
+          u_consumer.first_name || ' ' || u_consumer.last_name as consumer_name,
+          u_consumer.email as consumer_email,
+          u_barber.first_name || ' ' || u_barber.last_name as barber_name,
+          COALESCE(campus.timezone, 'America/New_York') as campus_timezone
+        FROM bookings b
+        JOIN users u_consumer ON b."consumerId" = u_consumer.id
+        JOIN barbers bar ON b."barberId" = bar.id
+        JOIN users u_barber ON bar."userId" = u_barber.id
+        LEFT JOIN conversations c ON c.booking_id = b.id
+        LEFT JOIN campuses campus ON bar."campusId" = campus.id
+        WHERE b.id = $1 AND b.status = 'PENDING'
+      `, [bookingId]);
+
+      if (bookingDetailsResult.rows.length === 0) {
+        throw new Error('Booking not found or already responded to');
+      }
+
+      const bookingData = bookingDetailsResult.rows[0];
+      const consumerId = bookingData.consumerId;
+      
+      // Now update the booking status
+      await client.query(`
         UPDATE bookings
         SET 
           status = 'CANCELLED',
           "cancelledAt" = NOW(),
           "cancellationReason" = $2,
           "updatedAt" = NOW()
-        WHERE id = $1 AND status = 'PENDING'
-        RETURNING "consumerId"
+        WHERE id = $1
       `, [bookingId, reason]);
-
-      if (updateResult.rows.length === 0) {
-        throw new Error('Booking not found or already responded to');
-      }
-
-      const consumerId = updateResult.rows[0].consumerId;
       
       // Delete any linked conversation and its messages when booking is cancelled
       // First delete messages, then conversation
@@ -684,15 +743,9 @@ export class BookingRequestService {
       `, [bookingId]);
       logger.info(`Deleted linked conversation and messages for cancelled booking ${bookingId}`);
       
-      // Get barber name for notification
-      const barberNameResult = await client.query(
-        `SELECT u.first_name || ' ' || u.last_name as name 
-         FROM barbers b
-         JOIN users u ON b."userId" = u.id
-         WHERE b.id = $1 OR b."userId" = $1`,
-        [barberId]
-      );
-      const barberName = barberNameResult.rows[0]?.name || 'The barber';
+      const barberName = bookingData.barber_name || 'The barber';
+      const consumerName = bookingData.consumer_name || 'Customer';
+      const consumerEmail = bookingData.consumer_email;
       
       // Send notification to consumer
       await notificationService.saveNotification({
@@ -702,6 +755,31 @@ export class BookingRequestService {
         message: `${barberName} was unable to accept your booking request`,
         data: { bookingId, reason },
       });
+
+      // Send decline email to consumer
+      if (consumerEmail) {
+        const campusTimezone = bookingData.campus_timezone || 'America/New_York';
+        const scheduledDate = new Date(bookingData.requestedAt);
+        
+        sendBookingDeclineEmail({
+          consumerEmail,
+          consumerName,
+          barberName,
+          serviceName: bookingData.service_name || bookingData.serviceType || 'Haircut',
+          scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+            timeZone: campusTimezone 
+          }),
+          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
+            hour: 'numeric', minute: '2-digit', hour12: true, 
+            timeZone: campusTimezone 
+          }),
+          price: (bookingData.priceUsdCents || 0) / 100,
+          location: bookingData.location || undefined,
+          reason: reason || undefined,
+          bookingId,
+        }).catch(err => logger.error('Failed to send decline email:', err));
+      }
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} rejected by barber ${barberId}`);
