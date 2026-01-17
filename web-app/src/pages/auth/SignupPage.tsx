@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, FileText, X } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, X } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
 import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
@@ -709,14 +709,11 @@ export default function SignupPage() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <FileText className="w-6 h-6 text-primary-500" />
-                <h2 className="text-xl font-bold text-gray-900">Terms of Service</h2>
-              </div>
+            <div className="relative px-6 py-4 border-b border-gray-200 flex-shrink-0">
+              <h2 className="text-xl font-bold text-gray-900 text-center">Terms of Service</h2>
               <button
                 onClick={() => setShowTermsModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
