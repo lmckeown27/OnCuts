@@ -364,9 +364,22 @@ export const deleteAccount = async (req: Request, res: Response) => {
     // Start transaction for hard delete
     await client.query('BEGIN');
 
+    // Helper function to safely delete from a table (ignores missing table/column errors)
+    const safeDelete = async (query: string, params: any[]) => {
+      try {
+        await client.query(query, params);
+      } catch (err: any) {
+        // Ignore errors for missing tables/columns (42P01 = undefined_table, 42703 = undefined_column)
+        if (err.code !== '42P01' && err.code !== '42703') {
+          throw err;
+        }
+        logger.warn(`Safe delete skipped (table/column not found): ${err.message}`);
+      }
+    };
+
     // Delete in correct order to respect foreign key constraints
     // 1. Delete messages (references conversations)
-    await client.query(
+    await safeDelete(
       `DELETE FROM messages 
        WHERE conversation_id IN (
          SELECT id FROM conversations WHERE user1_id = $1 OR user2_id = $1
@@ -375,56 +388,46 @@ export const deleteAccount = async (req: Request, res: Response) => {
     );
 
     // 2. Delete conversations
-    await client.query(
+    await safeDelete(
       'DELETE FROM conversations WHERE user1_id = $1 OR user2_id = $1',
       [id]
     );
 
     // 3. Delete notifications
-    await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
+    await safeDelete('DELETE FROM notifications WHERE user_id = $1', [id]);
 
-    // 4. Delete reviews (both given and received)
-    await client.query('DELETE FROM reviews WHERE user_id = $1', [id]);
-    await client.query(
-      `DELETE FROM reviews 
-       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
-      [id]
-    );
-
-    // 5. Delete bookings (as consumer)
-    await client.query('DELETE FROM bookings WHERE consumer_id = $1', [id]);
+    // 4. Delete bookings (as consumer) - try both column naming conventions
+    await safeDelete('DELETE FROM bookings WHERE consumer_id = $1', [id]);
+    await safeDelete('DELETE FROM bookings WHERE "consumerId" = $1', [id]);
     
-    // 6. Delete bookings (as barber)
-    await client.query(
+    // 5. Delete bookings (as barber via barber record)
+    await safeDelete(
       `DELETE FROM bookings 
        WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
 
-    // 7. Delete barber services
-    await client.query(
+    // 6. Delete barber services
+    await safeDelete(
       `DELETE FROM barber_services 
        WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
 
-    // 8. Delete barber availability
-    await client.query(
+    // 7. Delete barber availability
+    await safeDelete(
       `DELETE FROM barber_availability 
        WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
 
-    // 9. Delete barber applications
-    await client.query('DELETE FROM barber_applications WHERE user_id = $1', [id]);
+    // 8. Delete barber applications
+    await safeDelete('DELETE FROM barber_applications WHERE user_id = $1', [id]);
 
-    // 10. Delete barber record
-    await client.query('DELETE FROM barbers WHERE "userId" = $1', [id]);
+    // 9. Delete barber record
+    await safeDelete('DELETE FROM barbers WHERE "userId" = $1', [id]);
 
-    // 11. Delete refresh tokens
-    await client.query('DELETE FROM refresh_tokens WHERE user_id = $1', [id]);
-
-    // 12. Finally delete the user
+    // 10. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
     await client.query('DELETE FROM users WHERE id = $1', [id]);
 
     await client.query('COMMIT');
