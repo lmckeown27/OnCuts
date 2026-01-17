@@ -53,7 +53,7 @@ class UserService {
   }
 
   async deleteAccount(userId: string, password: string): Promise<void> {
-    await api.post(`/users/${userId}/delete-account`, { password });
+    await api.delete(`/users/${userId}`, { password });
   }
 }
 

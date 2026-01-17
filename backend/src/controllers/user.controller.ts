@@ -319,13 +319,29 @@ export const changePassword = async (req: Request, res: Response) => {
 
 /**
  * Delete account
+ * Requires password verification for security
+ * Performs hard delete of user and all associated data
  */
 export const deleteAccount = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  
   try {
     const { id } = req.params;
+    const { password } = req.body;
 
-    // Check if user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    // Require password for verification
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required to delete account',
+      });
+    }
+
+    // Check if user exists and get password hash
+    const userCheck = await client.query(
+      'SELECT id, password_hash, email FROM users WHERE id = $1',
+      [id]
+    );
     
     if (userCheck.rows.length === 0) {
       return res.status(404).json({
@@ -334,21 +350,99 @@ export const deleteAccount = async (req: Request, res: Response) => {
       });
     }
 
-    // Mark as blocked (soft delete)
-    await pool.query(
-      'UPDATE users SET "isBlocked" = true, "updatedAt" = NOW() WHERE id = $1',
+    const user = userCheck.rows[0];
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password',
+      });
+    }
+
+    // Start transaction for hard delete
+    await client.query('BEGIN');
+
+    // Delete in correct order to respect foreign key constraints
+    // 1. Delete messages (references conversations)
+    await client.query(
+      `DELETE FROM messages 
+       WHERE conversation_id IN (
+         SELECT id FROM conversations WHERE user1_id = $1 OR user2_id = $1
+       )`,
       [id]
     );
+
+    // 2. Delete conversations
+    await client.query(
+      'DELETE FROM conversations WHERE user1_id = $1 OR user2_id = $1',
+      [id]
+    );
+
+    // 3. Delete notifications
+    await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
+
+    // 4. Delete reviews (both given and received)
+    await client.query('DELETE FROM reviews WHERE user_id = $1', [id]);
+    await client.query(
+      `DELETE FROM reviews 
+       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 5. Delete bookings (as consumer)
+    await client.query('DELETE FROM bookings WHERE consumer_id = $1', [id]);
+    
+    // 6. Delete bookings (as barber)
+    await client.query(
+      `DELETE FROM bookings 
+       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 7. Delete barber services
+    await client.query(
+      `DELETE FROM barber_services 
+       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 8. Delete barber availability
+    await client.query(
+      `DELETE FROM barber_availability 
+       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 9. Delete barber applications
+    await client.query('DELETE FROM barber_applications WHERE user_id = $1', [id]);
+
+    // 10. Delete barber record
+    await client.query('DELETE FROM barbers WHERE "userId" = $1', [id]);
+
+    // 11. Delete refresh tokens
+    await client.query('DELETE FROM refresh_tokens WHERE user_id = $1', [id]);
+
+    // 12. Finally delete the user
+    await client.query('DELETE FROM users WHERE id = $1', [id]);
+
+    await client.query('COMMIT');
+
+    logger.info(`Account deleted successfully: ${user.email}`);
 
     res.json({
       success: true,
       message: 'Account deleted successfully',
     });
   } catch (error) {
+    await client.query('ROLLBACK');
     logger.error('Error deleting account:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete account',
     });
+  } finally {
+    client.release();
   }
 };

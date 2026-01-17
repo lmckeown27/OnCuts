@@ -53,6 +53,14 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
   const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
+  // Delete account modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [deletePasswordError, setDeletePasswordError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
   useEffect(() => {
     loadUserProfile();
     loadNotificationPreferences();
@@ -178,6 +186,49 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeletePasswordError('');
+    
+    if (!deletePassword) {
+      setDeletePasswordError('Password is required');
+      return;
+    }
+
+    if (deleteConfirmText !== 'DELETE') {
+      toast.error('Please type DELETE to confirm');
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await userService.deleteAccount(userId, deletePassword);
+      
+      // Clear all auth storage
+      localStorage.removeItem('campuscuts_access_token');
+      localStorage.removeItem('campuscuts_refresh_token');
+      localStorage.removeItem('campuscuts_user');
+      
+      toast.success('Account deleted successfully');
+      
+      // Redirect to home page
+      window.location.href = '/';
+    } catch (error: any) {
+      console.error('Failed to delete account:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Failed to delete account';
+      
+      if (error.response?.status === 401 || errorMessage.toLowerCase().includes('incorrect')) {
+        setDeletePasswordError('Incorrect password');
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -576,12 +627,131 @@ export default function ConsumerProfileEditor({ userId }: ConsumerProfileEditorP
               <p className="text-sm text-gray-600 mb-4">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
-              <Button variant="secondary" size="sm" className="bg-red-600 text-white hover:bg-red-700">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={() => setShowDeleteModal(true)}
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Account
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => {
+            setShowDeleteModal(false);
+            setDeletePassword('');
+            setDeleteConfirmText('');
+            setDeletePasswordError('');
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-red-600 px-6 py-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Trash2 className="w-5 h-5" />
+                Delete Account
+              </h2>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-red-800 font-medium mb-2">⚠️ Warning: This action is permanent!</p>
+                <p className="text-sm text-red-700">
+                  Deleting your account will permanently remove:
+                </p>
+                <ul className="text-sm text-red-700 list-disc list-inside mt-2 space-y-1">
+                  <li>Your profile and personal information</li>
+                  <li>All your booking history</li>
+                  <li>All your messages and conversations</li>
+                  <li>Your reviews and ratings</li>
+                  {authUser?.user_type === 'barber' && (
+                    <li>Your barber profile and services</li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Password verification */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Enter your password to confirm
+                </label>
+                <div className="relative">
+                  <input
+                    type={showDeletePassword ? 'text' : 'password'}
+                    value={deletePassword}
+                    onChange={(e) => {
+                      setDeletePassword(e.target.value);
+                      setDeletePasswordError('');
+                    }}
+                    placeholder="Your password"
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent ${
+                      deletePasswordError ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeletePassword(!showDeletePassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showDeletePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {deletePasswordError && (
+                  <p className="text-xs text-red-500 mt-1">{deletePasswordError}</p>
+                )}
+              </div>
+
+              {/* Type DELETE confirmation */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="font-bold text-red-600">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                    setDeleteConfirmText('');
+                    setDeletePasswordError('');
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting || !deletePassword || deleteConfirmText !== 'DELETE'}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white disabled:bg-red-300"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete My Account'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
