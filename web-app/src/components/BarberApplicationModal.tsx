@@ -286,9 +286,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           {/* Header */}
           <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4 flex items-center justify-center relative">
             <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-white/20 rounded-lg mb-2">
-                <UserX className="w-6 h-6 text-white" />
-              </div>
               <h2 className="text-xl font-bold text-white">Account Status</h2>
             </div>
             <button
