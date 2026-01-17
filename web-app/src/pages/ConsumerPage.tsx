@@ -1370,13 +1370,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                         <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
                           <span>Availability</span>
                         </div>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                           {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
-                            <div key={day} className="bg-gray-50 rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 text-center">
+                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-center">
                               <div className="font-semibold text-gray-800 text-sm">{day}</div>
                               <div className="flex flex-col gap-0.5">
                                 {times.split(', ').map((timeSlot, idx) => (
-                                  <div key={idx} className="text-xs text-gray-600">{timeSlot}</div>
+                                  <div key={idx} className="text-xs text-gray-600 whitespace-nowrap">{timeSlot}</div>
                                 ))}
                               </div>
                             </div>
