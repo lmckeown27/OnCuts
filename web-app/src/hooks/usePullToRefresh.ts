@@ -39,6 +39,13 @@ export function usePullToRefresh({
   const canPull = useRef(false);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Don't activate if body scroll is locked (modal is open)
+    // This is detected by checking if body has position: fixed (set by useBodyScrollLock)
+    if (document.body.style.position === 'fixed') {
+      canPull.current = false;
+      return;
+    }
+    
     // Only activate if at the very top of the page (or nearly so)
     if (window.scrollY > 5) {
       canPull.current = false;
