@@ -1142,7 +1142,7 @@ export default function LandingPage() {
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
             {/* Resources */}
             <div>
               <h4 className="font-bold text-white mb-4">Resources</h4>
@@ -1157,21 +1157,9 @@ export default function LandingPage() {
                     Campus Manager
                   </button>
                 </li>
-              </ul>
-            </div>
-
-            {/* For You */}
-            <div>
-              <h4 className="font-bold text-white mb-4">For You</h4>
-              <ul className="space-y-2">
                 <li>
                   <button onClick={() => scrollToSection('pricing')} className="text-gray-400 hover:text-white transition-colors">
                     Pricing Explained
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('faq')} className="text-gray-400 hover:text-white transition-colors">
-                    FAQ
                   </button>
                 </li>
               </ul>
