@@ -1195,7 +1195,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
           return (
             <Card
               key={barber.id}
-              className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden"
+              className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden bg-transparent p-0 shadow-none hover:bg-transparent"
               onClick={() => setSelectedBarber(barber)}
             >
               {/* Barber Profile Picture with Name & Price Overlays */}
