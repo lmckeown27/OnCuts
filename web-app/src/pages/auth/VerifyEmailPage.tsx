@@ -180,10 +180,20 @@ export default function VerifyEmailPage() {
       inputRefs.current[0]?.focus();
     } catch (err: any) {
       const statusCode = err.response?.status;
+      const errorMessage = err.response?.data?.error?.message || 
+                           err.response?.data?.message || 
+                           err.message || '';
+      
       if (statusCode === 429 || err.isRateLimitError) {
         toast.error('Rate limit reached. Please wait a moment and reload the page.');
+      } else if (errorMessage.toLowerCase().includes('no pending registration') || 
+                 errorMessage.toLowerCase().includes('register first')) {
+        // Session expired - redirect to signup
+        toast.error('Your session has expired. Please sign up again.');
+        localStorage.removeItem('pendingVerificationEmail');
+        setTimeout(() => navigate('/web'), 2000);
       } else {
-        toast.error(err.message || 'Failed to resend code. Please try again.');
+        toast.error(errorMessage || 'Failed to resend code. Please try again.');
       }
     } finally {
       setIsResending(false);
