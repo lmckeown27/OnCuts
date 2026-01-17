@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon, UserX } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
 import campusService from '../services/campus.service';
+import barberService from '../services/barber.service';
 import type { Campus } from '../types';
 import toast from 'react-hot-toast';
 
@@ -43,6 +44,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   const campusSelectorRef = useRef<HTMLDivElement>(null);
   const [existingApplication, setExistingApplication] = useState<BarberApplication | null>(null);
   const [checkingExistingApplication, setCheckingExistingApplication] = useState(true);
+  const [isDemotedBarber, setIsDemotedBarber] = useState(false);
   
   // Handle open/close animations and body scroll lock
   useEffect(() => {
@@ -77,11 +79,27 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setTimeout(onClose, 150);
   };
 
-  // Check for existing application and load campuses on mount
+  // Check for existing application, demoted status, and load campuses on mount
   useEffect(() => {
-    const checkExistingApplication = async () => {
+    const checkExistingApplicationAndDemotedStatus = async () => {
       try {
         setCheckingExistingApplication(true);
+        
+        // First, check if user is a demoted barber (has barber record with isActive = false)
+        if (user?.id) {
+          try {
+            const barberProfile = await barberService.getBarberByUserId(user.id);
+            if (barberProfile && barberProfile.is_active === false) {
+              setIsDemotedBarber(true);
+              setExistingApplication(null);
+              return; // Don't check for application if demoted
+            }
+          } catch {
+            // No barber profile found, continue to check application
+          }
+        }
+        
+        // Check for existing application
         const application = await barberApplicationService.getMyApplication();
         setExistingApplication(application);
       } catch (error) {
@@ -107,10 +125,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     };
     
     if (isOpen) {
-      checkExistingApplication();
+      checkExistingApplicationAndDemotedStatus();
       loadCampuses();
     }
-  }, [isOpen]);
+  }, [isOpen, user?.id]);
 
   const [form, setForm] = useState<ApplicationForm>({
     campusId: '',
@@ -244,6 +262,91 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-3 border-primary-400 border-t-transparent rounded-full animate-spin" />
             <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show demoted barber status view
+  if (isDemotedBarber) {
+    return (
+      <div 
+        className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
+          isVisible ? 'bg-black/50' : 'bg-black/0'
+        }`}
+        onClick={handleClose}
+      >
+        <div 
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-150 ease-out ${
+            isVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-6 py-4 flex items-center justify-center relative">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-2 bg-white/20 rounded-lg mb-2">
+                <UserX className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Account Status</h2>
+            </div>
+            <button
+              onClick={handleClose}
+              className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center mx-auto mb-5">
+              <UserX className="w-8 h-8" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Barber Access Removed</h3>
+            <p className="text-gray-600 mb-6">
+              Your barber privileges have been removed by the campus manager. You no longer have access to the barber dashboard or booking features.
+            </p>
+
+            {/* Info box */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-gray-600">
+                <strong>What does this mean?</strong>
+              </p>
+              <ul className="text-sm text-gray-500 mt-2 space-y-1 list-disc list-inside">
+                <li>You can no longer receive booking requests</li>
+                <li>Your barber profile is no longer visible to consumers</li>
+                <li>You can still use the platform as a consumer</li>
+              </ul>
+            </div>
+
+            {/* Support section */}
+            <div className="border-t pt-5">
+              <p className="text-sm text-gray-500 mb-2">
+                Think this was a mistake? Contact us:
+              </p>
+              <a 
+                href="mailto:campuscuthelp@gmail.com?subject=Barber Access Removed - Appeal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"
+              >
+                <Mail className="w-4 h-4" />
+                campuscuthelp@gmail.com
+              </a>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t">
+            <button
+              onClick={handleClose}
+              className="w-full px-6 py-2.5 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+            >
+              I Understand
+            </button>
           </div>
         </div>
       </div>
