@@ -3,12 +3,20 @@
  * 
  * Allows barbers to view and chat with other barbers on their campus
  * for scheduling coordination and communication.
+ * Admins can switch between universities.
  */
 
-import { useState, useEffect } from 'react';
-import { X, Send, Search, RefreshCw, Crown } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Send, Search, RefreshCw, Crown, ChevronDown } from 'lucide-react';
 import Avatar from './Avatar';
 import messageService from '../services/message.service';
+import campusService from '../services/campus.service';
+import { useAuthStore } from '../store/useAuthStore';
+
+interface Campus {
+  id: string;
+  name: string;
+}
 
 interface Barber {
   userId: string;
@@ -32,26 +40,64 @@ interface BarberChatsModalProps {
 }
 
 export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }: BarberChatsModalProps) {
+  const { user } = useAuthStore();
+  const isAdmin = user?.is_admin;
+  
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Campus selector for admins
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<Campus | null>(null);
+  const [campusSearchQuery, setCampusSearchQuery] = useState('');
+  const [showCampusDropdown, setShowCampusDropdown] = useState(false);
+  const campusSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Fetch campuses for admin
+  useEffect(() => {
+    if (isVisible && isAdmin) {
+      campusService.getAllCampuses().then(data => {
+        setCampuses(data);
+        // Don't auto-select, let admin choose
+      }).catch(console.error);
+    }
+  }, [isVisible, isAdmin]);
+
+  // Close campus dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (campusSelectorRef.current && !campusSelectorRef.current.contains(e.target as Node)) {
+        setShowCampusDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (isVisible) {
       fetchBarbers();
     }
-  }, [isVisible]);
+  }, [isVisible, selectedCampus]);
 
   const fetchBarbers = async () => {
     try {
       setLoading(true);
-      const result = await messageService.getBarberChatBarbers();
+      const campusId = isAdmin && selectedCampus ? selectedCampus.id : undefined;
+      const result = await messageService.getBarberChatBarbers(campusId);
       setBarbers(result.barbers);
     } catch (error) {
       console.error('Failed to fetch barbers:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCampusSelect = (campus: Campus) => {
+    setSelectedCampus(campus);
+    setCampusSearchQuery(campus.name);
+    setShowCampusDropdown(false);
   };
 
   const filteredBarbers = barbers.filter(barber =>
@@ -94,7 +140,55 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
               <Send className="w-5 h-5 text-primary-600" />
               Barber Chats
             </h2>
-            <p className="text-sm text-gray-500">Chat with barbers on your campus</p>
+            
+            {/* Campus Selector for Admins */}
+            {isAdmin && campuses.length > 0 ? (
+              <div className="mt-2 relative" ref={campusSelectorRef}>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Select a campus..."
+                    value={showCampusDropdown ? campusSearchQuery : (selectedCampus?.name || '')}
+                    onChange={(e) => {
+                      setCampusSearchQuery(e.target.value);
+                      setShowCampusDropdown(true);
+                    }}
+                    onFocus={() => setShowCampusDropdown(true)}
+                    className="w-full pr-8 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                  />
+                  <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                </div>
+                {showCampusDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[200px] overflow-y-auto overscroll-contain">
+                    <div className="p-1">
+                      {campuses
+                        .filter(campus => campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase()))
+                        .slice(0, 50)
+                        .map(campus => (
+                          <button
+                            key={campus.id}
+                            type="button"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCampusSelect(campus);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors text-sm ${
+                              selectedCampus?.id === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                            }`}
+                          >
+                            {campus.name}
+                          </button>
+                        ))}
+                      {campuses.filter(campus => campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-2 text-gray-500 text-sm">No campuses found</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Chat with barbers on your campus</p>
+            )}
           </div>
           <button
             onClick={onClose}

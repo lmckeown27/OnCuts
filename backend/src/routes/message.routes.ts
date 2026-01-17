@@ -456,15 +456,16 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
 /**
  * GET /api/messages/barber-chats/barbers
  * Get all other barbers on the same campus for barber-to-barber chat
+ * Admins can optionally specify a campusId to view barbers from any campus
  */
 router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
+    const requestedCampusId = req.query.campusId as string | undefined;
 
-    // Get user's barber record to find their campus
-    // Allow active barbers, campus managers, and admins
+    // Get user's info and role
     const userResult = await pool.query(
-      `SELECT b.id as barber_id, COALESCE(b."campusId", u."campusId") as "campusId"
+      `SELECT u.role, b.id as barber_id, COALESCE(b."campusId", u."campusId") as "campusId"
        FROM users u
        LEFT JOIN barbers b ON b."userId" = u.id
        WHERE u.id = $1 
@@ -479,7 +480,16 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
       return res.status(403).json({ success: false, error: 'Only barbers can access this endpoint' });
     }
 
-    const campusId = userResult.rows[0].campusId;
+    const userRole = userResult.rows[0].role;
+    const userCampusId = userResult.rows[0].campusId;
+
+    // Admins can view any campus, others can only view their own
+    let campusId: string;
+    if (requestedCampusId && userRole === 'ADMIN') {
+      campusId = requestedCampusId;
+    } else {
+      campusId = userCampusId;
+    }
 
     if (!campusId) {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });

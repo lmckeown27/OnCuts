@@ -162,8 +162,9 @@ class MessageService {
 
   /**
    * Get all barbers on the same campus for barber-to-barber chat
+   * @param campusId - Optional campus ID for admins to view a specific campus
    */
-  async getBarberChatBarbers(): Promise<{
+  async getBarberChatBarbers(campusId?: string): Promise<{
     barbers: Array<{
       userId: string;
       barberId: string;
@@ -179,7 +180,8 @@ class MessageService {
       unreadCount: number;
     }>;
   }> {
-    return await api.get<{ barbers: any[] }>('/messages/barber-chats/barbers');
+    const params = campusId ? `?campusId=${campusId}` : '';
+    return await api.get<{ barbers: any[] }>(`/messages/barber-chats/barbers${params}`);
   }
 
   /**
