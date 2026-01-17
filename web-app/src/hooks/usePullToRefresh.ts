@@ -40,6 +40,12 @@ export function usePullToRefresh({
   const pullDistanceRef = useRef(0);
   const onRefreshRef = useRef(onRefresh);
   const isRefreshingRef = useRef(false);
+  const touchMoveCount = useRef(0);
+  const maxRawMovement = useRef(0);
+  
+  // Minimum requirements for a valid pull gesture
+  const MIN_TOUCH_MOVES = 3; // Must have at least 3 touchmove events
+  const MIN_RAW_MOVEMENT = 50; // Must have at least 50px of raw movement (before resistance)
   
   // Keep refs in sync with state/props
   useEffect(() => {
@@ -55,6 +61,10 @@ export function usePullToRefresh({
   }, [isRefreshing]);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
+    // Reset gesture tracking
+    touchMoveCount.current = 0;
+    maxRawMovement.current = 0;
+    
     // Only activate if at the very top of the page (or nearly so)
     if (window.scrollY > 5) {
       canPull.current = false;
@@ -70,7 +80,7 @@ export function usePullToRefresh({
     const target = e.target as HTMLElement;
     if (target) {
       // Check if the target or any of its ancestors is an interactive element
-      const interactiveElement = target.closest('button, a, [role="button"], [onclick], .cursor-pointer');
+      const interactiveElement = target.closest('button, a, [role="button"], [onclick], .cursor-pointer, .card, [data-clickable]');
       if (interactiveElement) {
         canPull.current = false;
         return;
@@ -85,6 +95,9 @@ export function usePullToRefresh({
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!canPull.current || isRefreshingRef.current) return;
     
+    // Track touch move count for gesture validation
+    touchMoveCount.current++;
+    
     // If user scrolled down, cancel pull
     if (window.scrollY > 5) {
       canPull.current = false;
@@ -96,6 +109,11 @@ export function usePullToRefresh({
 
     currentY.current = e.touches[0].clientY;
     const diff = currentY.current - startY.current;
+    
+    // Track maximum raw movement for gesture validation
+    if (diff > maxRawMovement.current) {
+      maxRawMovement.current = diff;
+    }
 
     if (diff > 0) {
       // Apply resistance to make it feel natural (like rubber band)
@@ -123,8 +141,13 @@ export function usePullToRefresh({
     // Use refs to get the latest values, avoiding stale closure issues
     const currentPullDistance = pullDistanceRef.current;
     const currentIsRefreshing = isRefreshingRef.current;
+    const moves = touchMoveCount.current;
+    const rawMovement = maxRawMovement.current;
+    
+    // Validate this was a legitimate pull gesture, not a tap or accidental touch
+    const isValidGesture = moves >= MIN_TOUCH_MOVES && rawMovement >= MIN_RAW_MOVEMENT;
 
-    if (currentPullDistance >= threshold && !currentIsRefreshing) {
+    if (currentPullDistance >= threshold && !currentIsRefreshing && isValidGesture) {
       setIsRefreshing(true);
       isRefreshingRef.current = true;
       // Keep spinner visible during refresh
