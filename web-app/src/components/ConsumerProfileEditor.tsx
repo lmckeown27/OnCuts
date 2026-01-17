@@ -308,36 +308,36 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
         <div className="flex gap-4">
           <button
             onClick={() => setActiveSection('profile')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'profile'
                 ? 'border-primary-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <UserIcon className="w-4 h-4 inline mr-2" />
-            Profile Info
+            <UserIcon className="w-4 h-4" />
+            <span className="whitespace-nowrap">Profile Info</span>
           </button>
           <button
             onClick={() => setActiveSection('notifications')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'notifications'
                 ? 'border-primary-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Bell className="w-4 h-4 inline mr-2" />
-            Notifications
+            <Bell className="w-4 h-4" />
+            <span className="whitespace-nowrap">Notifications</span>
           </button>
           <button
             onClick={() => setActiveSection('security')}
-            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors ${
+            className={`pb-3 px-2 border-b-2 font-medium text-sm transition-colors flex flex-col sm:flex-row items-center gap-1 sm:gap-2 ${
               activeSection === 'security'
                 ? 'border-primary-400 text-primary-400'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Lock className="w-4 h-4 inline mr-2" />
-            Security
+            <Lock className="w-4 h-4" />
+            <span className="whitespace-nowrap">Security</span>
           </button>
         </div>
       </div>
@@ -417,9 +417,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
                 <p className="font-medium text-gray-900">{user?.email}</p>
                 <p className="text-sm text-gray-500">Verified {user?.is_verified ? '✓' : '✗'}</p>
               </div>
-              <span className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
-                Cannot be changed
-              </span>
             </div>
           </Card>
 
