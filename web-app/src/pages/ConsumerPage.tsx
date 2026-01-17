@@ -1140,8 +1140,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
         {(filteredBarbers || []).map((barber) => {
           // Find the haircut price specifically, or fall back to lowest price
           const haircutService = barber.pricing?.find(p => 
-            p.service_type?.toLowerCase() === 'haircut' || 
-            p.serviceType?.toLowerCase() === 'haircut'
+            p.name?.toLowerCase() === 'haircut'
           );
           const displayPrice = haircutService?.price ?? (
             barber.pricing && barber.pricing.length > 0
@@ -1351,7 +1350,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                               key={idx}
                               className="px-3 py-1.5 bg-primary-100 text-primary-600 text-sm rounded-full font-medium flex items-center gap-1.5"
                             >
-                              <span>{service.service_type || service.serviceType}</span>
+                              <span>{service.name}</span>
                               <span className="text-primary-500">•</span>
                               <span className="font-bold">${service.price}</span>
                             </span>
