@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap, Check, Trash2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
@@ -149,7 +149,6 @@ export default function ConsumerPage() {
     serviceName: string;
     amount: number;
   } | null>(null);
-  const [isBarberPopupOpen, setIsBarberPopupOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -159,7 +158,7 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || isBarberPopupOpen;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
@@ -531,7 +530,7 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DiscoveryView navigate={navigate} onBarberPopupChange={setIsBarberPopupOpen} />
+        <DiscoveryView navigate={navigate} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -849,21 +848,12 @@ export default function ConsumerPage() {
   );
 }
 
-function DiscoveryView({ navigate, onBarberPopupChange }: { navigate: any; onBarberPopupChange?: (isOpen: boolean) => void }) {
+function DiscoveryView({ navigate }: { navigate: any }) {
   const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBarberState, setSelectedBarberState] = useState<Barber | null>(null);
-  
-  // Wrapper to notify parent when barber popup opens/closes
-  const setSelectedBarber = useCallback((barber: Barber | null) => {
-    setSelectedBarberState(barber);
-    onBarberPopupChange?.(barber !== null);
-  }, [onBarberPopupChange]);
-  
-  // Alias for reading the state
-  const selectedBarber = selectedBarberState;
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [filterCriteria, setFilterCriteria] = useState<FilterCriteria>({
     serviceType: null,
