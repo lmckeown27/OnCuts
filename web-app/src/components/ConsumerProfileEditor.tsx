@@ -295,14 +295,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Profile</h2>
-          <p className="text-gray-600 mt-1">Manage your personal information and preferences</p>
-        </div>
-      </div>
-
       {/* Section Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex gap-4">
