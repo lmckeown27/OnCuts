@@ -57,7 +57,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
   // Fetch campuses for admin
   useEffect(() => {
     if (isVisible && isAdmin) {
-      campusService.getAllCampuses().then(data => {
+      campusService.getCampuses().then(data => {
         setCampuses(data);
         // Don't auto-select, let admin choose
       }).catch(console.error);
