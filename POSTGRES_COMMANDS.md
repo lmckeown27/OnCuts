@@ -1768,6 +1768,49 @@ ORDER BY distance_km;
 
 ---
 
+## PENDING REGISTRATIONS
+
+The `pending_registrations` table stores user registration data while awaiting email verification.
+This table is auto-created by the verification service on startup.
+
+### View Pending Registrations
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT email, first_name, last_name, role, expires_at, created_at
+FROM pending_registrations
+ORDER BY created_at DESC;
+"
+```
+
+### Delete Expired Pending Registrations
+```bash
+sudo -u postgres psql -d campuscuts -c "DELETE FROM pending_registrations WHERE expires_at < NOW();"
+```
+
+### Clear All Pending Registrations (Testing Only)
+```bash
+sudo -u postgres psql -d campuscuts -c "DELETE FROM pending_registrations;"
+```
+
+### Create Table Manually (if not auto-created)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+CREATE TABLE IF NOT EXISTS pending_registrations (
+  email VARCHAR(255) PRIMARY KEY,
+  password_hash TEXT NOT NULL,
+  first_name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  campus_id UUID,
+  role VARCHAR(50) NOT NULL,
+  verification_code VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"
+```
+
+---
+
 ## PENDING MIGRATIONS
 
 ### Add paymentRequestedAt column to bookings (Required for payment flow)
