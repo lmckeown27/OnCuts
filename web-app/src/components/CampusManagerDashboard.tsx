@@ -1226,28 +1226,22 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4" />
-              Barbers
-            </span>
+            Barbers
           </button>
           
           {/* Requested Locations - Only show if there are pending requests */}
           {pendingLocations.length > 0 && (
             <button
               onClick={() => setActiveSubTab('requested')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 flex items-center gap-1.5 ${
                 activeSubTab === 'requested'
                   ? 'border-amber-500 text-amber-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4" />
-                Requested
-                <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
-                  {pendingLocations.length}
-                </span>
+              Requested
+              <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                {pendingLocations.length}
               </span>
             </button>
           )}
@@ -1260,10 +1254,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              Locations
-            </span>
+            Locations
           </button>
         </nav>
       </div>
