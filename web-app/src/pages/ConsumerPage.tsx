@@ -893,9 +893,6 @@ export default function ConsumerPage() {
             {/* Content */}
             <div className="p-6">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-600" />
-                </div>
                 <p className="text-gray-600">
                   <span className="font-semibold text-gray-900">{declinedModalData.barberName}</span> was unable to accept your booking request.
                 </p>
@@ -911,25 +908,6 @@ export default function ConsumerPage() {
                   <p className="text-red-700 text-sm">{declinedModalData.reason}</p>
                 </div>
               )}
-
-              {/* What's Next */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                <h4 className="font-semibold text-gray-900 mb-3">What's Next?</h4>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary-500 mt-1">•</span>
-                    <span>Browse other available barbers near you</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary-500 mt-1">•</span>
-                    <span>Try booking at a different time</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary-500 mt-1">•</span>
-                    <span>Message the barber if you have questions</span>
-                  </li>
-                </ul>
-              </div>
 
               {/* Support Contact */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
