@@ -818,7 +818,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
       const barbersList = barbersArray.map((b: any) => ({
         id: b.id,
         name: b.name || b.display_name || `${b.first_name || ''} ${b.last_name || ''}`.trim() || 'Unknown',
-        profilePicture: b.profile_picture || b.profilePicture || b.avatar || null,
+        profilePicture: b.profile_picture_url || b.profilePictureUrl || b.profile_picture || b.avatarUrl || b.avatar_url || b.avatar || null,
       }));
       
       setCampusBarbers(barbersList);
@@ -1295,7 +1295,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     onClick={() => toggleBarberExpanded(barber.id)}
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left flex-1"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                       {barber.profilePicture ? (
                         <img 
                           src={barber.profilePicture} 
@@ -1303,7 +1303,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <Users className="w-5 h-5 text-gray-400" />
+                        <span className="text-primary-600 font-semibold text-sm">
+                          {barber.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </span>
                       )}
                     </div>
                     <div>
