@@ -1135,7 +1135,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   // Day modal open/close handlers with animation
   const openDayModal = (date: Date) => {
     setSelectedDate(date);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Scroll to bottom to prevent pull-to-refresh from activating while popup is open
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' });
     setShowDayModal(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1154,6 +1155,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       setIsEditingBooking(false);
       setIsDeletingBooking(false);
       setCancelReason('');
+      // Scroll back to top when modal closes
+      window.scrollTo({ top: 0, behavior: 'instant' });
     }, 150);
   };
 
