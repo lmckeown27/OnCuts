@@ -15,7 +15,8 @@ import {
   Instagram,
   Mail,
   Clock,
-  Loader2
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -25,11 +26,13 @@ import type { Barber } from '../types';
 interface CampusManagerBarberViewProps {
   barberId: string;
   onClose: () => void;
+  onRemove?: () => void;
 }
 
 export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = ({ 
   barberId, 
-  onClose 
+  onClose,
+  onRemove
 }) => {
   const [barber, setBarber] = useState<Barber | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,6 +290,30 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
           </a>
         </div>
       </Card>
+
+      {/* Remove Barber */}
+      {onRemove && (
+        <Card className="p-4 bg-red-50 border-red-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <XCircle className="w-5 h-5 text-red-600" />
+              <div>
+                <h4 className="font-semibold text-red-900 text-sm">Remove Barber</h4>
+                <p className="text-xs text-red-700">Remove this barber from your campus</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRemove}
+              className="text-red-600 border-red-300 hover:bg-red-100"
+            >
+              <XCircle className="w-4 h-4 mr-1" />
+              Remove
+            </Button>
+          </div>
+        </Card>
+      )}
 
     </div>
   );

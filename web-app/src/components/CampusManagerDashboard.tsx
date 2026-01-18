@@ -583,10 +583,12 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   // If a barber is selected, show their profile instead of the list
   if (selectedBarberId) {
+    const selectedBarber = barbers.find(b => b.id === selectedBarberId);
     return (
       <CampusManagerBarberView
         barberId={selectedBarberId}
         onClose={() => setSelectedBarberId(null)}
+        onRemove={selectedBarber ? () => setRemoveConfirmBarber(selectedBarber) : undefined}
       />
     );
   }
@@ -613,7 +615,11 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       ) : (
         <div className="space-y-3">
           {filteredBarbers.map((barber) => (
-            <Card key={barber.id} className="p-3 sm:p-5">
+            <Card 
+              key={barber.id} 
+              className="p-3 sm:p-5 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setSelectedBarberId(barber.id)}
+            >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
                 <div className="flex-1">
                   {/* Header Row */}
@@ -622,35 +628,19 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                   </div>
 
                   {/* Contact Info */}
-                  <div className="mb-3 text-xs sm:text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     <div className="flex items-center gap-1.5 sm:gap-2 truncate">
                       <span className="font-medium">Email:</span>
-                      <a href={`mailto:${barber.email}`} className="text-primary-600 hover:underline truncate">
+                      <span className="text-primary-600 truncate">
                         {barber.email}
-                      </a>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Actions - Full width on mobile */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:ml-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedBarberId(barber.id)}
-                    className="flex-1 sm:flex-none text-xs sm:text-sm"
-                  >
-                    View Profile
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setRemoveConfirmBarber(barber)}
-                    className="text-red-600 border-red-300 hover:bg-red-50 text-xs sm:text-sm w-full sm:w-auto"
-                  >
-                    <XCircle className="w-4 h-4 mr-1" />
-                    Remove
-                  </Button>
+                {/* Arrow indicator for tap to view */}
+                <div className="hidden sm:flex items-center text-gray-400">
+                  <ChevronLeft className="w-5 h-5 rotate-180" />
                 </div>
               </div>
             </Card>
