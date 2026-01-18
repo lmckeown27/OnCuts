@@ -2,6 +2,12 @@
  * Location Routes
  * 
  * API endpoints for managing campus locations and barber location assignments
+ * 
+ * Uses existing campus_locations table schema:
+ * - university_id (not campus_id)
+ * - is_verified (not is_active)
+ * - created_by_user_id (not created_by)
+ * - normalized_name, category, cohort, usage_count, confidence columns
  */
 
 import { Router, Response, NextFunction } from 'express';
@@ -10,6 +16,11 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
 const router = Router();
+
+// Helper to normalize location name
+const normalizeLocationName = (name: string): string => {
+  return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+};
 
 // ============================================================================
 // CAMPUS LOCATIONS (Campus Manager / Admin)
@@ -24,25 +35,25 @@ router.get('/campus/:campusId', authenticate, async (req: AuthRequest, res: Resp
     const { campusId } = req.params;
     const { activeOnly } = req.query;
     
-    let whereClause = 'campus_id = $1';
+    let whereClause = 'university_id = $1';
     if (activeOnly === 'true') {
-      whereClause += ' AND is_active = true';
+      whereClause += ' AND is_verified = true';
     }
     
     const result = await pool.query(
       `SELECT 
         cl.id,
-        cl.campus_id,
+        cl.university_id as campus_id,
         cl.name,
-        cl.description,
-        cl.address,
-        cl.is_active,
+        cl.normalized_name as description,
+        cl.category as address,
+        cl.is_verified as is_active,
         cl.created_at,
         cl.updated_at,
         u.first_name || ' ' || u.last_name as created_by_name,
         (SELECT COUNT(*) FROM barber_locations bl WHERE bl.location_id = cl.id) as barber_count
       FROM campus_locations cl
-      LEFT JOIN users u ON cl.created_by = u.id
+      LEFT JOIN users u ON cl.created_by_user_id = u.id
       WHERE ${whereClause}
       ORDER BY cl.name ASC`,
       [campusId]
@@ -95,10 +106,12 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
       });
     }
     
+    const normalizedName = normalizeLocationName(name);
+    
     // Check for duplicate name
     const duplicateCheck = await pool.query(
-      `SELECT id FROM campus_locations WHERE campus_id = $1 AND LOWER(name) = LOWER($2)`,
-      [campusId, name.trim()]
+      `SELECT id FROM campus_locations WHERE university_id = $1 AND normalized_name = $2`,
+      [campusId, normalizedName]
     );
     
     if (duplicateCheck.rows.length > 0) {
@@ -109,10 +122,10 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
     }
     
     const result = await pool.query(
-      `INSERT INTO campus_locations (campus_id, name, description, address, created_by)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [campusId, name.trim(), description || null, address || null, userId]
+      `INSERT INTO campus_locations (university_id, name, normalized_name, category, cohort, usage_count, confidence, is_verified, created_by_user_id)
+       VALUES ($1, $2, $3, $4, 'UNKNOWN', 1, 0.80, true, $5)
+       RETURNING id, university_id as campus_id, name, normalized_name as description, category as address, is_verified as is_active, created_at, updated_at`,
+      [campusId, name.trim(), normalizedName, address || 'OTHER', userId]
     );
     
     logger.info(`Location created: ${name} for campus ${campusId} by user ${userId}`);
@@ -139,7 +152,7 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
     
     // Get the location to check campus
     const locationCheck = await pool.query(
-      `SELECT campus_id FROM campus_locations WHERE id = $1`,
+      `SELECT university_id FROM campus_locations WHERE id = $1`,
       [locationId]
     );
     
@@ -150,7 +163,7 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
       });
     }
     
-    const campusId = locationCheck.rows[0].campus_id;
+    const campusId = locationCheck.rows[0].university_id;
     
     // Check if user is campus manager or admin
     const authCheck = await pool.query(
@@ -172,16 +185,18 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
       });
     }
     
+    const normalizedName = name ? normalizeLocationName(name) : null;
+    
     const result = await pool.query(
       `UPDATE campus_locations
        SET name = COALESCE($1, name),
-           description = COALESCE($2, description),
-           address = COALESCE($3, address),
-           is_active = COALESCE($4, is_active),
+           normalized_name = COALESCE($2, normalized_name),
+           category = COALESCE($3, category),
+           is_verified = COALESCE($4, is_verified),
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
-       RETURNING *`,
-      [name, description, address, isActive, locationId]
+       RETURNING id, university_id as campus_id, name, normalized_name as description, category as address, is_verified as is_active, created_at, updated_at`,
+      [name, normalizedName, address, isActive, locationId]
     );
     
     res.json({
@@ -205,7 +220,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
     
     // Get the location to check campus
     const locationCheck = await pool.query(
-      `SELECT campus_id, name FROM campus_locations WHERE id = $1`,
+      `SELECT university_id, name FROM campus_locations WHERE id = $1`,
       [locationId]
     );
     
@@ -216,7 +231,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
       });
     }
     
-    const campusId = locationCheck.rows[0].campus_id;
+    const campusId = locationCheck.rows[0].university_id;
     const locationName = locationCheck.rows[0].name;
     
     // Check if user is campus manager or admin
@@ -276,12 +291,12 @@ router.get('/barber/:barberId', authenticate, async (req: AuthRequest, res: Resp
         bl.created_at as assigned_at,
         cl.id as location_id,
         cl.name,
-        cl.description,
-        cl.address,
-        cl.is_active
+        cl.normalized_name as description,
+        cl.category as address,
+        cl.is_verified as is_active
       FROM barber_locations bl
       JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_active = true
+      WHERE bl.barber_id = $1 AND cl.is_verified = true
       ORDER BY bl.is_primary DESC, cl.name ASC`,
       [barberId]
     );
@@ -327,20 +342,20 @@ router.get('/my-locations', authenticate, async (req: AuthRequest, res: Response
         bl.is_primary,
         cl.id as location_id,
         cl.name,
-        cl.description,
-        cl.address
+        cl.normalized_name as description,
+        cl.category as address
       FROM barber_locations bl
       JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_active = true
+      WHERE bl.barber_id = $1 AND cl.is_verified = true
       ORDER BY bl.is_primary DESC, cl.name ASC`,
       [barberId]
     );
     
     // Get all available locations for this campus (for adding new ones)
     const availableResult = await pool.query(
-      `SELECT id, name, description, address
+      `SELECT id, name, normalized_name as description, category as address
        FROM campus_locations
-       WHERE campus_id = $1 AND is_active = true
+       WHERE university_id = $1 AND is_verified = true
        ORDER BY name ASC`,
       [campusId]
     );
@@ -392,7 +407,7 @@ router.post('/barber/assign', authenticate, async (req: AuthRequest, res: Respon
     
     // Verify the location belongs to the barber's campus
     const locationCheck = await pool.query(
-      `SELECT campus_id FROM campus_locations WHERE id = $1 AND is_active = true`,
+      `SELECT university_id FROM campus_locations WHERE id = $1 AND is_verified = true`,
       [locationId]
     );
     
@@ -403,7 +418,7 @@ router.post('/barber/assign', authenticate, async (req: AuthRequest, res: Respon
       });
     }
     
-    if (locationCheck.rows[0].campus_id !== barberCampusId) {
+    if (locationCheck.rows[0].university_id !== barberCampusId) {
       return res.status(400).json({
         success: false,
         error: 'This location is not available for your campus',
@@ -490,12 +505,12 @@ router.get('/for-booking/:barberId', async (req, res, next) => {
       `SELECT 
         cl.id,
         cl.name,
-        cl.description,
-        cl.address,
+        cl.normalized_name as description,
+        cl.category as address,
         bl.is_primary
       FROM barber_locations bl
       JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_active = true
+      WHERE bl.barber_id = $1 AND cl.is_verified = true
       ORDER BY bl.is_primary DESC, cl.name ASC`,
       [barberId]
     );
