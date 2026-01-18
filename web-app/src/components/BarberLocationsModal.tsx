@@ -283,7 +283,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                           value={newLocationName}
                           onChange={(e) => setNewLocationName(e.target.value)}
                           placeholder="e.g., Dexter Lawn, My Dorm, Student Union"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base sm:text-sm"
                           autoFocus
                         />
                       </div>
@@ -294,7 +294,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                           value={newLocationDescription}
                           onChange={(e) => setNewLocationDescription(e.target.value)}
                           placeholder="Brief description or directions"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base sm:text-sm"
                         />
                       </div>
                       <div className="flex gap-2">
