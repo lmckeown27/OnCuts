@@ -333,7 +333,7 @@ export default function BookingDetailsModal({
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Cancel Booking
+                      Cancel
                     </>
                   )}
                 </button>
@@ -344,7 +344,7 @@ export default function BookingDetailsModal({
             <div className="space-y-4">
               <h3 className="font-bold text-gray-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-primary-500" />
-                Edit Booking
+                Edit
               </h3>
 
               {/* Date & Time */}
@@ -572,14 +572,14 @@ export default function BookingDetailsModal({
               {/* Action Buttons */}
               {(canComplete || canEdit || canCancel) && (
                 <div className="space-y-3 pt-4 border-t border-gray-100">
-                  {/* Complete Booking Button - Navigates to Payment Page */}
+                  {/* Complete Button - Navigates to Payment Page */}
                   {canComplete && (
                     <button
                       onClick={handleCompleteBooking}
                       className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
                       <CreditCard className="w-4 h-4" />
-                      Complete Booking
+                      Complete
                     </button>
                   )}
                   
@@ -592,7 +592,7 @@ export default function BookingDetailsModal({
                           className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                         >
                           <Pencil className="w-4 h-4" />
-                          Edit Booking
+                          Edit
                         </button>
                       )}
                       {canCancel && (
@@ -601,7 +601,7 @@ export default function BookingDetailsModal({
                           className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-red-200"
                         >
                           <Trash2 className="w-4 h-4" />
-                          Cancel Booking
+                          Cancel
                         </button>
                       )}
                     </div>
