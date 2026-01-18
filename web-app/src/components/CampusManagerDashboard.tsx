@@ -18,7 +18,10 @@ import {
   MapPin,
   Plus,
   Edit2,
-  Trash2
+  Trash2,
+  ChevronLeft,
+  DollarSign,
+  Star
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
