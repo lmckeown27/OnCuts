@@ -85,10 +85,9 @@ export default function BarberPage() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
-  const [isDayModalOpen, setIsDayModalOpen] = useState(false); // Track DayModal from DashboardView
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal || isDayModalOpen;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -549,7 +548,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} onDayModalChange={setIsDayModalOpen} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -960,7 +959,6 @@ interface DashboardViewProps {
   // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
   campusTimezone?: string;
-  onDayModalChange?: (isOpen: boolean) => void;
 }
 
 // Type for confirmed bookings
@@ -986,7 +984,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onDayModalChange }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
     const now = new Date();
@@ -1007,11 +1005,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Notify parent when DayModal opens/closes (for disabling pull-to-refresh)
-  useEffect(() => {
-    onDayModalChange?.(showDayModal);
-  }, [showDayModal, onDayModalChange]);
   
   // Inline booking details state (shown within DayModal instead of separate popup)
   const [selectedBookingInline, setSelectedBookingInline] = useState<ConfirmedBooking | null>(null);
