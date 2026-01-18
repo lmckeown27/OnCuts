@@ -1205,7 +1205,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   const bookingDate = new Date(b.scheduledTime);
                   return bookingDate >= startOfWeek && bookingDate < endOfWeek;
                 }).length;
-                return `${count} appointment${count !== 1 ? 's' : ''} this week`;
+                const weekWord = weekOffset === 0 ? 'this' : 'that';
+                return `${count} appointment${count !== 1 ? 's' : ''} ${weekWord} week`;
               } else {
                 const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
                 const displayMonth = displayDate.getMonth();
@@ -1214,7 +1215,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   const bookingDate = new Date(b.scheduledTime);
                   return bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear;
                 }).length;
-                return `${count} appointment${count !== 1 ? 's' : ''} this month`;
+                const monthWord = monthOffset === 0 ? 'this' : 'that';
+                return `${count} appointment${count !== 1 ? 's' : ''} ${monthWord} month`;
               }
             })()}
           </p>
