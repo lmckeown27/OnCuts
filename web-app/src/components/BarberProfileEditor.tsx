@@ -237,7 +237,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
         <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
         <div className="flex justify-center mb-4">
-          <div className="relative w-48 sm:w-56 h-40 sm:h-64 overflow-hidden rounded-lg bg-gray-200">
+          <div className="relative w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200">
             {profilePhoto ? (
               <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
             ) : (
@@ -247,7 +247,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
             )}
           </div>
         </div>
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -260,11 +260,15 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
             size="sm" 
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
+            className="whitespace-nowrap px-6"
           >
             <Upload className="w-4 h-4 mr-2" />
             {isUploading ? 'Uploading...' : 'Upload Photo'}
           </Button>
-          <p className="text-xs text-gray-500">Max size: 5MB. Formats: JPG, PNG</p>
+          <div className="text-xs text-gray-500 text-center sm:text-left">
+            <p>Max size: 5MB</p>
+            <p>Formats: JPG, PNG</p>
+          </div>
         </div>
       </Card>
 
