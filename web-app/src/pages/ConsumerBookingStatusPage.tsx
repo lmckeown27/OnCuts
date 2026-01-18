@@ -801,13 +801,16 @@ export default function ConsumerBookingStatusPage() {
 
         {/* Actions */}
         <div className="space-y-3">
-          <button
-            onClick={handleMessageBarber}
-            className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
-          >
-            <MessageCircle className="w-5 h-5" />
-            Message {booking.barberName}
-          </button>
+          {/* Message button only shows after barber accepts (messaging locked during pending) */}
+          {isAccepted && (
+            <button
+              onClick={handleMessageBarber}
+              className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Message {booking.barberName}
+            </button>
+          )}
           
           {/* Edit and Cancel buttons for pending and accepted bookings (hidden if payment requested) */}
           {(isPending || isAccepted) && !booking.paymentRequestedAt && (
