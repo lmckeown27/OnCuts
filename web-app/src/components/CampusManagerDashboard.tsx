@@ -737,6 +737,7 @@ interface CampusLocation {
 interface CampusBarberOption {
   id: string;
   name: string;
+  profilePicture: string | null;
 }
 
 interface BarberLocationAssignment {
@@ -750,6 +751,7 @@ interface BarberLocationAssignment {
 interface BarberWithLocations {
   id: string;
   name: string;
+  profilePicture: string | null;
   locations: BarberLocationAssignment[];
 }
 
@@ -816,6 +818,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
       const barbersList = barbersArray.map((b: any) => ({
         id: b.id,
         name: b.name || b.display_name || `${b.first_name || ''} ${b.last_name || ''}`.trim() || 'Unknown',
+        profilePicture: b.profile_picture || b.profilePicture || b.avatar || null,
       }));
       
       setCampusBarbers(barbersList);
@@ -844,12 +847,13 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
               return {
                 id: barber.id,
                 name: barber.name,
+                profilePicture: barber.profilePicture,
                 locations: data.data || [],
               };
             }
-            return { id: barber.id, name: barber.name, locations: [] };
+            return { id: barber.id, name: barber.name, profilePicture: barber.profilePicture, locations: [] };
           } catch {
-            return { id: barber.id, name: barber.name, locations: [] };
+            return { id: barber.id, name: barber.name, profilePicture: barber.profilePicture, locations: [] };
           }
         })
       );
@@ -1291,8 +1295,16 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     onClick={() => toggleBarberExpanded(barber.id)}
                     className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left flex-1"
                   >
-                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary-600" />
+                    <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {barber.profilePicture ? (
+                        <img 
+                          src={barber.profilePicture} 
+                          alt={barber.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Users className="w-5 h-5 text-gray-400" />
+                      )}
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{barber.name}</p>
