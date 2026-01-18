@@ -46,6 +46,14 @@ export function usePullToRefresh({
       return;
     }
     
+    // Don't activate if touch started on an interactive element (buttons, cards, links, etc.)
+    // This prevents pull-to-refresh from interfering with taps on clickable elements
+    const target = e.target as HTMLElement;
+    if (target?.closest?.('button, a, [role="button"], .cursor-pointer, [data-clickable]')) {
+      canPull.current = false;
+      return;
+    }
+    
     // Only activate if at the very top of the page (or nearly so)
     if (window.scrollY > 5) {
       canPull.current = false;
