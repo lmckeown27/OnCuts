@@ -933,17 +933,22 @@ function generatePendingBookingHtml(
       <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 18px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
     </div>
     
-    <p style="color: #6b7280; font-size: 14px; margin: 20px 0;">
+    <p style="color: #6b7280; font-size: 14px; margin: 15px 0 20px 0;">
       ${isConsumer 
-        ? "We'll notify you once the barber confirms your booking. You can track your booking status on the webpage."
-        : 'Please review and respond to this booking request in the CampusCut app.'}
+        ? "We'll notify you once the barber confirms your booking."
+        : 'Please review and respond to this booking request.'}
     </p>
     
-    <p style="text-align: center; margin: 30px 0 20px 0;">
-      <a href="${ctaLink}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
-        ${ctaText}
-      </a>
-    </p>
+    <!-- CTA Button -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 10px 0 15px 0;">
+      <tr>
+        <td align="center">
+          <a href="${ctaLink}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+            ${ctaText}
+          </a>
+        </td>
+      </tr>
+    </table>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
