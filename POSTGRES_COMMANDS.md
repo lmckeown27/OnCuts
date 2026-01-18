@@ -1974,6 +1974,135 @@ CREATE TABLE IF NOT EXISTS pending_registrations (
 
 ---
 
+## SERVICE LOCATIONS (Barber-defined and Campus Manager curated)
+
+This system allows barbers to request new service locations, which campus managers approve/reject.
+Campus managers can also create locations directly. Locations can be **universal** (all barbers) or **barber-specific**.
+
+### Create Service Locations Tables (Run this once)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+-- New table for service locations with approval workflow
+CREATE TABLE IF NOT EXISTS service_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campus_id UUID NOT NULL REFERENCES campuses(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  is_active BOOLEAN DEFAULT true,
+  status VARCHAR(20) DEFAULT 'approved',  -- 'pending', 'approved', 'rejected'
+  is_universal BOOLEAN DEFAULT true,       -- true = all barbers, false = specific barber
+  restricted_to_barber_id UUID REFERENCES barbers(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES users(id),    -- who requested/created it
+  reviewed_by UUID REFERENCES users(id),   -- campus manager who approved/rejected
+  reviewed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(campus_id, name)
+);
+
+-- Barber assignments to service locations (which barbers use which locations)
+CREATE TABLE IF NOT EXISTS barber_service_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  barber_id UUID NOT NULL REFERENCES barbers(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES service_locations(id) ON DELETE CASCADE,
+  is_primary BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(barber_id, location_id)
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_service_locations_campus ON service_locations(campus_id);
+CREATE INDEX IF NOT EXISTS idx_service_locations_status ON service_locations(campus_id, status);
+CREATE INDEX IF NOT EXISTS idx_service_locations_active ON service_locations(campus_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_barber_service_locations_barber ON barber_service_locations(barber_id);
+CREATE INDEX IF NOT EXISTS idx_barber_service_locations_location ON barber_service_locations(location_id);
+"
+```
+
+### Add Approval Workflow Columns (Migration for existing tables)
+If the `service_locations` table already exists without the approval columns:
+```bash
+sudo -u postgres psql -d campuscuts -c "
+ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'approved';
+ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS is_universal BOOLEAN DEFAULT true;
+ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS restricted_to_barber_id UUID REFERENCES barbers(id) ON DELETE SET NULL;
+ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS reviewed_by UUID REFERENCES users(id);
+ALTER TABLE service_locations ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP WITH TIME ZONE;
+CREATE INDEX IF NOT EXISTS idx_service_locations_status ON service_locations(campus_id, status);
+"
+```
+
+### View All Service Locations
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    sl.id,
+    sl.name,
+    sl.description,
+    sl.status,
+    CASE WHEN sl.is_universal THEN 'All Barbers' ELSE 'Specific' END as availability,
+    c.name as campus_name,
+    sl.is_active,
+    u.first_name || ' ' || u.last_name as created_by
+FROM service_locations sl
+JOIN campuses c ON sl.campus_id = c.id
+LEFT JOIN users u ON sl.created_by = u.id
+ORDER BY c.name, sl.status, sl.name;
+"
+```
+
+### View Pending Location Requests
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    sl.id,
+    sl.name,
+    sl.description,
+    c.name as campus_name,
+    u.first_name || ' ' || u.last_name as requested_by,
+    u.email as requester_email,
+    sl.created_at
+FROM service_locations sl
+JOIN campuses c ON sl.campus_id = c.id
+LEFT JOIN users u ON sl.created_by = u.id
+WHERE sl.status = 'pending'
+ORDER BY sl.created_at DESC;
+"
+```
+
+### View Barber Location Assignments
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    bsl.id as assignment_id,
+    u.first_name || ' ' || u.last_name as barber_name,
+    sl.name as location_name,
+    bsl.is_primary,
+    sl.is_universal
+FROM barber_service_locations bsl
+JOIN barbers b ON bsl.barber_id = b.id
+JOIN users u ON b.\"userId\" = u.id
+JOIN service_locations sl ON bsl.location_id = sl.id
+WHERE sl.status = 'approved'
+ORDER BY barber_name, bsl.is_primary DESC, location_name;
+"
+```
+
+### Approve a Pending Location Request (Example)
+```bash
+# Replace LOCATION_ID and REVIEWER_USER_ID with actual UUIDs
+sudo -u postgres psql -d campuscuts -c "
+UPDATE service_locations 
+SET status = 'approved', 
+    is_universal = true, 
+    reviewed_by = 'REVIEWER_USER_ID', 
+    reviewed_at = NOW() 
+WHERE id = 'LOCATION_ID';
+"
+```
+
+---
+
 ## PENDING MIGRATIONS
 
 ### Add paymentRequestedAt column to bookings (Required for payment flow)

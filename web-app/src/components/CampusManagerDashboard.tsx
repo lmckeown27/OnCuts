@@ -720,28 +720,51 @@ interface CampusLocation {
   campus_id: string;
   name: string;
   description: string | null;
-  address: string | null;
   is_active: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  is_universal: boolean;
+  restricted_to_barber_id: string | null;
+  restricted_barber_name: string | null;
   created_at: string;
   updated_at: string;
+  reviewed_at: string | null;
   created_by_name: string | null;
+  created_by_email: string | null;
+  reviewed_by_name: string | null;
   barber_count: string;
+}
+
+interface CampusBarberOption {
+  id: string;
+  name: string;
 }
 
 const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [locations, setLocations] = useState<CampusLocation[]>([]);
+  const [campusBarbers, setCampusBarbers] = useState<CampusBarberOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingLocation, setEditingLocation] = useState<CampusLocation | null>(null);
+  const [approvalLocation, setApprovalLocation] = useState<CampusLocation | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<CampusLocation | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', address: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', 
+    description: '', 
+    isUniversal: true, 
+    restrictedToBarberId: '' 
+  });
+  const [approvalData, setApprovalData] = useState({
+    isUniversal: true,
+    restrictedToBarberId: '',
+  });
   const [saving, setSaving] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved'>('all');
 
   const fetchLocations = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/locations/campus/${campusId}`, {
+      const response = await fetch(`/api/locations/campus/${campusId}?status=${activeFilter}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -760,9 +783,26 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     }
   };
 
+  const fetchBarbers = async () => {
+    try {
+      const barberServiceModule = await import('../services/barber.service');
+      const barberService = barberServiceModule.default;
+      const response = await barberService.getBarbers({ campusId } as any);
+      const barbersArray = Array.isArray(response) ? response : (response?.data || []);
+      
+      setCampusBarbers(barbersArray.map((b: any) => ({
+        id: b.id,
+        name: b.name || b.display_name || `${b.first_name || ''} ${b.last_name || ''}`.trim() || 'Unknown',
+      })));
+    } catch (error) {
+      console.error('Failed to fetch barbers:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLocations();
-  }, [campusId]);
+    fetchBarbers();
+  }, [campusId, activeFilter]);
 
   const handleAddLocation = async () => {
     if (!formData.name.trim()) {
@@ -779,13 +819,18 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description || null,
+          isUniversal: formData.isUniversal,
+          restrictedToBarberId: formData.isUniversal ? null : formData.restrictedToBarberId || null,
+        }),
       });
 
       if (response.ok) {
         toast.success('Location added successfully');
         setShowAddModal(false);
-        setFormData({ name: '', description: '', address: '' });
+        setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
         fetchLocations();
       } else {
         const data = await response.json();
@@ -814,13 +859,18 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description || null,
+          isUniversal: formData.isUniversal,
+          restrictedToBarberId: formData.isUniversal ? null : formData.restrictedToBarberId || null,
+        }),
       });
 
       if (response.ok) {
         toast.success('Location updated successfully');
         setEditingLocation(null);
-        setFormData({ name: '', description: '', address: '' });
+        setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
         fetchLocations();
       } else {
         const data = await response.json();
@@ -829,6 +879,68 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     } catch (error) {
       console.error('Failed to update location:', error);
       toast.error('Failed to update location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveLocation = async () => {
+    if (!approvalLocation) return;
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/${approvalLocation.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          isUniversal: approvalData.isUniversal,
+          restrictedToBarberId: approvalData.isUniversal ? null : approvalData.restrictedToBarberId || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Location approved');
+        setApprovalLocation(null);
+        setApprovalData({ isUniversal: true, restrictedToBarberId: '' });
+        fetchLocations();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to approve location');
+      }
+    } catch (error) {
+      console.error('Failed to approve location:', error);
+      toast.error('Failed to approve location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRejectLocation = async (locationId: string) => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/${locationId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Location request rejected');
+        fetchLocations();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to reject location');
+      }
+    } catch (error) {
+      console.error('Failed to reject location:', error);
+      toast.error('Failed to reject location');
     } finally {
       setSaving(false);
     }
@@ -889,10 +1001,24 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     setFormData({
       name: location.name,
       description: location.description || '',
-      address: location.address || '',
+      isUniversal: location.is_universal,
+      restrictedToBarberId: location.restricted_to_barber_id || '',
     });
     setEditingLocation(location);
   };
+
+  const openApprovalModal = (location: CampusLocation) => {
+    setApprovalData({
+      isUniversal: true,
+      restrictedToBarberId: '',
+    });
+    setApprovalLocation(location);
+  };
+
+  // Separate pending and approved locations
+  const pendingLocations = locations.filter(l => l.status === 'pending');
+  const approvedLocations = locations.filter(l => l.status === 'approved');
+  const rejectedLocations = locations.filter(l => l.status === 'rejected');
 
   if (loading) {
     return (
@@ -906,16 +1032,21 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-gray-900">Campus Locations</h3>
-          <p className="text-sm text-gray-500">{locations.length} locations configured</p>
+          <h3 className="font-semibold text-gray-900">Service Locations</h3>
+          <p className="text-sm text-gray-500">
+            {pendingLocations.length > 0 && (
+              <span className="text-amber-600 font-medium">{pendingLocations.length} pending • </span>
+            )}
+            {approvedLocations.length} active locations
+          </p>
         </div>
         <Button
           variant="primary"
           size="sm"
           onClick={() => {
-            setFormData({ name: '', description: '', address: '' });
+            setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
             setShowAddModal(true);
           }}
         >
@@ -924,85 +1055,155 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </Button>
       </div>
 
-      {/* Locations List */}
-      {locations.length === 0 ? (
-        <Card className="text-center py-8 sm:py-12">
-          <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-          <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Add locations where barbers can offer their services
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-4"
-            onClick={() => {
-              setFormData({ name: '', description: '', address: '' });
-              setShowAddModal(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Add First Location
-          </Button>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {locations.map((location) => (
-            <Card key={location.id} className={`p-4 ${!location.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="w-4 h-4 text-primary-500" />
-                    <h4 className="font-semibold text-gray-900">{location.name}</h4>
-                    {!location.is_active && (
-                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inactive</span>
+      {/* Pending Requests Section */}
+      {pendingLocations.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-4 h-4 text-amber-500" />
+            <h4 className="font-semibold text-amber-700">Pending Requests ({pendingLocations.length})</h4>
+          </div>
+          <div className="space-y-3">
+            {pendingLocations.map((location) => (
+              <Card key={location.id} className="p-4 border-amber-200 bg-amber-50">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-amber-600" />
+                      <h4 className="font-semibold text-gray-900">{location.name}</h4>
+                      <span className="text-xs bg-amber-200 text-amber-700 px-2 py-0.5 rounded-full">
+                        Pending
+                      </span>
+                    </div>
+                    {location.description && (
+                      <p className="text-sm text-gray-600 mt-1">{location.description}</p>
                     )}
+                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                      <span>Requested by <strong>{location.created_by_name || location.created_by_email}</strong></span>
+                      <span className="text-gray-400">•</span>
+                      <span>{new Date(location.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  {location.description && (
-                    <p className="text-sm text-gray-600 mt-1">{location.description}</p>
-                  )}
-                  {location.address && (
-                    <p className="text-xs text-gray-500 mt-1">{location.address}</p>
-                  )}
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>{parseInt(location.barber_count)} barber{parseInt(location.barber_count) !== 1 ? 's' : ''} assigned</span>
-                    {location.created_by_name && (
-                      <span>Added by {location.created_by_name}</span>
-                    )}
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleToggleActive(location)}
-                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
-                      location.is_active
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {location.is_active ? 'Active' : 'Inactive'}
-                  </button>
-                  <button
-                    onClick={() => openEditModal(location)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-4 h-4 text-gray-500" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(location)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => openApprovalModal(location)}
+                      disabled={saving}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRejectLocation(location.id)}
+                      disabled={saving}
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Reject
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </div>
       )}
+
+      {/* Approved Locations List */}
+      <div>
+        {pendingLocations.length > 0 && (
+          <h4 className="font-semibold text-gray-900 mb-3">Approved Locations</h4>
+        )}
+        
+        {approvedLocations.length === 0 ? (
+          <Card className="text-center py-8 sm:py-12">
+            <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Add locations where barbers can offer their services
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => {
+                setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
+                setShowAddModal(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Add First Location
+            </Button>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {approvedLocations.map((location) => (
+              <Card key={location.id} className={`p-4 ${!location.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <MapPin className="w-4 h-4 text-primary-500" />
+                      <h4 className="font-semibold text-gray-900">{location.name}</h4>
+                      {!location.is_active && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inactive</span>
+                      )}
+                      {location.is_universal ? (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          All Barbers
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                          {location.restricted_barber_name || 'Specific Barber'}
+                        </span>
+                      )}
+                    </div>
+                    {location.description && (
+                      <p className="text-sm text-gray-600 mt-1">{location.description}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
+                      <span>{parseInt(location.barber_count)} barber{parseInt(location.barber_count) !== 1 ? 's' : ''} using</span>
+                      {location.created_by_name && (
+                        <span>Added by {location.created_by_name}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleActive(location)}
+                      className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                        location.is_active
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {location.is_active ? 'Active' : 'Inactive'}
+                    </button>
+                    <button
+                      onClick={() => openEditModal(location)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm(location)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Add/Edit Location Modal */}
       {(showAddModal || editingLocation) && (
@@ -1012,12 +1213,12 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             if (!saving) {
               setShowAddModal(false);
               setEditingLocation(null);
-              setFormData({ name: '', description: '', address: '' });
+              setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
             }
           }}
         >
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
@@ -1041,7 +1242,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  Description (optional)
                 </label>
                 <textarea
                   value={formData.description}
@@ -1051,25 +1252,64 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
                 />
               </div>
+              
+              {/* Availability Setting */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address (optional)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Who can use this location?
                 </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Full address or building number"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="availability"
+                      checked={formData.isUniversal}
+                      onChange={() => setFormData({ ...formData, isUniversal: true, restrictedToBarberId: '' })}
+                      className="text-primary-600 focus:ring-primary-400"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">All Barbers</span>
+                      <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="availability"
+                      checked={!formData.isUniversal}
+                      onChange={() => setFormData({ ...formData, isUniversal: false })}
+                      className="text-primary-600 focus:ring-primary-400"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">Specific Barber Only</span>
+                      <p className="text-xs text-gray-500">Only a selected barber can use this location</p>
+                    </div>
+                  </label>
+                </div>
+                
+                {!formData.isUniversal && (
+                  <div className="mt-3">
+                    <select
+                      value={formData.restrictedToBarberId}
+                      onChange={(e) => setFormData({ ...formData, restrictedToBarberId: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    >
+                      <option value="">Select a barber...</option>
+                      {campusBarbers.map((barber) => (
+                        <option key={barber.id} value={barber.id}>{barber.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => {
                     setShowAddModal(false);
                     setEditingLocation(null);
-                    setFormData({ name: '', description: '', address: '' });
+                    setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
                   }}
                   disabled={saving}
                   className="flex-1"
@@ -1091,6 +1331,136 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     'Update Location'
                   ) : (
                     'Add Location'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Modal */}
+      {approvalLocation && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => !saving && setApprovalLocation(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-green-50 px-6 py-4 border-b border-green-100">
+              <h3 className="text-lg font-bold text-green-800 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Approve Location Request
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Location Info */}
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-4 h-4 text-primary-500" />
+                  <span className="font-semibold text-gray-900">{approvalLocation.name}</span>
+                </div>
+                {approvalLocation.description && (
+                  <p className="text-sm text-gray-600">{approvalLocation.description}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  Requested by {approvalLocation.created_by_name || approvalLocation.created_by_email}
+                </p>
+              </div>
+
+              {/* Availability Setting */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Who should be able to use this location?
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="approvalAvailability"
+                      checked={approvalData.isUniversal}
+                      onChange={() => setApprovalData({ ...approvalData, isUniversal: true, restrictedToBarberId: '' })}
+                      className="text-green-600 focus:ring-green-400"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">All Barbers (Universal)</span>
+                      <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="approvalAvailability"
+                      checked={!approvalData.isUniversal}
+                      onChange={() => setApprovalData({ ...approvalData, isUniversal: false })}
+                      className="text-green-600 focus:ring-green-400"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">Only the Requesting Barber</span>
+                      <p className="text-xs text-gray-500">Only {approvalLocation.created_by_name || 'the barber who requested'} can use this</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="approvalAvailability"
+                      checked={!approvalData.isUniversal && approvalData.restrictedToBarberId !== ''}
+                      onChange={() => setApprovalData({ ...approvalData, isUniversal: false })}
+                      className="text-green-600 focus:ring-green-400"
+                    />
+                    <div>
+                      <span className="font-medium text-gray-900">Specific Barber</span>
+                      <p className="text-xs text-gray-500">Assign to a different barber</p>
+                    </div>
+                  </label>
+                </div>
+                
+                {!approvalData.isUniversal && (
+                  <div className="mt-3">
+                    <select
+                      value={approvalData.restrictedToBarberId}
+                      onChange={(e) => setApprovalData({ ...approvalData, restrictedToBarberId: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                    >
+                      <option value="">Assign to the requesting barber</option>
+                      {campusBarbers.map((barber) => (
+                        <option key={barber.id} value={barber.id}>{barber.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setApprovalLocation(null);
+                    setApprovalData({ isUniversal: true, restrictedToBarberId: '' });
+                  }}
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleApproveLocation}
+                  disabled={saving}
+                  className="flex-1 bg-green-600 hover:bg-green-700 border-green-600"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Approving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve Location
+                    </>
                   )}
                 </Button>
               </div>
