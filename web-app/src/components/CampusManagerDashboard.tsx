@@ -2048,6 +2048,123 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     );
   }
 
+  // If a booking is selected, show inline details instead of the list
+  if (selectedBooking) {
+    return (
+      <div className="space-y-4">
+        {/* Back Button */}
+        <button
+          onClick={() => setSelectedBooking(null)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Bookings</span>
+        </button>
+
+        {/* Barber Info */}
+        <Card className="p-4">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {selectedBooking.barberAvatar ? (
+                <img src={selectedBooking.barberAvatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Users className="w-6 h-6 text-gray-400" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-gray-900">{selectedBooking.barberName}</h3>
+              <p className="text-sm text-gray-500">Barber</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Booking Details Grid */}
+        <Card className="p-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Service</p>
+              <p className="font-semibold text-gray-900">{selectedBooking.serviceType}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Customer</p>
+              <p className="font-semibold text-gray-900">{selectedBooking.consumerName}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Scheduled</p>
+              <p className="font-semibold text-gray-900 text-sm">{formatDate(selectedBooking.scheduledTime)}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Status</p>
+              <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' ? 'text-green-600' : 'text-amber-600'}`}>
+                {selectedBooking.status === 'PAID' ? 'Paid' : 'Awaiting Payment'}
+              </p>
+            </div>
+          </div>
+          {selectedBooking.location && (
+            <div className="p-3 bg-gray-50 rounded-lg mt-4">
+              <p className="text-xs text-gray-500 mb-1">Location</p>
+              <p className="font-semibold text-gray-900">{selectedBooking.location}</p>
+            </div>
+          )}
+          {selectedBooking.notes && (
+            <div className="p-3 bg-gray-50 rounded-lg mt-4">
+              <p className="text-xs text-gray-500 mb-1">Notes</p>
+              <p className="text-gray-700 italic">"{selectedBooking.notes}"</p>
+            </div>
+          )}
+        </Card>
+
+        {/* Payment Details */}
+        <Card className="p-4">
+          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+            <DollarSign className="w-4 h-4 text-primary-600" />
+            Payment Details
+          </h4>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Service Price</span>
+              <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
+            </div>
+            {selectedBooking.tipAmountCents !== null && selectedBooking.tipAmountCents > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Tip</span>
+                <span className="font-medium text-green-600">{formatPrice(selectedBooking.tipAmountCents)}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2 border-t">
+              <span className="font-semibold text-gray-900">Total</span>
+              <span className="font-bold text-lg text-green-600">
+                {formatPrice(selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0))}
+              </span>
+            </div>
+          </div>
+          {selectedBooking.paidAt && (
+            <p className="text-xs text-gray-500 mt-2">Paid on {formatDate(selectedBooking.paidAt)}</p>
+          )}
+        </Card>
+
+        {/* Customer Review */}
+        {selectedBooking.review && (
+          <Card className="p-4 bg-yellow-50 border-yellow-200">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 text-sm">
+              <Star className="w-4 h-4 text-yellow-500" />
+              Customer Review
+            </h4>
+            <div className="flex items-center gap-2 mb-2">
+              {renderStars(selectedBooking.review.rating)}
+              <span className="text-sm text-gray-600">({selectedBooking.review.rating}/5)</span>
+            </div>
+            {selectedBooking.review.comment && (
+              <p className="text-gray-700 italic">"{selectedBooking.review.comment}"</p>
+            )}
+          </Card>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Filter Bar */}
@@ -2142,138 +2259,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
       )}
 
-      {/* Booking Details Modal */}
-      {selectedBooking && (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedBooking(null)}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-              <h3 className="text-lg font-bold text-gray-900">Booking Details</h3>
-              <button 
-                onClick={() => setSelectedBooking(null)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <span className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</span>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              {/* Barber Info */}
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
-                <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                  {selectedBooking.barberAvatar ? (
-                    <img src={selectedBooking.barberAvatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <Users className="w-6 h-6 text-gray-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">{selectedBooking.barberName}</p>
-                  <p className="text-sm text-gray-500">Barber</p>
-                </div>
-              </div>
-
-              {/* Service & Customer */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Service</p>
-                  <p className="font-semibold text-gray-900">{selectedBooking.serviceType}</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Customer</p>
-                  <p className="font-semibold text-gray-900">{selectedBooking.consumerName}</p>
-                </div>
-              </div>
-
-              {/* Date & Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Scheduled</p>
-                  <p className="font-semibold text-gray-900 text-sm">{formatDate(selectedBooking.scheduledTime)}</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Status</p>
-                  <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' ? 'text-green-600' : 'text-amber-600'}`}>
-                    {selectedBooking.status === 'PAID' ? 'Paid' : 'Awaiting Payment'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Location */}
-              {selectedBooking.location && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Location</p>
-                  <p className="font-semibold text-gray-900">{selectedBooking.location}</p>
-                </div>
-              )}
-
-              {/* Notes */}
-              {selectedBooking.notes && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-1">Notes</p>
-                  <p className="text-gray-700 italic">"{selectedBooking.notes}"</p>
-                </div>
-              )}
-
-              {/* Payment Breakdown */}
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-3">Payment Details</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Service Price</span>
-                    <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
-                  </div>
-                  {selectedBooking.tipAmountCents !== null && selectedBooking.tipAmountCents > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Tip</span>
-                      <span className="font-medium text-green-600">{formatPrice(selectedBooking.tipAmountCents)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t">
-                    <span className="font-semibold text-gray-900">Total</span>
-                    <span className="font-bold text-lg text-green-600">
-                      {formatPrice(selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0))}
-                    </span>
-                  </div>
-                </div>
-                {selectedBooking.paidAt && (
-                  <p className="text-xs text-gray-500 mt-2">Paid on {formatDate(selectedBooking.paidAt)}</p>
-                )}
-              </div>
-
-              {/* Review */}
-              {selectedBooking.review && (
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">Customer Review</h4>
-                  <div className="p-4 bg-yellow-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      {renderStars(selectedBooking.review.rating)}
-                      <span className="text-sm text-gray-600">({selectedBooking.review.rating}/5)</span>
-                    </div>
-                    {selectedBooking.review.comment && (
-                      <p className="text-gray-700 italic">"{selectedBooking.review.comment}"</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
