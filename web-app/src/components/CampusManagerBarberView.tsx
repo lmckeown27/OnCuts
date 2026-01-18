@@ -227,34 +227,38 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 };
                 
                 // Get display times - handle both new intervals format and legacy start/end format
-                const getScheduleDisplay = (): string => {
-                  if (!schedule?.enabled) return 'Off';
+                const getScheduleDisplay = (): string[] => {
+                  if (!schedule?.enabled) return ['Off'];
                   
                   // New intervals format
                   if (schedule.intervals && Array.isArray(schedule.intervals) && schedule.intervals.length > 0) {
                     const validIntervals = schedule.intervals.filter(
                       (i: any) => i && i.start && i.end
                     );
-                    if (validIntervals.length === 0) return 'Available';
+                    if (validIntervals.length === 0) return ['Available'];
                     return validIntervals.map((i: any) => 
                       `${formatTime(i.start)}-${formatTime(i.end)}`
-                    ).join(', ');
+                    );
                   }
                   
                   // Legacy format
                   if (schedule.start && schedule.end) {
-                    return `${formatTime(schedule.start)} - ${formatTime(schedule.end)}`;
+                    return [`${formatTime(schedule.start)}-${formatTime(schedule.end)}`];
                   }
                   
-                  return 'Available';
+                  return ['Available'];
                 };
+                
+                const timeSlots = getScheduleDisplay();
                 
                 return (
                   <div key={day} className="text-center">
                     <span className="font-medium text-gray-900 text-xs uppercase">{day.slice(0, 3)}</span>
-                    <p className={`text-xs mt-1 ${schedule?.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {getScheduleDisplay()}
-                    </p>
+                    <div className={`text-xs mt-1 ${schedule?.enabled ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {timeSlots.map((slot, idx) => (
+                        <p key={idx}>{slot}</p>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
