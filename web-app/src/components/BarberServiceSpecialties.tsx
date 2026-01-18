@@ -225,7 +225,6 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     <div className="space-y-6">
       {/* Service Selection */}
       <Card>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">My Services & Pricing</h3>
         <p className="text-sm text-gray-600 mb-4">
           Select services and set your prices.
         </p>
