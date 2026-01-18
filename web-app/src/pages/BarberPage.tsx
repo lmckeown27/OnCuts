@@ -1132,8 +1132,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
 
   // Day modal open/close handlers with animation
   const openDayModal = (date: Date) => {
-    // Notify parent FIRST to disable PullToRefresh before modal opens
-    onDayModalChange?.(true);
     setSelectedDate(date);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDayModal(true);
@@ -1167,27 +1165,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     prevIsBookingDetailsOpenRef.current = isBookingDetailsOpen;
   }, [isBookingDetailsOpen]);
 
-  // Close modal when clicking outside (but not when BookingDetailsModal is open or just closed)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      // Don't close DayModal if BookingDetailsModal is open or just closed
-      if (isBookingDetailsOpen || bookingDetailsJustClosedRef.current) return;
-      
-      const target = event.target as Node;
-      if (modalRef.current && !modalRef.current.contains(target)) {
-        closeDayModal();
-      }
-    };
-
-    if (showDayModal) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('touchstart', handleClickOutside);
-      };
-    }
-  }, [showDayModal, isBookingDetailsOpen]);
+  // Note: We rely on the backdrop's onClick handler (with debounce protection) instead of 
+  // document-level event listeners to avoid timing issues on mobile
 
   // Get appointments for a specific date from confirmed bookings
   const getAppointmentsForDate = (date: Date): ConfirmedBooking[] => {
@@ -1573,8 +1552,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.fullDate)}
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1643,8 +1620,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.fullDate)}
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1755,8 +1730,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day}
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
-                      onTouchStart={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
                           ? 'bg-primary-400 text-white border-primary-500' 
