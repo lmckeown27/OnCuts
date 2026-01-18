@@ -193,7 +193,7 @@ export default function ScheduleServicePage() {
           <div className="md:col-span-1">
             <Card className="sticky top-4">
               <div className="p-6">
-                <div className="w-48 h-64 mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
+                <div className="w-48 aspect-square mx-auto rounded-lg overflow-hidden bg-gray-200 mb-4">
                   {barber.profile_picture_url || barber.profile_photo_url ? (
                     <img
                       src={barber.profile_picture_url || barber.profile_photo_url}
@@ -219,31 +219,16 @@ export default function ScheduleServicePage() {
 
 
                 {barber.instagram_handle && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                  <a
+                    href={`https://instagram.com/${barber.instagram_handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm hover:shadow-md w-full"
+                  >
                     <Instagram className="w-4 h-4" />
-                    <a
-                      href={`https://instagram.com/${barber.instagram_handle}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-primary-600 transition-colors"
-                    >
-                      @{barber.instagram_handle}
-                    </a>
-                  </div>
+                    <span className="text-sm font-medium">@{barber.instagram_handle}</span>
+                  </a>
                 )}
-
-                <p className="text-sm text-gray-600 mb-4">{barber.bio}</p>
-
-                <div className="flex flex-wrap gap-2">
-                  {barber.specialties?.map((specialty, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
               </div>
             </Card>
           </div>
