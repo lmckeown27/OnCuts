@@ -84,6 +84,7 @@ export default function BarberPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   
   // Lock body scroll when any modal is open
   const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
@@ -226,7 +227,6 @@ export default function BarberPage() {
 
   // State for booking details modal
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
-  const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
   // State for barber profile data (for walk-in services and campus manager)
