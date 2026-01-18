@@ -1554,15 +1554,33 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                         </div>
                         <div>
                           <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
-                          <div className={`text-sm ${
-                            isToday 
-                              ? 'text-white/70' 
-                              : dayBookings.length > 0 
-                                ? 'text-green-700 font-bold' 
-                                : 'text-gray-500'
-                          }`}>
-                            {dayBookings.length === 0 ? 'No appointments' : `${dayBookings.length} appointment${dayBookings.length > 1 ? 's' : ''}`}
-                          </div>
+                          {(() => {
+                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
+                            const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
+                            
+                            if (dayBookings.length === 0) {
+                              return (
+                                <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
+                                  No appointments
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                {completedCount > 0 && (
+                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-green-700 font-bold'}`}>
+                                    {completedCount} completed
+                                  </div>
+                                )}
+                                {pendingCount > 0 && (
+                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-amber-600 font-bold'}`}>
+                                    {pendingCount} pending
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <ChevronDown className={`w-6 h-6 -rotate-90 ${isToday ? 'text-white/70' : 'text-gray-400'}`} />
