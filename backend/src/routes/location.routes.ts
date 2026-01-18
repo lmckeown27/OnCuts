@@ -5,9 +5,9 @@
  */
 
 import { Router, Response, NextFunction } from 'express';
-import { pool } from '../config/db';
+import { pool } from '../database/connection';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
