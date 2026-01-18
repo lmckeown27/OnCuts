@@ -1143,31 +1143,39 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   };
 
   // Track when BookingDetailsModal closes to prevent DayModal from closing on mobile
+  const prevIsBookingDetailsOpenRef = useRef(isBookingDetailsOpen);
   useEffect(() => {
-    if (!isBookingDetailsOpen) {
+    // Only trigger when going from open (true) to closed (false)
+    if (prevIsBookingDetailsOpenRef.current && !isBookingDetailsOpen) {
       // BookingDetailsModal just closed - set a flag to ignore clicks for a short time
       bookingDetailsJustClosedRef.current = true;
       const timeout = setTimeout(() => {
         bookingDetailsJustClosedRef.current = false;
-      }, 300); // 300ms debounce for mobile touch events
+      }, 500); // 500ms debounce for mobile touch events
       return () => clearTimeout(timeout);
     }
+    prevIsBookingDetailsOpenRef.current = isBookingDetailsOpen;
   }, [isBookingDetailsOpen]);
 
   // Close modal when clicking outside (but not when BookingDetailsModal is open or just closed)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       // Don't close DayModal if BookingDetailsModal is open or just closed
       if (isBookingDetailsOpen || bookingDetailsJustClosedRef.current) return;
       
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (modalRef.current && !modalRef.current.contains(target)) {
         closeDayModal();
       }
     };
 
     if (showDayModal) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside);
+      };
     }
   }, [showDayModal, isBookingDetailsOpen]);
 
