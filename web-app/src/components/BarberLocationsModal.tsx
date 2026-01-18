@@ -5,6 +5,7 @@
  * - View available campus locations
  * - Assign/unassign locations
  * - Set primary location
+ * - Create new locations
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,14 +20,12 @@ interface AssignedLocation {
   location_id: string;
   name: string;
   description: string | null;
-  address: string | null;
 }
 
 interface AvailableLocation {
   id: string;
   name: string;
   description: string | null;
-  address: string | null;
 }
 
 interface LocationsData {
@@ -46,6 +45,11 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   const [data, setData] = useState<LocationsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // New location form state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newLocationName, setNewLocationName] = useState('');
+  const [newLocationDescription, setNewLocationDescription] = useState('');
 
   const fetchLocations = async () => {
     try {
@@ -155,6 +159,45 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
     }
   };
 
+  const handleCreateLocation = async () => {
+    if (!newLocationName.trim()) {
+      toast.error('Please enter a location name');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/locations/barber/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          name: newLocationName.trim(), 
+          description: newLocationDescription.trim() || null 
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Location created and added');
+        setNewLocationName('');
+        setNewLocationDescription('');
+        setShowAddForm(false);
+        fetchLocations();
+      } else {
+        const result = await response.json();
+        toast.error(result.error || 'Failed to create location');
+      }
+    } catch (error) {
+      console.error('Failed to create location:', error);
+      toast.error('Failed to create location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Get unassigned available locations
   const assignedLocationIds = new Set(data?.assigned.map(a => a.location_id) || []);
   const unassignedLocations = data?.available.filter(loc => !assignedLocationIds.has(loc.id)) || [];
@@ -198,14 +241,89 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Assigned Locations */}
+              {/* Add New Location Section */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-3">Your Locations</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900">Your Locations</h3>
+                  {!showAddForm && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddForm(true)}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add New
+                    </Button>
+                  )}
+                </div>
+
+                {/* Add Location Form */}
+                {showAddForm && (
+                  <Card className="p-4 mb-4 border-primary-200 bg-primary-50">
+                    <h4 className="font-medium text-gray-900 mb-3">Add New Location</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Location Name *</label>
+                        <input
+                          type="text"
+                          value={newLocationName}
+                          onChange={(e) => setNewLocationName(e.target.value)}
+                          placeholder="e.g., Dexter Lawn, My Dorm, Student Union"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">Description (optional)</label>
+                        <input
+                          type="text"
+                          value={newLocationDescription}
+                          onChange={(e) => setNewLocationDescription(e.target.value)}
+                          placeholder="Brief description or directions"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowAddForm(false);
+                            setNewLocationName('');
+                            setNewLocationDescription('');
+                          }}
+                          disabled={saving}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleCreateLocation}
+                          disabled={saving || !newLocationName.trim()}
+                          className="flex-1"
+                        >
+                          {saving ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4 mr-1" />
+                              Create
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
+                {/* Assigned Locations List */}
                 {data?.assigned.length === 0 ? (
                   <Card className="p-4 text-center bg-gray-50">
                     <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-gray-500 text-sm">No locations assigned yet</p>
-                    <p className="text-xs text-gray-400 mt-1">Add locations from the list below</p>
+                    <p className="text-xs text-gray-400 mt-1">Add locations from the list below or create a new one</p>
                   </Card>
                 ) : (
                   <div className="space-y-2">
@@ -225,9 +343,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                             </div>
                             {loc.description && (
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
-                            )}
-                            {loc.address && (
-                              <p className="text-xs text-gray-500 mt-0.5">{loc.address}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-1">
@@ -260,9 +375,9 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
               {/* Available Locations to Add */}
               {unassignedLocations.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Available Locations</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">Campus Locations</h3>
                   <p className="text-sm text-gray-500 mb-3">
-                    Add locations where you can offer services
+                    Locations set up by your campus manager
                   </p>
                   <div className="space-y-2">
                     {unassignedLocations.map((loc) => (
@@ -293,22 +408,12 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                 </div>
               )}
 
-              {/* No Available Locations */}
+              {/* All Locations Added */}
               {unassignedLocations.length === 0 && data?.available.length === data?.assigned.length && data?.assigned.length > 0 && (
                 <Card className="p-4 text-center bg-green-50 border-green-200">
                   <Check className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                  <p className="text-green-700 text-sm font-medium">All available locations added</p>
-                </Card>
-              )}
-
-              {/* No Locations at All */}
-              {data?.available.length === 0 && (
-                <Card className="p-6 text-center bg-amber-50 border-amber-200">
-                  <MapPin className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-                  <p className="text-amber-800 font-medium">No locations available yet</p>
-                  <p className="text-amber-600 text-sm mt-1">
-                    Contact your campus manager to add service locations for your campus.
-                  </p>
+                  <p className="text-green-700 text-sm font-medium">All campus locations added</p>
+                  <p className="text-green-600 text-xs mt-1">You can still create custom locations above</p>
                 </Card>
               )}
             </div>
@@ -320,4 +425,3 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
 };
 
 export default BarberLocationsModal;
-

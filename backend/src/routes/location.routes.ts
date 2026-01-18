@@ -131,6 +131,100 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
 });
 
 /**
+ * POST /api/v1/locations/barber/create
+ * Create a new location and assign it to the barber (Barber can create locations)
+ */
+router.post('/barber/create', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { name, description } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Location name is required',
+      });
+    }
+    
+    // Get barber info
+    const barberCheck = await pool.query(
+      `SELECT b.id, b."campusId", b."isActive"
+       FROM barbers b
+       WHERE b."userId" = $1`,
+      [userId]
+    );
+    
+    if (barberCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Barber profile not found',
+      });
+    }
+    
+    const barberId = barberCheck.rows[0].id;
+    const campusId = barberCheck.rows[0].campusId;
+    
+    if (!barberCheck.rows[0].isActive) {
+      return res.status(403).json({
+        success: false,
+        error: 'Your barber account is not active',
+      });
+    }
+    
+    // Check for duplicate name
+    const duplicateCheck = await pool.query(
+      `SELECT id FROM service_locations WHERE campus_id = $1 AND LOWER(name) = LOWER($2)`,
+      [campusId, name.trim()]
+    );
+    
+    if (duplicateCheck.rows.length > 0) {
+      // Location already exists, just assign it to the barber
+      const existingLocationId = duplicateCheck.rows[0].id;
+      
+      await pool.query(
+        `INSERT INTO barber_service_locations (barber_id, location_id, is_primary)
+         VALUES ($1, $2, false)
+         ON CONFLICT (barber_id, location_id) DO NOTHING`,
+        [barberId, existingLocationId]
+      );
+      
+      return res.json({
+        success: true,
+        data: { id: existingLocationId, name: name.trim(), description },
+        message: 'Location already exists and has been added to your profile',
+      });
+    }
+    
+    // Create new location
+    const locationResult = await pool.query(
+      `INSERT INTO service_locations (campus_id, name, description, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [campusId, name.trim(), description || null, userId]
+    );
+    
+    const newLocation = locationResult.rows[0];
+    
+    // Assign to barber
+    await pool.query(
+      `INSERT INTO barber_service_locations (barber_id, location_id, is_primary)
+       VALUES ($1, $2, false)`,
+      [barberId, newLocation.id]
+    );
+    
+    logger.info(`Location created by barber: ${name} for campus ${campusId} by user ${userId}`);
+    
+    res.status(201).json({
+      success: true,
+      data: newLocation,
+    });
+  } catch (error: any) {
+    logger.error('Error creating barber location:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * PUT /api/v1/locations/:locationId
  * Update a location (Campus Manager / Admin only)
  */
