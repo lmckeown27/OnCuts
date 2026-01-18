@@ -198,19 +198,16 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+        <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary-600" />
-              My Locations
-            </h2>
-            <p className="text-sm text-gray-500">Manage where you offer services</p>
+            <h2 className="text-2xl font-bold">My Locations</h2>
+            <p className="text-white/80 text-sm">Manage where you offer services</p>
           </div>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
