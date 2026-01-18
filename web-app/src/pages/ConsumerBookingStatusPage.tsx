@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
-  MessageCircle, AlertTriangle, Bell, CheckCircle, Edit3,
+  MessageCircle, AlertTriangle, Bell, CheckCircle, Pencil,
   ChevronDown, Settings, LogOut, Trash2
 } from 'lucide-react';
 import api from '../services/api.service';
@@ -691,7 +691,7 @@ export default function ConsumerBookingStatusPage() {
           <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-300 p-6 mb-6">
             <div className="flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                <Edit3 className="w-6 h-6 text-amber-600" />
+                <Pencil className="w-6 h-6 text-amber-600" />
               </div>
               <h3 className="font-bold text-gray-900 mb-2">Barber Made Changes</h3>
               <p className="text-gray-600 text-sm mb-4">
@@ -816,7 +816,7 @@ export default function ConsumerBookingStatusPage() {
                 onClick={handleOpenEditModal}
                 className="py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-amber-200"
               >
-                <Edit3 className="w-4 h-4" />
+                <Pencil className="w-4 h-4" />
                 Edit Booking
               </button>
               <button
@@ -849,7 +849,7 @@ export default function ConsumerBookingStatusPage() {
             }}
           >
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-primary-500" />
+              <Pencil className="w-5 h-5 text-primary-500" />
               Edit Booking
             </h3>
             

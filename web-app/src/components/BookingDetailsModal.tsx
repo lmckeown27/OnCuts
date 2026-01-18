@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
-  Edit3, Trash2, Check, AlertTriangle, Star, MessageSquare,
+  Pencil, Trash2, Check, AlertTriangle, Star, MessageSquare,
   Phone, Mail, Save, CreditCard
 } from 'lucide-react';
 import api from '../services/api.service';
@@ -343,7 +343,7 @@ export default function BookingDetailsModal({
             /* Edit View */
             <div className="space-y-4">
               <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-primary-500" />
+                <Pencil className="w-5 h-5 text-primary-500" />
                 Edit Booking
               </h3>
 
@@ -591,7 +591,7 @@ export default function BookingDetailsModal({
                           onClick={() => setIsEditing(true)}
                           className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                         >
-                          <Edit3 className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                           Edit Booking
                         </button>
                       )}
