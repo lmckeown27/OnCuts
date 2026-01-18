@@ -739,6 +739,14 @@ interface CampusBarberOption {
   name: string;
 }
 
+interface BarberLocationAssignment {
+  assignment_id: string;
+  is_primary: boolean;
+  location_id: string;
+  name: string;
+  description: string | null;
+}
+
 const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [locations, setLocations] = useState<CampusLocation[]>([]);
   const [campusBarbers, setCampusBarbers] = useState<CampusBarberOption[]>([]);
@@ -759,6 +767,11 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   });
   const [saving, setSaving] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  
+  // Barber filter state
+  const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
+  const [barberLocations, setBarberLocations] = useState<BarberLocationAssignment[]>([]);
+  const [loadingBarberLocations, setLoadingBarberLocations] = useState(false);
 
   const fetchLocations = async () => {
     try {
@@ -799,10 +812,42 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     }
   };
 
+  const fetchBarberLocations = async (barberId: string) => {
+    if (barberId === 'all') {
+      setBarberLocations([]);
+      return;
+    }
+    
+    try {
+      setLoadingBarberLocations(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/barber/${barberId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBarberLocations(data.data || []);
+      } else {
+        console.error('Failed to fetch barber locations:', response.status);
+        setBarberLocations([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch barber locations:', error);
+      setBarberLocations([]);
+    } finally {
+      setLoadingBarberLocations(false);
+    }
+  };
+
   useEffect(() => {
     fetchLocations();
     fetchBarbers();
   }, [campusId, activeFilter]);
+
+  useEffect(() => {
+    fetchBarberLocations(selectedBarberId);
+  }, [selectedBarberId]);
 
   const handleAddLocation = async () => {
     if (!formData.name.trim()) {
@@ -1054,6 +1099,81 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           Add Location
         </Button>
       </div>
+
+      {/* Filter by Barber Dropdown */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-gray-500" />
+            <label className="text-sm text-gray-600 font-medium">View locations by barber:</label>
+          </div>
+          <select
+            value={selectedBarberId}
+            onChange={(e) => setSelectedBarberId(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent min-w-[200px]"
+          >
+            <option value="all">All Locations (Overview)</option>
+            {campusBarbers.map((barber) => (
+              <option key={barber.id} value={barber.id}>{barber.name}</option>
+            ))}
+          </select>
+        </div>
+      </Card>
+
+      {/* Barber-specific Locations View */}
+      {selectedBarberId !== 'all' && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin className="w-4 h-4 text-primary-500" />
+            <h4 className="font-semibold text-gray-900">
+              Locations for {campusBarbers.find(b => b.id === selectedBarberId)?.name || 'Barber'}
+            </h4>
+          </div>
+          
+          {loadingBarberLocations ? (
+            <Card className="text-center py-8">
+              <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
+              <p className="text-gray-500 text-sm">Loading barber locations...</p>
+            </Card>
+          ) : barberLocations.length === 0 ? (
+            <Card className="text-center py-8 bg-gray-50">
+              <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-600 font-medium">No locations assigned</p>
+              <p className="text-sm text-gray-500 mt-1">
+                This barber hasn't added any locations yet
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-2">
+              {barberLocations.map((loc) => (
+                <Card key={loc.assignment_id} className={`p-4 ${loc.is_primary ? 'border-primary-300 bg-primary-50' : ''}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary-500" />
+                        <span className="font-medium text-gray-900">{loc.name}</span>
+                        {loc.is_primary && (
+                          <span className="text-xs bg-primary-200 text-primary-700 px-2 py-0.5 rounded-full">
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                      {loc.description && (
+                        <p className="text-sm text-gray-600 mt-1 ml-6">{loc.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+          
+          {/* Divider before main locations list */}
+          <div className="border-t border-gray-200 my-6 pt-2">
+            <p className="text-xs text-gray-500 text-center">All Campus Locations</p>
+          </div>
+        </div>
+      )}
 
       {/* Pending Requests Section */}
       {pendingLocations.length > 0 && (
