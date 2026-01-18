@@ -223,7 +223,7 @@ export default function BarberPage() {
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
   // State for barber profile data (for walk-in services and campus manager)
-  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string } | null>(null);
+  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string; campusTimezone?: string } | null>(null);
 
   // Admin campus management - admins can manage any campus
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -291,7 +291,8 @@ export default function BarberPage() {
           setBarberProfile({
             name: response.name || fullName || 'Barber',
             specialties: response.specialties || [],
-            campusId: response.campus_id || ''
+            campusId: response.campus_id || '',
+            campusTimezone: response.campus_timezone || 'America/Los_Angeles'
           });
         }
       } catch (error) {
@@ -533,7 +534,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -935,6 +936,7 @@ interface DashboardViewProps {
   onViewDetails: (booking: any) => void;
   // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
+  campusTimezone?: string;
 }
 
 // Type for confirmed bookings
@@ -958,7 +960,18 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+  // Helper to get the current date in campus timezone
+  const getTodayInCampusTimezone = () => {
+    const now = new Date();
+    // Get the date string in the campus timezone
+    const dateStr = now.toLocaleDateString('en-CA', { timeZone: campusTimezone }); // 'en-CA' gives YYYY-MM-DD format
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const campusToday = new Date(year, month - 1, day);
+    campusToday.setHours(0, 0, 0, 0);
+    return campusToday;
+  };
+
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
@@ -1152,8 +1165,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
           {/* Appointments Count - centered above toggle buttons */}
           <p className="text-sm sm:text-base text-gray-600 font-medium">
             {(() => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
+              const today = getTodayInCampusTimezone();
               
               if (scheduleView === 'daily') {
                 const displayDate = new Date(today);
@@ -1252,8 +1264,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
                 {dayOffset === 0 ? 'Today - ' : dayOffset === 1 ? 'Tomorrow - ' : dayOffset === -1 ? 'Yesterday - ' : ''}
                 {(() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
+                  const today = getTodayInCampusTimezone();
                   const displayDate = new Date(today);
                   displayDate.setDate(displayDate.getDate() + dayOffset);
                   return displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
@@ -1287,7 +1298,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
               </button>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
                 {(() => {
-                  const today = new Date();
+                  const today = getTodayInCampusTimezone();
                   const todayDay = today.getDay();
                   const startOfWeek = new Date(today);
                   const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
@@ -1330,7 +1341,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
               </button>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">
                 {(() => {
-                  const today = new Date();
+                  const today = getTodayInCampusTimezone();
                   const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
                   return displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                 })()}
@@ -1355,9 +1366,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
 
         {/* Daily View */}
         {scheduleView === 'daily' && (() => {
-          // Filter bookings for the selected day (using dayOffset)
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+          // Filter bookings for the selected day (using dayOffset) - using campus timezone
+          const today = getTodayInCampusTimezone();
           const displayDate = new Date(today);
           displayDate.setDate(displayDate.getDate() + dayOffset);
           const nextDay = new Date(displayDate);
@@ -1371,7 +1381,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
             .sort((a, b) => new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime());
 
           const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
-          const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: campusTimezone });
           const dayLabel = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : dayOffset === -1 ? 'Yesterday' : '';
           const dateFormatted = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
@@ -1448,8 +1458,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
 
         {/* Weekly View */}
         {scheduleView === 'weekly' && (() => {
-          // Get the week based on weekOffset
-          const today = new Date();
+          // Get the week based on weekOffset - using campus timezone
+          const today = getTodayInCampusTimezone();
           const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
           
           // Calculate start of current week (Monday)
@@ -1602,7 +1612,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
 
         {/* Monthly View */}
         {scheduleView === 'monthly' && (() => {
-          const today = new Date();
+          // Use campus timezone to determine current month
+          const today = getTodayInCampusTimezone();
           // Calculate the displayed month based on offset
           const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
           const displayMonth = displayDate.getMonth();
@@ -1658,7 +1669,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
                   
                   const dayBookings = monthAppointmentsByDay[day] || [];
                   const hasAppointments = dayBookings.length > 0;
-                  const isToday = day === today.getDate();
+                  // Check if this day is "today" in campus timezone (must match day, month, and year)
+                  const isToday = day === today.getDate() && displayMonth === today.getMonth() && displayYear === today.getFullYear();
                   
                   return (
                     <div

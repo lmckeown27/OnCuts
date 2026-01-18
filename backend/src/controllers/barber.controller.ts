@@ -296,9 +296,11 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         u."avatarUrl" as profile_picture_url,
         u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id,
-        u.role as user_type
+        u.role as user_type,
+        c.timezone as campus_timezone
       FROM barbers b
       JOIN users u ON b."userId" = u.id
+      LEFT JOIN campuses c ON u."campusId" = c.id
       WHERE b."userId" = $1`,
       [userId]
     );
