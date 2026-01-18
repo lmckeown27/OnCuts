@@ -15,8 +15,7 @@ import {
   Instagram,
   Mail,
   Clock,
-  Loader2,
-  X
+  Loader2
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -35,9 +34,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
   const [barber, setBarber] = useState<Barber | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState('');
-  const [reportDetails, setReportDetails] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -73,25 +69,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
 
     fetchBarber();
   }, [barberId]);
-
-  const handleSubmitReport = () => {
-    if (!reportReason || !reportDetails) {
-      alert('Please select a reason and provide details');
-      return;
-    }
-    
-    // TODO: Submit report to admin via API
-    console.log('Report submitted:', {
-      barberId: barberId,
-      reason: reportReason,
-      details: reportDetails,
-    });
-    
-    alert('Report submitted to admin successfully');
-    setShowReportModal(false);
-    setReportReason('');
-    setReportDetails('');
-  };
 
   // Helper to get barber name
   const getBarberName = () => {
@@ -295,98 +272,18 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
               <p className="text-xs text-yellow-700">Flag concerns to platform administrators</p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowReportModal(true)}
-            className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+          <a
+            href={`mailto:campuscuthelp@gmail.com?subject=Barber Report: ${encodeURIComponent(getBarberName())}&body=${encodeURIComponent(`I would like to report a concern about the following barber:\n\nBarber Name: ${getBarberName()}\nBarber ID: ${barberId}\nEmail: ${getEmail()}\n\nConcern:\n[Please describe your concern here]`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 border-2 px-3 py-1.5 text-sm border-yellow-600 text-yellow-700 hover:bg-yellow-100"
           >
             <Flag className="w-4 h-4 mr-1" />
             Report
-          </Button>
+          </a>
         </div>
       </Card>
 
-      {/* Report Modal */}
-      {showReportModal && (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
-          onClick={() => setShowReportModal(false)}
-        >
-          <div 
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">Report Barber to Admin</h3>
-              <button
-                onClick={() => setShowReportModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for Report *
-                </label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-                >
-                  <option value="">Select a reason...</option>
-                  <option value="quality_issues">Quality Issues</option>
-                  <option value="professionalism">Unprofessional Behavior</option>
-                  <option value="customer_complaints">Multiple Customer Complaints</option>
-                  <option value="no_show">Repeated No-Shows</option>
-                  <option value="pricing_violations">Pricing Violations</option>
-                  <option value="safety_concerns">Safety Concerns</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Details *
-                </label>
-                <textarea
-                  value={reportDetails}
-                  onChange={(e) => setReportDetails(e.target.value)}
-                  rows={6}
-                  placeholder="Please provide specific details about the issue, including dates, incidents, and any supporting information..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400"
-                />
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> This report will be sent to platform administrators for review.
-                  They will investigate and take appropriate action if necessary. All reports are confidential.
-                </p>
-              </div>
-
-              <div className="flex gap-3 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowReportModal(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleSubmitReport}
-                  disabled={!reportReason || !reportDetails}
-                >
-                  Submit Report
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
