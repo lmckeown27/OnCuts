@@ -1236,12 +1236,13 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           <div className="space-y-3">
             {barbersWithLocations.map((barber) => (
               <Card key={barber.id} className="overflow-hidden">
-                {/* Barber Header - Clickable */}
-                <button
-                  onClick={() => toggleBarberExpanded(barber.id)}
-                  className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
-                >
-                  <div className="flex items-center gap-3">
+                {/* Barber Header */}
+                <div className="p-4 flex items-center justify-between">
+                  {/* Left side - Barber info (clickable to expand) */}
+                  <button
+                    onClick={() => toggleBarberExpanded(barber.id)}
+                    className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left flex-1"
+                  >
                     <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
                       <Users className="w-5 h-5 text-primary-600" />
                     </div>
@@ -1253,11 +1254,14 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                           : `${barber.locations.length} location${barber.locations.length !== 1 ? 's' : ''}`}
                       </p>
                     </div>
-                  </div>
+                  </button>
+                  
+                  {/* Right side - Actions */}
                   <div className="flex items-center gap-2">
+                    {/* Location preview icons */}
                     {barber.locations.length > 0 && (
-                      <div className="flex -space-x-1">
-                        {barber.locations.slice(0, 3).map((loc, idx) => (
+                      <div className="hidden sm:flex -space-x-1 mr-2">
+                        {barber.locations.slice(0, 3).map((loc) => (
                           <div 
                             key={loc.location_id}
                             className="w-6 h-6 rounded-full bg-primary-200 border-2 border-white flex items-center justify-center"
@@ -1273,25 +1277,45 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                         )}
                       </div>
                     )}
-                    <svg 
-                      className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarbers.has(barber.id) ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
+                    
+                    {/* Assign Location Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAssignModal({ barberId: barber.id, barberName: barber.name });
+                      }}
+                      className="text-xs px-2 py-1"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                      <Plus className="w-3 h-3 mr-1" />
+                      Assign
+                    </Button>
+                    
+                    {/* Expand/Collapse chevron */}
+                    <button
+                      onClick={() => toggleBarberExpanded(barber.id)}
+                      className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarbers.has(barber.id) ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
-                </button>
+                </div>
                 
-                {/* Expanded Content */}
+                {/* Expanded Content - Just assigned locations */}
                 {expandedBarbers.has(barber.id) && (
                   <div className="border-t border-gray-100 bg-gray-50 p-4">
-                    {/* Assigned Locations */}
                     {barber.locations.length === 0 ? (
                       <p className="text-sm text-gray-500 text-center py-2">No locations assigned yet</p>
                     ) : (
-                      <div className="space-y-2 mb-3">
+                      <div className="space-y-2">
                         {barber.locations.map((loc) => (
                           <div 
                             key={loc.assignment_id} 
@@ -1315,17 +1339,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                         ))}
                       </div>
                     )}
-                    
-                    {/* Assign Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowAssignModal({ barberId: barber.id, barberName: barber.name })}
-                      className="w-full"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Assign Location
-                    </Button>
                   </div>
                 )}
               </Card>
