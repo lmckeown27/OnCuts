@@ -14,7 +14,6 @@ import {
   Flag,
   Instagram,
   Mail,
-  Award,
   Clock,
   Loader2,
   X
@@ -113,17 +112,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
     return (barber as any)?.email || barber?.user?.email || 'Not available';
   };
 
-  // Helper to get price range
-  const getPriceRange = () => {
-    if (!barber?.pricing || barber.pricing.length === 0) {
-      return { min: 0, max: 0 };
-    }
-    const prices = barber.pricing.map(s => s.price);
-    return {
-      min: Math.min(...prices),
-      max: Math.max(...prices)
-    };
-  };
 
   if (loading) {
     return (
@@ -160,8 +148,6 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
       </div>
     );
   }
-
-  const priceRange = getPriceRange();
 
   return (
     <div className="space-y-4">
@@ -222,41 +208,20 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
         </div>
       </Card>
 
-        {/* Pricing Info */}
-        {priceRange.max > 0 && (
+        {/* Services & Pricing */}
+        {barber.pricing && barber.pricing.length > 0 && (
           <Card className="p-4">
             <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
               <DollarSign className="w-4 h-4 text-primary-600" />
-              Pricing
-            </h4>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xs text-gray-600">Price Range</p>
-                <p className="text-lg font-bold text-gray-900">
-                  ${priceRange.min} - ${priceRange.max}
-                </p>
-              </div>
-              <div className="text-sm text-gray-500">
-                {barber.pricing?.length || 0} services offered
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Specialties */}
-        {barber.specialties && barber.specialties.length > 0 && (
-          <Card className="p-4">
-            <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2 text-sm">
-              <Award className="w-4 h-4 text-primary-600" />
-              Specialties
+              Services & Pricing
             </h4>
             <div className="flex flex-wrap gap-2">
-              {barber.specialties.map((specialty) => (
+              {barber.pricing.map((service) => (
                 <span
-                  key={specialty}
+                  key={service.name}
                   className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium"
                 >
-                  {specialty}
+                  {service.name} • ${service.price}
                 </span>
               ))}
             </div>
