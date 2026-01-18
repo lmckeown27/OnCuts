@@ -87,10 +87,7 @@ export default function BarberPage() {
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   
   // Lock body scroll when any modal is open
-  // Track when DayModal is open in DashboardView (for disabling pull-to-refresh)
-  const [isDayModalOpenInDashboard, setIsDayModalOpenInDashboard] = useState(false);
-  
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal || isDayModalOpenInDashboard;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -551,7 +548,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} onDayModalChange={setIsDayModalOpenInDashboard} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -962,7 +959,6 @@ interface DashboardViewProps {
   // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
   campusTimezone?: string;
-  onDayModalChange?: (isOpen: boolean) => void;
 }
 
 // Type for confirmed bookings
@@ -988,7 +984,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onDayModalChange }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
     const now = new Date();
@@ -1138,7 +1134,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
 
   // Day modal open/close handlers with animation
   const openDayModal = (date: Date) => {
-    onDayModalChange?.(true); // Notify parent to disable pull-to-refresh
     setSelectedDate(date);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDayModal(true);
@@ -1159,7 +1154,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       setIsEditingBooking(false);
       setIsDeletingBooking(false);
       setCancelReason('');
-      onDayModalChange?.(false); // Notify parent to re-enable pull-to-refresh
     }, 150);
   };
 
@@ -1670,7 +1664,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      data-no-pull-refresh
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
@@ -1739,7 +1732,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      data-no-pull-refresh
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
@@ -1850,7 +1842,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day}
-                      data-no-pull-refresh
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 

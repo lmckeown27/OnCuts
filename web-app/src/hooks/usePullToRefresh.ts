@@ -46,14 +46,6 @@ export function usePullToRefresh({
       return;
     }
     
-    // Don't activate if touch started on an interactive element (date cards, buttons, etc.)
-    // Elements with data-no-pull-refresh attribute will not trigger pull-to-refresh
-    const target = e.target as HTMLElement;
-    if (target?.closest?.('[data-no-pull-refresh]')) {
-      canPull.current = false;
-      return;
-    }
-    
     // Only activate if at the very top of the page (or nearly so)
     if (window.scrollY > 5) {
       canPull.current = false;
