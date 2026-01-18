@@ -1151,25 +1151,44 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
         <div className="flex flex-col items-center gap-3 mb-4">
           {/* Appointments Count - centered above toggle buttons */}
           <p className="text-sm sm:text-base text-gray-600 font-medium">
-            {confirmedBookings.filter(b => {
+            {(() => {
               const today = new Date();
               today.setHours(0, 0, 0, 0);
-              const displayDate = new Date(today);
-              displayDate.setDate(displayDate.getDate() + dayOffset);
-              const nextDay = new Date(displayDate);
-              nextDay.setDate(nextDay.getDate() + 1);
-              const bookingDate = new Date(b.scheduledTime);
-              return bookingDate >= displayDate && bookingDate < nextDay;
-            }).length} appointment{confirmedBookings.filter(b => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const displayDate = new Date(today);
-              displayDate.setDate(displayDate.getDate() + dayOffset);
-              const nextDay = new Date(displayDate);
-              nextDay.setDate(nextDay.getDate() + 1);
-              const bookingDate = new Date(b.scheduledTime);
-              return bookingDate >= displayDate && bookingDate < nextDay;
-            }).length !== 1 ? 's' : ''}
+              
+              if (scheduleView === 'daily') {
+                const displayDate = new Date(today);
+                displayDate.setDate(displayDate.getDate() + dayOffset);
+                const nextDay = new Date(displayDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const count = confirmedBookings.filter(b => {
+                  const bookingDate = new Date(b.scheduledTime);
+                  return bookingDate >= displayDate && bookingDate < nextDay;
+                }).length;
+                return `${count} appointment${count !== 1 ? 's' : ''}`;
+              } else if (scheduleView === 'weekly') {
+                const todayDay = today.getDay();
+                const startOfWeek = new Date(today);
+                const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+                startOfWeek.setDate(today.getDate() - daysFromMonday + (weekOffset * 7));
+                startOfWeek.setHours(0, 0, 0, 0);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 7);
+                const count = confirmedBookings.filter(b => {
+                  const bookingDate = new Date(b.scheduledTime);
+                  return bookingDate >= startOfWeek && bookingDate < endOfWeek;
+                }).length;
+                return `${count} appointment${count !== 1 ? 's' : ''} this week`;
+              } else {
+                const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+                const displayMonth = displayDate.getMonth();
+                const displayYear = displayDate.getFullYear();
+                const count = confirmedBookings.filter(b => {
+                  const bookingDate = new Date(b.scheduledTime);
+                  return bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear;
+                }).length;
+                return `${count} appointment${count !== 1 ? 's' : ''} this month`;
+              }
+            })()}
           </p>
 
           {/* View Toggle Buttons */}
@@ -1252,6 +1271,81 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
                   className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
                 >
                   Today
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Weekly Date Navigation */}
+          {scheduleView === 'weekly' && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setWeekOffset(prev => prev - 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+                {(() => {
+                  const today = new Date();
+                  const todayDay = today.getDay();
+                  const startOfWeek = new Date(today);
+                  const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+                  startOfWeek.setDate(today.getDate() - daysFromMonday + (weekOffset * 7));
+                  const endOfWeek = new Date(startOfWeek);
+                  endOfWeek.setDate(startOfWeek.getDate() + 6);
+                  const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                  const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                  return startMonth === endMonth 
+                    ? `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`
+                    : `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                })()}
+              </h3>
+              <button 
+                onClick={() => setWeekOffset(prev => prev + 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+              {weekOffset !== 0 && (
+                <button 
+                  onClick={() => setWeekOffset(0)}
+                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                >
+                  This Week
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Monthly Date Navigation */}
+          {scheduleView === 'monthly' && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setMonthOffset(prev => prev - 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">
+                {(() => {
+                  const today = new Date();
+                  const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+                  return displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                })()}
+              </h3>
+              <button 
+                onClick={() => setMonthOffset(prev => prev + 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+              {monthOffset !== 0 && (
+                <button 
+                  onClick={() => setMonthOffset(0)}
+                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                >
+                  This Month
                 </button>
               )}
             </div>
@@ -1407,45 +1501,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
 
           return (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex flex-col items-center sm:flex-row gap-2">
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setWeekOffset(prev => prev - 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[240px] text-center">Week of {weekRangeText}</h3>
-                    <button 
-                      onClick={() => setWeekOffset(prev => prev + 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
-                    </button>
-                    {/* Desktop: inline This Week button */}
-                    {weekOffset !== 0 && (
-                      <button 
-                        onClick={() => setWeekOffset(0)}
-                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                      >
-                        This Week
-                      </button>
-                    )}
-              </div>
-                  {/* Mobile: This Week's Schedule button below header */}
-                  {weekOffset !== 0 && (
-                    <button 
-                      onClick={() => setWeekOffset(0)}
-                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
-                    >
-                      This Week's Schedule
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalWeekAppointments} appointment{totalWeekAppointments !== 1 ? 's' : ''} this week</p>
-              </div>
-              
               {/* Mobile: List view */}
               <div className="sm:hidden space-y-2">
                 {weekDays.map(day => {
@@ -1586,44 +1641,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
           
           return (
           <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex flex-col items-center sm:flex-row gap-2">
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setMonthOffset(prev => prev - 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">{monthName}</h3>
-                    <button 
-                      onClick={() => setMonthOffset(prev => prev + 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
-                    </button>
-                    {/* Desktop: inline Today button */}
-                    {monthOffset !== 0 && (
-                      <button 
-                        onClick={() => setMonthOffset(0)}
-                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                      >
-                        Today
-                      </button>
-                    )}
-            </div>
-                  {/* Mobile: Today's Schedule button below header */}
-                  {monthOffset !== 0 && (
-                    <button 
-                      onClick={() => setMonthOffset(0)}
-                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
-                    >
-                      Today's Schedule
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">{totalMonthAppointments} appointment{totalMonthAppointments !== 1 ? 's' : ''} this month</p>
-              </div>
               <div className="grid grid-cols-7 gap-1.5 sm:gap-3">
               {/* Calendar header */}
                 {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayLabel, i) => (
