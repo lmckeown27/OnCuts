@@ -18,7 +18,7 @@ import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
-import WalkInPaymentModal from '../components/WalkInPaymentModal';
+// import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
 import { CampusCutLogo } from '@assets';
@@ -70,7 +70,7 @@ export default function BarberPage() {
   
   const [showAvailability, setShowAvailability] = useState(false);
   
-  const [showWalkInPayment, setShowWalkInPayment] = useState(false);
+  // const [showWalkInPayment, setShowWalkInPayment] = useState(false); // Walk-in feature disabled
   const [isAvailabilityVisible, setIsAvailabilityVisible] = useState(false);
   
   const [showServiceDetails, setShowServiceDetails] = useState(false);
@@ -82,7 +82,7 @@ export default function BarberPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showAvailability || showServiceDetails || showWalkInPayment || showNotifications;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showAvailability || showServiceDetails || showNotifications;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -533,7 +533,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onWalkInClick={() => { window.scrollTo({ top: 0, behavior: 'instant' }); setShowWalkInPayment(true); }} refreshKey={bookingsRefreshKey} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -767,13 +767,14 @@ export default function BarberPage() {
         />
       )}
 
-      {/* Walk-in Payment Modal */}
+      {/* Walk-in Payment Modal - Feature disabled
       <WalkInPaymentModal
         isOpen={showWalkInPayment}
         onClose={() => setShowWalkInPayment(false)}
         barberName={barberProfile?.name || (user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber')}
         barberSpecialties={barberProfile?.specialties || []}
       />
+      */}
 
       {/* Notifications Modal */}
       {showNotifications && (
@@ -932,7 +933,7 @@ interface DashboardViewProps {
   navigate: any;
   barberId: string;
   onViewDetails: (booking: any) => void;
-  onWalkInClick: () => void;
+  // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
 }
 
@@ -957,7 +958,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refreshKey = 0 }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: DashboardViewProps) {
   const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
@@ -1148,11 +1149,10 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
           className="touch-pan-y"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
-          {/* View Toggle Buttons with Walk-in aligned above Weekly */}
+          {/* View Toggle Buttons */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 justify-items-center">
-            {/* Empty cell above Daily */}
+            {/* Walk-in feature disabled
             <div></div>
-            {/* Walk-in Button - aligned above Weekly */}
             <button
               onClick={onWalkInClick}
               className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold min-w-[5rem] sm:min-w-[6rem] text-center"
@@ -1160,8 +1160,8 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
             >
               Walk-in
             </button>
-            {/* Empty cell above Monthly */}
             <div></div>
+            */}
             
             {/* Daily Button */}
             <button
