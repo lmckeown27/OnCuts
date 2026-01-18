@@ -2073,40 +2073,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
       </Card>
 
-      {/* Summary Stats by Barber */}
-      {selectedBarberId === 'all' && Object.keys(bookingsByBarber).length > 0 && (
-        <Card className="p-4">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary-600" />
-            Barber Performance Summary
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {Object.entries(bookingsByBarber).map(([name, data]) => (
-              <div 
-                key={name} 
-                className="p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => {
-                  const barber = barbers.find(b => b.name === name);
-                  if (barber) setSelectedBarberId(barber.id);
-                }}
-              >
-                <div className="font-medium text-gray-900">{name}</div>
-                <div className="flex items-center justify-between mt-2 text-sm">
-                  <span className="text-gray-600">{data.count} bookings</span>
-                  <span className="text-green-600 font-medium">{formatPrice(data.totalRevenue)}</span>
-                </div>
-                {data.avgRating > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {renderStars(Math.round(data.avgRating))}
-                    <span className="text-xs text-gray-500">({data.avgRating.toFixed(1)})</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
       {/* Bookings List */}
       {bookings.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
