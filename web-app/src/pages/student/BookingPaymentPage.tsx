@@ -377,9 +377,11 @@ export default function BookingPaymentPage() {
         </Button>
 
         {/* Info Text */}
-        <p className="text-xs text-gray-500 text-center mt-4">
-          No payment is required until after your service is complete. By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName?.split(' ')[0] || 'your barber'} upon completion. A receipt will be sent to your registered email.
-        </p>
+        <div className="text-xs text-gray-500 text-center mt-4 space-y-1">
+          <p>No payment is required until after your service is complete.</p>
+          <p>By confirming, you agree to pay ${bookingDetails.servicePrice.toFixed(2)} directly to {bookingDetails.barberName?.split(' ')[0] || 'your barber'} upon completion.</p>
+          <p>A receipt will be sent to your registered email.</p>
+        </div>
       </div>
     </div>
   );
