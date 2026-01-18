@@ -478,9 +478,8 @@ export default function BarberPage() {
                           setShowProfileDropdown(false);
                           openBarberChats();
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        <Send className="w-4 h-4 text-primary-600" />
                         Barber Chats
                       </button>
                       <button
@@ -511,9 +510,8 @@ export default function BarberPage() {
                           openCampusManager();
                           setShowProfileDropdown(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        <Shield className="w-4 h-4 text-primary-600" />
                         Campus Manager
                       </button>
                       <button
@@ -521,9 +519,8 @@ export default function BarberPage() {
                           setShowProfileDropdown(false);
                           openBarberChats();
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        <Send className="w-4 h-4 text-primary-600" />
                         Barber Chats
                       </button>
                     </>
