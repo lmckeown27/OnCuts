@@ -1,13 +1,11 @@
 /**
  * Location Routes
  * 
- * API endpoints for managing campus locations and barber location assignments
+ * API endpoints for managing service locations and barber location assignments
  * 
- * Uses existing campus_locations table schema:
- * - university_id (not campus_id)
- * - is_verified (not is_active)
- * - created_by_user_id (not created_by)
- * - normalized_name, category, cohort, usage_count, confidence columns
+ * Uses new tables:
+ * - service_locations: Predefined locations created by campus managers
+ * - barber_service_locations: Which locations each barber works at
  */
 
 import { Router, Response, NextFunction } from 'express';
@@ -17,13 +15,8 @@ import { logger } from '../utils/logger';
 
 const router = Router();
 
-// Helper to normalize location name
-const normalizeLocationName = (name: string): string => {
-  return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-};
-
 // ============================================================================
-// CAMPUS LOCATIONS (Campus Manager / Admin)
+// SERVICE LOCATIONS (Campus Manager / Admin)
 // ============================================================================
 
 /**
@@ -35,27 +28,26 @@ router.get('/campus/:campusId', authenticate, async (req: AuthRequest, res: Resp
     const { campusId } = req.params;
     const { activeOnly } = req.query;
     
-    let whereClause = 'university_id = $1';
+    let whereClause = 'campus_id = $1';
     if (activeOnly === 'true') {
-      whereClause += ' AND is_verified = true';
+      whereClause += ' AND is_active = true';
     }
     
     const result = await pool.query(
       `SELECT 
-        cl.id,
-        cl.university_id as campus_id,
-        cl.name,
-        cl.normalized_name as description,
-        cl.category as address,
-        cl.is_verified as is_active,
-        cl.created_at,
-        cl.updated_at,
+        sl.id,
+        sl.campus_id,
+        sl.name,
+        sl.description,
+        sl.is_active,
+        sl.created_at,
+        sl.updated_at,
         u.first_name || ' ' || u.last_name as created_by_name,
-        (SELECT COUNT(*) FROM barber_locations bl WHERE bl.location_id = cl.id) as barber_count
-      FROM campus_locations cl
-      LEFT JOIN users u ON cl.created_by_user_id = u.id
+        (SELECT COUNT(*) FROM barber_service_locations bsl WHERE bsl.location_id = sl.id) as barber_count
+      FROM service_locations sl
+      LEFT JOIN users u ON sl.created_by = u.id
       WHERE ${whereClause}
-      ORDER BY cl.name ASC`,
+      ORDER BY sl.name ASC`,
       [campusId]
     );
     
@@ -77,7 +69,7 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
   try {
     const userId = req.user!.userId;
     const { campusId } = req.params;
-    const { name, description, address } = req.body;
+    const { name, description } = req.body;
     
     if (!name || !name.trim()) {
       return res.status(400).json({
@@ -106,12 +98,10 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
       });
     }
     
-    const normalizedName = normalizeLocationName(name);
-    
     // Check for duplicate name
     const duplicateCheck = await pool.query(
-      `SELECT id FROM campus_locations WHERE university_id = $1 AND normalized_name = $2`,
-      [campusId, normalizedName]
+      `SELECT id FROM service_locations WHERE campus_id = $1 AND LOWER(name) = LOWER($2)`,
+      [campusId, name.trim()]
     );
     
     if (duplicateCheck.rows.length > 0) {
@@ -122,10 +112,10 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
     }
     
     const result = await pool.query(
-      `INSERT INTO campus_locations (university_id, name, normalized_name, category, cohort, usage_count, confidence, is_verified, created_by_user_id)
-       VALUES ($1, $2, $3, $4, 'UNKNOWN', 1, 0.80, true, $5)
-       RETURNING id, university_id as campus_id, name, normalized_name as description, category as address, is_verified as is_active, created_at, updated_at`,
-      [campusId, name.trim(), normalizedName, address || 'OTHER', userId]
+      `INSERT INTO service_locations (campus_id, name, description, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [campusId, name.trim(), description || null, userId]
     );
     
     logger.info(`Location created: ${name} for campus ${campusId} by user ${userId}`);
@@ -148,11 +138,11 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
   try {
     const userId = req.user!.userId;
     const { locationId } = req.params;
-    const { name, description, address, isActive } = req.body;
+    const { name, description, isActive } = req.body;
     
     // Get the location to check campus
     const locationCheck = await pool.query(
-      `SELECT university_id FROM campus_locations WHERE id = $1`,
+      `SELECT campus_id FROM service_locations WHERE id = $1`,
       [locationId]
     );
     
@@ -163,7 +153,7 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
       });
     }
     
-    const campusId = locationCheck.rows[0].university_id;
+    const campusId = locationCheck.rows[0].campus_id;
     
     // Check if user is campus manager or admin
     const authCheck = await pool.query(
@@ -185,18 +175,15 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
       });
     }
     
-    const normalizedName = name ? normalizeLocationName(name) : null;
-    
     const result = await pool.query(
-      `UPDATE campus_locations
+      `UPDATE service_locations
        SET name = COALESCE($1, name),
-           normalized_name = COALESCE($2, normalized_name),
-           category = COALESCE($3, category),
-           is_verified = COALESCE($4, is_verified),
+           description = COALESCE($2, description),
+           is_active = COALESCE($3, is_active),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5
-       RETURNING id, university_id as campus_id, name, normalized_name as description, category as address, is_verified as is_active, created_at, updated_at`,
-      [name, normalizedName, address, isActive, locationId]
+       WHERE id = $4
+       RETURNING *`,
+      [name, description, isActive, locationId]
     );
     
     res.json({
@@ -220,7 +207,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
     
     // Get the location to check campus
     const locationCheck = await pool.query(
-      `SELECT university_id, name FROM campus_locations WHERE id = $1`,
+      `SELECT campus_id, name FROM service_locations WHERE id = $1`,
       [locationId]
     );
     
@@ -231,7 +218,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
       });
     }
     
-    const campusId = locationCheck.rows[0].university_id;
+    const campusId = locationCheck.rows[0].campus_id;
     const locationName = locationCheck.rows[0].name;
     
     // Check if user is campus manager or admin
@@ -254,11 +241,11 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
       });
     }
     
-    // Delete associated barber_locations first (cascade should handle this but being explicit)
-    await pool.query(`DELETE FROM barber_locations WHERE location_id = $1`, [locationId]);
+    // Delete associated barber_service_locations first
+    await pool.query(`DELETE FROM barber_service_locations WHERE location_id = $1`, [locationId]);
     
     // Delete the location
-    await pool.query(`DELETE FROM campus_locations WHERE id = $1`, [locationId]);
+    await pool.query(`DELETE FROM service_locations WHERE id = $1`, [locationId]);
     
     logger.info(`Location deleted: ${locationName} (${locationId}) by user ${userId}`);
     
@@ -286,18 +273,17 @@ router.get('/barber/:barberId', authenticate, async (req: AuthRequest, res: Resp
     
     const result = await pool.query(
       `SELECT 
-        bl.id as assignment_id,
-        bl.is_primary,
-        bl.created_at as assigned_at,
-        cl.id as location_id,
-        cl.name,
-        cl.normalized_name as description,
-        cl.category as address,
-        cl.is_verified as is_active
-      FROM barber_locations bl
-      JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_verified = true
-      ORDER BY bl.is_primary DESC, cl.name ASC`,
+        bsl.id as assignment_id,
+        bsl.is_primary,
+        bsl.created_at as assigned_at,
+        sl.id as location_id,
+        sl.name,
+        sl.description,
+        sl.is_active
+      FROM barber_service_locations bsl
+      JOIN service_locations sl ON bsl.location_id = sl.id
+      WHERE bsl.barber_id = $1 AND sl.is_active = true
+      ORDER BY bsl.is_primary DESC, sl.name ASC`,
       [barberId]
     );
     
@@ -338,24 +324,23 @@ router.get('/my-locations', authenticate, async (req: AuthRequest, res: Response
     // Get assigned locations
     const assignedResult = await pool.query(
       `SELECT 
-        bl.id as assignment_id,
-        bl.is_primary,
-        cl.id as location_id,
-        cl.name,
-        cl.normalized_name as description,
-        cl.category as address
-      FROM barber_locations bl
-      JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_verified = true
-      ORDER BY bl.is_primary DESC, cl.name ASC`,
+        bsl.id as assignment_id,
+        bsl.is_primary,
+        sl.id as location_id,
+        sl.name,
+        sl.description
+      FROM barber_service_locations bsl
+      JOIN service_locations sl ON bsl.location_id = sl.id
+      WHERE bsl.barber_id = $1 AND sl.is_active = true
+      ORDER BY bsl.is_primary DESC, sl.name ASC`,
       [barberId]
     );
     
     // Get all available locations for this campus (for adding new ones)
     const availableResult = await pool.query(
-      `SELECT id, name, normalized_name as description, category as address
-       FROM campus_locations
-       WHERE university_id = $1 AND is_verified = true
+      `SELECT id, name, description
+       FROM service_locations
+       WHERE campus_id = $1 AND is_active = true
        ORDER BY name ASC`,
       [campusId]
     );
@@ -407,7 +392,7 @@ router.post('/barber/assign', authenticate, async (req: AuthRequest, res: Respon
     
     // Verify the location belongs to the barber's campus
     const locationCheck = await pool.query(
-      `SELECT university_id FROM campus_locations WHERE id = $1 AND is_verified = true`,
+      `SELECT campus_id FROM service_locations WHERE id = $1 AND is_active = true`,
       [locationId]
     );
     
@@ -418,7 +403,7 @@ router.post('/barber/assign', authenticate, async (req: AuthRequest, res: Respon
       });
     }
     
-    if (locationCheck.rows[0].university_id !== barberCampusId) {
+    if (locationCheck.rows[0].campus_id !== barberCampusId) {
       return res.status(400).json({
         success: false,
         error: 'This location is not available for your campus',
@@ -428,14 +413,14 @@ router.post('/barber/assign', authenticate, async (req: AuthRequest, res: Respon
     // If setting as primary, unset other primary locations
     if (isPrimary) {
       await pool.query(
-        `UPDATE barber_locations SET is_primary = false WHERE barber_id = $1`,
+        `UPDATE barber_service_locations SET is_primary = false WHERE barber_id = $1`,
         [barberId]
       );
     }
     
     // Insert or update the assignment
     const result = await pool.query(
-      `INSERT INTO barber_locations (barber_id, location_id, is_primary)
+      `INSERT INTO barber_service_locations (barber_id, location_id, is_primary)
        VALUES ($1, $2, $3)
        ON CONFLICT (barber_id, location_id) 
        DO UPDATE SET is_primary = $3
@@ -478,7 +463,7 @@ router.delete('/barber/unassign/:locationId', authenticate, async (req: AuthRequ
     const barberId = barberCheck.rows[0].id;
     
     await pool.query(
-      `DELETE FROM barber_locations WHERE barber_id = $1 AND location_id = $2`,
+      `DELETE FROM barber_service_locations WHERE barber_id = $1 AND location_id = $2`,
       [barberId, locationId]
     );
     
@@ -503,15 +488,14 @@ router.get('/for-booking/:barberId', async (req, res, next) => {
     
     const result = await pool.query(
       `SELECT 
-        cl.id,
-        cl.name,
-        cl.normalized_name as description,
-        cl.category as address,
-        bl.is_primary
-      FROM barber_locations bl
-      JOIN campus_locations cl ON bl.location_id = cl.id
-      WHERE bl.barber_id = $1 AND cl.is_verified = true
-      ORDER BY bl.is_primary DESC, cl.name ASC`,
+        sl.id,
+        sl.name,
+        sl.description,
+        bsl.is_primary
+      FROM barber_service_locations bsl
+      JOIN service_locations sl ON bsl.location_id = sl.id
+      WHERE bsl.barber_id = $1 AND sl.is_active = true
+      ORDER BY bsl.is_primary DESC, sl.name ASC`,
       [barberId]
     );
     
