@@ -1822,7 +1822,11 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
           className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
             isDayModalVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
-          onClick={closeDayModal}
+          onClick={() => {
+            // Don't close if BookingDetailsModal is open or just closed (mobile touch event protection)
+            if (isBookingDetailsOpen || bookingDetailsJustClosedRef.current) return;
+            closeDayModal();
+          }}
         >
           <div 
             ref={modalRef} 
