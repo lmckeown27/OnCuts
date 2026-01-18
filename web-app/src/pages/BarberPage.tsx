@@ -85,10 +85,9 @@ export default function BarberPage() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
-  const [isDayModalOpenInDashboard, setIsDayModalOpenInDashboard] = useState(false);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal || isDayModalOpenInDashboard;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -549,7 +548,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} isBookingDetailsOpen={showBookingDetailsModal} onDayModalChange={setIsDayModalOpenInDashboard} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -960,8 +959,6 @@ interface DashboardViewProps {
   // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
   campusTimezone?: string;
-  isBookingDetailsOpen?: boolean;
-  onDayModalChange?: (isOpen: boolean) => void;
 }
 
 // Type for confirmed bookings
@@ -985,7 +982,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles', isBookingDetailsOpen = false, onDayModalChange }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
     const now = new Date();
@@ -1001,17 +998,10 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
-  
-  // Notify parent when DayModal opens/closes (for PullToRefresh disable)
-  useEffect(() => {
-    onDayModalChange?.(showDayModal);
-  }, [showDayModal, onDayModalChange]);
-  
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const modalRef = useRef<HTMLDivElement>(null);
-  const bookingDetailsJustClosedRef = useRef(false);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
   // Confirmed bookings state
@@ -1064,30 +1054,14 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     }
   };
 
-  // Touch handlers for mobile swipe between views
-  const touchStartTarget = useRef<EventTarget | null>(null);
-  
+  // Touch handlers for mobile swipe
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
-    touchStartTarget.current = e.target;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null || touchStartY.current === null) return;
-    
-    // Don't trigger view switch if touch started on a clickable day card
-    // Day cards have cursor-pointer class and are meant to open the day modal
-    const target = touchStartTarget.current as HTMLElement | null;
-    if (target) {
-      const clickableParent = target.closest('[data-day-card]');
-      if (clickableParent) {
-        touchStartX.current = null;
-        touchStartY.current = null;
-        touchStartTarget.current = null;
-        return;
-      }
-    }
     
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
@@ -1107,7 +1081,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     
     touchStartX.current = null;
     touchStartY.current = null;
-    touchStartTarget.current = null;
   };
 
   // Use native wheel event listener to properly prevent browser back/forward navigation
@@ -1167,23 +1140,19 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     }, 150);
   };
 
-  // Track when BookingDetailsModal closes to prevent DayModal from closing on mobile
-  const prevIsBookingDetailsOpenRef = useRef(isBookingDetailsOpen);
+  // Close modal when clicking outside
   useEffect(() => {
-    // Only trigger when going from open (true) to closed (false)
-    if (prevIsBookingDetailsOpenRef.current && !isBookingDetailsOpen) {
-      // BookingDetailsModal just closed - set a flag to ignore clicks for a short time
-      bookingDetailsJustClosedRef.current = true;
-      const timeout = setTimeout(() => {
-        bookingDetailsJustClosedRef.current = false;
-      }, 500); // 500ms debounce for mobile touch events
-      return () => clearTimeout(timeout);
-    }
-    prevIsBookingDetailsOpenRef.current = isBookingDetailsOpen;
-  }, [isBookingDetailsOpen]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        closeDayModal();
+      }
+    };
 
-  // Note: We rely on the backdrop's onClick handler (with debounce protection) instead of 
-  // document-level event listeners to avoid timing issues on mobile
+    if (showDayModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDayModal]);
 
   // Get appointments for a specific date from confirmed bookings
   const getAppointmentsForDate = (date: Date): ConfirmedBooking[] => {
@@ -1568,7 +1537,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      data-day-card
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
@@ -1637,7 +1605,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
-                      data-day-card
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
@@ -1748,7 +1715,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day}
-                      data-day-card
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
@@ -1831,11 +1797,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
           className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
             isDayModalVisible ? 'bg-black/50' : 'bg-black/0'
           }`}
-          onClick={() => {
-            // Don't close if BookingDetailsModal is open or just closed (mobile touch event protection)
-            if (isBookingDetailsOpen || bookingDetailsJustClosedRef.current) return;
-            closeDayModal();
-          }}
+          onClick={closeDayModal}
         >
           <div 
             ref={modalRef} 
@@ -1882,6 +1844,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div 
                       key={apt.id} 
                       onClick={() => {
+                        closeDayModal();
                         onViewDetails(apt);
                       }}
                       className={`p-5 rounded-lg border transition-colors cursor-pointer ${
