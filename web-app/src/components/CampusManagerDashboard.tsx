@@ -236,7 +236,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
     <div className="space-y-4 sm:space-y-6">
       {/* Tab Navigation - Scrollable on mobile */}
       <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
-        <nav className="flex gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
+        <nav className="flex justify-center gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
           <button
             onClick={() => handleTabChange('applications')}
             className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
