@@ -2868,13 +2868,13 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
   };
 
   const days: { key: DayKey; label: string; shortLabel: string }[] = [
-    { key: 'sunday', label: 'Sunday', shortLabel: 'S' },
-    { key: 'monday', label: 'Monday', shortLabel: 'M' },
-    { key: 'tuesday', label: 'Tuesday', shortLabel: 'T' },
-    { key: 'wednesday', label: 'Wednesday', shortLabel: 'W' },
-    { key: 'thursday', label: 'Thursday', shortLabel: 'T' },
-    { key: 'friday', label: 'Friday', shortLabel: 'F' },
-    { key: 'saturday', label: 'Saturday', shortLabel: 'S' },
+    { key: 'sunday', label: 'Sunday', shortLabel: 'Sun' },
+    { key: 'monday', label: 'Monday', shortLabel: 'Mon' },
+    { key: 'tuesday', label: 'Tuesday', shortLabel: 'Tue' },
+    { key: 'wednesday', label: 'Wednesday', shortLabel: 'Wed' },
+    { key: 'thursday', label: 'Thursday', shortLabel: 'Thu' },
+    { key: 'friday', label: 'Friday', shortLabel: 'Fri' },
+    { key: 'saturday', label: 'Saturday', shortLabel: 'Sat' },
   ];
 
   const addInterval = (day: DayKey) => {
@@ -3030,8 +3030,8 @@ function AvailabilityModal({ isVisible, onClose, userId }: { isVisible: boolean;
                 >
                   {/* Day header */}
                   <div className="flex items-center gap-3 p-3 sm:p-4">
-                    {/* Day letter badge */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                    {/* Day abbreviation badge */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm ${
                       availability[key].enabled && availability[key].intervals.length > 0
                         ? 'bg-primary-500 text-white'
                         : 'bg-gray-200 text-gray-500'
