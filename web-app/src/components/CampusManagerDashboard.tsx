@@ -1270,9 +1270,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
 
       {/* Barbers Subtab Content */}
       {activeSubTab === 'barbers' && (
-        <>
-          {/* Barber Location Assignments Section */}
-      <div>
+        <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-primary-500" />
@@ -1404,7 +1402,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             ))}
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Assign Location Modal */}
       {showAssignModal && (
@@ -1473,14 +1472,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           </div>
         </div>
       )}
-        </>
-      )}
 
       {/* Requested Locations Subtab Content */}
       {activeSubTab === 'requested' && pendingLocations.length > 0 && (
-        <>
-          {/* Pending Requests Section */}
-      {pendingLocations.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Clock className="w-4 h-4 text-amber-500" />
@@ -1534,35 +1528,33 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             ))}
           </div>
         </div>
-        </>
       )}
 
       {/* Approved Locations Subtab Content */}
       {activeSubTab === 'approved' && (
-        <>
-          <div>
-            {approvedLocations.length === 0 ? (
-          <Card className="text-center py-8 sm:py-12">
-            <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-            <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Add locations where barbers can offer their services
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => {
-                setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
-                setShowAddModal(true);
-              }}
-            >
-              <Plus className="w-4 h-4 mr-1.5" />
-              Add First Location
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-3">
+        <div>
+          {approvedLocations.length === 0 ? (
+            <Card className="text-center py-8 sm:py-12">
+              <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Add locations where barbers can offer their services
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => {
+                  setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
+                  setShowAddModal(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Add First Location
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-3">
             {approvedLocations.map((location) => (
               <Card key={location.id} className={`p-4 ${!location.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -1624,10 +1616,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 </div>
               </Card>
             ))}
-          </div>
-        )}
-      </div>
-        </>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Add/Edit Location Modal */}
