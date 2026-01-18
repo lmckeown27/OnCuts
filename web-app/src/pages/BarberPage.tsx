@@ -1132,6 +1132,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
 
   // Day modal open/close handlers with animation
   const openDayModal = (date: Date) => {
+    // Notify parent FIRST to disable PullToRefresh before modal opens
+    onDayModalChange?.(true);
     setSelectedDate(date);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDayModal(true);
@@ -1571,6 +1573,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.fullDate)}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1639,6 +1643,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day.fullDate.toISOString()}
                       onClick={() => handleDayClick(day.fullDate)}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
                           ? 'bg-primary-400 text-white border-primary-500'
@@ -1749,6 +1755,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div
                       key={day}
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
+                      onTouchStart={(e) => e.stopPropagation()}
+                      onTouchEnd={(e) => e.stopPropagation()}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
                           ? 'bg-primary-400 text-white border-primary-500' 
