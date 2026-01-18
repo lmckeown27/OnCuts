@@ -6,18 +6,16 @@
  * - View pending location requests
  * - Request new locations (pending campus manager approval)
  * - Add from approved campus locations
- * - Set primary location
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Check, X, RefreshCw, Star, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Plus, Check, X, RefreshCw, Trash2, Clock, AlertCircle } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import toast from 'react-hot-toast';
 
 interface AssignedLocation {
   assignment_id: string;
-  is_primary: boolean;
   location_id: string;
   name: string;
   description: string | null;
@@ -138,33 +136,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
     } catch (error) {
       console.error('Failed to unassign location:', error);
       toast.error('Failed to remove location');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSetPrimary = async (locationId: string) => {
-    try {
-      setSaving(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/locations/barber/assign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ locationId, isPrimary: true }),
-      });
-
-      if (response.ok) {
-        toast.success('Primary location updated');
-        fetchLocations();
-      } else {
-        toast.error('Failed to set primary location');
-      }
-    } catch (error) {
-      console.error('Failed to set primary:', error);
-      toast.error('Failed to set primary location');
     } finally {
       setSaving(false);
     }
@@ -365,43 +336,25 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                 ) : (
                   <div className="space-y-2">
                     {data?.assigned.map((loc) => (
-                      <Card key={loc.assignment_id} className={`p-4 ${loc.is_primary ? 'border-primary-300 bg-primary-50' : ''}`}>
+                      <Card key={loc.assignment_id} className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-primary-500" />
                               <span className="font-medium text-gray-900">{loc.name}</span>
-                              {loc.is_primary && (
-                                <span className="text-xs bg-primary-200 text-primary-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                  <Star className="w-3 h-3" />
-                                  Primary
-                                </span>
-                              )}
                             </div>
                             {loc.description && (
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
-                            {!loc.is_primary && (
-                              <button
-                                onClick={() => handleSetPrimary(loc.location_id)}
-                                disabled={saving}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Set as primary"
-                              >
-                                <Star className="w-4 h-4 text-gray-400" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleUnassignLocation(loc.location_id)}
-                              disabled={saving}
-                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Remove location"
-                            >
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleUnassignLocation(loc.location_id)}
+                            disabled={saving}
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Remove location"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
                         </div>
                       </Card>
                     ))}

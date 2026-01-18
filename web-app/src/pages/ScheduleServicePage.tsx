@@ -66,7 +66,6 @@ export default function ScheduleServicePage() {
     name: string;
     description: string | null;
     address: string | null;
-    is_primary: boolean;
   }
   const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
@@ -87,12 +86,12 @@ export default function ScheduleServicePage() {
         if (response.ok) {
           const data = await response.json();
           setBarberLocations(data.data || []);
-          // Auto-select primary location if available and no location is set
+          // Auto-select first location if available and no location is set
           if (!location_ && data.data?.length > 0) {
-            const primaryLoc = data.data.find((loc: BarberLocation) => loc.is_primary);
-            if (primaryLoc) {
-              setLocation(primaryLoc.name);
-              setLocationDetails(primaryLoc.name);
+            const firstLoc = data.data[0];
+            if (firstLoc) {
+              setLocation(firstLoc.name);
+              setLocationDetails(firstLoc.name);
             }
           }
         }
@@ -372,7 +371,7 @@ export default function ScheduleServicePage() {
                         <option value="">Select a location</option>
                         {barberLocations.map((loc) => (
                           <option key={loc.id} value={loc.name}>
-                            {loc.name}{loc.is_primary ? ' (Preferred)' : ''}
+                            {loc.name}
                           </option>
                         ))}
                       </select>

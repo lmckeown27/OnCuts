@@ -742,7 +742,6 @@ interface CampusBarberOption {
 
 interface BarberLocationAssignment {
   assignment_id: string;
-  is_primary: boolean;
   location_id: string;
   name: string;
   description: string | null;
@@ -1358,14 +1357,11 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                         {barber.locations.map((loc) => (
                           <div 
                             key={loc.assignment_id} 
-                            className={`flex items-center justify-between p-2 rounded-lg ${loc.is_primary ? 'bg-primary-100' : 'bg-white'}`}
+                            className="flex items-center justify-between p-2 rounded-lg bg-white"
                           >
                             <div className="flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-primary-500" />
                               <span className="text-sm font-medium text-gray-900">{loc.name}</span>
-                              {loc.is_primary && (
-                                <span className="text-xs bg-primary-200 text-primary-700 px-1.5 py-0.5 rounded">Primary</span>
-                              )}
                             </div>
                             <button
                               onClick={() => handleRevokeLocationFromBarber(barber.id, loc.location_id)}
