@@ -781,7 +781,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [expandedBarbers, setExpandedBarbers] = useState<Set<string>>(new Set());
   
   // Subtab state
-  const [activeSubTab, setActiveSubTab] = useState<'barbers' | 'locations'>('barbers');
+  const [activeSubTab, setActiveSubTab] = useState<'barbers' | 'requested' | 'approved'>('barbers');
 
   const fetchLocations = async () => {
     try {
@@ -1231,10 +1231,31 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
               Barbers
             </span>
           </button>
+          
+          {/* Requested Locations - Only show if there are pending requests */}
+          {pendingLocations.length > 0 && (
+            <button
+              onClick={() => setActiveSubTab('requested')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+                activeSubTab === 'requested'
+                  ? 'border-amber-500 text-amber-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                Requested
+                <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                  {pendingLocations.length}
+                </span>
+              </span>
+            </button>
+          )}
+          
           <button
-            onClick={() => setActiveSubTab('locations')}
+            onClick={() => setActiveSubTab('approved')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-              activeSubTab === 'locations'
+              activeSubTab === 'approved'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
@@ -1455,8 +1476,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </>
       )}
 
-      {/* Locations Subtab Content */}
-      {activeSubTab === 'locations' && (
+      {/* Requested Locations Subtab Content */}
+      {activeSubTab === 'requested' && pendingLocations.length > 0 && (
         <>
           {/* Pending Requests Section */}
       {pendingLocations.length > 0 && (
@@ -1513,15 +1534,14 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             ))}
           </div>
         </div>
+        </>
       )}
 
-      {/* Approved Locations List */}
-      <div>
-        {pendingLocations.length > 0 && (
-          <h4 className="font-semibold text-gray-900 mb-3">Approved Locations</h4>
-        )}
-        
-        {approvedLocations.length === 0 ? (
+      {/* Approved Locations Subtab Content */}
+      {activeSubTab === 'approved' && (
+        <>
+          <div>
+            {approvedLocations.length === 0 ? (
           <Card className="text-center py-8 sm:py-12">
             <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
             <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
