@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, Plus, Check, X, RefreshCw, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { MapPin, Plus, X, RefreshCw, Trash2, Clock, AlertCircle } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import toast from 'react-hot-toast';
@@ -59,6 +59,9 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [newLocationName, setNewLocationName] = useState('');
   const [newLocationDescription, setNewLocationDescription] = useState('');
+  
+  // Delete confirmation state
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   const fetchLocations = async () => {
     try {
@@ -344,14 +347,36 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
                             )}
                           </div>
-                          <button
-                            onClick={() => handleUnassignLocation(loc.location_id)}
-                            disabled={saving}
-                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remove location"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
+                          {confirmingDeleteId === loc.location_id ? (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setConfirmingDeleteId(null)}
+                                disabled={saving}
+                                className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleUnassignLocation(loc.location_id);
+                                  setConfirmingDeleteId(null);
+                                }}
+                                disabled={saving}
+                                className="px-3 py-1 text-xs bg-red-500 text-white hover:bg-red-600 rounded transition-colors font-medium"
+                              >
+                                Delete Location?
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setConfirmingDeleteId(loc.location_id)}
+                              disabled={saving}
+                              className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove location"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          )}
                         </div>
                       </Card>
                     ))}
@@ -393,15 +418,6 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
-
-              {/* All Locations Added */}
-              {unassignedLocations.length === 0 && data?.available.length === data?.assigned.length && data?.assigned.length > 0 && (
-                <Card className="p-4 text-center bg-green-50 border-green-200">
-                  <Check className="w-6 h-6 text-green-500 mx-auto mb-2" />
-                  <p className="text-green-700 text-sm font-medium">All available locations added</p>
-                  <p className="text-green-600 text-xs mt-1">You can request new locations above</p>
-                </Card>
               )}
 
               {/* No Available Locations */}
