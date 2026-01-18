@@ -1848,7 +1848,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                     <div 
                       key={apt.id} 
                       onClick={() => {
-                        closeDayModal();
                         onViewDetails(apt);
                       }}
                       className={`p-5 rounded-lg border transition-colors cursor-pointer ${
