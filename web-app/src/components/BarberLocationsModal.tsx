@@ -347,27 +347,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
                             )}
                           </div>
-                          {confirmingDeleteId === loc.location_id ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => setConfirmingDeleteId(null)}
-                                disabled={saving}
-                                className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleUnassignLocation(loc.location_id);
-                                  setConfirmingDeleteId(null);
-                                }}
-                                disabled={saving}
-                                className="px-3 py-1 text-xs bg-red-500 text-white hover:bg-red-600 rounded transition-colors font-medium"
-                              >
-                                Delete Location?
-                              </button>
-                            </div>
-                          ) : (
+                          {confirmingDeleteId !== loc.location_id && (
                             <button
                               onClick={() => setConfirmingDeleteId(loc.location_id)}
                               disabled={saving}
@@ -378,6 +358,27 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                             </button>
                           )}
                         </div>
+                        {confirmingDeleteId === loc.location_id && (
+                          <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-gray-100">
+                            <button
+                              onClick={() => setConfirmingDeleteId(null)}
+                              disabled={saving}
+                              className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleUnassignLocation(loc.location_id);
+                                setConfirmingDeleteId(null);
+                              }}
+                              disabled={saving}
+                              className="px-3 py-1.5 text-sm bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors font-medium"
+                            >
+                              Delete Location?
+                            </button>
+                          </div>
+                        )}
                       </Card>
                     ))}
                   </div>
