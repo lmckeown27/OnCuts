@@ -1554,7 +1554,13 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                         </div>
                         <div>
                           <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
-                          <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
+                          <div className={`text-sm ${
+                            isToday 
+                              ? 'text-white/70' 
+                              : dayBookings.length > 0 
+                                ? 'text-green-700 font-bold' 
+                                : 'text-gray-500'
+                          }`}>
                             {dayBookings.length === 0 ? 'No appointments' : `${dayBookings.length} appointment${dayBookings.length > 1 ? 's' : ''}`}
                           </div>
                         </div>
