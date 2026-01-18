@@ -779,6 +779,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [loadingBarberAssignments, setLoadingBarberAssignments] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<{ barberId: string; barberName: string } | null>(null);
   const [expandedBarbers, setExpandedBarbers] = useState<Set<string>>(new Set());
+  
+  // Subtab state
+  const [activeSubTab, setActiveSubTab] = useState<'barbers' | 'locations'>('barbers');
 
   const fetchLocations = async () => {
     try {
@@ -1212,7 +1215,42 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </Button>
       </div>
 
-      {/* Barber Location Assignments Section */}
+      {/* Subtab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4">
+          <button
+            onClick={() => setActiveSubTab('barbers')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              activeSubTab === 'barbers'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <Users className="w-4 h-4" />
+              Barbers
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('locations')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
+              activeSubTab === 'locations'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4" />
+              Locations
+            </span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Barbers Subtab Content */}
+      {activeSubTab === 'barbers' && (
+        <>
+          {/* Barber Location Assignments Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -1414,8 +1452,13 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {/* Pending Requests Section */}
+      {/* Locations Subtab Content */}
+      {activeSubTab === 'locations' && (
+        <>
+          {/* Pending Requests Section */}
       {pendingLocations.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
@@ -1564,6 +1607,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* Add/Edit Location Modal */}
       {(showAddModal || editingLocation) && (
