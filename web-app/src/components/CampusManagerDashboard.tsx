@@ -14,7 +14,11 @@ import {
   XCircle,
   Clock,
   Flag,
-  RefreshCw
+  RefreshCw,
+  MapPin,
+  Plus,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -216,7 +220,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusId, 
   campusName 
 }) => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'bookings'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'locations' | 'bookings'>('applications');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedTab, setDisplayedTab] = useState(activeTab);
 
@@ -260,6 +264,17 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           </button>
           
           <button
+            onClick={() => handleTabChange('locations')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'locations'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Locations
+          </button>
+          
+          <button
             onClick={() => handleTabChange('bookings')}
             className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'bookings'
@@ -284,6 +299,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       >
         {displayedTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
         {displayedTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
+        {displayedTab === 'locations' && <CampusLocationsPanel campusId={campusId} />}
         {displayedTab === 'bookings' && <CompletedBookingsPanel campusId={campusId} />}
       </div>
     </div>
@@ -684,6 +700,453 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                     </>
                   ) : (
                     'Remove Barber'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CAMPUS LOCATIONS PANEL
+// ═══════════════════════════════════════════════════════════════
+
+interface CampusLocation {
+  id: string;
+  campus_id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by_name: string | null;
+  barber_count: string;
+}
+
+const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+  const [locations, setLocations] = useState<CampusLocation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<CampusLocation | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<CampusLocation | null>(null);
+  const [formData, setFormData] = useState({ name: '', description: '', address: '' });
+  const [saving, setSaving] = useState(false);
+
+  const fetchLocations = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/campus/${campusId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLocations(data.data || []);
+      } else {
+        console.error('Failed to fetch locations:', response.status);
+        toast.error('Failed to load locations');
+      }
+    } catch (error) {
+      console.error('Failed to fetch locations:', error);
+      toast.error('Failed to load locations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLocations();
+  }, [campusId]);
+
+  const handleAddLocation = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Location name is required');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/campus/${campusId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success('Location added successfully');
+        setShowAddModal(false);
+        setFormData({ name: '', description: '', address: '' });
+        fetchLocations();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to add location');
+      }
+    } catch (error) {
+      console.error('Failed to add location:', error);
+      toast.error('Failed to add location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!editingLocation || !formData.name.trim()) {
+      toast.error('Location name is required');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/${editingLocation.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success('Location updated successfully');
+        setEditingLocation(null);
+        setFormData({ name: '', description: '', address: '' });
+        fetchLocations();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to update location');
+      }
+    } catch (error) {
+      console.error('Failed to update location:', error);
+      toast.error('Failed to update location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteLocation = async () => {
+    if (!deleteConfirm) return;
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/${deleteConfirm.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        toast.success('Location deleted successfully');
+        setDeleteConfirm(null);
+        fetchLocations();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to delete location');
+      }
+    } catch (error) {
+      console.error('Failed to delete location:', error);
+      toast.error('Failed to delete location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleActive = async (location: CampusLocation) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/locations/${location.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isActive: !location.is_active }),
+      });
+
+      if (response.ok) {
+        toast.success(`Location ${location.is_active ? 'deactivated' : 'activated'}`);
+        fetchLocations();
+      } else {
+        toast.error('Failed to update location status');
+      }
+    } catch (error) {
+      console.error('Failed to toggle location:', error);
+      toast.error('Failed to update location status');
+    }
+  };
+
+  const openEditModal = (location: CampusLocation) => {
+    setFormData({
+      name: location.name,
+      description: location.description || '',
+      address: location.address || '',
+    });
+    setEditingLocation(location);
+  };
+
+  if (loading) {
+    return (
+      <Card className="text-center py-8 sm:py-12">
+        <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
+        <p className="text-gray-500 text-sm sm:text-base">Loading locations...</p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with Add Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-gray-900">Campus Locations</h3>
+          <p className="text-sm text-gray-500">{locations.length} locations configured</p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            setFormData({ name: '', description: '', address: '' });
+            setShowAddModal(true);
+          }}
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
+          Add Location
+        </Button>
+      </div>
+
+      {/* Locations List */}
+      {locations.length === 0 ? (
+        <Card className="text-center py-8 sm:py-12">
+          <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+          <p className="text-gray-700 font-medium text-sm sm:text-base">No locations configured</p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">
+            Add locations where barbers can offer their services
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => {
+              setFormData({ name: '', description: '', address: '' });
+              setShowAddModal(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add First Location
+          </Button>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {locations.map((location) => (
+            <Card key={location.id} className={`p-4 ${!location.is_active ? 'opacity-60 bg-gray-50' : ''}`}>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MapPin className="w-4 h-4 text-primary-500" />
+                    <h4 className="font-semibold text-gray-900">{location.name}</h4>
+                    {!location.is_active && (
+                      <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inactive</span>
+                    )}
+                  </div>
+                  {location.description && (
+                    <p className="text-sm text-gray-600 mt-1">{location.description}</p>
+                  )}
+                  {location.address && (
+                    <p className="text-xs text-gray-500 mt-1">{location.address}</p>
+                  )}
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                    <span>{parseInt(location.barber_count)} barber{parseInt(location.barber_count) !== 1 ? 's' : ''} assigned</span>
+                    {location.created_by_name && (
+                      <span>Added by {location.created_by_name}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggleActive(location)}
+                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                      location.is_active
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {location.is_active ? 'Active' : 'Inactive'}
+                  </button>
+                  <button
+                    onClick={() => openEditModal(location)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4 text-gray-500" />
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(location)}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Add/Edit Location Modal */}
+      {(showAddModal || editingLocation) && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => {
+            if (!saving) {
+              setShowAddModal(false);
+              setEditingLocation(null);
+              setFormData({ name: '', description: '', address: '' });
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+              <h3 className="text-lg font-bold text-primary-800 flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                {editingLocation ? 'Edit Location' : 'Add New Location'}
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Location Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Student Union, Dorm Building A"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of this location"
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address (optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Full address or building number"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingLocation(null);
+                    setFormData({ name: '', description: '', address: '' });
+                  }}
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={editingLocation ? handleUpdateLocation : handleAddLocation}
+                  disabled={saving || !formData.name.trim()}
+                  className="flex-1"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : editingLocation ? (
+                    'Update Location'
+                  ) : (
+                    'Add Location'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => !saving && setDeleteConfirm(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-red-50 px-6 py-4 border-b border-red-100">
+              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" />
+                Delete Location
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete <strong>{deleteConfirm.name}</strong>?
+              </p>
+              {parseInt(deleteConfirm.barber_count) > 0 && (
+                <p className="text-sm text-amber-600 mb-4 p-3 bg-amber-50 rounded-lg">
+                  ⚠️ This location is assigned to {deleteConfirm.barber_count} barber(s). 
+                  They will need to select new locations.
+                </p>
+              )}
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={saving}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleDeleteLocation}
+                  disabled={saving}
+                  className="flex-1 bg-red-600 hover:bg-red-700 border-red-600"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    'Delete Location'
                   )}
                 </Button>
               </div>

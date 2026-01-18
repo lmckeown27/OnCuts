@@ -844,6 +844,140 @@ sudo -u postgres psql -d campuscuts -c "\d locations"
 
 ---
 
+## CAMPUS LOCATIONS (New System)
+
+The new campus locations system allows campus managers to define predefined locations where barbers can offer services.
+
+### Create Campus Locations Tables (Run Once)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+-- Campus locations table: stores locations available at each campus
+CREATE TABLE IF NOT EXISTS campus_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  campus_id UUID NOT NULL REFERENCES campuses(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  address TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(campus_id, name)
+);
+
+-- Barber locations: junction table linking barbers to their available locations
+CREATE TABLE IF NOT EXISTS barber_locations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  barber_id UUID NOT NULL REFERENCES barbers(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES campus_locations(id) ON DELETE CASCADE,
+  is_primary BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(barber_id, location_id)
+);
+
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_campus_locations_campus ON campus_locations(campus_id);
+CREATE INDEX IF NOT EXISTS idx_campus_locations_active ON campus_locations(campus_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_barber_locations_barber ON barber_locations(barber_id);
+CREATE INDEX IF NOT EXISTS idx_barber_locations_location ON barber_locations(location_id);
+"
+```
+
+### View All Campus Locations
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    cl.id,
+    cl.name,
+    cl.description,
+    c.name as campus_name,
+    cl.is_active,
+    cl.created_at
+FROM campus_locations cl
+JOIN campuses c ON cl.campus_id = c.id
+ORDER BY c.name, cl.name;
+"
+```
+
+### View Locations for a Specific Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT cl.id, cl.name, cl.description, cl.is_active
+FROM campus_locations cl
+JOIN campuses c ON cl.campus_id = c.id
+WHERE c.slug = 'cal-poly'
+ORDER BY cl.name;
+"
+```
+
+### Add a Location to a Campus
+```bash
+sudo -u postgres psql -d campuscuts -c "
+INSERT INTO campus_locations (campus_id, name, description, address)
+SELECT id, 'Dexter Lawn', 'Popular outdoor meetup area', 'Near Kennedy Library'
+FROM campuses WHERE slug = 'cal-poly';
+"
+```
+
+### View Barber Location Assignments
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name || ' ' || u.last_name as barber_name,
+    cl.name as location_name,
+    bl.is_primary,
+    bl.created_at as assigned_at
+FROM barber_locations bl
+JOIN barbers b ON bl.barber_id = b.id
+JOIN users u ON b.\"userId\" = u.id
+JOIN campus_locations cl ON bl.location_id = cl.id
+ORDER BY barber_name, cl.name;
+"
+```
+
+### Assign Location to a Barber
+```bash
+sudo -u postgres psql -d campuscuts -c "
+INSERT INTO barber_locations (barber_id, location_id, is_primary)
+SELECT b.id, cl.id, true
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+JOIN campus_locations cl ON cl.campus_id = b.\"campusId\"
+WHERE u.email = 'barber@example.com'
+AND cl.name = 'Dexter Lawn';
+"
+```
+
+### Remove Location from a Barber
+```bash
+sudo -u postgres psql -d campuscuts -c "
+DELETE FROM barber_locations bl
+USING barbers b, users u, campus_locations cl
+WHERE bl.barber_id = b.id
+AND b.\"userId\" = u.id
+AND bl.location_id = cl.id
+AND u.email = 'barber@example.com'
+AND cl.name = 'Dexter Lawn';
+"
+```
+
+### Delete a Campus Location
+```bash
+sudo -u postgres psql -d campuscuts -c "
+DELETE FROM campus_locations
+WHERE name = 'Dexter Lawn'
+AND campus_id = (SELECT id FROM campuses WHERE slug = 'cal-poly');
+"
+```
+
+### Describe Campus Locations Tables
+```bash
+sudo -u postgres psql -d campuscuts -c "\d campus_locations"
+sudo -u postgres psql -d campuscuts -c "\d barber_locations"
+```
+
+---
+
 ## AVAILABILITY
 
 ### View All Availability Slots

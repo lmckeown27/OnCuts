@@ -59,11 +59,52 @@ export default function ScheduleServicePage() {
   );
   const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Available locations for this barber
+  interface BarberLocation {
+    id: string;
+    name: string;
+    description: string | null;
+    address: string | null;
+    is_primary: boolean;
+  }
+  const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // Available services based on barber's specialties (fallback to shared config)
   const availableServices = (Array.isArray(barber?.specialties) && barber.specialties.length > 0)
     ? barber.specialties 
     : SPECIALTY_OPTIONS;
+
+  // Fetch locations when barber is available
+  useEffect(() => {
+    const fetchLocations = async () => {
+      if (!barber?.id) return;
+      
+      try {
+        setLocationsLoading(true);
+        const response = await fetch(`/api/locations/for-booking/${barber.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setBarberLocations(data.data || []);
+          // Auto-select primary location if available and no location is set
+          if (!location_ && data.data?.length > 0) {
+            const primaryLoc = data.data.find((loc: BarberLocation) => loc.is_primary);
+            if (primaryLoc) {
+              setLocation(primaryLoc.name);
+              setLocationDetails(primaryLoc.name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber locations:', error);
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+    
+    fetchLocations();
+  }, [barber?.id]);
 
   // Get minimum date (today)
   const today = new Date().toISOString().split('T')[0];
@@ -314,19 +355,35 @@ export default function ScheduleServicePage() {
                         Location *
                       </div>
                     </label>
-                    <input
-                      type="text"
-                      value={locationDetails}
-                      onChange={(e) => {
-                        setLocationDetails(e.target.value);
-                        setLocation(e.target.value);
-                      }}
-                      placeholder="Enter service location (e.g., My Dorm, Student Union, etc.)"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      required
-                    />
+                    {locationsLoading ? (
+                      <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                        Loading locations...
+                      </div>
+                    ) : barberLocations.length > 0 ? (
+                      <select
+                        value={locationDetails}
+                        onChange={(e) => {
+                          setLocationDetails(e.target.value);
+                          setLocation(e.target.value);
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        required
+                      >
+                        <option value="">Select a location</option>
+                        {barberLocations.map((loc) => (
+                          <option key={loc.id} value={loc.name}>
+                            {loc.name}{loc.is_primary ? ' (Preferred)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="w-full px-4 py-3 border border-amber-300 rounded-lg bg-amber-50 text-amber-700 text-sm">
+                        <MapPin className="w-4 h-4 inline mr-2" />
+                        This barber hasn't set up service locations yet. Please contact them directly.
+                      </div>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Where would you like the service to take place?
+                      Where the service will take place
                     </p>
                   </div>
 

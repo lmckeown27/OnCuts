@@ -17,6 +17,7 @@ import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRe
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
+import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -68,6 +69,9 @@ export default function BarberPage() {
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
   
+  const [showLocations, setShowLocations] = useState(false);
+  const [isLocationsVisible, setIsLocationsVisible] = useState(false);
+  
   const [showAvailability, setShowAvailability] = useState(false);
   
   // const [showWalkInPayment, setShowWalkInPayment] = useState(false); // Walk-in feature disabled
@@ -82,7 +86,7 @@ export default function BarberPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showAvailability || showServiceDetails || showNotifications;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -188,6 +192,9 @@ export default function BarberPage() {
   
   const openBookings = () => openModal(setShowBookings, setIsBookingsVisible);
   const closeBookings = () => closeModal(setShowBookings, setIsBookingsVisible);
+  
+  const openLocations = () => openModal(setShowLocations, setIsLocationsVisible);
+  const closeLocations = () => closeModal(setShowLocations, setIsLocationsVisible);
   
   const openAvailability = () => openModal(setShowAvailability, setIsAvailabilityVisible);
   const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
@@ -415,6 +422,16 @@ export default function BarberPage() {
                   >
                     <Scissors className="w-4 h-4 text-gray-500" />
                     My Services
+                  </button>
+                  <button
+                    onClick={() => {
+                      openLocations();
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    My Locations
                   </button>
                   <button
                     onClick={() => {
@@ -745,6 +762,14 @@ export default function BarberPage() {
           isVisible={isBookingsVisible} 
           onClose={closeBookings}
           barberId={barberId}
+        />
+      )}
+
+      {/* Locations Modal */}
+      {showLocations && (
+        <BarberLocationsModal 
+          isVisible={isLocationsVisible} 
+          onClose={closeLocations}
         />
       )}
 
