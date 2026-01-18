@@ -241,12 +241,12 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
       {/* Service Selection */}
       <Card>
-        <h3 className="text-xl font-bold text-gray-900 mb-4">My Services & Pricing</h3>
-        <p className="text-sm text-gray-600 mb-6">
-          Select services and set your prices. Click "Confirm Price" after editing.
+        <h3 className="text-xl font-bold text-gray-900 mb-2">My Services & Pricing</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Select services and set your prices.
         </p>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {barberServices.map((service) => {
             const priceChanged = service.isEditing && service.price !== service.originalPrice;
             
@@ -259,101 +259,93 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                     toggleService(service.serviceId);
                   }
                 }}
-                className={`p-4 rounded-lg border-2 transition-all ${
+                className={`p-3 rounded-lg border-2 transition-all ${
                   service.isOffered
                     ? 'border-primary-400 bg-primary-50'
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                 } ${saving ? 'opacity-70' : ''}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  {/* Service Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      {/* Checkbox - only this can deselect when service is offered */}
-                      <div
-                        onClick={(e) => {
-                          if (service.isOffered && !saving) {
-                            e.stopPropagation();
-                            toggleService(service.serviceId);
-                          }
-                        }}
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                          service.isOffered
-                            ? 'bg-primary-400 border-primary-400 cursor-pointer hover:bg-primary-500'
-                            : 'border-gray-300'
-                        }`}
-                      >
-                        {service.isOffered && (
-                          <Check className="w-4 h-4 text-white" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{service.serviceName}</h4>
-                        <p className="text-xs text-gray-500">{service.description}</p>
-                      </div>
-                    </div>
+                {/* Header with checkbox and name */}
+                <div className="flex items-start gap-2 mb-2">
+                  {/* Checkbox */}
+                  <div
+                    onClick={(e) => {
+                      if (service.isOffered && !saving) {
+                        e.stopPropagation();
+                        toggleService(service.serviceId);
+                      }
+                    }}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 mt-0.5 ${
+                      service.isOffered
+                        ? 'bg-primary-400 border-primary-400 cursor-pointer hover:bg-primary-500'
+                        : 'border-gray-300'
+                    }`}
+                  >
+                    {service.isOffered && (
+                      <Check className="w-3 h-3 text-white" />
+                    )}
                   </div>
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">{service.serviceName}</h4>
+                  </div>
+                </div>
 
-                  {/* Pricing */}
-                  <div className="text-right min-w-[160px]">
-                    {service.isOffered ? (
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Your Price</p>
-                        <div className="flex items-center justify-end gap-1">
-                          <DollarSign className="w-5 h-5 text-gray-400" />
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={service.price}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
-                              updatePrice(service.serviceId, val ? Number(val) : 0);
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`w-20 text-2xl font-bold text-gray-900 text-right border-b-2 focus:outline-none bg-transparent ${
-                              priceChanged ? 'border-orange-400' : 'border-primary-300 focus:border-primary-500'
-                            }`}
-                          />
-                        </div>
-                        
-                        {/* Confirm/Cancel buttons when price changed */}
-                        {priceChanged && (
-                          <div className="flex gap-2 mt-2 justify-end">
-                            <Button
-                              size="sm"
-                              variant="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                confirmPrice(service.serviceId);
-                              }}
-                              disabled={saving}
-                            >
-                              Confirm Price
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                cancelPriceEdit(service.serviceId);
-                              }}
-                              disabled={saving}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-xs text-primary-500">
-                          Click to add
-                        </p>
+                {/* Pricing */}
+                {service.isOffered ? (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-0.5">
+                      <DollarSign className="w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={service.price}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          updatePrice(service.serviceId, val ? Number(val) : 0);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`w-14 text-lg font-bold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
+                          priceChanged ? 'border-orange-400' : 'border-primary-300 focus:border-primary-500'
+                        }`}
+                      />
+                    </div>
+                    
+                    {/* Confirm/Cancel buttons when price changed */}
+                    {priceChanged && (
+                      <div className="flex flex-col gap-1 mt-2">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            confirmPrice(service.serviceId);
+                          }}
+                          disabled={saving}
+                          className="text-xs py-1"
+                        >
+                          Confirm
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cancelPriceEdit(service.serviceId);
+                          }}
+                          disabled={saving}
+                          className="text-xs py-1"
+                        >
+                          Cancel
+                        </Button>
                       </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <p className="text-xs text-primary-500 mt-1">
+                    + Add
+                  </p>
+                )}
               </div>
             );
           })}
