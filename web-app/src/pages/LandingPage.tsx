@@ -1142,7 +1142,7 @@ export default function LandingPage() {
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-8 justify-items-center text-center">
             {/* Resources */}
             <div>
               <h4 className="font-bold text-white mb-4">Resources</h4>
@@ -1170,7 +1170,7 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Support</h4>
               <ul className="space-y-2">
                 <li>
-                  <button onClick={openContactPopup} className="text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+                  <button onClick={openContactPopup} className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 justify-center">
                     Contact Us <Mail className="w-3 h-3" />
                   </button>
                 </li>
