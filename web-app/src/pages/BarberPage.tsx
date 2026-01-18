@@ -1140,9 +1140,12 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     }, 150);
   };
 
-  // Close modal when clicking outside
+  // Close modal when clicking outside (but not when BookingDetailsModal is open)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Don't close DayModal if BookingDetailsModal is open
+      if (showBookingDetailsModal) return;
+      
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         closeDayModal();
       }
@@ -1152,7 +1155,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showDayModal]);
+  }, [showDayModal, showBookingDetailsModal]);
 
   // Get appointments for a specific date from confirmed bookings
   const getAppointmentsForDate = (date: Date): ConfirmedBooking[] => {
