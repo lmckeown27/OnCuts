@@ -1296,9 +1296,10 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
                   endOfWeek.setDate(startOfWeek.getDate() + 6);
                   const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
                   const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                  const year = endOfWeek.getFullYear();
                   return startMonth === endMonth 
-                    ? `Week of ${startOfWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { day: 'numeric', year: 'numeric' })}`
-                    : `${startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+                    ? `${startMonth} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}, ${year}`
+                    : `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}, ${year}`;
                 })()}
               </h3>
               <button 
