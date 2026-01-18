@@ -1922,12 +1922,6 @@ ${details.location ? `Location: ${details.location}` : ''}
 Price: $${details.price.toFixed(2)}
 
 ${details.reason ? `REASON PROVIDED\n---------------\n${details.reason}\n` : ''}
-We understand this is disappointing. Here are your options:
-
-1. Browse other barbers on CampusCut who may be available
-2. Try booking with ${details.barberName} for a different time
-3. Message the barber to discuss alternative arrangements
-
 Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 
 ---
@@ -2019,16 +2013,6 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
       <p style="color: #6b7280; margin: 0; font-size: 14px;">
         <strong>Barber:</strong> ${details.barberName}
       </p>
-    </div>
-    
-    <!-- What's Next -->
-    <div style="background-color: #eff6ff; border-radius: 8px; padding: 15px; margin: 20px 0;">
-      <p style="color: #1e40af; margin: 0 0 10px 0; font-weight: 600; font-size: 14px;">What's Next?</p>
-      <ul style="color: #1e3a8a; margin: 0; padding-left: 20px; font-size: 14px;">
-        <li>Browse other barbers on CampusCut</li>
-        <li>Try booking with ${details.barberName} for a different time</li>
-        <li>Message the barber to discuss alternatives</li>
-      </ul>
     </div>
     
     <!-- Booking Reference -->
