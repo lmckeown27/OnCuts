@@ -1064,14 +1064,30 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     }
   };
 
-  // Touch handlers for mobile swipe
+  // Touch handlers for mobile swipe between views
+  const touchStartTarget = useRef<EventTarget | null>(null);
+  
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    touchStartTarget.current = e.target;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null || touchStartY.current === null) return;
+    
+    // Don't trigger view switch if touch started on a clickable day card
+    // Day cards have cursor-pointer class and are meant to open the day modal
+    const target = touchStartTarget.current as HTMLElement | null;
+    if (target) {
+      const clickableParent = target.closest('[data-day-card]');
+      if (clickableParent) {
+        touchStartX.current = null;
+        touchStartY.current = null;
+        touchStartTarget.current = null;
+        return;
+      }
+    }
     
     const touchEndX = e.changedTouches[0].clientX;
     const touchEndY = e.changedTouches[0].clientY;
@@ -1091,6 +1107,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     
     touchStartX.current = null;
     touchStartY.current = null;
+    touchStartTarget.current = null;
   };
 
   // Use native wheel event listener to properly prevent browser back/forward navigation
@@ -1551,6 +1568,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
+                      data-day-card
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
@@ -1619,6 +1637,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
+                      data-day-card
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
@@ -1729,6 +1748,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day}
+                      data-day-card
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
