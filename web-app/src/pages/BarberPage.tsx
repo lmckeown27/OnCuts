@@ -548,7 +548,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} isBookingDetailsOpen={showBookingDetailsModal} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -959,6 +959,7 @@ interface DashboardViewProps {
   // onWalkInClick: () => void; // Walk-in feature disabled
   refreshKey?: number;
   campusTimezone?: string;
+  isBookingDetailsOpen?: boolean;
 }
 
 // Type for confirmed bookings
@@ -982,7 +983,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles', isBookingDetailsOpen = false }: DashboardViewProps) {
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
     const now = new Date();
@@ -1144,7 +1145,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Don't close DayModal if BookingDetailsModal is open
-      if (showBookingDetailsModal) return;
+      if (isBookingDetailsOpen) return;
       
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         closeDayModal();
@@ -1155,7 +1156,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-  }, [showDayModal, showBookingDetailsModal]);
+  }, [showDayModal, isBookingDetailsOpen]);
 
   // Get appointments for a specific date from confirmed bookings
   const getAppointmentsForDate = (date: Date): ConfirmedBooking[] => {
