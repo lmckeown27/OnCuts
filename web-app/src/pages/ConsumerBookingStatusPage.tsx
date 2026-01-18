@@ -755,8 +755,8 @@ export default function ConsumerBookingStatusPage() {
           {/* Service & Price */}
           <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl mb-4">
             <div>
-              <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
               <p className="text-sm text-gray-500">Service</p>
+              <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
             </div>
             <p className="text-2xl font-bold text-green-600">{formatPrice(booking.priceUsdCents)}</p>
           </div>
