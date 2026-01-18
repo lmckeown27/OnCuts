@@ -2052,24 +2052,18 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     <div className="space-y-4 sm:space-y-6">
       {/* Filter Bar */}
       <Card className="p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h3 className="font-semibold text-gray-900">Completed Bookings</h3>
-            <p className="text-sm text-gray-500">{bookings.length} completed bookings total</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Filter by barber:</label>
-            <select
-              value={selectedBarberId}
-              onChange={(e) => setSelectedBarberId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              <option value="all">All Barbers</option>
-              {barbers.map((barber) => (
-                <option key={barber.id} value={barber.id}>{barber.name}</option>
-              ))}
-            </select>
-          </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Filter by barber:</label>
+          <select
+            value={selectedBarberId}
+            onChange={(e) => setSelectedBarberId(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          >
+            <option value="all">All Barbers</option>
+            {barbers.map((barber) => (
+              <option key={barber.id} value={barber.id}>{barber.name}</option>
+            ))}
+          </select>
         </div>
       </Card>
 
