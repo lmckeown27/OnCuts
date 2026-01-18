@@ -245,7 +245,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="hidden sm:inline">Barber </span>Applications
+            Applications
           </button>
           
           <button
@@ -256,7 +256,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="hidden sm:inline">Barber </span>Management
+            Management
           </button>
           
           <button
