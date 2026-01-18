@@ -1162,6 +1162,22 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
           className="touch-pan-y"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
+          {/* Jump to Today/This Week/This Month button - shown when offset is non-zero */}
+          {((scheduleView === 'daily' && dayOffset !== 0) || 
+            (scheduleView === 'weekly' && weekOffset !== 0) || 
+            (scheduleView === 'monthly' && monthOffset !== 0)) && (
+            <button 
+              onClick={() => {
+                if (scheduleView === 'daily') setDayOffset(0);
+                else if (scheduleView === 'weekly') setWeekOffset(0);
+                else setMonthOffset(0);
+              }}
+              className="px-3 py-1.5 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
+            >
+              {scheduleView === 'daily' ? 'Today' : scheduleView === 'weekly' ? 'This Week' : 'This Month'}
+            </button>
+          )}
+          
           {/* Appointments Count - centered above toggle buttons */}
           <p className="text-sm sm:text-base text-gray-600 font-medium">
             {(() => {
@@ -1276,14 +1292,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
               >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
-              {dayOffset !== 0 && (
-                <button 
-                  onClick={() => setDayOffset(0)}
-                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                >
-                  Today
-                </button>
-              )}
             </div>
           )}
 
@@ -1319,14 +1327,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
               >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
-              {weekOffset !== 0 && (
-                <button 
-                  onClick={() => setWeekOffset(0)}
-                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                >
-                  This Week
-                </button>
-              )}
             </div>
           )}
 
@@ -1352,14 +1352,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
               >
                 <ChevronRight className="w-5 h-5 text-gray-600" />
               </button>
-              {monthOffset !== 0 && (
-                <button 
-                  onClick={() => setMonthOffset(0)}
-                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                >
-                  This Month
-                </button>
-              )}
             </div>
           )}
         </div>
