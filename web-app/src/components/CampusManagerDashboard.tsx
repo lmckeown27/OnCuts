@@ -1267,10 +1267,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
       {activeSubTab === 'barbers' && (
         <div>
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-primary-500" />
-            <h4 className="font-semibold text-gray-900">Barber Location Assignments</h4>
-          </div>
+          <h4 className="font-semibold text-gray-900">Barber Location Assignments</h4>
           <p className="text-xs text-gray-500">{campusBarbers.length} barbers</p>
         </div>
         
