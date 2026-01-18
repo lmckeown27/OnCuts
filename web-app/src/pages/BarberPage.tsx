@@ -1670,6 +1670,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
+                      data-no-pull-refresh
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`flex items-center justify-between p-4 rounded-xl border active:scale-98 transition-all ${
                         isToday
@@ -1738,6 +1739,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day.fullDate.toISOString()}
+                      data-no-pull-refresh
                       onClick={() => handleDayClick(day.fullDate)}
                       className={`p-5 rounded-xl border overflow-hidden min-h-[160px] flex flex-col ${
                         isToday
@@ -1848,6 +1850,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                   return (
                     <div
                       key={day}
+                      data-no-pull-refresh
                       onClick={() => handleDayClick(new Date(displayYear, displayMonth, day))}
                       className={`aspect-square p-1.5 sm:p-3 rounded-lg sm:rounded-xl border overflow-hidden ${
                         isToday 
