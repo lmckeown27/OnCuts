@@ -709,10 +709,12 @@ interface CompletedBooking {
   consumerAvatar: string | null;
   serviceType: string;
   priceUsdCents: number;
+  tipAmountCents: number | null;
   scheduledTime: string;
   paidAt: string | null;
   location: string | null;
   notes: string | null;
+  status: string;
   review: {
     rating: number;
     comment: string | null;
@@ -730,6 +732,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -891,7 +894,11 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       ) : (
         <div className="space-y-3">
           {bookings.map((booking) => (
-            <Card key={booking.id} className="p-4">
+            <Card 
+              key={booking.id} 
+              className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setSelectedBooking(booking)}
+            >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 {/* Left side - booking info */}
                 <div className="flex-1">
@@ -945,6 +952,139 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {selectedBooking && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="text-lg font-bold text-gray-900">Booking Details</h3>
+              <button 
+                onClick={() => setSelectedBooking(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <span className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Barber Info */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                <div className="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                  {selectedBooking.barberAvatar ? (
+                    <img src={selectedBooking.barberAvatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-6 h-6 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">{selectedBooking.barberName}</p>
+                  <p className="text-sm text-gray-500">Barber</p>
+                </div>
+              </div>
+
+              {/* Service & Customer */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Service</p>
+                  <p className="font-semibold text-gray-900">{selectedBooking.serviceType}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Customer</p>
+                  <p className="font-semibold text-gray-900">{selectedBooking.consumerName}</p>
+                </div>
+              </div>
+
+              {/* Date & Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Scheduled</p>
+                  <p className="font-semibold text-gray-900 text-sm">{formatDate(selectedBooking.scheduledTime)}</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Status</p>
+                  <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' ? 'text-green-600' : 'text-amber-600'}`}>
+                    {selectedBooking.status === 'PAID' ? 'Paid' : 'Awaiting Payment'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location */}
+              {selectedBooking.location && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Location</p>
+                  <p className="font-semibold text-gray-900">{selectedBooking.location}</p>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedBooking.notes && (
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-1">Notes</p>
+                  <p className="text-gray-700 italic">"{selectedBooking.notes}"</p>
+                </div>
+              )}
+
+              {/* Payment Breakdown */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold text-gray-900 mb-3">Payment Details</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Service Price</span>
+                    <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
+                  </div>
+                  {selectedBooking.tipAmountCents !== null && selectedBooking.tipAmountCents > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tip</span>
+                      <span className="font-medium text-green-600">{formatPrice(selectedBooking.tipAmountCents)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-semibold text-gray-900">Total</span>
+                    <span className="font-bold text-lg text-green-600">
+                      {formatPrice(selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0))}
+                    </span>
+                  </div>
+                </div>
+                {selectedBooking.paidAt && (
+                  <p className="text-xs text-gray-500 mt-2">Paid on {formatDate(selectedBooking.paidAt)}</p>
+                )}
+              </div>
+
+              {/* Review */}
+              {selectedBooking.review && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold text-gray-900 mb-3">Customer Review</h4>
+                  <div className="p-4 bg-yellow-50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      {renderStars(selectedBooking.review.rating)}
+                      <span className="text-sm text-gray-600">({selectedBooking.review.rating}/5)</span>
+                    </div>
+                    {selectedBooking.review.comment && (
+                      <p className="text-gray-700 italic">"{selectedBooking.review.comment}"</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedBooking(null)}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
