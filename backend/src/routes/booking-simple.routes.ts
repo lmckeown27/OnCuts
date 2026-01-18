@@ -1375,6 +1375,23 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       [tipAmountCents, totalAmountCents, id]
     );
 
+    // Delete the conversation and its messages when payment is confirmed
+    try {
+      await pool.query(
+        `DELETE FROM messages 
+         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+        [id]
+      );
+      await pool.query(
+        `DELETE FROM conversations WHERE booking_id = $1`,
+        [id]
+      );
+      logger.info(`Deleted conversation for paid booking ${id}`);
+    } catch (convError: any) {
+      // Conversation may already be deleted - that's fine
+      logger.debug(`No conversation to delete for booking ${id}`);
+    }
+
     // Notify barber of payment received
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
@@ -1452,6 +1469,23 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
        WHERE id = $3`,
       [tipAmountCents, totalAmountCents, id]
     );
+
+    // Delete the conversation and its messages when payment is processed
+    try {
+      await pool.query(
+        `DELETE FROM messages 
+         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+        [id]
+      );
+      await pool.query(
+        `DELETE FROM conversations WHERE booking_id = $1`,
+        [id]
+      );
+      logger.info(`Deleted conversation for paid booking ${id}`);
+    } catch (convError: any) {
+      // Conversation may already be deleted - that's fine
+      logger.debug(`No conversation to delete for booking ${id}`);
+    }
 
     // Notify barber of payment received
     await notificationService.saveNotification({
