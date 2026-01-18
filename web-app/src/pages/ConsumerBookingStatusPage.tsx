@@ -747,8 +747,8 @@ export default function ConsumerBookingStatusPage() {
               )}
             </div>
             <div>
+              <p className="text-sm text-gray-500">Barber</p>
               <p className="font-bold text-gray-900">{booking.barberName}</p>
-              <p className="text-sm text-gray-500">Your Barber</p>
             </div>
           </div>
           
