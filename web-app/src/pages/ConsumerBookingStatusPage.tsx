@@ -69,6 +69,12 @@ export default function ConsumerBookingStatusPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showDeclinedModal, setShowDeclinedModal] = useState(false);
+  const [declinedModalData, setDeclinedModalData] = useState<{
+    barberName: string;
+    reason: string;
+    message: string;
+  } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Auto-format date input (MM/DD/YYYY)
@@ -1062,6 +1068,17 @@ export default function ConsumerBookingStatusPage() {
                       if (isMessageNotification && data.conversationId) {
                         navigate(`${platformPrefix}/consumer/messages/${data.conversationId}`);
                         setShowNotifications(false);
+                      } else if (notification.type === 'booking_rejected') {
+                        // Booking declined - show decline details modal
+                        const barberNameMatch = notification.message?.match(/^(.+?) was unable to accept/);
+                        const barberName = barberNameMatch ? barberNameMatch[1] : 'The barber';
+                        setDeclinedModalData({
+                          barberName,
+                          reason: data.reason || '',
+                          message: notification.message || '',
+                        });
+                        setShowDeclinedModal(true);
+                        setShowNotifications(false);
                       } else {
                         setShowNotifications(false);
                       }
@@ -1112,6 +1129,102 @@ export default function ConsumerBookingStatusPage() {
               >
                 Close
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Declined Modal */}
+      {showDeclinedModal && declinedModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowDeclinedModal(false);
+              setDeclinedModalData(null);
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-slide-up">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4 flex items-center justify-center relative">
+              <div className="flex flex-col items-center text-center">
+                <h2 className="text-xl font-bold text-white">Booking Declined</h2>
+              </div>
+              <button 
+                className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+                onClick={() => {
+                  setShowDeclinedModal(false);
+                  setDeclinedModalData(null);
+                }}
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                </div>
+                <p className="text-gray-600">
+                  <span className="font-semibold text-gray-900">{declinedModalData.barberName}</span> was unable to accept your booking request.
+                </p>
+              </div>
+
+              {/* Reason Section */}
+              {declinedModalData.reason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                  <h4 className="font-semibold text-red-800 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Reason for Declining
+                  </h4>
+                  <p className="text-red-700 text-sm">{declinedModalData.reason}</p>
+                </div>
+              )}
+
+              {/* What's Next */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">What's Next?</h4>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary-500 mt-1">•</span>
+                    <span>Browse other available barbers near you</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary-500 mt-1">•</span>
+                    <span>Try booking at a different time</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary-500 mt-1">•</span>
+                    <span>Message the barber if you have questions</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Support Contact */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                <p className="text-sm text-amber-800">
+                  Think a mistake was made? Contact us at{' '}
+                  <a href="mailto:campuscuthelp@gmail.com" className="font-medium underline">
+                    campuscuthelp@gmail.com
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t">
+              <button
+                onClick={() => {
+                  setShowDeclinedModal(false);
+                  setDeclinedModalData(null);
+                  navigate(`${platformPrefix}/consumer`);
+                }}
+                className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+              >
+                Find Another Barber
+              </button>
             </div>
           </div>
         </div>
