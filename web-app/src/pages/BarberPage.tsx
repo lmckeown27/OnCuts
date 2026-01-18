@@ -1723,31 +1723,50 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                       } cursor-pointer active:scale-95 transition-all`}
                     >
                       <div className="text-sm sm:text-base font-bold mb-0.5 sm:mb-1">{day}</div>
-                      {/* Mobile: Show +X bookings count */}
-                      <div className="sm:hidden flex justify-center">
-                        {hasAppointments && (
-                          <div className={`text-base font-bold ${isToday ? 'text-white' : 'text-primary-500'}`}>
-                            +{dayBookings.length}
-                          </div>
-                        )}
+                      {/* Mobile: Show +X bookings count with color coding */}
+                      <div className="sm:hidden flex flex-col items-center gap-0">
+                        {(() => {
+                          const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
+                          const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
+                          return (
+                            <>
+                              {completedCount > 0 && (
+                                <div className={`text-xs font-bold ${isToday ? 'text-white' : 'text-green-600'}`}>
+                                  +{completedCount}
+                                </div>
+                              )}
+                              {pendingCount > 0 && (
+                                <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
+                                  +{pendingCount}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
-                      {/* Desktop: Show names */}
+                      {/* Desktop: Show names with color-coded counts */}
                       <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
                         {dayBookings.length === 0 ? (
                           <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
-                        ) : dayBookings.length === 1 ? (
-                          <div className="truncate font-medium">
-                            {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
-                          </div>
                         ) : (
-                          <>
-                            <div className="truncate font-medium">
-                              {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
-                            </div>
-                            <div className={`font-semibold ${isToday ? 'text-white/80' : 'text-gray-500'}`}>
-                              +{dayBookings.length - 1} more
-                            </div>
-                          </>
+                          (() => {
+                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
+                            const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                {completedCount > 0 && (
+                                  <div className={`text-xs font-bold ${isToday ? 'text-white' : 'text-green-600'}`}>
+                                    {completedCount} done
+                                  </div>
+                                )}
+                                {pendingCount > 0 && (
+                                  <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
+                                    {pendingCount} pending
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
                     </div>
