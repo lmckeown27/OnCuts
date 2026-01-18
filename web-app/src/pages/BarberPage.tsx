@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import Avatar from '../components/Avatar';
@@ -1004,6 +1004,16 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
+  // Inline booking details state (shown within DayModal instead of separate popup)
+  const [selectedBookingInline, setSelectedBookingInline] = useState<ConfirmedBooking | null>(null);
+  const [isEditingBooking, setIsEditingBooking] = useState(false);
+  const [isDeletingBooking, setIsDeletingBooking] = useState(false);
+  const [isSavingBooking, setIsSavingBooking] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [editedDate, setEditedDate] = useState('');
+  const [editedTime, setEditedTime] = useState('');
+  const [editedLocation, setEditedLocation] = useState('');
+  
   // Confirmed bookings state
   const [confirmedBookings, setConfirmedBookings] = useState<ConfirmedBooking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
@@ -1137,7 +1147,122 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     setTimeout(() => {
       setShowDayModal(false);
       setSelectedDate(null);
+      // Reset inline booking state
+      setSelectedBookingInline(null);
+      setIsEditingBooking(false);
+      setIsDeletingBooking(false);
+      setCancelReason('');
     }, 150);
+  };
+
+  // Initialize editable fields when a booking is selected for inline view
+  const selectBookingForInlineView = (booking: ConfirmedBooking) => {
+    setSelectedBookingInline(booking);
+    const scheduledTime = new Date(booking.scheduledTime);
+    const month = String(scheduledTime.getMonth() + 1).padStart(2, '0');
+    const day = String(scheduledTime.getDate()).padStart(2, '0');
+    const year = scheduledTime.getFullYear();
+    setEditedDate(`${month}/${day}/${year}`);
+    const hours = String(scheduledTime.getHours()).padStart(2, '0');
+    const minutes = String(scheduledTime.getMinutes()).padStart(2, '0');
+    setEditedTime(`${hours}:${minutes}`);
+    setEditedLocation(booking.location || '');
+    setIsEditingBooking(false);
+    setIsDeletingBooking(false);
+    setCancelReason('');
+  };
+
+  // Back to appointments list
+  const backToAppointmentsList = () => {
+    setSelectedBookingInline(null);
+    setIsEditingBooking(false);
+    setIsDeletingBooking(false);
+    setCancelReason('');
+  };
+
+  // Handle saving booking changes
+  const handleSaveBookingChanges = async () => {
+    if (!selectedBookingInline) return;
+    
+    // Parse date
+    const dateParts = editedDate.split('/');
+    if (dateParts.length !== 3) {
+      toast.error('Please enter a valid date (MM/DD/YYYY)');
+      return;
+    }
+    const month = parseInt(dateParts[0]);
+    const day = parseInt(dateParts[1]);
+    const year = parseInt(dateParts[2]);
+    if (isNaN(month) || isNaN(day) || isNaN(year)) {
+      toast.error('Please enter a valid date');
+      return;
+    }
+    
+    // Parse time
+    const timeParts = editedTime.split(':');
+    if (timeParts.length !== 2) {
+      toast.error('Please select a valid time');
+      return;
+    }
+    const hours = parseInt(timeParts[0]);
+    const minutes = parseInt(timeParts[1]);
+    if (isNaN(hours) || isNaN(minutes)) {
+      toast.error('Please select a valid time');
+      return;
+    }
+
+    setIsSavingBooking(true);
+    try {
+      const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
+      await api.put(`/bookings-simple/${selectedBookingInline.id}`, {
+        scheduledTime: newScheduledTime.toISOString(),
+        location: editedLocation || null,
+      });
+      toast.success('Booking updated successfully!');
+      setIsEditingBooking(false);
+      // Refresh bookings
+      onViewDetails(selectedBookingInline); // This triggers a refresh in parent
+    } catch (error: any) {
+      console.error('Failed to update booking:', error);
+      toast.error(error.message || 'Failed to update booking');
+    } finally {
+      setIsSavingBooking(false);
+    }
+  };
+
+  // Handle canceling booking
+  const handleCancelBooking = async () => {
+    if (!selectedBookingInline) return;
+    
+    setIsSavingBooking(true);
+    try {
+      await api.delete(`/bookings-simple/${selectedBookingInline.id}`, {
+        reason: cancelReason || undefined,
+      });
+      toast.success('Booking cancelled successfully');
+      closeDayModal();
+      onViewDetails(selectedBookingInline); // Trigger refresh
+    } catch (error: any) {
+      console.error('Failed to cancel booking:', error);
+      toast.error(error.message || 'Failed to cancel booking');
+    } finally {
+      setIsSavingBooking(false);
+    }
+  };
+
+  // Handle completing booking (request payment)
+  const handleCompleteBooking = async () => {
+    if (!selectedBookingInline) return;
+    
+    try {
+      await api.post(`/bookings-simple/${selectedBookingInline.id}/request-payment`, {});
+      toast.success('Payment request sent to customer');
+      closeDayModal();
+      navigate(`/web/payment/${selectedBookingInline.id}`);
+    } catch (error: any) {
+      console.error('Failed to request payment:', error);
+      toast.error(error.message || 'Failed to request payment');
+    }
   };
 
   // Close modal when clicking outside
@@ -1808,14 +1933,18 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
             }`}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Header - changes based on whether viewing booking details */}
             <div className="bg-primary-400 text-white p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {selectedBookingInline ? 'Booking Details' : selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </h2>
                   <p className="text-white/80">
-                    {getAppointmentsForDate(selectedDate).length} appointment{getAppointmentsForDate(selectedDate).length !== 1 ? 's' : ''}
+                    {selectedBookingInline 
+                      ? `${selectedBookingInline.status}` 
+                      : `${getAppointmentsForDate(selectedDate).length} appointment${getAppointmentsForDate(selectedDate).length !== 1 ? 's' : ''}`
+                    }
                   </p>
                 </div>
                 <button
@@ -1829,69 +1958,360 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                 </button>
               </div>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
-              {getAppointmentsForDate(selectedDate).length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
-                  <p className="text-gray-600">You have no appointments scheduled for this day.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {getAppointmentsForDate(selectedDate).map((apt) => {
-                    const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
-                    return (
-                    <div 
-                      key={apt.id} 
-                      onClick={() => {
-                        closeDayModal();
-                        onViewDetails(apt);
-                      }}
-                      className={`p-5 rounded-lg border transition-colors cursor-pointer ${
-                        isCompleted 
-                          ? 'bg-green-50 border-green-200 hover:border-green-400' 
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
-                      }`}
-                    >
-                      {/* Top row: Client name + Price */}
-                      <div className="flex items-start justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
-                          {isCompleted && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
-                          )}
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(80dvh-120px)] sm:max-h-[calc(80vh-120px)]">
+              {/* Show booking details inline when a booking is selected */}
+              {selectedBookingInline ? (
+                <div className="space-y-4">
+                  {/* Back button */}
+                  <button
+                    onClick={backToAppointmentsList}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                    <span className="text-sm font-medium">Back to Appointments</span>
+                  </button>
+
+                  {/* Cancel confirmation view */}
+                  {isDeletingBooking ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
+                        <AlertTriangle className="w-8 h-8 text-red-500 flex-shrink-0" />
+                        <div>
+                          <h3 className="font-bold text-red-800">Cancel this booking?</h3>
+                          <p className="text-sm text-red-600">
+                            The customer will be notified. This action cannot be undone.
+                          </p>
                         </div>
-                        <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
                       </div>
-                      {/* Service - prefer serviceName from input, fallback to serviceType */}
-                      <p className="text-base text-gray-600 mb-2">
-                        {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                      </p>
-                      {/* Location and Notes if available */}
-                      {(apt.location || apt.notes) && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {apt.location && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
-                              <MapPin className="w-3 h-3" />
-                              {apt.location}
-                          </span>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Reason for cancellation (optional)
+                        </label>
+                        <textarea
+                          value={cancelReason}
+                          onChange={(e) => setCancelReason(e.target.value)}
+                          placeholder="e.g., Schedule conflict, emergency..."
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent resize-none"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setIsDeletingBooking(false)}
+                          className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
+                          disabled={isSavingBooking}
+                        >
+                          Keep Booking
+                        </button>
+                        <button
+                          onClick={handleCancelBooking}
+                          disabled={isSavingBooking}
+                          className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isSavingBooking ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              Cancel Booking
+                            </>
                           )}
-                          {apt.notes && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                              {apt.notes}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Bottom row: Time */}
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
-                        <span className="text-sm text-gray-500">Tap for details →</span>
+                        </button>
                       </div>
                     </div>
-                    );
-                  })}
+                  ) : isEditingBooking ? (
+                    /* Edit view */
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                        <Pencil className="w-5 h-5 text-primary-500" />
+                        Edit Booking
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="MM/DD/YYYY"
+                            value={editedDate}
+                            onChange={(e) => {
+                              let digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                              let formatted = '';
+                              if (digits.length > 0) formatted = digits.slice(0, 2);
+                              if (digits.length > 2) formatted += '/' + digits.slice(2, 4);
+                              if (digits.length > 4) formatted += '/' + digits.slice(4, 8);
+                              setEditedDate(formatted);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                          <input
+                            type="time"
+                            value={editedTime}
+                            onChange={(e) => setEditedTime(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <input
+                          type="text"
+                          value={editedLocation}
+                          onChange={(e) => setEditedLocation(e.target.value)}
+                          placeholder="Enter location..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        />
+                      </div>
+                      {selectedBookingInline.notes && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Notes</label>
+                          <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 italic">
+                            "{selectedBookingInline.notes}"
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => setIsEditingBooking(false)}
+                          className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
+                          disabled={isSavingBooking}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveBookingChanges}
+                          disabled={isSavingBooking}
+                          className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isSavingBooking ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4" />
+                              Save Changes
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* View mode - booking details */
+                    <div className="space-y-5">
+                      {/* Customer Info */}
+                      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                        <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                          {selectedBookingInline.consumer.profilePictureUrl ? (
+                            <img 
+                              src={selectedBookingInline.consumer.profilePictureUrl} 
+                              alt="Customer" 
+                              className="w-14 h-14 rounded-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-7 h-7 text-primary-600" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-900 text-lg">
+                            {selectedBookingInline.consumer.firstName} {selectedBookingInline.consumer.lastName}
+                          </h3>
+                          {selectedBookingInline.consumer.email && (
+                            <p className="text-sm text-gray-500 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {selectedBookingInline.consumer.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Service Details */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Service</h4>
+                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                          <span className="font-semibold text-gray-900">
+                            {selectedBookingInline.serviceName || selectedBookingInline.serviceType}
+                          </span>
+                          <span className="font-bold text-green-600 text-lg">
+                            ${(selectedBookingInline.priceUsdCents / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Date & Time */}
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">When</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <Calendar className="w-5 h-5 text-primary-500" />
+                            <div>
+                              <p className="text-xs text-gray-500">Date</p>
+                              <p className="font-semibold text-gray-900">
+                                {new Date(selectedBookingInline.scheduledTime).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <Clock className="w-5 h-5 text-primary-500" />
+                            <div>
+                              <p className="text-xs text-gray-500">Time</p>
+                              <p className="font-semibold text-gray-900">
+                                {new Date(selectedBookingInline.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Location */}
+                      {selectedBookingInline.location && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Where</h4>
+                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <MapPin className="w-5 h-5 text-primary-500 flex-shrink-0" />
+                            <p className="font-medium text-gray-900">{selectedBookingInline.location}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {selectedBookingInline.notes && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Notes</h4>
+                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <FileText className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-gray-700 italic">"{selectedBookingInline.notes}"</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Booking Reference */}
+                      <div className="text-center pt-2">
+                        <p className="text-xs text-gray-400">Booking Reference</p>
+                        <p className="font-mono text-sm text-gray-600 font-medium">
+                          {selectedBookingInline.id.slice(0, 8).toUpperCase()}
+                        </p>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {(() => {
+                        const canEdit = selectedBookingInline.status === 'ACCEPTED';
+                        const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
+                        const canComplete = selectedBookingInline.status === 'ACCEPTED';
+                        
+                        if (!canComplete && !canEdit && !canCancel) return null;
+                        
+                        return (
+                          <div className="space-y-3 pt-4 border-t border-gray-100">
+                            {canComplete && (
+                              <button
+                                onClick={handleCompleteBooking}
+                                className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                              >
+                                <CreditCard className="w-4 h-4" />
+                                Complete
+                              </button>
+                            )}
+                            {(canEdit || canCancel) && (
+                              <div className="flex gap-3">
+                                {canEdit && (
+                                  <button
+                                    onClick={() => setIsEditingBooking(true)}
+                                    className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                    Edit
+                                  </button>
+                                )}
+                                {canCancel && (
+                                  <button
+                                    onClick={() => setIsDeletingBooking(true)}
+                                    className="flex-1 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-red-200"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
+              ) : (
+                /* Appointments list view */
+                <>
+                  {getAppointmentsForDate(selectedDate).length === 0 ? (
+                    <div className="text-center py-12">
+                      <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
+                      <p className="text-gray-600">You have no appointments scheduled for this day.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {getAppointmentsForDate(selectedDate).map((apt) => {
+                        const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
+                        return (
+                        <div 
+                          key={apt.id} 
+                          onClick={() => selectBookingForInlineView(apt)}
+                          className={`p-5 rounded-lg border transition-colors cursor-pointer ${
+                            isCompleted 
+                              ? 'bg-green-50 border-green-200 hover:border-green-400' 
+                              : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
+                          }`}
+                        >
+                          {/* Top row: Client name + Price */}
+                          <div className="flex items-start justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
+                              {isCompleted && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
+                              )}
+                            </div>
+                            <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
+                          </div>
+                          {/* Service - prefer serviceName from input, fallback to serviceType */}
+                          <p className="text-base text-gray-600 mb-2">
+                            {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                          </p>
+                          {/* Location and Notes if available */}
+                          {(apt.location || apt.notes) && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {apt.location && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
+                                  <MapPin className="w-3 h-3" />
+                                  {apt.location}
+                              </span>
+                              )}
+                              {apt.notes && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
+                                  {apt.notes}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {/* Bottom row: Time */}
+                          <div className="flex items-center justify-between">
+                            <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
+                            <span className="text-sm text-gray-500">Tap for details →</span>
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
