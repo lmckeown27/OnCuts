@@ -1235,10 +1235,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Tagline */}
-            <p className="text-center text-gray-500 text-sm mt-6">
-              Connecting talented barbers with students since 2025 • Fair Pricing • Secure Payments • Campus Community
-            </p>
           </div>
         </div>
       </footer>
