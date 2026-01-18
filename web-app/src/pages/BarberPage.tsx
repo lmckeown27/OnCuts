@@ -1149,6 +1149,29 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
           className="touch-pan-y"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
+          {/* Appointments Count - centered above toggle buttons */}
+          <p className="text-sm sm:text-base text-gray-600 font-medium">
+            {confirmedBookings.filter(b => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const displayDate = new Date(today);
+              displayDate.setDate(displayDate.getDate() + dayOffset);
+              const nextDay = new Date(displayDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const bookingDate = new Date(b.scheduledTime);
+              return bookingDate >= displayDate && bookingDate < nextDay;
+            }).length} appointment{confirmedBookings.filter(b => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const displayDate = new Date(today);
+              displayDate.setDate(displayDate.getDate() + dayOffset);
+              const nextDay = new Date(displayDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              const bookingDate = new Date(b.scheduledTime);
+              return bookingDate >= displayDate && bookingDate < nextDay;
+            }).length !== 1 ? 's' : ''}
+          </p>
+
           {/* View Toggle Buttons */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 justify-items-center">
             {/* Walk-in feature disabled
@@ -1197,6 +1220,42 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
               Monthly
             </button>
           </div>
+
+          {/* Date Navigation - below toggle buttons */}
+          {scheduleView === 'daily' && (
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setDayOffset(prev => prev - 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+                {dayOffset === 0 ? 'Today - ' : dayOffset === 1 ? 'Tomorrow - ' : dayOffset === -1 ? 'Yesterday - ' : ''}
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const displayDate = new Date(today);
+                  displayDate.setDate(displayDate.getDate() + dayOffset);
+                  return displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                })()}
+              </h3>
+              <button 
+                onClick={() => setDayOffset(prev => prev + 1)}
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-gray-600" />
+              </button>
+              {dayOffset !== 0 && (
+                <button 
+                  onClick={() => setDayOffset(0)}
+                  className="ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
+                >
+                  Today
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Daily View */}
@@ -1223,46 +1282,6 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0 }: Da
 
           return (
             <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0 mb-4 sm:mb-5 pb-4 border-b border-gray-200">
-                <div className="flex flex-col items-center sm:flex-row gap-2">
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setDayOffset(prev => prev - 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
-                      {dayLabel ? `${dayLabel} - ` : ''}{dateFormatted}
-                    </h3>
-                    <button 
-                      onClick={() => setDayOffset(prev => prev + 1)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <ChevronRight className="w-5 h-5 text-gray-600" />
-                    </button>
-                    {/* Desktop: inline Today button */}
-                    {dayOffset !== 0 && (
-                      <button 
-                        onClick={() => setDayOffset(0)}
-                        className="hidden sm:block ml-2 px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                      >
-                        Today
-                      </button>
-                    )}
-              </div>
-                  {/* Mobile: Today's Schedule button below header */}
-                  {dayOffset !== 0 && (
-                    <button 
-                      onClick={() => setDayOffset(0)}
-                      className="sm:hidden px-4 py-2 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
-                    >
-                      Today's Schedule
-                    </button>
-                  )}
-                </div>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">{dailyAppointments.length} appointment{dailyAppointments.length !== 1 ? 's' : ''}</p>
-                        </div>
               {isLoadingBookings ? (
                 <div className="text-center py-8 sm:py-12">
                   <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
