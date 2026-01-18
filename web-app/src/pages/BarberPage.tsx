@@ -1003,6 +1003,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const modalRef = useRef<HTMLDivElement>(null);
+  const bookingDetailsJustClosedRef = useRef(false);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
   // Confirmed bookings state
@@ -1141,11 +1142,23 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     }, 150);
   };
 
-  // Close modal when clicking outside (but not when BookingDetailsModal is open)
+  // Track when BookingDetailsModal closes to prevent DayModal from closing on mobile
+  useEffect(() => {
+    if (!isBookingDetailsOpen) {
+      // BookingDetailsModal just closed - set a flag to ignore clicks for a short time
+      bookingDetailsJustClosedRef.current = true;
+      const timeout = setTimeout(() => {
+        bookingDetailsJustClosedRef.current = false;
+      }, 300); // 300ms debounce for mobile touch events
+      return () => clearTimeout(timeout);
+    }
+  }, [isBookingDetailsOpen]);
+
+  // Close modal when clicking outside (but not when BookingDetailsModal is open or just closed)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Don't close DayModal if BookingDetailsModal is open
-      if (isBookingDetailsOpen) return;
+      // Don't close DayModal if BookingDetailsModal is open or just closed
+      if (isBookingDetailsOpen || bookingDetailsJustClosedRef.current) return;
       
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         closeDayModal();
