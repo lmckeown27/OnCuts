@@ -1320,26 +1320,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                   
                   {/* Right side - Actions */}
                   <div className="flex items-center gap-2">
-                    {/* Location preview icons */}
-                    {barber.locations.length > 0 && (
-                      <div className="hidden sm:flex -space-x-1 mr-2">
-                        {barber.locations.slice(0, 3).map((loc) => (
-                          <div 
-                            key={loc.location_id}
-                            className="w-6 h-6 rounded-full bg-primary-200 border-2 border-white flex items-center justify-center"
-                            title={loc.name}
-                          >
-                            <MapPin className="w-3 h-3 text-primary-600" />
-                          </div>
-                        ))}
-                        {barber.locations.length > 3 && (
-                          <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600 font-medium">
-                            +{barber.locations.length - 3}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
                     {/* Assign Location Button */}
                     <Button
                       variant="outline"
