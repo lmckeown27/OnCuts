@@ -979,6 +979,8 @@ interface ConfirmedBooking {
     firstName: string;
     lastName: string;
     avatar?: string;
+    email?: string;
+    profilePictureUrl?: string;
   };
 }
 
@@ -2110,9 +2112,9 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                       {/* Customer Info */}
                       <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                         <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
-                          {selectedBookingInline.consumer.profilePictureUrl ? (
+                          {(selectedBookingInline.consumer.profilePictureUrl || selectedBookingInline.consumer.avatar) ? (
                             <img 
-                              src={selectedBookingInline.consumer.profilePictureUrl} 
+                              src={selectedBookingInline.consumer.profilePictureUrl || selectedBookingInline.consumer.avatar} 
                               alt="Customer" 
                               className="w-14 h-14 rounded-full object-cover"
                             />
