@@ -221,24 +221,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     );
   }
 
-  const offeredServices = barberServices.filter(s => s.isOffered);
-
   return (
     <div className="space-y-6">
-      {/* Summary */}
-      {offeredServices.length > 0 && (
-        <Card>
-          <div className="text-center">
-            <h3 className="text-xl font-bold text-gray-900">
-              {offeredServices.length} Service{offeredServices.length !== 1 ? 's' : ''} Offered
-            </h3>
-            <p className="text-lg text-gray-600 mt-1">
-              Price range: ${Math.min(...offeredServices.map(s => s.price))} - ${Math.max(...offeredServices.map(s => s.price))}
-            </p>
-          </div>
-        </Card>
-      )}
-
       {/* Service Selection */}
       <Card>
         <h3 className="text-xl font-bold text-gray-900 mb-2">My Services & Pricing</h3>
