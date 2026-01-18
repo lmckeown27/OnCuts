@@ -747,6 +747,12 @@ interface BarberLocationAssignment {
   description: string | null;
 }
 
+interface BarberWithLocations {
+  id: string;
+  name: string;
+  locations: BarberLocationAssignment[];
+}
+
 const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [locations, setLocations] = useState<CampusLocation[]>([]);
   const [campusBarbers, setCampusBarbers] = useState<CampusBarberOption[]>([]);
@@ -768,10 +774,11 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [saving, setSaving] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved'>('all');
   
-  // Barber filter state
-  const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
-  const [barberLocations, setBarberLocations] = useState<BarberLocationAssignment[]>([]);
-  const [loadingBarberLocations, setLoadingBarberLocations] = useState(false);
+  // Barber assignments state
+  const [barbersWithLocations, setBarbersWithLocations] = useState<BarberWithLocations[]>([]);
+  const [loadingBarberAssignments, setLoadingBarberAssignments] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState<{ barberId: string; barberName: string } | null>(null);
+  const [expandedBarbers, setExpandedBarbers] = useState<Set<string>>(new Set());
 
   const fetchLocations = async () => {
     try {
@@ -803,51 +810,156 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
       const response = await barberService.getBarbers({ campusId } as any);
       const barbersArray = Array.isArray(response) ? response : (response?.data || []);
       
-      setCampusBarbers(barbersArray.map((b: any) => ({
+      const barbersList = barbersArray.map((b: any) => ({
         id: b.id,
         name: b.name || b.display_name || `${b.first_name || ''} ${b.last_name || ''}`.trim() || 'Unknown',
-      })));
+      }));
+      
+      setCampusBarbers(barbersList);
+      
+      // Fetch locations for each barber
+      await fetchAllBarberLocations(barbersList);
     } catch (error) {
       console.error('Failed to fetch barbers:', error);
     }
   };
 
-  const fetchBarberLocations = async (barberId: string) => {
-    if (barberId === 'all') {
-      setBarberLocations([]);
-      return;
-    }
-    
+  const fetchAllBarberLocations = async (barbersList: CampusBarberOption[]) => {
     try {
-      setLoadingBarberLocations(true);
+      setLoadingBarberAssignments(true);
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/locations/barber/${barberId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
       
-      if (response.ok) {
-        const data = await response.json();
-        setBarberLocations(data.data || []);
-      } else {
-        console.error('Failed to fetch barber locations:', response.status);
-        setBarberLocations([]);
-      }
+      const barbersWithLocs: BarberWithLocations[] = await Promise.all(
+        barbersList.map(async (barber) => {
+          try {
+            const response = await fetch(`/api/locations/barber/${barber.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              return {
+                id: barber.id,
+                name: barber.name,
+                locations: data.data || [],
+              };
+            }
+            return { id: barber.id, name: barber.name, locations: [] };
+          } catch {
+            return { id: barber.id, name: barber.name, locations: [] };
+          }
+        })
+      );
+      
+      setBarbersWithLocations(barbersWithLocs);
     } catch (error) {
       console.error('Failed to fetch barber locations:', error);
-      setBarberLocations([]);
     } finally {
-      setLoadingBarberLocations(false);
+      setLoadingBarberAssignments(false);
     }
+  };
+
+  const handleAssignLocationToBarber = async (barberId: string, locationId: string) => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/locations/admin/assign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ barberId, locationId }),
+      });
+
+      if (response.ok) {
+        toast.success('Location assigned to barber');
+        await fetchAllBarberLocations(campusBarbers);
+        setShowAssignModal(null);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to assign location');
+      }
+    } catch (error) {
+      console.error('Failed to assign location:', error);
+      toast.error('Failed to assign location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRevokeLocationFromBarber = async (barberId: string, locationId: string) => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/locations/admin/revoke', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ barberId, locationId }),
+      });
+
+      if (response.ok) {
+        toast.success('Location revoked from barber');
+        await fetchAllBarberLocations(campusBarbers);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to revoke location');
+      }
+    } catch (error) {
+      console.error('Failed to revoke location:', error);
+      toast.error('Failed to revoke location');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAssignToAllBarbers = async (locationId: string) => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/locations/admin/assign-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ locationId, campusId }),
+      });
+
+      if (response.ok) {
+        toast.success('Location assigned to all barbers');
+        await fetchAllBarberLocations(campusBarbers);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Failed to assign to all barbers');
+      }
+    } catch (error) {
+      console.error('Failed to assign to all:', error);
+      toast.error('Failed to assign to all barbers');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleBarberExpanded = (barberId: string) => {
+    setExpandedBarbers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(barberId)) {
+        newSet.delete(barberId);
+      } else {
+        newSet.add(barberId);
+      }
+      return newSet;
+    });
   };
 
   useEffect(() => {
     fetchLocations();
     fetchBarbers();
   }, [campusId, activeFilter]);
-
-  useEffect(() => {
-    fetchBarberLocations(selectedBarberId);
-  }, [selectedBarberId]);
 
   const handleAddLocation = async () => {
     if (!formData.name.trim()) {
@@ -1100,77 +1212,192 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </Button>
       </div>
 
-      {/* Filter by Barber Dropdown */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* Barber Location Assignments Section */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-500" />
-            <label className="text-sm text-gray-600 font-medium">View locations by barber:</label>
+            <Users className="w-4 h-4 text-primary-500" />
+            <h4 className="font-semibold text-gray-900">Barber Location Assignments</h4>
           </div>
-          <select
-            value={selectedBarberId}
-            onChange={(e) => setSelectedBarberId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent min-w-[200px]"
-          >
-            <option value="all">All Locations (Overview)</option>
-            {campusBarbers.map((barber) => (
-              <option key={barber.id} value={barber.id}>{barber.name}</option>
-            ))}
-          </select>
+          <p className="text-xs text-gray-500">{campusBarbers.length} barbers</p>
         </div>
-      </Card>
-
-      {/* Barber-specific Locations View */}
-      {selectedBarberId !== 'all' && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin className="w-4 h-4 text-primary-500" />
-            <h4 className="font-semibold text-gray-900">
-              Locations for {campusBarbers.find(b => b.id === selectedBarberId)?.name || 'Barber'}
-            </h4>
-          </div>
-          
-          {loadingBarberLocations ? (
-            <Card className="text-center py-8">
-              <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
-              <p className="text-gray-500 text-sm">Loading barber locations...</p>
-            </Card>
-          ) : barberLocations.length === 0 ? (
-            <Card className="text-center py-8 bg-gray-50">
-              <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 font-medium">No locations assigned</p>
-              <p className="text-sm text-gray-500 mt-1">
-                This barber hasn't added any locations yet
-              </p>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {barberLocations.map((loc) => (
-                <Card key={loc.assignment_id} className={`p-4 ${loc.is_primary ? 'border-primary-300 bg-primary-50' : ''}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary-500" />
-                        <span className="font-medium text-gray-900">{loc.name}</span>
-                        {loc.is_primary && (
-                          <span className="text-xs bg-primary-200 text-primary-700 px-2 py-0.5 rounded-full">
-                            Primary
-                          </span>
-                        )}
-                      </div>
-                      {loc.description && (
-                        <p className="text-sm text-gray-600 mt-1 ml-6">{loc.description}</p>
-                      )}
+        
+        {loadingBarberAssignments ? (
+          <Card className="text-center py-8">
+            <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
+            <p className="text-gray-500 text-sm">Loading barber assignments...</p>
+          </Card>
+        ) : barbersWithLocations.length === 0 ? (
+          <Card className="text-center py-8 bg-gray-50">
+            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">No barbers found</p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {barbersWithLocations.map((barber) => (
+              <Card key={barber.id} className="overflow-hidden">
+                {/* Barber Header - Clickable */}
+                <button
+                  onClick={() => toggleBarberExpanded(barber.id)}
+                  className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-primary-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">{barber.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {barber.locations.length === 0 
+                          ? 'No locations assigned' 
+                          : `${barber.locations.length} location${barber.locations.length !== 1 ? 's' : ''}`}
+                      </p>
                     </div>
                   </div>
-                </Card>
-              ))}
+                  <div className="flex items-center gap-2">
+                    {barber.locations.length > 0 && (
+                      <div className="flex -space-x-1">
+                        {barber.locations.slice(0, 3).map((loc, idx) => (
+                          <div 
+                            key={loc.location_id}
+                            className="w-6 h-6 rounded-full bg-primary-200 border-2 border-white flex items-center justify-center"
+                            title={loc.name}
+                          >
+                            <MapPin className="w-3 h-3 text-primary-600" />
+                          </div>
+                        ))}
+                        {barber.locations.length > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs text-gray-600 font-medium">
+                            +{barber.locations.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <svg 
+                      className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarbers.has(barber.id) ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                
+                {/* Expanded Content */}
+                {expandedBarbers.has(barber.id) && (
+                  <div className="border-t border-gray-100 bg-gray-50 p-4">
+                    {/* Assigned Locations */}
+                    {barber.locations.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-2">No locations assigned yet</p>
+                    ) : (
+                      <div className="space-y-2 mb-3">
+                        {barber.locations.map((loc) => (
+                          <div 
+                            key={loc.assignment_id} 
+                            className={`flex items-center justify-between p-2 rounded-lg ${loc.is_primary ? 'bg-primary-100' : 'bg-white'}`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-primary-500" />
+                              <span className="text-sm font-medium text-gray-900">{loc.name}</span>
+                              {loc.is_primary && (
+                                <span className="text-xs bg-primary-200 text-primary-700 px-1.5 py-0.5 rounded">Primary</span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleRevokeLocationFromBarber(barber.id, loc.location_id)}
+                              disabled={saving}
+                              className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                            >
+                              Revoke
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Assign Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAssignModal({ barberId: barber.id, barberName: barber.name })}
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Assign Location
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Assign Location Modal */}
+      {showAssignModal && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+          onClick={() => !saving && setShowAssignModal(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
+              <h3 className="text-lg font-bold text-primary-800 flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                Assign Location to {showAssignModal.barberName}
+              </h3>
             </div>
-          )}
-          
-          {/* Divider before main locations list */}
-          <div className="border-t border-gray-200 my-6 pt-2">
-            <p className="text-xs text-gray-500 text-center">All Campus Locations</p>
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              {approvedLocations.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">No approved locations available</p>
+              ) : (
+                <div className="space-y-2">
+                  {approvedLocations.map((location) => {
+                    const barberData = barbersWithLocations.find(b => b.id === showAssignModal.barberId);
+                    const isAssigned = barberData?.locations.some(l => l.location_id === location.id);
+                    
+                    return (
+                      <button
+                        key={location.id}
+                        onClick={() => !isAssigned && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
+                        disabled={saving || isAssigned}
+                        className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                          isAssigned 
+                            ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' 
+                            : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-primary-500" />
+                            <span className="font-medium text-gray-900">{location.name}</span>
+                          </div>
+                          {isAssigned && (
+                            <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Assigned</span>
+                          )}
+                        </div>
+                        {location.description && (
+                          <p className="text-xs text-gray-500 mt-1 ml-6">{location.description}</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="border-t border-gray-200 p-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowAssignModal(null)}
+                disabled={saving}
+                className="w-full"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       )}

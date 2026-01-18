@@ -866,4 +866,258 @@ router.get('/for-booking/:barberId', async (req, res, next) => {
   }
 });
 
+// ============================================================================
+// ADMIN / CAMPUS MANAGER LOCATION ASSIGNMENT
+// ============================================================================
+
+/**
+ * POST /api/v1/locations/admin/assign
+ * Campus Manager assigns a location to a specific barber
+ */
+router.post('/admin/assign', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { barberId, locationId } = req.body;
+    
+    if (!barberId || !locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Barber ID and Location ID are required',
+      });
+    }
+    
+    // Get location and verify campus
+    const locationCheck = await pool.query(
+      `SELECT campus_id, status FROM service_locations WHERE id = $1`,
+      [locationId]
+    );
+    
+    if (locationCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Location not found',
+      });
+    }
+    
+    const campusId = locationCheck.rows[0].campus_id;
+    
+    // Check if user is campus manager or admin
+    const authCheck = await pool.query(
+      `SELECT u.role, b."isCampusManager", b."campusId"
+       FROM users u
+       LEFT JOIN barbers b ON u.id = b."userId"
+       WHERE u.id = $1`,
+      [userId]
+    );
+    
+    const user = authCheck.rows[0];
+    const isAdmin = user?.role === 'ADMIN';
+    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
+    
+    if (!isAdmin && !isCampusManager) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only campus managers and admins can assign locations to barbers',
+      });
+    }
+    
+    // Verify barber belongs to this campus
+    const barberCheck = await pool.query(
+      `SELECT "campusId" FROM barbers WHERE id = $1`,
+      [barberId]
+    );
+    
+    if (barberCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Barber not found',
+      });
+    }
+    
+    if (barberCheck.rows[0].campusId !== campusId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Barber does not belong to this campus',
+      });
+    }
+    
+    // Assign location to barber
+    const result = await pool.query(
+      `INSERT INTO barber_service_locations (barber_id, location_id, is_primary)
+       VALUES ($1, $2, false)
+       ON CONFLICT (barber_id, location_id) DO NOTHING
+       RETURNING *`,
+      [barberId, locationId]
+    );
+    
+    logger.info(`Location ${locationId} assigned to barber ${barberId} by campus manager ${userId}`);
+    
+    res.json({
+      success: true,
+      data: result.rows[0],
+      message: 'Location assigned to barber',
+    });
+  } catch (error: any) {
+    logger.error('Error assigning location to barber:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/locations/admin/revoke
+ * Campus Manager revokes a location from a specific barber
+ */
+router.post('/admin/revoke', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { barberId, locationId } = req.body;
+    
+    if (!barberId || !locationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Barber ID and Location ID are required',
+      });
+    }
+    
+    // Get location and verify campus
+    const locationCheck = await pool.query(
+      `SELECT campus_id FROM service_locations WHERE id = $1`,
+      [locationId]
+    );
+    
+    if (locationCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Location not found',
+      });
+    }
+    
+    const campusId = locationCheck.rows[0].campus_id;
+    
+    // Check if user is campus manager or admin
+    const authCheck = await pool.query(
+      `SELECT u.role, b."isCampusManager", b."campusId"
+       FROM users u
+       LEFT JOIN barbers b ON u.id = b."userId"
+       WHERE u.id = $1`,
+      [userId]
+    );
+    
+    const user = authCheck.rows[0];
+    const isAdmin = user?.role === 'ADMIN';
+    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
+    
+    if (!isAdmin && !isCampusManager) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only campus managers and admins can revoke locations from barbers',
+      });
+    }
+    
+    // Remove assignment
+    await pool.query(
+      `DELETE FROM barber_service_locations WHERE barber_id = $1 AND location_id = $2`,
+      [barberId, locationId]
+    );
+    
+    logger.info(`Location ${locationId} revoked from barber ${barberId} by campus manager ${userId}`);
+    
+    res.json({
+      success: true,
+      message: 'Location revoked from barber',
+    });
+  } catch (error: any) {
+    logger.error('Error revoking location from barber:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/locations/admin/assign-all
+ * Campus Manager assigns a location to ALL barbers on a campus
+ */
+router.post('/admin/assign-all', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const { locationId, campusId } = req.body;
+    
+    if (!locationId || !campusId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Location ID and Campus ID are required',
+      });
+    }
+    
+    // Get location and verify campus
+    const locationCheck = await pool.query(
+      `SELECT campus_id, status FROM service_locations WHERE id = $1`,
+      [locationId]
+    );
+    
+    if (locationCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Location not found',
+      });
+    }
+    
+    if (locationCheck.rows[0].campus_id !== campusId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Location does not belong to this campus',
+      });
+    }
+    
+    // Check if user is campus manager or admin
+    const authCheck = await pool.query(
+      `SELECT u.role, b."isCampusManager", b."campusId"
+       FROM users u
+       LEFT JOIN barbers b ON u.id = b."userId"
+       WHERE u.id = $1`,
+      [userId]
+    );
+    
+    const user = authCheck.rows[0];
+    const isAdmin = user?.role === 'ADMIN';
+    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
+    
+    if (!isAdmin && !isCampusManager) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only campus managers and admins can assign locations to all barbers',
+      });
+    }
+    
+    // Get all active barbers for this campus
+    const barbersResult = await pool.query(
+      `SELECT id FROM barbers WHERE "campusId" = $1 AND "isActive" = true`,
+      [campusId]
+    );
+    
+    // Assign location to all barbers
+    let assignedCount = 0;
+    for (const barber of barbersResult.rows) {
+      const result = await pool.query(
+        `INSERT INTO barber_service_locations (barber_id, location_id, is_primary)
+         VALUES ($1, $2, false)
+         ON CONFLICT (barber_id, location_id) DO NOTHING
+         RETURNING *`,
+        [barber.id, locationId]
+      );
+      if (result.rows.length > 0) assignedCount++;
+    }
+    
+    logger.info(`Location ${locationId} assigned to ${assignedCount} barbers on campus ${campusId} by ${userId}`);
+    
+    res.json({
+      success: true,
+      message: `Location assigned to ${assignedCount} barbers`,
+      assignedCount,
+    });
+  } catch (error: any) {
+    logger.error('Error assigning location to all barbers:', error.message || error);
+    next(error);
+  }
+});
+
 export default router;
