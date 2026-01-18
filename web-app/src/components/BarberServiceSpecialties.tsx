@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Check, Info, DollarSign, Scissors } from 'lucide-react';
+import { Check, DollarSign } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
 import Button from './Button';
@@ -225,30 +225,6 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Info Banner */}
-      <Card className="bg-primary-50 border-primary-200">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">Set Your Own Prices</h3>
-            <div className="text-sm text-gray-700 space-y-2">
-              <p>
-                <strong>You're in control!</strong> Select the services you offer and set your own prices.
-              </p>
-              <ul className="list-disc ml-5 space-y-1">
-                <li>Click on a service to add it to your offerings</li>
-                <li>Enter the price you want to charge for each service</li>
-                <li>Click "Confirm Price" to save your changes</li>
-                <li>Suggested prices are shown as a starting point</li>
-              </ul>
-              <p className="text-primary-700 font-medium mt-2">
-                Tip: Competitive pricing helps attract more customers while you build reviews!
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
       {/* Summary */}
       {offeredServices.length > 0 && (
         <Card>
@@ -384,49 +360,6 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         </div>
       </Card>
 
-      {/* Pricing Tips */}
-      <Card className="bg-gray-50">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Pricing Tips</h3>
-        <div className="space-y-4 text-sm text-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">Start Competitive</p>
-              <p className="text-gray-600">
-                New barbers often start slightly below suggested prices to attract early customers and build reviews.
-              </p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">Increase With Reviews</p>
-              <p className="text-gray-600">
-                As you get 5-star reviews, you can gradually increase prices. Quality builds reputation!
-              </p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">Know Your Market</p>
-              <p className="text-gray-600">
-                Check what other barbers on campus charge. Price fairly for your skill level.
-              </p>
-            </div>
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-gray-900 mb-1">Value Your Time</p>
-              <p className="text-gray-600">
-                Consider time, supplies, and effort for each service when setting prices.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 mt-4">
-            <p className="text-primary-900 font-medium flex items-center gap-2">
-              <Scissors className="w-4 h-4" />
-              Pro Tip
-            </p>
-            <p className="text-primary-800 text-sm mt-1">
-              Offer a few services you're confident in at first. As you gain experience and reviews, 
-              expand your offerings and adjust prices based on demand!
-            </p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
