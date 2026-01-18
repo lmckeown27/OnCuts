@@ -54,6 +54,30 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
   const [selectedRequest, setSelectedRequest] = useState<BookingRequest | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Decline confirmation state
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
+  const [declineBookingId, setDeclineBookingId] = useState<string | null>(null);
+  const [declineReason, setDeclineReason] = useState('');
+  
+  const openDeclineConfirm = (bookingId: string) => {
+    setDeclineBookingId(bookingId);
+    setDeclineReason('');
+    setShowDeclineConfirm(true);
+  };
+  
+  const closeDeclineConfirm = () => {
+    setShowDeclineConfirm(false);
+    setDeclineBookingId(null);
+    setDeclineReason('');
+  };
+  
+  const confirmDecline = async () => {
+    if (declineBookingId) {
+      await handleReject(declineBookingId, declineReason || undefined);
+      closeDeclineConfirm();
+    }
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -230,7 +254,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 Accept
               </Button>
               <Button
-                onClick={() => handleReject(request.bookingId)}
+                onClick={() => openDeclineConfirm(request.bookingId)}
                 disabled={actionLoading !== null}
                 variant="secondary"
                 className="flex-1 md:flex-none flex items-center justify-center gap-2 border-red-300 text-red-600 hover:bg-red-50"
@@ -319,7 +343,7 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
                 <Button
                   onClick={() => {
                     setShowProfileModal(false);
-                    handleReject(selectedRequest.bookingId);
+                    openDeclineConfirm(selectedRequest.bookingId);
                   }}
                   disabled={actionLoading !== null}
                   variant="secondary"
@@ -331,6 +355,59 @@ export default function BarberBookingRequests({ barberId, onRequestHandled }: Pr
               </div>
             </div>
           </Card>
+        </div>
+      )}
+      
+      {/* Decline Confirmation Modal */}
+      {showDeclineConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={closeDeclineConfirm}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-red-50 px-6 py-4 border-b border-red-100">
+              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2">
+                <XCircle className="w-5 h-5" />
+                Decline Booking Request
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-600 mb-4">
+                Are you sure you want to decline this booking request? This action cannot be undone.
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for declining (optional)
+                </label>
+                <textarea
+                  value={declineReason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                  placeholder="Let the customer know why you can't accommodate their request..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={closeDeclineConfirm}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDecline}
+                  disabled={actionLoading !== null}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {actionLoading ? 'Declining...' : 'Confirm Decline'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
