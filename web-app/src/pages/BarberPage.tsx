@@ -980,10 +980,10 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
     const fetchConfirmedBookings = async () => {
       try {
         setIsLoadingBookings(true);
-        // Fetch ACCEPTED and COMPLETED bookings for the barber's schedule
+        // Fetch ACCEPTED, COMPLETED, and PAID bookings for the barber's schedule
         const response = await api.get<{ bookings: ConfirmedBooking[] }>('/bookings-simple', {
           role: 'barber',
-          status: 'ACCEPTED,COMPLETED',
+          status: 'ACCEPTED,COMPLETED,PAID',
         });
         
         setConfirmedBookings(response.bookings || []);
@@ -1277,7 +1277,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
               ) : (
                 <div className="space-y-3 sm:space-y-4">
                   {dailyAppointments.map((apt) => {
-                    const isCompleted = apt.status === 'COMPLETED';
+                    const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
                     return (
                     <div 
                       key={apt.id} 
@@ -1731,7 +1731,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onWalkInClick, refre
               ) : (
                 <div className="space-y-3">
                   {getAppointmentsForDate(selectedDate).map((apt) => {
-                    const isCompleted = apt.status === 'COMPLETED';
+                    const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
                     return (
                     <div 
                       key={apt.id} 
@@ -1817,9 +1817,9 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
       const response = await api.get(`/bookings-simple?role=barber`);
       // api.get already extracts data, so response is { bookings: [...] }
       const bookingsArray = response.bookings || response.data?.bookings || [];
-      // Filter to only show ACCEPTED and COMPLETED bookings
+      // Filter to only show ACCEPTED, COMPLETED, and PAID bookings
       const relevantBookings = bookingsArray.filter(
-        (b: any) => b.status === 'ACCEPTED' || b.status === 'COMPLETED'
+        (b: any) => b.status === 'ACCEPTED' || b.status === 'COMPLETED' || b.status === 'PAID'
       );
       setBookings(relevantBookings);
     } catch (error) {
@@ -1878,8 +1878,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
     } else if (activeTab === 'upcoming') {
       return bookingDate > now && !isToday(booking.scheduledTime) && booking.status === 'ACCEPTED';
     } else {
-      // Past: completed bookings OR past accepted bookings
-      return booking.status === 'COMPLETED' || (booking.status === 'ACCEPTED' && isPast(booking.scheduledTime) && !isToday(booking.scheduledTime));
+      // Past: paid bookings, completed bookings (awaiting payment), OR past accepted bookings
+      return booking.status === 'PAID' || booking.status === 'COMPLETED' || (booking.status === 'ACCEPTED' && isPast(booking.scheduledTime) && !isToday(booking.scheduledTime));
     }
   }).sort((a, b) => {
     // Sort by date (ascending for upcoming/today, descending for past)
@@ -1908,8 +1908,12 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   };
 
   const getStatusBadge = (booking: any) => {
+    if (booking.status === 'PAID') {
+      return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Paid</span>;
+    }
     if (booking.status === 'COMPLETED') {
-      return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Completed</span>;
+      // COMPLETED means awaiting payment
+      return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Awaiting Payment</span>;
     }
     if (isPaymentDue(booking)) {
       return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold animate-pulse">Payment Due</span>;
@@ -1936,7 +1940,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
         <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
                         <div>
             <h2 className="text-2xl font-bold">Bookings</h2>
-            <p className="text-white/80 text-sm">{bookings.filter(b => b.status === 'ACCEPTED').length} active, {bookings.filter(b => b.status === 'COMPLETED').length} completed</p>
+            <p className="text-white/80 text-sm">{bookings.filter(b => b.status === 'ACCEPTED').length} active, {bookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length} completed</p>
                         </div>
           <button
             onClick={onClose}
@@ -1994,10 +1998,10 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                   <div 
                     key={booking.id} 
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                      isPaymentDue(booking) 
-                        ? 'bg-amber-50 border-amber-200 hover:border-amber-400' 
-                        : booking.status === 'COMPLETED'
-                          ? 'bg-green-50 border-green-200 hover:border-green-400'
+                      booking.status === 'PAID'
+                        ? 'bg-gray-50 border-gray-200 hover:border-gray-400'
+                        : isPaymentDue(booking) || booking.status === 'COMPLETED'
+                          ? 'bg-amber-50 border-amber-200 hover:border-amber-400'
                           : 'bg-gray-50 border-gray-200 hover:border-primary-400 hover:shadow-md'
                     }`}
                           onClick={() => {
@@ -2090,8 +2094,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                       </button>
                     )}
 
-                    {/* Review display for completed bookings */}
-                    {booking.status === 'COMPLETED' && booking.review && (
+                    {/* Review display for completed/paid bookings */}
+                    {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.review && (
                       <div className="mt-3 p-3 bg-white rounded-lg border border-green-100" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1 mb-1">
                           {[1, 2, 3, 4, 5].map(star => (

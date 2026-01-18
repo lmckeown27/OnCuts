@@ -784,7 +784,7 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
     const { status } = req.body;
     const userId = (req as any).user.userId;
 
-    const validStatuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = ['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED', 'PAID', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ 
         success: false, 

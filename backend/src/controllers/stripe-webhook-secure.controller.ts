@@ -213,17 +213,20 @@ async function handlePaymentIntentSucceeded(
   try {
     await client.query('BEGIN');
 
-    // 1. Update booking to PAID status
+    // 1. Update booking to COMPLETED status (with payment info)
     const updateBookingResult = await client.query(
       `UPDATE bookings 
-       SET status = 'PAID',
+       SET status = 'COMPLETED',
            payment_intent_id = $1,
            paid_at = NOW(),
+           "paidAt" = NOW(),
            tip_amount_cents = $2,
+           "tipAmountCents" = $2,
+           "totalPaidCents" = $3,
            "updatedAt" = NOW()
-       WHERE id = $3
+       WHERE id = $4
        RETURNING *`,
-      [paymentIntent.id, parseInt(tip_amount_cents || '0'), booking_id]
+      [paymentIntent.id, parseInt(tip_amount_cents || '0'), amountCents, booking_id]
     );
 
     if (updateBookingResult.rowCount === 0) {
@@ -231,7 +234,24 @@ async function handlePaymentIntentSucceeded(
     }
 
     const booking = updateBookingResult.rows[0];
-    logger.info(`✅ Booking ${booking_id} marked as PAID`);
+    logger.info(`✅ Booking ${booking_id} marked as COMPLETED (paid)`);
+
+    // Delete the conversation and its messages when payment is confirmed
+    try {
+      await client.query(
+        `DELETE FROM messages 
+         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+        [booking_id]
+      );
+      await client.query(
+        `DELETE FROM conversations WHERE booking_id = $1`,
+        [booking_id]
+      );
+      logger.info(`Deleted conversation for paid booking ${booking_id}`);
+    } catch (convError: any) {
+      // Conversation may already be deleted - that's fine
+      logger.debug(`No conversation to delete for booking ${booking_id}`);
+    }
 
     // 2. Create payment record for audit trail
     await client.query(
