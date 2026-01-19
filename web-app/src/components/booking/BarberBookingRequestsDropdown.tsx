@@ -10,6 +10,7 @@ import { Inbox, CheckCircle, XCircle, Calendar, User, Eye, X } from 'lucide-reac
 import Button from '../Button';
 import toast from 'react-hot-toast';
 import api from '../../services/api.service';
+import socketService from '../../services/socket.service';
 import { useViewport, useBodyScrollLock } from '../../hooks';
 
 interface CustomerProfile {
@@ -76,6 +77,27 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   useEffect(() => {
     fetchRequests();
   }, [barberId]);
+
+  // Listen for new booking requests via WebSocket
+  useEffect(() => {
+    socketService.connect();
+    
+    const handleNewBookingRequest = (newBooking: any) => {
+      console.log('📬 Received new-booking-request:', newBooking);
+      toast.success(`New booking request from ${newBooking.consumerName || 'a customer'}!`, {
+        icon: '📥',
+        duration: 5000,
+      });
+      // Refresh the requests list to include the new booking
+      fetchRequests();
+    };
+    
+    socketService.onNewBookingRequest(handleNewBookingRequest);
+    
+    return () => {
+      socketService.offNewBookingRequest(handleNewBookingRequest);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

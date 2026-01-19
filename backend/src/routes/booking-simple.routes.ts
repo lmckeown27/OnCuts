@@ -253,6 +253,24 @@ router.post('/', authenticate, async (req, res, next) => {
         data: { bookingId: booking.id, consumerId, serviceType },
       });
       logger.info(`Notification sent to barber ${barberUserId} for new booking ${booking.id}`);
+      
+      // Emit new-booking-request event via WebSocket for live updates
+      const newBookingEvent = {
+        id: booking.id,
+        consumerId,
+        barberId: barberRecordId,
+        serviceType,
+        priceUsdCents: price,
+        scheduledTime: requestedTime,
+        location,
+        notes,
+        status: 'PENDING',
+        consumerName,
+        createdAt: new Date().toISOString(),
+      };
+      
+      io.to(`user-${barberUserId}`).emit('new-booking-request', newBookingEvent);
+      logger.info(`Emitted new-booking-request event to barber ${barberUserId} for booking ${booking.id}`);
     }
 
     // Send pending booking emails to both consumer and barber

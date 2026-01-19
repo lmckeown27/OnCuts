@@ -109,6 +109,15 @@ class SocketService {
     this.off('booking-update', handler);
   }
 
+  // New booking request methods (for barbers)
+  onNewBookingRequest(handler: (booking: any) => void): void {
+    this.on('new-booking-request', handler);
+  }
+
+  offNewBookingRequest(handler?: (booking: any) => void): void {
+    this.off('new-booking-request', handler);
+  }
+
   // Notification methods
   onNotification(handler: (notification: any) => void): void {
     this.on('notification', handler);
