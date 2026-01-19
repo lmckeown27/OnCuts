@@ -269,10 +269,18 @@ router.post('/', authenticate, async (req, res, next) => {
         createdAt: new Date().toISOString(),
       };
       
-      const io = getSocketIO();
-      if (io) {
-        io.to(`user-${barberUserId}`).emit('new-booking-request', newBookingEvent);
-        logger.info(`Emitted new-booking-request event to barber ${barberUserId} for booking ${booking.id}`);
+      logger.info(`[new-booking-request] Attempting to emit to barber user ${barberUserId}`);
+      try {
+        const io = getSocketIO();
+        logger.info(`[new-booking-request] Socket.IO instance available: ${!!io}`);
+        if (io) {
+          io.to(`user-${barberUserId}`).emit('new-booking-request', newBookingEvent);
+          logger.info(`[new-booking-request] ✅ Emitted to room user-${barberUserId} for booking ${booking.id}`);
+        } else {
+          logger.warn(`[new-booking-request] ❌ Socket.IO not available`);
+        }
+      } catch (wsError) {
+        logger.error(`[new-booking-request] ❌ Error emitting:`, wsError);
       }
     }
 
