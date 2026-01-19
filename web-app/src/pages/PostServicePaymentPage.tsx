@@ -19,6 +19,14 @@ import { useAuthStore } from '../store/useAuthStore';
 import { CampusCutLogo } from '@assets';
 import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
+import { findService } from '../config/services';
+
+// Helper to get display name for service
+const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
+  const serviceKey = serviceName || serviceType || '';
+  const found = findService(serviceKey);
+  return found?.name || serviceKey;
+};
 
 // Load Stripe - use your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
@@ -129,7 +137,7 @@ function PaymentForm({
       <div className="bg-gray-50 rounded-xl p-4 space-y-3">
         <div className="flex justify-between">
           <span className="text-gray-600">Service</span>
-          <span className="font-semibold">{booking.serviceName || booking.serviceType}</span>
+          <span className="font-semibold">{getServiceDisplayName(booking.serviceName, booking.serviceType)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Base Price</span>
@@ -534,7 +542,7 @@ export default function PostServicePaymentPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Service</span>
-                <span className="font-semibold">{booking.serviceName || booking.serviceType}</span>
+                <span className="font-semibold">{getServiceDisplayName(booking.serviceName, booking.serviceType)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount</span>
@@ -617,7 +625,7 @@ export default function PostServicePaymentPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900">{booking.barber.firstName} {booking.barber.lastName}</h3>
-                  <p className="text-sm text-gray-600">{booking.serviceName || booking.serviceType}</p>
+                  <p className="text-sm text-gray-600">{getServiceDisplayName(booking.serviceName, booking.serviceType)}</p>
                 </div>
               </div>
             </div>
