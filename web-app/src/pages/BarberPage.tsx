@@ -22,6 +22,8 @@ import ServiceDetailsModal from '../components/ServiceDetailsModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
+import DatePicker from '../components/DatePicker';
+import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
@@ -1005,6 +1007,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const [editedDate, setEditedDate] = useState('');
   const [editedTime, setEditedTime] = useState('');
   const [editedLocation, setEditedLocation] = useState('');
+  const [barberLocations, setBarberLocations] = useState<{id: string; name: string; description: string | null}[]>([]);
+  const [barberIdForEdit, setBarberIdForEdit] = useState('');
   
   // Confirmed bookings state
   const [confirmedBookings, setConfirmedBookings] = useState<ConfirmedBooking[]>([]);
@@ -1154,10 +1158,8 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
   const selectBookingForInlineView = (booking: ConfirmedBooking) => {
     setSelectedBookingInline(booking);
     const scheduledTime = new Date(booking.scheduledTime);
-    const month = String(scheduledTime.getMonth() + 1).padStart(2, '0');
-    const day = String(scheduledTime.getDate()).padStart(2, '0');
-    const year = scheduledTime.getFullYear();
-    setEditedDate(`${month}/${day}/${year}`);
+    // Format date as YYYY-MM-DD for DatePicker
+    setEditedDate(scheduledTime.toISOString().split('T')[0]);
     const hours = String(scheduledTime.getHours()).padStart(2, '0');
     const minutes = String(scheduledTime.getMinutes()).padStart(2, '0');
     setEditedTime(`${hours}:${minutes}`);
@@ -1175,40 +1177,65 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     setCancelReason('');
   };
 
+  // Start editing booking - fetch barber ID and locations
+  const startEditingBooking = async () => {
+    // Fetch the barber's own ID and locations
+    if (user?.id) {
+      try {
+        // Get barber ID
+        const barberResponse = await api.get<{ id: string }>(`/barbers/user/${user.id}`);
+        const barberId = barberResponse?.id || '';
+        setBarberIdForEdit(barberId);
+        console.log('[BarberPage] Barber ID for edit:', barberId);
+        
+        // Fetch locations for this barber
+        if (barberId) {
+          const locationsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/locations/for-booking/${barberId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          });
+          if (locationsResponse.ok) {
+            const locData = await locationsResponse.json();
+            setBarberLocations(locData.data || []);
+            console.log('[BarberPage] Loaded locations:', locData.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber data for edit:', error);
+      }
+    }
+    
+    setIsEditingBooking(true);
+  };
+
   // Handle saving booking changes
   const handleSaveBookingChanges = async () => {
     if (!selectedBookingInline) return;
     
-    // Parse date
-    const dateParts = editedDate.split('/');
-    if (dateParts.length !== 3) {
-      toast.error('Please enter a valid date (MM/DD/YYYY)');
-      return;
-    }
-    const month = parseInt(dateParts[0]);
-    const day = parseInt(dateParts[1]);
-    const year = parseInt(dateParts[2]);
-    if (isNaN(month) || isNaN(day) || isNaN(year)) {
-      toast.error('Please enter a valid date');
+    // Validate date (YYYY-MM-DD format from DatePicker)
+    if (!editedDate) {
+      toast.error('Please select a date');
       return;
     }
     
-    // Parse time
-    const timeParts = editedTime.split(':');
-    if (timeParts.length !== 2) {
-      toast.error('Please select a valid time');
-      return;
-    }
-    const hours = parseInt(timeParts[0]);
-    const minutes = parseInt(timeParts[1]);
-    if (isNaN(hours) || isNaN(minutes)) {
-      toast.error('Please select a valid time');
+    // Validate time (HH:MM format from time picker)
+    if (!editedTime) {
+      toast.error('Please select a time');
       return;
     }
 
     setIsSavingBooking(true);
     try {
-      const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
+      // Combine date (YYYY-MM-DD) and time (HH:MM) into ISO string
+      const newScheduledTime = new Date(`${editedDate}T${editedTime}`);
+      
+      if (isNaN(newScheduledTime.getTime())) {
+        toast.error('Invalid date or time selected');
+        setIsSavingBooking(false);
+        return;
+      }
+      
       await api.put(`/bookings-simple/${selectedBookingInline.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
         location: editedLocation || null,
@@ -2029,44 +2056,68 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                         <Pencil className="w-5 h-5 text-primary-500" />
                         Edit Booking
                       </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      
+                      {/* Date Picker */}
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <DatePicker
+                          label="Date"
+                          value={editedDate}
+                          onChange={(newDate) => {
+                            setEditedDate(newDate);
+                            setEditedTime(''); // Reset time when date changes
+                          }}
+                          minDate={new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                      
+                      {/* Time Picker */}
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Time
+                          </div>
+                        </label>
+                        <AvailableTimePickerDropdown
+                          barberId={barberIdForEdit}
+                          date={editedDate}
+                          value={editedTime}
+                          onChange={(value) => setEditedTime(value)}
+                          disabled={!editedDate}
+                        />
+                      </div>
+                      
+                      {/* Location */}
+                      <div className="bg-gray-50 rounded-xl p-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Location
+                          </div>
+                        </label>
+                        {barberLocations.length > 0 ? (
+                          <select
+                            value={editedLocation}
+                            onChange={(e) => setEditedLocation(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white text-base"
+                          >
+                            <option value="">Select a location</option>
+                            {barberLocations.map((loc) => (
+                              <option key={loc.id} value={loc.name}>
+                                {loc.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
                           <input
                             type="text"
-                            inputMode="numeric"
-                            placeholder="MM/DD/YYYY"
-                            value={editedDate}
-                            onChange={(e) => {
-                              let digits = e.target.value.replace(/\D/g, '').slice(0, 8);
-                              let formatted = '';
-                              if (digits.length > 0) formatted = digits.slice(0, 2);
-                              if (digits.length > 2) formatted += '/' + digits.slice(2, 4);
-                              if (digits.length > 4) formatted += '/' + digits.slice(4, 8);
-                              setEditedDate(formatted);
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                            value={editedLocation}
+                            onChange={(e) => setEditedLocation(e.target.value)}
+                            placeholder="Enter location..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                          <input
-                            type="time"
-                            value={editedTime}
-                            onChange={(e) => setEditedTime(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                        <input
-                          type="text"
-                          value={editedLocation}
-                          onChange={(e) => setEditedLocation(e.target.value)}
-                          placeholder="Enter location..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                        />
+                        )}
                       </div>
                       {selectedBookingInline.notes && (
                         <div>
@@ -2223,7 +2274,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                               <div className="flex gap-3">
                                 {canEdit && (
                                   <button
-                                    onClick={() => setIsEditingBooking(true)}
+                                    onClick={startEditingBooking}
                                     className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                                   >
                                     <Pencil className="w-4 h-4" />
