@@ -336,7 +336,7 @@ export default function MessagesPage() {
         } catch (error) {
           console.error('Failed to look up barber ID for current user:', error);
         }
-      } else if (selectedConversation.otherUser?.userType === 'barber') {
+      } else if (selectedConversation.otherUser?.userType?.toLowerCase() === 'barber') {
         // Other user is the barber - look up their barber ID
         console.log('[MessagesPage] Looking up barber ID for other user (barber):', selectedConversation.otherUser.id);
         try {
@@ -1417,7 +1417,7 @@ export default function MessagesPage() {
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {selectedConversation.otherUser?.userType === 'barber' ? 'Barber' : 'Customer'}
+                          {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
                         </p>
                       </div>
                     </div>
@@ -1691,7 +1691,7 @@ export default function MessagesPage() {
                       {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {selectedConversation.otherUser?.userType === 'barber' ? 'Barber' : 'Customer'}
+                      {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
                     </p>
                   </div>
                 </div>
