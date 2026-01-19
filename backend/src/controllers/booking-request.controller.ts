@@ -111,78 +111,152 @@ export async function acceptBookingRequest(req: Request, res: Response) {
       try {
         // Handle both conv-* prefixed IDs and regular booking IDs
         let actualBookingId = bookingId;
-        if (bookingId.startsWith('conv-')) {
+        let isConversationBased = false;
+        const conversationId = bookingId.startsWith('conv-') ? bookingId.replace('conv-', '') : null;
+        
+        if (conversationId) {
+          isConversationBased = true;
           // Get the linked booking_id from the conversation
           const convResult = await pool.query(
             `SELECT booking_id FROM conversations WHERE id = $1`,
-            [bookingId.replace('conv-', '')]
+            [conversationId]
           );
           if (convResult.rows.length > 0 && convResult.rows[0].booking_id) {
             actualBookingId = convResult.rows[0].booking_id;
+            isConversationBased = false; // Has a linked booking, use normal flow
           }
         }
 
-        // Get full booking details for the barber's dashboard
-        logger.info(`Looking up booking details for WebSocket emission, bookingId: ${actualBookingId}`);
-        const bookingResult = await pool.query(
-          `SELECT 
-            b.id,
-            b."consumerId",
-            b."barberId",
-            b."serviceType",
-            b."priceUsdCents",
-            b."requestedAt" as "scheduledTime",
-            b.status,
-            b."createdAt",
-            c.location,
-            c.notes,
-            c.service_name,
-            consumer.first_name as consumer_first_name,
-            consumer.last_name as consumer_last_name,
-            consumer.email as consumer_email,
-            consumer.profile_picture_url as consumer_profile_url,
-            barber."userId" as barber_user_id
-          FROM bookings b
-          LEFT JOIN conversations c ON c.booking_id = b.id
-          LEFT JOIN users consumer ON b."consumerId" = consumer.id
-          LEFT JOIN barbers barber ON b."barberId" = barber.id
-          WHERE b.id = $1`,
-          [actualBookingId]
-        );
-        
-        logger.info(`Booking query returned ${bookingResult.rows.length} rows`);
-        if (bookingResult.rows.length > 0) {
-          logger.info(`Found booking: barber_user_id=${bookingResult.rows[0].barber_user_id}, status=${bookingResult.rows[0].status}`);
+        let bookingData: any = null;
+        let barberUserId: string | null = null;
+
+        if (isConversationBased && conversationId) {
+          // Conversation-based booking without a linked booking record
+          // Get details directly from the conversation
+          logger.info(`Looking up conversation details for WebSocket emission, conversationId: ${conversationId}`);
+          const convResult = await pool.query(
+            `SELECT 
+              c.id,
+              c.user1_id,
+              c.user2_id,
+              c.service_name,
+              c.service_price,
+              c.scheduled_time,
+              c.location,
+              c.notes,
+              c.booking_status,
+              consumer.id as consumer_id,
+              consumer.first_name as consumer_first_name,
+              consumer.last_name as consumer_last_name,
+              consumer.email as consumer_email,
+              consumer.profile_picture_url as consumer_profile_url
+            FROM conversations c
+            LEFT JOIN users consumer ON (
+              CASE 
+                WHEN c.user1_id = $1 THEN c.user1_id
+                ELSE c.user2_id
+              END = consumer.id
+            )
+            WHERE c.id = $2`,
+            [barberId, conversationId]
+          );
+          
+          logger.info(`Conversation query returned ${convResult.rows.length} rows`);
+          if (convResult.rows.length > 0) {
+            const conv = convResult.rows[0];
+            // Determine which user is the consumer (not the barber)
+            const consumerId = conv.user1_id === barberId ? conv.user2_id : conv.user1_id;
+            
+            // Get consumer details
+            const consumerResult = await pool.query(
+              `SELECT first_name, last_name, email, profile_picture_url FROM users WHERE id = $1`,
+              [consumerId]
+            );
+            const consumer = consumerResult.rows[0] || {};
+            
+            barberUserId = barberId; // barberId passed to the accept function is the user ID
+            bookingData = {
+              id: `conv-${conversationId}`,
+              consumerId: consumerId,
+              barberId: barberId,
+              serviceType: conv.service_name || 'Haircut',
+              priceUsdCents: (conv.service_price || 0) * 100,
+              scheduledTime: conv.scheduled_time,
+              status: 'ACCEPTED',
+              location: conv.location,
+              notes: conv.notes,
+              consumer: {
+                firstName: consumer.first_name || '',
+                lastName: consumer.last_name || '',
+                email: consumer.email,
+                profilePictureUrl: consumer.profile_picture_url,
+              },
+            };
+            logger.info(`Found conversation booking: barber_user_id=${barberUserId}`);
+          }
+        } else {
+          // Regular booking from bookings table
+          logger.info(`Looking up booking details for WebSocket emission, bookingId: ${actualBookingId}`);
+          const bookingResult = await pool.query(
+            `SELECT 
+              b.id,
+              b."consumerId",
+              b."barberId",
+              b."serviceType",
+              b."priceUsdCents",
+              b."requestedAt" as "scheduledTime",
+              b.status,
+              b."createdAt",
+              c.location,
+              c.notes,
+              c.service_name,
+              consumer.first_name as consumer_first_name,
+              consumer.last_name as consumer_last_name,
+              consumer.email as consumer_email,
+              consumer.profile_picture_url as consumer_profile_url,
+              barber."userId" as barber_user_id
+            FROM bookings b
+            LEFT JOIN conversations c ON c.booking_id = b.id
+            LEFT JOIN users consumer ON b."consumerId" = consumer.id
+            LEFT JOIN barbers barber ON b."barberId" = barber.id
+            WHERE b.id = $1`,
+            [actualBookingId]
+          );
+          
+          logger.info(`Booking query returned ${bookingResult.rows.length} rows`);
+          if (bookingResult.rows.length > 0) {
+            const booking = bookingResult.rows[0];
+            barberUserId = booking.barber_user_id;
+            bookingData = {
+              id: booking.id,
+              consumerId: booking.consumerId,
+              barberId: booking.barberId,
+              serviceType: booking.service_name || booking.serviceType,
+              priceUsdCents: booking.priceUsdCents,
+              scheduledTime: booking.scheduledTime,
+              status: 'ACCEPTED',
+              location: booking.location,
+              notes: booking.notes,
+              consumer: {
+                firstName: booking.consumer_first_name,
+                lastName: booking.consumer_last_name,
+                email: booking.consumer_email,
+                profilePictureUrl: booking.consumer_profile_url,
+              },
+            };
+            logger.info(`Found booking: barber_user_id=${barberUserId}, status=${booking.status}`);
+          }
         }
 
         // Emit WebSocket event to barber for live dashboard updates
         const io = getSocketIO();
         logger.info(`Socket.IO instance available: ${!!io}`);
-        if (io && bookingResult.rows.length > 0) {
-          const booking = bookingResult.rows[0];
-          const barberUserId = booking.barber_user_id;
-          
+        if (io && bookingData && barberUserId) {
           logger.info(`Emitting booking-confirmed to room user-${barberUserId}`);
-          io.to(`user-${barberUserId}`).emit('booking-confirmed', {
-            id: booking.id,
-            consumerId: booking.consumerId,
-            barberId: booking.barberId,
-            serviceType: booking.service_name || booking.serviceType,
-            priceUsdCents: booking.priceUsdCents,
-            scheduledTime: booking.scheduledTime,
-            status: 'ACCEPTED',
-            location: booking.location,
-            notes: booking.notes,
-            consumer: {
-              firstName: booking.consumer_first_name,
-              lastName: booking.consumer_last_name,
-              email: booking.consumer_email,
-              profilePictureUrl: booking.consumer_profile_url,
-            },
-          });
+          io.to(`user-${barberUserId}`).emit('booking-confirmed', bookingData);
           logger.info(`Emitted 'booking-confirmed' event to barber user ${barberUserId} for booking ${actualBookingId}`);
         } else {
-          logger.warn(`Could not emit booking-confirmed: io=${!!io}, rows=${bookingResult.rows.length}`);
+          logger.warn(`Could not emit booking-confirmed: io=${!!io}, bookingData=${!!bookingData}, barberUserId=${barberUserId}`);
         }
       } catch (wsError) {
         logger.error('Error emitting booking-confirmed WebSocket event:', wsError);
