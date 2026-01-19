@@ -106,11 +106,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     const result = await pool.query(query, params);
     
     // Filter by max distance if user location is provided
-    // Default 8km (~5 miles) is reasonable for university students
+    // BUT: If campusId is provided, show ALL barbers for that campus (they may be temporarily away)
+    // Default 8km (~5 miles) is reasonable for university students when no campus is specified
     let filteredRows = result.rows;
     let showingClosestFallback = false;
     
-    if (hasUserLocation) {
+    // Only apply distance filtering if NO campusId is specified
+    // When a campus is selected, show all barbers assigned to that campus regardless of location
+    if (hasUserLocation && !campusId) {
       const nearbyRows = result.rows.filter(row => {
         // Include barbers without location data (they might be new)
         if (row.distance_km === null || row.distance_km === undefined) return true;
@@ -125,6 +128,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         filteredRows = nearbyRows;
       }
     }
+    // When campusId IS provided: show all barbers for that campus, sorted by distance
     
     // Get services/pricing for each barber
     const barbers = await Promise.all(filteredRows.map(async (barber) => {
