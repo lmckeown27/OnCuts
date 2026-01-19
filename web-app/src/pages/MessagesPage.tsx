@@ -303,38 +303,42 @@ export default function MessagesPage() {
     // Get barber ID - need to get the barber table ID, not user ID
     let barberId = booking.barberId || '';
     
-    // If we don't have a barber ID and the other user is a barber, look it up
-    if (!barberId && selectedConversation.otherUser?.userType === 'barber') {
-      try {
-        // Look up barber by user ID to get barber table ID
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${selectedConversation.otherUser.id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          barberId = data.data?.id || data.id || '';
+    // Determine who the barber is based on who is viewing the conversation
+    // If current user is a barber, they are the barber for this booking
+    // If current user is a consumer, the other user is the barber
+    if (!barberId) {
+      if (user?.user_type === 'barber') {
+        // Current user is the barber - look up their barber ID
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${user.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            barberId = data.data?.id || data.id || '';
+            console.log('[MessagesPage] Current user is barber, found barber ID:', barberId);
+          }
+        } catch (error) {
+          console.error('Failed to look up barber ID for current user:', error);
         }
-      } catch (error) {
-        console.error('Failed to look up barber ID:', error);
-      }
-    }
-    
-    // If current user is a barber, use their barber ID
-    if (!barberId && user?.user_type === 'barber') {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${user.id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          barberId = data.data?.id || data.id || '';
+      } else if (selectedConversation.otherUser?.userType === 'barber') {
+        // Other user is the barber - look up their barber ID
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${selectedConversation.otherUser.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            barberId = data.data?.id || data.id || '';
+            console.log('[MessagesPage] Other user is barber, found barber ID:', barberId);
+          }
+        } catch (error) {
+          console.error('Failed to look up barber ID for other user:', error);
         }
-      } catch (error) {
-        console.error('Failed to look up barber ID:', error);
       }
     }
     
