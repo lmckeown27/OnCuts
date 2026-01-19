@@ -503,14 +503,27 @@ export default function LandingPage() {
                   </div>
                 )}
 
+                {/* Desktop: Show "Become a Campus Manager" button below dropdown when no campus selected */}
+                {!selectedCampus && (
+                  <div className="hidden md:block">
+                    <a
+                      href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
+                      className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-colors shadow-lg hover:shadow-xl"
+                    >
+                      <Mail className="w-5 h-5" />
+                      <span>Become a Campus Manager</span>
+                    </a>
+                  </div>
+                )}
+
                 {/* Desktop: Show apply button below dropdown when campus has no manager */}
                 {selectedCampus && !selectedCampus.manager && (
                   <div className="hidden md:block">
                     <a
                       href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
-                      className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-colors shadow-lg hover:shadow-xl"
                     >
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-5 h-5" />
                       <span>Apply for This Position</span>
                     </a>
                   </div>
@@ -626,16 +639,9 @@ export default function LandingPage() {
                         <span className="text-4xl text-gray-500">?</span>
                       </div>
                       <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
-                      <p className="text-gray-400 text-sm max-w-xs mx-auto mb-4">
+                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
                         Choose your campus from the dropdown to meet your dedicated human Campus Manager.
                       </p>
-                      <a
-                        href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
-                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Become a Campus Manager</span>
-                      </a>
                     </>
                   ) : selectedCampus.manager ? (
                       <>
