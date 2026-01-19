@@ -1419,9 +1419,6 @@ export default function MessagesPage() {
                         <p className="font-medium text-gray-900 text-sm">
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {(selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' || selectedConversation.otherUser?.barberInfo?.id) ? 'Barber' : 'Customer'}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -1692,9 +1689,6 @@ export default function MessagesPage() {
                   <div>
                     <p className="font-medium text-gray-900">
                       {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {(selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' || selectedConversation.otherUser?.barberInfo?.id) ? 'Barber' : 'Customer'}
                     </p>
                   </div>
                 </div>
