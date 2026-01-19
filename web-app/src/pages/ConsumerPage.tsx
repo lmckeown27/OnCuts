@@ -1257,12 +1257,21 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             <br />
             Check back soon as more barbers join the platform!
           </p>
-          <button 
-            onClick={() => navigate('/web/find-barber')}
-            className="text-primary-600 hover:text-primary-700 underline"
-          >
-            Try a different university
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <button 
+              onClick={() => navigate('/web/find-barber')}
+              className="text-primary-600 hover:text-primary-700 underline"
+            >
+              Try a different university
+            </button>
+            <button
+              onClick={handleBecomeBarberClick}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+            >
+              <Scissors className="w-4 h-4 text-primary-600" />
+              <span className="text-sm font-medium text-primary-700">Become a Barber</span>
+            </button>
+          </div>
         </Card>
       )}
 
