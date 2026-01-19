@@ -497,19 +497,28 @@ class MessageService {
 
       const formattedMessage = {
         id: message.id,
+        conversation_id: conversationId,
+        sender_id: senderId,
         content: message.content,
+        message_type: message.message_type,
         messageType: message.message_type,
         mediaUrl: message.media_url,
+        media_url: message.media_url,
         isRead: message.is_read,
+        is_read: message.is_read,
         createdAt: message.created_at,
+        created_at: message.created_at,
         sender: {
           id: senderId,
           email: sender.email,
           firstName: sender.first_name,
+          first_name: sender.first_name,
           lastName: sender.last_name,
+          last_name: sender.last_name,
           profilePicture: sender.profile_picture,
+          profile_picture: sender.profile_picture,
         },
-        isOwn: true,
+        isOwn: false, // For recipient, this is not their own message
       };
 
       return {

@@ -395,8 +395,12 @@ export default function MessagesPage() {
   // Socket.io real-time messages
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
-      // Add to messages if in current conversation
-      if (selectedConversation && message.conversation_id === selectedConversation.id) {
+      console.log('📩 Socket received new-message:', message);
+      console.log('📩 Current conversation:', selectedConversation?.id, 'Message conversation:', message.conversation_id);
+      
+      // Add to messages if in current conversation (compare as numbers to handle type differences)
+      if (selectedConversation && Number(message.conversation_id) === Number(selectedConversation.id)) {
+        console.log('📩 Adding message to current conversation');
         setMessages(prev => [...prev, message as unknown as MessageWithSender]);
         scrollToBottom();
         // Mark as read since we're viewing
