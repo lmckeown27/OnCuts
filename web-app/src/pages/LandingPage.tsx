@@ -507,7 +507,9 @@ export default function LandingPage() {
                 {!selectedCampus && (
                   <div className="hidden md:flex justify-center">
                     <a
-                      href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
+                      href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent('Campus Manager for [Your Campus]')}&body=${encodeURIComponent('Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at [Your Campus].\n\nPlease let me know the next steps in the application process.\n\nThank you!')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
                       <Mail className="w-6 h-6" />
@@ -520,7 +522,9 @@ export default function LandingPage() {
                 {selectedCampus && !selectedCampus.manager && (
                   <div className="hidden md:flex justify-center">
                     <a
-                      href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
+                      href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent(`Campus Manager for ${selectedCampus.campusName}`)}&body=${encodeURIComponent(`Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at ${selectedCampus.campusName}.\n\nPlease let me know the next steps in the application process.\n\nThank you!`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
                       <Mail className="w-6 h-6" />
@@ -541,7 +545,9 @@ export default function LandingPage() {
                         Choose your campus from the dropdown to meet your dedicated human Campus Manager.
                       </p>
                       <a
-                        href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
+                        href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent('Campus Manager for [Your Campus]')}&body=${encodeURIComponent('Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at [Your Campus].\n\nPlease let me know the next steps in the application process.\n\nThank you!')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                       >
                         <Mail className="w-4 h-4" />
@@ -616,7 +622,9 @@ export default function LandingPage() {
                             </p>
                           </div>
                           <a
-                            href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
+                            href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent(`Campus Manager for ${selectedCampus.campusName}`)}&body=${encodeURIComponent(`Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at ${selectedCampus.campusName}.\n\nPlease let me know the next steps in the application process.\n\nThank you!`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                           >
                             <Mail className="w-4 h-4" />
