@@ -78,10 +78,36 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       WHERE b."isActive" = true
     `;
 
+    // Handle campusId - can be UUID or slug
+    let resolvedCampusId = campusId as string | undefined;
     if (campusId) {
-      query += ` AND b."campusId" = $${paramIndex}`;
-      params.push(campusId);
-      paramIndex++;
+      // Check if it's a UUID (simple regex check)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campusId as string);
+      
+      if (!isUUID) {
+        // It's a slug - look up the campus by name/slug
+        const campusResult = await pool.query(
+          `SELECT id FROM campuses 
+           WHERE LOWER(REPLACE(name, ' ', '-')) LIKE LOWER($1) 
+              OR LOWER(name) LIKE LOWER($2)
+           LIMIT 1`,
+          [`%${campusId}%`, `%${(campusId as string).replace(/-/g, ' ')}%`]
+        );
+        
+        if (campusResult.rows.length > 0) {
+          resolvedCampusId = campusResult.rows[0].id;
+          logger.info(`Resolved campus slug "${campusId}" to UUID: ${resolvedCampusId}`);
+        } else {
+          logger.warn(`Campus slug "${campusId}" not found in database`);
+          resolvedCampusId = undefined; // Don't filter by campus if not found
+        }
+      }
+      
+      if (resolvedCampusId) {
+        query += ` AND b."campusId" = $${paramIndex}`;
+        params.push(resolvedCampusId);
+        paramIndex++;
+      }
     }
 
     if (minRating) {
@@ -111,9 +137,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     let filteredRows = result.rows;
     let showingClosestFallback = false;
     
-    // Only apply distance filtering if NO campusId is specified
+    // Only apply distance filtering if NO campusId is specified (or if it wasn't resolved)
     // When a campus is selected, show all barbers assigned to that campus regardless of location
-    if (hasUserLocation && !campusId) {
+    if (hasUserLocation && !resolvedCampusId) {
       const nearbyRows = result.rows.filter(row => {
         // Include barbers without location data (they might be new)
         if (row.distance_km === null || row.distance_km === undefined) return true;

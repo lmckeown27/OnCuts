@@ -31,7 +31,7 @@ const router: Router = express.Router();
 router.get(
   '/',
   [
-    query('campusId').optional().isUUID(),
+    query('campusId').optional().isString(), // Accept UUID or slug
     query('minRating').optional().isFloat({ min: 0, max: 5 }),
     query('maxPrice').optional().isInt(),
     query('specialty').optional().isString(),
