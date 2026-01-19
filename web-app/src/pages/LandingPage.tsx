@@ -410,7 +410,7 @@ export default function LandingPage() {
               {/* Left side - Campus selector and profile picture (3/5 width) */}
               <div className="md:col-span-3 flex flex-col gap-6">
                 {/* Campus Selector */}
-                <div>
+                <div className="max-w-md mx-auto w-full">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
                   <div className="relative" ref={campusDropdownRef}>
                     <div 
