@@ -977,6 +977,9 @@ interface ConfirmedBooking {
 }
 
 function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+  // Get user from auth store for barber ID lookup
+  const { user } = useAuthStore();
+  
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
     const now = new Date();
