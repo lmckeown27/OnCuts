@@ -671,7 +671,7 @@ export default function MessagesPage() {
           setMessages([]);
           setShowMobileChat(false);
           setShowServiceDetails(false);
-          toast.info('This booking has been cancelled');
+          toast('This booking has been cancelled', { icon: 'ℹ️' });
         }
         
         // Close confirmation modal if it was showing for this booking
