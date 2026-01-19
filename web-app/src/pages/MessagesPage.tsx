@@ -1417,7 +1417,10 @@ export default function MessagesPage() {
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
+                          {(() => {
+                            console.log('[MessagesPage] otherUser.userType:', selectedConversation.otherUser?.userType);
+                            return selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer';
+                          })()}
                         </p>
                       </div>
                     </div>
