@@ -1239,14 +1239,49 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
         return;
       }
       
+      // Track what changed for the success message
+      const originalDate = selectedBookingInline.scheduledTime 
+        ? new Date(selectedBookingInline.scheduledTime) 
+        : null;
+      const originalLocation = selectedBookingInline.location || '';
+      
+      const changes: string[] = [];
+      
+      // Check if date changed
+      if (originalDate && originalDate.toDateString() !== newScheduledTime.toDateString()) {
+        changes.push('date');
+      }
+      
+      // Check if time changed
+      if (originalDate && (originalDate.getHours() !== newScheduledTime.getHours() || originalDate.getMinutes() !== newScheduledTime.getMinutes())) {
+        changes.push('time');
+      }
+      
+      // Check if location changed
+      if ((editedLocation || '') !== originalLocation) {
+        changes.push('location');
+      }
+      
       await api.put(`/bookings-simple/${selectedBookingInline.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
         location: editedLocation || null,
       });
-      toast.success('Booking updated successfully!');
-      setIsEditingBooking(false);
-      // Refresh bookings
-      onViewDetails(selectedBookingInline); // This triggers a refresh in parent
+      
+      // Build success message
+      let successMessage = 'Booking ';
+      if (changes.length === 0) {
+        successMessage = 'No changes were made';
+      } else if (changes.length === 1) {
+        successMessage += `${changes[0]} has been successfully changed`;
+      } else if (changes.length === 2) {
+        successMessage += `${changes[0]} and ${changes[1]} have been successfully changed`;
+      } else {
+        successMessage += `${changes.slice(0, -1).join(', ')}, and ${changes[changes.length - 1]} have been successfully changed`;
+      }
+      
+      toast.success(successMessage);
+      closeDayModal(); // Close the modal entirely
+      onViewDetails(selectedBookingInline); // Refresh bookings
     } catch (error: any) {
       console.error('Failed to update booking:', error);
       toast.error(error.message || 'Failed to update booking');
