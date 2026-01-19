@@ -1217,7 +1217,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       <div className="mb-4 sm:mb-6">
         {/* University and Filter Info */}
         <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
-          <span>Barbers near {selectedUniversity?.shortName || selectedUniversity?.name}</span>
+          <span>Barbers at {selectedUniversity?.shortName || selectedUniversity?.name}</span>
           {filterCriteria.serviceType && (
             <>
               <span className="text-gray-400">•</span>
@@ -1251,9 +1251,9 @@ function DiscoveryView({ navigate }: { navigate: any }) {
       {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
           <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers near {selectedUniversity.shortName || selectedUniversity.name}</p>
+          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers at {selectedUniversity.shortName || selectedUniversity.name}</p>
           <p className="text-xs sm:text-sm text-gray-500 mb-4">
-            There are no barbers available near your campus yet.
+            There are no barbers registered at this campus yet.
             <br />
             Check back soon as more barbers join the platform!
           </p>
