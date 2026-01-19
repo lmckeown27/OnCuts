@@ -1327,6 +1327,11 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   if (showAssignModal) {
     const selectedBarber = barbersWithLocations.find(b => b.id === showAssignModal.barberId);
     
+    // Filter locations to only show universal locations OR locations restricted to this specific barber
+    const availableLocationsForBarber = approvedLocations.filter(location => 
+      location.is_universal || location.restricted_to_barber_id === showAssignModal.barberId
+    );
+    
     return (
       <div className="space-y-4">
         <button 
@@ -1343,7 +1348,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             Assign Location to {showAssignModal.barberName}
           </h3>
 
-          {approvedLocations.length === 0 ? (
+          {availableLocationsForBarber.length === 0 ? (
             <div className="text-center py-8">
               <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500">No approved locations available</p>
@@ -1351,7 +1356,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             </div>
           ) : (
             <div className="space-y-2">
-              {approvedLocations.map((location) => {
+              {availableLocationsForBarber.map((location) => {
                 const isAssigned = selectedBarber?.locations.some(l => l.location_id === location.id);
                 
                 return (
