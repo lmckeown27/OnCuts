@@ -503,6 +503,19 @@ export default function LandingPage() {
                   </div>
                 )}
 
+                {/* Desktop: Show apply button below dropdown when campus has no manager */}
+                {selectedCampus && !selectedCampus.manager && (
+                  <div className="hidden md:block">
+                    <a
+                      href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
+                      className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Mail className="w-4 h-4" />
+                      <span>Apply for This Position</span>
+                    </a>
+                  </div>
+                )}
+
                 {/* Mobile: Show placeholder card when no campus selected */}
                 {!selectedCampus && (
                   <div className="md:hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
@@ -664,18 +677,11 @@ export default function LandingPage() {
                       <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
                       <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
                       <p className="text-gray-500 text-sm mb-4">{selectedCampus.campusName}</p>
-                      <div className="bg-white/10 rounded-xl p-4 mb-4">
+                      <div className="bg-white/10 rounded-xl p-4">
                         <p className="text-gray-400 text-sm">
                           We're currently searching for a Campus Manager for this location.
                         </p>
                       </div>
-                      <a
-                        href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
-                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Apply for This Position</span>
-                      </a>
                     </>
                   )}
                 </div>
