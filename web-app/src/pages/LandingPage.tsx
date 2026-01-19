@@ -505,12 +505,12 @@ export default function LandingPage() {
 
                 {/* Desktop: Show "Become a Campus Manager" button below dropdown when no campus selected */}
                 {!selectedCampus && (
-                  <div className="hidden md:block">
+                  <div className="hidden md:flex justify-center">
                     <a
                       href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
-                      className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-colors shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
-                      <Mail className="w-5 h-5" />
+                      <Mail className="w-6 h-6" />
                       <span>Become a Campus Manager</span>
                     </a>
                   </div>
@@ -518,12 +518,12 @@ export default function LandingPage() {
 
                 {/* Desktop: Show apply button below dropdown when campus has no manager */}
                 {selectedCampus && !selectedCampus.manager && (
-                  <div className="hidden md:block">
+                  <div className="hidden md:flex justify-center">
                     <a
                       href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
-                      className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-xl text-base font-semibold transition-colors shadow-lg hover:shadow-xl"
+                      className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
-                      <Mail className="w-5 h-5" />
+                      <Mail className="w-6 h-6" />
                       <span>Apply for This Position</span>
                     </a>
                   </div>
