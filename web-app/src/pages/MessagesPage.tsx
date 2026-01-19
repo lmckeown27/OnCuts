@@ -49,6 +49,7 @@ import toast from 'react-hot-toast';
 interface ConversationWithDetails extends Conversation {
   booking?: {
     id?: string;
+    barberId?: string;
     serviceName: string;
     servicePrice?: number;
     scheduledTime: string;
@@ -1191,7 +1192,7 @@ export default function MessagesPage() {
                    selectedConversation.booking.status !== 'rejected' && (
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={() => navigate(`/schedule/${selectedConversation.booking?.barberId}?edit=${selectedConversation.booking?.id}`)}
+                        onClick={() => navigate(`/schedule/${selectedConversation.booking?.barberId || selectedConversation.otherUser?.id}?edit=${selectedConversation.booking?.id}`)}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
                       >
                         <Pencil className="w-4 h-4" />
@@ -1384,7 +1385,7 @@ export default function MessagesPage() {
                   <button
                     onClick={() => {
                       setShowServiceDetails(false);
-                      navigate(`/schedule/${selectedConversation.booking?.barberId}?edit=${selectedConversation.booking?.id}`);
+                      navigate(`/schedule/${selectedConversation.booking?.barberId || selectedConversation.otherUser?.id}?edit=${selectedConversation.booking?.id}`);
                     }}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
                   >
