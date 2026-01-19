@@ -1355,29 +1355,39 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 const isAssigned = selectedBarber?.locations.some(l => l.location_id === location.id);
                 
                 return (
-                  <button
+                  <div
                     key={location.id}
-                    onClick={() => !isAssigned && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
-                    disabled={saving || isAssigned}
-                    className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                    className={`w-full p-3 rounded-lg border transition-colors ${
                       isAssigned 
-                        ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' 
-                        : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer'
                     }`}
+                    onClick={() => !isAssigned && !saving && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary-500" />
+                        <MapPin className={`w-4 h-4 ${isAssigned ? 'text-green-500' : 'text-primary-500'}`} />
                         <span className="font-medium text-gray-900">{location.name}</span>
                       </div>
-                      {isAssigned && (
-                        <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Assigned</span>
+                      {isAssigned ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRevokeLocationFromBarber(showAssignModal.barberId, location.id);
+                          }}
+                          disabled={saving}
+                          className="text-xs text-red-600 hover:text-red-700 hover:bg-red-100 px-2 py-1 rounded transition-colors"
+                        >
+                          Revoke
+                        </button>
+                      ) : (
+                        <span className="text-xs text-primary-600">Click to assign</span>
                       )}
                     </div>
                     {location.description && (
                       <p className="text-xs text-gray-500 mt-1 ml-6">{location.description}</p>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
