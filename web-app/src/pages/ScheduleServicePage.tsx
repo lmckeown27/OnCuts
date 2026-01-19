@@ -60,6 +60,14 @@ export default function ScheduleServicePage() {
   const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Validation error states
+  const [errors, setErrors] = useState<{
+    serviceType?: string;
+    date?: string;
+    time?: string;
+    location?: string;
+  }>({});
+  
   // Available locations for this barber
   interface BarberLocation {
     id: string;
@@ -111,23 +119,32 @@ export default function ScheduleServicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
+    // Validation - check all fields at once
+    const newErrors: typeof errors = {};
+    
     if (!serviceType) {
-      toast.error('Please select a service type');
-      return;
+      newErrors.serviceType = 'Please select a service type';
     }
     if (!date) {
-      toast.error('Please select a date');
-      return;
+      newErrors.date = 'Please select a date';
     }
     if (!time) {
-      toast.error('Please select a time');
-      return;
+      newErrors.time = 'Please select a time';
     }
     if (!location_) {
-      toast.error('Please select a location');
+      newErrors.location = 'Please select a location';
+    }
+    
+    // If there are errors, set them and scroll to top
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.error('Please fill in all required fields');
       return;
     }
+    
+    // Clear any previous errors
+    setErrors({});
 
     setIsSubmitting(true);
 
@@ -290,8 +307,13 @@ export default function ScheduleServicePage() {
                     </label>
                     <select
                       value={serviceType}
-                      onChange={(e) => setServiceType(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      onChange={(e) => {
+                        setServiceType(e.target.value);
+                        if (e.target.value) setErrors(prev => ({ ...prev, serviceType: undefined }));
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        errors.serviceType ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       required
                     >
                       <option value="">Select a service</option>
@@ -308,6 +330,9 @@ export default function ScheduleServicePage() {
                         );
                       })}
                     </select>
+                    {errors.serviceType && (
+                      <p className="text-red-500 text-sm mt-1">{errors.serviceType}</p>
+                    )}
                   </div>
 
                   {/* Date */}
@@ -319,11 +344,15 @@ export default function ScheduleServicePage() {
                         setDate(newDate);
                         // Reset time when date changes
                         setTime('');
+                        if (newDate) setErrors(prev => ({ ...prev, date: undefined }));
                       }}
                       minDate={today}
                       required
                       weeklySchedule={barber.weekly_schedule}
                     />
+                    {errors.date && (
+                      <p className="text-red-500 text-sm mt-1">{errors.date}</p>
+                    )}
                   </div>
 
                   {/* Time - Shows available slots based on barber's schedule and existing bookings */}
@@ -338,9 +367,15 @@ export default function ScheduleServicePage() {
                       barberId={barber.id}
                       date={date}
                       value={time}
-                      onChange={(value) => setTime(value)}
+                      onChange={(value) => {
+                        setTime(value);
+                        if (value) setErrors(prev => ({ ...prev, time: undefined }));
+                      }}
                       disabled={!date}
                     />
+                    {errors.time && (
+                      <p className="text-red-500 text-sm mt-1">{errors.time}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       Times shown are based on the barber's availability and existing bookings
                     </p>
@@ -364,8 +399,11 @@ export default function ScheduleServicePage() {
                         onChange={(e) => {
                           setLocationDetails(e.target.value);
                           setLocation(e.target.value);
+                          if (e.target.value) setErrors(prev => ({ ...prev, location: undefined }));
                         }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${
+                          errors.location ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         required
                       >
                         <option value="">Select a location</option>
@@ -380,6 +418,9 @@ export default function ScheduleServicePage() {
                         <MapPin className="w-4 h-4 inline mr-2" />
                         This barber hasn't set up service locations yet. Please contact them directly.
                       </div>
+                    )}
+                    {errors.location && (
+                      <p className="text-red-500 text-sm mt-1">{errors.location}</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
                       Where the service will take place
