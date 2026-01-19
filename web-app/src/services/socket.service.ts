@@ -138,6 +138,31 @@ class SocketService {
     this.off('booking-completed', handler);
   }
 
+  // Booking confirmed methods (for barbers - when they accept a booking)
+  onBookingConfirmed(handler: (booking: {
+    id: string;
+    consumerId: string;
+    barberId: string;
+    serviceType: string;
+    priceUsdCents: number;
+    scheduledTime: string;
+    status: string;
+    location?: string;
+    notes?: string;
+    consumer: {
+      firstName: string;
+      lastName: string;
+      email?: string;
+      profilePictureUrl?: string;
+    };
+  }) => void): void {
+    this.on('booking-confirmed', handler);
+  }
+
+  offBookingConfirmed(handler?: (booking: any) => void): void {
+    this.off('booking-confirmed', handler);
+  }
+
   // Notification methods
   onNotification(handler: (notification: any) => void): void {
     this.on('notification', handler);

@@ -1085,8 +1085,49 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     
     socketService.onBookingUpdate(handleBookingUpdate);
     
+    // Listen for newly confirmed bookings (when barber accepts a request)
+    const handleBookingConfirmed = (newBooking: any) => {
+      console.log('📬 Received booking-confirmed event:', newBooking);
+      
+      setConfirmedBookings(prevBookings => {
+        // Check if this booking already exists
+        const existingIndex = prevBookings.findIndex(b => b.id === newBooking.id);
+        if (existingIndex !== -1) {
+          console.log('ℹ️ Booking already in list, skipping:', newBooking.id);
+          return prevBookings;
+        }
+        
+        // Add the new booking to the list
+        const formattedBooking: ConfirmedBooking = {
+          id: newBooking.id,
+          consumerId: newBooking.consumerId || '',
+          barberId: newBooking.barberId || '',
+          scheduledTime: newBooking.scheduledTime,
+          location: newBooking.location || '',
+          notes: newBooking.notes || '',
+          status: newBooking.status || 'ACCEPTED',
+          serviceType: newBooking.serviceType,
+          priceUsdCents: newBooking.priceUsdCents || 0,
+          createdAt: new Date().toISOString(),
+          consumer: {
+            firstName: newBooking.consumer?.firstName || '',
+            lastName: newBooking.consumer?.lastName || '',
+            avatar: newBooking.consumer?.profilePictureUrl,
+            email: newBooking.consumer?.email,
+            profilePictureUrl: newBooking.consumer?.profilePictureUrl,
+          },
+        };
+        
+        console.log('✅ Adding newly confirmed booking to dashboard:', newBooking.id);
+        return [...prevBookings, formattedBooking];
+      });
+    };
+    
+    socketService.onBookingConfirmed(handleBookingConfirmed);
+    
     return () => {
       socketService.offBookingUpdate(handleBookingUpdate);
+      socketService.offBookingConfirmed(handleBookingConfirmed);
     };
   }, []);
 
