@@ -511,9 +511,16 @@ export default function LandingPage() {
                         <span className="text-4xl text-gray-500">?</span>
                       </div>
                       <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
-                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                      <p className="text-gray-400 text-sm max-w-xs mx-auto mb-4">
                         Choose your campus from the dropdown to meet your dedicated human Campus Manager.
                       </p>
+                      <a
+                        href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
+                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Become a Campus Manager</span>
+                      </a>
                     </div>
                   </div>
                 )}
@@ -576,13 +583,19 @@ export default function LandingPage() {
                           </div>
                           <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
                           <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
-                          <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
-                          <div className="bg-white/10 rounded-xl p-4">
+                          <p className="text-gray-500 text-sm mb-4">{selectedCampus.campusName}</p>
+                          <div className="bg-white/10 rounded-xl p-4 mb-4">
                             <p className="text-gray-400 text-sm">
-                              We're currently searching for a Campus Manager for this location. 
-                              Check back soon!
+                              We're currently searching for a Campus Manager for this location.
                             </p>
                           </div>
+                          <a
+                            href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
+                            className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            <Mail className="w-4 h-4" />
+                            <span>Apply for This Position</span>
+                          </a>
                         </>
                       )}
                     </div>
@@ -600,9 +613,16 @@ export default function LandingPage() {
                         <span className="text-4xl text-gray-500">?</span>
                       </div>
                       <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
-                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                      <p className="text-gray-400 text-sm max-w-xs mx-auto mb-4">
                         Choose your campus from the dropdown to meet your dedicated human Campus Manager.
                       </p>
+                      <a
+                        href="mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry"
+                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Become a Campus Manager</span>
+                      </a>
                     </>
                   ) : selectedCampus.manager ? (
                       <>
@@ -643,13 +663,19 @@ export default function LandingPage() {
                       </div>
                       <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
                       <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
-                      <p className="text-gray-500 text-sm mb-6">{selectedCampus.campusName}</p>
-                      <div className="bg-white/10 rounded-xl p-4">
+                      <p className="text-gray-500 text-sm mb-4">{selectedCampus.campusName}</p>
+                      <div className="bg-white/10 rounded-xl p-4 mb-4">
                         <p className="text-gray-400 text-sm">
-                          We're currently searching for a Campus Manager for this location. 
-                          Check back soon!
+                          We're currently searching for a Campus Manager for this location.
                         </p>
                       </div>
+                      <a
+                        href={`mailto:campuscuthelp@gmail.com?subject=Campus Manager Position Inquiry - ${selectedCampus.campusName}`}
+                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Mail className="w-4 h-4" />
+                        <span>Apply for This Position</span>
+                      </a>
                     </>
                   )}
                 </div>
