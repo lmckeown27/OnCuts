@@ -1691,7 +1691,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                         <div>
                           <div className={`font-semibold text-base ${isToday ? 'text-white' : 'text-gray-900'}`}>{day.name}</div>
                           {(() => {
-                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID').length;
+                            const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
                             const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
                             
                             if (dayBookings.length === 0) {
@@ -1756,27 +1756,31 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
                         </div>
                       </div>
                       <div className="text-sm space-y-1.5 flex-1 overflow-hidden">
-                        {dayBookings.length === 0 ? (
-                          <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
-                        ) : (
-                          <>
-                            <div className="truncate font-semibold">
-                              {dayBookings[0].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[0].consumer.firstName}
-                            </div>
-                            {dayBookings.length > 1 && (
-                              <>
-                                <div className="truncate">
-                                  {dayBookings[1].serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} - {dayBookings[1].consumer.firstName}
+                        {(() => {
+                          const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
+                          const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
+                          
+                          if (dayBookings.length === 0) {
+                            return (
+                              <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
+                            );
+                          }
+                          
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              {completedCount > 0 && (
+                                <div className={`${isToday ? 'text-white/80' : 'text-green-700 font-bold'}`}>
+                                  {completedCount} completed
                                 </div>
-                                {dayBookings.length > 2 && (
-                                  <div className={isToday ? 'text-white/80 font-bold' : 'text-gray-500 font-bold'}>
-                                    +{dayBookings.length - 2} more
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </>
-                        )}
+                              )}
+                              {pendingCount > 0 && (
+                                <div className={`${isToday ? 'text-white/80' : 'text-amber-600 font-bold'}`}>
+                                  {pendingCount} pending
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );
