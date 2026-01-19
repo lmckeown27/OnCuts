@@ -1062,36 +1062,23 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
         const existingIndex = prevBookings.findIndex(b => b.id === updatedBooking.id);
         
         if (existingIndex !== -1) {
-          // Update existing booking
+          // Update existing booking in place
           const updated = [...prevBookings];
           updated[existingIndex] = {
             ...updated[existingIndex],
-            scheduledTime: updatedBooking.scheduledTime,
-            location: updatedBooking.location,
-            notes: updatedBooking.notes,
-            status: updatedBooking.status,
+            scheduledTime: updatedBooking.scheduledTime || updated[existingIndex].scheduledTime,
+            location: updatedBooking.location !== undefined ? updatedBooking.location : updated[existingIndex].location,
+            notes: updatedBooking.notes !== undefined ? updatedBooking.notes : updated[existingIndex].notes,
+            status: updatedBooking.status || updated[existingIndex].status,
           };
           console.log('📝 Updated booking in list:', updatedBooking.id);
           return updated;
         }
         
-        // If booking doesn't exist and status is ACCEPTED/COMPLETED/PAID, add it
-        if (['ACCEPTED', 'COMPLETED', 'PAID'].includes(updatedBooking.status?.toUpperCase())) {
-          console.log('➕ Adding new booking to list:', updatedBooking.id);
-          return [...prevBookings, {
-            id: updatedBooking.id,
-            scheduledTime: updatedBooking.scheduledTime,
-            location: updatedBooking.location,
-            notes: updatedBooking.notes,
-            status: updatedBooking.status,
-            serviceType: updatedBooking.serviceType,
-            consumer: {
-              firstName: updatedBooking.consumerFirstName || 'Customer',
-              lastName: updatedBooking.consumerLastName || '',
-            },
-          }];
-        }
-        
+        // Booking not in our list - this could be a new booking that was just accepted
+        // Don't add it inline since we don't have all the required data
+        // The parent component will handle new bookings via notification refresh
+        console.log('ℹ️ Booking not in current list, may need refresh:', updatedBooking.id);
         return prevBookings;
       });
     };
