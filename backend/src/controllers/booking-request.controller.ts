@@ -109,21 +109,34 @@ export async function acceptBookingRequest(req: Request, res: Response) {
     // This runs in the background so it doesn't affect the response
     (async () => {
       try {
+        logger.info(`[booking-confirmed] Starting WebSocket emission for bookingId: ${bookingId}, barberId: ${barberId}`);
+        
         // Handle both conv-* prefixed IDs and regular booking IDs
         let actualBookingId = bookingId;
-        if (bookingId.startsWith('conv-')) {
+        const isConversationBased = bookingId.startsWith('conv-');
+        
+        if (isConversationBased) {
+          const conversationId = bookingId.replace('conv-', '');
+          logger.info(`[booking-confirmed] This is a conversation-based booking, conversationId: ${conversationId}`);
+          
           // Get the linked booking_id from the conversation
           const convResult = await pool.query(
             `SELECT booking_id FROM conversations WHERE id = $1`,
-            [bookingId.replace('conv-', '')]
+            [conversationId]
           );
+          logger.info(`[booking-confirmed] Conversation lookup returned ${convResult.rows.length} rows, booking_id: ${convResult.rows[0]?.booking_id || 'NULL'}`);
+          
           if (convResult.rows.length > 0 && convResult.rows[0].booking_id) {
             actualBookingId = convResult.rows[0].booking_id;
+            logger.info(`[booking-confirmed] Using linked booking_id: ${actualBookingId}`);
+          } else {
+            logger.warn(`[booking-confirmed] No linked booking_id found for conversation ${conversationId}, cannot emit event`);
+            return; // Exit early - we can't emit without a booking record
           }
         }
 
         // Get full booking details for the barber's dashboard
-        logger.info(`Looking up booking details for WebSocket emission, bookingId: ${actualBookingId}`);
+        logger.info(`[booking-confirmed] Looking up booking details, actualBookingId: ${actualBookingId}`);
         const bookingResult = await pool.query(
           `SELECT 
             b.id,
@@ -150,20 +163,23 @@ export async function acceptBookingRequest(req: Request, res: Response) {
           [actualBookingId]
         );
         
-        logger.info(`Booking query returned ${bookingResult.rows.length} rows`);
+        logger.info(`[booking-confirmed] Booking query returned ${bookingResult.rows.length} rows`);
         if (bookingResult.rows.length > 0) {
-          logger.info(`Found booking: barber_user_id=${bookingResult.rows[0].barber_user_id}, status=${bookingResult.rows[0].status}`);
+          const b = bookingResult.rows[0];
+          logger.info(`[booking-confirmed] Found booking: id=${b.id}, barber_user_id=${b.barber_user_id}, barberId=${b.barberId}, status=${b.status}`);
+        } else {
+          logger.warn(`[booking-confirmed] No booking found with id: ${actualBookingId}`);
         }
 
         // Emit WebSocket event to barber for live dashboard updates
         const io = getSocketIO();
-        logger.info(`Socket.IO instance available: ${!!io}`);
+        logger.info(`[booking-confirmed] Socket.IO instance available: ${!!io}`);
         if (io && bookingResult.rows.length > 0) {
           const booking = bookingResult.rows[0];
           const barberUserId = booking.barber_user_id;
           
-          logger.info(`Emitting booking-confirmed to room user-${barberUserId}`);
-          io.to(`user-${barberUserId}`).emit('booking-confirmed', {
+          logger.info(`[booking-confirmed] Emitting to room user-${barberUserId}`);
+          const eventData = {
             id: booking.id,
             consumerId: booking.consumerId,
             barberId: booking.barberId,
@@ -179,13 +195,15 @@ export async function acceptBookingRequest(req: Request, res: Response) {
               email: booking.consumer_email,
               profilePictureUrl: booking.consumer_profile_url,
             },
-          });
-          logger.info(`Emitted 'booking-confirmed' event to barber user ${barberUserId} for booking ${actualBookingId}`);
+          };
+          logger.info(`[booking-confirmed] Event data: ${JSON.stringify(eventData)}`);
+          io.to(`user-${barberUserId}`).emit('booking-confirmed', eventData);
+          logger.info(`[booking-confirmed] ✅ Successfully emitted to barber user ${barberUserId}`);
         } else {
-          logger.warn(`Could not emit booking-confirmed: io=${!!io}, rows=${bookingResult.rows.length}`);
+          logger.warn(`[booking-confirmed] ❌ Could not emit: io=${!!io}, rows=${bookingResult.rows.length}`);
         }
       } catch (wsError) {
-        logger.error('Error emitting booking-confirmed WebSocket event:', wsError);
+        logger.error('[booking-confirmed] ❌ Error emitting WebSocket event:', wsError);
         // Don't throw - this is non-blocking
       }
     })();
