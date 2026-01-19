@@ -40,7 +40,7 @@ class MessageService {
           u.first_name as other_user_first_name,
           u.last_name as other_user_last_name,
           u."avatarUrl" as other_user_profile_picture,
-          u.role as other_user_type,
+          CASE WHEN br.id IS NOT NULL THEN 'barber' ELSE COALESCE(u.user_type, u.role, 'consumer') END as other_user_type,
           
           -- BARBER INFO (if other user is barber)
           br.id as barber_id,
