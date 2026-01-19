@@ -9,7 +9,9 @@ class SocketService {
   private isConnected = false;
 
   connect(): void {
+    // If socket exists and is connected, just ensure we're in the right room
     if (this.socket?.connected) {
+      this.joinPersonalRoom();
       return;
     }
 
@@ -19,36 +21,52 @@ class SocketService {
       return;
     }
 
+    // If socket exists but is disconnected, try to reconnect
+    if (this.socket) {
+      console.log('Socket exists but disconnected, attempting reconnect...');
+      this.socket.connect();
+      return;
+    }
+
     this.socket = io(WS_URL, {
       auth: {
         token,
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity, // Keep trying to reconnect
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
 
     this.socket.on('connect', () => {
-      console.log('Socket.IO connected');
+      console.log('✅ Socket.IO connected, socket id:', this.socket?.id);
       this.isConnected = true;
-      
-      // Join personal room
-      const user = localStorage.getItem(STORAGE_KEYS.USER);
-      if (user) {
-        const userId = JSON.parse(user).id;
-        this.socket?.emit('join-personal', userId);
-      }
+      this.joinPersonalRoom();
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Socket.IO disconnected');
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Socket.IO disconnected, reason:', reason);
       this.isConnected = false;
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket.IO connection error:', error);
+      console.error('❌ Socket.IO connection error:', error.message);
     });
+
+    // Log when we successfully rejoin after reconnection
+    this.socket.on('joined-personal', (data) => {
+      console.log('📬 Joined personal room:', data);
+    });
+  }
+
+  private joinPersonalRoom(): void {
+    const user = localStorage.getItem(STORAGE_KEYS.USER);
+    if (user && this.socket) {
+      const userId = JSON.parse(user).id;
+      console.log('🔄 Joining personal room: user-' + userId);
+      this.socket.emit('join-personal', userId);
+    }
   }
 
   disconnect(): void {
