@@ -1420,7 +1420,7 @@ export default function MessagesPage() {
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
+                          {(selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' || selectedConversation.otherUser?.barberInfo?.id) ? 'Barber' : 'Customer'}
                         </p>
                       </div>
                     </div>
@@ -1694,7 +1694,7 @@ export default function MessagesPage() {
                       {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
+                      {(selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' || selectedConversation.otherUser?.barberInfo?.id) ? 'Barber' : 'Customer'}
                     </p>
                   </div>
                 </div>
