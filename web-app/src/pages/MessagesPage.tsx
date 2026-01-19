@@ -650,6 +650,74 @@ export default function MessagesPage() {
     };
   }, [selectedConversation, fetchConversations, scrollToBottom]);
 
+  // Socket.io real-time booking updates (cancellations, edits)
+  useEffect(() => {
+    const handleBookingUpdate = (updatedBooking: any) => {
+      console.log('📬 MessagesPage received booking-update:', updatedBooking);
+      
+      // If booking was cancelled, remove the conversation and close any open modals
+      if (updatedBooking.cancelled || updatedBooking.status?.toUpperCase() === 'CANCELLED') {
+        console.log('🗑️ Booking cancelled, removing conversation');
+        
+        // Find and remove the conversation with this booking
+        setConversations(prev => {
+          const filtered = prev.filter(c => c.booking?.id !== updatedBooking.id);
+          return filtered;
+        });
+        
+        // If the cancelled booking's conversation was selected, close it
+        if (selectedConversation?.booking?.id === updatedBooking.id) {
+          setSelectedConversation(null);
+          setMessages([]);
+          setShowMobileChat(false);
+          setShowServiceDetails(false);
+          toast.info('This booking has been cancelled');
+        }
+        
+        // Close confirmation modal if it was showing for this booking
+        if (deletingConversation?.booking?.id === updatedBooking.id) {
+          setShowDeleteConfirm(false);
+          setDeletingConversation(null);
+        }
+      } else {
+        // Booking was edited, update the conversation's booking data
+        setConversations(prev => prev.map(conv => {
+          if (conv.booking?.id === updatedBooking.id) {
+            return {
+              ...conv,
+              booking: {
+                ...conv.booking,
+                scheduledTime: updatedBooking.scheduledTime || conv.booking.scheduledTime,
+                location: updatedBooking.location !== undefined ? updatedBooking.location : conv.booking.location,
+                status: updatedBooking.status || conv.booking.status,
+              },
+            };
+          }
+          return conv;
+        }));
+        
+        // Update selected conversation if it matches
+        if (selectedConversation?.booking?.id === updatedBooking.id) {
+          setSelectedConversation(prev => prev ? {
+            ...prev,
+            booking: prev.booking ? {
+              ...prev.booking,
+              scheduledTime: updatedBooking.scheduledTime || prev.booking.scheduledTime,
+              location: updatedBooking.location !== undefined ? updatedBooking.location : prev.booking.location,
+              status: updatedBooking.status || prev.booking.status,
+            } : undefined,
+          } : null);
+        }
+      }
+    };
+    
+    socketService.onBookingUpdate(handleBookingUpdate);
+    
+    return () => {
+      socketService.offBookingUpdate(handleBookingUpdate);
+    };
+  }, [selectedConversation, deletingConversation]);
+
   // Scroll to bottom when messages change
   useLayoutEffect(() => {
     if (messages.length > 0) {
