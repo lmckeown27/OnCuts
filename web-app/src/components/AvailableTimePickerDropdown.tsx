@@ -77,8 +77,11 @@ export default function AvailableTimePickerDropdown({
 
   // Fetch availability when date changes
   useEffect(() => {
+    console.log('[AvailableTimePickerDropdown] barberId:', barberId, 'date:', date);
     if (barberId && date) {
       fetchAvailability();
+    } else {
+      console.log('[AvailableTimePickerDropdown] Missing barberId or date, not fetching');
     }
   }, [barberId, date]);
 

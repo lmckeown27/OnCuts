@@ -300,6 +300,11 @@ export default function MessagesPage() {
     setEditTime(scheduledDate.toTimeString().slice(0, 5));
     setEditLocation(booking.location || '');
     
+    console.log('[MessagesPage] startEditingBooking called');
+    console.log('[MessagesPage] Current user type:', user?.user_type, 'user ID:', user?.id);
+    console.log('[MessagesPage] Other user type:', selectedConversation.otherUser?.userType, 'other user ID:', selectedConversation.otherUser?.id);
+    console.log('[MessagesPage] Booking barberId:', booking.barberId);
+    
     // Get barber ID - need to get the barber table ID, not user ID
     let barberId = booking.barberId || '';
     
@@ -309,36 +314,54 @@ export default function MessagesPage() {
     if (!barberId) {
       if (user?.user_type === 'barber') {
         // Current user is the barber - look up their barber ID
+        console.log('[MessagesPage] Looking up barber ID for current user (barber):', user.id);
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${user.id}`, {
+          const url = `${import.meta.env.VITE_API_URL}/api/barbers/user/${user.id}`;
+          console.log('[MessagesPage] Fetching from:', url);
+          const response = await fetch(url, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
             },
           });
+          console.log('[MessagesPage] Response status:', response.status);
           if (response.ok) {
             const data = await response.json();
+            console.log('[MessagesPage] Barber lookup response:', data);
             barberId = data.data?.id || data.id || '';
             console.log('[MessagesPage] Current user is barber, found barber ID:', barberId);
+          } else {
+            const errorText = await response.text();
+            console.error('[MessagesPage] Barber lookup failed:', errorText);
           }
         } catch (error) {
           console.error('Failed to look up barber ID for current user:', error);
         }
       } else if (selectedConversation.otherUser?.userType === 'barber') {
         // Other user is the barber - look up their barber ID
+        console.log('[MessagesPage] Looking up barber ID for other user (barber):', selectedConversation.otherUser.id);
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/barbers/user/${selectedConversation.otherUser.id}`, {
+          const url = `${import.meta.env.VITE_API_URL}/api/barbers/user/${selectedConversation.otherUser.id}`;
+          console.log('[MessagesPage] Fetching from:', url);
+          const response = await fetch(url, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
             },
           });
+          console.log('[MessagesPage] Response status:', response.status);
           if (response.ok) {
             const data = await response.json();
+            console.log('[MessagesPage] Barber lookup response:', data);
             barberId = data.data?.id || data.id || '';
             console.log('[MessagesPage] Other user is barber, found barber ID:', barberId);
+          } else {
+            const errorText = await response.text();
+            console.error('[MessagesPage] Barber lookup failed:', errorText);
           }
         } catch (error) {
           console.error('Failed to look up barber ID for other user:', error);
         }
+      } else {
+        console.log('[MessagesPage] Neither current user nor other user is a barber!');
       }
     }
     
