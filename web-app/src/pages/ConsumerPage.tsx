@@ -24,6 +24,7 @@ import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
 import type { WeeklySchedule } from '../types';
+import socketService from '../services/socket.service';
 
 // Storage keys
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -356,6 +357,53 @@ export default function ConsumerPage() {
       loadUnreadCount();
     }
   }, [user?.id, loadUnreadCount]);
+
+  // WebSocket: Listen for booking completion (payment request) in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    // Ensure socket is connected
+    socketService.connect();
+
+    const handleBookingCompleted = (data: {
+      bookingId: string;
+      barberName: string;
+      serviceName: string;
+      price: number;
+      priceFormatted: string;
+      paymentUrl: string;
+    }) => {
+      console.log('Received booking-completed event:', data);
+      
+      // Show toast notification
+      toast.success(
+        `${data.barberName} completed your ${data.serviceName}. Ready to pay!`,
+        { duration: 5000 }
+      );
+
+      // Open payment modal directly
+      setPaymentModalData({
+        bookingId: data.bookingId,
+        barberName: data.barberName,
+        serviceName: data.serviceName,
+        amount: data.price,
+      });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      setShowPaymentModal(true);
+
+      // Also refresh notifications to add it to the list
+      notificationService.getNotifications().then((notifData) => {
+        setNotifications(notifData.notifications);
+        setUnreadNotifications(notifData.unreadCount);
+      }).catch(console.error);
+    };
+
+    socketService.onBookingCompleted(handleBookingCompleted);
+
+    return () => {
+      socketService.offBookingCompleted(handleBookingCompleted);
+    };
+  }, [user?.id]);
 
   const handleMarkNotificationRead = async (notificationId: string) => {
     try {

@@ -773,6 +773,23 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 
     logger.info(`Booking ${id} marked as COMPLETED by barber ${userId}. Payment request sent to consumer ${booking.consumerId}`);
 
+    // Emit WebSocket event to notify consumer in real-time about payment request
+    if (io) {
+      io.to(`user:${booking.consumerId}`).emit('booking-completed', {
+        bookingId: id,
+        status: 'COMPLETED',
+        barberName: booking.barber_name,
+        serviceName,
+        price: booking.priceUsdCents,
+        priceFormatted,
+        paymentUrl,
+        scheduledDate,
+        scheduledTime,
+        location: booking.location,
+      });
+      logger.info(`Emitted 'booking-completed' event to consumer ${booking.consumerId} for booking ${id}`);
+    }
+
     res.json({
       success: true,
       data: { booking: result.rows[0] },

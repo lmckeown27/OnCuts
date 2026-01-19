@@ -118,6 +118,26 @@ class SocketService {
     this.off('new-booking-request', handler);
   }
 
+  // Booking completed methods (for consumers - payment request)
+  onBookingCompleted(handler: (data: {
+    bookingId: string;
+    status: string;
+    barberName: string;
+    serviceName: string;
+    price: number;
+    priceFormatted: string;
+    paymentUrl: string;
+    scheduledDate: string;
+    scheduledTime: string;
+    location: string;
+  }) => void): void {
+    this.on('booking-completed', handler);
+  }
+
+  offBookingCompleted(handler?: (data: any) => void): void {
+    this.off('booking-completed', handler);
+  }
+
   // Notification methods
   onNotification(handler: (notification: any) => void): void {
     this.on('notification', handler);

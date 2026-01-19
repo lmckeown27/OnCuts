@@ -20,6 +20,7 @@ import PullToRefresh from '../components/PullToRefresh';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import { useBodyScrollLock } from '../hooks';
 import toast from 'react-hot-toast';
+import socketService from '../services/socket.service';
 
 interface ActiveBooking {
   id: string;
@@ -182,6 +183,40 @@ export default function ConsumerBookingStatusPage() {
     };
     fetchNotifications();
   }, [user?.id]);
+
+  // WebSocket: Listen for booking completion (payment request) in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    // Ensure socket is connected
+    socketService.connect();
+
+    const handleBookingCompleted = (data: {
+      bookingId: string;
+      barberName: string;
+      serviceName: string;
+      price: number;
+      priceFormatted: string;
+      paymentUrl: string;
+    }) => {
+      console.log('Received booking-completed event:', data);
+      
+      // Show toast notification
+      toast.success(
+        `${data.barberName} completed your ${data.serviceName}. Time to pay!`,
+        { duration: 5000 }
+      );
+
+      // Navigate directly to payment page
+      navigate(`${platformPrefix}/payment/${data.bookingId}`);
+    };
+
+    socketService.onBookingCompleted(handleBookingCompleted);
+
+    return () => {
+      socketService.offBookingCompleted(handleBookingCompleted);
+    };
+  }, [user?.id, navigate, platformPrefix]);
 
   // Lock body scroll when profile editor is open (must be before any early returns)
   useBodyScrollLock(showProfileEditor);

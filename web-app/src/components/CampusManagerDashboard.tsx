@@ -373,8 +373,8 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   };
 
   if (loading) {
-    return (
-      <div className="space-y-4">
+  return (
+    <div className="space-y-4">
         <Card className="text-center py-8 sm:py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
           <p className="text-gray-500 text-sm sm:text-base">Loading applications...</p>
@@ -407,7 +407,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                     {app.years_experience && (
                       <span className="text-xs text-gray-500">
                         {app.years_experience} years exp.
-                      </span>
+                    </span>
                     )}
                   </div>
                   {app.why_be_barber && (
@@ -567,11 +567,11 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   // Filter barbers based on search
   const filteredBarbers = barbers.filter((barber) => {
     return barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           barber.email.toLowerCase().includes(searchQuery.toLowerCase());
+                         barber.email.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   if (loading) {
-    return (
+  return (
       <div className="space-y-4">
         <Card className="text-center py-8 sm:py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
@@ -597,14 +597,14 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
     <div className="space-y-4 sm:space-y-6">
       {/* Search */}
       <div>
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-4 pr-4 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-        />
-      </div>
+          />
+        </div>
 
       {/* Barbers List */}
       {filteredBarbers.length === 0 ? (
@@ -1192,7 +1192,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   if (showAddModal || editingLocation) {
     return (
       <div className="space-y-4">
-        <button 
+          <button
           onClick={() => {
             setShowAddModal(false);
             setEditingLocation(null);
@@ -1384,7 +1384,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                           className="text-xs text-red-600 hover:text-red-700 hover:bg-red-100 px-2 py-1 rounded transition-colors"
                         >
                           Revoke
-                        </button>
+          </button>
                       ) : (
                         <span className="text-xs text-primary-600">Click to assign</span>
                       )}
@@ -1444,7 +1444,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           
           {/* Requested Locations - Only show if there are pending requests */}
           {pendingLocations.length > 0 && (
-            <button
+          <button
               onClick={() => setActiveSubTab('requested')}
               className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 flex items-center gap-1.5 ${
                 activeSubTab === 'requested'
@@ -1456,7 +1456,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
               <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
                 {pendingLocations.length}
               </span>
-            </button>
+          </button>
           )}
           
           <button
@@ -1470,7 +1470,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             Locations
           </button>
         </nav>
-      </div>
+        </div>
 
       {/* Barbers Subtab Content */}
       {activeSubTab === 'barbers' && (
@@ -1478,8 +1478,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-semibold text-gray-900">Barber Location Assignments</h4>
           <p className="text-xs text-gray-500">{campusBarbers.length} barbers</p>
-        </div>
-        
+      </div>
+
         {loadingBarberAssignments ? (
           <Card className="text-center py-8">
             <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
@@ -1489,9 +1489,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           <Card className="text-center py-8 bg-gray-50">
             <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-600 font-medium">No barbers found</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
+        </Card>
+      ) : (
+        <div className="space-y-3">
             {barbersWithLocations.map((barber) => (
               <Card key={barber.id} className="overflow-hidden">
                 {/* Barber Header */}
@@ -1511,9 +1511,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       ) : (
                         <span className="text-primary-600 font-semibold text-sm">
                           {barber.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                      </span>
+                    )}
+                  </div>
                     <div>
                       <p className="font-semibold text-gray-900">{barber.name}</p>
                       <p className="text-xs text-gray-500">
@@ -1554,8 +1554,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                  </div>
-                </div>
+                    </div>
+                    </div>
                 
                 {/* Expanded Content - Just assigned locations */}
                 {expandedBarbers.has(barber.id) && (
@@ -1588,9 +1588,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 )}
               </Card>
             ))}
-          </div>
+                    </div>
         )}
-        </div>
+                    </div>
       )}
 
       {/* Requested Locations Subtab Content */}
@@ -1599,7 +1599,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
           <div className="flex items-center gap-2 mb-3">
             <Clock className="w-4 h-4 text-amber-500" />
             <h4 className="font-semibold text-amber-700">Pending Requests ({pendingLocations.length})</h4>
-          </div>
+                    </div>
           <div className="space-y-3">
             {pendingLocations.map((location) => (
               <Card key={location.id} className="p-4 border-amber-200 bg-amber-50">
@@ -1619,40 +1619,40 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       <span>Requested by <strong>{location.created_by_name || location.created_by_email}</strong></span>
                       <span className="text-gray-400">•</span>
                       <span>{new Date(location.created_at).toLocaleDateString()}</span>
-                    </div>
                   </div>
+                </div>
 
                   <div className="flex items-center gap-2">
-                    <Button
+                  <Button 
                       variant="primary"
-                      size="sm"
+                    size="sm"
                       onClick={() => openApprovalModal(location)}
                       disabled={saving}
-                    >
+                  >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                       onClick={() => handleRejectLocation(location.id)}
                       disabled={saving}
                       className="text-red-600 border-red-300 hover:bg-red-50"
-                    >
+                  >
                       <XCircle className="w-4 h-4 mr-1" />
                       Reject
-                    </Button>
-                  </div>
+                  </Button>
                 </div>
-              </Card>
-            ))}
+              </div>
+            </Card>
+          ))}
           </div>
         </div>
       )}
 
       {/* Approved Locations Subtab Content */}
       {activeSubTab === 'approved' && (
-        <div>
+          <div>
           {approvedLocations.length === 0 ? (
             <Card className="text-center py-8 sm:py-12">
               <MapPin className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
@@ -1722,9 +1722,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
-                  </div>
-                </div>
-              </Card>
+          </div>
+        </div>
+      </Card>
             ))}
             </div>
           )}
@@ -1760,10 +1760,10 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 <p className="text-xs text-gray-500 mt-2">
                   Requested by {approvalLocation.created_by_name || approvalLocation.created_by_email}
                 </p>
-              </div>
+    </div>
 
               {/* Availability Setting */}
-              <div>
+      <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Who should be able to use this location?
                 </label>
@@ -1807,8 +1807,8 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       <p className="text-xs text-gray-500">Assign to a different barber</p>
                     </div>
                   </label>
-                </div>
-                
+      </div>
+
                 {!approvalData.isUniversal && (
                   <div className="mt-3">
                     <select
@@ -1823,12 +1823,12 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     </select>
                   </div>
                 )}
-              </div>
+          </div>
 
               <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
+            <Button
+              variant="outline"
+              onClick={() => {
                     setApprovalLocation(null);
                     setApprovalData({ isUniversal: true, restrictedToBarberId: '' });
                   }}
@@ -1854,9 +1854,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       Approve Location
                     </>
                   )}
-                </Button>
-              </div>
-            </div>
+            </Button>
+          </div>
+        </div>
           </div>
         </div>
       )}
@@ -1887,7 +1887,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                   They will need to select new locations.
                 </p>
               )}
-              <div className="flex gap-3">
+        <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setDeleteConfirm(null)}
@@ -1911,9 +1911,9 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     'Delete Location'
                   )}
                 </Button>
-              </div>
-            </div>
           </div>
+        </div>
+      </div>
         </div>
       )}
     </div>
@@ -2038,7 +2038,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   });
 
   if (loading) {
-    return (
+  return (
       <Card className="text-center py-8">
         <RefreshCw className="w-8 h-8 text-primary-400 mx-auto mb-3 animate-spin" />
         <p className="text-gray-600">Loading bookings...</p>
@@ -2097,8 +2097,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               <p className="text-xs text-gray-500 mb-1">Status</p>
               <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' || selectedBooking.paidAt ? 'text-green-600' : 'text-amber-600'}`}>
                 {selectedBooking.status === 'PAID' || selectedBooking.paidAt ? 'Paid' : 'Awaiting Payment'}
-              </p>
-            </div>
+        </p>
+      </div>
           </div>
           {selectedBooking.location && (
             <div className="p-3 bg-gray-50 rounded-lg mt-4">
@@ -2211,13 +2211,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                       ) : (
                         <Users className="w-5 h-5 text-gray-400" />
                       )}
-                    </div>
+                  </div>
                     <div>
                       <p className="font-semibold text-gray-900">{booking.barberName}</p>
                       <p className="text-sm text-gray-600">{booking.serviceType}</p>
-                    </div>
                   </div>
-                  
+              </div>
+
                   <div className="text-sm text-gray-600 space-y-1 ml-13">
                     <p><span className="text-gray-500">Customer:</span> {booking.consumerName}</p>
                     <p><span className="text-gray-500">Date:</span> {formatDate(booking.scheduledTime)}</p>
@@ -2227,11 +2227,11 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                     {booking.notes && (
                       <p className="italic text-gray-500">"{booking.notes}"</p>
                     )}
-                  </div>
+              </div>
 
                   {/* Tap hint on mobile */}
                   <p className="text-xs text-green-500 mt-2 sm:hidden">Tap for details →</p>
-                </div>
+              </div>
 
                 {/* Right side - price and review */}
                 <div className="flex items-start gap-2">
