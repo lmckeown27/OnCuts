@@ -410,6 +410,30 @@ export default function MessagesPage() {
     try {
       const scheduledTime = new Date(`${editDate}T${editTime}`).toISOString();
       
+      // Track what changed for the success message
+      const originalDate = selectedConversation.booking.scheduledTime 
+        ? new Date(selectedConversation.booking.scheduledTime) 
+        : null;
+      const newDate = new Date(scheduledTime);
+      const originalLocation = selectedConversation.booking.location || '';
+      
+      const changes: string[] = [];
+      
+      // Check if date changed
+      if (originalDate && originalDate.toDateString() !== newDate.toDateString()) {
+        changes.push('date');
+      }
+      
+      // Check if time changed
+      if (originalDate && (originalDate.getHours() !== newDate.getHours() || originalDate.getMinutes() !== newDate.getMinutes())) {
+        changes.push('time');
+      }
+      
+      // Check if location changed
+      if (editLocation !== originalLocation) {
+        changes.push('location');
+      }
+      
       const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/${selectedConversation.booking.id}`, {
         method: 'PATCH',
         headers: {
@@ -441,8 +465,21 @@ export default function MessagesPage() {
           : conv
       ));
 
-      toast.success('Booking updated successfully');
+      // Build success message
+      let successMessage = 'Booking ';
+      if (changes.length === 0) {
+        successMessage = 'No changes were made';
+      } else if (changes.length === 1) {
+        successMessage += `${changes[0]} has been successfully changed`;
+      } else if (changes.length === 2) {
+        successMessage += `${changes[0]} and ${changes[1]} have been successfully changed`;
+      } else {
+        successMessage += `${changes.slice(0, -1).join(', ')}, and ${changes[changes.length - 1]} have been successfully changed`;
+      }
+      
+      toast.success(successMessage);
       setIsEditingBooking(false);
+      setShowServiceDetails(false); // Close the mobile modal
     } catch (error) {
       console.error('Failed to update booking:', error);
       toast.error('Failed to update booking');
