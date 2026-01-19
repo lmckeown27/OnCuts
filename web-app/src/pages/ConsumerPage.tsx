@@ -1118,12 +1118,20 @@ function DiscoveryView({ navigate }: { navigate: any }) {
     try {
       setLoading(true);
       
-      // Pass user location to backend for distance-based sorting
+      // Pass user location AND campusId to backend
+      // When campusId is provided, ALL barbers for that campus are shown (regardless of distance)
       let response;
       if (latitude && longitude) {
-        response = await barberService.getBarbersByLocation(latitude, longitude);
+        // Pass selectedUniversity.id to show all barbers assigned to that campus
+        response = await barberService.getBarbersByLocation(
+          latitude, 
+          longitude, 
+          {}, // filters
+          8, // maxDistanceKm (only used when no campusId)
+          selectedUniversity?.id // campusId - shows all barbers for this campus
+        );
       } else {
-        response = await barberService.getBarbers();
+        response = await barberService.getBarbers({ campus_id: selectedUniversity?.id });
       }
       
       const barbersData = response.data || [];

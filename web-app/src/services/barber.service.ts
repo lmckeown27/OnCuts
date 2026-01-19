@@ -22,20 +22,22 @@ class BarberService {
 
   /**
    * Get barbers sorted by distance from user's location
-   * Default max distance: 8km (~5 miles) - reasonable for university students
-   * This prevents accidentally booking barbers too far away
+   * When campusId is provided, shows ALL barbers for that campus (regardless of distance)
+   * Distance is still calculated for display purposes
    */
   async getBarbersByLocation(
     latitude: number, 
     longitude: number, 
     filters: Omit<BarberFilters, 'lat' | 'lng'> = {},
-    maxDistanceKm: number = 8 // Default: 8km (~5 miles)
+    maxDistanceKm: number = 8, // Default: 8km (~5 miles) - only applies when no campusId
+    campusId?: string // When provided, shows all barbers for this campus
   ): Promise<PaginatedResponse<Barber>> {
     return await api.get<PaginatedResponse<Barber>>('/barbers', {
       ...filters,
       lat: latitude,
       lng: longitude,
       maxDistance: maxDistanceKm,
+      campusId, // Pass campusId to disable distance filtering
     });
   }
 
