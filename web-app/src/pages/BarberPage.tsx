@@ -534,7 +534,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
+        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onRefreshBookings={handleBookingUpdated} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -948,7 +948,7 @@ interface DashboardViewProps {
   navigate: any;
   barberId: string;
   onViewDetails: (booking: any) => void;
-  // onWalkInClick: () => void; // Walk-in feature disabled
+  onRefreshBookings?: () => void; // Callback to trigger refresh without opening modal
   refreshKey?: number;
   campusTimezone?: string;
 }
@@ -977,7 +977,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   
@@ -1370,7 +1370,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       
       toast.success(successMessage);
       closeDayModal(); // Close the modal entirely
-      onViewDetails(selectedBookingInline); // Refresh bookings
+      if (onRefreshBookings) onRefreshBookings(); // Trigger refresh without reopening modal
     } catch (error: any) {
       console.error('Failed to update booking:', error);
       toast.error(error.message || 'Failed to update booking');
@@ -1390,7 +1390,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
       });
       toast.success('Booking cancelled successfully');
       closeDayModal();
-      onViewDetails(selectedBookingInline); // Trigger refresh
+      if (onRefreshBookings) onRefreshBookings(); // Trigger refresh without reopening modal
     } catch (error: any) {
       console.error('Failed to cancel booking:', error);
       toast.error(error.message || 'Failed to cancel booking');
