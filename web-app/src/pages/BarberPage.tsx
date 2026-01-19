@@ -2447,7 +2447,8 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   };
 
   const getStatusBadge = (booking: any) => {
-    if (booking.status === 'PAID') {
+    // Check for payment by status OR paidAt field
+    if (booking.status === 'PAID' || booking.paidAt) {
       return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">Paid</span>;
     }
     if (booking.status === 'COMPLETED') {
@@ -2537,7 +2538,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                   <div 
                     key={booking.id} 
                     className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                      booking.status === 'PAID'
+                      booking.status === 'PAID' || booking.paidAt
                         ? 'bg-gray-50 border-gray-200 hover:border-gray-400'
                         : isPaymentDue(booking) || booking.status === 'COMPLETED'
                           ? 'bg-amber-50 border-amber-200 hover:border-amber-400'

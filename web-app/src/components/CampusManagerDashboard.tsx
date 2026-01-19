@@ -2095,8 +2095,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Status</p>
-              <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' ? 'text-green-600' : 'text-amber-600'}`}>
-                {selectedBooking.status === 'PAID' ? 'Paid' : 'Awaiting Payment'}
+              <p className={`font-semibold text-sm ${selectedBooking.status === 'PAID' || selectedBooking.paidAt ? 'text-green-600' : 'text-amber-600'}`}>
+                {selectedBooking.status === 'PAID' || selectedBooking.paidAt ? 'Paid' : 'Awaiting Payment'}
               </p>
             </div>
           </div>
