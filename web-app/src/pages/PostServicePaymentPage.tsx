@@ -18,6 +18,7 @@ import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { CampusCutLogo } from '@assets';
 import toast from 'react-hot-toast';
+import socketService from '../services/socket.service';
 
 // Load Stripe - use your publishable key
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
@@ -372,6 +373,40 @@ export default function PostServicePaymentPage() {
 
   useEffect(() => {
     fetchBooking();
+  }, [bookingId]);
+
+  // Listen for payment-received WebSocket event (for barber view)
+  useEffect(() => {
+    if (!bookingId) return;
+
+    // Connect to socket service
+    socketService.connect();
+
+    const handlePaymentReceived = (data: {
+      bookingId: string;
+      consumerId: string;
+      consumerName: string;
+      amountPaid: number;
+      tipAmount: number;
+      totalFormatted: string;
+      tipFormatted?: string;
+    }) => {
+      console.log('📬 Payment received WebSocket event:', data);
+      
+      // Check if this is for the current booking
+      if (data.bookingId === bookingId) {
+        toast.success(`Payment received: ${data.totalFormatted}${data.tipFormatted ? ` (includes ${data.tipFormatted} tip)` : ''}`);
+        setStep('review'); // Move to "Payment Confirmed" view
+        // Refresh booking data
+        fetchBooking();
+      }
+    };
+
+    socketService.onPaymentReceived(handlePaymentReceived);
+
+    return () => {
+      socketService.offPaymentReceived(handlePaymentReceived);
+    };
   }, [bookingId]);
 
   const fetchBooking = async () => {

@@ -181,6 +181,23 @@ class SocketService {
     this.off('booking-confirmed', handler);
   }
 
+  // Payment received methods (for barbers - when consumer pays)
+  onPaymentReceived(handler: (data: {
+    bookingId: string;
+    consumerId: string;
+    consumerName: string;
+    amountPaid: number;
+    tipAmount: number;
+    totalFormatted: string;
+    tipFormatted?: string;
+  }) => void): void {
+    this.on('payment-received', handler);
+  }
+
+  offPaymentReceived(handler?: (data: any) => void): void {
+    this.off('payment-received', handler);
+  }
+
   // Notification methods
   onNotification(handler: (notification: any) => void): void {
     this.on('notification', handler);

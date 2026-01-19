@@ -1125,9 +1125,31 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
     
     socketService.onBookingConfirmed(handleBookingConfirmed);
     
+    // Listen for payment received events (when consumer pays)
+    const handlePaymentReceived = (data: {
+      bookingId: string;
+      consumerName: string;
+      totalFormatted: string;
+      tipFormatted?: string;
+    }) => {
+      console.log('💰 Received payment-received event:', data);
+      toast.success(
+        `Payment received from ${data.consumerName}: ${data.totalFormatted}${data.tipFormatted ? ` (includes ${data.tipFormatted} tip)` : ''}`,
+        { duration: 5000 }
+      );
+      
+      // Remove the booking from the dashboard since it's now completed
+      setConfirmedBookings(prevBookings => 
+        prevBookings.filter(b => b.id !== data.bookingId)
+      );
+    };
+    
+    socketService.onPaymentReceived(handlePaymentReceived);
+    
     return () => {
       socketService.offBookingUpdate(handleBookingUpdate);
       socketService.offBookingConfirmed(handleBookingConfirmed);
+      socketService.offPaymentReceived(handlePaymentReceived);
     };
   }, []);
 
