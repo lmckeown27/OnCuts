@@ -517,5 +517,10 @@ process.on('SIGINT', async () => {
 // Export Socket.IO instance for use in services
 export { io };
 
+// Getter function for io to avoid circular dependency issues
+export function getSocketIO() {
+  return io;
+}
+
 export default app;
 

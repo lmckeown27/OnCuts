@@ -9,7 +9,7 @@ import { logger } from '../utils/logger';
 import { bookingRequestService } from '../services/booking-request.service';
 import { bookingMessagingService } from '../services/booking-messaging.service';
 import { pool } from '../database/connection';
-import { io } from '../index';
+import { getSocketIO } from '../index';
 
 /**
  * POST /api/booking-requests
@@ -105,71 +105,80 @@ export async function acceptBookingRequest(req: Request, res: Response) {
 
     await bookingRequestService.acceptBookingRequest(bookingId, barberId, message);
 
-    // Fetch the booking details for WebSocket emission
-    // Handle both conv-* prefixed IDs and regular booking IDs
-    let actualBookingId = bookingId;
-    if (bookingId.startsWith('conv-')) {
-      // Get the linked booking_id from the conversation
-      const convResult = await pool.query(
-        `SELECT booking_id FROM conversations WHERE id = $1`,
-        [bookingId.replace('conv-', '')]
-      );
-      if (convResult.rows.length > 0 && convResult.rows[0].booking_id) {
-        actualBookingId = convResult.rows[0].booking_id;
+    // Emit WebSocket event to barber for live dashboard updates (non-blocking)
+    // This runs in the background so it doesn't affect the response
+    (async () => {
+      try {
+        // Handle both conv-* prefixed IDs and regular booking IDs
+        let actualBookingId = bookingId;
+        if (bookingId.startsWith('conv-')) {
+          // Get the linked booking_id from the conversation
+          const convResult = await pool.query(
+            `SELECT booking_id FROM conversations WHERE id = $1`,
+            [bookingId.replace('conv-', '')]
+          );
+          if (convResult.rows.length > 0 && convResult.rows[0].booking_id) {
+            actualBookingId = convResult.rows[0].booking_id;
+          }
+        }
+
+        // Get full booking details for the barber's dashboard
+        const bookingResult = await pool.query(
+          `SELECT 
+            b.id,
+            b."consumerId",
+            b."barberId",
+            b."serviceType",
+            b."priceUsdCents",
+            b."requestedAt" as "scheduledTime",
+            b.status,
+            b."createdAt",
+            c.location,
+            c.notes,
+            c.service_name,
+            consumer.first_name as consumer_first_name,
+            consumer.last_name as consumer_last_name,
+            consumer.email as consumer_email,
+            consumer.profile_picture_url as consumer_profile_url,
+            barber."userId" as barber_user_id
+          FROM bookings b
+          LEFT JOIN conversations c ON c.booking_id = b.id
+          LEFT JOIN users consumer ON b."consumerId" = consumer.id
+          LEFT JOIN barbers barber ON b."barberId" = barber.id
+          WHERE b.id = $1`,
+          [actualBookingId]
+        );
+
+        // Emit WebSocket event to barber for live dashboard updates
+        const io = getSocketIO();
+        if (io && bookingResult.rows.length > 0) {
+          const booking = bookingResult.rows[0];
+          const barberUserId = booking.barber_user_id;
+          
+          io.to(`user:${barberUserId}`).emit('booking-confirmed', {
+            id: booking.id,
+            consumerId: booking.consumerId,
+            barberId: booking.barberId,
+            serviceType: booking.service_name || booking.serviceType,
+            priceUsdCents: booking.priceUsdCents,
+            scheduledTime: booking.scheduledTime,
+            status: 'ACCEPTED',
+            location: booking.location,
+            notes: booking.notes,
+            consumer: {
+              firstName: booking.consumer_first_name,
+              lastName: booking.consumer_last_name,
+              email: booking.consumer_email,
+              profilePictureUrl: booking.consumer_profile_url,
+            },
+          });
+          logger.info(`Emitted 'booking-confirmed' event to barber ${barberUserId} for booking ${actualBookingId}`);
+        }
+      } catch (wsError) {
+        logger.error('Error emitting booking-confirmed WebSocket event:', wsError);
+        // Don't throw - this is non-blocking
       }
-    }
-
-    // Get full booking details for the barber's dashboard
-    const bookingResult = await pool.query(
-      `SELECT 
-        b.id,
-        b."consumerId",
-        b."barberId",
-        b."serviceType",
-        b."priceUsdCents",
-        b."requestedAt" as "scheduledTime",
-        b.status,
-        b."createdAt",
-        c.location,
-        c.notes,
-        c.service_name,
-        consumer.first_name as consumer_first_name,
-        consumer.last_name as consumer_last_name,
-        consumer.email as consumer_email,
-        consumer.profile_picture_url as consumer_profile_url,
-        barber."userId" as barber_user_id
-      FROM bookings b
-      LEFT JOIN conversations c ON c.booking_id = b.id
-      LEFT JOIN users consumer ON b."consumerId" = consumer.id
-      LEFT JOIN barbers barber ON b."barberId" = barber.id
-      WHERE b.id = $1`,
-      [actualBookingId]
-    );
-
-    // Emit WebSocket event to barber for live dashboard updates
-    if (io && bookingResult.rows.length > 0) {
-      const booking = bookingResult.rows[0];
-      const barberUserId = booking.barber_user_id;
-      
-      io.to(`user:${barberUserId}`).emit('booking-confirmed', {
-        id: booking.id,
-        consumerId: booking.consumerId,
-        barberId: booking.barberId,
-        serviceType: booking.service_name || booking.serviceType,
-        priceUsdCents: booking.priceUsdCents,
-        scheduledTime: booking.scheduledTime,
-        status: 'ACCEPTED',
-        location: booking.location,
-        notes: booking.notes,
-        consumer: {
-          firstName: booking.consumer_first_name,
-          lastName: booking.consumer_last_name,
-          email: booking.consumer_email,
-          profilePictureUrl: booking.consumer_profile_url,
-        },
-      });
-      logger.info(`Emitted 'booking-confirmed' event to barber ${barberUserId} for booking ${actualBookingId}`);
-    }
+    })();
 
     res.json({
       success: true,
