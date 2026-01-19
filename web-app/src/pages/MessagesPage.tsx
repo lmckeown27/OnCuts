@@ -42,9 +42,18 @@ import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
+import DatePicker from '../components/DatePicker';
+import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import { CampusCutLogo } from '@assets';
 import type { Conversation, Message } from '../types';
 import toast from 'react-hot-toast';
+
+interface BarberLocation {
+  id: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+}
 
 interface ConversationWithDetails extends Conversation {
   booking?: {
@@ -139,6 +148,9 @@ export default function MessagesPage() {
   const [editTime, setEditTime] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
+  const [editBarberId, setEditBarberId] = useState<string>('');
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -280,13 +292,39 @@ export default function MessagesPage() {
   };
 
   // Start editing booking
-  const startEditingBooking = () => {
+  const startEditingBooking = async () => {
     if (!selectedConversation?.booking) return;
     const booking = selectedConversation.booking;
     const scheduledDate = new Date(booking.scheduledTime);
     setEditDate(scheduledDate.toISOString().split('T')[0]);
     setEditTime(scheduledDate.toTimeString().slice(0, 5));
     setEditLocation(booking.location || '');
+    
+    // Get barber ID - either from booking or from otherUser if they are the barber
+    const barberId = booking.barberId || 
+      (selectedConversation.otherUser?.userType === 'barber' ? selectedConversation.otherUser.id : '');
+    setEditBarberId(barberId);
+    
+    // Fetch barber's available locations
+    if (barberId) {
+      try {
+        setLocationsLoading(true);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/locations/for-booking/${barberId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setBarberLocations(data.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber locations:', error);
+      } finally {
+        setLocationsLoading(false);
+      }
+    }
+    
     setIsEditingBooking(true);
   };
 
@@ -1169,20 +1207,44 @@ export default function MessagesPage() {
                   </div>
 
                   {/* Date & Time */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-xs">Date</span>
-                      </div>
-                      {isEditingBooking ? (
-                        <input
-                          type="date"
+                  {isEditingBooking ? (
+                    <div className="space-y-3">
+                      {/* Date Picker */}
+                      <div className="p-3 bg-gray-50 rounded-xl">
+                        <DatePicker
+                          label="Date"
                           value={editDate}
-                          onChange={(e) => setEditDate(e.target.value)}
-                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                          onChange={(newDate) => {
+                            setEditDate(newDate);
+                            setEditTime(''); // Reset time when date changes
+                          }}
+                          minDate={new Date().toISOString().split('T')[0]}
+                          required
                         />
-                      ) : (
+                      </div>
+                      
+                      {/* Time Picker */}
+                      <div className="p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-1.5 text-gray-500 mb-2">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">Time</span>
+                        </div>
+                        <AvailableTimePickerDropdown
+                          barberId={editBarberId}
+                          date={editDate}
+                          value={editTime}
+                          onChange={(value) => setEditTime(value)}
+                          disabled={!editDate}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span className="text-xs">Date</span>
+                        </div>
                         <p className="font-medium text-gray-900 text-sm">
                           {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
                             weekday: 'short',
@@ -1190,30 +1252,21 @@ export default function MessagesPage() {
                             day: 'numeric'
                           })}
                         </p>
-                      )}
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span className="text-xs">Time</span>
                       </div>
-                      {isEditingBooking ? (
-                        <input
-                          type="time"
-                          value={editTime}
-                          onChange={(e) => setEditTime(e.target.value)}
-                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                        />
-                      ) : (
+                      <div className="p-3 bg-gray-50 rounded-xl">
+                        <div className="flex items-center gap-1.5 text-gray-500 mb-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span className="text-xs">Time</span>
+                        </div>
                         <p className="font-medium text-gray-900 text-sm">
                           {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
                             hour: 'numeric', 
                             minute: '2-digit'
                           })}
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Location */}
                   <div className="p-3 bg-gray-50 rounded-xl">
@@ -1222,13 +1275,30 @@ export default function MessagesPage() {
                       <span className="text-xs">Location</span>
                     </div>
                     {isEditingBooking ? (
-                      <input
-                        type="text"
-                        value={editLocation}
-                        onChange={(e) => setEditLocation(e.target.value)}
-                        placeholder="Enter location"
-                        className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                      />
+                      locationsLoading ? (
+                        <div className="text-sm text-gray-500 py-1">Loading locations...</div>
+                      ) : barberLocations.length > 0 ? (
+                        <select
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        >
+                          <option value="">Select a location</option>
+                          {barberLocations.map((loc) => (
+                            <option key={loc.id} value={loc.name}>
+                              {loc.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={editLocation}
+                          onChange={(e) => setEditLocation(e.target.value)}
+                          placeholder="Enter location"
+                          className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        />
+                      )
                     ) : (
                       <p className="font-medium text-gray-900 text-sm">{selectedConversation.booking.location || 'TBD'}</p>
                     )}
@@ -1401,20 +1471,44 @@ export default function MessagesPage() {
               </div>
 
               {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-xs">Date</span>
-                  </div>
-                  {isEditingBooking ? (
-                    <input
-                      type="date"
+              {isEditingBooking ? (
+                <div className="space-y-4">
+                  {/* Date Picker */}
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <DatePicker
+                      label="Date"
                       value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      onChange={(newDate) => {
+                        setEditDate(newDate);
+                        setEditTime(''); // Reset time when date changes
+                      }}
+                      minDate={new Date().toISOString().split('T')[0]}
+                      required
                     />
-                  ) : (
+                  </div>
+                  
+                  {/* Time Picker */}
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-2 text-gray-500 mb-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-xs font-medium">Time</span>
+                    </div>
+                    <AvailableTimePickerDropdown
+                      barberId={editBarberId}
+                      date={editDate}
+                      value={editTime}
+                      onChange={(value) => setEditTime(value)}
+                      disabled={!editDate}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-2 text-gray-500 mb-1">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-xs">Date</span>
+                    </div>
                     <p className="font-medium text-gray-900">
                       {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
                         weekday: 'short',
@@ -1423,30 +1517,21 @@ export default function MessagesPage() {
                         year: 'numeric'
                       })}
                     </p>
-                  )}
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-xs">Time</span>
                   </div>
-                  {isEditingBooking ? (
-                    <input
-                      type="time"
-                      value={editTime}
-                      onChange={(e) => setEditTime(e.target.value)}
-                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                    />
-                  ) : (
+                  <div className="p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center gap-2 text-gray-500 mb-1">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-xs">Time</span>
+                    </div>
                     <p className="font-medium text-gray-900">
                       {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
                         hour: 'numeric', 
                         minute: '2-digit'
                       })}
                     </p>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Location */}
               <div className="p-4 bg-gray-50 rounded-xl">
@@ -1455,13 +1540,30 @@ export default function MessagesPage() {
                   <span className="text-xs">Location</span>
                 </div>
                 {isEditingBooking ? (
-                  <input
-                    type="text"
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    placeholder="Enter location"
-                    className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                  />
+                  locationsLoading ? (
+                    <div className="text-sm text-gray-500 py-1">Loading locations...</div>
+                  ) : barberLocations.length > 0 ? (
+                    <select
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    >
+                      <option value="">Select a location</option>
+                      {barberLocations.map((loc) => (
+                        <option key={loc.id} value={loc.name}>
+                          {loc.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      placeholder="Enter location"
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    />
+                  )
                 ) : (
                   <>
                     <p className="font-medium text-gray-900">{selectedConversation.booking.location || 'TBD'}</p>
