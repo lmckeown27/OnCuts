@@ -783,7 +783,7 @@ export default function MessagesPage() {
                       <span className="text-xs">{new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       selectedConversation.booking.status === 'accepted' || selectedConversation.booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
                       selectedConversation.booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
