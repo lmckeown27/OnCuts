@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails, sendBookingCancellationEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
+import { io } from '../index';
 
 const router = express.Router();
 
@@ -1660,6 +1661,24 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     logger.info(`Booking ${id} updated by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
 
+    // Emit booking-update event via WebSocket for live updates
+    const bookingUpdate = {
+      id,
+      scheduledTime: updatedScheduledTime,
+      location: updatedLocation,
+      notes: updatedNotes,
+      status: booking.status,
+      barberId: booking.barberId,
+      consumerId: booking.consumerId,
+      serviceType: booking.serviceType,
+      updatedBy: isBarber ? 'barber' : 'consumer',
+    };
+    
+    // Emit to both barber and consumer's personal rooms
+    io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
+    io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
+    logger.info(`Emitted booking-update event for booking ${id}`);
+
     res.json({
       success: true,
       message: 'Booking updated successfully',
@@ -1805,6 +1824,21 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     });
 
     logger.info(`Booking ${id} cancelled by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
+
+    // Emit booking-update event via WebSocket for live updates
+    const bookingUpdate = {
+      id,
+      status: 'CANCELLED',
+      barberId: booking.barberId,
+      consumerId: booking.consumerId,
+      updatedBy: isBarber ? 'barber' : 'consumer',
+      cancelled: true,
+    };
+    
+    // Emit to both barber and consumer's personal rooms
+    io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
+    io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
+    logger.info(`Emitted booking-update event for cancelled booking ${id}`);
 
     res.json({
       success: true,

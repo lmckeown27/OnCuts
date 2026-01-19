@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
+import socketService from '../services/socket.service';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -1041,6 +1042,66 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
     
     fetchConfirmedBookings();
   }, [refreshKey]);
+
+  // Listen for live booking updates via WebSocket
+  useEffect(() => {
+    // Ensure socket is connected
+    socketService.connect();
+    
+    const handleBookingUpdate = (updatedBooking: any) => {
+      console.log('📬 Received booking-update event:', updatedBooking);
+      
+      setConfirmedBookings(prevBookings => {
+        // If booking was cancelled, remove it from the list
+        if (updatedBooking.cancelled || updatedBooking.status?.toUpperCase() === 'CANCELLED') {
+          console.log('🗑️ Removing cancelled booking from list:', updatedBooking.id);
+          return prevBookings.filter(b => b.id !== updatedBooking.id);
+        }
+        
+        // Check if this booking already exists in our list
+        const existingIndex = prevBookings.findIndex(b => b.id === updatedBooking.id);
+        
+        if (existingIndex !== -1) {
+          // Update existing booking
+          const updated = [...prevBookings];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            scheduledTime: updatedBooking.scheduledTime,
+            location: updatedBooking.location,
+            notes: updatedBooking.notes,
+            status: updatedBooking.status,
+          };
+          console.log('📝 Updated booking in list:', updatedBooking.id);
+          return updated;
+        }
+        
+        // If booking doesn't exist and status is ACCEPTED/COMPLETED/PAID, add it
+        if (['ACCEPTED', 'COMPLETED', 'PAID'].includes(updatedBooking.status?.toUpperCase())) {
+          console.log('➕ Adding new booking to list:', updatedBooking.id);
+          return [...prevBookings, {
+            id: updatedBooking.id,
+            scheduledTime: updatedBooking.scheduledTime,
+            location: updatedBooking.location,
+            notes: updatedBooking.notes,
+            status: updatedBooking.status,
+            serviceType: updatedBooking.serviceType,
+            consumer: {
+              firstName: updatedBooking.consumerFirstName || 'Customer',
+              lastName: updatedBooking.consumerLastName || '',
+            },
+          }];
+        }
+        
+        return prevBookings;
+      });
+    };
+    
+    socketService.onBookingUpdate(handleBookingUpdate);
+    
+    return () => {
+      socketService.offBookingUpdate(handleBookingUpdate);
+    };
+  }, []);
 
   // Touch/swipe state for switching views
   const touchStartX = useRef<number | null>(null);
