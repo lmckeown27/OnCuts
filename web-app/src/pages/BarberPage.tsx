@@ -469,7 +469,7 @@ export default function BarberPage() {
                       </span>
                     )}
                   </button>
-                  {/* Barber Chats & Chat with Campus Manager (for non-CM barbers) */}
+                  {/* Barber Chats (for non-CM barbers) */}
                   {!isCampusManager && (
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
@@ -481,23 +481,6 @@ export default function BarberPage() {
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Barber Chats
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            setShowProfileDropdown(false);
-                            const messageService = (await import('../services/message.service')).default;
-                            const result = await messageService.startCMBarberConversation();
-                            navigate(`${platformPrefix}/barber/messages/${result.conversationId}`);
-                          } catch (error: any) {
-                            console.error('Failed to start CM conversation:', error);
-                            toast.error(error.message || 'Failed to start conversation with campus manager');
-                          }
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                      >
-                        <MessageCircle className="w-4 h-4 text-primary-600" />
-                        Chat with Campus Manager
                       </button>
                     </>
                   )}
