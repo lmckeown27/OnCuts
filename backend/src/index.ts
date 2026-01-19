@@ -332,7 +332,8 @@ app.use('/api/users', userRoutes);  // User profile management (legacy)
 app.use('/api/ai', aiRoutes);  // Pricing, quality scores, fraud detection, disputes
 
 // Campus Location Management (Crowd-sourced + AI enrichment)
-app.use('/api/locations', locationRoutes);  // Location submission, search, retrieval
+app.use('/api/v1/locations', locationRoutes);  // Location management (versioned)
+app.use('/api/locations', locationRoutes);  // Location submission, search, retrieval (legacy)
 app.use('/api/admin/locations', locationAdminRoutes);  // Admin location management
 
 // System health monitoring
