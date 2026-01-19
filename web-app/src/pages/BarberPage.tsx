@@ -1193,7 +1193,7 @@ function DashboardView({ navigate, barberId, onViewDetails, refreshKey = 0, camp
         
         // Fetch locations for this barber
         if (barberId) {
-          const locationsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/locations/for-booking/${barberId}`, {
+          const locationsResponse = await fetch(`${import.meta.env.VITE_API_URL}/locations/for-booking/${barberId}`, {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
             },

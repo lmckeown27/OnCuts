@@ -319,7 +319,7 @@ export default function MessagesPage() {
         // Current user is the barber - look up their barber ID
         console.log('[MessagesPage] Looking up barber ID for current user (barber):', user.id);
         try {
-          const url = `${import.meta.env.VITE_API_URL}/api/barbers/user/${user.id}`;
+          const url = `${import.meta.env.VITE_API_URL}/barbers/user/${user.id}`;
           console.log('[MessagesPage] Fetching from:', url);
           const response = await fetch(url, {
             headers: {
@@ -343,7 +343,7 @@ export default function MessagesPage() {
         // Other user is the barber - look up their barber ID
         console.log('[MessagesPage] Looking up barber ID for other user (barber):', selectedConversation.otherUser.id);
         try {
-          const url = `${import.meta.env.VITE_API_URL}/api/barbers/user/${selectedConversation.otherUser.id}`;
+          const url = `${import.meta.env.VITE_API_URL}/barbers/user/${selectedConversation.otherUser.id}`;
           console.log('[MessagesPage] Fetching from:', url);
           const response = await fetch(url, {
             headers: {
@@ -375,7 +375,7 @@ export default function MessagesPage() {
     if (barberId) {
       try {
         setLocationsLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/locations/for-booking/${barberId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/locations/for-booking/${barberId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
@@ -410,7 +410,7 @@ export default function MessagesPage() {
     try {
       const scheduledTime = new Date(`${editDate}T${editTime}`).toISOString();
       
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${selectedConversation.booking.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/${selectedConversation.booking.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
