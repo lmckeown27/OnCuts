@@ -77,6 +77,7 @@ interface ConversationWithDetails extends Conversation {
     profilePicture?: string;
     userType: 'student' | 'barber';
     barberInfo?: {
+      id?: string;
       displayName?: string;
       specialties?: string[];
       rating?: number;
@@ -306,7 +307,9 @@ export default function MessagesPage() {
     console.log('[MessagesPage] Booking barberId:', booking.barberId);
     
     // Get barber ID - need to get the barber table ID, not user ID
-    let barberId = booking.barberId || '';
+    // Priority: booking.barberId > otherUser.barberInfo.id > API lookup
+    let barberId = booking.barberId || selectedConversation.otherUser?.barberInfo?.id || '';
+    console.log('[MessagesPage] Initial barberId:', barberId, 'from booking:', booking.barberId, 'from barberInfo:', selectedConversation.otherUser?.barberInfo?.id);
     
     // Determine who the barber is based on who is viewing the conversation
     // If current user is a barber, they are the barber for this booking
@@ -1417,10 +1420,7 @@ export default function MessagesPage() {
                           {selectedConversation.otherUser?.firstName} {selectedConversation.otherUser?.lastName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {(() => {
-                            console.log('[MessagesPage] otherUser.userType:', selectedConversation.otherUser?.userType);
-                            return selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer';
-                          })()}
+                          {selectedConversation.otherUser?.userType?.toLowerCase() === 'barber' ? 'Barber' : 'Customer'}
                         </p>
                       </div>
                     </div>

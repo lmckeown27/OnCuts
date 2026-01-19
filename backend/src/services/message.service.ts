@@ -43,6 +43,7 @@ class MessageService {
           u.role as other_user_type,
           
           -- BARBER INFO (if other user is barber)
+          br.id as barber_id,
           u.first_name || ' ' || u.last_name as barber_display_name,
           br.specialties as barber_specialties,
           br."avgRating" as barber_rating,
@@ -122,6 +123,7 @@ class MessageService {
         // Booking details - prefer conversation context, fallback to linked booking
         booking: (conv.conv_service_name || conv.booking_id_ref) ? {
           id: conv.booking_id_ref || null,
+          barberId: conv.barber_id || null, // Include barber ID for availability lookups
           serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
           servicePrice: conv.conv_service_price ? parseFloat(conv.conv_service_price) : 
                        (conv.booking_price_cents ? (conv.booking_price_cents / 100) : null),
@@ -145,6 +147,7 @@ class MessageService {
           userType: conv.other_user_type?.toLowerCase() || 'consumer',
           barberInfo: (conv.other_user_type === 'BARBER' || conv.other_user_type === 'barber')
             ? {
+                id: conv.barber_id, // Barber table ID for availability lookups
                 displayName: conv.barber_display_name,
                 specialties: conv.barber_specialties,
                 rating: conv.barber_rating,
