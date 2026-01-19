@@ -400,6 +400,8 @@ class MessageService {
       const result = await pool.query(
         `SELECT 
           c.id as conversation_id,
+          c.user1_id,
+          c.user2_id,
           c.booking_id,
           c.created_at
         FROM conversations c

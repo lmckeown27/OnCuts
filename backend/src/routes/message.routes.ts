@@ -119,10 +119,13 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
     // Emit to recipient's room
     const conversation = await messageService.getConversationById(conversationId, userId);
     if (conversation.success) {
-      const recipientId = conversation.data.conversation.user1_id === userId 
-        ? conversation.data.conversation.user2_id 
-        : conversation.data.conversation.user1_id;
+      const conv = conversation.data.conversation;
+      // Compare as strings to handle UUID comparison correctly
+      const recipientId = String(conv.user1_id) === String(userId) 
+        ? conv.user2_id 
+        : conv.user1_id;
       
+      console.log(`📨 Socket.IO: Emitting new-message to user-${recipientId} (sender: ${userId})`);
       io.to(`user-${recipientId}`).emit('new-message', result.data.message);
     }
 
