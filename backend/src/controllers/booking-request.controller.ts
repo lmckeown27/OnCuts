@@ -153,7 +153,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
             consumer.first_name as consumer_first_name,
             consumer.last_name as consumer_last_name,
             consumer.email as consumer_email,
-            consumer.profile_picture_url as consumer_profile_url,
+            consumer."avatarUrl" as consumer_profile_url,
             barber."userId" as barber_user_id
           FROM bookings b
           LEFT JOIN conversations c ON c.booking_id = b.id
