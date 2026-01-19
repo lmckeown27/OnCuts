@@ -132,6 +132,13 @@ export default function MessagesPage() {
   const [deletingConversation, setDeletingConversation] = useState<ConversationWithDetails | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Edit booking state
+  const [isEditingBooking, setIsEditingBooking] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -270,6 +277,74 @@ export default function MessagesPage() {
     setDeletingConversation(conv);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowDeleteConfirm(true);
+  };
+
+  // Start editing booking
+  const startEditingBooking = () => {
+    if (!selectedConversation?.booking) return;
+    const booking = selectedConversation.booking;
+    const scheduledDate = new Date(booking.scheduledTime);
+    setEditDate(scheduledDate.toISOString().split('T')[0]);
+    setEditTime(scheduledDate.toTimeString().slice(0, 5));
+    setEditLocation(booking.location || '');
+    setIsEditingBooking(true);
+  };
+
+  // Cancel editing
+  const cancelEditingBooking = () => {
+    setIsEditingBooking(false);
+    setEditDate('');
+    setEditTime('');
+    setEditLocation('');
+  };
+
+  // Save booking edits
+  const saveBookingEdits = async () => {
+    if (!selectedConversation?.booking?.id) return;
+    
+    setIsSavingEdit(true);
+    try {
+      const scheduledTime = new Date(`${editDate}T${editTime}`).toISOString();
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bookings/${selectedConversation.booking.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({
+          scheduledTime,
+          location: editLocation,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update booking');
+
+      // Update local state
+      setSelectedConversation(prev => prev ? {
+        ...prev,
+        booking: prev.booking ? {
+          ...prev.booking,
+          scheduledTime,
+          location: editLocation,
+        } : undefined,
+      } : null);
+
+      // Update in conversations list
+      setConversations(prev => prev.map(conv => 
+        conv.id === selectedConversation.id && conv.booking
+          ? { ...conv, booking: { ...conv.booking, scheduledTime, location: editLocation } }
+          : conv
+      ));
+
+      toast.success('Booking updated successfully');
+      setIsEditingBooking(false);
+    } catch (error) {
+      console.error('Failed to update booking:', error);
+      toast.error('Failed to update booking');
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   // Fetch notifications
@@ -452,6 +527,7 @@ export default function MessagesPage() {
   // Handle selecting a conversation
   const handleSelectConversation = (conv: ConversationWithDetails) => {
     setSelectedConversation(conv);
+    setIsEditingBooking(false); // Reset edit mode when changing conversations
     fetchMessages(conv.id);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowMobileChat(true);
@@ -1099,25 +1175,43 @@ export default function MessagesPage() {
                         <Calendar className="w-3.5 h-3.5" />
                         <span className="text-xs">Date</span>
                       </div>
-                      <p className="font-medium text-gray-900 text-sm">
-                        {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
-                          weekday: 'short',
-                          month: 'short', 
-                          day: 'numeric'
-                        })}
-                      </p>
+                      {isEditingBooking ? (
+                        <input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900 text-sm">
+                          {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                            weekday: 'short',
+                            month: 'short', 
+                            day: 'numeric'
+                          })}
+                        </p>
+                      )}
                     </div>
                     <div className="p-3 bg-gray-50 rounded-xl">
                       <div className="flex items-center gap-1.5 text-gray-500 mb-1">
                         <Clock className="w-3.5 h-3.5" />
                         <span className="text-xs">Time</span>
                       </div>
-                      <p className="font-medium text-gray-900 text-sm">
-                        {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit'
-                        })}
-                      </p>
+                      {isEditingBooking ? (
+                        <input
+                          type="time"
+                          value={editTime}
+                          onChange={(e) => setEditTime(e.target.value)}
+                          className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                        />
+                      ) : (
+                        <p className="font-medium text-gray-900 text-sm">
+                          {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1127,7 +1221,17 @@ export default function MessagesPage() {
                       <MapPin className="w-3.5 h-3.5" />
                       <span className="text-xs">Location</span>
                     </div>
-                    <p className="font-medium text-gray-900 text-sm">{selectedConversation.booking.location || 'TBD'}</p>
+                    {isEditingBooking ? (
+                      <input
+                        type="text"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        placeholder="Enter location"
+                        className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="font-medium text-gray-900 text-sm">{selectedConversation.booking.location || 'TBD'}</p>
+                    )}
                   </div>
 
                   {/* Status */}
@@ -1191,20 +1295,43 @@ export default function MessagesPage() {
                    selectedConversation.booking.status !== 'cancelled' && 
                    selectedConversation.booking.status !== 'rejected' && (
                     <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={() => navigate(`/schedule/${selectedConversation.booking?.barberId || selectedConversation.otherUser?.id}?edit=${selectedConversation.booking?.id}`)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => openDeleteConfirm(selectedConversation, new MouseEvent('click') as any)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Cancel
-                      </button>
+                      {isEditingBooking ? (
+                        <>
+                          <button
+                            onClick={cancelEditingBooking}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium"
+                            disabled={isSavingEdit}
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                          <button
+                            onClick={saveBookingEdits}
+                            disabled={isSavingEdit}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
+                          >
+                            <Check className="w-4 h-4" />
+                            {isSavingEdit ? 'Saving...' : 'Save'}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={startEditingBooking}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(selectedConversation, new MouseEvent('click') as any)}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1280,26 +1407,44 @@ export default function MessagesPage() {
                     <Calendar className="w-4 h-4" />
                     <span className="text-xs">Date</span>
                   </div>
-                  <p className="font-medium text-gray-900">
-                    {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
-                      weekday: 'short',
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </p>
+                  {isEditingBooking ? (
+                    <input
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    />
+                  ) : (
+                    <p className="font-medium text-gray-900">
+                      {new Date(selectedConversation.booking.scheduledTime).toLocaleDateString('en-US', { 
+                        weekday: 'short',
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  )}
                 </div>
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-2 text-gray-500 mb-1">
                     <Clock className="w-4 h-4" />
                     <span className="text-xs">Time</span>
                   </div>
-                  <p className="font-medium text-gray-900">
-                    {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
-                      hour: 'numeric', 
-                      minute: '2-digit'
-                    })}
-                  </p>
+                  {isEditingBooking ? (
+                    <input
+                      type="time"
+                      value={editTime}
+                      onChange={(e) => setEditTime(e.target.value)}
+                      className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    />
+                  ) : (
+                    <p className="font-medium text-gray-900">
+                      {new Date(selectedConversation.booking.scheduledTime).toLocaleTimeString('en-US', { 
+                        hour: 'numeric', 
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1309,9 +1454,21 @@ export default function MessagesPage() {
                   <MapPin className="w-4 h-4" />
                   <span className="text-xs">Location</span>
                 </div>
-                <p className="font-medium text-gray-900">{selectedConversation.booking.location || 'TBD'}</p>
-                {selectedConversation.booking.locationDetails && (
-                  <p className="text-sm text-gray-600 mt-1">{selectedConversation.booking.locationDetails}</p>
+                {isEditingBooking ? (
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Enter location"
+                    className="w-full text-base font-medium text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  />
+                ) : (
+                  <>
+                    <p className="font-medium text-gray-900">{selectedConversation.booking.location || 'TBD'}</p>
+                    {selectedConversation.booking.locationDetails && (
+                      <p className="text-sm text-gray-600 mt-1">{selectedConversation.booking.locationDetails}</p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1382,35 +1539,57 @@ export default function MessagesPage() {
                selectedConversation.booking.status !== 'cancelled' && 
                selectedConversation.booking.status !== 'rejected' && (
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setShowServiceDetails(false);
-                      navigate(`/schedule/${selectedConversation.booking?.barberId || selectedConversation.otherUser?.id}?edit=${selectedConversation.booking?.id}`);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
-                  >
-                    <Pencil className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowServiceDetails(false);
-                      openDeleteConfirm(selectedConversation, new MouseEvent('click') as any);
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Cancel
-                  </button>
+                  {isEditingBooking ? (
+                    <>
+                      <button
+                        onClick={cancelEditingBooking}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                        disabled={isSavingEdit}
+                      >
+                        <X className="w-4 h-4" />
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveBookingEdits}
+                        disabled={isSavingEdit}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4" />
+                        {isSavingEdit ? 'Saving...' : 'Save'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={startEditingBooking}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowServiceDetails(false);
+                          openDeleteConfirm(selectedConversation, new MouseEvent('click') as any);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
-              <Button
-                onClick={() => setShowServiceDetails(false)}
-                variant="outline"
-                className="w-full"
-              >
-                Close
-              </Button>
+              {!isEditingBooking && (
+                <Button
+                  onClick={() => setShowServiceDetails(false)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              )}
             </div>
           </div>
         </div>
