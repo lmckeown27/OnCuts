@@ -242,9 +242,8 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-gray-900 truncate">{barber.name}</h3>
                         {barber.isCampusManager && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded">
-                            <Crown className="w-3 h-3" />
-                            CM
+                          <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded">
+                            Campus Manager
                           </span>
                         )}
                       </div>
