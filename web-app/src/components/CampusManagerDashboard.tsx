@@ -1680,16 +1680,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       {!location.is_active && (
                         <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inactive</span>
                       )}
-                      {location.is_universal ? (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          All Barbers
-                        </span>
-                      ) : (
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                          {location.restricted_barber_name || 'Specific Barber'}
-                        </span>
-                      )}
                     </div>
                     {location.description && (
                       <p className="text-sm text-gray-600 mt-1">{location.description}</p>
