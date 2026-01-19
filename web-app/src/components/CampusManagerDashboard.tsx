@@ -1188,6 +1188,205 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     );
   }
 
+  // Inline Add/Edit Location View
+  if (showAddModal || editingLocation) {
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => {
+            setShowAddModal(false);
+            setEditingLocation(null);
+            setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
+          }}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Locations</span>
+        </button>
+
+        <Card className="p-4 sm:p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary-600" />
+            {editingLocation ? 'Edit Location' : 'Add New Location'}
+          </h3>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Student Union, Dorm Building A"
+                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description of this location"
+                rows={2}
+                className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+              />
+            </div>
+            
+            {/* Availability Setting */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Who can use this location?
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="availability-inline"
+                    checked={formData.isUniversal}
+                    onChange={() => setFormData({ ...formData, isUniversal: true, restrictedToBarberId: '' })}
+                    className="text-primary-600 focus:ring-primary-400"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">All Barbers</span>
+                    <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="availability-inline"
+                    checked={!formData.isUniversal}
+                    onChange={() => setFormData({ ...formData, isUniversal: false })}
+                    className="text-primary-600 focus:ring-primary-400"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">Specific Barber Only</span>
+                    <p className="text-xs text-gray-500">Only a selected barber can use this location</p>
+                  </div>
+                </label>
+              </div>
+              
+              {!formData.isUniversal && (
+                <div className="mt-3">
+                  <select
+                    value={formData.restrictedToBarberId}
+                    onChange={(e) => setFormData({ ...formData, restrictedToBarberId: e.target.value })}
+                    className="w-full px-4 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  >
+                    <option value="">Select a barber...</option>
+                    {campusBarbers.map((barber) => (
+                      <option key={barber.id} value={barber.id}>{barber.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingLocation(null);
+                  setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
+                }}
+                disabled={saving}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={editingLocation ? handleUpdateLocation : handleAddLocation}
+                disabled={saving || !formData.name.trim()}
+                className="flex-1"
+              >
+                {saving ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : editingLocation ? (
+                  'Update Location'
+                ) : (
+                  'Add Location'
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Inline Assign Location View
+  if (showAssignModal) {
+    const selectedBarber = barbersWithLocations.find(b => b.id === showAssignModal.barberId);
+    
+    return (
+      <div className="space-y-4">
+        <button 
+          onClick={() => setShowAssignModal(null)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Barbers</span>
+        </button>
+
+        <Card className="p-4 sm:p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-primary-600" />
+            Assign Location to {showAssignModal.barberName}
+          </h3>
+
+          {approvedLocations.length === 0 ? (
+            <div className="text-center py-8">
+              <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">No approved locations available</p>
+              <p className="text-sm text-gray-400 mt-1">Create a location first in the Locations tab</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {approvedLocations.map((location) => {
+                const isAssigned = selectedBarber?.locations.some(l => l.location_id === location.id);
+                
+                return (
+                  <button
+                    key={location.id}
+                    onClick={() => !isAssigned && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
+                    disabled={saving || isAssigned}
+                    className={`w-full p-3 rounded-lg border text-left transition-colors ${
+                      isAssigned 
+                        ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' 
+                        : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary-500" />
+                        <span className="font-medium text-gray-900">{location.name}</span>
+                      </div>
+                      {isAssigned && (
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Assigned</span>
+                      )}
+                    </div>
+                    {location.description && (
+                      <p className="text-xs text-gray-500 mt-1 ml-6">{location.description}</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header with Add Button */}
@@ -1379,74 +1578,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </div>
       )}
 
-      {/* Assign Location Modal */}
-      {showAssignModal && (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
-          onClick={() => !saving && setShowAssignModal(null)}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
-              <h3 className="text-lg font-bold text-primary-800 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Assign Location to {showAssignModal.barberName}
-              </h3>
-            </div>
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
-              {approvedLocations.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">No approved locations available</p>
-              ) : (
-                <div className="space-y-2">
-                  {approvedLocations.map((location) => {
-                    const barberData = barbersWithLocations.find(b => b.id === showAssignModal.barberId);
-                    const isAssigned = barberData?.locations.some(l => l.location_id === location.id);
-                    
-                    return (
-                      <button
-                        key={location.id}
-                        onClick={() => !isAssigned && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
-                        disabled={saving || isAssigned}
-                        className={`w-full p-3 rounded-lg border text-left transition-colors ${
-                          isAssigned 
-                            ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60' 
-                            : 'bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-primary-500" />
-                            <span className="font-medium text-gray-900">{location.name}</span>
-                          </div>
-                          {isAssigned && (
-                            <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">Assigned</span>
-                          )}
-                        </div>
-                        {location.description && (
-                          <p className="text-xs text-gray-500 mt-1 ml-6">{location.description}</p>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="border-t border-gray-200 p-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowAssignModal(null)}
-                disabled={saving}
-                className="w-full"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Requested Locations Subtab Content */}
       {activeSubTab === 'requested' && pendingLocations.length > 0 && (
         <div>
@@ -1592,140 +1723,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
             ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Add/Edit Location Modal */}
-      {(showAddModal || editingLocation) && (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
-          onClick={() => {
-            if (!saving) {
-              setShowAddModal(false);
-              setEditingLocation(null);
-              setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
-            }
-          }}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-primary-50 px-6 py-4 border-b border-primary-100">
-              <h3 className="text-lg font-bold text-primary-800 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                {editingLocation ? 'Edit Location' : 'Add New Location'}
-              </h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Student Union, Dorm Building A"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description (optional)
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Brief description of this location"
-                  rows={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
-                />
-              </div>
-              
-              {/* Availability Setting */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Who can use this location?
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="availability"
-                      checked={formData.isUniversal}
-                      onChange={() => setFormData({ ...formData, isUniversal: true, restrictedToBarberId: '' })}
-                      className="text-primary-600 focus:ring-primary-400"
-                    />
-                    <div>
-                      <span className="font-medium text-gray-900">All Barbers</span>
-                      <p className="text-xs text-gray-500">Any barber on this campus can use this location</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <input
-                      type="radio"
-                      name="availability"
-                      checked={!formData.isUniversal}
-                      onChange={() => setFormData({ ...formData, isUniversal: false })}
-                      className="text-primary-600 focus:ring-primary-400"
-                    />
-                    <div>
-                      <span className="font-medium text-gray-900">Specific Barber Only</span>
-                      <p className="text-xs text-gray-500">Only a selected barber can use this location</p>
-                    </div>
-                  </label>
-                </div>
-                
-                {!formData.isUniversal && (
-                  <div className="mt-3">
-                    <select
-                      value={formData.restrictedToBarberId}
-                      onChange={(e) => setFormData({ ...formData, restrictedToBarberId: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                    >
-                      <option value="">Select a barber...</option>
-                      {campusBarbers.map((barber) => (
-                        <option key={barber.id} value={barber.id}>{barber.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingLocation(null);
-                    setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
-                  }}
-                  disabled={saving}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={editingLocation ? handleUpdateLocation : handleAddLocation}
-                  disabled={saving || !formData.name.trim()}
-                  className="flex-1"
-                >
-                  {saving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : editingLocation ? (
-                    'Update Location'
-                  ) : (
-                    'Add Location'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
