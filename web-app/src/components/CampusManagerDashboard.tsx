@@ -617,13 +617,13 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
           {filteredBarbers.map((barber) => (
             <Card 
               key={barber.id} 
-              className="p-3 sm:p-5 cursor-pointer hover:shadow-md transition-shadow"
+              className="p-3 sm:p-5 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary-400"
               onClick={() => setSelectedBarberId(barber.id)}
             >
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                <div className="flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   {/* Header Row */}
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
                   </div>
 
@@ -636,10 +636,13 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                       </span>
                     </div>
                   </div>
+
+                  {/* Tap hint on mobile */}
+                  <p className="text-xs text-primary-500 mt-2 sm:hidden">Tap for details →</p>
                 </div>
 
-                {/* Arrow indicator for tap to view */}
-                <div className="hidden sm:flex items-center text-gray-400">
+                {/* Arrow indicator */}
+                <div className="flex items-center text-primary-400">
                   <ChevronLeft className="w-5 h-5 rotate-180" />
                 </div>
               </div>
@@ -2193,7 +2196,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           {bookings.map((booking) => (
             <Card 
               key={booking.id} 
-              className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+              className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-400"
               onClick={() => setSelectedBooking(booking)}
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -2223,28 +2226,37 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                       <p className="italic text-gray-500">"{booking.notes}"</p>
                     )}
                   </div>
+
+                  {/* Tap hint on mobile */}
+                  <p className="text-xs text-green-500 mt-2 sm:hidden">Tap for details →</p>
                 </div>
 
                 {/* Right side - price and review */}
-                <div className="text-right">
-                  <p className="font-bold text-lg text-green-600">{formatPrice(booking.priceUsdCents)}</p>
-                  {booking.paidAt && (
-                    <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
-                  )}
-                  
-                  {/* Review */}
-                  {booking.review ? (
-                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                      {renderStars(booking.review.rating)}
-                      {booking.review.comment && (
-                        <p className="text-xs text-gray-600 mt-1 max-w-[200px] truncate">
-                          "{booking.review.comment}"
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 mt-2 italic">No review</p>
-                  )}
+                <div className="flex items-start gap-2">
+                  <div className="text-right">
+                    <p className="font-bold text-lg text-green-600">{formatPrice(booking.priceUsdCents)}</p>
+                    {booking.paidAt && (
+                      <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
+                    )}
+                    
+                    {/* Review */}
+                    {booking.review ? (
+                      <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                        {renderStars(booking.review.rating)}
+                        {booking.review.comment && (
+                          <p className="text-xs text-gray-600 mt-1 max-w-[200px] truncate">
+                            "{booking.review.comment}"
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400 mt-2 italic">No review</p>
+                    )}
+                  </div>
+                  {/* Arrow indicator */}
+                  <div className="hidden sm:flex items-center text-green-400 mt-1">
+                    <ChevronLeft className="w-5 h-5 rotate-180" />
+                  </div>
                 </div>
               </div>
             </Card>
