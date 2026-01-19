@@ -977,6 +977,7 @@ interface ConfirmedBooking {
   scheduledTime: string;
   status: string;
   createdAt: string;
+  paidAt?: string;
   // Consumer-provided input data
   location?: string;
   notes?: string;
