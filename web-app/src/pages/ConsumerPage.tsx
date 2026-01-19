@@ -1258,10 +1258,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
             Check back soon as more barbers join the platform!
           </p>
           <button 
-            onClick={() => {
-              setSelectedUniversity(null);
-              localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-            }}
+            onClick={() => navigate('/web/find-barber')}
             className="text-primary-600 hover:text-primary-700 underline"
           >
             Try a different university
