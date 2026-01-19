@@ -155,7 +155,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
           const booking = bookingResult.rows[0];
           const barberUserId = booking.barber_user_id;
           
-          io.to(`user:${barberUserId}`).emit('booking-confirmed', {
+          io.to(`user-${barberUserId}`).emit('booking-confirmed', {
             id: booking.id,
             consumerId: booking.consumerId,
             barberId: booking.barberId,

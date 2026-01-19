@@ -775,7 +775,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 
     // Emit WebSocket event to notify consumer in real-time about payment request
     if (io) {
-      io.to(`user:${booking.consumerId}`).emit('booking-completed', {
+      io.to(`user-${booking.consumerId}`).emit('booking-completed', {
         bookingId: id,
         status: 'COMPLETED',
         barberName: booking.barber_name,
