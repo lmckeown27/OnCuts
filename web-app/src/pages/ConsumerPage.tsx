@@ -1325,11 +1325,13 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                       <span className="text-primary-500 font-bold text-2xl flex-shrink-0 mr-2">${displayPrice}</span>
                     )}
                   </div>
-                  {barber.distance_miles !== undefined && barber.distance_miles !== null && (
+                  {/* Distance display commented out
+                {barber.distance_miles !== undefined && barber.distance_miles !== null && (
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-sm text-primary-600 font-medium">{barber.distance_miles} mi</span>
                     </div>
                   )}
+                */}
                   {barber.instagram_handle && (
                     <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
                       <Instagram className="w-4 h-4 flex-shrink-0" />
@@ -1377,7 +1379,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </div>
                   </div>
                 )}
-                {/* Distance Overlay - Bottom Right */}
+                {/* Distance Overlay - Bottom Right - Commented out
                 {barber.distance_miles !== undefined && barber.distance_miles !== null && (
                   <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tl-lg rounded-br-lg">
                     <div className="flex items-center gap-1 text-white">
@@ -1386,6 +1388,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
                     </div>
                   </div>
                 )}
+                */}
               </div>
             </Card>
           );
