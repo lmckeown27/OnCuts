@@ -255,14 +255,27 @@ export default function MessagesPage() {
     }
   }, []);
 
-  // Delete conversation handler
-  const handleDeleteConversation = async () => {
+  // Cancel booking handler (also deletes conversation)
+  const handleCancelBooking = async () => {
     if (!deletingConversation) return;
     
     setIsDeleting(true);
     try {
+      // Cancel the booking if it exists
+      if (deletingConversation.booking?.id) {
+        await fetch(`${import.meta.env.VITE_API_URL}/bookings-simple/${deletingConversation.booking.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+          body: JSON.stringify({ reason: 'Cancelled by user' }),
+        });
+      }
+      
+      // Delete the conversation
       await messageService.deleteConversation(String(deletingConversation.id));
-      toast.success('Conversation deleted');
+      toast.success('Booking cancelled successfully');
       
       // Remove from list
       setConversations(prev => prev.filter(c => c.id !== deletingConversation.id));
@@ -278,8 +291,8 @@ export default function MessagesPage() {
       setShowDeleteConfirm(false);
       setDeletingConversation(null);
     } catch (error) {
-      console.error('Failed to delete conversation:', error);
-      toast.error('Failed to delete conversation');
+      console.error('Failed to cancel booking:', error);
+      toast.error('Failed to cancel booking');
     } finally {
       setIsDeleting(false);
     }
@@ -1794,7 +1807,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {/* Delete Conversation Confirmation Modal */}
+      {/* Cancel Booking Confirmation Modal */}
       {showDeleteConfirm && deletingConversation && (
         <div 
           className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
@@ -1809,9 +1822,9 @@ export default function MessagesPage() {
           >
             {/* Header */}
             <div className="p-6 text-center">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Conversation?</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Cancel Booking?</h3>
               <p className="text-sm text-gray-600">
-                Are you sure you want to delete your conversation with{' '}
+                Are you sure you want to cancel your booking with{' '}
                 <span className="font-semibold">
                   {deletingConversation.otherUser?.firstName} {deletingConversation.otherUser?.lastName}
                 </span>
@@ -1834,17 +1847,17 @@ export default function MessagesPage() {
                 variant="secondary"
                 className="flex-1"
               >
-                Cancel
+                Keep Booking
               </Button>
               <Button
-                onClick={handleDeleteConversation}
+                onClick={handleCancelBooking}
                 disabled={isDeleting}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white"
               >
                 {isDeleting ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  'Delete'
+                  'Cancel Booking'
                 )}
               </Button>
             </div>
