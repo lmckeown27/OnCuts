@@ -136,8 +136,7 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10 flex-shrink-0">
           <div className="flex-1">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Send className="w-5 h-5 text-primary-600" />
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               Barber Chats
             </h2>
             
