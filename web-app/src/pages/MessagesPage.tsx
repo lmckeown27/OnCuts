@@ -1732,8 +1732,8 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-3">
+            {/* Modal Footer - pt-4 above buttons, pb-4 below last element */}
+            <div className="px-6 pt-4 pb-4 border-t border-gray-200 bg-gray-50 space-y-3">
               {selectedConversation.booking.status !== 'completed' && 
                selectedConversation.booking.status !== 'cancelled' && 
                selectedConversation.booking.status !== 'rejected' && (
