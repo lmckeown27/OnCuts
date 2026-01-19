@@ -123,6 +123,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
         }
 
         // Get full booking details for the barber's dashboard
+        logger.info(`Looking up booking details for WebSocket emission, bookingId: ${actualBookingId}`);
         const bookingResult = await pool.query(
           `SELECT 
             b.id,
@@ -148,13 +149,20 @@ export async function acceptBookingRequest(req: Request, res: Response) {
           WHERE b.id = $1`,
           [actualBookingId]
         );
+        
+        logger.info(`Booking query returned ${bookingResult.rows.length} rows`);
+        if (bookingResult.rows.length > 0) {
+          logger.info(`Found booking: barber_user_id=${bookingResult.rows[0].barber_user_id}, status=${bookingResult.rows[0].status}`);
+        }
 
         // Emit WebSocket event to barber for live dashboard updates
         const io = getSocketIO();
+        logger.info(`Socket.IO instance available: ${!!io}`);
         if (io && bookingResult.rows.length > 0) {
           const booking = bookingResult.rows[0];
           const barberUserId = booking.barber_user_id;
           
+          logger.info(`Emitting booking-confirmed to room user-${barberUserId}`);
           io.to(`user-${barberUserId}`).emit('booking-confirmed', {
             id: booking.id,
             consumerId: booking.consumerId,
@@ -172,7 +180,9 @@ export async function acceptBookingRequest(req: Request, res: Response) {
               profilePictureUrl: booking.consumer_profile_url,
             },
           });
-          logger.info(`Emitted 'booking-confirmed' event to barber ${barberUserId} for booking ${actualBookingId}`);
+          logger.info(`Emitted 'booking-confirmed' event to barber user ${barberUserId} for booking ${actualBookingId}`);
+        } else {
+          logger.warn(`Could not emit booking-confirmed: io=${!!io}, rows=${bookingResult.rows.length}`);
         }
       } catch (wsError) {
         logger.error('Error emitting booking-confirmed WebSocket event:', wsError);
