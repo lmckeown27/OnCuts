@@ -16,7 +16,9 @@ import {
   Mail,
   Clock,
   Loader2,
-  XCircle
+  XCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -184,6 +186,29 @@ export const CampusManagerBarberView: React.FC<CampusManagerBarberViewProps> = (
                 @{barber.instagram_handle.replace('@', '')}
               </a>
             </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Profile Visibility Status */}
+      <Card className={`p-4 ${barber.is_active === false ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+        <div className="flex items-center gap-3">
+          {barber.is_active === false ? (
+            <>
+              <EyeOff className="w-5 h-5 text-amber-600" />
+              <div>
+                <h4 className="font-semibold text-amber-900 text-sm">Profile Hidden</h4>
+                <p className="text-xs text-amber-700">This barber has hidden their profile from consumers</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <Eye className="w-5 h-5 text-green-600" />
+              <div>
+                <h4 className="font-semibold text-green-900 text-sm">Profile Visible</h4>
+                <p className="text-xs text-green-700">This barber's profile is visible to consumers</p>
+              </div>
+            </>
           )}
         </div>
       </Card>
