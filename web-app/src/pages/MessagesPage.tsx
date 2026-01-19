@@ -28,7 +28,9 @@ import {
   AlertCircle,
   Trash2,
   Bell,
-  Lock
+  Lock,
+  Pencil,
+  XCircle
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
@@ -618,19 +620,9 @@ export default function MessagesPage() {
                     <h3 className="font-semibold text-gray-900 truncate">
                       {conv.otherUser?.firstName} {conv.otherUser?.lastName}
                     </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {conv.lastMessage?.time ? formatTime(conv.lastMessage.time) : ''}
-                      </span>
-                      {/* Delete button - appears on hover */}
-                      <button
-                        onClick={(e) => openDeleteConfirm(conv, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-100 rounded-lg transition-all"
-                        title="Delete conversation"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
+                      {conv.lastMessage?.time ? formatTime(conv.lastMessage.time) : ''}
+                    </span>
                   </div>
                   
                   {/* Booking context */}
@@ -1192,6 +1184,28 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Action Buttons */}
+                  {selectedConversation.booking.status !== 'completed' && 
+                   selectedConversation.booking.status !== 'cancelled' && 
+                   selectedConversation.booking.status !== 'rejected' && (
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => navigate(`/schedule/${selectedConversation.booking?.barberId}?edit=${selectedConversation.booking?.id}`)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => openDeleteConfirm(selectedConversation, new MouseEvent('click') as any)}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-sm font-medium"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -1362,10 +1376,36 @@ export default function MessagesPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-3">
+              {selectedConversation.booking.status !== 'completed' && 
+               selectedConversation.booking.status !== 'cancelled' && 
+               selectedConversation.booking.status !== 'rejected' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setShowServiceDetails(false);
+                      navigate(`/schedule/${selectedConversation.booking?.barberId}?edit=${selectedConversation.booking?.id}`);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowServiceDetails(false);
+                      openDeleteConfirm(selectedConversation, new MouseEvent('click') as any);
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors font-medium"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </div>
+              )}
               <Button
                 onClick={() => setShowServiceDetails(false)}
-                variant="primary"
+                variant="outline"
                 className="w-full"
               >
                 Close
