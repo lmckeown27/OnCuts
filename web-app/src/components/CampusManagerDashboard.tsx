@@ -2246,7 +2246,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                       <div className="mt-2 p-2 bg-gray-50 rounded-lg">
                         {renderStars(booking.review.rating)}
                         {booking.review.comment && (
-                          <p className="text-xs text-gray-600 mt-1 max-w-[200px] truncate">
+                          <p className="text-xs text-gray-600 mt-1 truncate">
                             "{booking.review.comment}"
                           </p>
                         )}
