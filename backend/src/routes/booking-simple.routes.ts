@@ -12,7 +12,7 @@ import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails, sendBookingCancellationEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
-import { io } from '../index';
+import { getSocketIO } from '../index';
 
 const router = express.Router();
 
@@ -269,8 +269,11 @@ router.post('/', authenticate, async (req, res, next) => {
         createdAt: new Date().toISOString(),
       };
       
-      io.to(`user-${barberUserId}`).emit('new-booking-request', newBookingEvent);
-      logger.info(`Emitted new-booking-request event to barber ${barberUserId} for booking ${booking.id}`);
+      const io = getSocketIO();
+      if (io) {
+        io.to(`user-${barberUserId}`).emit('new-booking-request', newBookingEvent);
+        logger.info(`Emitted new-booking-request event to barber ${barberUserId} for booking ${booking.id}`);
+      }
     }
 
     // Send pending booking emails to both consumer and barber
@@ -774,6 +777,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     logger.info(`Booking ${id} marked as COMPLETED by barber ${userId}. Payment request sent to consumer ${booking.consumerId}`);
 
     // Emit WebSocket event to notify consumer in real-time about payment request
+    const io = getSocketIO();
     if (io) {
       io.to(`user-${booking.consumerId}`).emit('booking-completed', {
         bookingId: id,
@@ -1710,9 +1714,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
     };
     
     // Emit to both barber and consumer's personal rooms
-    io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
-    io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
-    logger.info(`Emitted booking-update event for booking ${id}`);
+    const io = getSocketIO();
+    if (io) {
+      io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
+      io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
+      logger.info(`Emitted booking-update event for booking ${id}`);
+    }
 
     res.json({
       success: true,
@@ -1871,9 +1878,12 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     };
     
     // Emit to both barber and consumer's personal rooms
-    io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
-    io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
-    logger.info(`Emitted booking-update event for cancelled booking ${id}`);
+    const io = getSocketIO();
+    if (io) {
+      io.to(`user-${booking.barber_user_id}`).emit('booking-update', bookingUpdate);
+      io.to(`user-${booking.consumerId}`).emit('booking-update', bookingUpdate);
+      logger.info(`Emitted booking-update event for cancelled booking ${id}`);
+    }
 
     res.json({
       success: true,
