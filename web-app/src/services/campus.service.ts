@@ -5,7 +5,8 @@ class CampusService {
   async getCampuses(search?: string): Promise<Campus[]> {
     // api.get extracts response.data.data when no pagination is present
     // so the response is already the campuses array
-    const campuses = await api.get<Campus[]>('/campus', { search, limit: 100 });
+    // No limit - fetch all universities in the system
+    const campuses = await api.get<Campus[]>('/campus', { search });
     return campuses || [];
   }
 
