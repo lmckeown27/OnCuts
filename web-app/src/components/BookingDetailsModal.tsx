@@ -512,31 +512,32 @@ export default function BookingDetailsModal({
                 </div>
               )}
 
-              {/* Review (for completed bookings) */}
-              {booking.status === 'COMPLETED' && booking.reviewRating && (
+              {/* Review (for completed/paid bookings) */}
+              {/* Handle both formats: booking.reviewRating OR booking.review.rating */}
+              {(booking.status === 'COMPLETED' || booking.status === 'PAID') && (booking.reviewRating || booking.review?.rating) && (
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Review</h4>
+                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Customer Feedback</h4>
                   <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
                     <div className="flex items-center gap-1 mb-2">
                       {[1, 2, 3, 4, 5].map(star => (
                         <Star
                           key={star}
-                          className={`w-5 h-5 ${star <= booking.reviewRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                          className={`w-5 h-5 ${star <= (booking.reviewRating || booking.review?.rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
                         />
                       ))}
                       <span className="ml-2 font-semibold text-gray-700">
-                        {booking.reviewRating.toFixed(1)}
+                        {(booking.reviewRating || booking.review?.rating)?.toFixed(1)}
                       </span>
                     </div>
-                    {booking.reviewComment && (
-                      <p className="text-gray-700 italic">"{booking.reviewComment}"</p>
+                    {(booking.reviewComment || booking.review?.comment) && (
+                      <p className="text-gray-700 italic">"{booking.reviewComment || booking.review?.comment}"</p>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Payment Info (for completed bookings) */}
-              {booking.status === 'COMPLETED' && booking.paidAt && (
+              {/* Payment Info (for completed/paid bookings) */}
+              {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.paidAt && (
                 <div className="space-y-3">
                   <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Payment</h4>
                   <div className="p-4 bg-green-50 rounded-xl border border-green-100">

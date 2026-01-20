@@ -543,6 +543,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."paidAt",
         b."tipAmountCents",
         b."totalPaidCents",
+        b."reviewRating",
+        b."reviewComment",
+        b."reviewedAt",
         conv.service_name,
         conv.location,
         conv.notes,
@@ -586,6 +589,10 @@ router.get('/:id', authenticate, async (req, res, next) => {
       totalPaidCents: row.totalPaidCents,
       location: row.location,
       notes: row.notes,
+      // Review data (from consumer after service completion)
+      reviewRating: row.reviewRating || null,
+      reviewComment: row.reviewComment || null,
+      reviewedAt: row.reviewedAt || null,
       barber: {
         id: row.barber_user_id,
         recordId: row.barber_record_id,
