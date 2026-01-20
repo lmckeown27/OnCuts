@@ -167,44 +167,57 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
         [user.campusId]
       );
 
-      // Send email to each campus manager
-      for (const manager of campusManagers.rows) {
-        const managerName = `${manager.first_name} ${manager.last_name}`.trim();
-        
+      // Get campus name for the application
+      const campusInfo = await pool.query('SELECT name FROM campuses WHERE id = $1', [user.campusId]);
+      const campusName = campusInfo.rows[0]?.name || applicant.campus_name || 'Unknown Campus';
+
+      const applicationDetails = {
+        applicantName: `${applicant.first_name} ${applicant.last_name}`.trim(),
+        applicantEmail: applicant.email,
+        campusName,
+        yearsExperience,
+        hasLicense: hasLicense || false,
+        licenseNumber: licenseNumber || undefined,
+        specialties,
+        hasOwnTools: hasOwnTools || false,
+        availableHours,
+        whyBeBarber,
+        portfolioDescription: portfolioDescription || undefined,
+        socialMedia: socialMedia || undefined,
+        additionalNotes: additionalNotes || undefined,
+        applicationId: application.id,
+        submittedAt: new Date(application.created_at).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        })
+      };
+
+      if (campusManagers.rows.length > 0) {
+        // Send email to each campus manager
+        for (const manager of campusManagers.rows) {
+          const managerName = `${manager.first_name} ${manager.last_name}`.trim();
+          
+          await sendBarberApplicationNotification(
+            manager.email,
+            managerName,
+            applicationDetails
+          );
+          
+          logger.info(`Barber application notification sent to campus manager: ${manager.email}`);
+        }
+      } else {
+        // No campus manager for this campus - send to CampusCut support
         await sendBarberApplicationNotification(
-          manager.email,
-          managerName,
-          {
-            applicantName: `${applicant.first_name} ${applicant.last_name}`.trim(),
-            applicantEmail: applicant.email,
-            campusName: applicant.campus_name || 'Unknown Campus',
-            yearsExperience,
-            hasLicense: hasLicense || false,
-            licenseNumber: licenseNumber || undefined,
-            specialties,
-            hasOwnTools: hasOwnTools || false,
-            availableHours,
-            whyBeBarber,
-            portfolioDescription: portfolioDescription || undefined,
-            socialMedia: socialMedia || undefined,
-            additionalNotes: additionalNotes || undefined,
-            applicationId: application.id,
-            submittedAt: new Date(application.created_at).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit'
-            })
-          }
+          'campuscuthelp@gmail.com',
+          'CampusCut Team',
+          applicationDetails
         );
         
-        logger.info(`Barber application notification sent to campus manager: ${manager.email}`);
-      }
-
-      if (campusManagers.rows.length === 0) {
-        logger.warn(`No campus manager found for campus ${user.campusId} to notify about application ${application.id}`);
+        logger.info(`Barber application notification sent to campuscuthelp@gmail.com (no campus manager for campus ${user.campusId})`);
       }
     } catch (emailError: any) {
       // Don't fail the application submission if email fails
