@@ -17,6 +17,7 @@
     "@aptos-labs/wallet-adapter-ant-design": "^5.3.6",
     "@aptos-labs/wallet-adapter-core": "^7.10.0",
     "@aptos-labs/wallet-adapter-react": "^7.2.6",
+    "@simplewebauthn/browser": "^10.0.0",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.5.3",
     "@tanstack/react-query": "^5.90.11",

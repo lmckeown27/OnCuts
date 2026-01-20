@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, Fingerprint, ScanFace } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
 import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
+import webauthnService from '../../services/webauthn.service';
 
 interface LoginForm {
   email: string;
@@ -13,14 +14,57 @@ interface LoginForm {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, user } = useAuthStore();
+  const { login, loginWithTokens, user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<LoginForm>({
     email: '',
     password: ''
   });
+  
+  // Biometric login state
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [emailHasBiometric, setEmailHasBiometric] = useState(false);
+  const [biometricType, setBiometricType] = useState('Biometric');
+  const [checkingBiometric, setCheckingBiometric] = useState(false);
+  
+  // Check if biometric login is available on this device
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const available = await webauthnService.isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (available) {
+        setBiometricType(webauthnService.getBiometricType());
+      }
+    };
+    checkBiometric();
+  }, []);
+  
+  // Check if entered email has biometric credentials
+  useEffect(() => {
+    const checkEmailBiometric = async () => {
+      if (!biometricAvailable || !formData.email || !isValidEmail(formData.email)) {
+        setEmailHasBiometric(false);
+        return;
+      }
+      
+      setCheckingBiometric(true);
+      try {
+        const hasBiometric = await webauthnService.checkEmailHasBiometrics(formData.email);
+        setEmailHasBiometric(hasBiometric);
+      } catch {
+        setEmailHasBiometric(false);
+      } finally {
+        setCheckingBiometric(false);
+      }
+    };
+    
+    // Debounce the check
+    const timeout = setTimeout(checkEmailBiometric, 500);
+    return () => clearTimeout(timeout);
+  }, [formData.email, biometricAvailable]);
   
   // Redirect based on user role after login
   const redirectBasedOnRole = (userType: string) => {
@@ -96,6 +140,35 @@ export default function LoginPage() {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (!emailHasBiometric || !formData.email) return;
+    
+    setIsBiometricLoading(true);
+    setError(null);
+    
+    try {
+      const result = await webauthnService.loginWithBiometric(formData.email);
+      
+      // Use the loginWithTokens function to set auth state
+      loginWithTokens(result.user, result.accessToken, result.refreshToken);
+      
+      toast.success(`Signed in with ${biometricType}!`);
+      
+      // Redirect based on user role
+      if (result.user.role === 'ADMIN' || result.user.role === 'CAMPUS_MANAGER' || result.user.role === 'BARBER') {
+        navigate('/web/barber');
+      } else {
+        navigate('/web/consumer');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Biometric login failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsBiometricLoading(false);
     }
   };
 
@@ -222,6 +295,40 @@ export default function LoginPage() {
                 'Sign In'
               )}
             </button>
+
+            {/* Biometric Login Button - Shows when email has registered biometrics */}
+            {biometricAvailable && emailHasBiometric && (
+              <button
+                type="button"
+                onClick={handleBiometricLogin}
+                disabled={isBiometricLoading}
+                className="w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-900 hover:to-black text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-3"
+              >
+                {isBiometricLoading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Authenticating...</span>
+                  </div>
+                ) : (
+                  <>
+                    {webauthnService.getBiometricIcon() === 'face' ? (
+                      <ScanFace className="w-6 h-6" />
+                    ) : (
+                      <Fingerprint className="w-6 h-6" />
+                    )}
+                    <span>Sign in with {biometricType}</span>
+                  </>
+                )}
+              </button>
+            )}
+            
+            {/* Checking biometric indicator */}
+            {biometricAvailable && checkingBiometric && formData.email && isValidEmail(formData.email) && (
+              <div className="text-center text-gray-400 text-sm flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                <span>Checking for {biometricType}...</span>
+              </div>
+            )}
 
             {/* Forgot Password Link */}
             <div className="text-center">

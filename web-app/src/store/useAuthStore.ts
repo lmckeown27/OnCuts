@@ -3,6 +3,16 @@ import type { User } from '../types';
 import authService from '../services/auth.service';
 import socketService from '../services/socket.service';
 
+interface WebAuthnUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  campusId: string | null;
+  hasBarberProfile: boolean;
+}
+
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -14,6 +24,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
+  loginWithTokens: (userData: WebAuthnUser, accessToken: string, refreshToken: string) => void;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
   verifyEmail: (email: string, code: string) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
@@ -114,6 +125,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  // Login with tokens from WebAuthn (biometric) authentication
+  loginWithTokens: (userData, accessToken, refreshToken) => {
+    // Map backend role to frontend format
+    const rawRole = (userData.role || '').toString().toLowerCase();
+    const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
+    
+    const isAdmin = mappedRole === 'admin';
+    const isCampusManager = mappedRole === 'campus_manager' || isAdmin;
+    
+    const user: User = {
+      id: userData.id,
+      email: userData.email,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
+      is_verified: true,
+      is_admin: isAdmin,
+      is_campus_manager: isCampusManager,
+      has_barber_profile: userData.hasBarberProfile,
+      created_at: new Date().toISOString(),
+      campus_id: userData.campusId || undefined,
+    };
+    
+    // Store tokens and user in localStorage
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    localStorage.setItem('user', JSON.stringify(user));
+    
+    set({ 
+      user, 
+      isAuthenticated: true, 
+      isLoading: false,
+      activeRole: null
+    });
+    socketService.connect();
   },
 
   signup: async (data) => {

@@ -98,6 +98,9 @@ import campusManagerRoutes from './routes/campus-manager.routes';
 // Barber Applications
 import barberApplicationRoutes from './routes/barber-application.routes';
 
+// WebAuthn (Biometric Login - Touch ID, Face ID, Windows Hello)
+import webauthnRoutes from './routes/webauthn.routes';
+
 // Simple Booking Routes (matches production schema)
 import bookingSimpleRoutes from './routes/booking-simple.routes';
 
@@ -288,6 +291,7 @@ app.get('/health', async (req: Request, res: Response) => {
 
 // API Routes (V1 - versioned routes)
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/auth/webauthn', webauthnRoutes);  // Biometric login (Touch ID, Face ID)
 app.use('/api/v1/barbers', barberRoutes);
 app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
