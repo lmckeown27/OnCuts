@@ -11,6 +11,7 @@ import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDo
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
+import BarberApplicationModal from '../components/BarberApplicationModal';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
 import MainChairLogo from '../assets/logos/Main_Chair.webp';
@@ -44,6 +45,7 @@ export default function LandingPage() {
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+  const [showBarberApplication, setShowBarberApplication] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
@@ -1064,7 +1066,7 @@ export default function LandingPage() {
           </h2>
           <div className="flex justify-center">
             <button 
-              onClick={() => navigate('/web')}
+              onClick={() => setShowBarberApplication(true)}
               className="flex items-center gap-2 px-6 py-4 rounded-lg bg-white hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
               <Scissors className="w-5 h-5 text-primary-600" />
@@ -1073,6 +1075,13 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Barber Application Modal (Guest Mode) */}
+      <BarberApplicationModal
+        isOpen={showBarberApplication}
+        onClose={() => setShowBarberApplication(false)}
+        guestMode={true}
+      />
 
       {/* Contact Support Popup */}
       {showContactPopup && (

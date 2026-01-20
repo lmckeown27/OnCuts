@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -466,6 +466,219 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       success: true,
       message: `Application ${status === 'approved' ? 'approved! User has been promoted to barber.' : 'updated successfully.'}`,
       data: updatedApplication
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Guest Barber Application Body Interface
+ */
+interface GuestBarberApplicationBody extends BarberApplicationBody {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+/**
+ * Submit a guest barber application (no authentication required)
+ * POST /api/v1/barber-applications/guest
+ * 
+ * This allows users to apply to become a barber before creating an account.
+ * The application is stored with their email and can be linked when they sign up.
+ */
+export const submitGuestApplication = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      email,
+      firstName,
+      lastName,
+      campusId,
+      yearsExperience,
+      hasLicense,
+      licenseNumber,
+      specialties,
+      hasOwnTools,
+      availableHours,
+      whyBeBarber,
+      portfolioDescription,
+      socialMedia,
+      additionalNotes
+    }: GuestBarberApplicationBody = req.body;
+
+    // Validate required fields
+    if (!email) {
+      throw new ApiError(400, 'Email address is required');
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new ApiError(400, 'Please enter a valid email address');
+    }
+
+    if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
+      throw new ApiError(400, 'Missing required fields: campusId, yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    }
+
+    // Verify the campus exists
+    const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId]);
+    if (campusCheck.rows.length === 0) {
+      throw new ApiError(400, 'Invalid campus selected');
+    }
+
+    const campusName = campusCheck.rows[0].name;
+
+    // Check if email already has a user account
+    const existingUser = await pool.query('SELECT id, role FROM users WHERE email = $1', [email.toLowerCase()]);
+    
+    if (existingUser.rows.length > 0) {
+      const user = existingUser.rows[0];
+      if (user.role === 'BARBER') {
+        throw new ApiError(400, 'This email is already registered as a barber. Please sign in instead.');
+      }
+      // If user exists but isn't a barber, suggest they sign in to apply
+      throw new ApiError(400, 'This email is already registered. Please sign in to complete your barber application.');
+    }
+
+    // Check for existing guest application with this email
+    const existingGuestApp = await pool.query(
+      `SELECT id, status FROM guest_barber_applications 
+       WHERE email = $1 AND status IN ('pending', 'under_review')`,
+      [email.toLowerCase()]
+    );
+
+    if (existingGuestApp.rows.length > 0) {
+      throw new ApiError(400, 'You already have a pending application with this email. Please wait for it to be reviewed or sign up to check your status.');
+    }
+
+    // Ensure the guest_barber_applications table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS guest_barber_applications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        campus_id UUID NOT NULL REFERENCES campuses(id),
+        years_experience VARCHAR(50) NOT NULL,
+        has_license BOOLEAN DEFAULT FALSE,
+        license_number VARCHAR(100),
+        specialties TEXT[] NOT NULL,
+        has_own_tools BOOLEAN DEFAULT TRUE,
+        available_hours TEXT NOT NULL,
+        why_be_barber TEXT NOT NULL,
+        portfolio_description TEXT,
+        social_media TEXT,
+        additional_notes TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        linked_user_id UUID REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert the guest application
+    const result = await pool.query(
+      `INSERT INTO guest_barber_applications (
+        email, first_name, last_name, campus_id, years_experience, has_license, license_number,
+        specialties, has_own_tools, available_hours, why_be_barber,
+        portfolio_description, social_media, additional_notes, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+      RETURNING id, status, created_at`,
+      [
+        email.toLowerCase(),
+        firstName || null,
+        lastName || null,
+        campusId,
+        yearsExperience,
+        hasLicense || false,
+        licenseNumber || null,
+        specialties,
+        hasOwnTools !== false, // Default to true
+        availableHours,
+        whyBeBarber,
+        portfolioDescription || null,
+        socialMedia || null,
+        additionalNotes || null
+      ]
+    );
+
+    const application = result.rows[0];
+
+    logger.info(`New guest barber application submitted: ${application.id} from ${email}`);
+
+    // Send notification email to campus manager(s)
+    try {
+      const campusManagers = await pool.query(
+        `SELECT u.id, u.first_name, u.last_name, u.email
+         FROM users u
+         JOIN barbers b ON u.id = b."userId"
+         WHERE b."campusId" = $1 AND b."isCampusManager" = true AND u.role = 'CAMPUS_MANAGER'`,
+        [campusId]
+      );
+
+      const applicantName = firstName && lastName 
+        ? `${firstName} ${lastName}`.trim() 
+        : email.split('@')[0]; // Use email prefix as fallback name
+
+      const applicationDetails = {
+        applicantName,
+        applicantEmail: email,
+        campusName,
+        yearsExperience,
+        hasLicense: hasLicense || false,
+        licenseNumber: licenseNumber || undefined,
+        specialties,
+        hasOwnTools: hasOwnTools !== false,
+        availableHours,
+        whyBeBarber,
+        portfolioDescription: portfolioDescription || undefined,
+        socialMedia: socialMedia || undefined,
+        additionalNotes: additionalNotes || undefined,
+        applicationId: application.id,
+        submittedAt: new Date(application.created_at).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        })
+      };
+
+      if (campusManagers.rows.length > 0) {
+        for (const manager of campusManagers.rows) {
+          const managerName = `${manager.first_name} ${manager.last_name}`.trim();
+          await sendBarberApplicationNotification(
+            manager.email,
+            managerName,
+            applicationDetails
+          );
+          logger.info(`Guest barber application notification sent to campus manager: ${manager.email}`);
+        }
+      } else {
+        // No campus manager - send to support
+        await sendBarberApplicationNotification(
+          'campuscuthelp@gmail.com',
+          'CampusCut Team',
+          applicationDetails
+        );
+        logger.info(`Guest barber application notification sent to campuscuthelp@gmail.com (no campus manager)`);
+      }
+    } catch (emailError: any) {
+      logger.error(`Failed to send guest application notification email:`, emailError.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Application submitted successfully! We\'ll review your application and contact you at the email address provided.',
+      data: {
+        id: application.id,
+        email,
+        status: application.status,
+        createdAt: application.created_at
+      }
     });
   } catch (error) {
     next(error);

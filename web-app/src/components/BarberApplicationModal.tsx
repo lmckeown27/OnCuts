@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon, UserX } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
-import { barberApplicationService, BarberApplication } from '../services/barber-application.service';
+import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
 import campusService from '../services/campus.service';
 import barberService from '../services/barber.service';
@@ -12,9 +12,12 @@ interface BarberApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmitSuccess?: () => void;
+  /** When true, shows email field and uses guest submission endpoint (no auth required) */
+  guestMode?: boolean;
 }
 
 interface ApplicationForm {
+  email: string; // Added for guest mode
   campusId: string;
   yearsExperience: string;
   hasLicense: boolean;
@@ -29,7 +32,7 @@ interface ApplicationForm {
   additionalNotes: string;
 }
 
-export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess }: BarberApplicationModalProps) {
+export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess, guestMode = false }: BarberApplicationModalProps) {
   const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,12 +128,19 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     };
     
     if (isOpen) {
-      checkExistingApplicationAndDemotedStatus();
+      // Skip existing application check for guest mode (no user to check)
+      if (!guestMode) {
+        checkExistingApplicationAndDemotedStatus();
+      } else {
+        setCheckingExistingApplication(false);
+        setExistingApplication(null);
+      }
       loadCampuses();
     }
-  }, [isOpen, user?.id]);
+  }, [isOpen, user?.id, guestMode]);
 
   const [form, setForm] = useState<ApplicationForm>({
+    email: '',
     campusId: '',
     yearsExperience: '',
     hasLicense: false,
@@ -158,23 +168,46 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setIsSubmitting(true);
     
     try {
-      const result = await barberApplicationService.submit({
-        campusId: form.campusId,
-        yearsExperience: form.yearsExperience,
-        hasLicense: form.hasLicense,
-        licenseNumber: form.licenseNumber || undefined,
-        specialties: form.specialties,
-        hasOwnTools: !form.needsTools,
-        toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
-        availableHours: form.availableHours,
-        whyBeBarber: form.whyBeBarber,
-        portfolioDescription: form.portfolioDescription || undefined,
-        socialMedia: form.socialMedia || undefined,
-        additionalNotes: form.additionalNotes || undefined
-      });
+      let result: { applicationId?: string; id?: string; status?: string; submittedAt?: string; createdAt?: string };
+      
+      if (guestMode) {
+        // Guest mode - use guest endpoint (no auth required)
+        const guestResult = await barberApplicationService.submitGuestApplication({
+          email: form.email,
+          campusId: form.campusId,
+          yearsExperience: form.yearsExperience,
+          hasLicense: form.hasLicense,
+          licenseNumber: form.licenseNumber || undefined,
+          specialties: form.specialties,
+          hasOwnTools: !form.needsTools,
+          toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
+          availableHours: form.availableHours,
+          whyBeBarber: form.whyBeBarber,
+          portfolioDescription: form.portfolioDescription || undefined,
+          socialMedia: form.socialMedia || undefined,
+          additionalNotes: form.additionalNotes || undefined
+        });
+        result = { applicationId: guestResult.id, status: guestResult.status, submittedAt: guestResult.createdAt };
+      } else {
+        // Authenticated mode - use regular endpoint
+        result = await barberApplicationService.submit({
+          campusId: form.campusId,
+          yearsExperience: form.yearsExperience,
+          hasLicense: form.hasLicense,
+          licenseNumber: form.licenseNumber || undefined,
+          specialties: form.specialties,
+          hasOwnTools: !form.needsTools,
+          toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
+          availableHours: form.availableHours,
+          whyBeBarber: form.whyBeBarber,
+          portfolioDescription: form.portfolioDescription || undefined,
+          socialMedia: form.socialMedia || undefined,
+          additionalNotes: form.additionalNotes || undefined
+        });
+      }
       
       // API returns { applicationId, status, submittedAt } on success
-      if (result && result.applicationId) {
+      if (result && (result.applicationId || result.id)) {
         // Close the application modal smoothly
         setIsVisible(false);
         
@@ -199,7 +232,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     }
   };
 
-  const canProceedStep1 = form.campusId && form.yearsExperience && form.specialties.length > 0;
+  // Email validation helper
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  
+  // In guest mode, email is required for step 1
+  const canProceedStep1 = form.campusId && form.yearsExperience && form.specialties.length > 0 && 
+    (!guestMode || (form.email && isValidEmail(form.email)));
   const canProceedStep2 = form.whyBeBarber.trim().length > 0 && form.availableHours;
   const canSubmit = canProceedStep1 && canProceedStep2;
 
@@ -527,6 +565,26 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           {step === 1 ? (
             /* Step 1: Campus Selection, Experience & Skills */
             <div className="space-y-6">
+              {/* Email Field - Guest Mode Only */}
+              {guestMode && (
+                <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    <Mail className="w-4 h-4 inline mr-2 text-primary-600" />
+                    Your Email Address *
+                  </label>
+                  <p className="text-xs text-gray-600 mb-3">
+                    We'll use this to contact you about your application.
+                  </p>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="your.email@university.edu"
+                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                  />
+                </div>
+              )}
+
               {/* Campus Selection - First Question */}
               <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">

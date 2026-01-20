@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   submitApplication,
+  submitGuestApplication,
   getMyApplication,
   getAllApplications,
   updateApplicationStatus
@@ -8,6 +9,13 @@ import {
 import { authenticate, requireCampusManager } from '../middleware/auth.middleware';
 
 const router = Router();
+
+/**
+ * @route   POST /api/v1/barber-applications/guest
+ * @desc    Submit a guest barber application (no authentication required)
+ * @access  Public
+ */
+router.post('/guest', submitGuestApplication);
 
 /**
  * @route   POST /api/v1/barber-applications

@@ -15,6 +15,19 @@ export interface BarberApplicationForm {
   additionalNotes?: string;
 }
 
+export interface GuestBarberApplicationForm extends BarberApplicationForm {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+export interface GuestApplicationResponse {
+  id: string;
+  email: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface BarberApplication {
   id: string;
   user_id: string;
@@ -117,6 +130,14 @@ class BarberApplicationService {
     status: 'approved' | 'rejected' | 'interview_scheduled'
   ): Promise<void> {
     await api.put(`/barber-applications/${applicationId}/status`, { status });
+  }
+
+  /**
+   * Submit a guest barber application (no authentication required)
+   * Used from the landing page when user is not logged in
+   */
+  async submitGuestApplication(form: GuestBarberApplicationForm): Promise<GuestApplicationResponse> {
+    return api.post<GuestApplicationResponse>('/barber-applications/guest', form);
   }
 }
 
