@@ -20,6 +20,7 @@ import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
+import PayoutSettingsModal from '../components/PayoutSettingsModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -68,6 +69,8 @@ export default function BarberPage() {
   
   const [showBarberChats, setShowBarberChats] = useState(false);
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
+  
+  const [showPayoutSettings, setShowPayoutSettings] = useState(false);
   
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
@@ -474,7 +477,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
-                      navigate(`${platformPrefix}/barber/connect`);
+                      setShowPayoutSettings(true);
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -742,6 +745,12 @@ export default function BarberPage() {
           }}
         />
       )}
+
+      {/* Payout Settings Modal */}
+      <PayoutSettingsModal
+        isOpen={showPayoutSettings}
+        onClose={() => setShowPayoutSettings(false)}
+      />
 
       {/* Service Details Modal */}
       {selectedAppointment && (
