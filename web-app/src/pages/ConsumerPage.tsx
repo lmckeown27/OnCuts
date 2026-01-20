@@ -584,7 +584,7 @@ export default function ConsumerPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DiscoveryView navigate={navigate} />
+        <DiscoveryView navigate={navigate} onBecomeBarberClick={handleBecomeBarberClick} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -987,7 +987,7 @@ export default function ConsumerPage() {
   );
 }
 
-function DiscoveryView({ navigate }: { navigate: any }) {
+function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBecomeBarberClick: () => void }) {
   const location = useLocation();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [filteredBarbers, setFilteredBarbers] = useState<Barber[]>([]);
@@ -1265,19 +1265,7 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               Try a different university
             </button>
             <button
-              onClick={() => {
-                if (!user) {
-                  scrollToTopAndOpen(setShowLoginPrompt);
-                  return;
-                }
-                if (hasPendingApplication) {
-                  openPendingPopup();
-                } else if (hasRejectedApplication) {
-                  openRejectedPopup();
-                } else {
-                  scrollToTopAndOpen(setShowBarberApplication);
-                }
-              }}
+              onClick={onBecomeBarberClick}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
             >
               <Scissors className="w-4 h-4 text-primary-600" />
