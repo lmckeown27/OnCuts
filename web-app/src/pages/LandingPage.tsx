@@ -316,15 +316,11 @@ export default function LandingPage() {
       {/* Hero Section */}
       <div className="pt-32 pb-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-            Earn More,<br className="md:hidden" /> Pay Less
-          </h1>
-          
           {/* CTA Button */}
           <div className="flex justify-center mb-8">
             <button
               onClick={handleFindBarberClick}
-              className="px-12 py-5 sm:py-6 bg-primary-400 hover:bg-primary-500 text-white font-bold text-xl sm:text-2xl rounded-2xl transition-all shadow-lg hover:shadow-xl active:scale-95"
+              className="px-16 py-7 sm:py-8 bg-primary-400 hover:bg-primary-500 text-white font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95"
             >
               Find Barber
             </button>
