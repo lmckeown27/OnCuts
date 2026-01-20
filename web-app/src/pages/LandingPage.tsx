@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -264,7 +264,7 @@ export default function LandingPage() {
                 onClick={() => navigate('/web')}
                 className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
               >
-                Become a Barber
+                Sign In
               </button>
             </div>
 
@@ -305,7 +305,7 @@ export default function LandingPage() {
                   }} 
                   className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
                 >
-                  Become a Barber
+                  Sign In
                 </button>
               </div>
             </div>
@@ -1060,14 +1060,15 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Ready to Book?
+            Want to be a CampusCut Barber?
           </h2>
           <div className="flex justify-center">
             <button 
-              onClick={handleFindBarberClick}
-              className="px-8 py-4 bg-white hover:bg-gray-50 text-primary-600 font-bold rounded-lg transition-all shadow-lg hover:shadow-xl active:scale-95"
+              onClick={() => navigate('/web')}
+              className="flex items-center gap-2 px-6 py-4 rounded-lg bg-white hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              Find Barber
+              <Scissors className="w-5 h-5 text-primary-600" />
+              <span className="text-lg font-bold text-primary-600">Become a Barber</span>
             </button>
           </div>
         </div>
