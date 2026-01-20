@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star } from 'lucide-react';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import socketService from '../services/socket.service';
@@ -978,6 +978,12 @@ interface ConfirmedBooking {
   location?: string;
   notes?: string;
   serviceName?: string;
+  // Review data (from consumer after service completion)
+  review?: {
+    rating: number;
+    comment?: string;
+    reviewedAt?: string;
+  };
   consumer: {
     firstName: string;
     lastName: string;
@@ -1764,6 +1770,19 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                           )}
                         </div>
                       )}
+                      {/* Review display for completed/paid bookings */}
+                      {(apt.status === 'COMPLETED' || apt.status === 'PAID') && apt.review && (
+                        <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
+                          <div className="flex items-center gap-1 mb-1">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <span key={star} className={star <= apt.review.rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
+                            ))}
+                          </div>
+                          {apt.review.comment && (
+                            <p className="text-sm text-gray-600 italic">"{apt.review.comment}"</p>
+                          )}
+                        </div>
+                      )}
                       {/* Bottom row: Time */}
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-primary-400 text-base sm:text-lg lg:text-xl">{formatTime(apt.scheduledTime)}</p>
@@ -2402,6 +2421,29 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                         </div>
                       )}
 
+                      {/* Customer Feedback (for completed/paid bookings) */}
+                      {(selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID') && selectedBookingInline.review && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Customer Feedback</h4>
+                          <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                            <div className="flex items-center gap-1 mb-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star
+                                  key={star}
+                                  className={`w-5 h-5 ${star <= selectedBookingInline.review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                                />
+                              ))}
+                              <span className="ml-2 font-semibold text-gray-700">
+                                {selectedBookingInline.review.rating?.toFixed(1)}
+                              </span>
+                            </div>
+                            {selectedBookingInline.review.comment && (
+                              <p className="text-gray-700 italic">"{selectedBookingInline.review.comment}"</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Booking Reference */}
                       <div className="text-center pt-2">
                         <p className="text-xs text-gray-400">Booking Reference</p>
@@ -2507,6 +2549,19 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
                                   {apt.notes}
                                 </span>
+                              )}
+                            </div>
+                          )}
+                          {/* Review display for completed/paid bookings */}
+                          {(apt.status === 'COMPLETED' || apt.status === 'PAID') && apt.review && (
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
+                              <div className="flex items-center gap-1 mb-1">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <span key={star} className={star <= apt.review.rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
+                                ))}
+                              </div>
+                              {apt.review.comment && (
+                                <p className="text-sm text-gray-600 italic">"{apt.review.comment}"</p>
                               )}
                             </div>
                           )}
