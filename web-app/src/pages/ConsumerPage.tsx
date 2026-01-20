@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, GraduationCap, Check, Trash2 } from 'lucide-react';
+import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -1250,7 +1250,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       {/* No Results - University Based */}
       {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
-          <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers at {selectedUniversity.shortName || selectedUniversity.name}</p>
           <p className="text-xs sm:text-sm text-gray-500 mb-4">
             There are no barbers registered at this campus yet.
