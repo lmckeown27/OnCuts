@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, DollarSign, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { X, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Button from './Button';
@@ -169,9 +169,6 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
               {/* No Account - Setup */}
               {!status?.has_account && (
                 <div className="text-center py-6">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
-                    <DollarSign className="h-8 w-8 text-blue-600" />
-                  </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Set Up Your Payout Account
                   </h3>
