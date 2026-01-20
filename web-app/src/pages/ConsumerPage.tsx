@@ -1250,20 +1250,25 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       {/* No Results - University Based */}
       {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
-          <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers at {selectedUniversity.shortName || selectedUniversity.name}</p>
-          <p className="text-xs sm:text-sm text-gray-500 mb-4">
-            There are no barbers registered at this campus yet.
-            <br />
-            Check back soon as more barbers join the platform!
-          </p>
-          <div className="flex flex-col items-center gap-3">
+          {/* No barbers message with try different university */}
+          <div className="mb-10">
+            <p className="text-gray-600 text-base sm:text-lg mb-2">No barbers at {selectedUniversity.shortName || selectedUniversity.name}</p>
+            <p className="text-xs sm:text-sm text-gray-500 mb-4">
+              There are no barbers registered at this campus yet.
+              <br />
+              Check back soon as more barbers join the platform!
+            </p>
             <button 
               onClick={() => navigate('/')}
               className="text-primary-600 hover:text-primary-700 underline"
             >
               Try a different university
             </button>
-            <p className="text-xs sm:text-sm text-gray-500 mt-2">
+          </div>
+          
+          {/* Become a barber CTA - separated with vertical space */}
+          <div className="flex flex-col items-center gap-3 pt-6 border-t border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500">
               Want to be a barber at {selectedUniversity.shortName || selectedUniversity.name}?
             </p>
             <button
