@@ -19,19 +19,19 @@ const router = express.Router();
  * Create Stripe Connect account
  * POST /api/barber/connect/create
  */
-router.post('/connect/create', authenticate, requireRole('barber'), createConnectAccount);
+router.post('/connect/create', authenticate, requireRole('barber', 'admin'), createConnectAccount);
 
 /**
  * Get Connect account status
  * GET /api/barber/connect/status
  */
-router.get('/connect/status', authenticate, requireRole('barber'), getConnectStatus);
+router.get('/connect/status', authenticate, requireRole('barber', 'admin'), getConnectStatus);
 
 /**
  * Refresh onboarding link
  * POST /api/barber/connect/refresh
  */
-router.post('/connect/refresh', authenticate, requireRole('barber'), refreshOnboardingLink);
+router.post('/connect/refresh', authenticate, requireRole('barber', 'admin'), refreshOnboardingLink);
 
 /**
  * Handle onboarding return
