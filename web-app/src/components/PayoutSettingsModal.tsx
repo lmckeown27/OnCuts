@@ -179,13 +179,12 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={handleSetupPayouts}
-                    disabled={isCreatingAccount}
+                    disabled={true}
                   >
-                    {isCreatingAccount ? 'Redirecting to Stripe...' : 'Set Up Payouts'}
+                    Coming Soon
                   </Button>
                   <p className="text-xs text-gray-500 mt-4">
-                    Powered by Stripe Connect | Secure & PCI Compliant
+                    Payout setup will be available shortly
                   </p>
                 </div>
               )}
@@ -200,15 +199,14 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                     Complete Your Onboarding
                   </h3>
                   <p className="text-sm text-gray-600 mb-6">
-                    You started setting up payouts but didn't finish. Click below to continue.
+                    You started setting up payouts but didn't finish. This feature will be available soon.
                   </p>
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={handleContinueOnboarding}
-                    disabled={isCreatingAccount}
+                    disabled={true}
                   >
-                    {isCreatingAccount ? 'Redirecting...' : 'Continue Setup'}
+                    Coming Soon
                   </Button>
                 </div>
               )}
