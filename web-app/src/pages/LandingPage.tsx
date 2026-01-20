@@ -336,23 +336,8 @@ export default function LandingPage() {
       {/* Hero Section */}
       <div className="pt-32 pb-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50">
         <div className="max-w-5xl mx-auto text-center">
-          {/* CTA Button */}
-          <div className="flex justify-center mb-8">
-            <button
-              onClick={goToConsumerPage}
-              disabled={!selectedUniversity}
-              className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
-                selectedUniversity 
-                  ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Find Barber
-            </button>
-          </div>
-          
           {/* University Selector */}
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto mb-8">
             <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
               <UniversitySelector
                 value={selectedUniversity}
@@ -365,6 +350,21 @@ export default function LandingPage() {
                 Searching barbers at {selectedUniversity.shortName || selectedUniversity.name}
               </p>
             )}
+          </div>
+          
+          {/* CTA Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={goToConsumerPage}
+              disabled={!selectedUniversity}
+              className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
+                selectedUniversity 
+                  ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Find Barber
+            </button>
           </div>
         </div>
       </div>
