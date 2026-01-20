@@ -62,11 +62,11 @@ export default function MobileConsumerPage() {
         setSelectedUniversity(parsed);
       } catch (e) {
         localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
-        navigate('/web/find-barber');
+        navigate('/');
       }
     } else {
       // No university selected - redirect to find-barber
-      navigate('/web/find-barber');
+      navigate('/');
     }
   }, [navigate]);
 
@@ -229,7 +229,7 @@ export default function MobileConsumerPage() {
           Check back later or try a different university.
         </p>
         <button
-          onClick={() => navigate('/web/find-barber')}
+          onClick={() => navigate('/')}
           className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
         >
           Change University

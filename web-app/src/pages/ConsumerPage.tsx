@@ -1027,8 +1027,8 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         localStorage.removeItem(UNIVERSITY_STORAGE_KEY);
       }
     } else {
-      // No university selected - redirect to find-barber page
-      navigate('/web/find-barber');
+      // No university selected - redirect to landing page
+      navigate('/');
       return;
     }
     
@@ -1232,7 +1232,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           )}
           <span className="text-gray-400">•</span>
           <button 
-            onClick={() => navigate('/web/find-barber')}
+            onClick={() => navigate('/')}
             className="text-primary-600 hover:text-primary-700 underline"
           >
             Change
@@ -1259,7 +1259,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </p>
           <div className="flex flex-col items-center gap-3">
             <button 
-              onClick={() => navigate('/web/find-barber')}
+              onClick={() => navigate('/')}
               className="text-primary-600 hover:text-primary-700 underline"
             >
               Try a different university

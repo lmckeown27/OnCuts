@@ -22,7 +22,6 @@ const DiscoverBarbers = lazy(() => import('./pages/DiscoverBarbers'));
 const BarberProfilePage = lazy(() => import('./pages/BarberProfilePage'));
 const ConsumerPage = lazy(() => import('./pages/ConsumerPage'));
 const ConsumerBookingStatusPage = lazy(() => import('./pages/ConsumerBookingStatusPage'));
-const FindBarberPage = lazy(() => import('./pages/FindBarberPage'));
 const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
 const PostServicePaymentPage = lazy(() => import('./pages/PostServicePaymentPage'));
@@ -104,7 +103,8 @@ function AppContent() {
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
         
         {/* Web - Consumer/Student Routes */}
-        <Route path="/web/find-barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><FindBarberPage /></LazyRoute></PlatformGuard>} />
+        {/* Redirect /web/find-barber to landing page (university selector now on landing page) */}
+        <Route path="/web/find-barber" element={<Navigate to="/" replace />} />
         <Route path="/web/consumer" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/booking-status" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerBookingStatusPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ScheduleServicePage /></LazyRoute></PlatformGuard>} />

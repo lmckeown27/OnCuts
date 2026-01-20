@@ -7,11 +7,13 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors, ArrowRight } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
+import UniversitySelector from '../components/UniversitySelector';
+import type { University } from '../data/universities';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
 import MainChairLogo from '../assets/logos/Main_Chair.webp';
@@ -19,6 +21,9 @@ import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.webp';
 import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
 import { API_BASE_URL } from '../config/constants';
+
+// Storage key for selected university
+const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 // Type for campus with optional manager data
 interface CampusWithManager {
@@ -58,13 +63,26 @@ export default function LandingPage() {
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
+  // University selector state for hero section
+  const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
+  
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, viewport } = useViewport();
   
-  // Handle "Find Barber" click - navigate to questionnaire
-  const handleFindBarberClick = useCallback(() => {
-    navigate('/web/find-barber');
-  }, [navigate]);
+  // Handle university selection - save to localStorage and navigate to consumer page
+  const handleUniversitySelect = useCallback((university: University | null) => {
+    setSelectedUniversity(university);
+    if (university) {
+      localStorage.setItem(UNIVERSITY_STORAGE_KEY, JSON.stringify(university));
+    }
+  }, []);
+  
+  // Navigate to consumer page when university is selected
+  const goToConsumerPage = useCallback(() => {
+    if (selectedUniversity) {
+      navigate('/web/consumer');
+    }
+  }, [selectedUniversity, navigate]);
   
   // Mobile menu open/close with animation
   const openMobileMenu = () => {
@@ -321,11 +339,32 @@ export default function LandingPage() {
           {/* CTA Button */}
           <div className="flex justify-center mb-8">
             <button
-              onClick={handleFindBarberClick}
-              className="px-16 py-7 sm:py-8 bg-primary-400 hover:bg-primary-500 text-white font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95"
+              onClick={goToConsumerPage}
+              disabled={!selectedUniversity}
+              className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
+                selectedUniversity 
+                  ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               Find Barber
             </button>
+          </div>
+          
+          {/* University Selector */}
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+              <UniversitySelector
+                value={selectedUniversity}
+                onChange={handleUniversitySelect}
+                placeholder="Search for your university..."
+              />
+            </div>
+            {selectedUniversity && (
+              <p className="mt-4 text-sm text-gray-600">
+                Searching barbers at {selectedUniversity.shortName || selectedUniversity.name}
+              </p>
+            )}
           </div>
         </div>
       </div>
