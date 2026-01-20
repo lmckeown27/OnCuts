@@ -177,6 +177,113 @@ sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = false W
 sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE email = 'user@example.com';"
 ```
 
+### Delete User Completely (Handles All Foreign Keys)
+Use this when simple delete fails due to foreign key constraints. Deletes all related data first.
+
+```bash
+# Replace 'user@example.com' with the actual email
+sudo -u postgres psql -d campuscuts -c "
+DO \$\$
+DECLARE
+    target_id UUID;
+    target_email TEXT := 'user@example.com';
+BEGIN
+    -- Get user ID
+    SELECT id INTO target_id FROM users WHERE email = target_email;
+    
+    IF target_id IS NULL THEN
+        RAISE NOTICE 'User not found: %', target_email;
+        RETURN;
+    END IF;
+    
+    RAISE NOTICE 'Deleting user: % (%)', target_email, target_id;
+    
+    -- Delete payments linked to user's bookings (as consumer)
+    DELETE FROM payments WHERE booking_id IN (
+        SELECT id FROM bookings WHERE \"consumerId\" = target_id
+    );
+    RAISE NOTICE 'Deleted payments for consumer bookings';
+    
+    -- Delete payments linked to user's bookings (as barber via barbers table)
+    DELETE FROM payments WHERE booking_id IN (
+        SELECT b.id FROM bookings b
+        JOIN barbers bar ON b.\"barberId\" = bar.id
+        WHERE bar.\"userId\" = target_id
+    );
+    RAISE NOTICE 'Deleted payments for barber bookings';
+    
+    -- Delete bookings (as consumer)
+    DELETE FROM bookings WHERE \"consumerId\" = target_id;
+    RAISE NOTICE 'Deleted consumer bookings';
+    
+    -- Delete bookings (as barber)
+    DELETE FROM bookings WHERE \"barberId\" IN (
+        SELECT id FROM barbers WHERE \"userId\" = target_id
+    );
+    RAISE NOTICE 'Deleted barber bookings';
+    
+    -- Delete messages
+    DELETE FROM messages WHERE sender_id = target_id;
+    RAISE NOTICE 'Deleted messages';
+    
+    -- Delete conversations (as participant)
+    DELETE FROM conversations WHERE user1_id = target_id OR user2_id = target_id;
+    RAISE NOTICE 'Deleted conversations';
+    
+    -- Delete notifications
+    DELETE FROM notifications WHERE user_id = target_id;
+    RAISE NOTICE 'Deleted notifications';
+    
+    -- Delete barber applications
+    DELETE FROM barber_applications WHERE user_id = target_id;
+    RAISE NOTICE 'Deleted barber applications';
+    
+    -- Delete barber service location assignments
+    DELETE FROM barber_service_locations WHERE barber_id IN (
+        SELECT id FROM barbers WHERE \"userId\" = target_id
+    );
+    RAISE NOTICE 'Deleted barber service locations';
+    
+    -- Delete barber location assignments (old table)
+    DELETE FROM barber_locations WHERE barber_id IN (
+        SELECT id FROM barbers WHERE \"userId\" = target_id
+    );
+    RAISE NOTICE 'Deleted barber locations';
+    
+    -- Delete barber profile
+    DELETE FROM barbers WHERE \"userId\" = target_id;
+    RAISE NOTICE 'Deleted barber profile';
+    
+    -- Delete the user
+    DELETE FROM users WHERE id = target_id;
+    RAISE NOTICE 'User deleted successfully: %', target_email;
+    
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error: %', SQLERRM;
+    RAISE;
+END \$\$;
+"
+```
+
+### Delete User (One-Liner Quick Version)
+Simpler version that ignores tables that may not exist:
+
+```bash
+# Replace EMAIL with the actual email address
+EMAIL='user@example.com' && sudo -u postgres psql -d campuscuts -c "
+BEGIN;
+DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE \"consumerId\" = (SELECT id FROM users WHERE email = '$EMAIL'));
+DELETE FROM bookings WHERE \"consumerId\" = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM messages WHERE sender_id = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM conversations WHERE user1_id = (SELECT id FROM users WHERE email = '$EMAIL') OR user2_id = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM notifications WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM barber_applications WHERE user_id = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM barbers WHERE \"userId\" = (SELECT id FROM users WHERE email = '$EMAIL');
+DELETE FROM users WHERE email = '$EMAIL';
+COMMIT;
+"
+```
+
 ### Delete Account Completely (For Testing)
 Use this to fully delete an account so you can test account creation again.
 This deletes the user AND all related records in other tables.
