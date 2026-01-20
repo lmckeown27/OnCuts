@@ -98,7 +98,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
     try {
       const prefs = await userService.getNotificationPreferences(userId);
       setEmailNotifications(prefs.email_notifications);
-      setPushNotifications(prefs.push_notifications);
       setBookingReminders(prefs.booking_reminders);
       setPromotionalEmails(prefs.promotional_emails);
     } catch (error) {
