@@ -1264,6 +1264,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             >
               Try a different university
             </button>
+            <p className="text-xs text-gray-500 mt-2">
+              Want to be a barber at {selectedUniversity.shortName || selectedUniversity.name}?
+            </p>
             <button
               onClick={onBecomeBarberClick}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
