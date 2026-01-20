@@ -71,6 +71,7 @@ import adminGasWalletRoutes from './routes/admin-gas-wallet.routes';
 // Marketplace Engine Routes (Capitalistic)
 import marketplaceRoutes from './routes/marketplace.routes';
 import { marketplaceCronService } from './services/marketplace-cron.service';
+import { bookingReminderCronService } from './services/booking-reminder-cron.service';
 
 // Booking Request Routes (AirBnb-style)
 import bookingRequestRoutes from './routes/booking-request.routes';
@@ -453,6 +454,9 @@ httpServer.listen(PORT, async () => {
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
   await marketplaceCronService.startAllJobs();
+
+  // Start booking reminder cron job (sends reminders 1 hour before appointments)
+  bookingReminderCronService.start();
 
   // NOTE: Blockchain sync disabled - platform uses Stripe for payments
   // To re-enable blockchain features, uncomment below:

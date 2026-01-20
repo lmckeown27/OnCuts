@@ -171,32 +171,59 @@ export const uploadProfilePhoto = async (req: Request, res: Response) => {
   }
 };
 
+// Default notification preferences
+const DEFAULT_NOTIFICATION_PREFERENCES = {
+  email_notifications: true,
+  push_notifications: true,
+  sms_notifications: false,
+  booking_reminders: true,
+  promotional_emails: false,
+};
+
+/**
+ * Ensure notification_preferences column exists
+ */
+async function ensureNotificationPreferencesColumn(): Promise<void> {
+  try {
+    await pool.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS notification_preferences JSONB DEFAULT '${JSON.stringify(DEFAULT_NOTIFICATION_PREFERENCES)}'::jsonb
+    `);
+  } catch (error) {
+    // Column might already exist or other non-critical error
+    logger.debug('Notification preferences column check:', error);
+  }
+}
+
 /**
  * Get notification preferences
- * Note: notification_preferences column may not exist yet - return defaults
+ * Stores and retrieves from notification_preferences JSONB column
  */
 export const getNotificationPreferences = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    // Ensure column exists
+    await ensureNotificationPreferencesColumn();
+
+    // Get user with notification preferences
+    const result = await pool.query(
+      'SELECT id, notification_preferences FROM users WHERE id = $1',
+      [id]
+    );
     
-    if (userCheck.rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
       });
     }
 
-    // Return default notification preferences
-    // TODO: Add notification_preferences column to users table for customization
+    // Merge stored preferences with defaults (in case new preferences are added)
+    const storedPreferences = result.rows[0].notification_preferences || {};
     const preferences = {
-      email_notifications: true,
-      push_notifications: true,
-      sms_notifications: false,
-      booking_reminders: true,
-      promotional_emails: false,
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...storedPreferences,
     };
 
     res.json({
@@ -214,15 +241,21 @@ export const getNotificationPreferences = async (req: Request, res: Response) =>
 
 /**
  * Update notification preferences
- * Note: notification_preferences column may not exist yet - just return success
+ * Stores preferences in notification_preferences JSONB column
  */
 export const updateNotificationPreferences = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const preferences = req.body;
 
-    // Check if user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    // Ensure column exists
+    await ensureNotificationPreferencesColumn();
+
+    // Check if user exists and get current preferences
+    const userCheck = await pool.query(
+      'SELECT id, notification_preferences FROM users WHERE id = $1',
+      [id]
+    );
     
     if (userCheck.rows.length === 0) {
       return res.status(404).json({
@@ -231,16 +264,21 @@ export const updateNotificationPreferences = async (req: Request, res: Response)
       });
     }
 
-    // TODO: Add notification_preferences column to users table
-    // For now, just acknowledge the update
+    // Merge current preferences with new ones
+    const currentPreferences = userCheck.rows[0].notification_preferences || {};
     const updatedPreferences = {
-      email_notifications: true,
-      push_notifications: true,
-      sms_notifications: false,
-      booking_reminders: true,
-      promotional_emails: false,
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...currentPreferences,
       ...preferences,
     };
+
+    // Update the database
+    await pool.query(
+      'UPDATE users SET notification_preferences = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2',
+      [JSON.stringify(updatedPreferences), id]
+    );
+
+    logger.info(`Updated notification preferences for user ${id}:`, updatedPreferences);
 
     res.json({
       success: true,
