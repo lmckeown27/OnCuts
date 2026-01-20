@@ -578,7 +578,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                             .filter(campus => 
                               campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
                             )
-                            .slice(0, 50) // Limit to 50 results for performance
                             .map(campus => (
                               <button
                                 key={campus.id}
