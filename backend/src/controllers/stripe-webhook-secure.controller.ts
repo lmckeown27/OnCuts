@@ -20,6 +20,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
+// Platform fee percentage (5% to platform, 95% to barber)
+const PLATFORM_FEE_PERCENTAGE = 0.05;
+
 /**
  * Check if event was already processed (idempotency)
  */
@@ -46,6 +49,109 @@ async function markEventProcessed(
      ON CONFLICT (event_id) DO NOTHING`,
     [eventId, eventType, JSON.stringify(payload), result]
   );
+}
+
+/**
+ * Initiate barber payout via Stripe Connect
+ * Transfers 95% of payment (plus 100% of tip) to barber's connected account
+ */
+async function initiateBarberPayout(
+  client: any,
+  booking: any,
+  totalAmountCents: number,
+  tipAmountCents: number,
+  paymentIntentId: string
+): Promise<void> {
+  try {
+    // Get barber's Stripe Connect account ID
+    const barberResult = await client.query(
+      `SELECT u.stripe_account_id, u.first_name, u.last_name, u.email
+       FROM users u
+       JOIN barbers b ON b."userId" = u.id
+       WHERE b.id = $1`,
+      [booking.barberId]
+    );
+
+    if (barberResult.rows.length === 0) {
+      logger.warn(`No barber found for booking ${booking.id}`);
+      return;
+    }
+
+    const barber = barberResult.rows[0];
+    const stripeAccountId = barber.stripe_account_id;
+
+    if (!stripeAccountId) {
+      logger.warn(`Barber ${barber.email} has not connected Stripe account - payout skipped for booking ${booking.id}`);
+      // Store the pending payout for later when barber connects their account
+      await client.query(
+        `INSERT INTO pending_payouts (booking_id, barber_id, amount_cents, tip_cents, payment_intent_id, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, 'pending', NOW())
+         ON CONFLICT (booking_id) DO NOTHING`,
+        [booking.id, booking.barberId, totalAmountCents, tipAmountCents, paymentIntentId]
+      );
+      logger.info(`Created pending payout record for booking ${booking.id}`);
+      return;
+    }
+
+    // Calculate barber's earnings: 95% of service + 100% of tip
+    const serviceAmountCents = totalAmountCents - tipAmountCents;
+    const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
+    const barberServiceEarnings = serviceAmountCents - platformFeeCents;
+    const barberTotalEarnings = barberServiceEarnings + tipAmountCents;
+
+    if (barberTotalEarnings <= 0) {
+      logger.warn(`Barber earnings are $0 or negative for booking ${booking.id} - skipping payout`);
+      return;
+    }
+
+    // Create transfer to barber's connected account
+    const transfer = await stripe.transfers.create({
+      amount: barberTotalEarnings,
+      currency: 'usd',
+      destination: stripeAccountId,
+      transfer_group: `booking_${booking.id}`,
+      metadata: {
+        booking_id: booking.id.toString(),
+        payment_intent_id: paymentIntentId,
+        service_amount_cents: serviceAmountCents.toString(),
+        tip_amount_cents: tipAmountCents.toString(),
+        platform_fee_cents: platformFeeCents.toString(),
+        barber_email: barber.email,
+      },
+    });
+
+    logger.info(`💸 Transfer created: ${transfer.id} - $${barberTotalEarnings / 100} to ${barber.email}`);
+
+    // Update payment record with transfer info
+    await client.query(
+      `UPDATE payments 
+       SET stripe_transfer_id = $1,
+           platform_fee_cents = $2,
+           barber_earnings_cents = $3,
+           transfer_status = 'completed',
+           transferred_at = NOW()
+       WHERE payment_intent_id = $4`,
+      [transfer.id, platformFeeCents, barberTotalEarnings, paymentIntentId]
+    );
+
+    logger.info(`✅ Barber payout complete for booking ${booking.id}: $${barberTotalEarnings / 100} (service: $${barberServiceEarnings / 100}, tip: $${tipAmountCents / 100})`);
+
+  } catch (error: any) {
+    // Log error but don't fail the entire transaction - we can retry payouts
+    logger.error(`❌ Failed to create barber payout for booking ${booking.id}: ${error.message}`);
+    
+    // Store failed payout for retry
+    try {
+      await client.query(
+        `INSERT INTO pending_payouts (booking_id, barber_id, amount_cents, tip_cents, payment_intent_id, status, error_message, created_at)
+         VALUES ($1, $2, $3, $4, $5, 'failed', $6, NOW())
+         ON CONFLICT (booking_id) DO UPDATE SET status = 'failed', error_message = $6, updated_at = NOW()`,
+        [booking.id, booking.barberId, totalAmountCents, tipAmountCents, paymentIntentId, error.message]
+      );
+    } catch (insertError: any) {
+      logger.error(`Failed to record pending payout: ${insertError.message}`);
+    }
+  }
 }
 
 /**
@@ -279,8 +385,9 @@ async function handlePaymentIntentSucceeded(
       ]
     );
 
-    // 3. TODO: Trigger payout to barber via Stripe Connect
-    // await initiateBarberPayout(booking, amountCents);
+    // 3. Trigger payout to barber via Stripe Connect
+    const tipAmountCents = parseInt(tip_amount_cents || '0');
+    await initiateBarberPayout(client, booking, amountCents, tipAmountCents, paymentIntent.id);
 
     // 4. Mark webhook event as processed
     await client.query(

@@ -31,6 +31,7 @@ const BarberPage = lazy(() => import('./pages/BarberPage'));
 const BarberEarningsPage = lazy(() => import('./pages/barber/BarberEarningsPage'));
 const BarberServiceHistoryPage = lazy(() => import('./pages/barber/BarberServiceHistoryPage'));
 const AppointmentDetailsPage = lazy(() => import('./pages/AppointmentDetailsPage'));
+const BarberConnectOnboarding = lazy(() => import('./pages/BarberConnectOnboarding'));
 
 // Shared Pages - Lazy loaded
 const WalletPage = lazy(() => import('./pages/WalletPage'));
@@ -118,6 +119,9 @@ function AppContent() {
         <Route path="/web/barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/earnings" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberEarningsPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/service-history" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberServiceHistoryPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/barber/connect" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberConnectOnboarding /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/barber/connect/return" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberConnectOnboarding /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/barber/connect/refresh" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberConnectOnboarding /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/appointment/:appointmentId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><AppointmentDetailsPage /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Wallet */}
