@@ -258,40 +258,6 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                 </div>
               )}
 
-              {/* How Payouts Work */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  How Payouts Work
-                </h4>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-blue-600 mt-0.5">
-                      <CheckCircle className="w-5 h-5" />
-                    </div>
-                    <p className="ml-3">
-                      When a student pays for a completed booking, funds are securely transferred
-                      to your connected Stripe account
-                    </p>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-blue-600 mt-0.5">
-                      <CheckCircle className="w-5 h-5" />
-                    </div>
-                    <p className="ml-3">
-                      Payouts are transferred instantly to your bank account
-                      (typically arrives within 1-2 business days)
-                    </p>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-blue-600 mt-0.5">
-                      <CheckCircle className="w-5 h-5" />
-                    </div>
-                    <p className="ml-3">
-                      All payments are processed securely by Stripe
-                    </p>
-                  </div>
-                </div>
-              </div>
             </>
           )}
         </div>
