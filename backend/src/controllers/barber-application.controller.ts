@@ -3,7 +3,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
-import { sendBarberApplicationNotification } from '../services/email.service';
+import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -479,75 +479,78 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       );
       updatedApplication = result.rows[0];
 
-      // For guest applications being approved, we need to create a user account first
+      // For guest applications being approved:
+      // - If user with this email already exists, promote them to barber
+      // - If user doesn't exist yet, send them an email to create an account
+      // The user will be auto-promoted when they sign up (handled in auth.controller.ts)
       if (status === 'approved') {
-        // Check if user with this email already exists
         const existingUser = await pool.query(
           'SELECT id FROM users WHERE email = $1',
           [applicationData.email.toLowerCase()]
         );
 
-        let userId: string;
-
         if (existingUser.rows.length > 0) {
-          // User exists - just update their role
-          userId = existingUser.rows[0].id;
+          // User exists - promote them to barber now
+          const userId = existingUser.rows[0].id;
           await pool.query(
             `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
             [userId]
           );
-        } else {
-          // Create new user account
-          const tempPassword = Math.random().toString(36).slice(-12);
-          const bcrypt = require('bcryptjs');
-          const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-          const newUser = await pool.query(
-            `INSERT INTO users (email, password_hash, role, first_name, last_name, email_verified, "createdAt", "updatedAt")
-             VALUES ($1, $2, 'BARBER', $3, $4, false, NOW(), NOW())
-             RETURNING id`,
-            [applicationData.email.toLowerCase(), hashedPassword, updatedApplication.first_name || '', updatedApplication.last_name || '']
-          );
-          userId = newUser.rows[0].id;
-
-          // Link the guest application to the new user
+          // Link the guest application to the user
           await pool.query(
             'UPDATE guest_barber_applications SET linked_user_id = $1 WHERE id = $2',
             [userId, id]
           );
 
-          logger.info(`Created new user account for approved guest application: ${applicationData.email}`);
+          // Create barber profile
+          const specialties = applicationData.specialties || [];
+          const pricing = generatePricingFromSpecialties(specialties);
+
+          await pool.query(
+            `INSERT INTO barbers (
+               id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
+               "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+               "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+               "pricingMultiplier", "isCampusManager", "isOnboarded",
+               "createdAt", "updatedAt"
+             )
+             VALUES (
+               gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+               0, 0,
+               0, 0, 0, 0,
+               1.00, false, false,
+               NOW(), NOW()
+             )
+             ON CONFLICT ("userId") DO UPDATE SET 
+               specialties = EXCLUDED.specialties,
+               pricing = EXCLUDED.pricing,
+               "isActive" = true,
+               "campusId" = EXCLUDED."campusId",
+               "updatedAt" = NOW()`,
+            [userId, applicationData.campus_id, specialties, JSON.stringify(pricing)]
+          );
+
+          logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
+        } else {
+          // User doesn't exist yet - send them an email to create an account
+          // They will be auto-promoted when they sign up with this email
+          const campusInfo = await pool.query('SELECT name FROM campuses WHERE id = $1', [applicationData.campus_id]);
+          const campusName = campusInfo.rows[0]?.name || 'your campus';
+
+          try {
+            await sendGuestApplicationApprovedEmail(
+              applicationData.email,
+              updatedApplication.first_name || 'Applicant',
+              campusName
+            );
+            logger.info(`Approval email sent to guest applicant: ${applicationData.email}`);
+          } catch (emailError: any) {
+            logger.error(`Failed to send approval email to ${applicationData.email}:`, emailError.message);
+          }
+
+          logger.info(`Guest application ${id} approved. User ${applicationData.email} must create an account to become a barber.`);
         }
-
-        // Create barber profile
-        const specialties = applicationData.specialties || [];
-        const pricing = generatePricingFromSpecialties(specialties);
-
-        await pool.query(
-          `INSERT INTO barbers (
-             id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
-             "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
-             "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
-             "pricingMultiplier", "isCampusManager", "isOnboarded",
-             "createdAt", "updatedAt"
-           )
-           VALUES (
-             gen_random_uuid(), $1, $2, $3, $4, true, '{}',
-             0, 0,
-             0, 0, 0, 0,
-             1.00, false, false,
-             NOW(), NOW()
-           )
-           ON CONFLICT ("userId") DO UPDATE SET 
-             specialties = EXCLUDED.specialties,
-             pricing = EXCLUDED.pricing,
-             "isActive" = true,
-             "campusId" = EXCLUDED."campusId",
-             "updatedAt" = NOW()`,
-          [userId, applicationData.campus_id, specialties, JSON.stringify(pricing)]
-        );
-
-        logger.info(`Guest user ${applicationData.email} promoted to BARBER after application ${id} approved`);
       }
     } else {
       // Update regular application

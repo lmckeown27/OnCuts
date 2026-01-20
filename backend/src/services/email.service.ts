@@ -2248,3 +2248,136 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
 </body>
 </html>`.trim();
 }
+
+/**
+ * Send Guest Application Approved Email
+ * 
+ * Notifies a guest applicant that their barber application has been approved
+ * and prompts them to create an account to complete onboarding.
+ * 
+ * @param email - Guest applicant's email
+ * @param firstName - Guest applicant's first name
+ * @param campusName - Name of the campus they applied to
+ */
+export async function sendGuestApplicationApprovedEmail(
+  email: string,
+  firstName: string,
+  campusName: string
+): Promise<void> {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const signUpLink = `${frontendUrl}/web/auth`;
+
+  const subject = '🎉 Your CampusCut Barber Application Has Been Approved!';
+
+  const text = `
+Hi ${firstName}!
+
+Great news! Your barber application for ${campusName} has been approved! 
+
+To complete your onboarding and start receiving bookings, you need to create your CampusCut account.
+
+Create your account here: ${signUpLink}
+
+IMPORTANT: Use the same email address (${email}) when signing up, and you'll be automatically set up as a barber.
+
+Once you create your account, you can:
+- Set up your barber profile and services
+- Configure your availability
+- Start receiving booking requests from students
+
+Welcome to CampusCut!
+
+Best,
+The CampusCut Team
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 16px; overflow: hidden; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 40px 30px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">🎉 Application Approved!</h1>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Welcome to the CampusCut barber team</p>
+    </div>
+    
+    <!-- Content -->
+    <div style="padding: 30px;">
+      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Hi <strong>${firstName}</strong>! 👋
+      </p>
+      
+      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+        Great news! Your barber application for <strong>${campusName}</strong> has been approved! 
+      </p>
+      
+      <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">⚡ One More Step</h4>
+        <p style="color: #78350f; margin: 0; font-size: 14px; line-height: 1.6;">
+          To complete your onboarding and start receiving bookings, you need to create your CampusCut account.
+        </p>
+      </div>
+      
+      <div style="background-color: #ecfdf5; border-radius: 12px; padding: 15px; margin: 20px 0;">
+        <p style="color: #166534; margin: 0; font-size: 14px;">
+          <strong>Important:</strong> Use the same email address (<strong>${email}</strong>) when signing up, and you'll be automatically set up as a barber.
+        </p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${signUpLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 16px 50px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px;">
+          Create Your Account
+        </a>
+      </div>
+      
+      <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 20px 0;">
+        Once you create your account, you can:
+      </p>
+      <ul style="color: #374151; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0 0 20px 0;">
+        <li>Set up your barber profile and services</li>
+        <li>Configure your availability and schedule</li>
+        <li>Start receiving booking requests from students</li>
+        <li>Build your reputation with reviews</li>
+      </ul>
+      
+      <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 20px 0 0 0;">
+        Welcome to the team! 💈
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut - Earn More, Pay Less</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping guest approval email to ${email}`);
+    return;
+  }
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: email,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Guest application approved email sent to: ${email}`);
+  } catch (error: any) {
+    logger.error(`Failed to send guest approval email to ${email}:`, error.message);
+    throw error;
+  }
+}

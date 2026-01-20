@@ -341,13 +341,35 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       throw new ApiError(400, 'User already exists. Please log in.');
     }
 
+    // Check if this email has an approved guest barber application
+    const approvedGuestApp = await pool.query(
+      `SELECT id, campus_id, specialties FROM guest_barber_applications 
+       WHERE email = $1 AND status = 'approved' AND linked_user_id IS NULL
+       ORDER BY created_at DESC LIMIT 1`,
+      [email.toLowerCase()]
+    );
+
+    const hasApprovedApplication = approvedGuestApp.rows.length > 0;
+
     // Map frontend role to database enum (student -> CONSUMER, barber -> BARBER)
-    const roleMap: { [key: string]: string } = {
-      'student': 'CONSUMER',
-      'barber': 'BARBER',
-      'admin': 'ADMIN'
-    };
-    const dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
+    // If user has an approved guest application, make them a BARBER
+    let dbRole: string;
+    if (hasApprovedApplication) {
+      dbRole = 'BARBER';
+      logger.info(`User ${email} has an approved guest application - auto-promoting to BARBER`);
+    } else {
+      const roleMap: { [key: string]: string } = {
+        'student': 'CONSUMER',
+        'barber': 'BARBER',
+        'admin': 'ADMIN'
+      };
+      dbRole = roleMap[pendingReg.role.toLowerCase()] || 'CONSUMER';
+    }
+
+    // Use campus from approved application if available, otherwise use the one from registration
+    const campusId = hasApprovedApplication 
+      ? approvedGuestApp.rows[0].campus_id 
+      : pendingReg.campusId;
 
     // Create user in database (off-chain for v1 - no blockchain wallets)
     // Note: Column names use camelCase in the database schema
@@ -361,12 +383,62 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         pendingReg.password,
         pendingReg.firstName,
         pendingReg.lastName,
-        pendingReg.campusId,
+        campusId,
         dbRole
       ]
     );
 
     const user = result.rows[0];
+
+    // If user had an approved guest application, create their barber profile
+    if (hasApprovedApplication) {
+      const guestApp = approvedGuestApp.rows[0];
+      const specialties = guestApp.specialties || [];
+      
+      // Generate pricing from specialties
+      const SERVICE_BASE_PRICES: Record<string, number> = {
+        'Buzz Cut': 23, 'Line Up': 23, 'Beard Trim': 23, 'Haircut': 28, 'Taper': 28,
+        'Hot Shave': 28, 'Kids Cut': 28, 'Fade': 35, 'Haircut & Fade': 35,
+        'Design/Art': 38, 'Afro Textures': 38, "Women's Cut": 40, 'Color Treatment': 45, 'Perm': 45,
+      };
+      const pricing = specialties.map((specialty: string) => ({
+        name: specialty,
+        price: SERVICE_BASE_PRICES[specialty] || 25,
+      }));
+
+      // Create barber profile
+      await pool.query(
+        `INSERT INTO barbers (
+           id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
+           "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+           "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+           "pricingMultiplier", "isCampusManager", "isOnboarded",
+           "createdAt", "updatedAt"
+         )
+         VALUES (
+           gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+           0, 0,
+           0, 0, 0, 0,
+           1.00, false, false,
+           NOW(), NOW()
+         )
+         ON CONFLICT ("userId") DO UPDATE SET 
+           specialties = EXCLUDED.specialties,
+           pricing = EXCLUDED.pricing,
+           "isActive" = true,
+           "campusId" = EXCLUDED."campusId",
+           "updatedAt" = NOW()`,
+        [user.id, guestApp.campus_id, specialties, JSON.stringify(pricing)]
+      );
+
+      // Link the guest application to the new user
+      await pool.query(
+        'UPDATE guest_barber_applications SET linked_user_id = $1 WHERE id = $2',
+        [user.id, guestApp.id]
+      );
+
+      logger.info(`Created barber profile for user ${user.id} from approved guest application ${guestApp.id}`);
+    }
 
     // Generate JWT tokens
     const token = generateAccessToken({
@@ -392,7 +464,9 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     res.status(201).json({
       success: true,
-      message: 'Email verified successfully. Welcome to CampusCuts!',
+      message: hasApprovedApplication 
+        ? 'Email verified successfully. Welcome to CampusCuts! Your barber application has been linked to your account.'
+        : 'Email verified successfully. Welcome to CampusCuts!',
       data: {
         user: {
           id: user.id,
