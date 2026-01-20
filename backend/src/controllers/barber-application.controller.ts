@@ -280,76 +280,135 @@ export const getMyApplication = async (req: AuthRequest, res: Response, next: Ne
 /**
  * Get all applications (admin/campus manager only)
  * GET /api/v1/barber-applications
+ * 
+ * Returns both regular barber applications (from authenticated users)
+ * and guest applications (from unauthenticated users via landing page)
  */
 export const getAllApplications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status, campusId, page = 1, limit = 20 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    let query = `
-      SELECT 
-        ba.id,
-        ba.user_id,
-        ba.status,
-        ba.years_experience,
-        ba.has_license,
-        ba.license_number,
-        ba.specialties,
-        ba.has_own_tools,
-        ba.available_hours,
-        ba.why_be_barber,
-        ba.social_media,
-        ba.additional_notes,
-        ba.created_at,
-        ba.reviewed_at,
-        ba.interview_scheduled_at,
-        u.email,
-        u.first_name,
-        u.last_name,
-        c.name as campus_name
-      FROM barber_applications ba
-      JOIN users u ON ba.user_id = u.id
-      LEFT JOIN campuses c ON ba.campus_id = c.id
-      WHERE 1=1
-    `;
+    // Build filter conditions
     const params: any[] = [];
     let paramIndex = 1;
+    let statusFilter = '';
+    let campusFilter = '';
 
     if (status) {
-      query += ` AND ba.status = $${paramIndex}`;
+      statusFilter = `status = $${paramIndex}`;
       params.push(status);
       paramIndex++;
     }
 
     if (campusId) {
-      query += ` AND ba.campus_id = $${paramIndex}`;
+      campusFilter = `campus_id = $${paramIndex}`;
       params.push(campusId);
       paramIndex++;
     }
 
-    query += ` ORDER BY ba.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    // Combined query using UNION ALL to get both regular and guest applications
+    let query = `
+      SELECT * FROM (
+        -- Regular applications (authenticated users)
+        SELECT 
+          ba.id,
+          ba.user_id,
+          ba.status,
+          ba.years_experience,
+          ba.has_license,
+          ba.license_number,
+          ba.specialties,
+          ba.has_own_tools,
+          ba.available_hours,
+          ba.why_be_barber,
+          ba.social_media,
+          ba.additional_notes,
+          ba.created_at,
+          ba.reviewed_at,
+          ba.interview_scheduled_at,
+          u.email,
+          u.first_name,
+          u.last_name,
+          c.name as campus_name,
+          ba.campus_id,
+          'regular' as application_type
+        FROM barber_applications ba
+        JOIN users u ON ba.user_id = u.id
+        LEFT JOIN campuses c ON ba.campus_id = c.id
+        WHERE 1=1
+        ${statusFilter ? `AND ba.${statusFilter}` : ''}
+        ${campusFilter ? `AND ba.${campusFilter}` : ''}
+
+        UNION ALL
+
+        -- Guest applications (unauthenticated users from landing page)
+        SELECT 
+          gba.id,
+          gba.linked_user_id as user_id,
+          gba.status,
+          gba.years_experience,
+          gba.has_license,
+          gba.license_number,
+          gba.specialties,
+          gba.has_own_tools,
+          gba.available_hours,
+          gba.why_be_barber,
+          gba.social_media,
+          gba.additional_notes,
+          gba.created_at,
+          NULL as reviewed_at,
+          NULL as interview_scheduled_at,
+          gba.email,
+          gba.first_name,
+          gba.last_name,
+          c.name as campus_name,
+          gba.campus_id,
+          'guest' as application_type
+        FROM guest_barber_applications gba
+        LEFT JOIN campuses c ON gba.campus_id = c.id
+        WHERE 1=1
+        ${statusFilter ? `AND gba.${statusFilter}` : ''}
+        ${campusFilter ? `AND gba.${campusFilter}` : ''}
+      ) combined
+      ORDER BY created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
     params.push(Number(limit), offset);
 
     const result = await pool.query(query, params);
 
-    // Get total count
-    let countQuery = `SELECT COUNT(*) FROM barber_applications ba WHERE 1=1`;
+    // Get total count from both tables
     const countParams: any[] = [];
     let countIndex = 1;
+    let countStatusFilter = '';
+    let countCampusFilter = '';
 
     if (status) {
-      countQuery += ` AND ba.status = $${countIndex}`;
+      countStatusFilter = `status = $${countIndex}`;
       countParams.push(status);
       countIndex++;
     }
 
     if (campusId) {
-      countQuery += ` AND ba.campus_id = $${countIndex}`;
+      countCampusFilter = `campus_id = $${countIndex}`;
       countParams.push(campusId);
     }
 
+    const countQuery = `
+      SELECT (
+        (SELECT COUNT(*) FROM barber_applications ba WHERE 1=1 
+          ${countStatusFilter ? `AND ba.${countStatusFilter}` : ''}
+          ${countCampusFilter ? `AND ba.${countCampusFilter}` : ''})
+        +
+        (SELECT COUNT(*) FROM guest_barber_applications gba WHERE 1=1
+          ${countStatusFilter ? `AND gba.${countStatusFilter}` : ''}
+          ${countCampusFilter ? `AND gba.${countCampusFilter}` : ''})
+      ) as total
+    `;
+
     const countResult = await pool.query(countQuery, countParams);
-    const total = parseInt(countResult.rows[0].count);
+    const total = parseInt(countResult.rows[0].total);
 
     res.json({
       success: true,
@@ -371,6 +430,9 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
 /**
  * Update application status (admin/campus manager only)
  * PATCH /api/v1/barber-applications/:id/status
+ * 
+ * Handles both regular applications (barber_applications table)
+ * and guest applications (guest_barber_applications table)
  */
 export const updateApplicationStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -383,81 +445,162 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
       throw new ApiError(400, `Invalid status. Must be one of: ${validStatuses.join(', ')}`);
     }
 
-    // Check if application exists
-    const existing = await pool.query(
-      'SELECT id, user_id, status FROM barber_applications WHERE id = $1',
+    // First check regular barber_applications table
+    let existing = await pool.query(
+      'SELECT id, user_id, status, campus_id, specialties FROM barber_applications WHERE id = $1',
       [id]
     );
+    let isGuestApplication = false;
 
+    // If not found in regular table, check guest_barber_applications
     if (existing.rows.length === 0) {
-      throw new ApiError(404, 'Application not found');
-    }
-
-    // Update the application
-    const result = await pool.query(
-      `UPDATE barber_applications 
-       SET status = $1, 
-           reviewed_by = $2, 
-           reviewed_at = NOW(),
-           review_notes = COALESCE($3, review_notes),
-           interview_scheduled_at = $4,
-           updated_at = NOW()
-       WHERE id = $5
-       RETURNING *`,
-      [status, reviewerId, reviewNotes || null, interviewScheduledAt || null, id]
-    );
-
-    const updatedApplication = result.rows[0];
-
-    // If approved, update user role to BARBER
-    if (status === 'approved') {
-      await pool.query(
-        `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
-        [updatedApplication.user_id]
-      );
-
-      // Get the full application data including specialties
-      const fullApp = await pool.query(
-        'SELECT specialties FROM barber_applications WHERE id = $1',
+      existing = await pool.query(
+        'SELECT id, linked_user_id as user_id, email, status, campus_id, specialties FROM guest_barber_applications WHERE id = $1',
         [id]
       );
-      const specialties = fullApp.rows[0]?.specialties || [];
-      
-      // Generate pricing from specialties with base prices
-      const pricing = generatePricingFromSpecialties(specialties);
+      if (existing.rows.length === 0) {
+        throw new ApiError(404, 'Application not found');
+      }
+      isGuestApplication = true;
+    }
 
-      // Create barber profile with specialties AND pricing
-      // Note: Must include ALL required NOT NULL columns from barbers table
-      await pool.query(
-        `INSERT INTO barbers (
-           id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
-           "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
-           "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
-           "pricingMultiplier", "isCampusManager", "isOnboarded",
-           "createdAt", "updatedAt"
-         )
-         VALUES (
-           gen_random_uuid(), $1, $2, $3, $4, true, '{}',
-           0, 0,
-           0, 0, 0, 0,
-           1.00, false, false,
-           NOW(), NOW()
-         )
-         ON CONFLICT ("userId") DO UPDATE SET 
-           specialties = EXCLUDED.specialties,
-           pricing = EXCLUDED.pricing,
-           "isActive" = true,
-           "campusId" = EXCLUDED."campusId",
-           "updatedAt" = NOW()`,
-        [
-          updatedApplication.user_id,
-          updatedApplication.campus_id,
-          specialties,  // Pass array directly, pg driver handles TEXT[] conversion
-          JSON.stringify(pricing)  // JSONB column needs JSON string
-        ]
+    const applicationData = existing.rows[0];
+    let updatedApplication;
+
+    if (isGuestApplication) {
+      // Update guest application
+      const result = await pool.query(
+        `UPDATE guest_barber_applications 
+         SET status = $1, 
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [status, id]
       );
+      updatedApplication = result.rows[0];
 
-      logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
+      // For guest applications being approved, we need to create a user account first
+      if (status === 'approved') {
+        // Check if user with this email already exists
+        const existingUser = await pool.query(
+          'SELECT id FROM users WHERE email = $1',
+          [applicationData.email.toLowerCase()]
+        );
+
+        let userId: string;
+
+        if (existingUser.rows.length > 0) {
+          // User exists - just update their role
+          userId = existingUser.rows[0].id;
+          await pool.query(
+            `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
+            [userId]
+          );
+        } else {
+          // Create new user account
+          const tempPassword = Math.random().toString(36).slice(-12);
+          const bcrypt = require('bcryptjs');
+          const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+          const newUser = await pool.query(
+            `INSERT INTO users (email, password_hash, role, first_name, last_name, email_verified, "createdAt", "updatedAt")
+             VALUES ($1, $2, 'BARBER', $3, $4, false, NOW(), NOW())
+             RETURNING id`,
+            [applicationData.email.toLowerCase(), hashedPassword, updatedApplication.first_name || '', updatedApplication.last_name || '']
+          );
+          userId = newUser.rows[0].id;
+
+          // Link the guest application to the new user
+          await pool.query(
+            'UPDATE guest_barber_applications SET linked_user_id = $1 WHERE id = $2',
+            [userId, id]
+          );
+
+          logger.info(`Created new user account for approved guest application: ${applicationData.email}`);
+        }
+
+        // Create barber profile
+        const specialties = applicationData.specialties || [];
+        const pricing = generatePricingFromSpecialties(specialties);
+
+        await pool.query(
+          `INSERT INTO barbers (
+             id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
+             "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+             "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+             "pricingMultiplier", "isCampusManager", "isOnboarded",
+             "createdAt", "updatedAt"
+           )
+           VALUES (
+             gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+             0, 0,
+             0, 0, 0, 0,
+             1.00, false, false,
+             NOW(), NOW()
+           )
+           ON CONFLICT ("userId") DO UPDATE SET 
+             specialties = EXCLUDED.specialties,
+             pricing = EXCLUDED.pricing,
+             "isActive" = true,
+             "campusId" = EXCLUDED."campusId",
+             "updatedAt" = NOW()`,
+          [userId, applicationData.campus_id, specialties, JSON.stringify(pricing)]
+        );
+
+        logger.info(`Guest user ${applicationData.email} promoted to BARBER after application ${id} approved`);
+      }
+    } else {
+      // Update regular application
+      const result = await pool.query(
+        `UPDATE barber_applications 
+         SET status = $1, 
+             reviewed_by = $2, 
+             reviewed_at = NOW(),
+             review_notes = COALESCE($3, review_notes),
+             interview_scheduled_at = $4,
+             updated_at = NOW()
+         WHERE id = $5
+         RETURNING *`,
+        [status, reviewerId, reviewNotes || null, interviewScheduledAt || null, id]
+      );
+      updatedApplication = result.rows[0];
+
+      // If approved, update user role to BARBER
+      if (status === 'approved') {
+        await pool.query(
+          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
+          [updatedApplication.user_id]
+        );
+
+        const specialties = applicationData.specialties || [];
+        const pricing = generatePricingFromSpecialties(specialties);
+
+        await pool.query(
+          `INSERT INTO barbers (
+             id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
+             "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
+             "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
+             "pricingMultiplier", "isCampusManager", "isOnboarded",
+             "createdAt", "updatedAt"
+           )
+           VALUES (
+             gen_random_uuid(), $1, $2, $3, $4, true, '{}',
+             0, 0,
+             0, 0, 0, 0,
+             1.00, false, false,
+             NOW(), NOW()
+           )
+           ON CONFLICT ("userId") DO UPDATE SET 
+             specialties = EXCLUDED.specialties,
+             pricing = EXCLUDED.pricing,
+             "isActive" = true,
+             "campusId" = EXCLUDED."campusId",
+             "updatedAt" = NOW()`,
+          [updatedApplication.user_id, updatedApplication.campus_id, specialties, JSON.stringify(pricing)]
+        );
+
+        logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
+      }
     }
 
     logger.info(`Barber application ${id} status updated to ${status} by ${reviewerId}`);
