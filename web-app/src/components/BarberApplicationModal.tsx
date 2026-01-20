@@ -420,7 +420,11 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           {/* Content */}
           <div className="p-6 text-center">
             <div className={`w-16 h-16 ${colorClasses[status.color as keyof typeof colorClasses]} rounded-full flex items-center justify-center mx-auto mb-5`}>
-              <Clock className="w-8 h-8" />
+              {status.color === 'red' ? (
+                <X className="w-8 h-8" />
+              ) : (
+                <Clock className="w-8 h-8" />
+              )}
             </div>
             
             <h3 className="text-xl font-bold text-gray-900 mb-3">{status.title}</h3>
