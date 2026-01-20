@@ -451,11 +451,17 @@ export default function AuthPage() {
   const { isMobile, isMobilePortrait } = useViewport();
   
   return (
-    <div 
-      className="min-h-[100dvh] flex items-center justify-center py-6 sm:py-12 px-3 sm:px-4"
-      style={{ backgroundColor: '#022b19' }}
-    >
-      <div className="max-w-md w-full">
+    <>
+      {/* Fixed full-screen background to cover overscroll areas on mobile */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{ backgroundColor: '#022b19' }}
+      />
+      <div 
+        className="relative z-10 min-h-[100dvh] flex items-center justify-center py-6 sm:py-12 px-3 sm:px-4"
+        style={{ backgroundColor: '#022b19' }}
+      >
+        <div className="max-w-md w-full">
         {/* Header - Logo & Title */}
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
@@ -1059,6 +1065,7 @@ export default function AuthPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
