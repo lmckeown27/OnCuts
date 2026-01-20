@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
   Pencil, Trash2, Check, AlertTriangle, Star, MessageSquare,
-  Phone, Mail, Save, CreditCard
+  Phone, Mail, Save
 } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
@@ -576,9 +576,8 @@ export default function BookingDetailsModal({
                   {canComplete && (
                     <button
                       onClick={handleCompleteBooking}
-                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      <CreditCard className="w-4 h-4" />
                       Complete
                     </button>
                   )}
