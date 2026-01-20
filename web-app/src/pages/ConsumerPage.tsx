@@ -488,10 +488,13 @@ export default function ConsumerPage() {
               )}
             </div>
             
-            {/* Center section - Logo (centered on all screen sizes) */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
+            {/* Center section - Logo (centered on all screen sizes) - clickable to go home */}
+            <button 
+              onClick={() => navigate('/')}
+              className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
+            >
               <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
-            </div>
+            </button>
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}
             <div className="flex items-center gap-2 sm:gap-4">
