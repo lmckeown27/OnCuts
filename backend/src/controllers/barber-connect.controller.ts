@@ -25,9 +25,10 @@ export const createConnectAccount = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role;
+    const role = req.user!.role?.toLowerCase();
 
-    if (role !== 'barber') {
+    // Allow barbers and admins
+    if (role !== 'barber' && role !== 'admin') {
       throw new ApiError(403, 'Only barbers can create Connect accounts');
     }
 
@@ -121,9 +122,10 @@ export const getConnectStatus = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role;
+    const role = req.user!.role?.toLowerCase();
 
-    if (role !== 'barber') {
+    // Allow barbers and admins
+    if (role !== 'barber' && role !== 'admin') {
       throw new ApiError(403, 'Only barbers can check Connect status');
     }
 
@@ -177,9 +179,10 @@ export const refreshOnboardingLink = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role;
+    const role = req.user!.role?.toLowerCase();
 
-    if (role !== 'barber') {
+    // Allow barbers and admins
+    if (role !== 'barber' && role !== 'admin') {
       throw new ApiError(403, 'Only barbers can refresh onboarding');
     }
 
