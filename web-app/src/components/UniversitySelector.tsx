@@ -117,7 +117,7 @@ export default function UniversitySelector({
         <input
           ref={inputRef}
           type="text"
-          value={value ? (value.shortName || value.name) : searchQuery}
+          value={value ? `${value.shortName || value.name} — ${value.city}, ${value.state}` : searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
             if (!isOpen) setIsOpen(true);
@@ -131,9 +131,11 @@ export default function UniversitySelector({
           readOnly={!!value}
           onClick={() => {
             if (value) {
-              // Allow re-selection
+              // Clear selection and allow re-search
+              onChange(null);
               setSearchQuery('');
               setIsOpen(true);
+              // Focus will happen automatically
             }
           }}
         />
@@ -151,16 +153,6 @@ export default function UniversitySelector({
           </div>
         )}
       </div>
-
-      {/* Selected University Display */}
-      {value && !isOpen && (
-        <div className="mt-2 p-3 bg-primary-50 rounded-lg border border-primary-200">
-          <div>
-            <p className="font-semibold text-gray-900">{value.name}</p>
-            <p className="text-sm text-gray-600">{value.city}, {value.state}</p>
-          </div>
-        </div>
-      )}
 
       {/* Dropdown Results */}
       {isOpen && (
