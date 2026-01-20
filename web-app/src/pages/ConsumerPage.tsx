@@ -1265,7 +1265,19 @@ function DiscoveryView({ navigate }: { navigate: any }) {
               Try a different university
             </button>
             <button
-              onClick={handleBecomeBarberClick}
+              onClick={() => {
+                if (!user) {
+                  scrollToTopAndOpen(setShowLoginPrompt);
+                  return;
+                }
+                if (hasPendingApplication) {
+                  openPendingPopup();
+                } else if (hasRejectedApplication) {
+                  openRejectedPopup();
+                } else {
+                  scrollToTopAndOpen(setShowBarberApplication);
+                }
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
             >
               <Scissors className="w-4 h-4 text-primary-600" />
