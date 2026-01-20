@@ -1270,16 +1270,16 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </div>
           
           {/* Become a barber CTA - separated with vertical space */}
-          <div className="flex flex-col items-center gap-3 pt-6 border-t border-gray-200">
-            <p className="text-xs sm:text-sm text-gray-500">
+          <div className="flex flex-col items-center gap-4 pt-8 border-t border-gray-200">
+            <p className="text-base sm:text-lg text-gray-600 font-medium">
               Want to be a barber at {selectedUniversity.shortName || selectedUniversity.name}?
             </p>
             <button
               onClick={onBecomeBarberClick}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-primary-100 hover:bg-primary-200 transition-colors border-2 border-primary-300"
             >
-              <Scissors className="w-4 h-4 text-primary-600" />
-              <span className="text-sm font-medium text-primary-700">Become a Barber</span>
+              <Scissors className="w-5 h-5 text-primary-600" />
+              <span className="text-base font-semibold text-primary-700">Become a Barber</span>
             </button>
           </div>
         </Card>
