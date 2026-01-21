@@ -21,7 +21,8 @@ import {
   Trash2,
   ChevronLeft,
   DollarSign,
-  Star
+  Star,
+  X
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -510,6 +511,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const [removeConfirmBarber, setRemoveConfirmBarber] = useState<CampusBarber | null>(null);
   const [removeLoading, setRemoveLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleRemoveBarber = async (barber: CampusBarber) => {
     try {
@@ -517,9 +519,17 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       const barberServiceModule = await import('../services/barber.service');
       const barberService = barberServiceModule.default;
       await barberService.removeBarber(barber.id);
-      toast.success(`${barber.name} has been removed and demoted to consumer`);
+      
+      // Close the confirmation modal
       setRemoveConfirmBarber(null);
-      fetchBarbers(); // Refresh the list
+      // Close the barber profile view and return to list
+      setSelectedBarberId(null);
+      // Show success message banner
+      setSuccessMessage(`${barber.name} was successfully removed from ${campusName}`);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setSuccessMessage(null), 5000);
+      // Refresh the list
+      fetchBarbers();
     } catch (error) {
       console.error('Failed to remove barber:', error);
       toast.error('Failed to remove barber');
@@ -595,6 +605,22 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Success Message Banner */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-green-800 font-medium text-sm sm:text-base">{successMessage}</p>
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-green-600 hover:text-green-800 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Search */}
       <div>
           <input
