@@ -210,14 +210,14 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
           logger.info(`Barber application notification sent to campus manager: ${manager.email}`);
         }
       } else {
-        // No campus manager for this campus - send to CampusCut support
+        // No campus manager for this campus - send to admin
         await sendBarberApplicationNotification(
-          'campuscuthelp@gmail.com',
-          'CampusCut Team',
+          'liam.mckeown38415@gmail.com',
+          'CampusCut Admin',
           applicationDetails
         );
         
-        logger.info(`Barber application notification sent to campuscuthelp@gmail.com (no campus manager for campus ${user.campusId})`);
+        logger.info(`Barber application notification sent to liam.mckeown38415@gmail.com (no campus manager for campus ${user.campusId})`);
       }
     } catch (emailError: any) {
       // Don't fail the application submission if email fails
@@ -812,13 +812,13 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
           logger.info(`Guest barber application notification sent to campus manager: ${manager.email}`);
         }
       } else {
-        // No campus manager - send to support
+        // No campus manager - send to admin
         await sendBarberApplicationNotification(
-          'campuscuthelp@gmail.com',
-          'CampusCut Team',
+          'liam.mckeown38415@gmail.com',
+          'CampusCut Admin',
           applicationDetails
         );
-        logger.info(`Guest barber application notification sent to campuscuthelp@gmail.com (no campus manager)`);
+        logger.info(`Guest barber application notification sent to liam.mckeown38415@gmail.com (no campus manager)`);
       }
     } catch (emailError: any) {
       logger.error(`Failed to send guest application notification email:`, emailError.message);
