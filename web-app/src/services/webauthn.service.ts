@@ -216,6 +216,81 @@ export function getBiometricButtonLabel(): string {
   return `Sign in with ${type}`;
 }
 
+// ============================================================================
+// Local Storage Helpers for Remember Me functionality
+// ============================================================================
+
+const LAST_EMAIL_KEY = 'campuscut_last_email';
+const BIOMETRIC_PROMPTED_KEY = 'campuscut_biometric_prompted';
+
+/**
+ * Save the last logged-in email for auto-fill on return
+ */
+export function saveLastEmail(email: string): void {
+  localStorage.setItem(LAST_EMAIL_KEY, email);
+}
+
+/**
+ * Get the last logged-in email
+ */
+export function getLastEmail(): string | null {
+  return localStorage.getItem(LAST_EMAIL_KEY);
+}
+
+/**
+ * Clear the last email (for logout or "use different account")
+ */
+export function clearLastEmail(): void {
+  localStorage.removeItem(LAST_EMAIL_KEY);
+}
+
+/**
+ * Check if we've already prompted this user to enable biometrics
+ * (to avoid nagging them every login)
+ */
+export function hasBiometricBeenPrompted(email: string): boolean {
+  const prompted = localStorage.getItem(BIOMETRIC_PROMPTED_KEY);
+  if (!prompted) return false;
+  try {
+    const emails = JSON.parse(prompted) as string[];
+    return emails.includes(email.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mark that we've prompted this user about biometrics
+ */
+export function markBiometricPrompted(email: string): void {
+  const prompted = localStorage.getItem(BIOMETRIC_PROMPTED_KEY);
+  let emails: string[] = [];
+  try {
+    emails = prompted ? JSON.parse(prompted) : [];
+  } catch {
+    emails = [];
+  }
+  if (!emails.includes(email.toLowerCase())) {
+    emails.push(email.toLowerCase());
+    localStorage.setItem(BIOMETRIC_PROMPTED_KEY, JSON.stringify(emails));
+  }
+}
+
+/**
+ * Clear the biometric prompted flag for an email (if they want to be asked again)
+ */
+export function clearBiometricPrompted(email: string): void {
+  const prompted = localStorage.getItem(BIOMETRIC_PROMPTED_KEY);
+  if (!prompted) return;
+  try {
+    let emails = JSON.parse(prompted) as string[];
+    emails = emails.filter(e => e !== email.toLowerCase());
+    localStorage.setItem(BIOMETRIC_PROMPTED_KEY, JSON.stringify(emails));
+  } catch {
+    // ignore
+  }
+}
+
 // Default export for convenience
 const webauthnService = {
   isWebAuthnSupported,
@@ -229,6 +304,13 @@ const webauthnService = {
   getBiometricType,
   getBiometricIcon,
   getBiometricButtonLabel,
+  // Remember me helpers
+  saveLastEmail,
+  getLastEmail,
+  clearLastEmail,
+  hasBiometricBeenPrompted,
+  markBiometricPrompted,
+  clearBiometricPrompted,
 };
 
 export default webauthnService;
