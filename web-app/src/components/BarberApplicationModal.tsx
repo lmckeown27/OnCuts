@@ -228,7 +228,27 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to submit application. Please try again.';
-      toast.error(errorMessage);
+      
+      // Check if this is a "pending application" error - show the pending status view instead of a toast
+      if (errorMessage.toLowerCase().includes('pending application') || 
+          errorMessage.toLowerCase().includes('already have a pending')) {
+        // Create a mock existing application to show the pending status view
+        setExistingApplication({
+          id: 'pending',
+          user_id: '',
+          campus_id: form.campusId,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          years_experience: form.yearsExperience,
+          specialties: form.specialties,
+          has_own_tools: !form.needsTools,
+          available_hours: form.availableHours,
+          why_be_barber: form.whyBeBarber
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
