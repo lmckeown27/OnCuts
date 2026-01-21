@@ -296,7 +296,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
     let campusFilter = '';
 
     if (status) {
-      statusFilter = `status = $${paramIndex}`;
+      statusFilter = `status::text = $${paramIndex}`;
       params.push(status);
       paramIndex++;
     }
@@ -314,7 +314,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
         SELECT 
           ba.id,
           ba.user_id,
-          ba.status,
+          ba.status::text as status,
           ba.years_experience,
           ba.has_license,
           ba.license_number,
@@ -385,7 +385,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
     let countCampusFilter = '';
 
     if (status) {
-      countStatusFilter = `status = $${countIndex}`;
+      countStatusFilter = `status::text = $${countIndex}`;
       countParams.push(status);
       countIndex++;
     }
