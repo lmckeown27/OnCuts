@@ -11,10 +11,6 @@ import {
   browserSupportsWebAuthn,
   platformAuthenticatorIsAvailable,
 } from '@simplewebauthn/browser';
-import type {
-  PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON,
-} from '@simplewebauthn/browser';
 import apiClient from './api.service';
 
 // Types
@@ -106,10 +102,11 @@ export async function registerBiometric(friendlyName?: string): Promise<{
 }> {
   // Step 1: Get registration options from server
   const optionsResponse = await apiClient.post('/auth/webauthn/register/options');
-  const options: PublicKeyCredentialCreationOptionsJSON = optionsResponse.data.data;
+  const options = optionsResponse.data.data;
 
   // Step 2: Create credential using browser API (triggers biometric prompt)
-  const credential = await startRegistration({ optionsJSON: options });
+  // v10 API: pass options directly
+  const credential = await startRegistration(options);
 
   // Step 3: Verify and store credential on server
   const verifyResponse = await apiClient.post('/auth/webauthn/register/verify', {
@@ -131,10 +128,11 @@ export async function registerBiometric(friendlyName?: string): Promise<{
 export async function loginWithBiometric(email: string): Promise<WebAuthnLoginResponse> {
   // Step 1: Get authentication options from server
   const optionsResponse = await apiClient.post('/auth/webauthn/login/options', { email });
-  const options: PublicKeyCredentialRequestOptionsJSON = optionsResponse.data.data;
+  const options = optionsResponse.data.data;
 
   // Step 2: Authenticate using browser API (triggers biometric prompt)
-  const credential = await startAuthentication({ optionsJSON: options });
+  // v10 API: pass options directly
+  const credential = await startAuthentication(options);
 
   // Step 3: Verify authentication on server
   const verifyResponse = await apiClient.post('/auth/webauthn/login/verify', {
@@ -160,8 +158,6 @@ export function getBiometricType(): string {
   
   // iOS devices
   if (/iphone|ipad|ipod/.test(ua)) {
-    // Face ID was introduced with iPhone X (2017)
-    // Check for notch-era devices by screen size or just use generic name
     return 'Face ID / Touch ID';
   }
   
@@ -236,4 +232,3 @@ const webauthnService = {
 };
 
 export default webauthnService;
-
