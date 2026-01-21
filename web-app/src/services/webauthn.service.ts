@@ -15,7 +15,7 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
 } from '@simplewebauthn/browser';
-import apiClient from './api';
+import apiClient from './api.service';
 
 // Types
 interface WebAuthnCredential {
