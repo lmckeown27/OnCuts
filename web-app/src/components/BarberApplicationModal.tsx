@@ -236,11 +236,10 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         setExistingApplication({
           id: 'pending',
           user_id: '',
-          campus_id: form.campusId,
           status: 'pending',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          years_experience: form.yearsExperience,
+          years_experience: 0,
+          has_license: false,
           specialties: form.specialties,
           has_own_tools: !form.needsTools,
           available_hours: form.availableHours,
