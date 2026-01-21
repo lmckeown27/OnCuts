@@ -614,8 +614,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="your.email@university.edu"
-                      className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white ${
+                        form.email && !isValidEmail(form.email) ? 'border-red-400' : 'border-primary-300'
+                      }`}
                     />
+                    {form.email && !isValidEmail(form.email) && (
+                      <p className="text-red-500 text-xs mt-2">Must be a valid email address</p>
+                    )}
                   </div>
                 </>
               )}
