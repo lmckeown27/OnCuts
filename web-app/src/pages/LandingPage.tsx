@@ -501,9 +501,6 @@ export default function LandingPage() {
                               }`}
                             >
                               <span>{campus.campusName} — {campus.city}, {campus.state}</span>
-                              {campus.manager && (
-                                <span className="text-xs bg-primary-100 text-primary-600 px-2 py-1 rounded-full">Has Manager</span>
-                              )}
                             </button>
                           ))}
                         {campusesWithManagers.filter(campus => 
