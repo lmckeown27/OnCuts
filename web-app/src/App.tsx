@@ -99,6 +99,7 @@ function AppContent() {
             All routes under /web/* are isolated to web experience
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/web" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
+        <Route path="/web/auth" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
         <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/reset-password" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ResetPasswordPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
