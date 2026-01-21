@@ -29,7 +29,6 @@ interface ApplicationForm {
   needsTools: boolean;
   toolsNeeded: string;
   socialMedia: string;
-  additionalNotes: string;
 }
 
 export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess, guestMode = false }: BarberApplicationModalProps) {
@@ -151,8 +150,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     availableHours: '',
     needsTools: false,
     toolsNeeded: '',
-    socialMedia: '',
-    additionalNotes: ''
+    socialMedia: ''
   });
 
   const handleSpecialtyToggle = (specialty: string) => {
@@ -184,8 +182,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
-          socialMedia: form.socialMedia || undefined,
-          additionalNotes: form.additionalNotes || undefined
+          socialMedia: form.socialMedia || undefined
         });
         result = { applicationId: guestResult.id, status: guestResult.status, submittedAt: guestResult.createdAt };
       } else {
@@ -201,8 +198,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           availableHours: form.availableHours,
           whyBeBarber: form.whyBeBarber,
           portfolioDescription: form.portfolioDescription || undefined,
-          socialMedia: form.socialMedia || undefined,
-          additionalNotes: form.additionalNotes || undefined
+          socialMedia: form.socialMedia || undefined
         });
       }
       
@@ -823,19 +819,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Anything else you'd like us to know? (optional)
-                </label>
-                <textarea
-                  value={form.additionalNotes}
-                  onChange={(e) => setForm({ ...form, additionalNotes: e.target.value })}
-                  placeholder="Any additional information..."
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
-                />
               </div>
             </div>
           ) : (
