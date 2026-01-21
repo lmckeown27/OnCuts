@@ -11,14 +11,13 @@
  */
 
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, Fingerprint, ScanFace, X, Smartphone, Check } from 'lucide-react';
+import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as ImageIcon, Eye, EyeOff, X } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
 import toast from 'react-hot-toast';
 import userService from '../services/user.service';
 import { useAuthStore } from '../store/useAuthStore';
-import webauthnService from '../services/webauthn.service';
 import type { User } from '../types';
 
 interface ConsumerProfileEditorProps {
@@ -65,13 +64,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  // Biometric login state
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricCredentials, setBiometricCredentials] = useState<any[]>([]);
-  const [biometricType, setBiometricType] = useState('Biometric');
-  const [isEnablingBiometric, setIsEnablingBiometric] = useState(false);
-  const [isDeletingCredential, setIsDeletingCredential] = useState<string | null>(null);
-
   // Expose showDeleteModal method to parent via ref
   useImperativeHandle(ref, () => ({
     showDeleteModal: () => setShowDeleteModal(true),
@@ -80,31 +72,7 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
   useEffect(() => {
     loadUserProfile();
     loadNotificationPreferences();
-    checkBiometricAvailability();
   }, [userId]);
-
-  // Check if biometric login is available and load existing credentials
-  const checkBiometricAvailability = async () => {
-    try {
-      const available = await webauthnService.isBiometricAvailable();
-      setBiometricAvailable(available);
-      if (available) {
-        setBiometricType(webauthnService.getBiometricType());
-        await loadBiometricCredentials();
-      }
-    } catch (error) {
-      console.error('Failed to check biometric availability:', error);
-    }
-  };
-
-  const loadBiometricCredentials = async () => {
-    try {
-      const status = await webauthnService.getCredentialStatus();
-      setBiometricCredentials(status.credentials || []);
-    } catch (error) {
-      console.error('Failed to load biometric credentials:', error);
-    }
-  };
 
   const loadUserProfile = async () => {
     try {
@@ -224,35 +192,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
       }
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleEnableBiometric = async () => {
-    try {
-      setIsEnablingBiometric(true);
-      await webauthnService.registerBiometric(biometricType);
-      toast.success(`${biometricType} enabled successfully!`);
-      await loadBiometricCredentials();
-    } catch (error: any) {
-      console.error('Failed to enable biometric:', error);
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to enable biometric login';
-      toast.error(errorMessage);
-    } finally {
-      setIsEnablingBiometric(false);
-    }
-  };
-
-  const handleDeleteBiometricCredential = async (credentialId: string) => {
-    try {
-      setIsDeletingCredential(credentialId);
-      await webauthnService.deleteBiometricCredential(credentialId);
-      toast.success('Biometric login removed');
-      await loadBiometricCredentials();
-    } catch (error: any) {
-      console.error('Failed to delete biometric credential:', error);
-      toast.error('Failed to remove biometric login');
-    } finally {
-      setIsDeletingCredential(null);
     }
   };
 
@@ -661,111 +600,6 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
               </div>
             </div>
           </Card>
-
-          {/* Biometric Login */}
-          {biometricAvailable && (
-            <Card>
-              <div className="flex items-center gap-3 mb-4">
-                {webauthnService.getBiometricIcon() === 'face' ? (
-                  <ScanFace className="w-6 h-6 text-primary-500" />
-                ) : (
-                  <Fingerprint className="w-6 h-6 text-primary-500" />
-                )}
-                <div>
-                  <h3 className="text-lg font-semibold">{biometricType}</h3>
-                  <p className="text-sm text-gray-600">Sign in faster with biometric authentication</p>
-                </div>
-              </div>
-
-              {biometricCredentials.length > 0 ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-green-600 mb-4">
-                    <Check className="w-5 h-5" />
-                    <span className="font-medium">Biometric login is enabled</span>
-                  </div>
-                  
-                  {biometricCredentials.map((credential) => (
-                    <div 
-                      key={credential.id} 
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Smartphone className="w-5 h-5 text-gray-500" />
-                        <div>
-                          <p className="font-medium text-gray-900">{credential.friendly_name}</p>
-                          <p className="text-xs text-gray-500">
-                            Added {new Date(credential.created_at).toLocaleDateString()}
-                            {credential.last_used_at && (
-                              <> • Last used {new Date(credential.last_used_at).toLocaleDateString()}</>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteBiometricCredential(credential.id)}
-                        disabled={isDeletingCredential === credential.id}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                        title="Remove this device"
-                      >
-                        {isDeletingCredential === credential.id ? (
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
-                        ) : (
-                          <X className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  ))}
-
-                  <div className="pt-2">
-                    <button
-                      onClick={handleEnableBiometric}
-                      disabled={isEnablingBiometric}
-                      className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-2"
-                    >
-                      {isEnablingBiometric ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                          Setting up...
-                        </>
-                      ) : (
-                        <>
-                          <Smartphone className="w-4 h-4" />
-                          Add another device
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-gray-600 text-sm">
-                    Enable biometric login to sign in with {biometricType} instead of typing your password.
-                  </p>
-                  <Button
-                    onClick={handleEnableBiometric}
-                    disabled={isEnablingBiometric}
-                    variant="primary"
-                  >
-                    {isEnablingBiometric ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Setting up {biometricType}...
-                      </>
-                    ) : (
-                      <>
-                        {webauthnService.getBiometricIcon() === 'face' ? (
-                          <ScanFace className="w-4 h-4 mr-2" />
-                        ) : (
-                          <Fingerprint className="w-4 h-4 mr-2" />
-                        )}
-                        Enable {biometricType}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-            </Card>
-          )}
         </div>
       )}
 

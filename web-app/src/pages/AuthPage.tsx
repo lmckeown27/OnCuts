@@ -1,53 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Fingerprint, ScanFace } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
 import TabChairLogo from '../assets/logos/Tab_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
-import webauthnService from '../services/webauthn.service';
-import BiometricPromptModal from '../components/BiometricPromptModal';
-
-// Generate or retrieve a unique device ID for biometric prompting
-const DEVICE_ID_KEY = 'campuscut_device_id';
-const BIOMETRIC_PROMPTED_DEVICES_KEY = 'campuscut_biometric_prompted_devices';
-
-function getDeviceId(): string {
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-  if (!deviceId) {
-    deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
-  }
-  return deviceId;
-}
-
-function hasDeviceBeenPrompted(email: string): boolean {
-  const key = `${email.toLowerCase()}_${getDeviceId()}`;
-  const prompted = localStorage.getItem(BIOMETRIC_PROMPTED_DEVICES_KEY);
-  if (!prompted) return false;
-  try {
-    const devices = JSON.parse(prompted) as string[];
-    return devices.includes(key);
-  } catch {
-    return false;
-  }
-}
-
-function markDevicePrompted(email: string): void {
-  const key = `${email.toLowerCase()}_${getDeviceId()}`;
-  const prompted = localStorage.getItem(BIOMETRIC_PROMPTED_DEVICES_KEY);
-  let devices: string[] = [];
-  try {
-    devices = prompted ? JSON.parse(prompted) : [];
-  } catch {
-    devices = [];
-  }
-  if (!devices.includes(key)) {
-    devices.push(key);
-    localStorage.setItem(BIOMETRIC_PROMPTED_DEVICES_KEY, JSON.stringify(devices));
-  }
-}
 
 // Terms of Service content component
 const TermsOfServiceContent = () => (
@@ -252,25 +210,6 @@ export default function AuthPage() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const termsScrollRef = useRef<HTMLDivElement>(null);
   
-  // Biometric login state
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState('Biometric');
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<{ path: string } | null>(null);
-  const [loggedInEmail, setLoggedInEmail] = useState('');
-  
-  // Check biometric availability on mount
-  useEffect(() => {
-    const checkBiometric = async () => {
-      const available = await webauthnService.isBiometricAvailable();
-      setBiometricAvailable(available);
-      if (available) {
-        setBiometricType(webauthnService.getBiometricType());
-      }
-    };
-    checkBiometric();
-  }, []);
-  
   // Handle terms scroll to detect when user reaches bottom
   const handleTermsScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const element = e.currentTarget;
@@ -377,12 +316,6 @@ export default function AuthPage() {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
       
-      // Save email for biometric
-      webauthnService.saveLastEmail(loginData.email);
-      
-      // Determine navigation path
-      let navPath = '/web/consumer';
-      
       // Check for post-login redirect (e.g., scheduling a service)
       const postLoginRedirect = localStorage.getItem('postLoginRedirect');
       if (postLoginRedirect) {
@@ -391,41 +324,26 @@ export default function AuthPage() {
           localStorage.removeItem('postLoginRedirect');
           
           if (redirect.type === 'schedule' && redirect.barber) {
-            navPath = `/web/consumer/book/${redirect.barberId}`;
+            // Redirect to schedule service page with barber data
+            navigate(`/web/consumer/book/${redirect.barberId}`, {
+              state: { barber: redirect.barber }
+            });
+            return;
           }
         } catch (e) {
           localStorage.removeItem('postLoginRedirect');
         }
+      }
+      
+      // Default redirect based on user role
+      const currentUser = useAuthStore.getState().user;
+      
+      // Redirect based on user role
+      if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
+        navigate('/web/barber');
       } else {
-        // Default redirect based on user role
-        const currentUser = useAuthStore.getState().user;
-        if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
-          navPath = '/web/barber';
-        }
+        navigate('/web/consumer');
       }
-      
-      // Check if we should show biometric prompt (device-specific)
-      const shouldPromptBiometric = biometricAvailable && 
-        !hasDeviceBeenPrompted(loginData.email);
-      
-      // Also check if they already have biometric on this device
-      let alreadyHasBiometric = false;
-      try {
-        alreadyHasBiometric = await webauthnService.checkEmailHasBiometrics(loginData.email);
-      } catch {
-        // Ignore
-      }
-      
-      if (shouldPromptBiometric && !alreadyHasBiometric) {
-        // Show biometric prompt before navigating
-        setLoggedInEmail(loginData.email);
-        setPendingNavigation({ path: navPath });
-        setShowBiometricPrompt(true);
-        setIsLoading(false);
-        return;
-      }
-      
-      navigate(navPath);
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;
       let errorMessage: string;
@@ -526,15 +444,6 @@ export default function AuthPage() {
     setValidationErrors({});
     setShowPassword(false);
     setShowConfirmPassword(false);
-  };
-
-  // Handle biometric prompt close/skip
-  const handleBiometricPromptClose = () => {
-    markDevicePrompted(loggedInEmail);
-    setShowBiometricPrompt(false);
-    if (pendingNavigation) {
-      navigate(pendingNavigation.path);
-    }
   };
 
   // Viewport detection
@@ -1154,14 +1063,6 @@ export default function AuthPage() {
           </div>
         </div>
       )}
-
-      {/* Biometric Prompt Modal */}
-      <BiometricPromptModal
-        isOpen={showBiometricPrompt}
-        onClose={handleBiometricPromptClose}
-        onSkip={handleBiometricPromptClose}
-        userEmail={loggedInEmail}
-      />
     </div>
     </>
   );
