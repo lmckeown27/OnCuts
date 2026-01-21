@@ -16,9 +16,9 @@ export interface BarberApplicationForm {
 }
 
 export interface GuestBarberApplicationForm extends BarberApplicationForm {
+  firstName: string;
+  lastName: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
 }
 
 export interface GuestApplicationResponse {

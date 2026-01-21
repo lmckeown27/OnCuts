@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon, UserX } from 'lucide-react';
+import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon, UserX, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
@@ -17,6 +17,8 @@ interface BarberApplicationModalProps {
 }
 
 interface ApplicationForm {
+  firstName: string; // Added for guest mode
+  lastName: string; // Added for guest mode
   email: string; // Added for guest mode
   campusId: string;
   yearsExperience: string;
@@ -139,6 +141,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   }, [isOpen, user?.id, guestMode]);
 
   const [form, setForm] = useState<ApplicationForm>({
+    firstName: '',
+    lastName: '',
     email: '',
     campusId: '',
     yearsExperience: '',
@@ -171,6 +175,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
       if (guestMode) {
         // Guest mode - use guest endpoint (no auth required)
         const guestResult = await barberApplicationService.submitGuestApplication({
+          firstName: form.firstName,
+          lastName: form.lastName,
           email: form.email,
           campusId: form.campusId,
           yearsExperience: form.yearsExperience,
@@ -231,10 +237,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   // Email validation helper
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   
-  // In guest mode, email is required for step 1
-  const canProceedStep1 = form.campusId && form.yearsExperience && form.specialties.length > 0 && 
-    (!guestMode || (form.email && isValidEmail(form.email)));
-  const canProceedStep2 = form.whyBeBarber.trim().length > 0 && form.availableHours;
+  // Step 1: Experience & Skills (+ name/email in guest mode)
+  const canProceedStep1 = form.yearsExperience && form.specialties.length > 0 && 
+    (!guestMode || (form.firstName.trim() && form.lastName.trim() && form.email && isValidEmail(form.email)));
+  
+  // Step 2: Campus selection + About You
+  const canProceedStep2 = form.campusId && form.whyBeBarber.trim().length > 0 && form.availableHours;
+  
   const canSubmit = canProceedStep1 && canProceedStep2;
 
   const handleCloseSuccessPopup = () => {
@@ -559,114 +568,57 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {step === 1 ? (
-            /* Step 1: Campus Selection, Experience & Skills */
+            /* Step 1: Personal Info, Experience & Skills */
             <div className="space-y-6">
-              {/* Email Field - Guest Mode Only */}
+              {/* Name and Email Fields - Guest Mode Only */}
               {guestMode && (
-                <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    <Mail className="w-4 h-4 inline mr-2 text-primary-600" />
-                    Your Email Address *
-                  </label>
-                  <p className="text-xs text-gray-600 mb-3">
-                    We'll use this to contact you about your application.
-                  </p>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="your.email@university.edu"
-                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
-                  />
-                </div>
-              )}
-
-              {/* Campus Selection - First Question */}
-              <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-2 text-primary-600" />
-                  Which campus do you want to cut at? *
-                </label>
-                <p className="text-xs text-gray-600 mb-3">
-                  Your application will be sent to the campus manager at this location.
-                </p>
-                {loadingCampuses ? (
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <span className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-                    Loading campuses...
-                  </div>
-                ) : (
-                  <div className="relative" ref={campusSelectorRef}>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <>
+                  {/* First Name and Last Name */}
+                  <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      <UserIcon className="w-4 h-4 inline mr-2 text-primary-600" />
+                      Your Name *
+                    </label>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Enter your full name as you'd like it to appear on your barber profile.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"
-                        value={campusSearchQuery}
-                        onChange={(e) => {
-                          setCampusSearchQuery(e.target.value);
-                          setShowCampusDropdown(true);
-                        }}
-                        onFocus={() => setShowCampusDropdown(true)}
-                        onBlur={(e) => {
-                          // Delay to allow click on dropdown items to register first
-                          setTimeout(() => {
-                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
-                              setShowCampusDropdown(false);
-                              // Revert to selected campus name if no new selection
-                              if (form.campusId) {
-                                const selectedCampus = campuses.find(c => c.id === form.campusId);
-                                setCampusSearchQuery(selectedCampus?.name || '');
-                              } else {
-                                setCampusSearchQuery('');
-                              }
-                            }
-                          }, 150);
-                        }}
-                        placeholder="Search and select your campus..."
-                        className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                        value={form.firstName}
+                        onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                        placeholder="First Name"
+                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
                       />
-                      <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                      <input
+                        type="text"
+                        value={form.lastName}
+                        onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                        placeholder="Last Name"
+                        className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                      />
                     </div>
-                    
-                    {/* Campus Dropdown */}
-                    {showCampusDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[250px] overflow-y-auto overscroll-contain">
-                        <div className="p-1">
-                          {campuses
-                            .filter(campus => 
-                              campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                            )
-                            .map(campus => (
-                              <button
-                                key={campus.id}
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault(); // Prevent blur from firing
-                                  setForm({ ...form, campusId: campus.id });
-                                  setCampusSearchQuery(campus.name);
-                                  setShowCampusDropdown(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
-                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
-                                }`}
-                              >
-                                {campus.name}
-                              </button>
-                            ))
-                          }
-                          {campuses.filter(campus => 
-                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                          ).length === 0 && (
-                            <div className="px-3 py-2 text-gray-500 text-sm">
-                              No campuses found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                )}
-              </div>
+
+                  {/* Email Field */}
+                  <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      <Mail className="w-4 h-4 inline mr-2 text-primary-600" />
+                      Your Email Address *
+                    </label>
+                    <p className="text-xs text-gray-600 mb-3">
+                      We'll use this to contact you about your application.
+                    </p>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="your.email@university.edu"
+                      className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Experience and Tools - Side by side */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
@@ -772,8 +724,95 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </div>
             </div>
           ) : step === 2 ? (
-            /* Step 2: About You */
+            /* Step 2: Campus & About You */
             <div className="space-y-6">
+              {/* Campus Selection */}
+              <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <MapPin className="w-4 h-4 inline mr-2 text-primary-600" />
+                  Which campus do you want to cut at? *
+                </label>
+                <p className="text-xs text-gray-600 mb-3">
+                  Your application will be sent to the campus manager at this location.
+                </p>
+                {loadingCampuses ? (
+                  <div className="flex items-center gap-2 text-gray-500">
+                    <span className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                    Loading campuses...
+                  </div>
+                ) : (
+                  <div className="relative" ref={campusSelectorRef}>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={campusSearchQuery}
+                        onChange={(e) => {
+                          setCampusSearchQuery(e.target.value);
+                          setShowCampusDropdown(true);
+                        }}
+                        onFocus={() => setShowCampusDropdown(true)}
+                        onBlur={(e) => {
+                          // Delay to allow click on dropdown items to register first
+                          setTimeout(() => {
+                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
+                              setShowCampusDropdown(false);
+                              // Revert to selected campus name if no new selection
+                              if (form.campusId) {
+                                const selectedCampus = campuses.find(c => c.id === form.campusId);
+                                setCampusSearchQuery(selectedCampus?.name || '');
+                              } else {
+                                setCampusSearchQuery('');
+                              }
+                            }
+                          }, 150);
+                        }}
+                        placeholder="Search and select your campus..."
+                        className="w-full pl-10 pr-10 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                      />
+                      <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 transition-transform pointer-events-none ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                    </div>
+                    
+                    {/* Campus Dropdown */}
+                    {showCampusDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[250px] overflow-y-auto overscroll-contain">
+                        <div className="p-1">
+                          {campuses
+                            .filter(campus => 
+                              campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                            )
+                            .map(campus => (
+                              <button
+                                key={campus.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevent blur from firing
+                                  setForm({ ...form, campusId: campus.id });
+                                  setCampusSearchQuery(campus.name);
+                                  setShowCampusDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
+                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                                }`}
+                              >
+                                {campus.name}
+                              </button>
+                            ))
+                          }
+                          {campuses.filter(campus => 
+                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              No campuses found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Why do you want to be a CampusCut barber? *
@@ -827,19 +866,22 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <h3 className="text-lg font-semibold text-gray-900">Review Your Application</h3>
               
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-                {/* Show email - use form.email for guest mode, user.email for authenticated */}
+                {/* Show applicant name */}
                 <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Applicant</p>
+                  <p className="font-medium">
+                    {guestMode 
+                      ? `${form.firstName} ${form.lastName}`.trim() || 'Not provided'
+                      : `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Not provided'
+                    }
+                  </p>
+                </div>
+                
+                {/* Show email - use form.email for guest mode, user.email for authenticated */}
+                <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
                   <p className="font-medium">{guestMode ? form.email : user?.email}</p>
                 </div>
-                
-                {/* Only show applicant name for authenticated users */}
-                {!guestMode && user?.first_name && (
-                  <div className="border-t pt-4">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Applicant</p>
-                    <p className="font-medium">{user?.first_name} {user?.last_name}</p>
-                  </div>
-                )}
 
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>

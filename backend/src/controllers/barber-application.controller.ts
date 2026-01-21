@@ -622,9 +622,9 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
  * Guest Barber Application Body Interface
  */
 interface GuestBarberApplicationBody extends BarberApplicationBody {
+  firstName: string;
+  lastName: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
 }
 
 /**
@@ -654,6 +654,14 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
     }: GuestBarberApplicationBody = req.body;
 
     // Validate required fields
+    if (!firstName || !firstName.trim()) {
+      throw new ApiError(400, 'First name is required');
+    }
+
+    if (!lastName || !lastName.trim()) {
+      throw new ApiError(400, 'Last name is required');
+    }
+
     if (!email) {
       throw new ApiError(400, 'Email address is required');
     }
