@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Globe, Mail } from 'lucide-react';
 import MainChairLogo from '../../assets/logos/Main_Chair.webp';
 
 export default function GDPRPage() {
-  const lastUpdated = "December 23, 2024";
+  const lastUpdated = "January 21, 2026";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -21,216 +20,104 @@ export default function GDPRPage() {
           </Link>
           <Link 
             to="/"
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <ArrowLeft size={18} />
-            <span>Back</span>
+            Back
           </Link>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
-          {/* Title */}
-          <div className="flex items-center gap-3 mb-6">
-            <Globe className="w-8 h-8 text-primary-500" />
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">GDPR Compliance</h1>
-          </div>
-          
-          <p className="text-gray-500 mb-8">Last Updated: {lastUpdated}</p>
+        <div className="bg-white rounded-lg shadow p-8 md:p-12">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">GDPR Compliance</h1>
+          <p className="text-gray-500 mb-4">Last Updated: {lastUpdated}</p>
+          <p className="text-gray-600 mb-8">
+            For Users in the European Union (EU) and European Economic Area (EEA). This page outlines your rights under the General Data Protection Regulation (GDPR).
+          </p>
 
-          {/* GDPR Notice Banner */}
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded-r-lg">
-            <p className="text-blue-800 font-medium">
-              For Users in the European Union (EU) and European Economic Area (EEA)
-            </p>
-            <p className="text-blue-700 text-sm mt-1">
-              This page outlines your rights under the General Data Protection Regulation (GDPR).
-            </p>
-          </div>
-
-          <div className="prose prose-gray max-w-none space-y-8">
-            {/* Introduction */}
+          <div className="space-y-8 text-gray-700 leading-relaxed">
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
-              <p className="text-gray-700 leading-relaxed">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
+              <p>
                 CampusCut is committed to complying with the General Data Protection Regulation (GDPR) for users located in the European Union (EU) and European Economic Area (EEA). This page explains how we process your personal data and your rights under GDPR.
               </p>
             </section>
 
-            {/* Data Controller */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Data Controller</h2>
-              <p className="text-gray-700 leading-relaxed">
-                CampusCut is the data controller responsible for your personal data. For any data protection inquiries, please contact us at:
+              <h2 className="text-xl font-bold text-gray-900 mb-3">2. Data Controller</h2>
+              <p>
+                CampusCut is the data controller responsible for your personal data. For any data protection inquiries, please contact us at campuscuthelp@gmail.com.
               </p>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <p className="text-gray-700 flex items-center gap-2">
-                  <Mail size={18} className="text-primary-500" />
-                  <a href="mailto:campuscuthelp@gmail.com" className="text-primary-500 hover:underline">
-                    campuscuthelp@gmail.com
-                  </a>
-                </p>
-              </div>
             </section>
 
-            {/* Legal Basis for Processing */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Legal Basis for Processing</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Under GDPR, we must have a legal basis for processing your personal data. We rely on the following:
-              </p>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">3. Legal Basis for Processing</h2>
+              <p>Under GDPR, we must have a legal basis for processing your personal data. We rely on the following:</p>
+              
+              <p className="font-semibold mt-4 mb-1">3.1 Contract Performance</p>
+              <p>Processing necessary to provide our services: account creation, booking management, payment processing, communications between users.</p>
 
-              <div className="mt-6 space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-semibold text-green-800">Contract Performance</h4>
-                  <p className="text-green-700 text-sm mt-1">
-                    Processing necessary to provide our services: account creation, booking management, payment processing, communications between users.
-                  </p>
-                </div>
+              <p className="font-semibold mt-4 mb-1">3.2 Legitimate Interests</p>
+              <p>Processing for platform improvement, fraud prevention, security, and analytics (where it does not override your rights).</p>
 
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-semibold text-blue-800">Legitimate Interests</h4>
-                  <p className="text-blue-700 text-sm mt-1">
-                    Processing for platform improvement, fraud prevention, security, and analytics (where it does not override your rights).
-                  </p>
-                </div>
+              <p className="font-semibold mt-4 mb-1">3.3 Consent</p>
+              <p>Processing based on your explicit consent: marketing communications, optional features, cookies beyond essential functionality.</p>
 
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h4 className="font-semibold text-purple-800">Consent</h4>
-                  <p className="text-purple-700 text-sm mt-1">
-                    Processing based on your explicit consent: marketing communications, optional features, cookies beyond essential functionality.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                  <h4 className="font-semibold text-orange-800">Legal Obligation</h4>
-                  <p className="text-orange-700 text-sm mt-1">
-                    Processing required by law: tax records, fraud investigations, regulatory compliance.
-                  </p>
-                </div>
-              </div>
+              <p className="font-semibold mt-4 mb-1">3.4 Legal Obligation</p>
+              <p>Processing required by law: tax records, fraud investigations, regulatory compliance.</p>
             </section>
 
-            {/* Your GDPR Rights */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Your GDPR Rights</h2>
-              <p className="text-gray-700 leading-relaxed">
-                Under GDPR, you have the following rights:
-              </p>
-
-              <div className="mt-6 space-y-6">
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Access (Article 15)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can request a copy of all personal data we hold about you, including how it is processed and with whom it is shared.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Rectification (Article 16)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can request correction of inaccurate or incomplete personal data.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Erasure (Article 17)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can request deletion of your personal data when it is no longer necessary, you withdraw consent, or you object to processing.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Restrict Processing (Article 18)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can request limitations on how we process your data while we verify its accuracy or legitimacy of processing.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Data Portability (Article 20)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can request your data in a structured, machine-readable format and transfer it to another service provider.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Object (Article 21)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You can object to processing based on legitimate interests or for direct marketing purposes.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Withdraw Consent (Article 7)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    Where we rely on your consent, you can withdraw it at any time without affecting prior processing.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-primary-400 pl-4">
-                  <h4 className="font-semibold text-gray-900">Right to Lodge a Complaint (Article 77)</h4>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You have the right to file a complaint with a supervisory authority in your country of residence.
-                  </p>
-                </div>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">4. Your GDPR Rights</h2>
+              <p>Under GDPR, you have the following rights:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-2">
+                <li>Right to Access (Article 15): You can request a copy of all personal data we hold about you, including how it is processed and with whom it is shared.</li>
+                <li>Right to Rectification (Article 16): You can request correction of inaccurate or incomplete personal data.</li>
+                <li>Right to Erasure (Article 17): You can request deletion of your personal data when it is no longer necessary, you withdraw consent, or you object to processing.</li>
+                <li>Right to Restrict Processing (Article 18): You can request limitations on how we process your data while we verify its accuracy or legitimacy of processing.</li>
+                <li>Right to Data Portability (Article 20): You can request your data in a structured, machine-readable format and transfer it to another service provider.</li>
+                <li>Right to Object (Article 21): You can object to processing based on legitimate interests or for direct marketing purposes.</li>
+                <li>Right to Withdraw Consent (Article 7): Where we rely on your consent, you can withdraw it at any time without affecting prior processing.</li>
+                <li>Right to Lodge a Complaint (Article 77): You have the right to file a complaint with a supervisory authority in your country of residence.</li>
+              </ul>
             </section>
 
-            {/* How to Exercise Your Rights */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">5. How to Exercise Your Rights</h2>
-              <p className="text-gray-700 leading-relaxed">
-                To exercise any of your GDPR rights, please contact us at:
+              <h2 className="text-xl font-bold text-gray-900 mb-3">5. How to Exercise Your Rights</h2>
+              <p>To exercise any of your GDPR rights, please contact us at:</p>
+              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-2">
+                Please include "GDPR Request" in the subject line and provide sufficient information to verify your identity. We will respond within 30 days.
               </p>
-              <div className="mt-4 p-6 bg-gray-50 rounded-lg">
-                <p className="text-gray-700 mb-4">
-                  <strong>Email:</strong>{' '}
-                  <a href="mailto:campuscuthelp@gmail.com" className="text-primary-500 hover:underline">
-                    campuscuthelp@gmail.com
-                  </a>
-                </p>
-                <p className="text-gray-600 text-sm">
-                  Please include GDPR Request in the subject line and provide sufficient information to verify your identity. We will respond within 30 days.
-                </p>
-              </div>
             </section>
 
-            {/* International Data Transfers */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">6. International Data Transfers</h2>
-              <p className="text-gray-700 leading-relaxed">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">6. International Data Transfers</h2>
+              <p>
                 Our servers are located in the United States. If you are accessing the Service from the EU/EEA, your data will be transferred to the US. We ensure appropriate safeguards are in place:
               </p>
-              <ul className="list-disc pl-6 mt-4 space-y-2 text-gray-700">
+              <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Standard Contractual Clauses (SCCs) approved by the European Commission</li>
                 <li>Adequacy decisions where applicable</li>
                 <li>Data processing agreements with all sub-processors</li>
               </ul>
             </section>
 
-            {/* Data Retention */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Data Retention</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We retain personal data only for as long as necessary:
-              </p>
-              <ul className="list-disc pl-6 mt-4 space-y-2 text-gray-700">
-                <li><strong>Active accounts:</strong> Data retained while account is active</li>
-                <li><strong>After account deletion:</strong> Core data deleted within 30 days; some data retained for legal compliance (up to 7 years for financial records)</li>
-                <li><strong>Backups:</strong> Removed from backup systems within 90 days</li>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">7. Data Retention</h2>
+              <p>We retain personal data only for as long as necessary:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-1">
+                <li>Active accounts: Data retained while account is active</li>
+                <li>After account deletion: Core data deleted within 30 days; some data retained for legal compliance (up to 7 years for financial records)</li>
+                <li>Backups: Removed from backup systems within 90 days</li>
               </ul>
             </section>
 
-            {/* Data Security */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Data Security Measures</h2>
-              <p className="text-gray-700 leading-relaxed">
-                We implement technical and organizational measures to protect your data:
-              </p>
-              <ul className="list-disc pl-6 mt-4 space-y-2 text-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">8. Data Security Measures</h2>
+              <p>We implement technical and organizational measures to protect your data:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Encryption in transit (TLS 1.3) and at rest (AES-256)</li>
                 <li>Regular security assessments and penetration testing</li>
                 <li>Access controls based on principle of least privilege</li>
@@ -240,53 +127,32 @@ export default function GDPRPage() {
               </ul>
             </section>
 
-            {/* Data Breach Notification */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Data Breach Notification</h2>
-              <p className="text-gray-700 leading-relaxed">
-                In the event of a personal data breach that poses a high risk to your rights and freedoms, we will:
-              </p>
-              <ul className="list-disc pl-6 mt-4 space-y-2 text-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">9. Data Breach Notification</h2>
+              <p>In the event of a personal data breach that poses a high risk to your rights and freedoms, we will:</p>
+              <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Notify the relevant supervisory authority within 72 hours</li>
                 <li>Notify affected individuals without undue delay</li>
                 <li>Document the breach and remediation steps taken</li>
               </ul>
             </section>
 
-            {/* Contact */}
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Contact Information</h2>
-              <p className="text-gray-700 leading-relaxed">
-                For any GDPR-related questions or to exercise your rights:
-              </p>
-              <div className="mt-4 p-6 bg-primary-50 rounded-lg border border-primary-200">
-                <p className="text-gray-800 font-medium mb-2">Data Protection Inquiries</p>
-                <p className="text-gray-700">
-                  Email:{' '}
-                  <a href="mailto:campuscuthelp@gmail.com" className="text-primary-500 hover:underline">
-                    campuscuthelp@gmail.com
-                  </a>
-                </p>
-                <p className="text-gray-600 text-sm mt-2">
-                  Subject line: GDPR Request - [Your Request Type]
-                </p>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">10. Contact Information</h2>
+              <p>For any GDPR-related questions or to exercise your rights:</p>
+              <p className="mt-2">Email: campuscuthelp@gmail.com</p>
+              <p className="mt-1">Subject line: GDPR Request - [Your Request Type]</p>
             </section>
           </div>
         </div>
 
         {/* Related Links */}
-        <div className="mt-8 flex flex-wrap gap-4 justify-center">
-          <Link 
-            to="/terms" 
-            className="text-primary-500 hover:text-primary-600 font-medium transition-colors"
-          >
+        <div className="mt-8 flex flex-wrap gap-4 justify-center text-sm">
+          <Link to="/terms" className="text-gray-600 hover:text-gray-900">
             Terms of Service
           </Link>
-          <Link 
-            to="/privacy" 
-            className="text-primary-500 hover:text-primary-600 font-medium transition-colors"
-          >
+          <span className="text-gray-400">|</span>
+          <Link to="/privacy" className="text-gray-600 hover:text-gray-900">
             Privacy Policy
           </Link>
         </div>
@@ -294,4 +160,3 @@ export default function GDPRPage() {
     </div>
   );
 }
-
