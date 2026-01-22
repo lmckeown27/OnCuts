@@ -65,11 +65,11 @@ class StripeConnectService {
   /**
    * Create account link for onboarding
    */
-  async createAccountLink(accountId: string, returnPath = '/barber/dashboard'): Promise<AccountLinkResult> {
+  async createAccountLink(accountId: string, returnPath = '/web/barber'): Promise<AccountLinkResult> {
     try {
       const accountLink = await stripe.accountLinks.create({
         account: accountId,
-        refresh_url: `${FRONTEND_URL}/barber/onboarding/refresh`,
+        refresh_url: `${FRONTEND_URL}/web/barber/connect/refresh`,
         return_url: `${FRONTEND_URL}${returnPath}`,
         type: 'account_onboarding',
       });

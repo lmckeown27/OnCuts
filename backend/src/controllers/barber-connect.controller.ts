@@ -52,8 +52,8 @@ export const createConnectAccount = async (
       // Already has account, just return onboarding link
       const accountLink = await stripeService.createAccountLink(
         user.stripe_account_id,
-        `${process.env.FRONTEND_URL}/barber/connect/refresh`,
-        `${process.env.FRONTEND_URL}/barber/connect/return`
+        `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
+        `${process.env.FRONTEND_URL}/web/barber/connect/return`
       );
 
       return res.status(200).json({
@@ -82,8 +82,8 @@ export const createConnectAccount = async (
     // 4. Create account link for onboarding
     const accountLink = await stripeService.createAccountLink(
       accountId,
-      `${process.env.FRONTEND_URL}/barber/connect/refresh`,
-      `${process.env.FRONTEND_URL}/barber/connect/return`
+      `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
+      `${process.env.FRONTEND_URL}/web/barber/connect/return`
     );
 
     // 5. Audit log
@@ -200,8 +200,8 @@ export const refreshOnboardingLink = async (
     // Create new account link
     const accountLink = await stripeService.createAccountLink(
       stripeAccountId,
-      `${process.env.FRONTEND_URL}/barber/connect/refresh`,
-      `${process.env.FRONTEND_URL}/barber/connect/return`
+      `${process.env.FRONTEND_URL}/web/barber/connect/refresh`,
+      `${process.env.FRONTEND_URL}/web/barber/connect/return`
     );
 
     res.status(200).json({
