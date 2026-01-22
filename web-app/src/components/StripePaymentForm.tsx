@@ -69,7 +69,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     client_secret: string;
     payment_intent_id: string;
   }> => {
-    const token = localStorage.getItem('campuscuts_access_token');
+    const token = localStorage.getItem('accessToken');
 
     const response = await axios.post(
       `${API_BASE_URL}/bookings/${bookingId}/payment/create`,

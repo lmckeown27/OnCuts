@@ -40,7 +40,7 @@ export const BarberConnectOnboarding = () => {
   const checkConnectStatus = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('campuscuts_access_token');
+      const token = localStorage.getItem('accessToken');
 
       const response = await axios.get(`${API_BASE_URL}/barber/connect/status`, {
         headers: {
@@ -63,7 +63,7 @@ export const BarberConnectOnboarding = () => {
   const handleSetupPayouts = async () => {
     try {
       setIsCreatingAccount(true);
-      const token = localStorage.getItem('campuscuts_access_token');
+      const token = localStorage.getItem('accessToken');
 
       const response = await axios.post(
         `${API_BASE_URL}/barber/connect/create`,
@@ -92,7 +92,7 @@ export const BarberConnectOnboarding = () => {
   const handleContinueOnboarding = async () => {
     try {
       setIsCreatingAccount(true);
-      const token = localStorage.getItem('campuscuts_access_token');
+      const token = localStorage.getItem('accessToken');
 
       const response = await axios.post(
         `${API_BASE_URL}/barber/connect/refresh`,
