@@ -563,7 +563,7 @@ export default function BookingDetailsModal({
               )}
 
               {/* Booking Reference */}
-              <div className="text-center pt-2">
+              <div className="text-center pt-2 pb-6">
                 <p className="text-xs text-gray-400">Booking Reference</p>
                 <p className="font-mono text-sm text-gray-600 font-medium">
                   {booking.id.slice(0, 8).toUpperCase()}
