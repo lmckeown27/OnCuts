@@ -1075,6 +1075,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
   const [selectedBookingInline, setSelectedBookingInline] = useState<ConfirmedBooking | null>(null);
   const [isEditingBooking, setIsEditingBooking] = useState(false);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
+  const [isRemovingBooking, setIsRemovingBooking] = useState(false);
   const [isSavingBooking, setIsSavingBooking] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [editedDate, setEditedDate] = useState('');
@@ -1331,6 +1332,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
       setSelectedBookingInline(null);
       setIsEditingBooking(false);
       setIsDeletingBooking(false);
+      setIsRemovingBooking(false);
       setCancelReason('');
       // Scroll back to top when modal closes
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1349,6 +1351,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
     setEditedLocation(booking.location || '');
     setIsEditingBooking(false);
     setIsDeletingBooking(false);
+    setIsRemovingBooking(false);
     setCancelReason('');
   };
 
@@ -1357,6 +1360,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
     setSelectedBookingInline(null);
     setIsEditingBooking(false);
     setIsDeletingBooking(false);
+    setIsRemovingBooking(false);
     setCancelReason('');
   };
 
@@ -1485,6 +1489,24 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
     } catch (error: any) {
       console.error('Failed to cancel booking:', error);
       toast.error(error.message || 'Failed to cancel booking');
+    } finally {
+      setIsSavingBooking(false);
+    }
+  };
+
+  // Handle removing completed booking from schedule
+  const handleRemoveBooking = async () => {
+    if (!selectedBookingInline) return;
+    
+    setIsSavingBooking(true);
+    try {
+      await api.delete(`/bookings-simple/${selectedBookingInline.id}`);
+      toast.success('Booking removed from schedule');
+      closeDayModal();
+      if (onRefreshBookings) onRefreshBookings();
+    } catch (error: any) {
+      console.error('Failed to remove booking:', error);
+      toast.error(error.message || 'Failed to remove booking');
     } finally {
       setIsSavingBooking(false);
     }
@@ -2510,8 +2532,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                         const canEdit = selectedBookingInline.status === 'ACCEPTED';
                         const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
                         const canComplete = selectedBookingInline.status === 'ACCEPTED';
+                        const canRemove = selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID';
                         
-                        if (!canComplete && !canEdit && !canCancel) return null;
+                        if (!canComplete && !canEdit && !canCancel && !canRemove) return null;
                         
                         return (
                           <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -2544,6 +2567,56 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                     Cancel
                                   </button>
                                 )}
+                              </div>
+                            )}
+                            
+                            {/* Remove from Schedule Button (for completed bookings) */}
+                            {canRemove && !isRemovingBooking && (
+                              <button
+                                onClick={() => setIsRemovingBooking(true)}
+                                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Remove from Schedule
+                              </button>
+                            )}
+
+                            {/* Remove Confirmation */}
+                            {isRemovingBooking && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                  <AlertTriangle className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="font-semibold text-gray-800 text-sm">Remove this booking?</p>
+                                    <p className="text-xs text-gray-600">This will permanently remove it from your schedule.</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3">
+                                  <button
+                                    onClick={() => setIsRemovingBooking(false)}
+                                    className="flex-1 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors text-sm"
+                                    disabled={isSavingBooking}
+                                  >
+                                    Keep
+                                  </button>
+                                  <button
+                                    onClick={handleRemoveBooking}
+                                    disabled={isSavingBooking}
+                                    className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                                  >
+                                    {isSavingBooking ? (
+                                      <>
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Removing...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Trash2 className="w-3 h-3" />
+                                        Remove
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
