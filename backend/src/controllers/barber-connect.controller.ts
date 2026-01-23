@@ -25,12 +25,7 @@ export const createConnectAccount = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role?.toLowerCase();
-
-    // Allow barbers and admins
-    if (role !== 'barber' && role !== 'admin') {
-      throw new ApiError(403, 'Only barbers can create Connect accounts');
-    }
+    // Role check is handled by requireRole middleware in routes
 
     logger.info('Creating Stripe Connect account for barber', {
       user_id: userId,
@@ -122,12 +117,7 @@ export const getConnectStatus = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role?.toLowerCase();
-
-    // Allow barbers and admins
-    if (role !== 'barber' && role !== 'admin') {
-      throw new ApiError(403, 'Only barbers can check Connect status');
-    }
+    // Role check is handled by requireRole middleware in routes
 
     const userResult = await pool.query(
       `SELECT stripe_account_id FROM users WHERE id = $1`,
@@ -179,12 +169,7 @@ export const refreshOnboardingLink = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role?.toLowerCase();
-
-    // Allow barbers and admins
-    if (role !== 'barber' && role !== 'admin') {
-      throw new ApiError(403, 'Only barbers can refresh onboarding');
-    }
+    // Role check is handled by requireRole middleware in routes
 
     const userResult = await pool.query(
       `SELECT stripe_account_id FROM users WHERE id = $1`,
@@ -275,12 +260,7 @@ export const getDashboardLink = async (
 ) => {
   try {
     const userId = req.user!.userId;
-    const role = req.user!.role?.toLowerCase();
-
-    // Allow barbers and admins
-    if (role !== 'barber' && role !== 'admin') {
-      throw new ApiError(403, 'Only barbers can access dashboard');
-    }
+    // Role check is handled by requireRole middleware in routes
 
     const userResult = await pool.query(
       `SELECT stripe_account_id FROM users WHERE id = $1`,
