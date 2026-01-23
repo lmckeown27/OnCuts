@@ -65,18 +65,21 @@ class StripePaymentService {
   }
 
   /**
-   * Create payment intent for booking with Stripe Connect
-   * Uses destination charges: payment goes to platform, then 95% transferred to barber
+   * Create payment intent for booking
+   * TEMPORARILY: 100% to platform while LLC account needs funding
+   * TODO: Re-enable Stripe Connect split when ready
    */
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
     try {
       const { amount, currency = 'usd', customerId, barberId, metadata = {} } = params;
 
-      // Calculate fees
+      // Calculate fees (for tracking purposes, not used in split currently)
       const amountCents = Math.round(amount * 100); // Convert to cents
       const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENTAGE);
       const barberAmountCents = amountCents - platformFeeCents;
 
+      /*
+      // DISABLED: Stripe Connect lookup - platform keeps 100%
       // Get barber's Stripe Connect account ID
       let barberStripeAccountId: string | null = null;
       if (barberId) {
@@ -86,8 +89,9 @@ class StripePaymentService {
         );
         barberStripeAccountId = barberResult.rows[0]?.stripe_account_id;
       }
+      */
 
-      // Build payment intent config
+      // Build payment intent config - 100% to platform
       const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
         amount: amountCents,
         currency,
@@ -96,12 +100,15 @@ class StripePaymentService {
           ...metadata,
           platformFee: platformFeeCents.toString(),
           barberAmount: barberAmountCents.toString(),
+          payout_mode: 'manual', // TEMP: Platform keeps 100%
         },
         automatic_payment_methods: {
           enabled: true,
         },
       };
 
+      /*
+      // DISABLED: Stripe Connect destination charges
       // If barber has a Stripe Connect account, use destination charges
       // This automatically splits the payment: 95% to barber, 5% to platform
       if (barberStripeAccountId) {
@@ -113,11 +120,12 @@ class StripePaymentService {
       } else {
         logger.warn(`Barber ${barberId} has no Stripe Connect account - payment goes to platform only. Manual payout required.`);
       }
+      */
 
       // Create payment intent
       const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
 
-      logger.info(`Created payment intent: ${paymentIntent.id} for $${amount}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect - manual payout needed)'}`);
+      logger.info(`Created payment intent: ${paymentIntent.id} for $${amount} (100% to platform - manual payout mode)`);
 
       return {
         clientSecret: paymentIntent.client_secret!,
