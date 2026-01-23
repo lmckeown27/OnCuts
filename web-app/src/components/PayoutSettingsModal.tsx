@@ -15,6 +15,8 @@ import { API_BASE_URL } from '../config/constants';
 interface PayoutSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preventClose?: boolean;
+  onStatusChange?: (isCompleted: boolean) => void;
 }
 
 interface ConnectStatus {
@@ -25,7 +27,7 @@ interface ConnectStatus {
   payoutsEnabled: boolean;
 }
 
-export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsModalProps) {
+export default function PayoutSettingsModal({ isOpen, onClose, preventClose = false, onStatusChange }: PayoutSettingsModalProps) {
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -56,7 +58,14 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
         },
       });
 
-      setStatus(response.data.data);
+      const newStatus = response.data.data;
+      setStatus(newStatus);
+      
+      // Notify parent of status change
+      if (onStatusChange) {
+        const isCompleted = newStatus?.has_account && newStatus?.payoutsEnabled;
+        onStatusChange(isCompleted);
+      }
     } catch (error: any) {
       // If 401, the user might not be a barber - show the setup screen anyway
       if (error.response?.status === 401) {
@@ -64,6 +73,9 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
       } else {
         toast.error('Failed to check payout status');
         console.error('Connect status error:', error);
+      }
+      if (onStatusChange) {
+        onStatusChange(false);
       }
     } finally {
       setIsLoading(false);
@@ -152,12 +164,18 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
 
   if (!isVisible && !isOpen) return null;
 
+  const handleBackdropClick = () => {
+    if (!preventClose) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
         isOpen ? 'bg-black/50' : 'bg-black/0'
       }`}
-      onClick={onClose}
+      onClick={handleBackdropClick}
     >
       <div
         className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-hidden transition-all duration-150 ease-out ${
@@ -171,18 +189,38 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
         <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Payout Settings</h2>
-            <p className="text-white/80 text-sm">Set up your payout account</p>
+            <p className="text-white/80 text-sm">
+              {preventClose ? 'Complete setup to continue' : 'Set up your payout account'}
+            </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          {!preventClose && (
+            <button
+              onClick={onClose}
+              className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
         </div>
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90dvh-80px)]">
+          {/* Required Setup Banner */}
+          {preventClose && !isLoading && !(status?.has_account && status?.payoutsEnabled) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">Payout Setup Required</p>
+                  <p className="text-sm text-amber-700 mt-1">
+                    You must complete your payout setup before you can access your barber dashboard. 
+                    Consumers won't be able to see or book you until this is complete.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>

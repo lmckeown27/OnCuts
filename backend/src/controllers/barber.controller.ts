@@ -76,6 +76,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."isActive" = true
+        AND u.stripe_account_id IS NOT NULL
     `;
 
     // Handle campusId - can be UUID or slug

@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star } from 'lucide-react';
+import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import socketService from '../services/socket.service';
@@ -71,6 +72,7 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
+  const [stripeConnectCompleted, setStripeConnectCompleted] = useState<boolean | null>(null); // null = loading
   
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
@@ -157,10 +159,39 @@ export default function BarberPage() {
     return date.toLocaleDateString();
   };
   
+  // Check Stripe Connect status on mount
+  const checkStripeConnectStatus = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${API_BASE_URL}/barber/connect/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        const isCompleted = data.data.has_account && data.data.payoutsEnabled;
+        setStripeConnectCompleted(isCompleted);
+        
+        // Force open payout settings if not completed
+        if (!isCompleted) {
+          setShowPayoutSettings(true);
+        }
+      } else {
+        setStripeConnectCompleted(false);
+        setShowPayoutSettings(true);
+      }
+    } catch (error) {
+      console.error('Failed to check Stripe Connect status:', error);
+      setStripeConnectCompleted(false);
+      setShowPayoutSettings(true);
+    }
+  };
+
   // Fetch notifications and unread messages on mount
   useEffect(() => {
     fetchNotifications();
     loadUnreadCount();
+    checkStripeConnectStatus();
   }, [loadUnreadCount]);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -746,10 +777,23 @@ export default function BarberPage() {
         />
       )}
 
-      {/* Payout Settings Modal */}
+      {/* Payout Settings Modal - Cannot be closed until Stripe Connect is complete */}
       <PayoutSettingsModal
         isOpen={showPayoutSettings}
-        onClose={() => setShowPayoutSettings(false)}
+        onClose={() => {
+          // Only allow closing if Stripe Connect is completed
+          if (stripeConnectCompleted) {
+            setShowPayoutSettings(false);
+          }
+        }}
+        preventClose={!stripeConnectCompleted}
+        onStatusChange={(isCompleted: boolean) => {
+          setStripeConnectCompleted(isCompleted);
+          if (isCompleted) {
+            // Refresh the status check
+            checkStripeConnectStatus();
+          }
+        }}
       />
 
       {/* Service Details Modal */}
