@@ -11,6 +11,7 @@ import {
   getConnectStatus,
   refreshOnboardingLink,
   handleOnboardingReturn,
+  getDashboardLink,
 } from '../controllers/barber-connect.controller';
 
 const router = express.Router();
@@ -38,6 +39,12 @@ router.post('/connect/refresh', authenticate, requireRole('barber', 'admin'), re
  * GET /api/barber/connect/return
  */
 router.get('/connect/return', authenticate, handleOnboardingReturn);
+
+/**
+ * Get Stripe Express dashboard login link
+ * GET /api/barber/connect/dashboard
+ */
+router.get('/connect/dashboard', authenticate, requireRole('barber', 'admin'), getDashboardLink);
 
 export default router;
 

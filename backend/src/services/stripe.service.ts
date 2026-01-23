@@ -301,6 +301,20 @@ class StripeService {
   }
 
   /**
+   * Create Express dashboard login link
+   */
+  async createExpressLoginLink(accountId: string): Promise<string> {
+    try {
+      const loginLink = await this.stripe.accounts.createLoginLink(accountId);
+      logger.info(`Created Express login link for account: ${accountId}`);
+      return loginLink.url;
+    } catch (error) {
+      logger.error(`Failed to create login link for ${accountId}:`, error);
+      throw new ApiError(500, 'Failed to create dashboard login link');
+    }
+  }
+
+  /**
    * Calculate platform fee (5%)
    */
   calculateFees(amount: number): { platformFee: number; barberPayout: number } {

@@ -264,3 +264,46 @@ export const handleOnboardingReturn = async (
   }
 };
 
+/**
+ * Get Stripe Express dashboard login link
+ * GET /api/barber/connect/dashboard
+ */
+export const getDashboardLink = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.userId;
+    const role = req.user!.role?.toLowerCase();
+
+    // Allow barbers and admins
+    if (role !== 'barber' && role !== 'admin') {
+      throw new ApiError(403, 'Only barbers can access dashboard');
+    }
+
+    const userResult = await pool.query(
+      `SELECT stripe_account_id FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    const stripeAccountId = userResult.rows[0]?.stripe_account_id;
+
+    if (!stripeAccountId) {
+      throw new ApiError(400, 'No Connect account found. Complete onboarding first.');
+    }
+
+    // Create login link for Stripe Express dashboard
+    const loginLink = await stripeService.createExpressLoginLink(stripeAccountId);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        dashboard_url: loginLink,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

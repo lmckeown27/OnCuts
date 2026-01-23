@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { X, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Button from './Button';
@@ -126,6 +126,30 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
     }
   };
 
+  /**
+   * Open Stripe Express dashboard
+   */
+  const handleOpenDashboard = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      const response = await axios.get(
+        `${API_BASE_URL}/barber/connect/dashboard`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const { dashboard_url } = response.data.data;
+      window.open(dashboard_url, '_blank');
+    } catch (error: any) {
+      toast.error('Failed to open Stripe dashboard');
+      console.error('Dashboard error:', error);
+    }
+  };
+
   if (!isVisible && !isOpen) return null;
 
   return (
@@ -235,9 +259,6 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
               {/* Fully Enabled */}
               {status?.has_account && status.detailsSubmitted && status.payoutsEnabled && (
                 <div className="text-center py-6">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                    <CheckCircle className="h-8 w-8 text-green-600" />
-                  </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Payouts Enabled!
                   </h3>
@@ -252,8 +273,17 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                       <p><strong>Payout Method:</strong> Instant Transfer (1-2 business days)</p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    You can update your payout settings anytime in your Stripe Dashboard
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleOpenDashboard}
+                    className="w-full"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Stripe Dashboard
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-4">
+                    View payouts, update bank details, and manage your account
                   </p>
                 </div>
               )}
