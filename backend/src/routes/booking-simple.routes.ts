@@ -1147,8 +1147,19 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const Stripe = require('stripe');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Get barber's Stripe Connect account ID for payment split
+    const barberAccountResult = await pool.query(
+      'SELECT stripe_account_id FROM users WHERE id = $1',
+      [booking.barber_user_id]
+    );
+    const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
+
+    // Calculate platform fee (5%)
+    const PLATFORM_FEE_PERCENTAGE = 0.05;
+    const platformFeeCents = Math.round(totalAmountCents * PLATFORM_FEE_PERCENTAGE);
+
+    // Build payment intent config
+    const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
@@ -1156,14 +1167,31 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         booking_id: id,
         consumer_id: userId,
         barber_id: booking.barberId,
+        barber_user_id: booking.barber_user_id,
         service_name: booking.service_name || 'Haircut',
         tip_amount_cents: tipAmountCents.toString(),
+        platform_fee_cents: platformFeeCents.toString(),
         platform: 'CampusCuts',
       },
       description: `CampusCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
-    });
+    };
 
-    logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}`);
+    // If barber has Stripe Connect account, use destination charges for automatic split
+    // Platform takes 5%, barber receives 95%
+    if (barberStripeAccountId) {
+      paymentIntentConfig.application_fee_amount = platformFeeCents;
+      paymentIntentConfig.transfer_data = {
+        destination: barberStripeAccountId,
+      };
+      logger.info(`Payment split: $${platformFeeCents / 100} to platform, $${(totalAmountCents - platformFeeCents) / 100} to barber (${barberStripeAccountId})`);
+    } else {
+      logger.warn(`Barber ${booking.barber_user_id} has no Stripe Connect account - payment goes to platform. Manual payout required.`);
+    }
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+
+    logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect)'}`);
 
     res.json({
       success: true,

@@ -1,11 +1,13 @@
 /**
  * Stripe Payment Service
  * 
- * Handles customer payments for bookings
+ * Handles customer payments for bookings with Stripe Connect
+ * Platform takes 5%, barber receives 95%
  */
 
 import Stripe from 'stripe';
 import { logger } from '../utils/logger';
+import { pool } from '../database/connection';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
   apiVersion: '2023-10-16',
@@ -17,6 +19,7 @@ interface CreatePaymentIntentParams {
   amount: number; // in dollars
   currency?: string;
   customerId?: string;
+  barberId?: string; // User ID of the barber
   metadata?: Record<string, string>;
 }
 
@@ -62,19 +65,30 @@ class StripePaymentService {
   }
 
   /**
-   * Create payment intent for booking
+   * Create payment intent for booking with Stripe Connect
+   * Uses destination charges: payment goes to platform, then 95% transferred to barber
    */
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
     try {
-      const { amount, currency = 'usd', customerId, metadata = {} } = params;
+      const { amount, currency = 'usd', customerId, barberId, metadata = {} } = params;
 
       // Calculate fees
       const amountCents = Math.round(amount * 100); // Convert to cents
       const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENTAGE);
       const barberAmountCents = amountCents - platformFeeCents;
 
-      // Create payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
+      // Get barber's Stripe Connect account ID
+      let barberStripeAccountId: string | null = null;
+      if (barberId) {
+        const barberResult = await pool.query(
+          'SELECT stripe_account_id FROM users WHERE id = $1',
+          [barberId]
+        );
+        barberStripeAccountId = barberResult.rows[0]?.stripe_account_id;
+      }
+
+      // Build payment intent config
+      const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
         amount: amountCents,
         currency,
         customer: customerId,
@@ -86,9 +100,24 @@ class StripePaymentService {
         automatic_payment_methods: {
           enabled: true,
         },
-      });
+      };
 
-      logger.info(`Created payment intent: ${paymentIntent.id} for $${amount}`);
+      // If barber has a Stripe Connect account, use destination charges
+      // This automatically splits the payment: 95% to barber, 5% to platform
+      if (barberStripeAccountId) {
+        paymentIntentConfig.application_fee_amount = platformFeeCents;
+        paymentIntentConfig.transfer_data = {
+          destination: barberStripeAccountId,
+        };
+        logger.info(`Payment will split: $${platformFeeCents / 100} to platform, $${barberAmountCents / 100} to barber (${barberStripeAccountId})`);
+      } else {
+        logger.warn(`Barber ${barberId} has no Stripe Connect account - payment goes to platform only. Manual payout required.`);
+      }
+
+      // Create payment intent
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+
+      logger.info(`Created payment intent: ${paymentIntent.id} for $${amount}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect - manual payout needed)'}`);
 
       return {
         clientSecret: paymentIntent.client_secret!,

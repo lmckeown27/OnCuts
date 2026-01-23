@@ -47,10 +47,11 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
       `${student.first_name} ${student.last_name}`
     );
 
-    // Create payment intent
+    // Create payment intent with Stripe Connect split
     const paymentIntent = await stripePaymentService.createPaymentIntent({
       amount,
       customerId,
+      barberId, // Pass barberId for Stripe Connect destination
       metadata: {
         bookingId,
         barberId,
