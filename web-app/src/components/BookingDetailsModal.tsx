@@ -29,6 +29,7 @@ export default function BookingDetailsModal({
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
@@ -242,6 +243,23 @@ export default function BookingDetailsModal({
     }
   };
 
+  const handleRemoveBooking = async () => {
+    setIsSaving(true);
+    try {
+      await api.delete(`/bookings-simple/${booking.id}`);
+
+      toast.success('Booking removed from schedule');
+      setIsRemoving(false);
+      onClose();
+      onBookingUpdated?.();
+    } catch (error: any) {
+      console.error('Failed to remove booking:', error);
+      toast.error(error.message || 'Failed to remove booking');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCompleteBooking = async () => {
     try {
       // Request payment from consumer - this sends them a notification
@@ -259,6 +277,7 @@ export default function BookingDetailsModal({
   const canEdit = booking.status === 'ACCEPTED';
   const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
   const canComplete = booking.status === 'ACCEPTED';
+  const canRemove = booking.status === 'COMPLETED' || booking.status === 'PAID';
 
   return (
     <div
@@ -606,6 +625,60 @@ export default function BookingDetailsModal({
                       )}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Remove from Schedule Button (for completed bookings) */}
+              {canRemove && !isRemoving && (
+                <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0">
+                  <button
+                    onClick={() => setIsRemoving(true)}
+                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remove from Schedule
+                  </button>
+                </div>
+              )}
+
+              {/* Remove Confirmation */}
+              {isRemoving && (
+                <div className="pt-4 border-t border-gray-100 space-y-4 pb-4 sm:pb-0">
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <AlertTriangle className="w-6 h-6 text-gray-500 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Remove this booking?</h3>
+                      <p className="text-sm text-gray-600">
+                        This will permanently remove this booking from your schedule.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsRemoving(false)}
+                      className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
+                      disabled={isSaving}
+                    >
+                      Keep
+                    </button>
+                    <button
+                      onClick={handleRemoveBooking}
+                      disabled={isSaving}
+                      className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Removing...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          Remove
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

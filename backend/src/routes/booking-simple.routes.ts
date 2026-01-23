@@ -1850,8 +1850,35 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const isBarber = booking.barber_user_id === userId;
     const isConsumer = booking.consumerId === userId;
 
-    // Cannot delete completed or already cancelled bookings
-    if (booking.status === 'COMPLETED') {
+    // Allow barbers to remove completed/paid bookings from their schedule
+    if ((booking.status === 'COMPLETED' || booking.status === 'PAID') && isBarber) {
+      // For completed bookings, actually delete instead of just cancelling
+      // Delete conversation first if exists
+      const convResult = await pool.query(
+        `SELECT id FROM conversations WHERE booking_id = $1`,
+        [id]
+      );
+      
+      if (convResult.rows.length > 0) {
+        const conversationId = convResult.rows[0].id;
+        await pool.query(`DELETE FROM messages WHERE conversation_id = $1`, [conversationId]);
+        await pool.query(`DELETE FROM conversations WHERE id = $1`, [conversationId]);
+        logger.info(`Deleted conversation for removed completed booking ${id}`);
+      }
+
+      // Delete the booking
+      await pool.query(`DELETE FROM bookings WHERE id = $1`, [id]);
+      
+      logger.info(`Barber ${userId} removed completed booking ${id} from schedule`);
+      
+      return res.json({
+        success: true,
+        message: 'Booking removed from schedule',
+      });
+    }
+
+    // Consumers cannot delete completed bookings
+    if (booking.status === 'COMPLETED' || booking.status === 'PAID') {
       return res.status(400).json({ 
         success: false, 
         error: 'Cannot cancel a completed booking' 
