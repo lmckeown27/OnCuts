@@ -193,6 +193,17 @@ export default function BarberPage() {
     loadUnreadCount();
     checkStripeConnectStatus();
   }, [loadUnreadCount]);
+
+  // Check for showPayoutSettings query param (redirect from Stripe Connect return)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('showPayoutSettings') === 'true') {
+      setShowPayoutSettings(true);
+      // Clear the query param from URL without triggering navigation
+      const newUrl = location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [location]);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
