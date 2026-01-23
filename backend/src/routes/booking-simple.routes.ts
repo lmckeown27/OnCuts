@@ -1147,10 +1147,6 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const Stripe = require('stripe');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-    // TEMPORARILY DISABLED: Stripe Connect split to barbers
-    // Platform keeps 100% while LLC account needs to be funded
-    // TODO: Re-enable when ready to split payments with barbers
-    /*
     // Get barber's Stripe Connect account ID for payment split
     const barberAccountResult = await pool.query(
       'SELECT stripe_account_id FROM users WHERE id = $1',
@@ -1161,9 +1157,8 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     // Calculate platform fee (5%)
     const PLATFORM_FEE_PERCENTAGE = 0.05;
     const platformFeeCents = Math.round(totalAmountCents * PLATFORM_FEE_PERCENTAGE);
-    */
 
-    // Build payment intent config - 100% to platform
+    // Build payment intent config
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
@@ -1175,15 +1170,12 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
         barber_user_id: booking.barber_user_id,
         service_name: booking.service_name || 'Haircut',
         tip_amount_cents: tipAmountCents.toString(),
+        platform_fee_cents: platformFeeCents.toString(),
         platform: 'CampusCuts',
-        // TEMP: Platform keeps 100% - manual payout to barbers required
-        payout_mode: 'manual',
       },
       description: `CampusCuts - ${booking.service_name || 'Haircut'} with ${booking.barber_name}`,
     };
 
-    /*
-    // DISABLED: Stripe Connect destination charges
     // If barber has Stripe Connect account, use destination charges for automatic split
     // Platform takes 5%, barber receives 95%
     if (barberStripeAccountId) {
@@ -1195,12 +1187,11 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     } else {
       logger.warn(`Barber ${booking.barber_user_id} has no Stripe Connect account - payment goes to platform. Manual payout required.`);
     }
-    */
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
 
-    logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id} (100% to platform - manual payout mode)`);
+    logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect)'}`);
 
     res.json({
       success: true,
