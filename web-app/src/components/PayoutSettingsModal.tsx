@@ -90,8 +90,8 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
 
       const { onboarding_url } = response.data.data;
 
-      // Redirect to Stripe onboarding
-      window.location.href = onboarding_url;
+      // Open Stripe onboarding in new tab
+      window.open(onboarding_url, '_blank');
     } catch (error: any) {
       toast.error('Failed to create payout account');
       console.error('Connect creation error:', error);
@@ -118,7 +118,7 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
       );
 
       const { onboarding_url } = response.data.data;
-      window.location.href = onboarding_url;
+      window.open(onboarding_url, '_blank');
     } catch (error: any) {
       toast.error('Failed to refresh onboarding link');
       console.error('Refresh error:', error);
@@ -182,7 +182,7 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                     onClick={handleSetupPayouts}
                     disabled={isCreatingAccount}
                   >
-                    {isCreatingAccount ? 'Redirecting to Stripe...' : 'Set Up Payouts'}
+                    {isCreatingAccount ? 'Opening Stripe...' : 'Set Up Payouts'}
                   </Button>
                   <p className="text-xs text-gray-500 mt-4">
                     Powered by Stripe Connect | Secure & PCI Compliant
@@ -208,7 +208,7 @@ export default function PayoutSettingsModal({ isOpen, onClose }: PayoutSettingsM
                     onClick={handleContinueOnboarding}
                     disabled={isCreatingAccount}
                   >
-                    {isCreatingAccount ? 'Redirecting...' : 'Continue Setup'}
+                    {isCreatingAccount ? 'Opening Stripe...' : 'Continue Setup'}
                   </Button>
                 </div>
               )}

@@ -77,8 +77,8 @@ export const BarberConnectOnboarding = () => {
 
       const { onboarding_url } = response.data.data;
 
-      // Redirect to Stripe onboarding
-      window.location.href = onboarding_url;
+      // Open Stripe onboarding in new tab
+      window.open(onboarding_url, '_blank');
     } catch (error: any) {
       toast.error('Failed to create payout account');
       console.error('Connect creation error:', error);
@@ -105,7 +105,7 @@ export const BarberConnectOnboarding = () => {
       );
 
       const { onboarding_url } = response.data.data;
-      window.location.href = onboarding_url;
+      window.open(onboarding_url, '_blank');
     } catch (error: any) {
       toast.error('Failed to refresh onboarding link');
       console.error('Refresh error:', error);
