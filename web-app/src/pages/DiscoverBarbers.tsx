@@ -197,7 +197,7 @@ export default function DiscoverBarbers({ customerId, customerName }: Props) {
               </div>
               <p className="text-sm text-gray-700">
                 <strong>Why so affordable?</strong> Traditional shops charge $35+ and barbers only keep 40-60%. 
-                We eliminated the middleman—barbers keep 95%, so they can charge less while earning more!
+                We eliminated the middleman—barbers keep 91%, so they can charge less while earning more!
               </p>
             </div>
           </div>

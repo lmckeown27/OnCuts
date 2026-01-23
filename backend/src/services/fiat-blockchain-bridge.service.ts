@@ -25,7 +25,7 @@
  * 
  * Platform Economics:
  * - User deposits: Free (no fee)
- * - Booking fee: 5% (collected on-chain)
+ * - Booking fee: 9% (collected on-chain)
  * - Withdrawal: $1 flat fee (covers Stripe payout + conversion)
  */
 
@@ -44,7 +44,7 @@ const USDC_TO_USD_RATE = 1.0; // 1 USDC = $1 USD (stablecoin)
 const APT_TO_USD_RATE = 10.0; // Example: 1 APT = $10 USD (fetch from oracle in production)
 
 // Platform fee settings
-const BOOKING_FEE_PERCENT = 5; // 5% platform fee on bookings
+const BOOKING_FEE_PERCENT = 9; // 9% platform fee on bookings
 const WITHDRAWAL_FEE_USD = 1.00; // $1 flat withdrawal fee
 
 // Octas conversion (Aptos native unit)
@@ -201,7 +201,7 @@ class FiatBlockchainBridgeService {
   /**
    * Calculate platform fee for a booking
    * 
-   * Example: $30 haircut → $1.50 platform fee (5%)
+   * Example: $30 haircut → $2.70 platform fee (9%)
    */
   calculatePlatformFee(bookingAmountUSD: number): {
     totalAmount: number;

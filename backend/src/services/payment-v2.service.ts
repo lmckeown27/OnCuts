@@ -22,8 +22,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 });
 
-// Platform fee rate (5%)
-const PLATFORM_FEE_RATE = 0.05;
+// Platform fee rate (9% - covers Stripe's ~4% processing fee, nets ~5%)
+const PLATFORM_FEE_RATE = 0.09;
 
 export interface DepositInput {
   userId: string;

@@ -7,7 +7,7 @@
  * 3. Create Payment Intent for student to pay
  * 4. Student pays via Stripe
  * 5. Webhook confirms payment
- * 6. Transfer funds to barber (minus 5% fee)
+ * 6. Transfer funds to barber (minus 9% fee)
  * 7. Credit custodial wallet balances
  * 
  * Based on user instructions for Stripe integration
@@ -179,7 +179,7 @@ export const handlePaymentSuccess = async (
 
     const booking = bookingResult.rows[0];
 
-    // 3. Calculate fees (Step 6: Distribute payment minus 5%)
+    // 3. Calculate fees (Step 6: Distribute payment minus 9%)
     const { platformFee, barberPayout } = stripeService.calculateFees(amountCents);
 
     logger.info('Payment distribution', {

@@ -328,7 +328,7 @@ export async function calculateBookingPrice(barberId: string, basePrice: number,
   try {
     const pricingData = await getBarberPricing(barberId, deps);
     const finalPrice = Math.round(basePrice * pricingData.multiplier * 100) / 100;
-    const platformFee = Math.round(finalPrice * 0.05 * 100) / 100;
+    const platformFee = Math.round(finalPrice * 0.09 * 100) / 100;
 
     return {
       basePrice,
@@ -345,7 +345,7 @@ export async function calculateBookingPrice(barberId: string, basePrice: number,
       basePrice,
       multiplier: 1.0,
       finalPrice: basePrice,
-      platformFee: Math.round(basePrice * 0.05 * 100) / 100,
+      platformFee: Math.round(basePrice * 0.09 * 100) / 100,
       barberReceives: Math.round(basePrice * 0.95 * 100) / 100,
       error: true,
     };

@@ -101,7 +101,7 @@ router.post('/', authenticate, async (req, res, next) => {
     // Create booking record (all NOT NULL columns in production)
     // Platform fee is 5% of price, barber gets 95%
     const price = priceUsdCents || 0;
-    const platformFee = Math.round(price * 0.05);
+    const platformFee = Math.round(price * 0.09);
     const barberEarnings = price - platformFee;
     
     // Parse scheduled time - all times are in Pacific timezone (Cal Poly SLO)
@@ -1154,8 +1154,8 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     );
     const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
 
-    // Calculate platform fee (5%)
-    const PLATFORM_FEE_PERCENTAGE = 0.05;
+    // Calculate platform fee (9% - covers Stripe's ~4% processing fee, nets ~5%)
+    const PLATFORM_FEE_PERCENTAGE = 0.09;
     const platformFeeCents = Math.round(totalAmountCents * PLATFORM_FEE_PERCENTAGE);
 
     // Build payment intent config
@@ -1177,7 +1177,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     };
 
     // If barber has Stripe Connect account, use destination charges for automatic split
-    // Platform takes 5%, barber receives 95%
+    // Platform takes 9%, barber receives 91%
     if (barberStripeAccountId) {
       paymentIntentConfig.application_fee_amount = platformFeeCents;
       paymentIntentConfig.transfer_data = {

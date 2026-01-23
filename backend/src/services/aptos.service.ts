@@ -413,7 +413,7 @@ class AptosService {
   }
 
   /**
-   * Release USDC from escrow to barber (95%) and platform (5%)
+   * Release USDC from escrow to barber (91%) and platform (9%)
    * Called after service completion and consumer confirmation
    * 
    * Gas: Paid by platform's APT wallet

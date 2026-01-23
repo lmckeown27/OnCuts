@@ -45,7 +45,7 @@ export interface CreateEscrowInput {
 export interface ReleaseEscrowInput {
   booking_id: string;
   tip_cents?: number;
-  platform_fee_rate?: number;  // Default 0.05 (5%)
+  platform_fee_rate?: number;  // Default 0.09 (9%)
 }
 
 class EscrowService {
@@ -174,7 +174,7 @@ class EscrowService {
       }
 
       // 3. Calculate amounts
-      const platformFeeRate = input.platform_fee_rate || 0.05; // 5%
+      const platformFeeRate = input.platform_fee_rate || 0.09; // 9%
       const platformFeeCents = Math.floor(escrow.amount * platformFeeRate);
       const netToBarber = escrow.amount - platformFeeCents;
 

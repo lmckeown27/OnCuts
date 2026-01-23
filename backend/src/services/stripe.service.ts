@@ -210,7 +210,7 @@ class StripeService {
 
   /**
    * Transfer funds to barber (instant payout)
-   * Step 6: Distribute payment (minus 5% CampusCuts fee) to barber
+   * Step 6: Distribute payment (minus 9% CampusCuts fee) to barber
    */
   async transferToBarber(params: {
     amount: number; // Amount in cents (after platform fee deduction)
@@ -315,10 +315,10 @@ class StripeService {
   }
 
   /**
-   * Calculate platform fee (5%)
+   * Calculate platform fee (9%)
    */
   calculateFees(amount: number): { platformFee: number; barberPayout: number } {
-    const platformFee = Math.floor(amount * 0.05); // 5%
+    const platformFee = Math.floor(amount * 0.09); // 9%
     const barberPayout = amount - platformFee;
 
     return { platformFee, barberPayout };

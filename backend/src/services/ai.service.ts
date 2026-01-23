@@ -120,7 +120,7 @@ export async function calculateBookingPrice(barberId: string, basePrice: number)
       basePrice,
       multiplier: 1.0,
       finalPrice: basePrice,
-      platformFee: Math.round(basePrice * 0.05 * 100) / 100,
+      platformFee: Math.round(basePrice * 0.09 * 100) / 100,
       barberReceives: Math.round(basePrice * 0.95 * 100) / 100,
       error: true,
     };
