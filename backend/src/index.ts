@@ -58,9 +58,6 @@ import adminTransactionsRoutes from './routes/admin-transactions.routes';
 // Admin User Management Routes
 import adminUsersRoutes from './routes/admin-users.routes';
 
-// Integrated Analytics Routes
-import aiRoutes from './routes/ai.routes';
-
 // System Health Routes
 import systemHealthRoutes from './routes/system-health.routes';
 
@@ -330,10 +327,7 @@ app.use('/api/pricing', pricingRoutes);  // Dynamic pricing engine
 app.use('/api/v1/users', userRoutes);  // User profile management (versioned)
 app.use('/api/users', userRoutes);  // User profile management (legacy)
 
-// Analytics features (integrated worker)
-app.use('/api/ai', aiRoutes);  // Pricing, quality scores, fraud detection, disputes
-
-// Campus Location Management (Crowd-sourced + AI enrichment)
+// Campus Location Management (Crowd-sourced)
 app.use('/api/v1/locations', locationRoutes);  // Location management (versioned)
 app.use('/api/locations', locationRoutes);  // Location submission, search, retrieval (legacy)
 app.use('/api/admin/locations', locationAdminRoutes);  // Admin location management

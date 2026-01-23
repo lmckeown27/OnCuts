@@ -7,10 +7,8 @@
  * - GET /admin/locations/unverified - View unverified locations
  * - POST /admin/locations/:id/verify - Manually verify location
  * - POST /admin/locations/merge - Merge duplicate locations
- * - POST /admin/locations/:id/enrich - Trigger location enrichment
  * - PUT /admin/locations/:id - Update location details
  * - DELETE /admin/locations/:id - Delete location
- * - GET /admin/locations/enrichment-log - View enrichment history
  * - GET /admin/locations/merge-log - View merge history
  */
 
@@ -19,26 +17,11 @@ import { body, query, param, validationResult } from 'express-validator';
 import { authenticate, requireAdmin } from '../../middleware/auth';
 import { pool } from '../../database/connection';
 import { CampusLocationService } from '../../services/campus-location.service';
-import { LocationEnrichmentProcessor } from '../../ai/processors/locationEnrichmentProcessor';
 import { ApiError } from '../../middleware/errorHandler';
 import { logger } from '../../utils/logger';
-import OpenAI from 'openai';
 
 const router = Router();
 const locationService = new CampusLocationService(pool);
-
-// Initialize OpenAI client (optional - only if API key is configured)
-let enrichmentProcessor: LocationEnrichmentProcessor | null = null;
-
-if (process.env.OPENAI_API_KEY) {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  enrichmentProcessor = new LocationEnrichmentProcessor(openai, pool);
-  logger.info('🤖 Location enrichment enabled');
-} else {
-  logger.warn('⚠️  Location enrichment disabled: OPENAI_API_KEY not configured');
-}
 
 /**
  * Validation helper
@@ -191,50 +174,6 @@ router.post(
 );
 
 /**
- * POST /api/admin/locations/:id/enrich
- * Trigger location enrichment
- */
-router.post(
-  '/:id/enrich',
-  authenticate,
-  requireAdmin,
-  [param('id').isUUID().withMessage('Valid location ID required')],
-  validate,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-
-      // Check if enrichment is available
-      if (!enrichmentProcessor) {
-        throw new ApiError(503, 'Location enrichment not available: OPENAI_API_KEY not configured');
-      }
-
-      // Get location to verify it exists
-      const location = await locationService.getLocationById(id);
-      if (!location) {
-        throw new ApiError(404, 'Location not found');
-      }
-
-      // Process enrichment immediately (for admin-triggered enrichment)
-      await enrichmentProcessor.process({
-        data: {
-          locationId: id,
-          universityId: location.universityId,
-          trigger: 'admin_request',
-        },
-      } as any);
-
-      res.json({
-        success: true,
-        message: 'Location enrichment completed',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
  * PUT /api/admin/locations/:id
  * Update location details
  */
@@ -338,54 +277,6 @@ router.delete(
       res.json({
         success: true,
         message: 'Location deleted successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-/**
- * GET /api/admin/locations/enrichment-log
- * View enrichment history
- */
-router.get(
-  '/enrichment-log',
-  authenticate,
-  requireAdmin,
-  [
-    query('locationId').optional().isUUID(),
-    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-  ],
-  validate,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { locationId, limit = 20 } = req.query;
-
-      let query = `
-        SELECT lel.*, cl.name as location_name, cl.university_id
-        FROM location_enrichment_log lel
-        JOIN campus_locations cl ON cl.id = lel.campus_location_id
-      `;
-      const params: any[] = [];
-      let paramIndex = 1;
-
-      if (locationId) {
-        query += ` WHERE lel.campus_location_id = $${paramIndex++}`;
-        params.push(locationId);
-      }
-
-      query += ` ORDER BY lel.created_at DESC LIMIT $${paramIndex}`;
-      params.push(limit);
-
-      const result = await pool.query(query, params);
-
-      res.json({
-        success: true,
-        data: {
-          logs: result.rows,
-          count: result.rows.length,
-        },
       });
     } catch (error) {
       next(error);
