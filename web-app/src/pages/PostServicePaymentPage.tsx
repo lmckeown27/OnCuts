@@ -548,12 +548,14 @@ export default function PostServicePaymentPage() {
               )}
             </div>
 
-            <button
-              onClick={() => navigate('/web/barber')}
-              className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
-            >
-              Return to Dashboard
-            </button>
+            {isPaid && (
+              <button
+                onClick={() => navigate('/web/barber')}
+                className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                Return to Dashboard
+              </button>
+            )}
           </div>
         </div>
       </div>
