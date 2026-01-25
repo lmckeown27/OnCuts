@@ -371,6 +371,15 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       ? approvedGuestApp.rows[0].campus_id 
       : pendingReg.campusId;
 
+    // Log if user is registering without a campus (consumers can do this, barbers cannot)
+    if (!campusId) {
+      if (dbRole === 'BARBER') {
+        logger.error(`Barber ${email} attempting to register without a campusId - this should not happen`);
+        throw new ApiError(400, 'Campus selection is required for barber accounts. Please contact support.');
+      }
+      logger.info(`Consumer ${email} registering without campus affiliation`);
+    }
+
     // Create user in database (off-chain for v1 - no blockchain wallets)
     // Note: Column names use camelCase in the database schema
     // id uses gen_random_uuid() since the column has no default
