@@ -1147,6 +1147,44 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const Stripe = require('stripe');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+    // Get consumer's email and name for Stripe customer creation
+    const consumerResult = await pool.query(
+      'SELECT email, first_name, last_name FROM users WHERE id = $1',
+      [userId]
+    );
+    const consumer = consumerResult.rows[0];
+
+    // Create or get Stripe customer for this consumer
+    let stripeCustomerId: string | undefined;
+    if (consumer?.email) {
+      try {
+        // Check if customer already exists
+        const existingCustomers = await stripe.customers.list({
+          email: consumer.email,
+          limit: 1,
+        });
+
+        if (existingCustomers.data.length > 0) {
+          stripeCustomerId = existingCustomers.data[0].id;
+        } else {
+          // Create new customer
+          const newCustomer = await stripe.customers.create({
+            email: consumer.email,
+            name: `${consumer.first_name || ''} ${consumer.last_name || ''}`.trim() || undefined,
+            metadata: {
+              userId: userId,
+              platform: 'CampusCuts',
+            },
+          });
+          stripeCustomerId = newCustomer.id;
+          logger.info(`Created Stripe customer: ${stripeCustomerId} for user: ${userId}`);
+        }
+      } catch (customerError: any) {
+        logger.warn(`Failed to create/get Stripe customer for ${consumer.email}: ${customerError.message}`);
+        // Continue without customer - payment will still work, just won't be associated
+      }
+    }
+
     // Get barber's Stripe Connect account ID for payment split
     const barberAccountResult = await pool.query(
       'SELECT stripe_account_id FROM users WHERE id = $1',
@@ -1163,6 +1201,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       amount: totalAmountCents,
       currency: 'usd',
       automatic_payment_methods: { enabled: true },
+      customer: stripeCustomerId, // Associate payment with Stripe customer
       metadata: {
         booking_id: id,
         consumer_id: userId,
