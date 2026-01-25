@@ -755,7 +755,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              The Math Behind "Earn More, Pay Less"
+              The Math Behind CampusCut
             </h2>
           </div>
 
