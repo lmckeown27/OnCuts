@@ -1,25 +1,29 @@
 /**
  * Stripe Payment Form Component
  * 
- * Handles post-booking payments using Stripe Elements
- * This component is used AFTER the appointment is completed
+ * Handles post-booking payments using Stripe Elements with PaymentElement
+ * Supports Apple Pay, Google Pay, and card payments with Face ID/Touch ID
  * 
  * Flow:
  * 1. Barber completes service
  * 2. Student is prompted to pay
  * 3. This form creates Payment Intent
- * 4. Student enters card details
+ * 4. Student pays with Apple Pay, Google Pay, or card
  * 5. Stripe processes payment
  * 6. Webhook confirms and distributes funds
  */
 
-import { useState } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+import { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import Card from './Card';
 import { API_BASE_URL } from '../config/constants';
+
+// Load Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
 interface StripePaymentFormProps {
   bookingId: string;
@@ -30,31 +34,15 @@ interface StripePaymentFormProps {
   onError?: (error: Error) => void;
 }
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontSize: '16px',
-      color: '#1f2937',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      '::placeholder': {
-        color: '#9ca3af',
-      },
-    },
-    invalid: {
-      color: '#ef4444',
-      iconColor: '#ef4444',
-    },
-  },
-};
-
-export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
+// Inner form component that uses Stripe hooks
+function PaymentFormInner({
   bookingId,
   amount,
   serviceName,
   barberName,
   onSuccess,
   onError,
-}) => {
+}: StripePaymentFormProps) {
   const stripe = useStripe();
   const elements = useElements();
 
@@ -62,36 +50,11 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  /**
-   * Step 1 & 3: Create Payment Intent on backend
-   */
-  const createPaymentIntent = async (): Promise<{
-    client_secret: string;
-    payment_intent_id: string;
-  }> => {
-    const token = localStorage.getItem('accessToken');
-
-    const response = await axios.post(
-      `${API_BASE_URL}/bookings/${bookingId}/payment/create`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    return response.data.data;
-  };
-
-  /**
-   * Step 4: Handle payment submission
-   */
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
-      setError('Stripe has not loaded yet. Please try again.');
+      setError('Payment system not ready. Please try again.');
       return;
     }
 
@@ -99,42 +62,28 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
     setError(null);
 
     try {
-      // Step 1: Create Payment Intent
-      const { client_secret } = await createPaymentIntent();
-
-      const cardElement = elements.getElement(CardElement);
-
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      // Step 2: Confirm payment with Stripe
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        client_secret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
+      // Confirm payment with Stripe - PaymentElement handles all payment methods
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required',
+      });
 
       if (stripeError) {
         throw new Error(stripeError.message || 'Payment failed');
       }
 
-      if (paymentIntent.status === 'succeeded') {
+      if (paymentIntent?.status === 'succeeded') {
         setPaymentSuccess(true);
         toast.success('Payment successful! Thank you!');
 
-        // Clear card element
-        cardElement.clear();
-
-        // Callback
         if (onSuccess) {
           onSuccess();
         }
       } else {
-        throw new Error(`Payment status: ${paymentIntent.status}`);
+        throw new Error(`Payment status: ${paymentIntent?.status}`);
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error?.message || err.message || 'Payment failed';
@@ -199,12 +148,15 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
       <form onSubmit={handlePayment}>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Card Details
-          </label>
-          <div className="border border-gray-300 rounded-md p-3 bg-white">
-            <CardElement options={CARD_ELEMENT_OPTIONS} />
-          </div>
+          <PaymentElement 
+            options={{
+              layout: 'tabs',
+              wallets: {
+                applePay: 'auto',
+                googlePay: 'auto',
+              },
+            }}
+          />
         </div>
 
         {error && (
@@ -215,8 +167,8 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
         <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
           <p className="text-xs text-blue-800">
-            <strong>Secure Payment:</strong> Your card details are processed securely by Stripe.
-            We never see or store your card information.
+            <strong>Secure Payment:</strong> Pay with Apple Pay, Google Pay, or card. 
+            Your payment is processed securely by Stripe.
           </p>
         </div>
 
@@ -258,12 +210,92 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
       <div className="mt-4 text-center">
         <p className="text-xs text-gray-500">
-          Protected by Stripe | PCI DSS Compliant
+          Supports Apple Pay, Google Pay & Cards | Secured by Stripe
         </p>
       </div>
     </Card>
   );
+}
+
+// Main wrapper component that handles payment intent creation
+export const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
+  const { bookingId } = props;
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const createPaymentIntent = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+
+        const response = await axios.post(
+          `${API_BASE_URL}/bookings/${bookingId}/payment/create`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setClientSecret(response.data.data.client_secret);
+      } catch (err: any) {
+        console.error('Failed to create payment intent:', err);
+        setError(err.response?.data?.error?.message || 'Failed to initialize payment');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    createPaymentIntent();
+  }, [bookingId]);
+
+  if (isLoading) {
+    return (
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center py-8">
+          <div className="animate-spin w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full mb-4"></div>
+          <p className="text-gray-600">Preparing payment...</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-4">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>
+            Try Again
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (!clientSecret) {
+    return null;
+  }
+
+  return (
+    <Elements 
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#059669',
+            fontFamily: 'system-ui, sans-serif',
+          },
+        },
+      }}
+    >
+      <PaymentFormInner {...props} />
+    </Elements>
+  );
 };
 
 export default StripePaymentForm;
-

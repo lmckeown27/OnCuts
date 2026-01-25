@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { X, DollarSign, User, Scissors, CreditCard, CheckCircle, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
@@ -20,7 +20,138 @@ interface WalkInPaymentModalProps {
 
 type Step = 'details' | 'confirm' | 'payment' | 'success';
 
-// Card Payment Form Component
+// Inner Payment Form Component (wrapped in Elements with clientSecret)
+function PaymentFormInner({
+  amount,
+  customerName,
+  serviceName,
+  walkInId,
+  onSuccess,
+  onBack,
+}: {
+  amount: number;
+  customerName: string;
+  serviceName: string;
+  walkInId: string;
+  onSuccess: (transactionId: string) => void;
+  onBack: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      setError('Payment system not ready. Please try again.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Confirm payment with Stripe - PaymentElement handles all payment methods
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: 'if_required',
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+
+      if (paymentIntent?.status === 'succeeded') {
+        // Confirm on backend
+        await api.post('/bookings-simple/walk-in/confirm-payment', {
+          paymentIntentId: paymentIntent.id,
+          walkInId,
+        });
+
+        onSuccess(paymentIntent.id);
+      } else {
+        throw new Error('Payment was not completed');
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err);
+      setError(err.message || 'Payment failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Amount Display */}
+      <div className="text-center py-4 bg-gradient-to-r from-green-50 to-primary-50 rounded-xl border-2 border-green-200">
+        <p className="text-sm text-gray-600">Charging {customerName}</p>
+        <p className="text-4xl font-bold text-green-600">${amount.toFixed(2)}</p>
+        <p className="text-gray-500">{serviceName}</p>
+      </div>
+
+      {/* Payment Element - Shows Apple Pay, Google Pay, and Card options */}
+      <div>
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+            wallets: {
+              applePay: 'auto',
+              googlePay: 'auto',
+            },
+          }}
+        />
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      <Button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="w-full py-4 text-lg"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5 mr-2" />
+            Pay ${amount.toFixed(2)}
+          </>
+        )}
+      </Button>
+
+      <p className="text-center text-xs text-gray-500">
+        Supports Apple Pay, Google Pay & Cards. Secured by Stripe.
+      </p>
+
+      {/* Back Button */}
+      <Button
+        type="button"
+        onClick={onBack}
+        variant="secondary"
+        className="w-full"
+        disabled={isProcessing}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        Back
+      </Button>
+    </form>
+  );
+}
+
+// Card Payment Form Wrapper - handles payment intent creation
 function CardPaymentForm({
   amount,
   customerName,
@@ -36,13 +167,10 @@ function CardPaymentForm({
   onError: (error: string) => void;
   onBack: () => void;
 }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [walkInId, setWalkInId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Create payment intent when component mounts
   useEffect(() => {
@@ -73,52 +201,6 @@ function CardPaymentForm({
     createPaymentIntent();
   }, [amount, customerName, serviceName]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements || !clientSecret) {
-      setError('Payment system not ready. Please try again.');
-      return;
-    }
-
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-        },
-      });
-
-      if (stripeError) {
-        throw new Error(stripeError.message);
-      }
-
-      if (paymentIntent?.status === 'succeeded') {
-        // Confirm on backend
-        await api.post('/bookings-simple/walk-in/confirm-payment', {
-          paymentIntentId: paymentIntent.id,
-          walkInId,
-        });
-
-        onSuccess(paymentIntent.id);
-      } else {
-        throw new Error('Payment was not completed');
-      }
-    } catch (err: any) {
-      console.error('Payment error:', err);
-      setError(err.message || 'Payment failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -128,78 +210,42 @@ function CardPaymentForm({
     );
   }
 
+  if (error || !clientSecret || !walkInId) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-600 mb-4">{error || 'Failed to initialize payment'}</p>
+        <Button onClick={onBack} variant="secondary">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Amount Display */}
-      <div className="text-center py-4 bg-gradient-to-r from-green-50 to-primary-50 rounded-xl border-2 border-green-200">
-        <p className="text-sm text-gray-600">Charging {customerName}</p>
-        <p className="text-4xl font-bold text-green-600">${amount.toFixed(2)}</p>
-        <p className="text-gray-500">{serviceName}</p>
-      </div>
-
-      {/* Card Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          <CreditCard className="w-4 h-4 inline mr-2" />
-          Card Details
-        </label>
-        <div className="p-4 border border-gray-300 rounded-lg bg-white">
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#1f2937',
-                  '::placeholder': { color: '#9ca3af' },
-                },
-                invalid: { color: '#ef4444' },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">{error}</span>
-        </div>
-      )}
-
-      <Button
-        type="submit"
-        disabled={!stripe || isProcessing || !clientSecret}
-        className="w-full py-4 text-lg"
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-5 h-5 mr-2" />
-            Charge ${amount.toFixed(2)}
-          </>
-        )}
-      </Button>
-
-      <p className="text-center text-xs text-gray-500">
-        Secured by Stripe. Payment information is encrypted.
-      </p>
-
-      {/* Back Button */}
-      <Button
-        type="button"
-        onClick={onBack}
-        variant="secondary"
-        className="w-full"
-        disabled={isProcessing}
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-    </form>
+    <Elements 
+      stripe={stripePromise}
+      options={{
+        clientSecret,
+        appearance: {
+          theme: 'stripe',
+          variables: {
+            colorPrimary: '#059669',
+            fontFamily: 'system-ui, sans-serif',
+          },
+        },
+      }}
+    >
+      <PaymentFormInner
+        amount={amount}
+        customerName={customerName}
+        serviceName={serviceName}
+        walkInId={walkInId}
+        onSuccess={onSuccess}
+        onBack={onBack}
+      />
+    </Elements>
   );
 }
 
@@ -446,7 +492,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
               </Card>
 
               <p className="text-center text-sm text-gray-600">
-                Customer will enter their card details on the next screen.
+                Customer can pay with Apple Pay, Google Pay, or card.
               </p>
 
               {/* Action Buttons */}
@@ -455,7 +501,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                 className="w-full py-4 text-lg"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Proceed to Card Payment
+                Proceed to Payment
               </Button>
 
               <Button
@@ -469,18 +515,16 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
             </div>
           )}
 
-          {/* Step 3: Card Payment with Stripe */}
+          {/* Step 3: Payment with Stripe */}
           {step === 'payment' && (
-            <Elements stripe={stripePromise}>
-              <CardPaymentForm
-                amount={price}
-                customerName={customerName}
-                serviceName={getServiceName()}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-                onBack={() => setStep('confirm')}
-              />
-            </Elements>
+            <CardPaymentForm
+              amount={price}
+              customerName={customerName}
+              serviceName={getServiceName()}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              onBack={() => setStep('confirm')}
+            />
           )}
 
           {/* Step 4: Success */}
@@ -492,7 +536,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
               
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Complete!</h3>
-                <p className="text-gray-600">Card payment processed successfully.</p>
+                <p className="text-gray-600">Payment processed successfully.</p>
               </div>
 
               <Card className="bg-gray-50 p-4 text-left">
@@ -504,10 +548,6 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                   <div className="flex justify-between">
                     <span className="text-gray-600">Service:</span>
                     <span className="font-medium">{getServiceName()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Payment Method:</span>
-                    <span className="font-medium">Card</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg border-t border-gray-200 pt-2 mt-2">
                     <span>Total:</span>

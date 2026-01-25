@@ -3,13 +3,13 @@
  * 
  * This page is shown when a barber marks a service as complete.
  * - Barber sees a "waiting for payment" view
- * - Consumer sees the Stripe payment form to pay
+ * - Consumer sees the Stripe payment form with Apple Pay / Google Pay support
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, Check, Clock, DollarSign, User, Calendar,
   MapPin, ArrowLeft, Star, AlertCircle, Loader2
@@ -54,30 +54,22 @@ interface BookingDetails {
   };
 }
 
-// Payment Form Component (wrapped in Elements)
-function PaymentForm({ 
-  booking, 
+// Payment Form Component (wrapped in Elements with clientSecret)
+function PaymentFormInner({ 
+  booking,
+  tipAmount,
+  totalAmount,
   onSuccess 
 }: { 
   booking: BookingDetails;
+  tipAmount: number;
+  totalAmount: number;
   onSuccess: () => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTip, setSelectedTip] = useState<number>(0);
-  const [customTip, setCustomTip] = useState('');
-
-  const baseAmount = booking.priceUsdCents / 100;
-  const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
-  const totalAmount = baseAmount + tipAmount;
-
-  const tipOptions = [
-    { label: '15%', value: Math.round(baseAmount * 0.15 * 100) / 100 },
-    { label: '20%', value: Math.round(baseAmount * 0.20 * 100) / 100 },
-    { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,22 +83,13 @@ function PaymentForm({
     setError(null);
 
     try {
-      // 1. Create payment intent on backend
-      const { clientSecret } = await api.post<{ clientSecret: string; paymentIntentId: string }>(
-        `/bookings-simple/${booking.id}/create-payment-intent`,
-        { tipAmountCents: Math.round(tipAmount * 100) }
-      );
-
-      // 2. Confirm payment with Stripe
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) {
-        throw new Error('Card element not found');
-      }
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
+      // Confirm payment with Stripe - PaymentElement handles all payment methods
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href, // Fallback for redirect-based payments
         },
+        redirect: 'if_required', // Only redirect if payment method requires it
       });
 
       if (stripeError) {
@@ -114,7 +97,7 @@ function PaymentForm({
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        // 3. Confirm payment on backend
+        // Confirm payment on backend
         await api.post(`/bookings-simple/${booking.id}/confirm-payment`, {
           paymentIntentId: paymentIntent.id,
           tipAmountCents: Math.round(tipAmount * 100),
@@ -133,6 +116,138 @@ function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Payment Element - Shows Apple Pay, Google Pay, and Card options */}
+      <div>
+        <PaymentElement 
+          options={{
+            layout: 'tabs',
+            wallets: {
+              applePay: 'auto',
+              googlePay: 'auto',
+            },
+          }}
+        />
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
+          <AlertCircle className="w-5 h-5" />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5" />
+            Pay ${totalAmount.toFixed(2)}
+          </>
+        )}
+      </button>
+
+      <p className="text-center text-xs text-gray-500">
+        Secured by Stripe. Supports Apple Pay, Google Pay, and cards.
+      </p>
+    </form>
+  );
+}
+
+// Wrapper component that handles tip selection and payment intent creation
+function PaymentForm({ 
+  booking, 
+  onSuccess 
+}: { 
+  booking: BookingDetails;
+  onSuccess: () => void;
+}) {
+  const [selectedTip, setSelectedTip] = useState<number>(0);
+  const [customTip, setCustomTip] = useState('');
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [intentError, setIntentError] = useState<string | null>(null);
+
+  const baseAmount = booking.priceUsdCents / 100;
+  const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
+  const totalAmount = baseAmount + tipAmount;
+
+  const tipOptions = [
+    { label: '15%', value: Math.round(baseAmount * 0.15 * 100) / 100 },
+    { label: '20%', value: Math.round(baseAmount * 0.20 * 100) / 100 },
+    { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
+  ];
+
+  // Create payment intent when component mounts or tip changes
+  const createPaymentIntent = async () => {
+    setIsCreatingIntent(true);
+    setIntentError(null);
+    
+    try {
+      const response = await api.post<{ clientSecret: string; paymentIntentId: string }>(
+        `/bookings-simple/${booking.id}/create-payment-intent`,
+        { tipAmountCents: Math.round(tipAmount * 100) }
+      );
+      setClientSecret(response.clientSecret);
+      setPaymentIntentId(response.paymentIntentId);
+    } catch (err: any) {
+      console.error('Failed to create payment intent:', err);
+      setIntentError(err.message || 'Failed to initialize payment');
+    } finally {
+      setIsCreatingIntent(false);
+    }
+  };
+
+  // Create initial payment intent
+  useEffect(() => {
+    createPaymentIntent();
+  }, []);
+
+  // Recreate payment intent when tip changes (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (clientSecret) {
+        createPaymentIntent();
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [tipAmount]);
+
+  if (isCreatingIntent && !clientSecret) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-4" />
+        <p className="text-gray-600">Preparing payment...</p>
+      </div>
+    );
+  }
+
+  if (intentError) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-600 mb-4">{intentError}</p>
+        <button
+          onClick={createPaymentIntent}
+          className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
       {/* Order Summary */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-3">
         <div className="flex justify-between">
@@ -189,55 +304,30 @@ function PaymentForm({
         />
       </div>
 
-      {/* Card Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Card Details</label>
-        <div className="p-4 border border-gray-300 rounded-lg bg-white">
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#1f2937',
-                  '::placeholder': { color: '#9ca3af' },
-                },
-                invalid: { color: '#ef4444' },
+      {/* Payment Form with Elements Provider */}
+      {clientSecret && (
+        <Elements 
+          stripe={stripePromise} 
+          options={{
+            clientSecret,
+            appearance: {
+              theme: 'stripe',
+              variables: {
+                colorPrimary: '#059669', // primary-600
+                fontFamily: 'system-ui, sans-serif',
               },
-            }}
+            },
+          }}
+        >
+          <PaymentFormInner 
+            booking={booking} 
+            tipAmount={tipAmount}
+            totalAmount={totalAmount}
+            onSuccess={onSuccess} 
           />
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
-          <AlertCircle className="w-5 h-5" />
-          <span className="text-sm">{error}</span>
-        </div>
+        </Elements>
       )}
-
-      {/* Submit Button */}
-      <button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          <>
-            <CreditCard className="w-5 h-5" />
-            Pay ${totalAmount.toFixed(2)}
-          </>
-        )}
-      </button>
-
-      <p className="text-center text-xs text-gray-500">
-        Secured by Stripe. Your payment information is encrypted.
-      </p>
-    </form>
+    </div>
   );
 }
 
@@ -597,7 +687,7 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
               <h1 className="text-xl font-bold mb-1">Complete Payment</h1>
-              <p className="text-white/80">Pay for your haircut service</p>
+              <p className="text-white/80">Pay with card, Apple Pay, or Google Pay</p>
             </div>
 
             {/* Barber Info */}
@@ -623,9 +713,7 @@ export default function PostServicePaymentPage() {
 
             {/* Payment Form */}
             <div className="p-6">
-              <Elements stripe={stripePromise}>
-                <PaymentForm booking={booking} onSuccess={handlePaymentSuccess} />
-              </Elements>
+              <PaymentForm booking={booking} onSuccess={handlePaymentSuccess} />
             </div>
           </div>
         )}
@@ -633,4 +721,3 @@ export default function PostServicePaymentPage() {
     </div>
   );
 }
-
