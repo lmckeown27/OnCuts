@@ -43,6 +43,16 @@ CampusCuts uses a role-based permission system with the following hierarchy:
 
 ## USERS
 
+## Number of Users
+'''bash
+sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS total_users FROM users;"
+'''
+
+### Number of Users (By Role)
+'''bash
+sudo -u postgres psql -d campuscuts -c "SELECT role, COUNT(*) FROM users GROUP BY role ORDER BY COUNT(*) DESC;"
+'''
+
 ### View All Users (Table Format)
 ```bash
 sudo -u postgres psql -d campuscuts -c "SELECT email, first_name, last_name, role, email_verified FROM users;"
