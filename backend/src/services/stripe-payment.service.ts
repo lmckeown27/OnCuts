@@ -2,7 +2,7 @@
  * Stripe Payment Service
  * 
  * Handles customer payments for bookings with Stripe Connect
- * Platform takes 9%, barber receives 91%
+ * Platform takes 15%, barber receives 85%
  */
 
 import Stripe from 'stripe';
@@ -13,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
   apiVersion: '2023-10-16',
 });
 
-const PLATFORM_FEE_PERCENTAGE = 0.09; // 9% platform fee (covers Stripe's ~4% processing fee, nets ~5%)
+const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% platform fee (covers Stripe's ~4% processing fee, nets ~11%)
 
 interface CreatePaymentIntentParams {
   amount: number; // in dollars
@@ -66,7 +66,7 @@ class StripePaymentService {
 
   /**
    * Create payment intent for booking with Stripe Connect
-   * Uses destination charges: payment goes to platform, then 91% transferred to barber
+   * Uses destination charges: payment goes to platform, then 85% transferred to barber
    */
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
     try {
@@ -103,7 +103,7 @@ class StripePaymentService {
       };
 
       // If barber has a Stripe Connect account, use destination charges
-      // This automatically splits the payment: 91% to barber, 9% to platform
+      // This automatically splits the payment: 85% to barber, 15% to platform
       if (barberStripeAccountId) {
         paymentIntentConfig.application_fee_amount = platformFeeCents;
         paymentIntentConfig.transfer_data = {

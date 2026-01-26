@@ -33,7 +33,7 @@ export default function PaymentForm({
   const [cardCvc, setCardCvc] = useState('');
   const [cardholderName, setCardholderName] = useState('');
 
-  const platformFee = amount * 0.09;
+  const platformFee = amount * 0.15;
   const barberAmount = amount - platformFee;
 
   const handleSubmit = async (e: React.FormEvent) => {

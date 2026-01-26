@@ -140,7 +140,7 @@ export default function BarberEarningsPage() {
               </span>
               <div>
                 <p className="font-semibold text-gray-900">Escrow Release</p>
-                <p className="text-gray-600">Blockchain automatically releases 91% to you</p>
+                <p className="text-gray-600">Blockchain automatically releases 85% to you</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -164,7 +164,7 @@ export default function BarberEarningsPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-primary-200">
             <p className="text-xs text-primary-500">
-              Platform absorbs all blockchain gas fees. You receive 91% of every transaction.
+              Platform absorbs all blockchain gas fees. You receive 85% of every transaction.
             </p>
           </div>
         </Card>

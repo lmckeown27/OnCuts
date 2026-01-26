@@ -20,8 +20,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
-// Platform fee percentage (9% to platform, 91% to barber)
-const PLATFORM_FEE_PERCENTAGE = 0.09;
+// Platform fee percentage (15% to platform, 85% to barber)
+const PLATFORM_FEE_PERCENTAGE = 0.15;
 
 /**
  * Check if event was already processed (idempotency)
@@ -53,7 +53,7 @@ async function markEventProcessed(
 
 /**
  * Initiate barber payout via Stripe Connect
- * Transfers 91% of payment (plus 100% of tip) to barber's connected account
+ * Transfers 85% of payment (plus 100% of tip) to barber's connected account
  */
 async function initiateBarberPayout(
   client: any,
@@ -93,7 +93,7 @@ async function initiateBarberPayout(
       return;
     }
 
-    // Calculate barber's earnings: 91% of service + 100% of tip
+    // Calculate barber's earnings: 85% of service + 100% of tip
     const serviceAmountCents = totalAmountCents - tipAmountCents;
     const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
     const barberServiceEarnings = serviceAmountCents - platformFeeCents;

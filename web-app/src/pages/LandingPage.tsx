@@ -848,8 +848,8 @@ export default function LandingPage() {
 
                     <div className="bg-white rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-700 font-medium">Platform Fee (9%):</span>
-                        <span className="text-xl font-bold text-orange-600">-$1.40</span>
+                        <span className="text-gray-700 font-medium">Platform Fee (15%):</span>
+                        <span className="text-xl font-bold text-orange-600">-$4.20</span>
                       </div>
                       <p className="text-xs text-gray-500">No overhead, just technology</p>
                     </div>
@@ -857,9 +857,9 @@ export default function LandingPage() {
                     <div className="bg-white rounded-lg p-4 border-2 border-green-400">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-900 font-bold">Barber Earns:</span>
-                        <span className="text-3xl font-bold text-green-700">$26.60</span>
+                        <span className="text-3xl font-bold text-green-700">$23.80</span>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">91% of what customer paid</p>
+                      <p className="text-sm text-gray-600 mt-1">85% of what customer paid</p>
                     </div>
                   </div>
 
@@ -1027,7 +1027,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 91% of every payment, plus 100% of tips. We only take a 9% platform fee—way less than the 40-60% traditional barbershops take.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 85% of every payment, plus 100% of tips. We only take a 15% platform fee—way less than the 40-60% traditional barbershops take.</p>
                     </div>
                   </div>
                 </div>
