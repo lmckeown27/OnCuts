@@ -138,7 +138,21 @@ export default function PaymentRequestModal({
               {/* Tip Selection */}
               <div>
                 <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {/* No Tip Option */}
+                  <button
+                    onClick={() => {
+                      setSelectedTip(0);
+                      setCustomTip('');
+                    }}
+                    className={`py-3 px-3 sm:px-4 rounded-lg border-2 transition-all font-semibold text-sm sm:text-base ${
+                      selectedTip === 0 && !customTip
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    No Tip
+                  </button>
                   {tipOptions.map((option) => (
                     <button
                       key={option.label}
@@ -162,13 +176,21 @@ export default function PaymentRequestModal({
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="number"
+                    min="0"
+                    step="0.01"
                     placeholder="Custom tip amount"
                     value={customTip}
                     onChange={(e) => {
-                      setCustomTip(e.target.value);
-                      setSelectedTip(0);
+                      // Prevent negative values
+                      const value = e.target.value;
+                      if (value === '' || parseFloat(value) >= 0) {
+                        setCustomTip(value);
+                        setSelectedTip(0);
+                      }
                     }}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+                      customTip ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+                    }`}
                   />
                 </div>
               </div>

@@ -59,12 +59,14 @@ function PaymentFormInner({
   booking,
   tipAmount,
   totalAmount,
-  onSuccess 
+  onSuccess,
+  isUpdatingIntent = false,
 }: { 
   booking: BookingDetails;
   tipAmount: number;
   totalAmount: number;
   onSuccess: () => void;
+  isUpdatingIntent?: boolean;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -139,10 +141,15 @@ function PaymentFormInner({
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || isUpdatingIntent}
         className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {isProcessing ? (
+        {isUpdatingIntent ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Updating total...
+          </>
+        ) : isProcessing ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
             Processing...
@@ -273,7 +280,22 @@ function PaymentForm({
       {/* Tip Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {/* No Tip Option */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedTip(0);
+              setCustomTip('');
+            }}
+            className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+              selectedTip === 0 && !customTip
+                ? 'border-primary-500 bg-primary-50 text-primary-600'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            No Tip
+          </button>
           {tipOptions.map((option) => (
             <button
               key={option.label}
@@ -292,21 +314,33 @@ function PaymentForm({
             </button>
           ))}
         </div>
-        <input
-          type="number"
-          placeholder="Custom tip amount"
-          value={customTip}
-          onChange={(e) => {
-            setCustomTip(e.target.value);
-            setSelectedTip(0);
-          }}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-        />
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Custom tip amount"
+            value={customTip}
+            onChange={(e) => {
+              // Prevent negative values
+              const value = e.target.value;
+              if (value === '' || parseFloat(value) >= 0) {
+                setCustomTip(value);
+                setSelectedTip(0);
+              }
+            }}
+            className={`w-full pl-7 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent ${
+              customTip ? 'border-primary-500 bg-primary-50' : 'border-gray-300'
+            }`}
+          />
+        </div>
       </div>
 
       {/* Payment Form with Elements Provider */}
       {clientSecret && (
         <Elements 
+          key={clientSecret} // Force remount when clientSecret changes to ensure correct payment intent
           stripe={stripePromise} 
           options={{
             clientSecret,
@@ -323,7 +357,8 @@ function PaymentForm({
             booking={booking} 
             tipAmount={tipAmount}
             totalAmount={totalAmount}
-            onSuccess={onSuccess} 
+            onSuccess={onSuccess}
+            isUpdatingIntent={isCreatingIntent}
           />
         </Elements>
       )}
