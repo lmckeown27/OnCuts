@@ -54,6 +54,9 @@ async function markEventProcessed(
 /**
  * Initiate barber payout via Stripe Connect
  * Transfers 85% of payment (plus 100% of tip) to barber's connected account
+ * 
+ * NOTE: If destination charges were used (transfer_data.destination in payment intent),
+ * Stripe automatically handles the split and this function will skip the manual transfer.
  */
 async function initiateBarberPayout(
   client: any,
@@ -63,7 +66,33 @@ async function initiateBarberPayout(
   paymentIntentId: string
 ): Promise<void> {
   try {
-    // Get barber's Stripe Connect account ID
+    // First, check if this payment used destination charges (automatic split)
+    // If so, the transfer already happened automatically and we shouldn't do it again
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.transfer_data?.destination) {
+      // Destination charges were used - Stripe already transferred funds to barber
+      logger.info(`✅ Destination charges used for booking ${booking.id} - automatic split to ${paymentIntent.transfer_data.destination}, skipping manual transfer`);
+      
+      // Still record the payout info for our records
+      const serviceAmountCents = totalAmountCents - tipAmountCents;
+      const platformFeeCents = paymentIntent.application_fee_amount || Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
+      const barberEarnings = totalAmountCents - platformFeeCents;
+      
+      await client.query(
+        `UPDATE payments 
+         SET platform_fee_cents = $1,
+             barber_earnings_cents = $2,
+             transfer_status = 'completed',
+             transferred_at = NOW()
+         WHERE payment_intent_id = $3`,
+        [platformFeeCents, barberEarnings, paymentIntentId]
+      );
+      
+      return;
+    }
+
+    // Get barber's Stripe Connect account ID for manual transfer
     const barberResult = await client.query(
       `SELECT u.stripe_account_id, u.first_name, u.last_name, u.email
        FROM users u
