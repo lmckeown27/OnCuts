@@ -217,14 +217,22 @@ router.post(
       }
 
       // Validate file type on server side as well
-      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!allowedMimeTypes.includes(file.mimetype)) {
+      // Note: HEIC/HEIF are iOS native formats - sharp can convert them if libheif is installed
+      // Also accept empty mimetype as iOS Photo Library sometimes doesn't set it
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      const isValidMime = allowedMimeTypes.includes(file.mimetype) || 
+                          file.mimetype === '' || 
+                          file.mimetype === 'application/octet-stream';
+      
+      if (!isValidMime) {
         logger.warn(`[Upload] Rejected file with unsupported type: ${file.mimetype}`);
         return res.status(400).json({
           success: false,
-          error: { message: `Unsupported image format: ${file.mimetype}. Only JPG, PNG, and WebP are allowed.` },
+          error: { message: `Unsupported image format: ${file.mimetype}. Only JPG, PNG, WebP, and HEIC are allowed.` },
         });
       }
+      
+      logger.info(`[Upload] File type validated: ${file.mimetype || 'empty (likely iOS Photo Library)'}`)
 
       // Process image locally - now generates original, medium, and thumbnail
       logger.info(`[Upload] Processing image...`);

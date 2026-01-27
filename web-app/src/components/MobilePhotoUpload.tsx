@@ -32,16 +32,17 @@ export default function MobilePhotoUpload({
   const validateAndUpload = async (file: File | undefined) => {
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Get file extension for fallback validation
+    const fileName = file.name.toLowerCase();
+    const extension = fileName.split('.').pop() || '';
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    
+    // Validate file type - check MIME type OR extension (iOS Photo Library may have empty MIME type)
+    const isImageMime = file.type.startsWith('image/') || file.type === '';
+    const hasValidExtension = allowedExtensions.includes(extension);
+    
+    if (!isImageMime && !hasValidExtension) {
       toast.error('Please select an image file');
-      return;
-    }
-
-    // Validate specific formats
-    const allowedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-    if (!allowedFormats.includes(file.type.toLowerCase())) {
-      toast.error('Only JPG, PNG, WebP, and HEIC images are allowed');
       return;
     }
 
