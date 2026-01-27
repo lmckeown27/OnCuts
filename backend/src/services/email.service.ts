@@ -2267,7 +2267,7 @@ export async function sendGuestApplicationApprovedEmail(
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
   const signUpLink = `${frontendUrl}/web/auth`;
 
-  const subject = '🎉 Your CampusCut Barber Application Has Been Approved!';
+  const subject = 'Your CampusCut Barber Application Has Been Approved!';
 
   const text = `
 Hi ${firstName}!
@@ -2302,14 +2302,14 @@ The CampusCut Team
   <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 16px; overflow: hidden; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 40px 30px; text-align: center;">
-      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">🎉 Application Approved!</h1>
+      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Application Approved!</h1>
       <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Welcome to the CampusCut barber team</p>
     </div>
     
     <!-- Content -->
     <div style="padding: 30px;">
       <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-        Hi <strong>${firstName}</strong>! 👋
+        Hi <strong>${firstName}</strong>,
       </p>
       
       <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
@@ -2317,7 +2317,7 @@ The CampusCut Team
       </p>
       
       <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">⚡ One More Step</h4>
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">One More Step</h4>
         <p style="color: #78350f; margin: 0; font-size: 14px; line-height: 1.6;">
           To complete your onboarding and start receiving bookings, you need to create your CampusCut account.
         </p>
@@ -2347,7 +2347,7 @@ The CampusCut Team
       </ul>
       
       <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 20px 0 0 0;">
-        Welcome to the team! 💈
+        Welcome to the team!
       </p>
     </div>
     
