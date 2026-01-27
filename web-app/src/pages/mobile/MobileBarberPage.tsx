@@ -59,7 +59,7 @@ export default function MobileBarberPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
   
   const [activeTab, setActiveTab] = useState<'schedule' | 'requests' | 'earnings' | 'profile'>('schedule');
   const [requests, setRequests] = useState<BookingRequest[]>([]);
@@ -82,6 +82,9 @@ export default function MobileBarberPage() {
     user?.has_barber_profile;
   
   useEffect(() => {
+    // Don't redirect while auth is still loading - wait for fresh user data
+    if (isAuthLoading) return;
+    
     if (user && !isAuthorizedForBarberPage) {
       console.warn('Unauthorized access to MobileBarberPage. Redirecting to consumer page.', {
         userId: user.id,
@@ -91,7 +94,7 @@ export default function MobileBarberPage() {
       toast.error('You need a barber profile to access this page');
       navigate(`${platformPrefix}/consumer`);
     }
-  }, [user, isAuthorizedForBarberPage, navigate, platformPrefix]);
+  }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);
 
   const handleAcceptRequest = (requestId: string) => {
     setRequests(requests.filter(r => r.id !== requestId));

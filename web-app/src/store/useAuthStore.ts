@@ -246,6 +246,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const user = await authService.getCurrentUser();
+      // Also persist to localStorage so role/profile data survives page refresh
+      localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
       socketService.connect();
     } catch (error) {

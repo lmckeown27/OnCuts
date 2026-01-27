@@ -249,7 +249,7 @@ export default function BarberPage() {
   const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
   
   // Get barber data from auth - in production this would come from API
-  const { user } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   const barberId = user?.id || '';
   const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
   
@@ -262,6 +262,9 @@ export default function BarberPage() {
     user?.has_barber_profile;
   
   useEffect(() => {
+    // Don't redirect while auth is still loading - wait for fresh user data from /me endpoint
+    if (isAuthLoading) return;
+    
     if (user && !isAuthorizedForBarberPage) {
       console.warn('Unauthorized access to BarberPage. Redirecting to consumer page.', {
         userId: user.id,
@@ -271,7 +274,7 @@ export default function BarberPage() {
       toast.error('You need a barber profile to access this page');
       navigate(`${platformPrefix}/consumer`);
     }
-  }, [user, isAuthorizedForBarberPage, navigate, platformPrefix]);
+  }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);
 
   // State for booking details modal
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
