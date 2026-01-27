@@ -86,6 +86,9 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
    * Create Stripe Connect account and redirect to onboarding
    */
   const handleSetupPayouts = async () => {
+    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
+    const stripeWindow = window.open('about:blank', '_blank');
+    
     try {
       setIsCreatingAccount(true);
       const token = localStorage.getItem('accessToken');
@@ -102,9 +105,18 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
 
       const { onboarding_url } = response.data.data;
 
-      // Open Stripe onboarding in new tab
-      window.open(onboarding_url, '_blank');
+      // Redirect the already-opened window to Stripe onboarding
+      if (stripeWindow) {
+        stripeWindow.location.href = onboarding_url;
+      } else {
+        // Fallback: redirect in same tab if popup was blocked
+        window.location.href = onboarding_url;
+      }
     } catch (error: any) {
+      // Close the blank window if API failed
+      if (stripeWindow) {
+        stripeWindow.close();
+      }
       toast.error('Failed to create payout account');
       console.error('Connect creation error:', error);
       setIsCreatingAccount(false);
@@ -115,6 +127,9 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
    * Refresh onboarding link if user needs to complete setup
    */
   const handleContinueOnboarding = async () => {
+    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
+    const stripeWindow = window.open('about:blank', '_blank');
+    
     try {
       setIsCreatingAccount(true);
       const token = localStorage.getItem('accessToken');
@@ -130,8 +145,19 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
       );
 
       const { onboarding_url } = response.data.data;
-      window.open(onboarding_url, '_blank');
+      
+      // Redirect the already-opened window to Stripe onboarding
+      if (stripeWindow) {
+        stripeWindow.location.href = onboarding_url;
+      } else {
+        // Fallback: redirect in same tab if popup was blocked
+        window.location.href = onboarding_url;
+      }
     } catch (error: any) {
+      // Close the blank window if API failed
+      if (stripeWindow) {
+        stripeWindow.close();
+      }
       toast.error('Failed to refresh onboarding link');
       console.error('Refresh error:', error);
       setIsCreatingAccount(false);
@@ -142,6 +168,9 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
    * Open Stripe Express dashboard
    */
   const handleOpenDashboard = async () => {
+    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
+    const stripeWindow = window.open('about:blank', '_blank');
+    
     try {
       const token = localStorage.getItem('accessToken');
 
@@ -155,8 +184,19 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
       );
 
       const { dashboard_url } = response.data.data;
-      window.open(dashboard_url, '_blank');
+      
+      // Redirect the already-opened window to Stripe dashboard
+      if (stripeWindow) {
+        stripeWindow.location.href = dashboard_url;
+      } else {
+        // Fallback: redirect in same tab if popup was blocked
+        window.location.href = dashboard_url;
+      }
     } catch (error: any) {
+      // Close the blank window if API failed
+      if (stripeWindow) {
+        stripeWindow.close();
+      }
       toast.error('Failed to open Stripe dashboard');
       console.error('Dashboard error:', error);
     }
