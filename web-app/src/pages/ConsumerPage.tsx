@@ -1250,6 +1250,13 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         )}
       </div>
 
+      {/* Price disclaimer */}
+      {filteredBarbers && filteredBarbers.length > 0 && (
+        <p className="text-center text-xs text-gray-400 mt-4 italic">
+          Prices are set by individual barbers
+        </p>
+      )}
+
       {/* No Results - University Based */}
       {(!filteredBarbers || filteredBarbers.length === 0) && selectedUniversity && !filterCriteria.serviceType && (
         <Card className="text-center py-8 sm:py-12">
