@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef } from 'react';
-import { Camera, ImageIcon, X, Upload, Loader2 } from 'lucide-react';
+import { Camera, ImageIcon, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface MobilePhotoUploadProps {
@@ -75,9 +75,9 @@ export default function MobilePhotoUpload({
 
   return (
     <div className={className}>
-      {/* Current Photo Display */}
+      {/* Current Profile Picture Display */}
       <div className="flex flex-col items-center">
-        <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 mb-4">
+        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 mb-4">
           {currentPhotoUrl ? (
             <img
               src={currentPhotoUrl}
@@ -89,37 +89,21 @@ export default function MobilePhotoUpload({
               <ImageIcon className="w-12 h-12 text-gray-400" />
             </div>
           )}
-          
-          {/* Upload Overlay Button */}
-          <button
-            onClick={() => setShowOptions(true)}
-            disabled={isUploading}
-            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity"
-          >
-            {isUploading ? (
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-            ) : (
-              <Camera className="w-8 h-8 text-white" />
-            )}
-          </button>
         </div>
 
-        {/* Change Photo Button */}
+        {/* Change Profile Picture Button */}
         <button
           onClick={() => setShowOptions(true)}
           disabled={isUploading}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-600 rounded-lg font-medium hover:bg-primary-100 active:scale-95 transition-all"
+          className="px-4 py-2 bg-primary-50 text-primary-600 rounded-lg font-medium hover:bg-primary-100 active:scale-95 transition-all"
         >
           {isUploading ? (
-            <>
+            <span className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Uploading...
-            </>
+            </span>
           ) : (
-            <>
-              <Camera className="w-4 h-4" />
-              Change Photo
-            </>
+            'Change Profile Picture'
           )}
         </button>
         <p className="text-xs text-gray-500 mt-2">Max size: {maxSizeMB}MB</p>
@@ -160,7 +144,7 @@ export default function MobilePhotoUpload({
 
             {/* Title */}
             <h3 className="text-xl font-bold text-gray-900 text-center mb-6">
-              Change Profile Photo
+              Change Profile Picture
             </h3>
 
             {/* Options */}
