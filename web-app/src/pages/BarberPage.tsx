@@ -1989,7 +1989,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                 )}
                                 {pendingCount > 0 && (
                                   <div className={`text-sm ${isToday ? 'text-white/70' : 'text-amber-600 font-bold'}`}>
-                                    {pendingCount} pending
+                                    {pendingCount} booked
                                   </div>
                                 )}
                               </div>
@@ -2053,7 +2053,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                               )}
                               {pendingCount > 0 && (
                                 <div className={`${isToday ? 'text-white/80' : 'text-amber-600 font-bold'}`}>
-                                  {pendingCount} pending
+                                  {pendingCount} booked
                                 </div>
                               )}
                             </div>
@@ -2179,7 +2179,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                 )}
                                 {pendingCount > 0 && (
                                   <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
-                                    {pendingCount} pending
+                                    {pendingCount} booked
                                   </div>
                                 )}
                               </div>
