@@ -2,15 +2,14 @@
  * Mobile Photo Upload Component
  * 
  * Provides a mobile-friendly interface for uploading profile photos.
- * On mobile devices, explicitly offers two options:
- * 1. Take a photo with the camera
- * 2. Choose from the photo gallery
- * 
- * Uses native HTML5 capture attribute for camera access.
+ * Uses the native file picker which on mobile devices shows options like:
+ * - Photo Library
+ * - Take Photo
+ * - Choose File
  */
 
-import { useState, useRef } from 'react';
-import { Camera, ImageIcon, Loader2 } from 'lucide-react';
+import { useRef } from 'react';
+import { ImageIcon, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface MobilePhotoUploadProps {
@@ -28,9 +27,7 @@ export default function MobilePhotoUpload({
   maxSizeMB = 5,
   className = '',
 }: MobilePhotoUploadProps) {
-  const [showOptions, setShowOptions] = useState(false);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateAndUpload = async (file: File | undefined) => {
     if (!file) return;
@@ -54,16 +51,11 @@ export default function MobilePhotoUpload({
       return;
     }
 
-    setShowOptions(false);
     await onPhotoSelected(file);
   };
 
-  const handleCameraClick = () => {
-    cameraInputRef.current?.click();
-  };
-
-  const handleGalleryClick = () => {
-    galleryInputRef.current?.click();
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +85,7 @@ export default function MobilePhotoUpload({
 
         {/* Change Profile Picture Button */}
         <button
-          onClick={() => setShowOptions(true)}
+          onClick={handleButtonClick}
           disabled={isUploading}
           className="px-4 py-2 bg-primary-50 text-primary-600 rounded-lg font-medium hover:bg-primary-100 active:scale-95 transition-all"
         >
@@ -109,85 +101,14 @@ export default function MobilePhotoUpload({
         <p className="text-xs text-gray-500 mt-2">Max size: {maxSizeMB}MB</p>
       </div>
 
-      {/* Hidden File Inputs */}
-      {/* Camera Input - uses capture attribute for direct camera access */}
+      {/* Hidden File Input - triggers native picker with Photo Library, Take Photo, Choose File options */}
       <input
-        ref={cameraInputRef}
+        ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="user"
         onChange={handleFileChange}
         className="hidden"
       />
-      
-      {/* Gallery Input - no capture attribute to show gallery */}
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
-        onChange={handleFileChange}
-        className="hidden"
-      />
-
-      {/* Options Bottom Sheet */}
-      {showOptions && (
-        <div
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 animate-fade-in"
-          onClick={() => setShowOptions(false)}
-        >
-          <div
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 animate-slide-up safe-area-bottom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle Bar */}
-            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6" />
-
-            {/* Title */}
-            <h3 className="text-xl font-bold text-gray-900 text-center mb-6">
-              Change Profile Picture
-            </h3>
-
-            {/* Options */}
-            <div className="space-y-3">
-              {/* Take Photo Option */}
-              <button
-                onClick={handleCameraClick}
-                className="w-full flex items-center gap-4 p-4 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors active:scale-98"
-              >
-                <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-                  <Camera className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Take Photo</p>
-                  <p className="text-sm text-gray-600">Use your camera to take a new photo</p>
-                </div>
-              </button>
-
-              {/* Choose from Gallery Option */}
-              <button
-                onClick={handleGalleryClick}
-                className="w-full flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors active:scale-98"
-              >
-                <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center">
-                  <ImageIcon className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-gray-900">Choose from Gallery</p>
-                  <p className="text-sm text-gray-600">Select an existing photo from your device</p>
-                </div>
-              </button>
-            </div>
-
-            {/* Cancel Button */}
-            <button
-              onClick={() => setShowOptions(false)}
-              className="w-full mt-6 py-4 text-gray-600 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
