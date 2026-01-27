@@ -34,6 +34,13 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
+  console.log('[Image Service] fileFilter called:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    encoding: file.encoding,
+    size: file.size,
+  });
+  
   // Check file type - be lenient for mobile uploads
   // iOS Photo Library may send empty mimetype or application/octet-stream
   const isImage = file.mimetype.startsWith('image/');
@@ -44,9 +51,13 @@ const fileFilter = (
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'];
   const hasImageExtension = imageExtensions.includes(ext);
   
+  console.log('[Image Service] File validation:', { isImage, isEmptyMime, ext, hasImageExtension });
+  
   if (isImage || isEmptyMime || hasImageExtension) {
+    console.log('[Image Service] File accepted');
     cb(null, true);
   } else {
+    console.error('[Image Service] File rejected - invalid type');
     cb(new Error('Only image files are allowed'));
   }
 };

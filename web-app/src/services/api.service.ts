@@ -124,16 +124,43 @@ class ApiService {
   }
 
   async upload<T = any>(url: string, formData: FormData): Promise<T> {
-    // For FormData uploads, we must NOT set Content-Type header manually.
-    // The browser sets it with the proper boundary parameter automatically.
-    // We need to explicitly delete the default Content-Type header.
-    const response = await this.client.post<ApiResponse<T>>(url, formData, {
-      transformRequest: [(data) => data], // Prevent axios from transforming FormData
-      headers: {
-        'Content-Type': undefined, // Remove default JSON content-type
-      },
-    });
-    return response.data.data as T;
+    console.log('[ApiService] upload called:', { url });
+    console.log('[ApiService] FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File { name: ${value.name}, size: ${value.size}, type: ${value.type} }`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+    
+    try {
+      // For FormData uploads, we need to let the browser set the Content-Type
+      // with the proper boundary. We use axios directly without instance defaults.
+      const token = localStorage.getItem('accessToken');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      // Note: We explicitly do NOT set Content-Type - browser will set it with boundary
+      
+      console.log('[ApiService] Making upload request with headers:', Object.keys(headers));
+      
+      const response = await axios.post<ApiResponse<T>>(`${API_BASE_URL}${url}`, formData, {
+        headers,
+        timeout: 60000, // Longer timeout for uploads
+      });
+      
+      console.log('[ApiService] Upload response:', response.status, response.data);
+      return response.data.data as T;
+    } catch (error: any) {
+      console.error('[ApiService] Upload failed:', error.message);
+      if (error.response) {
+        console.error('[ApiService] Response status:', error.response.status);
+        console.error('[ApiService] Response data:', error.response.data);
+      }
+      throw error;
+    }
   }
 }
 

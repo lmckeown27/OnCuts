@@ -125,16 +125,22 @@ export default function MobileBarberPage() {
 
   // Handle profile photo upload
   const handlePhotoUpload = async (file: File) => {
+    console.log('[MobileBarberPage] handlePhotoUpload called with file:', { name: file.name, size: file.size, type: file.type });
+    
     if (!user?.id) {
+      console.error('[MobileBarberPage] User not found');
       toast.error('User not found');
       return;
     }
 
     try {
       setIsUploadingPhoto(true);
+      console.log('[MobileBarberPage] Calling userService.uploadProfilePhoto');
       const result = await userService.uploadProfilePhoto(user.id, file);
+      console.log('[MobileBarberPage] Upload result:', result);
       
       // Update user profile with new photo URL
+      console.log('[MobileBarberPage] Updating user profile with new URL');
       await userService.updateUserProfile(user.id, { profile_picture_url: result.url });
       
       // Update auth store
@@ -145,7 +151,8 @@ export default function MobileBarberPage() {
       
       toast.success('Profile photo updated!');
     } catch (error: any) {
-      console.error('Failed to upload photo:', error);
+      console.error('[MobileBarberPage] Failed to upload photo:', error);
+      console.error('[MobileBarberPage] Error details:', error.response?.data || error.message);
       toast.error('Failed to upload photo');
     } finally {
       setIsUploadingPhoto(false);

@@ -210,16 +210,22 @@ export default function MobileConsumerPage() {
 
   // Handle profile photo upload
   const handlePhotoUpload = async (file: File) => {
+    console.log('[MobileConsumerPage] handlePhotoUpload called with file:', { name: file.name, size: file.size, type: file.type });
+    
     if (!user?.id) {
+      console.error('[MobileConsumerPage] User not found');
       toast.error('Please sign in to update your photo');
       return;
     }
 
     try {
       setIsUploadingPhoto(true);
+      console.log('[MobileConsumerPage] Calling userService.uploadProfilePhoto');
       const result = await userService.uploadProfilePhoto(user.id, file);
+      console.log('[MobileConsumerPage] Upload result:', result);
       
       // Update user profile with new photo URL
+      console.log('[MobileConsumerPage] Updating user profile with new URL');
       await userService.updateUserProfile(user.id, { profile_picture_url: result.url });
       
       // Update auth store
@@ -230,7 +236,8 @@ export default function MobileConsumerPage() {
       
       toast.success('Profile photo updated!');
     } catch (error: any) {
-      console.error('Failed to upload photo:', error);
+      console.error('[MobileConsumerPage] Failed to upload photo:', error);
+      console.error('[MobileConsumerPage] Error details:', error.response?.data || error.message);
       toast.error('Failed to upload photo');
     } finally {
       setIsUploadingPhoto(false);

@@ -30,7 +30,12 @@ export default function MobilePhotoUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateAndUpload = async (file: File | undefined) => {
-    if (!file) return;
+    console.log('[MobilePhotoUpload] validateAndUpload called', { file: file ? { name: file.name, size: file.size, type: file.type } : null });
+    
+    if (!file) {
+      console.warn('[MobilePhotoUpload] No file provided');
+      return;
+    }
 
     // Get file extension for fallback validation
     const fileName = file.name.toLowerCase();
@@ -41,18 +46,29 @@ export default function MobilePhotoUpload({
     const isImageMime = file.type.startsWith('image/') || file.type === '';
     const hasValidExtension = allowedExtensions.includes(extension);
     
+    console.log('[MobilePhotoUpload] File validation:', { fileName, extension, isImageMime, hasValidExtension, mimeType: file.type });
+    
     if (!isImageMime && !hasValidExtension) {
+      console.error('[MobilePhotoUpload] Invalid file type rejected');
       toast.error('Please select an image file');
       return;
     }
 
     // Validate file size
     if (file.size > maxSizeMB * 1024 * 1024) {
+      console.error('[MobilePhotoUpload] File too large:', file.size);
       toast.error(`Image must be less than ${maxSizeMB}MB`);
       return;
     }
 
-    await onPhotoSelected(file);
+    console.log('[MobilePhotoUpload] Validation passed, calling onPhotoSelected');
+    try {
+      await onPhotoSelected(file);
+      console.log('[MobilePhotoUpload] onPhotoSelected completed successfully');
+    } catch (error) {
+      console.error('[MobilePhotoUpload] onPhotoSelected failed:', error);
+      throw error;
+    }
   };
 
   const handleButtonClick = () => {
@@ -60,7 +76,14 @@ export default function MobilePhotoUpload({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[MobilePhotoUpload] handleFileChange triggered');
+    console.log('[MobilePhotoUpload] Input files:', e.target.files);
     const file = e.target.files?.[0];
+    if (file) {
+      console.log('[MobilePhotoUpload] File selected:', { name: file.name, size: file.size, type: file.type });
+    } else {
+      console.log('[MobilePhotoUpload] No file in input');
+    }
     validateAndUpload(file);
     // Reset input so the same file can be selected again
     e.target.value = '';

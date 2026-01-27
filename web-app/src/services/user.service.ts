@@ -26,9 +26,13 @@ class UserService {
   }
 
   async uploadProfilePhoto(userId: string, file: File): Promise<{ url: string }> {
+    console.log('[UserService] uploadProfilePhoto called:', { userId, fileName: file.name, fileSize: file.size, fileType: file.type });
     const formData = new FormData();
     formData.append('image', file);
-    return await api.upload<{ url: string }>(`/upload/profile-photo`, formData);
+    console.log('[UserService] FormData created, calling api.upload');
+    const result = await api.upload<{ url: string }>(`/upload/profile-photo`, formData);
+    console.log('[UserService] Upload result:', result);
+    return result;
   }
 
   async getNotificationPreferences(userId: string): Promise<NotificationPreferences> {
