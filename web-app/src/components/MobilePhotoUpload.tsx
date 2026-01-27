@@ -24,6 +24,8 @@ interface MobilePhotoUploadProps {
   isUploading?: boolean;
   maxSizeMB?: number;
   className?: string;
+  /** Shape of the profile picture preview - 'circle' for consumers, 'square' for barbers */
+  shape?: 'circle' | 'square';
 }
 
 /**
@@ -134,6 +136,7 @@ export default function MobilePhotoUpload({
   isUploading = false,
   maxSizeMB = 10, // Increased since we process before upload
   className = '',
+  shape = 'circle', // Default to circle, use 'square' for barbers
 }: MobilePhotoUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -208,11 +211,16 @@ export default function MobilePhotoUpload({
   
   const showLoading = isUploading || isProcessing;
 
+  // Determine container classes based on shape
+  const shapeClasses = shape === 'square' 
+    ? 'w-48 aspect-square rounded-lg' // Square with rounded corners for barbers
+    : 'w-32 h-32 rounded-full'; // Circle for consumers
+
   return (
     <div className={className}>
       {/* Current Profile Picture Display */}
       <div className="flex flex-col items-center">
-        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 mb-4">
+        <div className={`${shapeClasses} overflow-hidden bg-gray-200 mb-4`}>
           {currentPhotoUrl ? (
             <img
               src={currentPhotoUrl}

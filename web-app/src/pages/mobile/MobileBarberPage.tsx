@@ -353,6 +353,7 @@ export default function MobileBarberPage() {
                 currentPhotoUrl={user?.profile_picture_url}
                 onPhotoSelected={handlePhotoUpload}
                 isUploading={isUploadingPhoto}
+                shape="square"
               />
               <h2 className="text-xl font-bold text-gray-900 text-center mt-4">
                 {user?.first_name} {user?.last_name}
