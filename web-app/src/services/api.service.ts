@@ -124,9 +124,13 @@ class ApiService {
   }
 
   async upload<T = any>(url: string, formData: FormData): Promise<T> {
+    // For FormData uploads, we must NOT set Content-Type header manually.
+    // The browser sets it with the proper boundary parameter automatically.
+    // We need to explicitly delete the default Content-Type header.
     const response = await this.client.post<ApiResponse<T>>(url, formData, {
+      transformRequest: [(data) => data], // Prevent axios from transforming FormData
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined, // Remove default JSON content-type
       },
     });
     return response.data.data as T;
