@@ -34,8 +34,17 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  // Check file type
-  if (file.mimetype.startsWith('image/')) {
+  // Check file type - be lenient for mobile uploads
+  // iOS Photo Library may send empty mimetype or application/octet-stream
+  const isImage = file.mimetype.startsWith('image/');
+  const isEmptyMime = file.mimetype === '' || file.mimetype === 'application/octet-stream';
+  
+  // Also check file extension as fallback
+  const ext = file.originalname.toLowerCase().split('.').pop() || '';
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'];
+  const hasImageExtension = imageExtensions.includes(ext);
+  
+  if (isImage || isEmptyMime || hasImageExtension) {
     cb(null, true);
   } else {
     cb(new Error('Only image files are allowed'));
