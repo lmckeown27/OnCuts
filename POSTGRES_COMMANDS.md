@@ -1573,6 +1573,56 @@ sudo -u postgres psql -d campuscuts -c "\d notifications"
 
 ---
 
+## STRIPE CONNECT (Barber Payouts)
+
+> **Note:** Stripe Connect account IDs are stored in the `users` table (`stripe_account_id` column). Barbers must complete Stripe Connect onboarding to receive payouts.
+
+### View All Barbers with Stripe Connect Status
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.email,
+    u.first_name,
+    u.last_name,
+    b.\"isActive\",
+    CASE 
+        WHEN u.stripe_account_id IS NOT NULL THEN 'Yes'
+        ELSE 'No'
+    END AS stripe_connected,
+    u.stripe_account_id
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+ORDER BY u.stripe_account_id IS NULL, u.first_name;
+"
+```
+
+### View Barbers WITHOUT Stripe Connect
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.first_name, u.last_name, b.\"isActive\"
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.stripe_account_id IS NULL;
+"
+```
+
+### View Barbers WITH Stripe Connect
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.email, u.first_name, u.last_name, b.\"isActive\", u.stripe_account_id
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.stripe_account_id IS NOT NULL;
+"
+```
+
+### Check Specific Barber's Stripe Status
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT stripe_account_id FROM users WHERE email = 'barber@example.com';"
+```
+
+---
+
 ## PAYMENTS (Stripe Off-Chain)
 
 > **Note:** CampusCuts uses Stripe for all payments. Blockchain payment columns are deprecated.
