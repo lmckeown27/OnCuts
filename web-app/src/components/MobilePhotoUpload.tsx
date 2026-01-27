@@ -245,11 +245,11 @@ export default function MobilePhotoUpload({
       </div>
 
       {/* Hidden File Input - triggers native picker with Photo Library, Take Photo, Choose File options */}
+      {/* Note: Do NOT use capture attribute - it forces camera only. Without it, iOS shows all 3 options */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileChange}
         className="hidden"
       />
