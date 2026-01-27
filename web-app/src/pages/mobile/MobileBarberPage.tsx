@@ -14,6 +14,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import toast from 'react-hot-toast';
+import MobilePhotoUpload from '../../components/MobilePhotoUpload';
+import BarberProfileEditor from '../../components/BarberProfileEditor';
+import userService from '../../services/user.service';
 import {
   Calendar,
   Clock,
@@ -26,7 +29,8 @@ import {
   X,
   ChevronRight,
   MapPin,
-  MoreVertical
+  MoreVertical,
+  ArrowLeft
 } from 'lucide-react';
 
 interface BookingRequest {
@@ -55,7 +59,7 @@ export default function MobileBarberPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   
   const [activeTab, setActiveTab] = useState<'schedule' | 'requests' | 'earnings' | 'profile'>('schedule');
   const [requests, setRequests] = useState<BookingRequest[]>([]);
@@ -63,6 +67,8 @@ export default function MobileBarberPage() {
   const [showRequestDetail, setShowRequestDetail] = useState<BookingRequest | null>(null);
   const [swipingRequest, setSwipingRequest] = useState<string | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [showFullEditor, setShowFullEditor] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const todayEarnings = 0;
   const weekEarnings = 0;
@@ -112,6 +118,35 @@ export default function MobileBarberPage() {
       setSwipingRequest(null);
       setSwipeDirection(null);
     }, 300);
+  };
+
+  // Handle profile photo upload
+  const handlePhotoUpload = async (file: File) => {
+    if (!user?.id) {
+      toast.error('User not found');
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+      const result = await userService.uploadProfilePhoto(user.id, file);
+      
+      // Update user profile with new photo URL
+      await userService.updateUserProfile(user.id, { profile_picture_url: result.url });
+      
+      // Update auth store
+      setUser({
+        ...user,
+        profile_picture_url: result.url,
+      });
+      
+      toast.success('Profile photo updated!');
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   return (
@@ -300,44 +335,72 @@ export default function MobileBarberPage() {
           </div>
         )}
 
-        {activeTab === 'profile' && (
+        {activeTab === 'profile' && !showFullEditor && (
           <div className="p-4 space-y-4">
-            <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-              <div className="w-24 h-24 bg-primary-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <UserIcon className="w-12 h-12 text-primary-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">Marcus Johnson</h2>
-              <p className="text-gray-500 text-sm mt-2">127 reviews</p>
+            {/* Profile Photo with Camera/Gallery Upload */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <MobilePhotoUpload
+                currentPhotoUrl={user?.profile_picture_url}
+                onPhotoSelected={handlePhotoUpload}
+                isUploading={isUploadingPhoto}
+              />
+              <h2 className="text-xl font-bold text-gray-900 text-center mt-4">
+                {user?.first_name} {user?.last_name}
+              </h2>
+              <p className="text-gray-500 text-sm text-center mt-1">{user?.email}</p>
             </div>
 
             <div className="space-y-2">
-              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
-                <span className="font-medium text-gray-900">Edit Profile</span>
+              <button 
+                onClick={() => setShowFullEditor(true)}
+                className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+              >
+                <span className="font-medium text-gray-900">Edit Full Profile</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
               
-              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+              <button 
+                onClick={() => navigate(`${platformPrefix}/barber/services`)}
+                className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+              >
                 <span className="font-medium text-gray-900">My Services</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
               
-              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
+              <button 
+                onClick={() => navigate(`${platformPrefix}/barber/availability`)}
+                className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+              >
                 <span className="font-medium text-gray-900">Availability</span>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
-              
-              <button className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform">
-                <span className="font-medium text-gray-900">Settings</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
             </div>
 
             <button
-              onClick={() => navigate('/web')}
+              onClick={() => navigate(`${platformPrefix}/consumer`)}
               className="w-full py-3 text-primary-600 font-medium"
             >
               Switch to Student
             </button>
+          </div>
+        )}
+
+        {/* Full Profile Editor */}
+        {activeTab === 'profile' && showFullEditor && (
+          <div className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <button 
+                onClick={() => setShowFullEditor(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
+            </div>
+            <BarberProfileEditor 
+              userId={user?.id}
+              onClose={() => setShowFullEditor(false)}
+            />
           </div>
         )}
       </div>

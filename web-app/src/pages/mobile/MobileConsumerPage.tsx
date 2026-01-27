@@ -11,7 +11,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import toast from 'react-hot-toast';
+import MobilePhotoUpload from '../../components/MobilePhotoUpload';
+import ConsumerProfileEditor from '../../components/ConsumerProfileEditor';
+import userService from '../../services/user.service';
 import {
   Heart,
   X,
@@ -27,7 +32,9 @@ import {
   Clock,
   DollarSign,
   Loader2,
-  GraduationCap
+  GraduationCap,
+  ArrowLeft,
+  LogOut
 } from 'lucide-react';
 import { calculateDistance, kmToMiles } from '../../hooks';
 import barberService from '../../services/barber.service';
@@ -39,6 +46,10 @@ const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function MobileConsumerPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  const { user, setUser, logout } = useAuthStore();
+  
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
@@ -49,6 +60,8 @@ export default function MobileConsumerPage() {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [showFullEditor, setShowFullEditor] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const currentBarber = barbers[currentBarberIndex];
   const minSwipeDistance = 50;
@@ -195,6 +208,40 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
+  // Handle profile photo upload
+  const handlePhotoUpload = async (file: File) => {
+    if (!user?.id) {
+      toast.error('Please sign in to update your photo');
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+      const result = await userService.uploadProfilePhoto(user.id, file);
+      
+      // Update user profile with new photo URL
+      await userService.updateUserProfile(user.id, { profile_picture_url: result.url });
+      
+      // Update auth store
+      setUser({
+        ...user,
+        profile_picture_url: result.url,
+      });
+      
+      toast.success('Profile photo updated!');
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
   const handlePass = () => {
     setSwipeDirection('left');
     setTimeout(() => {
@@ -240,30 +287,116 @@ export default function MobileConsumerPage() {
 
   return (
     <div className="fixed inset-0 bg-gray-50 flex flex-col">
-      {/* Header */}
+      {/* Header - changes based on active tab */}
       <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between safe-area-inset-top">
-        <div className="flex items-center gap-2">
-          <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
-            <p className="text-xs text-gray-500 leading-tight">{selectedUniversity?.shortName || selectedUniversity?.name}</p>
+        {activeTab === 'profile' && showFullEditor ? (
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowFullEditor(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <h1 className="text-lg font-bold text-gray-900">Edit Profile</h1>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFilters(true)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <Filter className="w-5 h-5 text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Search className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
+        ) : activeTab === 'profile' ? (
+          <div className="flex items-center gap-2">
+            <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">Profile</h1>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <img src="/src/assets/logos/Logo1.png" alt="CampusCut" className="h-8" />
+              <div>
+                <h1 className="text-lg font-bold text-gray-900 leading-tight">Discover</h1>
+                <p className="text-xs text-gray-500 leading-tight">{selectedUniversity?.shortName || selectedUniversity?.name}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowFilters(true)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Filter className="w-5 h-5 text-gray-600" />
+              </button>
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Search className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </>
+        )}
       </header>
 
-      {/* Swipeable Card Area */}
-      <div className="flex-1 relative overflow-hidden p-4">
+      {/* Profile Tab Content */}
+      {activeTab === 'profile' && !showFullEditor && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {user ? (
+            <>
+              {/* Profile Photo with Camera/Gallery Upload */}
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <MobilePhotoUpload
+                  currentPhotoUrl={user?.profile_picture_url}
+                  onPhotoSelected={handlePhotoUpload}
+                  isUploading={isUploadingPhoto}
+                />
+                <h2 className="text-xl font-bold text-gray-900 text-center mt-4">
+                  {user?.first_name} {user?.last_name}
+                </h2>
+                <p className="text-gray-500 text-sm text-center mt-1">{user?.email}</p>
+              </div>
+
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setShowFullEditor(true)}
+                  className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+                >
+                  <span className="font-medium text-gray-900">Edit Full Profile</span>
+                  <X className="w-5 h-5 text-gray-400 rotate-45" />
+                </button>
+                
+                <button 
+                  onClick={() => navigate(`${platformPrefix}/consumer/bookings`)}
+                  className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+                >
+                  <span className="font-medium text-gray-900">My Bookings</span>
+                  <Calendar className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-3 text-red-600 font-medium"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-12">
+              <UserIcon className="w-16 h-16 text-gray-300 mb-4" />
+              <p className="text-gray-600 text-center mb-4">Sign in to manage your profile</p>
+              <button
+                onClick={() => navigate('/web')}
+                className="px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold"
+              >
+                Sign In
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Full Profile Editor */}
+      {activeTab === 'profile' && showFullEditor && user && (
+        <div className="flex-1 overflow-y-auto p-4">
+          <ConsumerProfileEditor userId={user.id} />
+        </div>
+      )}
+
+      {/* Home Tab - Swipeable Card Area */}
+      {activeTab === 'home' && (
+        <div className="flex-1 relative overflow-hidden p-4">
         <div
           className={`relative w-full h-full transition-transform duration-300 ${
             swipeDirection === 'left' ? '-translate-x-full opacity-0' :
@@ -359,29 +492,32 @@ export default function MobileConsumerPage() {
           </div>
         </div>
       </div>
+      )}
 
-      {/* Action Buttons */}
-      <div className="p-6 bg-white border-t border-gray-200">
-        <div className="flex items-center justify-center gap-6">
-          <button
-            onClick={handlePass}
-            className="w-16 h-16 bg-red-50 hover:bg-red-100 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg"
-          >
-            <X className="w-8 h-8 text-red-500" />
-          </button>
+      {/* Action Buttons - only show on home tab */}
+      {activeTab === 'home' && (
+        <div className="p-6 bg-white border-t border-gray-200">
+          <div className="flex items-center justify-center gap-6">
+            <button
+              onClick={handlePass}
+              className="w-16 h-16 bg-red-50 hover:bg-red-100 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-lg"
+            >
+              <X className="w-8 h-8 text-red-500" />
+            </button>
+            
+            <button
+              onClick={handleLike}
+              className="w-20 h-20 bg-primary-400 hover:bg-primary-500 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl"
+            >
+              <Heart className="w-10 h-10 text-white" />
+            </button>
+          </div>
           
-          <button
-            onClick={handleLike}
-            className="w-20 h-20 bg-primary-400 hover:bg-primary-500 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl"
-          >
-            <Heart className="w-10 h-10 text-white" />
-          </button>
+          <p className="text-center text-sm text-gray-500 mt-4">
+            Swipe left to pass, right to book
+          </p>
         </div>
-        
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Swipe left to pass, right to book
-        </p>
-      </div>
+      )}
 
       {/* Bottom Navigation */}
       <nav className="bg-white border-t border-gray-200 px-2 py-2 safe-area-inset-bottom">

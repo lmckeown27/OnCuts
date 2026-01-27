@@ -13,12 +13,20 @@ import { Upload, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
+import MobilePhotoUpload from './MobilePhotoUpload';
 import toast from 'react-hot-toast';
 import barberService from '../services/barber.service';
 import userService from '../services/user.service';
 import { useAuthStore } from '../store/useAuthStore';
 import { SPECIALTY_OPTIONS } from '../config/services';
 import type { Barber } from '../types';
+
+// Detect if user is on a mobile device (for camera/gallery picker)
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 768);
+};
 
 interface BarberProfileEditorProps {
   barberId?: string;
@@ -226,6 +234,49 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
     }
   };
 
+  // Mobile photo upload handler - receives file directly from MobilePhotoUpload component
+  const handleMobilePhotoUpload = async (file: File) => {
+    try {
+      setIsUploading(true);
+      
+      const uploadUserId = userId || barber?.user_id || '';
+      console.log('[ProfileEditor] Mobile upload for userId:', uploadUserId);
+      
+      if (!uploadUserId) {
+        console.error('[ProfileEditor] No userId available for upload');
+        toast.error('Unable to upload: User ID not found. Please refresh the page.');
+        return;
+      }
+      
+      // Upload the file
+      const response = await userService.uploadProfilePhoto(uploadUserId, file);
+      console.log('[ProfileEditor] Upload response:', response);
+      
+      if (response.url) {
+        setProfilePhoto(response.url);
+        
+        // Update the auth store so all components get the new profile picture
+        if (user) {
+          setUser({
+            ...user,
+            profile_picture_url: response.url,
+          });
+        }
+        
+        toast.success('Photo uploaded successfully!');
+      } else {
+        console.error('[ProfileEditor] No URL in response:', response);
+        toast.error('Upload completed but no image URL received');
+      }
+    } catch (error: any) {
+      console.error('[ProfileEditor] Failed to upload photo:', error);
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to upload photo';
+      toast.error(errorMessage);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (isLoading) {
     return <Loading />;
   }
@@ -236,40 +287,52 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
       <Card>
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
         <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
-        <div className="flex justify-center mb-4">
-          <div className="relative w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200">
-            {profilePhoto ? (
-              <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="w-12 h-12 text-gray-400" />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-            onChange={handleFileSelect}
-            className="hidden"
+        {isMobileDevice() ? (
+          /* Mobile: Use camera/gallery picker */
+          <MobilePhotoUpload
+            currentPhotoUrl={profilePhoto}
+            onPhotoSelected={handleMobilePhotoUpload}
+            isUploading={isUploading}
           />
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="whitespace-nowrap px-6"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            {isUploading ? 'Uploading...' : 'Upload Photo'}
-          </Button>
-          <div className="text-xs text-gray-500 text-center sm:text-left">
-            <p>Max size: 5MB</p>
-            <p>Formats: JPG, PNG</p>
-          </div>
-        </div>
+        ) : (
+          /* Desktop: Standard file upload */
+          <>
+            <div className="flex justify-center mb-4">
+              <div className="relative w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200">
+                {profilePhoto ? (
+                  <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="whitespace-nowrap px-6"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {isUploading ? 'Uploading...' : 'Upload Photo'}
+              </Button>
+              <div className="text-xs text-gray-500 text-center sm:text-left">
+                <p>Max size: 5MB</p>
+                <p>Formats: JPG, PNG</p>
+              </div>
+            </div>
+          </>
+        )}
       </Card>
 
       {/* Display Name */}

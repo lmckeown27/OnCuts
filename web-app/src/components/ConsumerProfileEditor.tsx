@@ -15,10 +15,18 @@ import { Upload, Save, Mail, User as UserIcon, Bell, Lock, Trash2, Image as Imag
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
+import MobilePhotoUpload from './MobilePhotoUpload';
 import toast from 'react-hot-toast';
 import userService from '../services/user.service';
 import { useAuthStore } from '../store/useAuthStore';
 import type { User } from '../types';
+
+// Detect if user is on a mobile device (for camera/gallery picker)
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 768);
+};
 
 interface ConsumerProfileEditorProps {
   userId: string;
@@ -286,6 +294,32 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
     }
   };
 
+  // Mobile photo upload handler - receives file directly from MobilePhotoUpload component
+  const handleMobilePhotoUpload = async (file: File) => {
+    try {
+      toast.success('Uploading photo...');
+      const result = await userService.uploadProfilePhoto(userId, file);
+      setProfilePhoto(result.url);
+      
+      // Update user profile with new photo URL
+      await userService.updateUserProfile(userId, { profile_picture_url: result.url });
+      
+      // Update auth store so the avatar updates immediately everywhere
+      if (authUser) {
+        const updatedUser = { ...authUser, profile_picture_url: result.url };
+        setAuthUser(updatedUser);
+        // Also persist to localStorage
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+      
+      toast.success('Profile photo updated!');
+      await loadUserProfile();
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error('Failed to upload photo');
+    }
+  };
+
   if (isLoading) {
     return <Loading />;
   }
@@ -337,31 +371,41 @@ const ConsumerProfileEditor = forwardRef<ConsumerProfileEditorRef, ConsumerProfi
           {/* Profile Photo */}
           <Card>
             <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
-            <div className="flex items-center gap-6">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
-                {profilePhoto ? (
-                  <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon className="w-12 h-12 text-gray-400" />
-                )}
+            {isMobileDevice() ? (
+              /* Mobile: Use camera/gallery picker */
+              <MobilePhotoUpload
+                currentPhotoUrl={profilePhoto}
+                onPhotoSelected={handleMobilePhotoUpload}
+                isUploading={isSaving}
+              />
+            ) : (
+              /* Desktop: Standard file upload */
+              <div className="flex items-center gap-6">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                  {profilePhoto ? (
+                    <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon className="w-12 h-12 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Upload a profile photo</p>
+                  <label className="cursor-pointer">
+                    <Button variant="secondary" size="sm" as="span">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Photo
+                    </Button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleUploadPhoto}
+                      className="hidden"
+                    />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPG, PNG</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Upload a profile photo</p>
-                <label className="cursor-pointer">
-                  <Button variant="secondary" size="sm" as="span">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Photo
-                  </Button>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadPhoto}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-2">Max size: 5MB. Formats: JPG, PNG</p>
-              </div>
-            </div>
+            )}
           </Card>
 
           {/* Basic Info */}
