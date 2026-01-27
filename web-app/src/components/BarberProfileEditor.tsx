@@ -288,11 +288,12 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
         <h3 className="text-lg font-semibold mb-4">Profile Photo</h3>
         <p className="text-sm text-gray-600 mb-3">This is how your photo appears on your barber card</p>
         {isMobileDevice() ? (
-          /* Mobile: Use camera/gallery picker */
+          /* Mobile: Use camera/gallery picker with square shape for barbers */
           <MobilePhotoUpload
             currentPhotoUrl={profilePhoto}
             onPhotoSelected={handleMobilePhotoUpload}
             isUploading={isUploading}
+            shape="square"
           />
         ) : (
           /* Desktop: Standard file upload */
