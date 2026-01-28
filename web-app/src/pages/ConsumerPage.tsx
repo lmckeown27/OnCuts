@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { DollarSign, Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2 } from 'lucide-react';
+import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -1308,15 +1308,11 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
         {(filteredBarbers || []).map((barber) => {
-          // Find the haircut price specifically, or fall back to lowest price
-          const haircutService = barber.pricing?.find(p => 
-            p.name?.toLowerCase() === 'haircut'
-          );
-          const displayPrice = haircutService?.price ?? (
-            barber.pricing && barber.pricing.length > 0
-              ? Math.min(...barber.pricing.map(p => p.price))
-              : undefined
-          );
+          // Calculate price display - show range if multiple different prices
+          const prices = barber.pricing?.map(p => p.price) || [];
+          const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
+          const maxPrice = prices.length > 0 ? Math.max(...prices) : undefined;
+          const hasRange = minPrice !== undefined && maxPrice !== undefined && maxPrice !== minPrice;
 
           // Mobile portrait: Horizontal card layout
           if (isMobilePortrait) {
@@ -1347,8 +1343,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                     <h3 className="font-bold text-gray-900 text-lg">
                       {barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Barber'}
                     </h3>
-                    {displayPrice && (
-                      <span className="text-primary-500 font-bold text-2xl flex-shrink-0 mr-2">${displayPrice}</span>
+                    {minPrice !== undefined && (
+                      <span className="text-primary-500 font-bold text-xl flex-shrink-0 mr-2">
+                        {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
+                      </span>
                     )}
                   </div>
                   {/* Distance display commented out
@@ -1397,11 +1395,12 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                   </h3>
                 </div>
                 {/* Price Overlay - Bottom Left */}
-                {displayPrice && (
+                {minPrice !== undefined && (
                   <div className="absolute bottom-0 left-0 bg-primary-400/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tr-lg rounded-bl-lg">
                     <div className="flex items-center text-white">
-                      <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="font-bold text-base sm:text-lg">{displayPrice}</span>
+                      <span className="font-bold text-sm sm:text-base">
+                        {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
+                      </span>
                     </div>
                   </div>
                 )}
