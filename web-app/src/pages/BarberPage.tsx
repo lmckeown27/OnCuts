@@ -92,6 +92,7 @@ export default function BarberPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isNotificationsVisible, setIsNotificationsVisible] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
   
   // Lock body scroll when any modal is open
@@ -139,6 +140,24 @@ export default function BarberPage() {
     } catch (error) {
       console.error('Failed to delete all notifications:', error);
     }
+  };
+
+  // Notifications popup handlers
+  const openNotifications = () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShowNotifications(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsNotificationsVisible(true);
+      });
+    });
+  };
+
+  const closeNotifications = () => {
+    setIsNotificationsVisible(false);
+    setTimeout(() => {
+      setShowNotifications(false);
+    }, 150);
   };
   
   // Format time helper
@@ -506,8 +525,7 @@ export default function BarberPage() {
                   </button>
                   <button
                     onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'instant' });
-                      setShowNotifications(true);
+                      openNotifications();
                       setShowProfileDropdown(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -871,11 +889,13 @@ export default function BarberPage() {
       {/* Notifications Modal */}
       {showNotifications && (
         <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowNotifications(false)}
+          className={`fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4 transition-all duration-150 ease-out ${isNotificationsVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeNotifications}
         >
           <div 
-            className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transform transition-all"
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transition-all duration-150 ease-out ${
+              isNotificationsVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -888,7 +908,7 @@ export default function BarberPage() {
               </div>
               <div className="flex items-center gap-2">
                 {unreadNotifications > 0 && (
-              <button
+                  <button
                     onClick={handleMarkAllNotificationsRead}
                     className="text-white/80 hover:text-white text-sm underline"
                   >
@@ -904,12 +924,12 @@ export default function BarberPage() {
                   </button>
                 )}
                 <button 
-                  onClick={() => setShowNotifications(false)}
+                  onClick={closeNotifications}
                   className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                 >
                   <X className="w-5 h-5" />
-              </button>
-            </div>
+                </button>
+              </div>
             </div>
 
             {/* Content */}
@@ -958,13 +978,13 @@ export default function BarberPage() {
                       // Message notifications navigate to the conversation
                       if (isMessageNotification && data.conversationId) {
                         navigate(`${platformPrefix}/barber/messages/${data.conversationId}`);
-                        setShowNotifications(false);
+                        closeNotifications();
                       } else if (notifType === 'new_booking_request') {
                         // Stay on barber page, close modal - dashboard shows requests
-                        setShowNotifications(false);
+                        closeNotifications();
                       } else {
                         // Default: close modal
-                        setShowNotifications(false);
+                        closeNotifications();
                       }
                     };
                     
@@ -1007,7 +1027,7 @@ export default function BarberPage() {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
               <Button
-                onClick={() => setShowNotifications(false)}
+                onClick={closeNotifications}
                 variant="secondary"
                 className="w-full"
               >
