@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -173,6 +173,8 @@ interface SignupForm {
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect'); // For email links like ?redirect=/web/consumer/messages/123
   const { login, signup } = useAuthStore();
   const [mode, setMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -316,7 +318,16 @@ export default function AuthPage() {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
       
-      // Check for post-login redirect (e.g., scheduling a service)
+      // Check for URL redirect parameter (e.g., from email links ?redirect=/web/consumer/messages/123)
+      if (redirectUrl) {
+        // Validate redirect URL is internal (starts with /)
+        if (redirectUrl.startsWith('/')) {
+          navigate(redirectUrl);
+          return;
+        }
+      }
+      
+      // Check for post-login redirect from localStorage (e.g., scheduling a service)
       const postLoginRedirect = localStorage.getItem('postLoginRedirect');
       if (postLoginRedirect) {
         try {

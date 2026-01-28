@@ -2418,7 +2418,8 @@ export async function sendConsumerNewMessageEmail(details: NewMessageEmailDetail
   }
 
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
-  const conversationLink = `${frontendUrl}/web/consumer`;
+  // Link to auth page with redirect to consumer messages after login
+  const conversationLink = `${frontendUrl}/web/auth?redirect=/web/consumer/messages/${details.conversationId}`;
 
   const firstName = details.recipientName.split(' ')[0];
   const subject = `New message from ${details.senderName}`;
@@ -2560,7 +2561,8 @@ export async function sendBarberNewMessageFromConsumerEmail(details: NewMessageE
   }
 
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
-  const conversationLink = `${frontendUrl}/web/barber`;
+  // Link to auth page with redirect to barber messages after login
+  const conversationLink = `${frontendUrl}/web/auth?redirect=/web/barber/messages/${details.conversationId}`;
 
   const firstName = details.recipientName.split(' ')[0];
   const subject = `New message from ${details.senderName}`;
@@ -2713,7 +2715,8 @@ export async function sendBarberToBarberMessageEmail(details: BarberToBarberMess
   }
 
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
-  const conversationLink = `${frontendUrl}/web/barber`;
+  // Link to auth page with redirect to barber messages after login
+  const conversationLink = `${frontendUrl}/web/auth?redirect=/web/barber/messages/${details.conversationId}`;
 
   const firstName = details.recipientName.split(' ')[0];
   const subject = `New message from ${details.senderName}`;
