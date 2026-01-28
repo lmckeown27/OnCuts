@@ -354,7 +354,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                   </p>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-left">
                     <div className="text-sm text-green-800 space-y-1">
-                      <p><strong>Account ID:</strong> {status.account_id?.slice(0, 12)}...</p>
+                      <p><strong>Account ID:</strong> <span className="sm:hidden">{status.account_id?.slice(0, 12)}...</span><span className="hidden sm:inline">{status.account_id}</span></p>
                       <p><strong>Status:</strong> Verified & Active</p>
                       <p><strong>Payout Method:</strong> Instant Transfer (1-2 business days)</p>
                     </div>
