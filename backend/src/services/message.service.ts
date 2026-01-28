@@ -14,6 +14,11 @@ import { pool } from '../database/connection';
 import { redisGet, redisSet, redisDel, generateCacheKey, CACHE_TTL } from '../config/redis';
 import pushNotificationService from './pushNotification.service';
 import notificationService from './notification.service';
+import { 
+  sendConsumerNewMessageEmail, 
+  sendBarberNewMessageFromConsumerEmail, 
+  sendBarberToBarberMessageEmail 
+} from './email.service';
 
 class MessageService {
   /**
@@ -496,6 +501,118 @@ class MessageService {
         });
       } catch (notificationError) {
         console.error('Failed to send push notification:', notificationError);
+      }
+
+      // Send email notification to recipient
+      try {
+        // Get recipient info and conversation details for email
+        const recipientResult = await pool.query(
+          `SELECT email, first_name, last_name, role FROM users WHERE id = $1`,
+          [recipientId]
+        );
+        
+        if (recipientResult.rows.length > 0) {
+          const recipient = recipientResult.rows[0];
+          const senderFullName = `${sender.first_name} ${sender.last_name}`;
+          const recipientFullName = `${recipient.first_name} ${recipient.last_name}`;
+          
+          // Get conversation booking details if available
+          const convDetails = await pool.query(
+            `SELECT service_name, service_price, scheduled_time, booking_status, booking_id
+             FROM conversations WHERE id = $1`,
+            [conversationId]
+          );
+          
+          const convData = convDetails.rows[0];
+          const hasBookingContext = convData?.service_name || convData?.booking_id;
+          
+          // Format booking details for email
+          let bookingDetails = undefined;
+          if (hasBookingContext) {
+            // Format the scheduled time if available
+            let formattedDate = '';
+            let formattedTime = '';
+            if (convData.scheduled_time) {
+              const scheduledDate = new Date(convData.scheduled_time);
+              formattedDate = scheduledDate.toLocaleDateString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+              });
+              formattedTime = scheduledDate.toLocaleTimeString('en-US', { 
+                hour: 'numeric', minute: '2-digit', hour12: true 
+              });
+            }
+            
+            bookingDetails = {
+              serviceName: convData.service_name || 'Haircut',
+              scheduledDate: formattedDate,
+              scheduledTime: formattedTime,
+              price: convData.service_price ? parseFloat(convData.service_price) : undefined,
+              status: convData.booking_status || 'pending',
+            };
+          }
+          
+          // Get sender's role to determine email type
+          const senderRoleResult = await pool.query(
+            `SELECT role FROM users WHERE id = $1`,
+            [senderId]
+          );
+          const senderRole = senderRoleResult.rows[0]?.role?.toUpperCase() || 'CONSUMER';
+          const recipientRole = recipient.role?.toUpperCase() || 'CONSUMER';
+          
+          // Determine which email template to use based on sender and recipient roles
+          if (senderRole === 'BARBER' && recipientRole === 'CONSUMER') {
+            // Barber sending to Consumer
+            await sendConsumerNewMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+              booking: bookingDetails,
+            });
+          } else if (senderRole === 'CONSUMER' && recipientRole === 'BARBER') {
+            // Consumer sending to Barber
+            await sendBarberNewMessageFromConsumerEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+              booking: bookingDetails,
+            });
+          } else if (senderRole === 'BARBER' && recipientRole === 'BARBER') {
+            // Barber-to-barber communication
+            await sendBarberToBarberMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+            });
+          } else if ((senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && recipientRole === 'BARBER') {
+            // Campus manager/admin sending to barber - use barber-to-barber template
+            await sendBarberToBarberMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+            });
+          } else if (senderRole === 'BARBER' && (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')) {
+            // Barber sending to campus manager/admin - use barber-to-barber template
+            await sendBarberToBarberMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+            });
+          }
+          // Note: Consumer-to-consumer messaging is not a typical use case, so no email for that
+        }
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't throw - email notification is non-critical
       }
 
       const formattedMessage = {

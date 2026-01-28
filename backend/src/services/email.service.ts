@@ -2381,3 +2381,421 @@ The CampusCut Team
     throw error;
   }
 }
+
+// ============================================
+// NEW MESSAGE EMAIL NOTIFICATIONS
+// ============================================
+
+/**
+ * New Message Email Details Interface
+ */
+interface NewMessageEmailDetails {
+  recipientEmail: string;
+  recipientName: string;
+  senderName: string;
+  messageContent: string;
+  conversationId: number | string;
+  // Booking details (optional, for consumer-barber messages)
+  booking?: {
+    serviceName?: string;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    price?: number;
+    status?: string;
+  };
+}
+
+/**
+ * Send New Message Email - Consumer receiving message from Barber
+ * 
+ * Notifies a consumer when their barber sends them a message.
+ * Includes booking details if the conversation is about a booking.
+ */
+export async function sendConsumerNewMessageEmail(details: NewMessageEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping new message email to consumer ${details.recipientEmail}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const conversationLink = `${frontendUrl}/web/consumer`;
+
+  const firstName = details.recipientName.split(' ')[0];
+  const subject = `New message from ${details.senderName}`;
+
+  const text = `
+Hi ${firstName},
+
+You have a new message from your barber, ${details.senderName}.
+
+MESSAGE
+-------
+"${details.messageContent}"
+
+${details.booking ? `
+BOOKING DETAILS
+---------------
+Service: ${details.booking.serviceName || 'Haircut'}
+${details.booking.scheduledDate ? `Date: ${details.booking.scheduledDate}` : ''}
+${details.booking.scheduledTime ? `Time: ${details.booking.scheduledTime}` : ''}
+${details.booking.price ? `Price: $${details.booking.price.toFixed(2)}` : ''}
+Status: ${details.booking.status || 'Pending'}
+` : ''}
+
+Reply to this message by visiting:
+${conversationLink}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 14px;">New Message</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        You have a new message from your barber, <strong>${details.senderName}</strong>.
+      </p>
+      
+      <!-- Message Content -->
+      <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
+        <p style="color: #166534; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
+          "${details.messageContent.length > 200 ? details.messageContent.substring(0, 200) + '...' : details.messageContent}"
+        </p>
+        <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 12px;">- ${details.senderName}</p>
+      </div>
+      
+      ${details.booking ? `
+      <!-- Booking Details -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.serviceName || 'Haircut'}</td>
+          </tr>
+          ${details.booking.scheduledDate ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.scheduledDate}</td>
+          </tr>` : ''}
+          ${details.booking.scheduledTime ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.scheduledTime}</td>
+          </tr>` : ''}
+          ${details.booking.price ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Status</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${(details.booking.status || 'Pending').charAt(0).toUpperCase() + (details.booking.status || 'Pending').slice(1)}</td>
+          </tr>
+        </table>
+      </div>
+      ` : ''}
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Reply to Message
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        Open the CampusCut app to continue the conversation.
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.recipientEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`New message email sent to consumer: ${details.recipientEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send new message email to consumer ${details.recipientEmail}:`, error.message);
+    // Don't throw - email notification is non-critical
+  }
+}
+
+/**
+ * Send New Message Email - Barber receiving message from Consumer
+ * 
+ * Notifies a barber when a customer sends them a message.
+ * Includes booking details if the conversation is about a booking.
+ */
+export async function sendBarberNewMessageFromConsumerEmail(details: NewMessageEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping new message email to barber ${details.recipientEmail}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const conversationLink = `${frontendUrl}/web/barber`;
+
+  const firstName = details.recipientName.split(' ')[0];
+  const subject = `New message from ${details.senderName}`;
+
+  const text = `
+Hi ${firstName},
+
+You have a new message from your customer, ${details.senderName}.
+
+MESSAGE
+-------
+"${details.messageContent}"
+
+${details.booking ? `
+BOOKING DETAILS
+---------------
+Service: ${details.booking.serviceName || 'Haircut'}
+${details.booking.scheduledDate ? `Date: ${details.booking.scheduledDate}` : ''}
+${details.booking.scheduledTime ? `Time: ${details.booking.scheduledTime}` : ''}
+${details.booking.price ? `Price: $${details.booking.price.toFixed(2)}` : ''}
+Status: ${details.booking.status || 'Pending'}
+` : ''}
+
+Reply to this message by visiting:
+${conversationLink}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 14px;">New Message from Customer</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        You have a new message from your customer, <strong>${details.senderName}</strong>.
+      </p>
+      
+      <!-- Message Content -->
+      <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
+        <p style="color: #1e40af; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
+          "${details.messageContent.length > 200 ? details.messageContent.substring(0, 200) + '...' : details.messageContent}"
+        </p>
+        <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 12px;">- ${details.senderName}</p>
+      </div>
+      
+      ${details.booking ? `
+      <!-- Booking Details -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.serviceName || 'Haircut'}</td>
+          </tr>
+          ${details.booking.scheduledDate ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.scheduledDate}</td>
+          </tr>` : ''}
+          ${details.booking.scheduledTime ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.booking.scheduledTime}</td>
+          </tr>` : ''}
+          ${details.booking.price ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Status</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${(details.booking.status || 'Pending').charAt(0).toUpperCase() + (details.booking.status || 'Pending').slice(1)}</td>
+          </tr>
+        </table>
+      </div>
+      ` : ''}
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Reply to Message
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        Open the CampusCut app to continue the conversation.
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.recipientEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`New message email sent to barber: ${details.recipientEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send new message email to barber ${details.recipientEmail}:`, error.message);
+    // Don't throw - email notification is non-critical
+  }
+}
+
+/**
+ * Barber-to-Barber Message Email Details Interface
+ */
+interface BarberToBarberMessageEmailDetails {
+  recipientEmail: string;
+  recipientName: string;
+  senderName: string;
+  messageContent: string;
+  conversationId: number | string;
+}
+
+/**
+ * Send New Message Email - Barber receiving message from another Barber
+ * 
+ * Notifies a barber when another barber on the same campus sends them a message.
+ * No booking details included - this is for direct barber communication.
+ */
+export async function sendBarberToBarberMessageEmail(details: BarberToBarberMessageEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping barber-to-barber message email to ${details.recipientEmail}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const conversationLink = `${frontendUrl}/web/barber`;
+
+  const firstName = details.recipientName.split(' ')[0];
+  const subject = `New message from ${details.senderName}`;
+
+  const text = `
+Hi ${firstName},
+
+You have a new message from your fellow barber, ${details.senderName}.
+
+MESSAGE
+-------
+"${details.messageContent}"
+
+Reply to this message by visiting:
+${conversationLink}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
+      <p style="color: #fbbf24; margin: 10px 0 0 0; font-size: 14px;">Message from Fellow Barber</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        You have a new message from your fellow barber, <strong>${details.senderName}</strong>.
+      </p>
+      
+      <!-- Message Content -->
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
+        <p style="color: #92400e; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
+          "${details.messageContent.length > 200 ? details.messageContent.substring(0, 200) + '...' : details.messageContent}"
+        </p>
+        <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 12px;">- ${details.senderName}</p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Reply to Message
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        Open the CampusCut app to continue the conversation.
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.recipientEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Barber-to-barber message email sent to: ${details.recipientEmail}`);
+  } catch (error: any) {
+    logger.error(`Failed to send barber-to-barber message email to ${details.recipientEmail}:`, error.message);
+    // Don't throw - email notification is non-critical
+  }
+}
