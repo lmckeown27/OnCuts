@@ -32,13 +32,21 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // Animation handling
+  // Animation handling - use double requestAnimationFrame for smooth open animation
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
       checkConnectStatus();
+      // Delay animation trigger to allow initial render with hidden state
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
     } else {
+      setIsAnimating(false);
       const timer = setTimeout(() => setIsVisible(false), 150);
       return () => clearTimeout(timer);
     }
@@ -213,13 +221,13 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
   return (
     <div
       className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
-        isOpen ? 'bg-black/50' : 'bg-black/0'
+        isAnimating ? 'bg-black/50' : 'bg-black/0'
       }`}
       onClick={handleBackdropClick}
     >
       <div
         className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-hidden transition-all duration-150 ease-out ${
-          isOpen
+          isAnimating
             ? 'opacity-100 scale-100 translate-y-0'
             : 'opacity-0 scale-95 translate-y-4'
         }`}
