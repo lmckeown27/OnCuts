@@ -283,7 +283,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                     Set Up Your Payout Account
                   </h3>
                   <p className="text-sm text-gray-600 mb-6">
-                    Connect with Stripe to receive instant payouts when you complete bookings.
+                    Connect with Stripe to receive payouts when you complete bookings.
                     You'll need to provide your legal name, SSN, and bank account details.
                   </p>
                   <Button
@@ -349,14 +349,14 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                     Payouts Enabled!
                   </h3>
                   <p className="text-sm text-gray-600 mb-4">
-                    Your payout account is fully set up. You'll receive instant payouts
-                    when you complete bookings.
+                    Your payout account is fully set up. You'll receive payouts
+                    when customers pay for completed bookings.
                   </p>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-left">
                     <div className="text-sm text-green-800 space-y-1">
                       <p><strong>Account ID:</strong> <span className="sm:hidden">{status.account_id?.slice(0, 12)}...</span><span className="hidden sm:inline">{status.account_id}</span></p>
                       <p><strong>Status:</strong> Verified & Active</p>
-                      <p><strong>Payout Method:</strong> Instant Transfer (1-2 business days)</p>
+                      <p><strong>Payout Schedule:</strong> Standard (2 business days)</p>
                     </div>
                   </div>
                   <Button
@@ -403,7 +403,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                       </svg>
                     </div>
                     <p className="ml-3">
-                      Payouts are transferred to your bank account (typically arrives within 1-2 business days)
+                      Stripe transfers funds to your bank account on a 2 business day rolling basis
                     </p>
                   </div>
                   <div className="flex items-start">
