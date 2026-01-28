@@ -1905,6 +1905,10 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         logger.info(`Deleted conversation for removed completed booking ${id}`);
       }
 
+      // Delete associated payment records first (foreign key constraint)
+      await pool.query(`DELETE FROM payments WHERE booking_id = $1`, [id]);
+      logger.info(`Deleted payment records for booking ${id}`);
+
       // Delete the booking
       await pool.query(`DELETE FROM bookings WHERE id = $1`, [id]);
       

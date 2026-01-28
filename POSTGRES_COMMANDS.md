@@ -1623,6 +1623,106 @@ sudo -u postgres psql -d campuscuts -c "SELECT stripe_account_id FROM users WHER
 
 ---
 
+## BARBER AVAILABILITY (Weekly Schedule)
+
+> **Note:** The `weeklySchedule` column is stored as JSONB in the `barbers` table. Each day has `enabled`, `start`, `end`, and optionally `intervals` for multi-slot schedules.
+
+### View All Barbers' Availability Settings
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name,
+    u.last_name,
+    u.email,
+    b.\"weeklySchedule\"
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+ORDER BY u.first_name;
+"
+```
+
+### View Barbers' Availability (Pretty Printed)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name || ' ' || u.last_name AS barber_name,
+    jsonb_pretty(b.\"weeklySchedule\") AS schedule
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+ORDER BY u.first_name;
+"
+```
+
+### View Specific Barber's Availability by Email
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT jsonb_pretty(b.\"weeklySchedule\") AS schedule
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE u.email = 'barber@example.com';
+"
+```
+
+### View Barbers WITH Availability Configured (At Least One Day Enabled)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name,
+    u.last_name,
+    u.email
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.\"weeklySchedule\" IS NOT NULL
+  AND (
+    (b.\"weeklySchedule\"->>'monday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'tuesday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'wednesday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'thursday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'friday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'saturday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'sunday')::jsonb->>'enabled' = 'true'
+  );
+"
+```
+
+### View Barbers WITHOUT Availability (No Days Enabled or NULL Schedule)
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name,
+    u.last_name,
+    u.email
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+WHERE b.\"weeklySchedule\" IS NULL
+   OR NOT (
+    (b.\"weeklySchedule\"->>'monday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'tuesday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'wednesday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'thursday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'friday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'saturday')::jsonb->>'enabled' = 'true' OR
+    (b.\"weeklySchedule\"->>'sunday')::jsonb->>'enabled' = 'true'
+  );
+"
+```
+
+### View Monday Availability for All Barbers
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT 
+    u.first_name || ' ' || u.last_name AS barber_name,
+    b.\"weeklySchedule\"->'monday'->>'enabled' AS monday_enabled,
+    b.\"weeklySchedule\"->'monday'->>'start' AS monday_start,
+    b.\"weeklySchedule\"->'monday'->>'end' AS monday_end
+FROM barbers b
+JOIN users u ON b.\"userId\" = u.id
+ORDER BY u.first_name;
+"
+```
+
+---
+
 ## PAYMENTS (Stripe Off-Chain)
 
 > **Note:** CampusCuts uses Stripe for all payments. Blockchain payment columns are deprecated.
