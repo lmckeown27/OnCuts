@@ -14,7 +14,8 @@
     "check": "npm run verify",
     "migrate:deploy": "npx prisma migrate deploy",
     "postinstall": "npx prisma generate",
-    "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts"
+    "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts",
+    "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts"
   },
   "keywords": [
     "aptos",

@@ -13,13 +13,11 @@ CREATE INDEX IF NOT EXISTS idx_users_stripe_payouts_enabled
   ON users(stripe_payouts_enabled) 
   WHERE stripe_payouts_enabled = true;
 
--- Update existing barbers: Set payouts_enabled to true for those with stripe_account_id
--- (This is a one-time backfill - assumes existing connected accounts were verified)
--- Note: You may want to verify this manually or run a script to check with Stripe API
-UPDATE users 
-SET stripe_payouts_enabled = true, stripe_charges_enabled = true
-WHERE stripe_account_id IS NOT NULL 
-  AND stripe_payouts_enabled IS NULL;
+-- NOTE: Do NOT auto-backfill as true - this would show restricted accounts to consumers
+-- Instead, run the sync script after migration to check each account with Stripe API:
+--   cd backend && npm run sync-stripe-status
+-- 
+-- This will query Stripe for each barber and set the correct status
 
 COMMENT ON COLUMN users.stripe_payouts_enabled IS 'Whether barber Stripe Connect account can receive payouts (false = restricted)';
 COMMENT ON COLUMN users.stripe_charges_enabled IS 'Whether barber Stripe Connect account can accept charges';
