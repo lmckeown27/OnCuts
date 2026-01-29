@@ -349,8 +349,8 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                     Payouts Enabled!
                   </h3>
                   <div className="text-sm text-gray-600 mb-4 space-y-1">
-                    <p>Your payout account is fully set up.</p>
-                    <p>You'll receive payouts when customers pay for completed bookings.</p>
+                    <p>Your payout account is fully set up</p>
+                    <p>You'll receive payouts when customers pay for completed bookings</p>
                   </div>
                   <Button
                     variant="primary"
