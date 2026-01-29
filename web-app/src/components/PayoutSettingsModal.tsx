@@ -329,50 +329,65 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                 </div>
               )}
 
-              {/* Verification In Progress */}
-              {status?.has_account && status.detailsSubmitted && !status.payoutsEnabled && (
-                <div className="text-center py-6">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
-                    <Clock className="h-8 w-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {status.requirements?.currently_due?.length || status.requirements?.past_due?.length
-                      ? 'Action Required'
-                      : 'Verification In Progress'}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {status.requirements?.currently_due?.length || status.requirements?.past_due?.length
-                      ? 'Stripe needs additional information to enable payouts. Click below to complete your setup.'
-                      : 'Stripe is verifying your account details. This usually takes a few minutes to a few hours.'}
-                  </p>
-                  
-                  {/* Show disabled reason if any */}
-                  {status.requirements?.disabled_reason && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-left">
-                      <p className="text-sm text-amber-800">
-                        <span className="font-medium">Issue: </span>
-                        {status.requirements.disabled_reason.replace(/_/g, ' ')}
-                      </p>
-                    </div>
-                  )}
+              {/* Verification In Progress or Action Required */}
+              {status?.has_account && status.detailsSubmitted && !status.payoutsEnabled && (() => {
+                // Determine if there are actionable requirements
+                const hasRequirements = !!(
+                  status.requirements?.currently_due?.length || 
+                  status.requirements?.past_due?.length ||
+                  status.requirements?.disabled_reason
+                );
+                
+                // Only show clock/pure verification when there's truly nothing to do
+                const isPureVerification = !hasRequirements;
+                
+                return (
+                  <div className="text-center py-6">
+                    {/* Only show clock icon for pure verification (no action needed) */}
+                    {isPureVerification && (
+                      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
+                        <Clock className="h-8 w-8 text-blue-600" />
+                      </div>
+                    )}
+                    
+                    {/* Show warning icon when action is required */}
+                    {!isPureVerification && (
+                      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-4">
+                        <AlertTriangle className="h-8 w-8 text-amber-600" />
+                      </div>
+                    )}
+                    
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {isPureVerification ? 'Verification In Progress' : 'Action Required'}
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {isPureVerification
+                        ? 'Stripe is verifying your account details. This usually takes a few minutes to a few hours.'
+                        : 'Stripe needs additional information to enable payouts. Click below to complete your setup.'}
+                    </p>
+                    
+                    {/* Show disabled reason if any */}
+                    {status.requirements?.disabled_reason && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-left">
+                        <p className="text-sm text-amber-800">
+                          <span className="font-medium">Issue: </span>
+                          {status.requirements.disabled_reason.replace(/_/g, ' ')}
+                        </p>
+                      </div>
+                    )}
 
-                  <div className="space-y-3">
-                    {(status.requirements?.currently_due?.length || status.requirements?.past_due?.length) ? (
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        onClick={handleContinueOnboarding}
-                        disabled={isCreatingAccount}
-                      >
-                        {isCreatingAccount ? 'Opening Stripe...' : 'Complete Requirements'}
-                      </Button>
-                    ) : null}
-                    <Button variant="secondary" onClick={checkConnectStatus}>
-                      Refresh Status
+                    {/* Always show button to go back into Stripe Connect */}
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={handleContinueOnboarding}
+                      disabled={isCreatingAccount}
+                    >
+                      {isCreatingAccount ? 'Opening Stripe...' : (isPureVerification ? 'Open Stripe Connect' : 'Complete Requirements')}
                     </Button>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Fully Enabled */}
               {status?.has_account && status.detailsSubmitted && status.payoutsEnabled && (
