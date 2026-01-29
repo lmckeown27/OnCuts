@@ -30,7 +30,8 @@ import {
   Bell,
   Lock,
   Pencil,
-  XCircle
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
