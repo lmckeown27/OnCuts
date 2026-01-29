@@ -102,8 +102,14 @@ export default function MobileConsumerPage() {
         lng: selectedUniversity.longitude,
       });
       
-      // Handle paginated response
-      const barberList = Array.isArray(response) ? response : response.data;
+      // Handle paginated response - ensure we have an array
+      const barberList = Array.isArray(response) ? response : (response?.data || []);
+      
+      // If no barbers returned, set empty array and exit early
+      if (!barberList || barberList.length === 0) {
+        setBarbers([]);
+        return;
+      }
       
       // Sort by distance from university
       // First try to find barbers within 5 miles, if none found show closest barbers
