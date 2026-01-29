@@ -145,6 +145,14 @@ export const getConnectStatus = async (
     // Get account status from Stripe
     const status = await stripeService.getAccountStatus(stripeAccountId);
 
+    // Sync database with current Stripe status
+    await pool.query(
+      `UPDATE users 
+       SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
+       WHERE id = $3`,
+      [status.payoutsEnabled, status.chargesEnabled, userId]
+    );
+
     res.status(200).json({
       success: true,
       data: {
@@ -230,6 +238,14 @@ export const handleOnboardingReturn = async (
     }
 
     const status = await stripeService.getAccountStatus(stripeAccountId);
+
+    // Update the database with current Stripe status
+    await pool.query(
+      `UPDATE users 
+       SET stripe_payouts_enabled = $1, stripe_charges_enabled = $2 
+       WHERE id = $3`,
+      [status.payoutsEnabled, status.chargesEnabled, userId]
+    );
 
     // Audit log
     logger.info('Stripe Connect onboarding completed', {

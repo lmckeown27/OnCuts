@@ -77,6 +77,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       JOIN users u ON b."userId" = u.id
       WHERE b."isActive" = true
         AND u.stripe_account_id IS NOT NULL
+        AND u.stripe_payouts_enabled = true
     `;
 
     // Handle campusId - can be UUID or slug

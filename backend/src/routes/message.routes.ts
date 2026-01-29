@@ -521,6 +521,7 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          AND b."userId" != $1
          AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
          AND u.stripe_account_id IS NOT NULL
+         AND u.stripe_payouts_enabled = true
        ORDER BY 
          b."isCampusManager" DESC,
          COALESCE(c.last_message_at, b."createdAt") DESC`,
