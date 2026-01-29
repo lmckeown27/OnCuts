@@ -1253,16 +1253,6 @@ export default function LandingPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <GraduationCap className="w-10 h-10 text-primary-600" />
-                </div>
-                <p className="text-gray-600 leading-relaxed">
-                  Campus Managers are student leaders who help grow the CampusCut community at their university. 
-                  They connect barbers with customers and ensure a great experience for everyone.
-                </p>
-              </div>
-
               <div className="bg-gray-50 rounded-xl p-6">
                 <h3 className="font-semibold text-gray-900 mb-3">How to Apply</h3>
                 <p className="text-gray-600 text-sm mb-4">
