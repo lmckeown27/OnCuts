@@ -1272,8 +1272,8 @@ export default function LandingPage() {
                 <p className="text-gray-600 text-sm mb-4">
                   To apply for the Campus Manager position, send an email to:
                 </p>
-                <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between gap-3">
-                  <p className="font-mono text-primary-600 font-medium text-lg select-all flex-1 text-center">
+                <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-4 flex items-center justify-between gap-2 sm:gap-3">
+                  <p className="font-mono text-primary-600 font-medium text-xs sm:text-lg select-all flex-1 text-center">
                     campuscuthelp@gmail.com
                   </p>
                   <button
