@@ -153,6 +153,7 @@ function AppContent() {
         {/* App - Consumer/Student Routes (Mobile-Optimized) */}
         <Route path="/app/consumer" element={<PlatformGuard requiredPlatform="app"><LazyRoute><MobileConsumerPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/consumer/booking-status" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ConsumerBookingStatusPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/app/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ScheduleServicePage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/discover" element={<PlatformGuard requiredPlatform="app"><LazyRoute><DiscoverBarbers customerId="user-temp" customerName="User" /></LazyRoute></PlatformGuard>} />
         <Route path="/app/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
