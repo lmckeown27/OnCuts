@@ -50,19 +50,9 @@ export default function MobileConsumerPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, setUser, logout, isLoading: isAuthLoading } = useAuthStore();
   
+  // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Wait for auth to finish loading before rendering
-  // This prevents white screen issues after login
-  if (isAuthLoading) {
-    return (
-      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
-        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
@@ -272,12 +262,14 @@ export default function MobileConsumerPage() {
     }, 300);
   };
 
-  // Show loading state while redirecting or fetching
-  if (!selectedUniversity || isLoading) {
+  // Show loading state while auth is loading, redirecting, or fetching
+  if (isAuthLoading || !selectedUniversity || isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
-        <p className="text-gray-600 text-center">Finding barbers near {selectedUniversity.shortName || selectedUniversity.name}...</p>
+        <p className="text-gray-600 text-center">
+          {isAuthLoading ? 'Loading...' : `Finding barbers near ${selectedUniversity?.shortName || selectedUniversity?.name || 'campus'}...`}
+        </p>
       </div>
     );
   }
