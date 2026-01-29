@@ -348,16 +348,9 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Payouts Enabled!
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Your payout account is fully set up. You'll receive payouts
-                    when customers pay for completed bookings.
-                  </p>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 text-left">
-                    <div className="text-sm text-green-800 space-y-1">
-                      <p><strong>Account ID:</strong> <span className="sm:hidden">{status.account_id?.slice(0, 12)}...</span><span className="hidden sm:inline">{status.account_id}</span></p>
-                      <p><strong>Status:</strong> Verified & Active</p>
-                      <p><strong>Payout Schedule:</strong> Standard (2 business days)</p>
-                    </div>
+                  <div className="text-sm text-gray-600 mb-4 space-y-1">
+                    <p>Your payout account is fully set up.</p>
+                    <p>You'll receive payouts when customers pay for completed bookings.</p>
                   </div>
                   <Button
                     variant="primary"
