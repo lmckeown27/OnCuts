@@ -368,15 +368,26 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Open Stripe Dashboard
                   </Button>
-                  <p className="text-xs text-gray-500 mt-4">
-                    View payouts, update bank details, and manage your account
+                  
+                  {/* Or divider */}
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-sm text-gray-500">Or</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  
+                  <p className="text-sm font-medium text-gray-900 text-center">
+                    Download the Stripe Express App
                   </p>
                 </div>
               )}
 
-              {/* How Payouts Work - Always visible */}
+              {/* Stripe Express App Info - Always visible */}
               <div className="border-t border-gray-200 mt-6 pt-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">How Payouts Work</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Stripe Express App</h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  The Stripe Express app lets you track your earnings, view payout history, and manage your bank account right from your phone.
+                </p>
                 <div className="space-y-3 text-sm text-gray-600">
                   <div className="flex items-start">
                     <div className="flex-shrink-0 h-5 w-5 text-primary-600 mt-0.5">
@@ -389,7 +400,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                       </svg>
                     </div>
                     <p className="ml-3">
-                      When a student pays for a completed booking, funds are securely transferred to your connected Stripe account
+                      Search "Stripe Express" in the App Store (iOS) or Google Play (Android)
                     </p>
                   </div>
                   <div className="flex items-start">
@@ -403,7 +414,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                       </svg>
                     </div>
                     <p className="ml-3">
-                      Stripe transfers funds to your bank account on a 2 business day rolling basis
+                      Sign in with the same email you used for your Stripe Connect account
                     </p>
                   </div>
                   <div className="flex items-start">
@@ -417,7 +428,7 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                       </svg>
                     </div>
                     <p className="ml-3">
-                      All payments are processed securely by Stripe
+                      View real-time earnings, payout schedule, and update your bank details anytime
                     </p>
                   </div>
                 </div>
