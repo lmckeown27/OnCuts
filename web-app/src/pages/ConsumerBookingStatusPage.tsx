@@ -13,6 +13,7 @@ import api from '../services/api.service';
 import notificationService, { Notification } from '../services/notification.service';
 import { useAuthStore } from '../store/useAuthStore';
 import Button from '../components/Button';
+import Loading from '../components/Loading';
 import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import TimePickerDropdown from '../components/TimePickerDropdown';
@@ -50,10 +51,15 @@ export default function ConsumerBookingStatusPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { user } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Wait for auth to finish loading before rendering
+  if (isAuthLoading) {
+    return <Loading />;
+  }
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);

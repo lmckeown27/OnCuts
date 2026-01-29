@@ -18,7 +18,8 @@ import {
   MapPin,
   User,
   Scissors,
-  MessageCircle
+  MessageCircle,
+  Loader2
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -44,9 +45,18 @@ export default function BookingPaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingDetails = location.state as BookingDetails;
-  const { user } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
 
   const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'error'>('confirm');
+  
+  // Wait for auth to finish loading before rendering
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
   const [bookingId, setBookingId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 

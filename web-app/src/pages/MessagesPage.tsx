@@ -122,12 +122,21 @@ export default function MessagesPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
   const location = useLocation();
-  const { user } = useAuthStore();
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   const platform = usePlatform();
   const platformPrefix = `/${platform}`;
   
   // Handle dynamic viewport height for mobile browser bar changes
   useDynamicViewportHeight();
+  
+  // Wait for auth to finish loading before rendering
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
   
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithDetails | null>(null);
