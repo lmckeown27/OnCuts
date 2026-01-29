@@ -200,8 +200,14 @@ export default function ConsumerPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   
   // Get consumer ID from auth
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
   const consumerId = user?.id || '';
+  
+  // Wait for auth to finish loading before rendering
+  // This prevents white screen issues after login
+  if (isAuthLoading) {
+    return <Loading />;
+  }
   
   // Check for active bookings and redirect to booking status page
   useEffect(() => {

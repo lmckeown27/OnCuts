@@ -48,10 +48,21 @@ export default function MobileConsumerPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
-  const { user, setUser, logout } = useAuthStore();
+  const { user, setUser, logout, isLoading: isAuthLoading } = useAuthStore();
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Wait for auth to finish loading before rendering
+  // This prevents white screen issues after login
+  if (isAuthLoading) {
+    return (
+      <div className="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center p-6">
+        <Loader2 className="w-10 h-10 text-primary-500 animate-spin mb-4" />
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
