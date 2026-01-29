@@ -58,6 +58,8 @@ export default function LandingPage() {
   
   // Campus Manager section state
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
+  const [showCampusManagerInfo, setShowCampusManagerInfo] = useState(false);
+  const [campusManagerInfoVisible, setCampusManagerInfoVisible] = useState(false);
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
@@ -133,6 +135,17 @@ export default function LandingPage() {
       setContactSubmitted(false);
       setContactForm({ name: '', email: '', message: '' });
     }, 200);
+  };
+
+  // Campus Manager info popup handlers
+  const openCampusManagerInfo = () => {
+    setShowCampusManagerInfo(true);
+    setTimeout(() => setCampusManagerInfoVisible(true), 10);
+  };
+
+  const closeCampusManagerInfo = () => {
+    setCampusManagerInfoVisible(false);
+    setTimeout(() => setShowCampusManagerInfo(false), 200);
   };
 
   // Handle scroll for sticky navigation
@@ -540,30 +553,26 @@ export default function LandingPage() {
                 {/* Desktop: Show "Become a Campus Manager" button below dropdown when no campus selected */}
                 {!selectedCampus && (
                   <div className="hidden md:flex justify-center">
-                    <a
-                      href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent('Campus Manager for [Your Campus]')}&body=${encodeURIComponent('Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at [Your Campus].\n\nPlease let me know the next steps in the application process.\n\nThank you!')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={openCampusManagerInfo}
                       className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
                       <Mail className="w-6 h-6" />
                       <span>Become a Campus Manager</span>
-                    </a>
+                    </button>
                   </div>
                 )}
 
                 {/* Desktop: Show apply button below dropdown when campus has no manager */}
                 {selectedCampus && !selectedCampus.manager && (
                   <div className="hidden md:flex justify-center">
-                    <a
-                      href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent(`Campus Manager for ${selectedCampus.campusName}`)}&body=${encodeURIComponent(`Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at ${selectedCampus.campusName}.\n\nPlease let me know the next steps in the application process.\n\nThank you!`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={openCampusManagerInfo}
                       className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
                     >
                       <Mail className="w-6 h-6" />
                       <span>Apply for This Position</span>
-                    </a>
+                    </button>
                   </div>
                 )}
 
@@ -578,15 +587,13 @@ export default function LandingPage() {
                       <p className="text-gray-400 text-sm max-w-xs mx-auto mb-4">
                         Choose your campus from the dropdown to meet your dedicated human Campus Manager.
                       </p>
-                      <a
-                        href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent('Campus Manager for [Your Campus]')}&body=${encodeURIComponent('Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at [Your Campus].\n\nPlease let me know the next steps in the application process.\n\nThank you!')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={openCampusManagerInfo}
                         className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                       >
                         <Mail className="w-4 h-4" />
                         <span>Become a Campus Manager</span>
-                      </a>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -655,15 +662,13 @@ export default function LandingPage() {
                               We're currently searching for a Campus Manager for this location.
                             </p>
                           </div>
-                          <a
-                            href={`mailto:campuscuthelp@gmail.com?subject=${encodeURIComponent(`Campus Manager for ${selectedCampus.campusName}`)}&body=${encodeURIComponent(`Hi CampusCut Team,\n\nI am interested in applying for the Campus Manager position at ${selectedCampus.campusName}.\n\nPlease let me know the next steps in the application process.\n\nThank you!`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={openCampusManagerInfo}
                             className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                           >
                             <Mail className="w-4 h-4" />
                             <span>Apply for This Position</span>
-                          </a>
+                          </button>
                         </>
                       )}
                     </div>
@@ -1223,6 +1228,63 @@ export default function LandingPage() {
                 </p>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Campus Manager Application Info Popup */}
+      {showCampusManagerInfo && (
+        <div 
+          className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${campusManagerInfoVisible ? 'opacity-100' : 'opacity-0'}`}
+          onClick={closeCampusManagerInfo}
+        >
+          <div 
+            className={`bg-white rounded-3xl p-8 max-w-lg w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto transition-all duration-200 ${campusManagerInfoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Become a Campus Manager</h2>
+              <button
+                onClick={closeCampusManagerInfo}
+                className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <GraduationCap className="w-10 h-10 text-primary-600" />
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  Campus Managers are student leaders who help grow the CampusCut community at their university. 
+                  They connect barbers with customers and ensure a great experience for everyone.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="font-semibold text-gray-900 mb-3">How to Apply</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  To apply for the Campus Manager position, send an email to:
+                </p>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                  <p className="font-mono text-primary-600 font-medium text-lg select-all">
+                    campuscuthelp@gmail.com
+                  </p>
+                </div>
+                <p className="text-gray-500 text-sm mt-4">
+                  Please include your name, university, and a brief explanation of why you'd be a great Campus Manager.
+                </p>
+              </div>
+
+              <button
+                onClick={closeCampusManagerInfo}
+                className="w-full px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Got it
+              </button>
+            </div>
           </div>
         </div>
       )}
