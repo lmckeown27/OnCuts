@@ -48,15 +48,6 @@ export default function BookingPaymentPage() {
   const { user, isLoading: isAuthLoading } = useAuthStore();
 
   const [step, setStep] = useState<'confirm' | 'processing' | 'success' | 'error'>('confirm');
-  
-  // Wait for auth to finish loading before rendering
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-      </div>
-    );
-  }
   const [bookingId, setBookingId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -108,6 +99,16 @@ export default function BookingPaymentPage() {
       setStep('error');
     }
   };
+
+  // Wait for auth to finish loading before rendering
+  // This check is placed after all hooks to comply with React's Rules of Hooks
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   // Not authenticated - redirect to login
   if (!user) {

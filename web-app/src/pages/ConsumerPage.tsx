@@ -203,11 +203,8 @@ export default function ConsumerPage() {
   const { user, setUser, isLoading: isAuthLoading } = useAuthStore();
   const consumerId = user?.id || '';
   
-  // Wait for auth to finish loading before rendering
-  // This prevents white screen issues after login
-  if (isAuthLoading) {
-    return <Loading />;
-  }
+  // NOTE: isAuthLoading check is moved to the return statement below
+  // to avoid violating React's Rules of Hooks (no early returns before hooks)
   
   // Check for active bookings and redirect to booking status page
   useEffect(() => {
@@ -476,6 +473,12 @@ export default function ConsumerPage() {
   const handlePullToRefresh = async () => {
     window.location.reload();
   };
+
+  // Wait for auth to finish loading before rendering
+  // This check is placed after all hooks to comply with React's Rules of Hooks
+  if (isAuthLoading) {
+    return <Loading />;
+  }
 
   return (
     <PullToRefresh onRefresh={handlePullToRefresh} className="min-h-screen bg-gray-50" disabled={isAnyModalOpen}>

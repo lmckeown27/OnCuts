@@ -53,13 +53,9 @@ export default function ConsumerBookingStatusPage() {
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, isLoading: isAuthLoading } = useAuthStore();
   
+  // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Wait for auth to finish loading before rendering
-  if (isAuthLoading) {
-    return <Loading />;
-  }
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [isProfileEditorVisible, setIsProfileEditorVisible] = useState(false);
@@ -548,6 +544,12 @@ export default function ConsumerBookingStatusPage() {
       setShowProfileEditor(false);
     }, 150);
   };
+
+  // Wait for auth to finish loading before rendering
+  // This check is placed after all hooks to comply with React's Rules of Hooks
+  if (isAuthLoading) {
+    return <Loading />;
+  }
 
   return (
     <PullToRefresh onRefresh={() => window.location.reload()} className="min-h-[100dvh] bg-gray-50" disabled={isAnyModalOpen}>

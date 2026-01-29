@@ -476,15 +476,6 @@ export default function PostServicePaymentPage() {
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Wait for auth to finish loading before rendering
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-      </div>
-    );
-  }
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
 
@@ -578,6 +569,16 @@ export default function PostServicePaymentPage() {
       }
     }, 2000);
   };
+
+  // Wait for auth to finish loading before rendering
+  // This check is placed after all hooks to comply with React's Rules of Hooks
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

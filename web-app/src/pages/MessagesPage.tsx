@@ -130,15 +130,7 @@ export default function MessagesPage() {
   // Handle dynamic viewport height for mobile browser bar changes
   useDynamicViewportHeight();
   
-  // Wait for auth to finish loading before rendering
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-      </div>
-    );
-  }
-  
+  // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithDetails | null>(null);
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
@@ -1230,6 +1222,16 @@ export default function MessagesPage() {
       </div>
     );
   };
+
+  // Wait for auth to finish loading before rendering
+  // This check is placed after all hooks to comply with React's Rules of Hooks
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
