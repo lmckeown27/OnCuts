@@ -285,14 +285,36 @@ class StripeService {
     detailsSubmitted: boolean;
     chargesEnabled: boolean;
     payoutsEnabled: boolean;
+    requirements?: {
+      currently_due: string[];
+      eventually_due: string[];
+      past_due: string[];
+      disabled_reason: string | null;
+    };
   }> {
     try {
       const account = await this.stripe.accounts.retrieve(accountId);
+
+      // Log requirements for debugging
+      if (account.requirements) {
+        logger.info(`Stripe account ${accountId} requirements:`, {
+          currently_due: account.requirements.currently_due,
+          eventually_due: account.requirements.eventually_due,
+          past_due: account.requirements.past_due,
+          disabled_reason: account.requirements.disabled_reason,
+        });
+      }
 
       return {
         detailsSubmitted: account.details_submitted || false,
         chargesEnabled: account.charges_enabled || false,
         payoutsEnabled: account.payouts_enabled || false,
+        requirements: account.requirements ? {
+          currently_due: account.requirements.currently_due || [],
+          eventually_due: account.requirements.eventually_due || [],
+          past_due: account.requirements.past_due || [],
+          disabled_reason: account.requirements.disabled_reason || null,
+        } : undefined,
       };
     } catch (error) {
       logger.error(`Failed to get account status for ${accountId}:`, error);

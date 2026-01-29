@@ -25,6 +25,12 @@ interface ConnectStatus {
   detailsSubmitted: boolean;
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
+  requirements?: {
+    currently_due: string[];
+    eventually_due: string[];
+    past_due: string[];
+    disabled_reason: string | null;
+  };
 }
 
 export default function PayoutSettingsModal({ isOpen, onClose, preventClose = false, onStatusChange }: PayoutSettingsModalProps) {
@@ -330,15 +336,41 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
                     <Clock className="h-8 w-8 text-blue-600" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Verification In Progress
+                    {status.requirements?.currently_due?.length || status.requirements?.past_due?.length
+                      ? 'Action Required'
+                      : 'Verification In Progress'}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Stripe is verifying your account details. This usually takes a few minutes to a few hours.
-                    You'll be notified once verification is complete.
+                  <p className="text-sm text-gray-600 mb-4">
+                    {status.requirements?.currently_due?.length || status.requirements?.past_due?.length
+                      ? 'Stripe needs additional information to enable payouts. Click below to complete your setup.'
+                      : 'Stripe is verifying your account details. This usually takes a few minutes to a few hours.'}
                   </p>
-                  <Button variant="secondary" onClick={checkConnectStatus}>
-                    Refresh Status
-                  </Button>
+                  
+                  {/* Show disabled reason if any */}
+                  {status.requirements?.disabled_reason && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-left">
+                      <p className="text-sm text-amber-800">
+                        <span className="font-medium">Issue: </span>
+                        {status.requirements.disabled_reason.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    {(status.requirements?.currently_due?.length || status.requirements?.past_due?.length) ? (
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={handleContinueOnboarding}
+                        disabled={isCreatingAccount}
+                      >
+                        {isCreatingAccount ? 'Opening Stripe...' : 'Complete Requirements'}
+                      </Button>
+                    ) : null}
+                    <Button variant="secondary" onClick={checkConnectStatus}>
+                      Refresh Status
+                    </Button>
+                  </div>
                 </div>
               )}
 
