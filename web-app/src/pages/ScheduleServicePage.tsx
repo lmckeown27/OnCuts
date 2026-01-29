@@ -17,6 +17,9 @@ export default function ScheduleServicePage() {
   const { barberId } = useParams<{ barberId: string }>();
   const location = useLocation();
   
+  // Determine platform prefix for navigation
+  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  
   // Get passed data from state
   const passedBarber = location.state?.barber as Barber | undefined;
   const passedFilters = location.state?.filters as FilterCriteria | undefined;
@@ -168,7 +171,7 @@ export default function ScheduleServicePage() {
         || 'Barber';
 
       // Navigate to payment page with booking details
-      navigate('/web/student/booking/payment', {
+      navigate(`${platformPrefix}/student/booking/payment`, {
         state: {
           barberId: barberId,
           barberUserId: barber?.user_id, // User ID for messaging
@@ -205,7 +208,7 @@ export default function ScheduleServicePage() {
       <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Barber not found</p>
-          <Button onClick={() => navigate('/web/consumer')}>
+          <Button onClick={() => navigate(`${platformPrefix}/consumer`)}>
             Back to Discovery
           </Button>
         </div>
@@ -220,7 +223,7 @@ export default function ScheduleServicePage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/web/consumer', {
+              onClick={() => navigate(`${platformPrefix}/consumer`, {
                 state: {
                   preservedFormData: {
                     barberId,
@@ -447,7 +450,7 @@ export default function ScheduleServicePage() {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => navigate('/web/consumer')}
+                    onClick={() => navigate(`${platformPrefix}/consumer`)}
                     className="flex-1"
                   >
                     Cancel
