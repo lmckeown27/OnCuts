@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors, ArrowRight } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors, ArrowRight, Copy, Check } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -60,6 +60,7 @@ export default function LandingPage() {
   const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
   const [showCampusManagerInfo, setShowCampusManagerInfo] = useState(false);
   const [campusManagerInfoVisible, setCampusManagerInfoVisible] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
@@ -145,7 +146,20 @@ export default function LandingPage() {
 
   const closeCampusManagerInfo = () => {
     setCampusManagerInfoVisible(false);
-    setTimeout(() => setShowCampusManagerInfo(false), 200);
+    setTimeout(() => {
+      setShowCampusManagerInfo(false);
+      setEmailCopied(false);
+    }, 200);
+  };
+
+  const copyEmailToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText('campuscuthelp@gmail.com');
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy email:', err);
+    }
   };
 
   // Handle scroll for sticky navigation
@@ -1258,10 +1272,17 @@ export default function LandingPage() {
                 <p className="text-gray-600 text-sm mb-4">
                   To apply for the Campus Manager position, send an email to:
                 </p>
-                <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <p className="font-mono text-primary-600 font-medium text-lg select-all">
+                <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between gap-3">
+                  <p className="font-mono text-primary-600 font-medium text-lg select-all flex-1 text-center">
                     campuscuthelp@gmail.com
                   </p>
+                  <button
+                    onClick={copyEmailToClipboard}
+                    className={`p-2 rounded-lg transition-all ${emailCopied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`}
+                    title={emailCopied ? 'Copied!' : 'Copy email'}
+                  >
+                    {emailCopied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </button>
                 </div>
                 <p className="text-gray-500 text-sm mt-4">
                   Please include your name, university, and a brief explanation of why you'd be a great Campus Manager.
