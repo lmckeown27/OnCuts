@@ -177,6 +177,20 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         [barber.id]
       );
       
+      // Get barber's assigned service locations
+      const locationsResult = await pool.query(
+        `SELECT 
+          sl.id,
+          sl.name,
+          sl.description,
+          bsl.is_primary
+        FROM barber_service_locations bsl
+        JOIN service_locations sl ON bsl.location_id = sl.id
+        WHERE bsl.barber_id = $1 AND sl.status = 'approved' AND sl.is_active = true
+        ORDER BY bsl.is_primary DESC, sl.name ASC`,
+        [barber.id]
+      );
+      
       // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services
       const customPricing = barber.pricing || [];
       const servicePricing = servicesResult.rows.map(s => ({
@@ -193,6 +207,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         distance_miles: barber.distance_km !== null ? Math.round(barber.distance_km * 0.621371 * 10) / 10 : null,
         pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
+        service_locations: locationsResult.rows,
       };
     }));
 
@@ -527,6 +542,20 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       [id]
     );
 
+    // Get barber's assigned service locations
+    const locationsResult = await pool.query(
+      `SELECT 
+        sl.id,
+        sl.name,
+        sl.description,
+        bsl.is_primary
+      FROM barber_service_locations bsl
+      JOIN service_locations sl ON bsl.location_id = sl.id
+      WHERE bsl.barber_id = $1 AND sl.status = 'approved' AND sl.is_active = true
+      ORDER BY bsl.is_primary DESC, sl.name ASC`,
+      [id]
+    );
+
     // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services table
     const customPricing = barber.pricing || [];
     const servicePricing = servicesResult.rows.map(s => ({
@@ -542,6 +571,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
+        service_locations: locationsResult.rows,
       },
     });
   } catch (error) {

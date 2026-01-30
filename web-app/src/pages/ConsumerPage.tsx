@@ -1544,37 +1544,85 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                     )}
                     
                     {/* Availability */}
-                    {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                          <span>Availability</span>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                          {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
-                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-center">
-                              <div className="font-semibold text-gray-800 text-sm">{day}</div>
-                              <div className="flex flex-col gap-0.5">
-                                {times.split(', ').map((timeSlot, idx) => (
-                                  <div key={idx} className="text-xs text-gray-600 whitespace-nowrap">{timeSlot}</div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                                    {selectedBarber.weekly_schedule && formatSchedule(selectedBarber.weekly_schedule).length > 0 && (
+                                      <div>
+                                        <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
+                                          <span>Availability</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                                          {formatSchedule(selectedBarber.weekly_schedule).map(({ day, times }) => (
+                                            <div key={day} className="bg-gray-50 rounded-lg px-3 py-1.5 sm:px-4 sm:py-2 text-center">
+                                              <div className="font-semibold text-gray-800 text-sm">{day}</div>
+                                              <div className="flex flex-col gap-0.5">
+                                                {times.split(', ').map((timeSlot, idx) => (
+                                                  <div key={idx} className="text-xs text-gray-600 whitespace-nowrap">{timeSlot}</div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {/* Locations - Mobile Only */}
+                                    {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
+                                      <div className="sm:hidden mt-4">
+                                        <div className="flex items-center justify-center text-gray-700 font-medium mb-3">
+                                          <MapPin className="w-4 h-4 mr-2 text-primary-500" />
+                                          <span>Locations</span>
+                                        </div>
+                                        <div className="flex flex-wrap justify-center gap-2">
+                                          {selectedBarber.service_locations.map((location: { id: string; name: string; is_primary?: boolean }) => (
+                                            <span
+                                              key={location.id}
+                                              className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                                                location.is_primary
+                                                  ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                                                  : 'bg-gray-100 text-gray-700'
+                                              }`}
+                                            >
+                                              {location.name}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                 
-                {/* Bio Section - Full width below */}
-                {selectedBarber.bio && (
-                  <div className="pt-4 sm:pt-6 border-t border-gray-100">
-                    <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                      <span>About</span>
-                    </div>
-                    <p className="text-gray-600 sm:text-lg leading-relaxed">{selectedBarber.bio}</p>
-                  </div>
-                )}
+                {/* Locations Section - Desktop Only (above About) */}
+                                {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
+                                  <div className="hidden sm:block pt-4 sm:pt-6 border-t border-gray-100">
+                                    <div className="flex items-center justify-start text-gray-700 font-medium mb-3 sm:text-lg">
+                                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary-500" />
+                                      <span>Locations</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                                      {selectedBarber.service_locations.map((location: { id: string; name: string; is_primary?: boolean }) => (
+                                        <span
+                                          key={location.id}
+                                          className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                                            location.is_primary
+                                              ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                                              : 'bg-gray-100 text-gray-700'
+                                          }`}
+                                        >
+                                          {location.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Bio Section - Full width below */}
+                                {selectedBarber.bio && (
+                                  <div className="pt-4 sm:pt-6 border-t border-gray-100">
+                                    <div className="flex items-center justify-center sm:justify-start text-gray-700 font-medium mb-3 sm:text-lg">
+                                      <span>About</span>
+                                    </div>
+                                    <p className="text-gray-600 sm:text-lg leading-relaxed">{selectedBarber.bio}</p>
+                                  </div>
+                                )}
               </div>
             </div>
             
