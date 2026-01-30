@@ -607,6 +607,18 @@ class MessageService {
               messageContent: content,
               conversationId,
             });
+          } else if (
+            (senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && 
+            (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')
+          ) {
+            // Admin/Campus Manager communicating with each other - use barber-to-barber template
+            await sendBarberToBarberMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+            });
           }
           // Note: Consumer-to-consumer messaging is not a typical use case, so no email for that
         }
