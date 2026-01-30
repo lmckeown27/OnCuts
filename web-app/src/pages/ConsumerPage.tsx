@@ -1568,7 +1568,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                     {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
                                       <div className="sm:hidden mt-4">
                                         <div className="flex items-center justify-center text-gray-700 font-medium mb-3">
-                                          <MapPin className="w-4 h-4 mr-2 text-primary-500" />
                                           <span>Locations</span>
                                         </div>
                                         <div className="flex flex-wrap justify-center gap-2">
@@ -1594,7 +1593,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                 {selectedBarber.service_locations && selectedBarber.service_locations.length > 0 && (
                                   <div className="hidden sm:block pt-4 sm:pt-6 border-t border-gray-100">
                                     <div className="flex items-center justify-start text-gray-700 font-medium mb-3 sm:text-lg">
-                                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-primary-500" />
                                       <span>Locations</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2 sm:gap-3">
