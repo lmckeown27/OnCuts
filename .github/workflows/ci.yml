@@ -82,7 +82,7 @@ jobs:
           JWT_SECRET: test_secret
           NODE_ENV: test
           APTOS_NODE_URL: https://fullnode.devnet.aptoslabs.com/v1
-          APTOS_PLATFORM_ADDRESS: 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
+          APTOS_PLATFORM_ADDRESS: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
   # ═══════════════════════════════════════════════════════════
   #  BUILD BACKEND
