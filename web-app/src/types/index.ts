@@ -23,12 +23,15 @@ export interface User {
 export interface Campus {
   id: string;
   name: string;
+  slug?: string;
   domain: string;
   city: string;
   state: string;
-  country: string;
-  timezone: string;
-  is_active: boolean;
+  country?: string;
+  timezone?: string;
+  is_active?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 // Time interval for availability (Calendly-style)

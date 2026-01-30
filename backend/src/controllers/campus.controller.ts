@@ -5,12 +5,24 @@ import { AuthRequest } from '../middleware/auth';
 
 export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const result = await pool.query(
-      `SELECT id, name, city, state, domain 
-       FROM campuses 
-       WHERE "isActive" = TRUE 
-       ORDER BY name`
-    );
+    const { search } = req.query;
+    
+    let query = `
+      SELECT id, name, slug, city, state, domain, latitude, longitude 
+      FROM campuses 
+      WHERE "isActive" = TRUE
+    `;
+    const params: string[] = [];
+    
+    // Optional search filter
+    if (search && typeof search === 'string' && search.length >= 1) {
+      params.push(`%${search.toLowerCase()}%`);
+      query += ` AND (LOWER(name) LIKE $1 OR LOWER(city) LIKE $1 OR LOWER(slug) LIKE $1)`;
+    }
+    
+    query += ` ORDER BY name`;
+    
+    const result = await pool.query(query, params);
 
     res.json({
       success: true,

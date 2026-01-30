@@ -247,6 +247,8 @@ export const US_UNIVERSITIES: University[] = [
   
   // U
   { id: "uab", name: "University of Alabama at Birmingham", city: "Birmingham", state: "AL", latitude: 33.5021, longitude: -86.8086, shortName: "UAB" },
+  { id: "utah", name: "University of Utah", city: "Salt Lake City", state: "UT", latitude: 40.7649, longitude: -111.8421, shortName: "Utah" },
+  { id: "utah-state", name: "Utah State University", city: "Logan", state: "UT", latitude: 41.7420, longitude: -111.8097, shortName: "Utah State" },
   { id: "uc-berkeley", name: "University of California, Berkeley", city: "Berkeley", state: "CA", latitude: 37.8719, longitude: -122.2585, shortName: "UC Berkeley" },
   { id: "uc-davis", name: "University of California, Davis", city: "Davis", state: "CA", latitude: 38.5382, longitude: -121.7617, shortName: "UC Davis" },
   { id: "uc-irvine", name: "University of California, Irvine", city: "Irvine", state: "CA", latitude: 33.6405, longitude: -117.8443, shortName: "UC Irvine" },

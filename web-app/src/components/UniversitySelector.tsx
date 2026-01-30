@@ -2,22 +2,94 @@
  * UniversitySelector Component
  * 
  * Searchable dropdown for selecting a US university.
+ * Fetches universities from the database API.
+ * 
  * Features:
  * - Type-ahead search with autocomplete
  * - Shows university name, city, and state
  * - Keyboard navigation support
  * - Mobile-friendly touch targets
+ * - Caches results to reduce API calls
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, ChevronDown, X, GraduationCap } from 'lucide-react';
-import { searchUniversities, type University } from '../data/universities';
+import { Search, ChevronDown, X, GraduationCap, Loader2 } from 'lucide-react';
+import campusService from '../services/campus.service';
+import type { Campus } from '../types';
+
+// Re-export Campus as University for backward compatibility
+export type University = Campus;
 
 interface UniversitySelectorProps {
-  value: University | null;
-  onChange: (university: University | null) => void;
+  value: Campus | null;
+  onChange: (university: Campus | null) => void;
   placeholder?: string;
   className?: string;
+}
+
+// Cache for all universities (loaded once)
+let universitiesCache: Campus[] | null = null;
+let cachePromise: Promise<Campus[]> | null = null;
+
+// Load all universities (with caching)
+async function loadUniversities(): Promise<Campus[]> {
+  if (universitiesCache) {
+    return universitiesCache;
+  }
+  
+  if (cachePromise) {
+    return cachePromise;
+  }
+  
+  cachePromise = campusService.getCampuses().then(campuses => {
+    universitiesCache = campuses;
+    return campuses;
+  });
+  
+  return cachePromise;
+}
+
+// Search universities client-side (after loading all)
+function searchUniversities(universities: Campus[], query: string, limit: number = 8): Campus[] {
+  if (!query || query.length < 1) return [];
+  
+  const lowerQuery = query.toLowerCase();
+  
+  // Split into exact start matches and contains matches
+  const startsWithMatches: Campus[] = [];
+  const containsMatches: Campus[] = [];
+  
+  for (const uni of universities) {
+    const nameLower = uni.name.toLowerCase();
+    const slugLower = uni.slug?.toLowerCase() || '';
+    const cityLower = uni.city.toLowerCase();
+    
+    // Check if name or slug STARTS with the query
+    if (nameLower.startsWith(lowerQuery) || slugLower.startsWith(lowerQuery)) {
+      startsWithMatches.push(uni);
+    } 
+    // Otherwise check if it contains the query anywhere
+    else if (
+      nameLower.includes(lowerQuery) ||
+      slugLower.includes(lowerQuery) ||
+      cityLower.includes(lowerQuery)
+    ) {
+      containsMatches.push(uni);
+    }
+  }
+  
+  // Return starts-with matches first, then contains matches
+  return [...startsWithMatches, ...containsMatches].slice(0, limit);
+}
+
+// Helper to get display name (use slug as shortName if it's short enough)
+function getDisplayName(uni: Campus): { shortName?: string; fullName: string } {
+  const slug = uni.slug?.toUpperCase().replace(/-/g, ' ');
+  // If slug is significantly shorter than name, treat it as a short name
+  if (slug && slug.length <= 10 && slug.length < uni.name.length * 0.5) {
+    return { shortName: slug, fullName: uni.name };
+  }
+  return { fullName: uni.name };
 }
 
 export default function UniversitySelector({
@@ -28,22 +100,42 @@ export default function UniversitySelector({
 }: UniversitySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [results, setResults] = useState<University[]>([]);
+  const [results, setResults] = useState<Campus[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [allUniversities, setAllUniversities] = useState<Campus[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Load universities on mount
+  useEffect(() => {
+    setIsLoading(true);
+    setLoadError(null);
+    
+    loadUniversities()
+      .then(unis => {
+        setAllUniversities(unis);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load universities:', err);
+        setLoadError('Failed to load universities');
+        setIsLoading(false);
+      });
+  }, []);
+
   // Search universities when query changes
   useEffect(() => {
-    if (searchQuery.length >= 1) {
-      const matches = searchUniversities(searchQuery, 8);
+    if (searchQuery.length >= 1 && allUniversities.length > 0) {
+      const matches = searchUniversities(allUniversities, searchQuery, 8);
       setResults(matches);
       setHighlightedIndex(0);
     } else {
       setResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, allUniversities]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -89,7 +181,7 @@ export default function UniversitySelector({
   }, [isOpen, results, highlightedIndex]);
 
   // Handle selection
-  const handleSelect = (university: University) => {
+  const handleSelect = (university: Campus) => {
     onChange(university);
     setSearchQuery('');
     setIsOpen(false);
@@ -99,11 +191,19 @@ export default function UniversitySelector({
   // Clear selection
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onChange(null); // Notify parent to clear selection
+    onChange(null);
     setSearchQuery('');
     setResults([]);
     setIsOpen(true);
     inputRef.current?.focus();
+  };
+
+  // Get display value for input
+  const getInputDisplayValue = () => {
+    if (value) {
+      return `${value.name} — ${value.city}, ${value.state}`;
+    }
+    return searchQuery;
   };
 
   return (
@@ -117,7 +217,7 @@ export default function UniversitySelector({
         <input
           ref={inputRef}
           type="text"
-          value={value ? `${value.shortName || value.name} — ${value.city}, ${value.state}` : searchQuery}
+          value={getInputDisplayValue()}
           onChange={(e) => {
             setSearchQuery(e.target.value);
             if (!isOpen) setIsOpen(true);
@@ -135,7 +235,6 @@ export default function UniversitySelector({
               onChange(null);
               setSearchQuery('');
               setIsOpen(true);
-              // Focus will happen automatically
             }
           }}
         />
@@ -149,7 +248,11 @@ export default function UniversitySelector({
           </button>
         ) : (
           <div className="pr-4 text-gray-400">
-            <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            )}
           </div>
         )}
       </div>
@@ -160,10 +263,38 @@ export default function UniversitySelector({
           ref={dropdownRef}
           className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto"
         >
-          {searchQuery.length === 0 ? (
+          {isLoading ? (
+            <div className="p-4 text-center text-gray-500">
+              <Loader2 className="w-8 h-8 mx-auto mb-2 text-primary-400 animate-spin" />
+              <p>Loading universities...</p>
+            </div>
+          ) : loadError ? (
+            <div className="p-4 text-center text-red-500">
+              <GraduationCap className="w-8 h-8 mx-auto mb-2 text-red-300" />
+              <p>{loadError}</p>
+              <button 
+                onClick={() => {
+                  universitiesCache = null;
+                  cachePromise = null;
+                  setIsLoading(true);
+                  loadUniversities()
+                    .then(unis => {
+                      setAllUniversities(unis);
+                      setIsLoading(false);
+                      setLoadError(null);
+                    })
+                    .catch(() => setIsLoading(false));
+                }}
+                className="mt-2 text-sm text-primary-600 hover:underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : searchQuery.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
               <p>Start typing to search</p>
+              <p className="text-xs mt-1 text-gray-400">{allUniversities.length} universities available</p>
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
@@ -173,31 +304,34 @@ export default function UniversitySelector({
             </div>
           ) : (
             <ul className="py-2">
-              {results.map((university, index) => (
-                <li key={university.id}>
-                  <button
-                    onClick={() => handleSelect(university)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full px-4 py-3 text-left transition-colors ${
-                      index === highlightedIndex
-                        ? 'bg-primary-50 text-primary-900'
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <p className="font-medium text-gray-900">
-                      {university.shortName ? (
-                        <>
-                          {university.shortName}
-                          <span className="font-normal text-gray-500"> - {university.name}</span>
-                        </>
-                      ) : (
-                        university.name
-                      )}
-                    </p>
-                    <p className="text-sm text-gray-500">{university.city}, {university.state}</p>
-                  </button>
-                </li>
-              ))}
+              {results.map((university, index) => {
+                const { shortName, fullName } = getDisplayName(university);
+                return (
+                  <li key={university.id}>
+                    <button
+                      onClick={() => handleSelect(university)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        index === highlightedIndex
+                          ? 'bg-primary-50 text-primary-900'
+                          : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="font-medium text-gray-900">
+                        {shortName ? (
+                          <>
+                            {shortName}
+                            <span className="font-normal text-gray-500"> - {fullName}</span>
+                          </>
+                        ) : (
+                          fullName
+                        )}
+                      </p>
+                      <p className="text-sm text-gray-500">{university.city}, {university.state}</p>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -206,3 +340,45 @@ export default function UniversitySelector({
   );
 }
 
+// Export helper functions for external use
+export function getUniversityById(id: string): Campus | undefined {
+  return universitiesCache?.find(uni => uni.id === id);
+}
+
+export async function getNearestUniversity(lat: number, lng: number): Promise<Campus | undefined> {
+  const universities = await loadUniversities();
+  
+  if (!lat || !lng || universities.length === 0) return undefined;
+  
+  let nearest: Campus | undefined;
+  let minDistance = Infinity;
+  
+  for (const uni of universities) {
+    if (!uni.latitude || !uni.longitude) continue;
+    
+    const distance = haversineDistance(lat, lng, uni.latitude, uni.longitude);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = uni;
+    }
+  }
+  
+  return nearest;
+}
+
+// Haversine formula to calculate distance between two points
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function toRad(deg: number): number {
+  return deg * (Math.PI / 180);
+}

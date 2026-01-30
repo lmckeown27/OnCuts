@@ -13,7 +13,7 @@ import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
-import type { University } from '../data/universities';
+import type { University } from '../components/UniversitySelector';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
 import MainChairLogo from '../assets/logos/Main_Chair.webp';

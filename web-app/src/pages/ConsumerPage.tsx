@@ -14,7 +14,7 @@ import notificationService, { Notification } from '../services/notification.serv
 import api from '../services/api.service';
 import { barberApplicationService } from '../services/barber-application.service';
 import type { Barber } from '../types';
-import type { University } from '../data/universities';
+import type { University } from '../components/UniversitySelector';
 import toast from 'react-hot-toast';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';

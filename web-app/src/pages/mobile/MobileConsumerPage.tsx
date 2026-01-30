@@ -39,7 +39,7 @@ import {
 import { calculateDistance, kmToMiles } from '../../hooks';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
-import type { University } from '../../data/universities';
+import type { University } from '../../components/UniversitySelector';
 
 // Storage key for selected university
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
