@@ -24,6 +24,7 @@ export interface Campus {
   id: string;
   name: string;
   slug?: string;
+  shortName?: string; // Common abbreviation (e.g., "UCLA", "MIT") - derived from slug
   domain: string;
   city: string;
   state: string;
