@@ -16,7 +16,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
 const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% platform fee (covers Stripe's ~4% processing fee, nets ~11%)
 
 interface CreatePaymentIntentParams {
-  amount: number; // in dollars
+  amount: number; // Total amount in dollars (service + tip)
+  serviceAmount?: number; // Service amount only in dollars (for fee calculation). If not provided, assumes amount has no tip.
   currency?: string;
   customerId?: string;
   barberId?: string; // User ID of the barber
@@ -70,12 +71,15 @@ class StripePaymentService {
    */
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntentResult> {
     try {
-      const { amount, currency = 'usd', customerId, barberId, metadata = {} } = params;
+      const { amount, serviceAmount, currency = 'usd', customerId, barberId, metadata = {} } = params;
 
       // Calculate fees
-      const amountCents = Math.round(amount * 100); // Convert to cents
-      const platformFeeCents = Math.round(amountCents * PLATFORM_FEE_PERCENTAGE);
-      const barberAmountCents = amountCents - platformFeeCents;
+      // IMPORTANT: Platform fee is calculated ONLY on the service amount, NOT on tips
+      // Barbers receive 100% of tips - tips should never have fees deducted
+      const amountCents = Math.round(amount * 100); // Total amount in cents
+      const serviceAmountCents = serviceAmount ? Math.round(serviceAmount * 100) : amountCents; // Service-only for fee calculation
+      const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE); // Fee on service only
+      const barberAmountCents = amountCents - platformFeeCents; // Barber gets: service - fee + full tip
 
       // Get barber's Stripe Connect account ID
       let barberStripeAccountId: string | null = null;

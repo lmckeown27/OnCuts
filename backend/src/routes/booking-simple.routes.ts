@@ -1193,8 +1193,11 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const barberStripeAccountId = barberAccountResult.rows[0]?.stripe_account_id;
 
     // Calculate platform fee (15% - covers Stripe's ~4% processing fee, nets ~11%)
+    // IMPORTANT: Platform fee is calculated ONLY on the service amount, NOT on tips
+    // Barbers receive 100% of tips - tips should never have fees deducted
     const PLATFORM_FEE_PERCENTAGE = 0.15;
-    const platformFeeCents = Math.round(totalAmountCents * PLATFORM_FEE_PERCENTAGE);
+    const serviceAmountCents = booking.priceUsdCents; // Service price only, excludes tip
+    const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
 
     // Build payment intent config
     const paymentIntentConfig: any = {
@@ -1216,13 +1219,15 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     };
 
     // If barber has Stripe Connect account, use destination charges for automatic split
-    // Platform takes 15%, barber receives 85%
+    // Platform takes 15% of SERVICE only (not tips), barber receives 85% of service + 100% of tips
     if (barberStripeAccountId) {
       paymentIntentConfig.application_fee_amount = platformFeeCents;
       paymentIntentConfig.transfer_data = {
         destination: barberStripeAccountId,
       };
-      logger.info(`Payment split: $${platformFeeCents / 100} to platform, $${(totalAmountCents - platformFeeCents) / 100} to barber (${barberStripeAccountId})`);
+      const barberEarnings = totalAmountCents - platformFeeCents;
+      const tipInfo = tipAmountCents > 0 ? ` (includes $${tipAmountCents / 100} tip - barber keeps 100%)` : '';
+      logger.info(`Payment split: $${platformFeeCents / 100} platform fee (15% of $${serviceAmountCents / 100} service), $${barberEarnings / 100} to barber${tipInfo} (${barberStripeAccountId})`);
     } else {
       logger.warn(`Barber ${booking.barber_user_id} has no Stripe Connect account - payment goes to platform. Manual payout required.`);
     }
