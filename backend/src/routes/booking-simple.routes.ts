@@ -1391,8 +1391,16 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
 router.post('/:id/pay', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { tipAmountCents = 0 } = req.body;
+    const { tipAmountCents = 0, paymentMethod = 'card' } = req.body;
     const userId = (req as any).user.userId;
+
+    // Validate payment method
+    if (!['card', 'cash'].includes(paymentMethod)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid payment method. Must be "card" or "cash"'
+      });
+    }
 
     // Verify user is the consumer for this booking
     const bookingCheck = await pool.query(
@@ -1430,9 +1438,10 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
        SET "tipAmountCents" = $1,
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
+           "paymentMethod" = $3,
            "updatedAt" = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [tipAmountCents, totalAmountCents, id]
+       WHERE id = $4`,
+      [tipAmountCents, totalAmountCents, paymentMethod, id]
     );
 
     // Delete the conversation and its messages when payment is processed
@@ -1453,15 +1462,16 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
     }
 
     // Notify barber of payment received
+    const paymentMethodLabel = paymentMethod === 'cash' ? 'Cash' : 'Card';
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
       type: 'payment_received',
       title: 'Payment Received!',
-      message: `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
-      data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents },
+      message: `You received $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})${tipAmountCents > 0 ? ` - includes $${(tipAmountCents / 100).toFixed(2)} tip` : ''}`,
+      data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents, paymentMethod },
     });
 
-    logger.info(`Payment processed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
+    logger.info(`Payment processed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} via ${paymentMethod} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
 
     res.json({
       success: true,
@@ -1470,6 +1480,7 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
         bookingId: id,
         amountPaid: totalAmountCents,
         tipAmount: tipAmountCents,
+        paymentMethod,
       },
     });
   } catch (error: any) {

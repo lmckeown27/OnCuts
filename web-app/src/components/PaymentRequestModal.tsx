@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, DollarSign, Star, CreditCard, Check, MessageSquare } from 'lucide-react';
+import { X, DollarSign, Star, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
 
@@ -25,6 +25,7 @@ export default function PaymentRequestModal({
   const [step, setStep] = useState<'payment' | 'tip' | 'review' | 'complete'>('payment');
   const [selectedTip, setSelectedTip] = useState<number>(0);
   const [customTip, setCustomTip] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [rating, setRating] = useState<number>(0);
   const [reviewComment, setReviewComment] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -45,12 +46,12 @@ export default function PaymentRequestModal({
   const handlePayment = async () => {
     setIsProcessing(true);
     try {
-      // Process payment (in a real app, this would integrate with Stripe/payment provider)
       await api.post(`/bookings-simple/${bookingId}/pay`, {
         tipAmountCents: Math.round(tipAmount * 100),
+        paymentMethod,
       });
       
-      toast.success('Payment successful!');
+      toast.success(paymentMethod === 'cash' ? 'Cash payment recorded!' : 'Payment successful!');
       setStep('review');
     } catch (error: any) {
       console.error('Payment failed:', error);
@@ -135,6 +136,40 @@ export default function PaymentRequestModal({
                 <p className="text-4xl font-bold text-gray-900">${baseAmountDollars.toFixed(2)}</p>
               </div>
 
+              {/* Payment Method Selection */}
+              <div>
+                <p className="font-semibold text-gray-900 mb-3">How would you like to pay?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPaymentMethod('card')}
+                    className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'card'
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <CreditCard className="w-6 h-6" />
+                    <span className="font-semibold">Pay with Card</span>
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                      paymentMethod === 'cash'
+                        ? 'border-green-500 bg-green-50 text-green-700'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <Banknote className="w-6 h-6" />
+                    <span className="font-semibold">Pay with Cash</span>
+                  </button>
+                </div>
+                {paymentMethod === 'cash' && (
+                  <p className="mt-2 text-sm text-green-600 text-center">
+                    Please give cash directly to {barberName.split(' ')[0]}
+                  </p>
+                )}
+              </div>
+
               {/* Tip Selection */}
               <div>
                 <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
@@ -214,8 +249,17 @@ export default function PaymentRequestModal({
                   </>
                 ) : (
                   <>
-                    <CreditCard className="w-5 h-5" />
-                    Pay ${totalAmount.toFixed(2)}
+                    {paymentMethod === 'cash' ? (
+                      <>
+                        <Banknote className="w-5 h-5" />
+                        Confirm Cash Payment ${totalAmount.toFixed(2)}
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5" />
+                        Pay ${totalAmount.toFixed(2)}
+                      </>
+                    )}
                   </>
                 )}
               </button>
