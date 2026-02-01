@@ -826,7 +826,11 @@ export default function MessagesPage() {
       setNewMessage(messageContent);
     } finally {
       setIsSending(false);
-      inputRef.current?.focus();
+      // Use setTimeout to ensure focus is restored after React state updates
+      // This helps on both desktop and mobile browsers
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   };
 
@@ -1206,6 +1210,8 @@ export default function MessagesPage() {
                 disabled={isSending}
               />
               <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim() || isSending}
                 className={`p-2 rounded-full transition-colors ${
