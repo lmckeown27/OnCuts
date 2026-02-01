@@ -701,14 +701,62 @@ sudo -u postgres psql -d campuscuts -c "\d barbers"
 
 ## BARBER APPLICATIONS
 
-### View All Applications
+### View All Applications (Table Format)
 ```bash
 sudo -u postgres psql -d campuscuts -c "SELECT ba.id, u.email, u.first_name, ba.status, ba.years_experience, ba.created_at FROM barber_applications ba JOIN users u ON ba.user_id = u.id ORDER BY ba.created_at DESC;"
+```
+
+### View All Applications (Expanded/Readable Format)
+```bash
+sudo -u postgres psql -d campuscuts -x -c "
+SELECT 
+    ba.id,
+    u.first_name || ' ' || u.last_name as full_name,
+    u.email,
+    c.name as campus,
+    ba.status,
+    array_to_string(ba.specialties, ', ') as specialties,
+    ba.years_experience,
+    ba.has_license,
+    ba.has_own_tools,
+    ba.available_hours,
+    ba.why_be_barber,
+    ba.social_media,
+    ba.created_at::date as applied_date
+FROM barber_applications ba
+JOIN users u ON ba.user_id = u.id
+LEFT JOIN campuses c ON ba.campus_id = c.id
+ORDER BY ba.created_at DESC;
+"
 ```
 
 ### View Pending Applications
 ```bash
 sudo -u postgres psql -d campuscuts -c "SELECT ba.*, u.email FROM barber_applications ba JOIN users u ON ba.user_id = u.id WHERE ba.status = 'pending';"
+```
+
+### View Pending Applications (Expanded)
+```bash
+sudo -u postgres psql -d campuscuts -x -c "
+SELECT 
+    ba.id,
+    u.first_name || ' ' || u.last_name as full_name,
+    u.email,
+    c.name as campus,
+    array_to_string(ba.specialties, ', ') as specialties,
+    ba.years_experience,
+    ba.has_license,
+    ba.has_own_tools,
+    ba.available_hours,
+    ba.why_be_barber,
+    ba.social_media,
+    ba.created_at
+FROM barber_applications ba
+JOIN users u ON ba.user_id = u.id
+LEFT JOIN campuses c ON ba.campus_id = c.id
+WHERE ba.status = 'pending'
+ORDER BY ba.created_at DESC;
+"
 ```
 
 ### Approve Application
@@ -726,9 +774,83 @@ sudo -u postgres psql -d campuscuts -c "UPDATE barber_applications SET status = 
 sudo -u postgres psql -d campuscuts -c "DELETE FROM barber_applications WHERE id = 'UUID_HERE';"
 ```
 
+### Count Applications by Status
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT status, COUNT(*) FROM barber_applications GROUP BY status
+UNION ALL
+SELECT status || ' (guest)', COUNT(*) FROM guest_barber_applications GROUP BY status;
+"
+```
+
 ### Describe Barber Applications Table
 ```bash
 sudo -u postgres psql -d campuscuts -c "\d barber_applications"
+```
+
+---
+
+## GUEST BARBER APPLICATIONS
+
+Guest applications are from unauthenticated users who want to become barbers. They must create an account after approval.
+
+### View All Guest Applications (Expanded)
+```bash
+sudo -u postgres psql -d campuscuts -x -c "
+SELECT 
+    gba.id,
+    gba.full_name,
+    gba.email,
+    gba.phone,
+    c.name as campus,
+    gba.status,
+    array_to_string(gba.specialties, ', ') as specialties,
+    gba.years_experience,
+    gba.linked_user_id,
+    gba.created_at::date as applied_date
+FROM guest_barber_applications gba
+LEFT JOIN campuses c ON gba.campus_id = c.id
+ORDER BY gba.created_at DESC;
+"
+```
+
+### View Pending Guest Applications
+```bash
+sudo -u postgres psql -d campuscuts -x -c "
+SELECT 
+    gba.id,
+    gba.full_name,
+    gba.email,
+    gba.phone,
+    c.name as campus,
+    array_to_string(gba.specialties, ', ') as specialties,
+    gba.years_experience,
+    gba.created_at
+FROM guest_barber_applications gba
+LEFT JOIN campuses c ON gba.campus_id = c.id
+WHERE gba.status = 'pending'
+ORDER BY gba.created_at DESC;
+"
+```
+
+### Approve Guest Application
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE guest_barber_applications SET status = 'approved', reviewed_at = NOW() WHERE id = 'UUID_HERE';"
+```
+
+### Reject Guest Application
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE guest_barber_applications SET status = 'rejected', reviewed_at = NOW(), review_notes = 'Reason here' WHERE id = 'UUID_HERE';"
+```
+
+### Delete Guest Application
+```bash
+sudo -u postgres psql -d campuscuts -c "DELETE FROM guest_barber_applications WHERE id = 'UUID_HERE';"
+```
+
+### Describe Guest Barber Applications Table
+```bash
+sudo -u postgres psql -d campuscuts -c "\d guest_barber_applications"
 ```
 
 ---

@@ -318,6 +318,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const [applications, setApplications] = useState<BarberApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
 
   const fetchApplications = async () => {
     try {
@@ -349,6 +350,7 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
       
       await barberApplicationService.updateApplicationStatus(applicationId, statusMap[action]);
       toast.success(`Application ${action === 'interview' ? 'scheduled for interview' : action + 'd'} successfully`);
+      setSelectedApplication(null); // Return to list after action
       fetchApplications(); // Refresh the list
     } catch (error) {
       console.error(`Failed to ${action} application:`, error);
@@ -373,6 +375,33 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
+  const formatExperience = (exp: string | number | undefined) => {
+    if (!exp) return 'Not specified';
+    const expStr = String(exp);
+    if (expStr === 'less-than-1') return 'Less than 1 year';
+    if (expStr === '1-2') return '1-2 years';
+    if (expStr === '3-5') return '3-5 years';
+    if (expStr === '5-plus' || expStr === '5+') return '5+ years';
+    return expStr;
+  };
+
+  const generateInterviewEmail = (app: BarberApplication) => {
+    const applicantName = app.first_name || app.user?.first_name || 'Applicant';
+    const applicantEmail = app.email || app.user?.email || '';
+    const subject = encodeURIComponent(`CampusCut Barber Application - Interview Request`);
+    const body = encodeURIComponent(
+`Hi ${applicantName},
+
+Thank you for applying to become a barber on CampusCut! I'd like to schedule a brief interview to learn more about your experience and discuss next steps.
+
+Are you available for a 15-minute call this week? Please let me know a few times that work for you.
+
+Best regards,
+Campus Manager`
+    );
+    return `mailto:${applicantEmail}?subject=${subject}&body=${body}`;
+  };
+
   if (loading) {
   return (
     <div className="space-y-4">
@@ -380,6 +409,159 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
           <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-3 animate-spin" />
           <p className="text-gray-500 text-sm sm:text-base">Loading applications...</p>
         </Card>
+      </div>
+    );
+  }
+
+  // Show application details view
+  if (selectedApplication) {
+    const app = selectedApplication;
+    const applicantName = `${app.first_name || app.user?.first_name || 'Unknown'} ${app.last_name || app.user?.last_name || 'User'}`;
+    const applicantEmail = app.email || app.user?.email || '';
+
+    return (
+      <div className="space-y-4">
+        {/* Back Button */}
+        <button
+          onClick={() => setSelectedApplication(null)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-sm font-medium">Back to Applications</span>
+        </button>
+
+        {/* Applicant Header */}
+        <Card className="p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                <Users className="w-7 h-7 text-primary-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">{applicantName}</h3>
+                <p className="text-gray-600">{applicantEmail}</p>
+                <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${getStatusStyle(app.status)}`}>
+                  {formatStatus(app.status)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Email Interview Button */}
+        <a
+          href={generateInterviewEmail(app)}
+          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+        >
+          <Clock className="w-5 h-5" />
+          Schedule Interview via Email
+        </a>
+
+        {/* Application Details */}
+        <Card className="p-4 sm:p-6">
+          <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Experience</p>
+              <p className="font-semibold text-gray-900">{formatExperience(app.years_experience)}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Available Hours</p>
+              <p className="font-semibold text-gray-900">{app.available_hours || 'Not specified'}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Has License</p>
+              <p className="font-semibold text-gray-900">{app.has_license ? 'Yes' : 'No'}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
+              <p className="font-semibold text-gray-900">{app.has_own_tools ? 'Yes' : 'No'}</p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Applied On</p>
+              <p className="font-semibold text-gray-900">
+                {new Date(app.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            </div>
+            {app.social_media && (
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 mb-1">Social Media</p>
+                <p className="font-semibold text-primary-600 break-all">{app.social_media}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Specialties */}
+          {app.specialties && app.specialties.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs text-gray-500 mb-2">Specialties</p>
+              <div className="flex flex-wrap gap-2">
+                {app.specialties.map((specialty, idx) => (
+                  <span key={idx} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Why Be a Barber */}
+          {app.why_be_barber && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-xs text-blue-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
+              <p className="text-gray-700 italic">"{app.why_be_barber}"</p>
+            </div>
+          )}
+
+          {/* Portfolio Description */}
+          {app.portfolio_description && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-2">Portfolio Description</p>
+              <p className="text-gray-700">{app.portfolio_description}</p>
+            </div>
+          )}
+
+          {/* Additional Notes */}
+          {app.additional_notes && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-2">Additional Notes</p>
+              <p className="text-gray-700">{app.additional_notes}</p>
+            </div>
+          )}
+        </Card>
+
+        {/* Action Buttons */}
+        {(app.status === 'pending' || app.status === 'under_review' || app.status === 'interview_scheduled') && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="primary"
+              onClick={() => handleAction(app.id, 'approve')}
+              disabled={actionLoading === app.id}
+              className="flex-1 py-3 justify-center"
+            >
+              {actionLoading === app.id ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <CheckCircle className="w-5 h-5 mr-2" />
+              )}
+              Approve Application
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleAction(app.id, 'reject')}
+              disabled={actionLoading === app.id}
+              className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
+            >
+              <XCircle className="w-5 h-5 mr-2" />
+              Reject Application
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -394,21 +576,35 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
       ) : (
         <div className="space-y-3">
           {applications.map((app) => (
-            <Card key={app.id} className="p-3 sm:p-4">
+            <Card 
+              key={app.id} 
+              className="p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-amber-400"
+              onClick={() => setSelectedApplication(app)}
+            >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
-                    {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
-                  </h4>
-                  <p className="text-sm text-gray-600 mt-1">{app.email || app.user?.email || 'No email'}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
+                      {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
+                    </h4>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusStyle(app.status)}`}>
+                      {formatStatus(app.status)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">{app.email || app.user?.email || 'No email'}</p>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2">
                     <span className="text-xs text-gray-500">
                       Applied {new Date(app.created_at).toLocaleDateString()}
                     </span>
                     {app.years_experience && (
                       <span className="text-xs text-gray-500">
-                        {app.years_experience} years exp.
+                        {formatExperience(app.years_experience)}
                     </span>
+                    )}
+                    {app.specialties && app.specialties.length > 0 && (
+                      <span className="text-xs text-gray-500">
+                        {app.specialties.length} service{app.specialties.length !== 1 ? 's' : ''}
+                      </span>
                     )}
                   </div>
                   {app.why_be_barber && (
@@ -416,70 +612,13 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                       "{app.why_be_barber}"
                     </p>
                   )}
+                  {/* Tap hint on mobile */}
+                  <p className="text-xs text-amber-600 mt-2 sm:hidden">Tap to view details →</p>
                 </div>
                 
-                {/* Buttons - Stacked on mobile, flex on desktop */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:ml-4 w-full sm:w-auto">
-                  {app.status === 'pending' && (
-                    <>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleAction(app.id, 'approve')}
-                        disabled={actionLoading === app.id}
-                        className="text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1.5" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAction(app.id, 'reject')}
-                        disabled={actionLoading === app.id}
-                        className="text-red-600 border-red-300 hover:bg-red-50 text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
-                      >
-                        <XCircle className="w-4 h-4 mr-1.5" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {(app.status === 'under_review' || app.status === 'interview_scheduled') && (
-                    <>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleAction(app.id, 'approve')}
-                        disabled={actionLoading === app.id}
-                        className="text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-1.5" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAction(app.id, 'reject')}
-                        disabled={actionLoading === app.id}
-                        className="text-red-600 border-red-300 hover:bg-red-50 text-sm py-3 sm:py-2 w-full sm:w-auto justify-center"
-                      >
-                        <XCircle className="w-4 h-4 mr-1.5" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                  {app.status === 'approved' && (
-                    <span className="text-xs text-green-600 font-medium flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      Approved
-                    </span>
-                  )}
-                  {app.status === 'rejected' && (
-                    <span className="text-xs text-red-600 font-medium flex items-center gap-1">
-                      <XCircle className="w-4 h-4" />
-                      Rejected
-                    </span>
-                  )}
+                {/* Arrow indicator */}
+                <div className="hidden sm:flex items-center text-amber-400">
+                  <ChevronLeft className="w-5 h-5 rotate-180" />
                 </div>
               </div>
             </Card>
