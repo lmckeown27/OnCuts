@@ -13,6 +13,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useMessageStore } from '../../store/useMessageStore';
 import toast from 'react-hot-toast';
 import MobilePhotoUpload from '../../components/MobilePhotoUpload';
 import ConsumerProfileEditor from '../../components/ConsumerProfileEditor';
@@ -49,6 +50,7 @@ export default function MobileConsumerPage() {
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, setUser, logout, isLoading: isAuthLoading } = useAuthStore();
+  const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
   
   // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -90,6 +92,11 @@ export default function MobileConsumerPage() {
       loadBarbers();
     }
   }, [selectedUniversity]);
+
+  // Load unread message count on mount
+  useEffect(() => {
+    loadUnreadCount();
+  }, []);
 
   // Load barbers from API - filtered by university location
   const loadBarbers = async () => {
@@ -550,11 +557,18 @@ export default function MobileConsumerPage() {
           
           <button
             onClick={() => setActiveTab('messages')}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors relative ${
               activeTab === 'messages' ? 'text-primary-600 bg-primary-50' : 'text-gray-600'
             }`}
           >
-            <MessageCircle className="w-6 h-6" />
+            <div className="relative">
+              <MessageCircle className="w-6 h-6" />
+              {unreadMessages > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
+            </div>
             <span className="text-xs font-medium">Messages</span>
           </button>
           

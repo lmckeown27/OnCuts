@@ -12,6 +12,7 @@ import {
 import api from '../services/api.service';
 import notificationService, { Notification } from '../services/notification.service';
 import { useAuthStore } from '../store/useAuthStore';
+import { useMessageStore } from '../store/useMessageStore';
 import Button from '../components/Button';
 import Loading from '../components/Loading';
 import { CampusCutLogo } from '@assets';
@@ -52,6 +53,7 @@ export default function ConsumerBookingStatusPage() {
   const location = useLocation();
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
   const { user, isLoading: isAuthLoading } = useAuthStore();
+  const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
   
   // ALL useState hooks must be declared before any early returns (React Rules of Hooks)
   const [booking, setBooking] = useState<ActiveBooking | null>(null);
@@ -154,6 +156,7 @@ export default function ConsumerBookingStatusPage() {
 
   useEffect(() => {
     fetchActiveBooking();
+    loadUnreadCount(); // Load unread message count on mount
     // Poll for updates every 10 seconds (faster for payment request detection)
     const interval = setInterval(fetchActiveBooking, 10000);
     return () => clearInterval(interval);
@@ -558,9 +561,14 @@ export default function ConsumerBookingStatusPage() {
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button
             onClick={handleGoToMessages}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors relative"
           >
             <MessageCircle className="w-6 h-6 text-gray-600" />
+            {unreadMessages > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                {unreadMessages > 99 ? '99+' : unreadMessages}
+              </span>
+            )}
           </button>
           <img src={CampusCutLogo} alt="CampusCut" className="h-10" />
           
