@@ -1191,39 +1191,131 @@ export default function MessagesPage() {
 
         {/* Message Input */}
         <div className="p-4 border-t border-gray-200 bg-white">
-          {/* Show locked message when booking is pending */}
-          {selectedConversation?.booking?.status === 'pending' ? (
-            <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-sm">
-              <Lock className="w-4 h-4" />
-              <span>Messaging is locked until the booking is accepted</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                disabled={isSending}
-              />
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className={`p-2 rounded-full transition-colors ${
-                  newMessage.trim() && !isSending
-                    ? 'bg-primary-500 text-white hover:bg-primary-600'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+          {/* Messaging lock logic for pending bookings:
+              - Barbers can always message (to initiate conversation)
+              - Consumers can only respond after barber has sent at least one message */}
+          {(() => {
+            const isPending = selectedConversation?.booking?.status === 'pending';
+            
+            if (isPending) {
+              // Check if barber has sent any messages in this conversation
+              // The barber is the "other user" from consumer view, or "current user" from barber view
+              const barberHasMessaged = isBarberView 
+                ? messages.some(m => (m.sender_id || m.senderId) === user?.id)
+                : messages.some(m => (m.sender_id || m.senderId) !== user?.id);
+              
+              // Barber can always message on pending
+              if (isBarberView) {
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
+                      <Info className="w-3.5 h-3.5" />
+                      <span>Booking pending – message to discuss details before accepting</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        disabled={isSending}
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || isSending}
+                        className={`p-2 rounded-full transition-colors ${
+                          newMessage.trim() && !isSending
+                            ? 'bg-primary-500 text-white hover:bg-primary-600'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Consumer can message only if barber has sent at least one message
+              if (barberHasMessaged) {
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Barber reached out – reply to discuss details</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                        disabled={isSending}
+                      />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={handleSendMessage}
+                        disabled={!newMessage.trim() || isSending}
+                        className={`p-2 rounded-full transition-colors ${
+                          newMessage.trim() && !isSending
+                            ? 'bg-primary-500 text-white hover:bg-primary-600'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Consumer cannot message yet - barber hasn't initiated
+              return (
+                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-sm">
+                  <Lock className="w-4 h-4" />
+                  <span>Waiting for barber to respond to your request</span>
+                </div>
+              );
+            }
+            
+            // Booking is not pending - normal messaging
+            return (
+              <div className="flex items-center gap-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  disabled={isSending}
+                />
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || isSending}
+                  className={`p-2 rounded-full transition-colors ${
+                    newMessage.trim() && !isSending
+                      ? 'bg-primary-500 text-white hover:bg-primary-600'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );
