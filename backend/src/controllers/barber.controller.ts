@@ -8,7 +8,7 @@ import { logger } from '../utils/logger';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden } = req.query;
     
     // Parse user location for distance-based sorting
     const userLat = lat ? parseFloat(lat as string) : null;
@@ -72,10 +72,13 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex += 2;
     }
 
+    // Build WHERE clause - campus managers can request to include hidden barbers
+    const shouldIncludeHidden = includeHidden === 'true';
+    
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE b."isActive" = true
+      WHERE ${shouldIncludeHidden ? '1=1' : 'b."isActive" = true'}
         AND u.stripe_account_id IS NOT NULL
         AND u.stripe_payouts_enabled = true
     `;

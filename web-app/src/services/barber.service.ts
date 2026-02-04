@@ -13,6 +13,8 @@ interface BarberFilters {
   lat?: number;
   lng?: number;
   maxDistance?: number; // Maximum distance in km (default: 8km / ~5 miles)
+  // Campus manager option to include hidden barbers
+  includeHidden?: boolean;
 }
 
 class BarberService {

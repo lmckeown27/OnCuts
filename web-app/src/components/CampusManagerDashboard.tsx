@@ -22,7 +22,8 @@ import {
   ChevronLeft,
   DollarSign,
   Star,
-  X
+  X,
+  EyeOff
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -684,7 +685,8 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       const barberService = barberServiceModule.default;
       // Filter by campusId to only show barbers for this campus
       // Note: Backend expects camelCase 'campusId' parameter
-      const response = await barberService.getBarbers({ campusId } as any);
+      // includeHidden: true allows campus managers to see barbers who have hidden their profiles
+      const response = await barberService.getBarbers({ campusId, includeHidden: true } as any);
       
       // Extract barbers array from response - handle both paginated and direct array responses
       const barbersArray = Array.isArray(response) ? response : (response?.data || []);
@@ -790,6 +792,12 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                   {/* Header Row */}
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
+                    {!barber.isActive && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
+                        <EyeOff className="w-3 h-3" />
+                        Hidden
+                      </span>
+                    )}
                   </div>
 
                   {/* Contact Info */}
