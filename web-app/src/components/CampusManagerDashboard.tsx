@@ -2130,6 +2130,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
@@ -2187,6 +2188,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   };
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+  // Sort bookings based on sortOrder
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const dateA = new Date(a.requestedAt).getTime();
+    const dateB = new Date(b.requestedAt).getTime();
+    return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+  });
 
   const renderStars = (rating: number) => {
     return (
@@ -2386,18 +2394,31 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       >
         {/* Filter Bar */}
         <Card className="p-4 mb-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Filter by barber:</label>
-            <select
-              value={selectedBarberId}
-              onChange={(e) => setSelectedBarberId(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              <option value="all">All Barbers</option>
-              {barbers.map((barber) => (
-                <option key={barber.id} value={barber.id}>{barber.name}</option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Filter by barber:</label>
+              <select
+                value={selectedBarberId}
+                onChange={(e) => setSelectedBarberId(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              >
+                <option value="all">All Barbers</option>
+                {barbers.map((barber) => (
+                  <option key={barber.id} value={barber.id}>{barber.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Sort by date:</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'latest' | 'oldest')}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              >
+                <option value="latest">Latest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
           </div>
         </Card>
 
@@ -2416,7 +2437,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </Card>
       ) : (
         <div className="space-y-3">
-          {bookings.map((booking) => (
+          {sortedBookings.map((booking) => (
             <Card 
               key={booking.id} 
               className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
