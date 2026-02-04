@@ -1287,13 +1287,13 @@ SELECT
     c.first_name || ' ' || c.last_name AS consumer,
     b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
 WHERE b.status = 'PENDING'
-ORDER BY b.\"scheduledTime\" DESC;
+ORDER BY b."requestedAt" DESC;
 "
 ```
 
@@ -1306,13 +1306,13 @@ SELECT
     c.first_name || ' ' || c.last_name AS consumer,
     b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
 WHERE b.status = 'ACCEPTED'
-ORDER BY b.\"scheduledTime\" DESC;
+ORDER BY b."requestedAt" DESC;
 "
 ```
 
@@ -1324,8 +1324,8 @@ SELECT
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
     b.\"serviceType\" AS service,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
     TO_CHAR(b.\"updatedAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS rejected_at
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
@@ -1344,8 +1344,8 @@ SELECT
     c.first_name || ' ' || c.last_name AS consumer,
     b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
@@ -1362,8 +1362,8 @@ SELECT
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
     b.\"serviceType\" AS service,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
-    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b."requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
     TO_CHAR(b.\"cancelledAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS cancelled_at
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
