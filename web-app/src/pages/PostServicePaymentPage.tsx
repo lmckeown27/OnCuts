@@ -12,7 +12,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, Check, Clock, DollarSign, User, Calendar,
-  MapPin, ArrowLeft, Star, AlertCircle, Loader2
+  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Banknote
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -179,10 +179,12 @@ function PaymentForm({
 }) {
   const [selectedTip, setSelectedTip] = useState<number>(0);
   const [customTip, setCustomTip] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [intentError, setIntentError] = useState<string | null>(null);
+  const [isProcessingCash, setIsProcessingCash] = useState(false);
 
   const baseAmount = booking.priceUsdCents / 100;
   const tipAmount = customTip ? parseFloat(customTip) || 0 : selectedTip;
@@ -194,8 +196,10 @@ function PaymentForm({
     { label: '25%', value: Math.round(baseAmount * 0.25 * 100) / 100 },
   ];
 
-  // Create payment intent when component mounts or tip changes
+  // Create payment intent when component mounts or tip changes (only for card payments)
   const createPaymentIntent = async () => {
+    if (paymentMethod === 'cash') return; // Skip for cash payments
+    
     setIsCreatingIntent(true);
     setIntentError(null);
     
@@ -214,13 +218,35 @@ function PaymentForm({
     }
   };
 
-  // Create initial payment intent
-  useEffect(() => {
-    createPaymentIntent();
-  }, []);
+  // Handle cash payment
+  const handleCashPayment = async () => {
+    setIsProcessingCash(true);
+    try {
+      await api.post(`/bookings-simple/${booking.id}/pay`, {
+        tipAmountCents: Math.round(tipAmount * 100),
+        paymentMethod: 'cash',
+      });
+      toast.success('Cash payment recorded!');
+      onSuccess();
+    } catch (err: any) {
+      console.error('Cash payment failed:', err);
+      toast.error(err.message || 'Failed to record cash payment');
+    } finally {
+      setIsProcessingCash(false);
+    }
+  };
 
-  // Recreate payment intent when tip changes (debounced)
+  // Create initial payment intent (only for card)
   useEffect(() => {
+    if (paymentMethod === 'card') {
+      createPaymentIntent();
+    }
+  }, [paymentMethod]);
+
+  // Recreate payment intent when tip changes (debounced, only for card)
+  useEffect(() => {
+    if (paymentMethod !== 'card') return;
+    
     const timer = setTimeout(() => {
       if (clientSecret) {
         createPaymentIntent();
@@ -229,7 +255,7 @@ function PaymentForm({
     return () => clearTimeout(timer);
   }, [tipAmount]);
 
-  if (isCreatingIntent && !clientSecret) {
+  if (paymentMethod === 'card' && isCreatingIntent && !clientSecret) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500 mb-4" />
@@ -238,7 +264,7 @@ function PaymentForm({
     );
   }
 
-  if (intentError) {
+  if (paymentMethod === 'card' && intentError) {
     return (
       <div className="text-center py-8">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
@@ -275,6 +301,42 @@ function PaymentForm({
           <span className="font-bold">Total</span>
           <span className="font-bold text-primary-600">${totalAmount.toFixed(2)}</span>
         </div>
+      </div>
+
+      {/* Payment Method Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">How would you like to pay?</label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('card')}
+            className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+              paymentMethod === 'card'
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+            }`}
+          >
+            <CreditCard className="w-6 h-6" />
+            <span className="font-semibold text-sm">Pay with Card</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentMethod('cash')}
+            className={`py-4 px-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+              paymentMethod === 'cash'
+                ? 'border-green-500 bg-green-50 text-green-700'
+                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+            }`}
+          >
+            <Banknote className="w-6 h-6" />
+            <span className="font-semibold text-sm">Pay with Cash</span>
+          </button>
+        </div>
+        {paymentMethod === 'cash' && (
+          <p className="mt-2 text-sm text-green-600 text-center">
+            Please give cash directly to {booking.barber.firstName}
+          </p>
+        )}
       </div>
 
       {/* Tip Selection */}
@@ -337,8 +399,29 @@ function PaymentForm({
         </div>
       </div>
 
-      {/* Payment Form with Elements Provider */}
-      {clientSecret && (
+      {/* Cash Payment Button */}
+      {paymentMethod === 'cash' && (
+        <button
+          onClick={handleCashPayment}
+          disabled={isProcessingCash}
+          className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {isProcessingCash ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Banknote className="w-5 h-5" />
+              Confirm Cash Payment ${totalAmount.toFixed(2)}
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Card Payment Form with Elements Provider */}
+      {paymentMethod === 'card' && clientSecret && (
         <Elements 
           key={clientSecret} // Force remount when clientSecret changes to ensure correct payment intent
           stripe={stripePromise} 
@@ -732,7 +815,7 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
               <h1 className="text-xl font-bold mb-1">Complete Payment</h1>
-              <p className="text-white/80">Pay with card, Apple Pay, or Google Pay</p>
+              <p className="text-white/80">Pay with card, Apple Pay, Google Pay, or cash</p>
             </div>
 
             {/* Barber Info */}
