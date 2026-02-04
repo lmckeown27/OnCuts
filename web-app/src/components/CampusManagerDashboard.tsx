@@ -2191,8 +2191,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   // Sort bookings based on sortOrder
   const sortedBookings = [...bookings].sort((a, b) => {
-    const dateA = new Date(a.requestedAt).getTime();
-    const dateB = new Date(b.requestedAt).getTime();
+    const dateA = new Date(a.scheduledTime).getTime();
+    const dateB = new Date(b.scheduledTime).getTime();
     return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
   });
 
