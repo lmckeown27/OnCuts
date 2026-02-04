@@ -1283,18 +1283,17 @@ sudo -u postgres psql -d campuscuts -c "SELECT * FROM bookings WHERE status = 'C
 # View all pending booking requests
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    b.id,
-    b.\"serviceType\",
-    b.\"priceUsdCents\" / 100.0 as price_usd,
-    c.email as consumer_email, I 
-    c.first_name as consumer_name,
-    bar_u.email as barber_email,
-    b.\"requestedAt\"
+    bar_u.first_name || ' ' || bar_u.last_name AS barber,
+    c.first_name || ' ' || c.last_name AS consumer,
+    b.\"serviceName\" AS service,
+    '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
 WHERE b.status = 'PENDING'
-ORDER BY b.\"requestedAt\" DESC;
+ORDER BY b.\"scheduledTime\" DESC;
 "
 ```
 
@@ -1303,18 +1302,17 @@ ORDER BY b.\"requestedAt\" DESC;
 # View all accepted bookings awaiting service
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    b.id,
-    b.\"serviceType\",
-    b.\"priceUsdCents\" / 100.0 as price_usd,
-    c.email as consumer_email,
-    bar_u.email as barber_email,
-    b.\"requestedAt\",
-    b.\"acceptedAt\"
+    bar_u.first_name || ' ' || bar_u.last_name AS barber,
+    c.first_name || ' ' || c.last_name AS consumer,
+    b.\"serviceName\" AS service,
+    '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
 WHERE b.status = 'ACCEPTED'
-ORDER BY b.\"acceptedAt\" DESC;
+ORDER BY b.\"scheduledTime\" DESC;
 "
 ```
 
@@ -1323,12 +1321,12 @@ ORDER BY b.\"acceptedAt\" DESC;
 # View all rejected bookings
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    b.id,
-    b.\"serviceType\",
-    c.email as consumer_email,
-    bar_u.email as barber_email,
-    b.\"requestedAt\",
-    b.\"updatedAt\" as rejected_at
+    bar_u.first_name || ' ' || bar_u.last_name AS barber,
+    c.first_name || ' ' || c.last_name AS consumer,
+    b.\"serviceName\" AS service,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
+    TO_CHAR(b.\"updatedAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS rejected_at
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
@@ -1342,13 +1340,12 @@ ORDER BY b.\"updatedAt\" DESC;
 # View all completed bookings
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    b.id,
-    b.\"serviceType\",
-    b.\"priceUsdCents\" / 100.0 as price_usd,
-    c.email as consumer_email,
-    bar_u.email as barber_email,
-    b.\"requestedAt\",
-    b.\"completedAt\"
+    bar_u.first_name || ' ' || bar_u.last_name AS barber,
+    c.first_name || ' ' || c.last_name AS consumer,
+    b.\"serviceName\" AS service,
+    '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
@@ -1362,12 +1359,12 @@ ORDER BY b.\"completedAt\" DESC;
 # View all cancelled bookings
 sudo -u postgres psql -d campuscuts -c "
 SELECT 
-    b.id,
-    b.\"serviceType\",
-    c.email as consumer_email,
-    bar_u.email as barber_email,
-    b.\"requestedAt\",
-    b.\"cancelledAt\"
+    bar_u.first_name || ' ' || bar_u.last_name AS barber,
+    c.first_name || ' ' || c.last_name AS consumer,
+    b.\"serviceName\" AS service,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
+    TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
+    TO_CHAR(b.\"cancelledAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS cancelled_at
 FROM bookings b
 JOIN users c ON b.\"consumerId\" = c.id
 LEFT JOIN users bar_u ON b.\"barberId\" = bar_u.id
