@@ -1285,7 +1285,7 @@ sudo -u postgres psql -d campuscuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
-    b.\"serviceName\" AS service,
+    b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
@@ -1304,7 +1304,7 @@ sudo -u postgres psql -d campuscuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
-    b.\"serviceName\" AS service,
+    b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
@@ -1323,7 +1323,7 @@ sudo -u postgres psql -d campuscuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
-    b.\"serviceName\" AS service,
+    b.\"serviceType\" AS service,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
     TO_CHAR(b.\"updatedAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS rejected_at
@@ -1342,7 +1342,7 @@ sudo -u postgres psql -d campuscuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
-    b.\"serviceName\" AS service,
+    b.\"serviceType\" AS service,
     '\$' || (b.\"priceUsdCents\" / 100.0)::numeric(10,2) AS price,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time
@@ -1361,7 +1361,7 @@ sudo -u postgres psql -d campuscuts -c "
 SELECT 
     bar_u.first_name || ' ' || bar_u.last_name AS barber,
     c.first_name || ' ' || c.last_name AS consumer,
-    b.\"serviceName\" AS service,
+    b.\"serviceType\" AS service,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD, YYYY') AS date,
     TO_CHAR(b.\"scheduledTime\" AT TIME ZONE 'America/Los_Angeles', 'HH12:MI AM') AS time,
     TO_CHAR(b.\"cancelledAt\" AT TIME ZONE 'America/Los_Angeles', 'Mon DD HH12:MI AM') AS cancelled_at
