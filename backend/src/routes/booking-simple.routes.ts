@@ -371,16 +371,17 @@ router.post('/walk-in/record-cash', authenticate, async (req, res, next) => {
 
 /**
  * GET /api/v1/bookings-simple/campus/:campusId
- * Get all completed bookings for a campus (Campus Managers only)
+ * Get bookings for a campus (Campus Managers only)
  * Query params:
  *   - barberId: filter by specific barber
  *   - limit: max number of results (default 100)
+ *   - statusFilter: 'upcoming' (PENDING, ACCEPTED) or 'completed' (COMPLETED, PAID)
  */
 router.get('/campus/:campusId', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
     const { campusId } = req.params;
-    const { barberId, limit = '100' } = req.query;
+    const { barberId, limit = '100', statusFilter = 'completed' } = req.query;
 
     // Check if user is an admin (admins have campus manager access to all campuses)
     const adminCheck = await pool.query(
@@ -408,10 +409,24 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       }
     }
 
-    // Build query to get completed bookings for all barbers on this campus
-    // Only show bookings from the last 7 days to keep the view clean
-    // Include both COMPLETED (awaiting payment) and PAID (fully finished) bookings
-    let whereClause = `barber."campusId" = $1 AND b.status IN ('COMPLETED', 'PAID') AND b."requestedAt" >= NOW() - INTERVAL '7 days'`;
+    // Build query to get bookings for all barbers on this campus
+    // statusFilter determines which bookings to show:
+    //   - 'upcoming': PENDING, ACCEPTED (future bookings)
+    //   - 'completed': COMPLETED, PAID (finished bookings)
+    let statusClause: string;
+    let dateFilter: string;
+    
+    if (statusFilter === 'upcoming') {
+      // Upcoming: PENDING or ACCEPTED, scheduled for today or future
+      statusClause = `b.status IN ('PENDING', 'ACCEPTED')`;
+      dateFilter = `b."requestedAt" >= NOW() - INTERVAL '1 day'`; // Include yesterday to catch late bookings
+    } else {
+      // Completed: COMPLETED or PAID, from last 30 days
+      statusClause = `b.status IN ('COMPLETED', 'PAID')`;
+      dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
+    }
+    
+    let whereClause = `barber."campusId" = $1 AND ${statusClause} AND ${dateFilter}`;
     const params: any[] = [campusId];
     let paramIndex = 2;
 

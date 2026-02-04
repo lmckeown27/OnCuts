@@ -2126,6 +2126,7 @@ interface BarberOption {
 }
 
 const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
@@ -2138,7 +2139,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       const token = localStorage.getItem('accessToken');
       const barberFilter = selectedBarberId !== 'all' ? `&barberId=${selectedBarberId}` : '';
       const response = await fetch(
-        `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}`,
+        `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}&statusFilter=${activeTab}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -2160,7 +2161,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   useEffect(() => {
     fetchBookings();
-  }, [campusId, selectedBarberId]);
+  }, [campusId, selectedBarberId, activeTab]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -2338,6 +2339,30 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Tab Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveTab('upcoming')}
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+            activeTab === 'upcoming'
+              ? 'bg-primary-500 text-white shadow-md'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Upcoming
+        </button>
+        <button
+          onClick={() => setActiveTab('completed')}
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+            activeTab === 'completed'
+              ? 'bg-primary-500 text-white shadow-md'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Completed
+        </button>
+      </div>
+
       {/* Filter Bar */}
       <Card className="p-4">
         <div className="flex items-center gap-2">
@@ -2359,11 +2384,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       {bookings.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
           <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-          <p className="text-gray-700 font-medium text-sm sm:text-base">No completed bookings yet</p>
+          <p className="text-gray-700 font-medium text-sm sm:text-base">
+            {activeTab === 'upcoming' ? 'No upcoming bookings' : 'No completed bookings yet'}
+          </p>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             {selectedBarberId !== 'all' 
-              ? 'This barber has no completed bookings' 
-              : 'Completed bookings will appear here'}
+              ? `This barber has no ${activeTab} bookings` 
+              : `${activeTab === 'upcoming' ? 'Upcoming' : 'Completed'} bookings will appear here`}
           </p>
         </Card>
       ) : (
@@ -2371,7 +2398,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           {bookings.map((booking) => (
             <Card 
               key={booking.id} 
-              className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-green-400"
+              className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
+                activeTab === 'upcoming' 
+                  ? booking.status === 'PENDING' 
+                    ? 'border-l-amber-400' 
+                    : 'border-l-blue-400'
+                  : 'border-l-green-400'
+              }`}
               onClick={() => setSelectedBooking(booking)}
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -2403,33 +2436,59 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               </div>
 
                   {/* Tap hint on mobile */}
-                  <p className="text-xs text-green-500 mt-2 sm:hidden">Tap for details →</p>
+                  <p className={`text-xs mt-2 sm:hidden ${
+                    activeTab === 'upcoming' 
+                      ? booking.status === 'PENDING' ? 'text-amber-500' : 'text-blue-500'
+                      : 'text-green-500'
+                  }`}>Tap for details →</p>
               </div>
 
-                {/* Right side - price and review */}
+                {/* Right side - price and status/review */}
                 <div className="flex items-start gap-2">
                   <div className="text-right">
-                    <p className="font-bold text-lg text-green-600">{formatPrice(booking.priceUsdCents)}</p>
-                    {booking.paidAt && (
-                      <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
-                    )}
+                    <p className={`font-bold text-lg ${
+                      activeTab === 'upcoming' 
+                        ? booking.status === 'PENDING' ? 'text-amber-600' : 'text-blue-600'
+                        : 'text-green-600'
+                    }`}>{formatPrice(booking.priceUsdCents)}</p>
                     
-                    {/* Review */}
-                    {booking.review ? (
-                      <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                        {renderStars(booking.review.rating)}
-                        {booking.review.comment && (
-                          <p className="text-xs text-gray-600 mt-1 truncate">
-                            "{booking.review.comment}"
-                          </p>
-                        )}
-                      </div>
+                    {activeTab === 'upcoming' ? (
+                      // Show status badge for upcoming bookings
+                      <span className={`inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                        booking.status === 'PENDING'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {booking.status === 'PENDING' ? 'Pending' : 'Accepted'}
+                      </span>
                     ) : (
-                      <p className="text-xs text-gray-400 mt-2 italic">No review</p>
+                      <>
+                        {booking.paidAt && (
+                          <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
+                        )}
+                        
+                        {/* Review */}
+                        {booking.review ? (
+                          <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                            {renderStars(booking.review.rating)}
+                            {booking.review.comment && (
+                              <p className="text-xs text-gray-600 mt-1 truncate">
+                                "{booking.review.comment}"
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 mt-2 italic">No review</p>
+                        )}
+                      </>
                     )}
                   </div>
                   {/* Arrow indicator */}
-                  <div className="hidden sm:flex items-center text-green-400 mt-1">
+                  <div className={`hidden sm:flex items-center mt-1 ${
+                    activeTab === 'upcoming'
+                      ? booking.status === 'PENDING' ? 'text-amber-400' : 'text-blue-400'
+                      : 'text-green-400'
+                  }`}>
                     <ChevronLeft className="w-5 h-5 rotate-180" />
                   </div>
                 </div>
