@@ -2130,7 +2130,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
-  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'furthest'>('latest');
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
@@ -2189,11 +2189,15 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-  // Sort bookings based on sortOrder
+  // Sort bookings based on sortOrder (by distance from current date)
   const sortedBookings = [...bookings].sort((a, b) => {
+    const now = Date.now();
     const dateA = new Date(a.scheduledTime).getTime();
     const dateB = new Date(b.scheduledTime).getTime();
-    return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+    const distanceA = Math.abs(dateA - now);
+    const distanceB = Math.abs(dateB - now);
+    // Latest = closest to current date, Furthest = furthest from current date
+    return sortOrder === 'latest' ? distanceA - distanceB : distanceB - distanceA;
   });
 
   const renderStars = (rating: number) => {
@@ -2412,11 +2416,11 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               <label className="text-sm text-gray-600">Sort by date:</label>
               <select
                 value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as 'latest' | 'oldest')}
+                onChange={(e) => setSortOrder(e.target.value as 'latest' | 'furthest')}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 <option value="latest">Latest First</option>
-                <option value="oldest">Oldest First</option>
+                <option value="furthest">Furthest First</option>
               </select>
             </div>
           </div>
