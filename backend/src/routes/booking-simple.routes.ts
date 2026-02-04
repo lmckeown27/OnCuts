@@ -473,12 +473,12 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       [...params, parseInt(limit as string)]
     );
 
-    // Get list of barbers for the filter dropdown
+    // Get list of barbers for the filter dropdown (exclude ADMIN users)
     const barbersResult = await pool.query(
       `SELECT b.id, u.first_name, u.last_name
        FROM barbers b
        JOIN users u ON b."userId" = u.id
-       WHERE b."campusId" = $1 AND b."isActive" = true
+       WHERE b."campusId" = $1 AND b."isActive" = true AND u.role != 'ADMIN'
        ORDER BY u.first_name, u.last_name`,
       [campusId]
     );
