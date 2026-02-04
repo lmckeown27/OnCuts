@@ -2132,6 +2132,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
+  const [isContentVisible, setIsContentVisible] = useState(true);
 
   const fetchBookings = async () => {
     try {
@@ -2156,10 +2157,22 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       console.error('Failed to fetch campus bookings:', error);
     } finally {
       setLoading(false);
+      // Fade in after loading
+      setTimeout(() => setIsContentVisible(true), 50);
     }
   };
 
+  // Handle tab change with animation
+  const handleTabChange = (tab: 'upcoming' | 'completed') => {
+    if (tab === activeTab) return;
+    setIsContentVisible(false);
+    setTimeout(() => {
+      setActiveTab(tab);
+    }, 150);
+  };
+
   useEffect(() => {
+    setIsContentVisible(false);
     fetchBookings();
   }, [campusId, selectedBarberId, activeTab]);
 
@@ -2342,7 +2355,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       {/* Tab Buttons */}
       <div className="flex gap-2">
         <button
-          onClick={() => setActiveTab('upcoming')}
+          onClick={() => handleTabChange('upcoming')}
           className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
             activeTab === 'upcoming'
               ? 'bg-primary-500 text-white shadow-md'
@@ -2352,7 +2365,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           Upcoming
         </button>
         <button
-          onClick={() => setActiveTab('completed')}
+          onClick={() => handleTabChange('completed')}
           className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
             activeTab === 'completed'
               ? 'bg-primary-500 text-white shadow-md'
@@ -2363,25 +2376,33 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </button>
       </div>
 
-      {/* Filter Bar */}
-      <Card className="p-4">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Filter by barber:</label>
-          <select
-            value={selectedBarberId}
-            onChange={(e) => setSelectedBarberId(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-          >
-            <option value="all">All Barbers</option>
-            {barbers.map((barber) => (
-              <option key={barber.id} value={barber.id}>{barber.name}</option>
-            ))}
-          </select>
-        </div>
-      </Card>
+      {/* Content with transition */}
+      <div 
+        className={`transition-all duration-150 ease-out ${
+          isContentVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-2'
+        }`}
+      >
+        {/* Filter Bar */}
+        <Card className="p-4 mb-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Filter by barber:</label>
+            <select
+              value={selectedBarberId}
+              onChange={(e) => setSelectedBarberId(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            >
+              <option value="all">All Barbers</option>
+              {barbers.map((barber) => (
+                <option key={barber.id} value={barber.id}>{barber.name}</option>
+              ))}
+            </select>
+          </div>
+        </Card>
 
-      {/* Bookings List */}
-      {bookings.length === 0 ? (
+        {/* Bookings List */}
+        {bookings.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
           <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
           <p className="text-gray-700 font-medium text-sm sm:text-base">
@@ -2496,7 +2517,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             </Card>
           ))}
         </div>
-      )}
+        )}
+      </div>
 
     </div>
   );
