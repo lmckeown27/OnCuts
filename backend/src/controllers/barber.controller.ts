@@ -1070,13 +1070,14 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       }
 
       // Get booked slots for this date
+      // Convert UTC stored times to Pacific time for proper comparison
       const bookingsResult = await pool.query(
         `SELECT 
-          TO_CHAR("requestedAt" AT TIME ZONE 'UTC', 'HH24:MI') as start_time,
-          TO_CHAR("requestedAt" AT TIME ZONE 'UTC' + INTERVAL '30 minutes', 'HH24:MI') as end_time
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH24:MI') as start_time,
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + INTERVAL '30 minutes', 'HH24:MI') as end_time
         FROM bookings 
         WHERE "barberId" = $1 
-          AND DATE("requestedAt") = $2
+          AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
           AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
         ORDER BY "requestedAt"`,
         [id, date]
@@ -1086,6 +1087,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         start: row.start_time,
         end: row.end_time
       }));
+
+      console.log(`[Availability] Found ${bookedSlots.length} booked slots for ${date}:`, bookedSlots);
 
       // Check if the selected date is today (to filter out past times)
       // Use Pacific timezone since all barbers are at Cal Poly SLO
