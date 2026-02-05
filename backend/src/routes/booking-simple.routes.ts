@@ -1491,6 +1491,38 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
 
     logger.info(`Payment processed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} via ${paymentMethod} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
 
+    // Emit WebSocket event to barber for instant notification (same as card payment)
+    try {
+      const io = getSocketIO();
+      if (io) {
+        // Get consumer info for the notification
+        const consumerResult = await pool.query(
+          `SELECT first_name, last_name FROM users WHERE id = $1`,
+          [userId]
+        );
+        const consumer = consumerResult.rows[0];
+        const consumerName = consumer ? `${consumer.first_name} ${consumer.last_name}` : 'Customer';
+
+        const paymentData = {
+          bookingId: id,
+          consumerId: userId,
+          consumerName,
+          amountPaid: totalAmountCents,
+          tipAmount: tipAmountCents,
+          totalFormatted: `$${(totalAmountCents / 100).toFixed(2)}`,
+          tipFormatted: tipAmountCents > 0 ? `$${(tipAmountCents / 100).toFixed(2)}` : undefined,
+          paymentMethod,
+        };
+
+        logger.info(`[payment-received] Emitting to barber user ${booking.barber_user_id} for booking ${id} (${paymentMethod})`);
+        io.to(`user-${booking.barber_user_id}`).emit('payment-received', paymentData);
+        logger.info(`[payment-received] ✅ Emitted to room user-${booking.barber_user_id}`);
+      }
+    } catch (wsError: any) {
+      logger.error(`[payment-received] Error emitting WebSocket event: ${wsError.message}`);
+      // Don't fail the request if WebSocket emission fails
+    }
+
     res.json({
       success: true,
       message: 'Payment processed successfully',
