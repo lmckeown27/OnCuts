@@ -1107,6 +1107,41 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       logger.error('Failed to send payment request notification:', notifError);
     }
 
+    // Send payment request email to consumer
+    const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+    const paymentUrl = `${frontendUrl}/web/payment/${id}`;
+    const serviceName = booking.service_name || 'Haircut';
+    
+    // Format scheduled date/time
+    const scheduledDate = booking.scheduled_time 
+      ? new Date(booking.scheduled_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      : 'N/A';
+    const scheduledTime = booking.scheduled_time
+      ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      : 'N/A';
+    
+    logger.info(`[REQUEST-PAYMENT] About to send payment request email for booking ${id}`);
+    logger.info(`[REQUEST-PAYMENT] Consumer: ${booking.consumer_name} <${booking.consumer_email}>`);
+    
+    try {
+      await sendBookingCompletedEmails({
+        bookingId: id,
+        serviceName,
+        price: booking.priceUsdCents / 100,
+        scheduledDate,
+        scheduledTime,
+        location: booking.location,
+        consumerName: booking.consumer_name,
+        consumerEmail: booking.consumer_email,
+        barberName: booking.barber_name,
+        barberEmail: '', // Don't send to barber from this endpoint - they initiated it
+        paymentUrl,
+      });
+      logger.info(`[REQUEST-PAYMENT] ✅ Payment request email sent for booking ${id}`);
+    } catch (emailError: any) {
+      logger.error(`[REQUEST-PAYMENT] ❌ Failed to send payment request email for ${id}:`, emailError.message);
+    }
+
     res.json({
       success: true,
       message: 'Payment request sent to consumer',
