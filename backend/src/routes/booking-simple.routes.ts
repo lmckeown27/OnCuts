@@ -64,14 +64,15 @@ router.post('/', authenticate, async (req, res, next) => {
         checkTime = pacificTime.toJSDate();
       }
       
-      // Check for existing bookings within 30 minutes of the requested time
+      // Check for existing bookings within 60 minutes of the requested time
       // Only check PENDING and ACCEPTED bookings (not COMPLETED, PAID, CANCELLED, REJECTED)
+      // Each appointment blocks 1 hour (3600 seconds)
       const conflictCheck = await pool.query(
         `SELECT id, "requestedAt", status 
          FROM bookings 
          WHERE "barberId" = $1 
            AND status IN ('PENDING', 'ACCEPTED')
-           AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamp))) < 1800`,
+           AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamp))) < 3600`,
         [barberRecordId, checkTime.toISOString()]
       );
       

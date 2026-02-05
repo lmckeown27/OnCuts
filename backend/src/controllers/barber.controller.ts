@@ -1071,10 +1071,11 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
 
       // Get booked slots for this date
       // Convert UTC stored times to Pacific time for proper comparison
+      // Each appointment blocks 1 hour (60 minutes) from start time
       const bookingsResult = await pool.query(
         `SELECT 
           TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH24:MI') as start_time,
-          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + INTERVAL '30 minutes', 'HH24:MI') as end_time
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + INTERVAL '60 minutes', 'HH24:MI') as end_time
         FROM bookings 
         WHERE "barberId" = $1 
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
