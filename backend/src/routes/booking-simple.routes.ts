@@ -1438,19 +1438,22 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
 
     const booking = bookingCheck.rows[0];
 
-    if (booking.status !== 'COMPLETED') {
+    // Allow payment for ACCEPTED or COMPLETED bookings
+    // ACCEPTED = service agreed upon, COMPLETED = barber marked service done
+    if (!['ACCEPTED', 'COMPLETED'].includes(booking.status)) {
       return res.status(400).json({
         success: false,
-        error: 'Can only pay for completed bookings'
+        error: 'Can only pay for accepted or completed bookings'
       });
     }
 
     const totalAmountCents = booking.priceUsdCents + tipAmountCents;
 
-    // Update booking with payment info
+    // Update booking with payment info and set status to PAID
     await pool.query(
       `UPDATE bookings 
-       SET "tipAmountCents" = $1,
+       SET status = 'PAID',
+           "tipAmountCents" = $1,
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
            "paymentMethod" = $3,
