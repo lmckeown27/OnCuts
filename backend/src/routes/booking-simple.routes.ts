@@ -53,6 +53,41 @@ router.post('/', authenticate, async (req, res, next) => {
     
     const barberRecordId = barberResult.rows[0].id;
 
+    // Check for time slot conflicts - barber can only have one booking at a time
+    if (scheduledTime) {
+      // Parse the scheduled time to check for conflicts
+      let checkTime: Date;
+      if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
+        checkTime = new Date(scheduledTime);
+      } else {
+        const pacificTime = DateTime.fromISO(scheduledTime, { zone: 'America/Los_Angeles' });
+        checkTime = pacificTime.toJSDate();
+      }
+      
+      // Check for existing bookings within 30 minutes of the requested time
+      // Only check PENDING and ACCEPTED bookings (not COMPLETED, PAID, CANCELLED, REJECTED)
+      const conflictCheck = await pool.query(
+        `SELECT id, "requestedAt", status 
+         FROM bookings 
+         WHERE "barberId" = $1 
+           AND status IN ('PENDING', 'ACCEPTED')
+           AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamp))) < 1800`,
+        [barberRecordId, checkTime.toISOString()]
+      );
+      
+      if (conflictCheck.rows.length > 0) {
+        const conflictingBooking = conflictCheck.rows[0];
+        const conflictTime = new Date(conflictingBooking.requestedAt);
+        logger.warn(`Time slot conflict for barber ${barberRecordId}: requested ${checkTime.toISOString()}, existing booking at ${conflictTime.toISOString()}`);
+        
+        return res.status(409).json({ 
+          success: false, 
+          error: 'This time slot is no longer available. The barber already has an appointment at this time. Please choose a different time.',
+          conflictAt: conflictTime.toISOString(),
+        });
+      }
+    }
+
     // Map frontend service names to database enum values
     // NOTE: The original service name is preserved in conversations.service_name for display
     // This mapping is for database storage - the display will show the original name
