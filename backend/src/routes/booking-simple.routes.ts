@@ -784,6 +784,8 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     });
 
     // Send booking completed emails to both consumer and barber
+    logger.info(`[COMPLETE ENDPOINT] About to send booking completed emails for booking ${id}`);
+    logger.info(`[COMPLETE ENDPOINT] Consumer email: ${booking.consumer_email}, Barber email: ${booking.barber_email}`);
     try {
       await sendBookingCompletedEmails({
         bookingId: id,
@@ -798,10 +800,11 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
         barberEmail: booking.barber_email,
         paymentUrl,
       });
-      logger.info(`Booking completed emails sent for booking ${id}`);
+      logger.info(`[COMPLETE ENDPOINT] ✅ Email function completed for booking ${id}`);
     } catch (emailError: any) {
       // Don't fail the request if emails fail - just log it
-      logger.error(`Failed to send booking completed emails for ${id}:`, emailError.message);
+      logger.error(`[COMPLETE ENDPOINT] ❌ Email function threw error for ${id}:`, emailError.message);
+      logger.error(`[COMPLETE ENDPOINT] Full error:`, emailError);
     }
 
     logger.info(`Booking ${id} marked as COMPLETED by barber ${userId}. Payment request sent to consumer ${booking.consumerId}`);

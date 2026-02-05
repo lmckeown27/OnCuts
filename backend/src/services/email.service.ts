@@ -1149,8 +1149,20 @@ interface BookingCompletedEmailDetails {
  * @param details - Booking completed details
  */
 export async function sendBookingCompletedEmails(details: BookingCompletedEmailDetails): Promise<void> {
+  logger.info(`[BOOKING COMPLETE EMAIL] Starting email send for booking ${details.bookingId}`);
+  logger.info(`[BOOKING COMPLETE EMAIL] Consumer: ${details.consumerName} <${details.consumerEmail}>`);
+  logger.info(`[BOOKING COMPLETE EMAIL] Barber: ${details.barberName} <${details.barberEmail}>`);
+  logger.info(`[BOOKING COMPLETE EMAIL] Service: ${details.serviceName}, Price: $${details.price}`);
+  logger.info(`[BOOKING COMPLETE EMAIL] Payment URL: ${details.paymentUrl}`);
+  
   if (isAutoVerifyEnabled()) {
     logger.info(`[AUTO-VERIFY MODE] Skipping booking completed emails for booking ${details.bookingId}`);
+    return;
+  }
+
+  // Validate required fields
+  if (!details.consumerEmail) {
+    logger.error(`[BOOKING COMPLETE EMAIL] Missing consumer email for booking ${details.bookingId}`);
     return;
   }
 
@@ -1158,6 +1170,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
 
   // Send to consumer - Payment Request
   try {
+    logger.info(`[BOOKING COMPLETE EMAIL] Creating transporter for consumer email...`);
     const transporter = createTransporter();
     
     const consumerMailOptions = {
@@ -1168,29 +1181,39 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
       html: generateBookingCompletedHtml(details, 'consumer', frontendUrl)
     };
 
+    logger.info(`[BOOKING COMPLETE EMAIL] Sending consumer email to ${details.consumerEmail}...`);
     await transporter.sendMail(consumerMailOptions);
-    logger.info(`Booking completed email sent to consumer: ${details.consumerEmail}`);
+    logger.info(`[BOOKING COMPLETE EMAIL] ✅ Consumer email sent successfully to: ${details.consumerEmail}`);
   } catch (error: any) {
-    logger.error(`Failed to send booking completed email to consumer ${details.consumerEmail}:`, error.message);
+    logger.error(`[BOOKING COMPLETE EMAIL] ❌ Failed to send consumer email to ${details.consumerEmail}:`, error.message);
+    logger.error(`[BOOKING COMPLETE EMAIL] Full error:`, error);
   }
 
   // Send to barber - Service Complete Confirmation
   try {
-    const transporter = createTransporter();
-    
-    const barberMailOptions = {
-      from: `CampusCut <${process.env.SMTP_USER}>`,
-      to: details.barberEmail,
-      subject: `Service Complete: ${details.serviceName} with ${details.consumerName}`,
-      text: generateBookingCompletedText(details, 'barber'),
-      html: generateBookingCompletedHtml(details, 'barber', frontendUrl)
-    };
+    if (!details.barberEmail) {
+      logger.warn(`[BOOKING COMPLETE EMAIL] Missing barber email for booking ${details.bookingId}, skipping barber notification`);
+    } else {
+      logger.info(`[BOOKING COMPLETE EMAIL] Sending barber confirmation email to ${details.barberEmail}...`);
+      const transporter = createTransporter();
+      
+      const barberMailOptions = {
+        from: `CampusCut <${process.env.SMTP_USER}>`,
+        to: details.barberEmail,
+        subject: `Service Complete: ${details.serviceName} with ${details.consumerName}`,
+        text: generateBookingCompletedText(details, 'barber'),
+        html: generateBookingCompletedHtml(details, 'barber', frontendUrl)
+      };
 
-    await transporter.sendMail(barberMailOptions);
-    logger.info(`Booking completed email sent to barber: ${details.barberEmail}`);
+      await transporter.sendMail(barberMailOptions);
+      logger.info(`[BOOKING COMPLETE EMAIL] ✅ Barber email sent successfully to: ${details.barberEmail}`);
+    }
   } catch (error: any) {
-    logger.error(`Failed to send booking completed email to barber ${details.barberEmail}:`, error.message);
+    logger.error(`[BOOKING COMPLETE EMAIL] ❌ Failed to send barber email to ${details.barberEmail}:`, error.message);
+    logger.error(`[BOOKING COMPLETE EMAIL] Full error:`, error);
   }
+  
+  logger.info(`[BOOKING COMPLETE EMAIL] Finished processing emails for booking ${details.bookingId}`);
 }
 
 /**
