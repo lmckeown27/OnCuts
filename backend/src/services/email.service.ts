@@ -1296,7 +1296,7 @@ function generateBookingCompletedHtml(
 
   const headerColor = isConsumer ? '#22c55e' : '#3b82f6'; // Green for consumer (pay), Blue for barber
   const headerText = isConsumer ? 'Payment Required' : 'Service Complete';
-  const headerEmoji = isConsumer ? '💳' : '✅';
+  const headerEmoji = isConsumer ? '' : '✅'; // No emoji for consumer, show CampusCut text instead
 
   const ctaButton = isConsumer
     ? `<a href="${details.paymentUrl}" style="display: inline-block; background-color: #22c55e; color: white; padding: 16px 48px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">Pay $${details.price.toFixed(2)} Now</a>`
@@ -1316,7 +1316,10 @@ function generateBookingCompletedHtml(
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <div style="background-color: ${headerColor}; padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">${headerEmoji}</span>
+      ${isConsumer 
+        ? `<span style="font-size: 28px; font-weight: 700; color: white; letter-spacing: -1px;">CampusCut</span>`
+        : `<span style="font-size: 48px;">${headerEmoji}</span>`
+      }
       <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">${headerText}</h1>
     </div>
     <div style="padding: 30px;">
