@@ -73,7 +73,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Build WHERE clause - campus managers can request to include hidden barbers
-    // Always exclude ADMIN users from barber listings (they are platform admins, not barbers)
     const shouldIncludeHidden = includeHidden === 'true';
     
     query += `
@@ -82,7 +81,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       WHERE ${shouldIncludeHidden ? '1=1' : 'b."isActive" = true'}
         AND u.stripe_account_id IS NOT NULL
         AND u.stripe_payouts_enabled = true
-        AND u.role != 'ADMIN'
     `;
 
     // Handle campusId - can be UUID or slug
