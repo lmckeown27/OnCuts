@@ -1,8 +1,8 @@
 # CampusCuts
 
-**A blockchain-powered campus marketplace connecting students with barbers.**
+**A campus marketplace connecting students with barbers.**
 
-Campus-based booking platform with escrow payments, built on Aptos blockchain with hybrid off-chain/on-chain architecture.
+Campus-based booking platform with secure payments, real-time messaging, and streamlined scheduling for college communities.
 
 ---
 
@@ -10,7 +10,7 @@ Campus-based booking platform with escrow payments, built on Aptos blockchain wi
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/CampusCuts.git
+git clone https://github.com/lmckeown27/CampusCuts.git
 cd CampusCuts
 
 # Backend setup
@@ -24,7 +24,7 @@ npm install
 npm run build
 
 # Start services
-pm2 start backend/dist/index.js --name backend
+pm2 start backend/dist/index.js --name campuscuts-backend
 ```
 
 ---
@@ -33,24 +33,22 @@ pm2 start backend/dist/index.js --name backend
 
 ### **Backend**
 - Node.js + TypeScript + Express
-- PostgreSQL (database)
-- Prisma ORM
+- PostgreSQL (database with raw queries)
 - Stripe (payments)
-- Aptos SDK (blockchain)
+- Socket.IO (real-time messaging & updates)
 - JWT authentication
-- Nodemailer (email)
+- Nodemailer (SMTP email)
+- AWS S3 (image storage)
+- Luxon (timezone handling)
 
 ### **Frontend**
-- React + TypeScript + Vite
+- React 18 + TypeScript + Vite
 - TailwindCSS
-- React Query
 - Zustand (state management)
-- Petra Wallet integration
+- React Router v6
+- Lucide React (icons)
+- React Hot Toast (notifications)
 - **Typography:** Source Serif 4 (Medium weight, 500) - Google Fonts
-
-### **Blockchain**
-- Aptos (Move smart contracts)
-- Module Address: `0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa`
 
 ---
 
@@ -73,10 +71,12 @@ GRANT ALL ON SCHEMA public TO campuscuts_user;
 ```bash
 cd backend
 # Run all migrations in order
-psql $DATABASE_URL -f database/migrations/001_initial_schema.sql
-psql $DATABASE_URL -f database/migrations/002_add_indexes.sql
-# ... (run all numbered migrations)
-psql $DATABASE_URL -f database/migrations/008_payment_escrows_fixed.sql
+for f in src/database/migrations/*.sql; do
+  sudo -u postgres psql -d campuscuts -f "$f"
+done
+
+# Seed campus data
+sudo -u postgres psql -d campuscuts -f src/database/seed_campuses.sql
 ```
 
 ---
@@ -100,10 +100,8 @@ JWT_EXPIRES_IN=7d
 JWT_REFRESH_EXPIRES_IN=30d
 
 # Payment System
-PAYMENT_MODE=offchain
-STRIPE_SECRET_KEY=sk_test_your_stripe_key
+STRIPE_SECRET_KEY=sk_live_your_stripe_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-STRIPE_PLATFORM_FEE_PERCENT=5.0
 
 # Email (SMTP)
 SMTP_HOST=smtp.gmail.com
@@ -111,78 +109,44 @@ SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_16_char_app_password
 EMAIL_FROM="CampusCuts <noreply@campuscuts.com>"
-FRONTEND_URL=https://campuscuts.com
+FRONTEND_URL=https://campuscut.com
 AUTO_VERIFY_EMAILS=false
 
-# Aptos Blockchain
-APTOS_NETWORK=devnet
-APTOS_MODULE_ADDRESS=0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa
-APTOS_PLATFORM_PRIVATE_KEY=0xYOUR_PRIVATE_KEY_HERE
-
-# Circle (Optional - for future on-chain payments)
-USE_CIRCLE=false
-CIRCLE_TEST_API_KEY=TEST_API_KEY:your_key:your_secret
-CIRCLE_API_URL=https://api-sandbox.circle.com
-
-# IPFS (Optional - for decentralized storage)
-USE_IPFS=false
-PINATA_API_KEY=your_pinata_jwt
-PINATA_API_SECRET=your_pinata_secret
-
-# Features
-ENABLE_GAS_WALLET_MONITORING=false
+# AWS S3 (Image Storage)
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_REGION=us-west-1
+S3_BUCKET_NAME=campuscut-images
 ```
 
 ### **Frontend `.env`**
 
 ```bash
-VITE_API_URL=http://localhost:3001/api/v1
-VITE_APTOS_NETWORK=devnet
-VITE_MODULE_ADDRESS=0x50c7bf0be7f5a56f8312ae8a49ec638d0d7b2bc68e061b867ed86d2af82a21aa
+VITE_API_URL=https://campuscut.com/api/v1
 ```
 
 ---
 
 ## 💳 Payment System
 
-### **Current: Off-Chain (Stripe)**
+### **Stripe Integration**
 
-Simple, production-ready payment flow:
+Secure payment flow with post-service payments:
 
 ```
-Student → Stripe → Escrow (database) → Barber
-         (USD)    (held)              (USD)
+Barber marks complete → Consumer receives email → Consumer pays → Funds to barber
 ```
+
+**Payment Options:**
+- **Pay with Card** - Stripe payment processing with optional tips
+- **Pay with Cash** - Mark as paid for in-person cash transactions
 
 **Features:**
-- Hold funds in escrow until service complete
-- Release to barber after haircut
-- Refund to student if cancelled
-- Platform fee: 5% (configurable)
-- Stripe fees: ~4.36% per transaction
-
-**Architecture:**
-```typescript
-// payment.service.ts - Unified API
-await paymentService.createEscrow(bookingId, amount, studentId, barberId);
-await paymentService.releaseEscrow(escrowId);
-await paymentService.refundEscrow(escrowId, reason);
-```
-
-### **Future: On-Chain (Circle + Blockchain)**
-
-Optional migration path for blockchain payments:
-
-```
-Student → Circle → USDC → Aptos Blockchain → Circle → Barber
-         (USD→USDC)      (smart contract)   (USDC→USD)
-```
-
-**To enable:**
-1. Set `PAYMENT_MODE=onchain` in `.env`
-2. Add Circle API keys
-3. Implement on-chain methods in `payment.service.ts`
-4. Application code stays **unchanged** (abstraction layer)
+- Post-service payment collection
+- Optional tip selection (15%, 20%, 25%, or custom)
+- Real-time payment status updates via WebSocket
+- Email notification with payment link when service completes
+- Platform fee: 15% (configurable)
 
 ---
 
@@ -192,8 +156,17 @@ Student → Circle → USDC → Aptos Blockchain → Circle → Barber
 
 - Access tokens (7 days default)
 - Refresh tokens (30 days default)
-- Role-based access control (student, barber, admin)
+- Role-based access control
 - Email verification required
+
+### **User Roles**
+
+| Role | Description |
+|------|-------------|
+| `student` | Consumer - can book appointments |
+| `barber` | Service provider - manages bookings |
+| `campus_manager` | Oversees campus barbers and applications |
+| `ADMIN` | Full platform access |
 
 ### **Generate Secrets**
 
@@ -207,19 +180,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ---
 
-## 📧 Email Verification
+## 📧 Email Notifications
 
-Two-step registration with email verification:
+Automated email notifications for:
 
-1. **Register** → Creates pending registration
-2. **Email sent** → 6-digit verification code
-3. **Verify code** → Creates account + issues JWT
-4. **Circle wallet** → Auto-created on registration
+- **Registration** - 6-digit verification code
+- **Booking Confirmation** - When barber accepts booking
+- **Service Complete** - Payment link sent to consumer
+- **Payment Received** - Confirmation to both parties
 
 **Configure SMTP:**
 - Gmail: Use app-specific password (16 characters)
 - Set `AUTO_VERIFY_EMAILS=false` for production
-- Set `AUTO_VERIFY_EMAILS=true` for development
 
 ---
 
@@ -229,23 +201,10 @@ Two-step registration with email verification:
 
 | Service | Key | Where to Get |
 |---------|-----|--------------|
-| **Stripe** | `STRIPE_SECRET_KEY` | https://dashboard.stripe.com/test/apikeys |
+| **Stripe** | `STRIPE_SECRET_KEY` | https://dashboard.stripe.com/apikeys |
 | **Stripe Webhooks** | `STRIPE_WEBHOOK_SECRET` | https://dashboard.stripe.com/webhooks |
 | **Gmail SMTP** | `SMTP_PASS` | Gmail → Security → App Passwords |
-
-### **Blockchain (Required for Aptos features)**
-
-| Service | Key | Where to Get |
-|---------|-----|--------------|
-| **Aptos** | `APTOS_PLATFORM_PRIVATE_KEY` | `aptos init` command |
-| **Module Address** | Pre-deployed | Already set: `0x50c7...` |
-
-### **Optional (Future Features)**
-
-| Service | Key | Purpose |
-|---------|-----|---------|
-| **Circle** | `CIRCLE_TEST_API_KEY` | USD ↔ USDC conversion |
-| **Pinata** | `PINATA_API_KEY` | IPFS file storage |
+| **AWS S3** | `AWS_ACCESS_KEY_ID` | AWS IAM Console |
 
 ---
 
@@ -255,12 +214,14 @@ Two-step registration with email verification:
 
 ```bash
 # 1. Clone on server
-git clone https://github.com/your-username/CampusCuts.git
+git clone https://github.com/lmckeown27/CampusCuts.git
 cd CampusCuts
 
 # 2. Setup database
-createdb campuscuts
-psql campuscuts < backend/database/migrations/*.sql
+sudo -u postgres createdb campuscuts
+for f in backend/src/database/migrations/*.sql; do
+  sudo -u postgres psql -d campuscuts -f "$f"
+done
 
 # 3. Configure environment
 cp backend/.env.example backend/.env
@@ -281,85 +242,97 @@ pm2 save
 
 # 7. Setup nginx reverse proxy
 sudo nano /etc/nginx/sites-available/campuscuts
-# Configure proxy to localhost:3001
 sudo nginx -t && sudo systemctl reload nginx
-```
-
-### **Docker Deployment (Alternative)**
-
-```bash
-docker-compose up -d --build
 ```
 
 ---
 
 ## 📱 Key Features
 
-### **For Students**
-- ✅ Browse barbers by campus
-- ✅ Book appointments
-- ✅ Secure escrow payments
+### **For Consumers (Students)**
+- ✅ Browse barbers by university campus
+- ✅ Dynamic university selection (100+ campuses)
+- ✅ Real-time availability with time slot blocking
+- ✅ Book appointments with date/time picker
+- ✅ Real-time messaging with barbers
+- ✅ Pay with card or cash after service
+- ✅ Optional tips for barbers
 - ✅ Rate and review barbers
-- ✅ Real-time booking status
+- ✅ View booking status in real-time
 
 ### **For Barbers**
-- ✅ Manage availability
-- ✅ Accept/reject bookings
-- ✅ Automatic payouts via Stripe Connect
-- ✅ Portfolio management
-- ✅ Earnings dashboard
+- ✅ Manage weekly availability schedule
+- ✅ Multiple time intervals per day
+- ✅ Accept/reject booking requests
+- ✅ Real-time messaging with consumers
+- ✅ Mark services as complete
+- ✅ Portfolio/gallery management (S3)
+- ✅ Instagram integration
+- ✅ Custom service pricing
+- ✅ Visibility toggle (hide/show profile)
+
+### **For Campus Managers**
+- ✅ View all campus barbers (including hidden)
+- ✅ Review barber applications
+- ✅ Schedule interviews via email
+- ✅ View campus booking statistics
+- ✅ Filter bookings by barber and date
 
 ### **Platform Features**
 - ✅ Email verification
-- ✅ JWT authentication
-- ✅ Payment escrow system
+- ✅ JWT authentication with refresh tokens
 - ✅ Role-based access control
-- ✅ Booking management
-- ✅ Review system
-- ✅ Admin dashboard
+- ✅ Real-time WebSocket updates
+- ✅ 1-hour appointment time blocking
+- ✅ Time conflict prevention
+- ✅ Responsive mobile-first design
+- ✅ Unread message notifications
 
 ---
 
 ## 🏗️ Architecture
 
-### **Hybrid Architecture**
+### **System Architecture**
 
 ```
 ┌─────────────────────────────────────────┐
 │           Frontend (React)              │
-│  Booking UI, Wallet, User Management    │
+│  Booking UI, Messages, User Dashboard   │
 └──────────────┬──────────────────────────┘
-               │ REST API
+               │ REST API + WebSocket
 ┌──────────────▼──────────────────────────┐
 │       Backend (Node.js/Express)         │
-│   Payment Service (abstraction layer)   │
-└──────┬────────────────────┬─────────────┘
-       │                    │
-       │ (Current)          │ (Future)
-       │                    │
-┌──────▼─────┐      ┌───────▼────────┐
-│   Stripe   │      │  Circle API    │
-│ (Off-chain)│      │ USD ↔ USDC     │
-└────────────┘      └────────┬───────┘
-                             │
-                    ┌────────▼─────────┐
-                    │ Aptos Blockchain │
-                    │  (On-chain)      │
-                    └──────────────────┘
+│   Routes, Controllers, Services         │
+└──────┬─────────────┬───────────┬────────┘
+       │             │           │
+┌──────▼─────┐ ┌─────▼─────┐ ┌───▼────┐
+│ PostgreSQL │ │   Stripe  │ │  AWS   │
+│  Database  │ │ Payments  │ │   S3   │
+└────────────┘ └───────────┘ └────────┘
 ```
 
-### **Payment Flow**
+### **Real-Time Communication**
 
-**Current (Off-Chain):**
 ```
-Student pays $25 → Stripe holds → Service done → Release to barber
+Socket.IO Events:
+├── booking-update     → Booking status changes
+├── payment-received   → Payment confirmations
+├── new-message        → Chat messages
+└── notification       → System notifications
 ```
 
-**Future (On-Chain):**
+### **Booking Flow**
+
 ```
-Student pays $25 → Circle converts to 25 USDC → 
-Blockchain escrow → Service done → 
-Release USDC → Circle converts to $25 → Barber receives
+1. Consumer selects barber & time
+2. Consumer submits booking request
+3. Barber receives notification
+4. Barber accepts/rejects
+5. Service is performed
+6. Barber marks complete
+7. Consumer receives payment email
+8. Consumer pays (card or cash)
+9. Booking marked as PAID
 ```
 
 ---
@@ -377,24 +350,28 @@ npm run dev  # Start with nodemon (auto-reload)
 
 ```bash
 cd web-app
-npm run dev  # Start Vite dev server
+npm run dev  # Start Vite dev server (port 5173)
 ```
 
 ### **Database Management**
 
 ```bash
 # Connect to database
-psql $DATABASE_URL
-
-# Run specific migration
-psql $DATABASE_URL -f backend/database/migrations/XXX_migration_name.sql
+sudo -u postgres psql -d campuscuts
 
 # Check tables
-psql $DATABASE_URL -c "\dt"
+\dt
 
-# Check escrows table
-psql $DATABASE_URL -c "SELECT * FROM escrows LIMIT 10;"
+# View barbers
+SELECT u.first_name, u.last_name, u.email, b."isActive" 
+FROM barbers b 
+JOIN users u ON b."userId" = u.id;
+
+# View bookings
+SELECT * FROM bookings ORDER BY "createdAt" DESC LIMIT 10;
 ```
+
+See `POSTGRES_COMMANDS.md` for comprehensive database queries.
 
 ---
 
@@ -415,11 +392,11 @@ psql $DATABASE_URL -c "SELECT * FROM escrows LIMIT 10;"
 # Health check
 curl http://localhost:3001/health
 
-# Create test escrow (requires auth)
-curl -X POST http://localhost:3001/api/v1/bookings \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"barberId":1,"serviceType":"haircut","scheduledTime":"2025-12-25T10:00:00Z"}'
+# Get campuses
+curl http://localhost:3001/api/v1/campus
+
+# Get barbers by campus
+curl http://localhost:3001/api/v1/barbers?campusId=<campus-id>
 ```
 
 ---
@@ -428,35 +405,29 @@ curl -X POST http://localhost:3001/api/v1/bookings \
 
 ### **Key Tables**
 
-- `users` - Students, barbers, admins
-- `bookings` - Appointment bookings (UUID primary key)
-- `escrows` - Payment escrows (off-chain and on-chain support)
-- `reviews` - Student reviews of barbers
-- `barbers` - Barber profiles and availability
-- `circle_transactions` - Circle API transaction tracking (optional)
+| Table | Description |
+|-------|-------------|
+| `users` | All users (students, barbers, managers, admins) |
+| `barbers` | Barber profiles, availability, pricing |
+| `bookings` | Appointment records with status tracking |
+| `reviews` | Consumer reviews and ratings |
+| `campuses` | University/college data |
+| `conversations` | Messaging threads |
+| `messages` | Individual chat messages |
+| `barber_applications` | Registered user applications |
+| `guest_barber_applications` | Non-registered applications |
+| `notifications` | In-app notifications |
 
-### **Escrows Table**
+### **Booking Statuses**
 
-```sql
-CREATE TABLE escrows (
-  id SERIAL PRIMARY KEY,
-  booking_id UUID NOT NULL REFERENCES bookings(id),
-  amount DECIMAL(10, 2) NOT NULL,
-  status VARCHAR(50) NOT NULL,  -- 'pending', 'held', 'released', 'refunded'
-  type VARCHAR(20) NOT NULL,    -- 'offchain' or 'onchain'
-  
-  -- Off-chain (Stripe)
-  stripe_payment_intent_id VARCHAR(255),
-  stripe_transfer_id VARCHAR(255),
-  
-  -- On-chain (future)
-  blockchain_tx_hash VARCHAR(255),
-  usdc_amount DECIMAL(20, 6),
-  
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
+| Status | Description |
+|--------|-------------|
+| `PENDING` | Awaiting barber response |
+| `ACCEPTED` | Barber accepted, service upcoming |
+| `COMPLETED` | Service finished, awaiting payment |
+| `PAID` | Payment received |
+| `CANCELLED` | Cancelled by consumer |
+| `REJECTED` | Rejected by barber |
 
 ---
 
@@ -466,20 +437,20 @@ CREATE TABLE escrows (
 
 ```bash
 # Check logs
-pm2 logs backend --lines 50
+pm2 logs campuscuts-backend --lines 50
 
 # Rebuild
 cd backend
 rm -rf dist
 npm run build
-pm2 restart backend
+pm2 restart campuscuts-backend
 ```
 
 ### **Database connection failed**
 
 ```bash
 # Test connection
-psql $DATABASE_URL -c "SELECT 1;"
+sudo -u postgres psql -d campuscuts -c "SELECT 1;"
 
 # Check .env
 grep DATABASE_URL backend/.env
@@ -488,17 +459,25 @@ grep DATABASE_URL backend/.env
 sudo -u postgres psql -c "\du"
 ```
 
-### **Payment errors**
+### **Email not sending**
 
 ```bash
-# Check Stripe keys
-grep STRIPE backend/.env
+# Check SMTP config
+grep SMTP backend/.env
 
-# Verify escrows table
-psql $DATABASE_URL -c "SELECT COUNT(*) FROM escrows;"
+# Verify app password is correct (16 chars, no spaces)
+# Check spam folder
+# Verify EMAIL_FROM format
+```
 
-# Check payment service
-ls -la backend/dist/services/payment.service.js
+### **Images not uploading**
+
+```bash
+# Check S3 config
+grep AWS backend/.env
+grep S3 backend/.env
+
+# Verify bucket permissions and CORS
 ```
 
 ### **Build errors**
@@ -521,14 +500,16 @@ npm run build
 - **Payment processing:** ~2-3 seconds (Stripe)
 - **Database queries:** <50ms average
 - **API response time:** <200ms average
+- **WebSocket latency:** <100ms
 - **Concurrent users:** 100+ supported
 
-### **Scaling**
+### **Optimization**
 
-- Use Redis for caching (future)
 - PostgreSQL connection pooling (configured)
 - PM2 cluster mode for multiple processes
-- Nginx load balancing
+- Nginx reverse proxy with caching
+- S3 for static asset storage
+- Cache-Control headers for availability data
 
 ---
 
@@ -542,46 +523,78 @@ npm run build
 - ✅ Role-based access control
 - ✅ SQL injection prevention (parameterized queries)
 - ✅ CORS configuration
-- ✅ Rate limiting (optional)
 - ✅ HTTPS in production
+- ✅ Rate limiting on auth endpoints
+- ✅ Input validation and sanitization
 
 ### **Recommendations**
 
 - Rotate JWT secrets every 90 days
 - Enable 2FA for admin accounts
-- Set up Stripe webhook signature verification
 - Regular security audits
 - Keep dependencies updated
+- Monitor for unusual activity
 
 ---
 
 ## 🚀 Roadmap
 
-### **Phase 1: MVP (Current)**
-- ✅ Off-chain payments (Stripe)
+### **Phase 1: MVP ✅ Complete**
+- ✅ Stripe payments (post-service)
 - ✅ Email verification
-- ✅ Booking system
+- ✅ Booking system with availability
+- ✅ Real-time messaging
 - ✅ Review system
+- ✅ Campus manager dashboard
+- ✅ Pay with cash option
 
-### **Phase 2: Enhancement**
-- ⏳ On-chain payments (Circle + Aptos)
-- ⏳ IPFS file storage
+### **Phase 2: Enhancement (In Progress)**
 - ⏳ Push notifications
-- ⏳ Real-time chat
+- ⏳ Advanced analytics dashboard
+- ⏳ Recurring appointments
+- ⏳ Waitlist feature
 
 ### **Phase 3: Scale**
-- ⏳ Multi-campus expansion
+- ⏳ Multi-campus expansion tools
 - ⏳ Mobile apps (React Native)
-- ⏳ Advanced analytics
-- ⏳ Loyalty program
+- ⏳ Loyalty/rewards program
+- ⏳ Barber scheduling assistant
+
+---
+
+## 📂 Project Structure
+
+```
+CampusCuts/
+├── backend/
+│   ├── src/
+│   │   ├── controllers/     # Route handlers
+│   │   ├── routes/          # API endpoints
+│   │   ├── services/        # Business logic
+│   │   ├── middleware/      # Auth, validation
+│   │   ├── database/        # Migrations, seeds
+│   │   └── index.ts         # Entry point
+│   └── dist/                # Compiled output
+├── web-app/
+│   ├── src/
+│   │   ├── components/      # Reusable UI
+│   │   ├── pages/           # Route pages
+│   │   ├── services/        # API clients
+│   │   ├── stores/          # Zustand state
+│   │   ├── hooks/           # Custom hooks
+│   │   └── types/           # TypeScript types
+│   └── dist/                # Built assets
+├── POSTGRES_COMMANDS.md     # Database queries
+└── README.md                # This file
+```
 
 ---
 
 ## 📞 Support
 
 - **Issues:** Open a GitHub issue
-- **Email:** support@campuscuts.com
-- **Docs:** This README
+- **Email:** support@campuscut.com
+- **Production URL:** https://campuscut.com
 
 ---
 
@@ -591,15 +604,7 @@ MIT License - See LICENSE file for details
 
 ---
 
-## 🙏 Acknowledgments
-
-- Aptos Foundation for blockchain infrastructure
-- Stripe for payment processing
-- Community contributors
-
----
-
 **Built with ❤️ for campus communities**
 
-Platform Version: 1.0.0  
-Last Updated: December 2024
+Platform Version: 2.0.0  
+Last Updated: February 2026
