@@ -560,7 +560,8 @@ class MessageService {
           const recipientRole = recipient.role?.toUpperCase() || 'CONSUMER';
           
           // Determine which email template to use based on sender and recipient roles
-          if (senderRole === 'BARBER' && recipientRole === 'CONSUMER') {
+          // Note: STUDENT and CONSUMER roles are treated equivalently
+          if (senderRole === 'BARBER' && (recipientRole === 'CONSUMER' || recipientRole === 'STUDENT')) {
             // Barber sending to Consumer
             await sendConsumerNewMessageEmail({
               recipientEmail: recipient.email,
@@ -570,7 +571,7 @@ class MessageService {
               conversationId,
               booking: bookingDetails,
             });
-          } else if (senderRole === 'CONSUMER' && recipientRole === 'BARBER') {
+          } else if ((senderRole === 'CONSUMER' || senderRole === 'STUDENT') && recipientRole === 'BARBER') {
             // Consumer sending to Barber
             await sendBarberNewMessageFromConsumerEmail({
               recipientEmail: recipient.email,
@@ -612,6 +613,31 @@ class MessageService {
             (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')
           ) {
             // Admin/Campus Manager communicating with each other - use barber-to-barber template
+            await sendBarberToBarberMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+            });
+          } else if (
+            (senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && 
+            (recipientRole === 'CONSUMER' || recipientRole === 'STUDENT')
+          ) {
+            // Campus Manager/Admin sending to Consumer - use consumer template
+            await sendConsumerNewMessageEmail({
+              recipientEmail: recipient.email,
+              recipientName: recipientFullName,
+              senderName: senderFullName,
+              messageContent: content,
+              conversationId,
+              booking: bookingDetails,
+            });
+          } else if (
+            (senderRole === 'CONSUMER' || senderRole === 'STUDENT') && 
+            (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')
+          ) {
+            // Consumer sending to Campus Manager/Admin - use barber-to-barber template (business notification)
             await sendBarberToBarberMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
