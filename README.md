@@ -2,7 +2,55 @@
 
 **A campus marketplace connecting students with barbers.**
 
-Campus-based booking platform with secure payments, real-time messaging, and streamlined scheduling for college communities.
+---
+
+## 📖 Overview
+
+CampusCuts is a mobile-first web platform that connects college students with on-campus barbers. The platform streamlines the entire haircut booking experience—from discovering barbers at your university to scheduling appointments, messaging, and secure payment processing.
+
+### What is CampusCuts?
+
+CampusCuts solves a common problem on college campuses: finding reliable, affordable haircuts nearby. Instead of searching for off-campus barbershops or relying on word-of-mouth, students can browse verified barbers right at their university, view portfolios, check availability, and book appointments in minutes.
+
+### How It Works
+
+**For Students (Consumers):**
+1. **Select your university** from 100+ supported campuses
+2. **Browse barbers** - view profiles, portfolios, ratings, and pricing
+3. **Book an appointment** - choose a service, date, time, and location
+4. **Message your barber** - coordinate details or ask questions
+5. **Get your haircut** - meet at the scheduled time and location
+6. **Pay after service** - pay with card or cash, add an optional tip
+7. **Leave a review** - help other students find great barbers
+
+**For Barbers:**
+1. **Apply to join** - submit an application with experience and portfolio
+2. **Set your schedule** - define weekly availability with flexible time slots
+3. **List your services** - set custom pricing for different haircut types
+4. **Receive bookings** - get notified when students request appointments
+5. **Accept or negotiate** - message students to confirm details
+6. **Complete the service** - mark as done when finished
+7. **Get paid** - receive payment minus a small platform fee
+
+### Key Benefits
+
+| For Students | For Barbers |
+|--------------|-------------|
+| Find barbers at your campus | Reach students at your school |
+| View portfolios before booking | Flexible scheduling |
+| Real-time availability | Build your client base |
+| Secure post-service payments | Track earnings and reviews |
+| No upfront payment required | Professional portfolio hosting |
+| Rate and review barbers | Instagram integration |
+
+### Platform Highlights
+
+- **100+ Universities** - Campuses across the United States
+- **Real-Time Messaging** - Chat directly with barbers before and after booking
+- **Smart Scheduling** - 1-hour appointment blocks prevent double-bookings
+- **Flexible Payments** - Pay with card (Stripe) or cash after service
+- **Mobile-First Design** - Optimized for phones, works on all devices
+- **Campus Manager Tools** - University staff can oversee local barbers
 
 ---
 
