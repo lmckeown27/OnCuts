@@ -1294,6 +1294,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       currency: 'usd',
       payment_method_types: ['card', 'link'], // Card + Stripe Link for saved payment autofill
       customer: stripeCustomerId, // Associate payment with Stripe customer
+      setup_future_usage: 'off_session', // Save card for future payments - shows saved cards next time
       metadata: {
         booking_id: id,
         consumer_id: userId,
