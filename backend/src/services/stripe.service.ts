@@ -37,7 +37,7 @@ class StripeService {
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
         currency: 'usd',
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
         metadata: {
           client_id: clientId,
           barber_id: barberId,

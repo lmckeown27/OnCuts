@@ -101,9 +101,7 @@ class StripePaymentService {
           platformFee: platformFeeCents.toString(),
           barberAmount: barberAmountCents.toString(),
         },
-        automatic_payment_methods: {
-          enabled: true,
-        },
+        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
       };
 
       // If barber has a Stripe Connect account, use destination charges

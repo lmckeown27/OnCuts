@@ -80,7 +80,7 @@ class PaymentServiceV2 {
       const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
         amount: input.amountCents,
         currency: 'usd',
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
         metadata: {
           booking_id: input.bookingId,
           consumer_id: input.consumerId,
@@ -241,10 +241,7 @@ class PaymentServiceV2 {
         currency: 'usd',
         payment_method: input.paymentMethodId,
         confirm: true,
-        automatic_payment_methods: {
-          enabled: true,
-          allow_redirects: 'never',
-        },
+        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay)
         description: input.description || 'CampusCuts wallet deposit',
         metadata: {
           user_id: input.userId,
@@ -312,7 +309,7 @@ class PaymentServiceV2 {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay)
         metadata: {
           user_id: userId,
           type: 'deposit',

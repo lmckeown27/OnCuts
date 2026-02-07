@@ -118,15 +118,16 @@ function PaymentFormInner({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Payment Element - Shows Apple Pay, Google Pay, and Card options */}
+      {/* Payment Element - Card payments only (includes Apple Pay, Google Pay as card wallets) */}
       <div>
         <PaymentElement 
           options={{
-            layout: 'tabs',
+            layout: 'accordion',
             wallets: {
               applePay: 'auto',
               googlePay: 'auto',
             },
+            defaultCollapsed: false,
           }}
         />
       </div>

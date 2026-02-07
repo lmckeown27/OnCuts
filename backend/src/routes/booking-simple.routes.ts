@@ -1292,7 +1292,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
       customer: stripeCustomerId, // Associate payment with Stripe customer
       metadata: {
         booking_id: id,
@@ -2180,4 +2180,6 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 });
 
 export default router;
+
+
 
