@@ -122,12 +122,16 @@ function PaymentFormInner({
       <div>
         <PaymentElement 
           options={{
-            layout: 'accordion',
+            layout: {
+              type: 'accordion',
+              defaultCollapsed: false,
+              radios: false,
+              spacedAccordionItems: true,
+            },
             wallets: {
               applePay: 'auto',
               googlePay: 'auto',
             },
-            defaultCollapsed: false,
           }}
         />
       </div>
