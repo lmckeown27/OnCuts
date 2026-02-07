@@ -118,19 +118,13 @@ function PaymentFormInner({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Payment Element - Card payments only (includes Apple Pay, Google Pay as card wallets) */}
+      {/* Card input only - Face ID autofill will trigger from the card number field */}
       <div>
         <PaymentElement 
           options={{
-            layout: {
-              type: 'accordion',
-              defaultCollapsed: false,
-              radios: false,
-              spacedAccordionItems: true,
-            },
             wallets: {
-              applePay: 'auto',
-              googlePay: 'auto',
+              applePay: 'never',
+              googlePay: 'never',
             },
           }}
         />
@@ -168,7 +162,7 @@ function PaymentFormInner({
       </button>
 
       <p className="text-center text-xs text-gray-500">
-        Secured by Stripe. Supports Apple Pay, Google Pay, and cards.
+        Secured by Stripe. Tap card number to use saved payment methods.
       </p>
     </form>
   );
@@ -826,7 +820,7 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
               <h1 className="text-xl font-bold mb-1">Complete Payment</h1>
-              <p className="text-white/80">Pay with card, Apple Pay, Google Pay, or cash</p>
+              <p className="text-white/80">Enter your card or use saved payment methods</p>
             </div>
 
             {/* Barber Info */}
