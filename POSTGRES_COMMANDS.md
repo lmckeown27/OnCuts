@@ -632,7 +632,7 @@ SELECT
 FROM barbers b 
 JOIN users u ON b.\"userId\" = u.id 
 JOIN campuses c ON u.\"campusId\" = c.id
-WHERE (c.name ILIKE '%University of Florida%' OR u.role = 'ADMIN')
+WHERE (c.name ILIKE '%Cal Poly SLO%' OR u.role = 'ADMIN')
   AND b.\"isActive\" = true
   AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
 ORDER BY u.role = 'ADMIN' DESC, (b.\"isCampusManager\" = true OR u.role = 'CAMPUS_MANAGER') DESC, b.\"avgRating\" DESC NULLS LAST;
