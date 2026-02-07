@@ -118,11 +118,12 @@ function PaymentFormInner({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Payment options: Apple Pay (for Apple Wallet cards) + Card input + Link (for saved cards) */}
+      {/* Payment options: Apple Pay (for Apple Wallet cards) + Card input */}
       <div>
         <PaymentElement 
           options={{
             layout: 'tabs',
+            paymentMethodOrder: ['card'], // Only show card, hide Link
             wallets: {
               applePay: 'auto',
               googlePay: 'auto',
