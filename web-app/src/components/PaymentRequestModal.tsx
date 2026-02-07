@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, DollarSign, Star, CreditCard, Check, MessageSquare, Banknote } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
@@ -22,6 +23,7 @@ export default function PaymentRequestModal({
   amount,
   onPaymentComplete,
 }: PaymentRequestModalProps) {
+  const navigate = useNavigate();
   const [step, setStep] = useState<'payment' | 'tip' | 'review' | 'complete'>('payment');
   const [selectedTip, setSelectedTip] = useState<number>(0);
   const [customTip, setCustomTip] = useState<string>('');
@@ -43,15 +45,22 @@ export default function PaymentRequestModal({
     { label: '25%', value: Math.round(baseAmountDollars * 0.25 * 100) / 100 },
   ];
 
-  const handlePayment = async () => {
+  // Handle card payment - redirect to full Stripe payment page with Apple Pay, Google Pay, and card support
+  const handleCardPayment = () => {
+    onClose(); // Close modal first
+    navigate(`/web/payment/${bookingId}`);
+  };
+
+  // Handle cash payment - process in modal
+  const handleCashPayment = async () => {
     setIsProcessing(true);
     try {
       await api.post(`/bookings-simple/${bookingId}/pay`, {
         tipAmountCents: Math.round(tipAmount * 100),
-        paymentMethod,
+        paymentMethod: 'cash',
       });
       
-      toast.success(paymentMethod === 'cash' ? 'Cash payment recorded!' : 'Payment successful!');
+      toast.success('Cash payment recorded!');
       setStep('review');
     } catch (error: any) {
       console.error('Payment failed:', error);
@@ -174,8 +183,8 @@ export default function PaymentRequestModal({
                 )}
               </div>
 
-              {/* Tip Selection - only show for card payments */}
-              {paymentMethod === 'card' && (
+              {/* Tip Selection - only show for cash payments (card payments handle tips on the Stripe page) */}
+              {paymentMethod === 'cash' && (
                 <div>
                   <p className="font-semibold text-gray-900 mb-3">Add a tip for {barberName}?</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -236,39 +245,69 @@ export default function PaymentRequestModal({
                 </div>
               )}
 
-              {/* Total */}
-              <div className="flex items-center justify-between py-4 border-t border-gray-200">
-                <span className="text-lg font-semibold text-gray-700">Total</span>
-                <span className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</span>
-              </div>
-
-              {/* Pay Button */}
-              <button
-                onClick={handlePayment}
-                disabled={isProcessing}
-                className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {paymentMethod === 'cash' ? (
+              {/* Total - show tip breakdown only for cash, base amount for card */}
+              <div className="py-4 border-t border-gray-200">
+                {paymentMethod === 'cash' ? (
+                  <div className="space-y-2">
+                    {tipAmount > 0 && (
                       <>
-                        <Banknote className="w-5 h-5" />
-                        Confirm Cash Payment ${totalAmount.toFixed(2)}
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-5 h-5" />
-                        Pay ${totalAmount.toFixed(2)}
+                        <div className="flex justify-between text-gray-600">
+                          <span>Service</span>
+                          <span>${baseAmountDollars.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-green-600">
+                          <span>Tip</span>
+                          <span>+${tipAmount.toFixed(2)}</span>
+                        </div>
                       </>
                     )}
-                  </>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-semibold text-gray-700">Total</span>
+                      <span className="text-2xl font-bold text-green-600">${totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-semibold text-gray-700">Service Total</span>
+                    <span className="text-2xl font-bold text-primary-600">${baseAmountDollars.toFixed(2)}</span>
+                  </div>
                 )}
-              </button>
+              </div>
+
+              {/* Pay Button - different behavior based on payment method */}
+              {paymentMethod === 'cash' ? (
+                <button
+                  onClick={handleCashPayment}
+                  disabled={isProcessing}
+                  className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Banknote className="w-5 h-5" />
+                      Confirm Cash Payment ${totalAmount.toFixed(2)}
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleCardPayment}
+                  className="w-full py-4 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Continue to Pay ${baseAmountDollars.toFixed(2)}
+                </button>
+              )}
+              
+              {paymentMethod === 'card' && (
+                <p className="text-center text-sm text-gray-500">
+                  Supports Apple Pay, Google Pay, and card payments
+                </p>
+              )}
             </div>
           )}
 
