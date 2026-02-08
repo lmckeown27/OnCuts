@@ -347,29 +347,19 @@ function PaymentForm({
       {paymentMethod === 'card' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Add a tip (optional)</label>
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {/* No Tip Option */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedTip(0);
-                setCustomTip('');
-              }}
-              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
-                selectedTip === 0 && !customTip
-                  ? 'border-primary-500 bg-primary-50 text-primary-600'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              No Tip
-            </button>
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {tipOptions.map((option) => (
               <button
                 key={option.label}
                 type="button"
                 onClick={() => {
-                  setSelectedTip(option.value);
-                  setCustomTip('');
+                  // Toggle: if already selected, deselect (set to 0)
+                  if (selectedTip === option.value && !customTip) {
+                    setSelectedTip(0);
+                  } else {
+                    setSelectedTip(option.value);
+                    setCustomTip('');
+                  }
                 }}
                 className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
                   selectedTip === option.value && !customTip
