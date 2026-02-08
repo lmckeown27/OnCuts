@@ -1405,6 +1405,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
            "tipAmountCents" = $1,
            "totalPaidCents" = $2,
            "paidAt" = CURRENT_TIMESTAMP,
+           "paymentMethod" = 'card',
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $3`,
       [tipAmountCents, totalAmountCents, id]
