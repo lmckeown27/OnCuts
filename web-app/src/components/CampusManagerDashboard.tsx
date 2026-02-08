@@ -2110,6 +2110,7 @@ interface CompletedBooking {
   tipAmountCents: number | null;
   scheduledTime: string;
   paidAt: string | null;
+  paymentMethod: 'card' | 'cash' | null;
   location: string | null;
   notes: string | null;
   status: string;
@@ -2130,6 +2131,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<'latest' | 'furthest'>('latest');
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
@@ -2140,8 +2142,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       setLoading(true);
       const token = localStorage.getItem('accessToken');
       const barberFilter = selectedBarberId !== 'all' ? `&barberId=${selectedBarberId}` : '';
+      const paymentFilter = selectedPaymentMethod !== 'all' ? `&paymentMethod=${selectedPaymentMethod}` : '';
       const response = await fetch(
-        `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}&statusFilter=${activeTab}`,
+        `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}${paymentFilter}&statusFilter=${activeTab}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -2175,7 +2178,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   useEffect(() => {
     setIsContentVisible(false);
     fetchBookings();
-  }, [campusId, selectedBarberId, activeTab]);
+  }, [campusId, selectedBarberId, selectedPaymentMethod, activeTab]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -2423,6 +2426,20 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                 <option value="furthest">Furthest First</option>
               </select>
             </div>
+            {activeTab === 'completed' && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Payment method:</label>
+                <select
+                  value={selectedPaymentMethod}
+                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                >
+                  <option value="all">All</option>
+                  <option value="card">Card</option>
+                  <option value="cash">Cash</option>
+                </select>
+              </div>
+            )}
           </div>
         </Card>
 

@@ -417,7 +417,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
     const { campusId } = req.params;
-    const { barberId, limit = '100', statusFilter = 'completed' } = req.query;
+    const { barberId, limit = '100', statusFilter = 'completed', paymentMethod } = req.query;
 
     // Check if user is an admin (admins have campus manager access to all campuses)
     const adminCheck = await pool.query(
@@ -473,6 +473,13 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       paramIndex++;
     }
 
+    // Optionally filter by payment method (card or cash)
+    if (paymentMethod && paymentMethod !== 'all') {
+      whereClause += ` AND b."paymentMethod" = $${paramIndex}`;
+      params.push(paymentMethod);
+      paramIndex++;
+    }
+
     const result = await pool.query(
       `SELECT 
         b.id,
@@ -485,6 +492,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         b.status,
         b."createdAt",
         b."paidAt",
+        b."paymentMethod",
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
@@ -543,6 +551,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           status: row.status,
           createdAt: row.createdAt,
           paidAt: row.paidAt,
+          paymentMethod: row.paymentMethod || null,
           location: row.conv_location || null,
           notes: row.conv_notes || null,
           review: row.reviewRating ? {
