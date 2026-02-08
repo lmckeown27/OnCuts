@@ -475,7 +475,7 @@ class MessageService {
 
       // Get sender info - use columns that exist in production
       const senderResult = await pool.query(
-        `SELECT email, first_name, last_name, "avatarUrl" as profile_picture FROM users WHERE id = $1`,
+        `SELECT email, first_name, last_name, "avatarUrl" as profile_picture, role FROM users WHERE id = $1`,
         [senderId]
       );
 
@@ -551,13 +551,27 @@ class MessageService {
             };
           }
           
-          // Get sender's role to determine email type
-          const senderRoleResult = await pool.query(
-            `SELECT role FROM users WHERE id = $1`,
+          // Determine if sender/recipient are barbers by checking the barbers table
+          // This is more reliable than checking users.role which may not be set correctly
+          const senderBarberCheck = await pool.query(
+            `SELECT b.id FROM barbers b WHERE b."userId" = $1`,
             [senderId]
           );
-          const senderRole = senderRoleResult.rows[0]?.role?.toUpperCase() || 'CONSUMER';
-          const recipientRole = recipient.role?.toUpperCase() || 'CONSUMER';
+          const recipientBarberCheck = await pool.query(
+            `SELECT b.id FROM barbers b WHERE b."userId" = $1`,
+            [recipientId]
+          );
+          
+          const senderIsBarber = senderBarberCheck.rows.length > 0;
+          const recipientIsBarber = recipientBarberCheck.rows.length > 0;
+          
+          // Determine roles - barber status from barbers table takes priority
+          const senderRoleFromDb = sender.role?.toUpperCase() || 'CONSUMER';
+          const recipientRoleFromDb = recipient.role?.toUpperCase() || 'CONSUMER';
+          
+          // If user is in barbers table, treat them as BARBER regardless of users.role
+          const senderRole = senderIsBarber ? 'BARBER' : senderRoleFromDb;
+          const recipientRole = recipientIsBarber ? 'BARBER' : recipientRoleFromDb;
           
           // Determine which email template to use based on sender and recipient roles
           // Note: STUDENT and CONSUMER roles are treated equivalently
