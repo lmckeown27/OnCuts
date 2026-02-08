@@ -821,7 +821,7 @@ export default function PostServicePaymentPage() {
             {/* Booking Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-500 p-6 text-white">
               <h1 className="text-xl font-bold mb-1">Complete Payment</h1>
-              <p className="text-white/80">Tap the Apple Pay or Google Pay button, or enter card details below</p>
+              <p className="text-white/80">Select Apple Pay or Google Pay, then tap "Pay" to confirm with Face ID</p>
             </div>
 
             {/* Barber Info */}
