@@ -124,8 +124,8 @@ function PaymentFormInner({
           options={{
             layout: 'tabs',
             wallets: {
-              applePay: 'always', // Always show Apple Pay button if available
-              googlePay: 'always',
+              applePay: 'auto',
+              googlePay: 'auto',
             },
           }}
         />
