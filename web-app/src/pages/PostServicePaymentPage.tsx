@@ -123,10 +123,9 @@ function PaymentFormInner({
         <PaymentElement 
           options={{
             layout: 'tabs',
-            paymentMethodOrder: ['card'], // Only show card, hide Link
             wallets: {
-              applePay: 'auto',
-              googlePay: 'auto',
+              applePay: 'always', // Always show Apple Pay button if available
+              googlePay: 'always',
             },
           }}
         />
