@@ -1292,7 +1292,10 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
-      payment_method_types: ['card'], // Card only (Apple Pay uses card rails)
+      automatic_payment_methods: { 
+        enabled: true,
+        allow_redirects: 'never' // Prevents redirect-based methods like Klarna
+      }, // Uses Stripe Dashboard settings - disable unwanted methods there
       customer: stripeCustomerId, // Associate payment with Stripe customer
       metadata: {
         booking_id: id,
