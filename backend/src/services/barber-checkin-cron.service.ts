@@ -106,12 +106,14 @@ export class BarberCheckInCronService {
           barber_user.first_name as barber_first_name,
           barber_user.last_name as barber_last_name,
           barber_user.email as barber_email,
-          barber_user.notification_preferences as barber_notification_preferences
+          barber_user.notification_preferences as barber_notification_preferences,
+          COALESCE(campus.timezone, 'America/Los_Angeles') as campus_timezone
         FROM bookings b
         LEFT JOIN conversations c ON c.booking_id = b.id
         LEFT JOIN users consumer ON b."consumerId" = consumer.id
         LEFT JOIN barbers barber ON b."barberId" = barber.id
         LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+        LEFT JOIN campuses campus ON barber."campusId" = campus.id
         WHERE b.status = 'accepted'
           AND b."requestedAt" < NOW() - INTERVAL '1 hour'
           AND b."requestedAt" > NOW() - INTERVAL '48 hours'
@@ -145,21 +147,21 @@ export class BarberCheckInCronService {
           // Prefer original service name from conversation, fallback to formatted enum
           const serviceName = booking.service_name || formatServiceType(booking.serviceType) || 'Haircut';
 
-          // Format date and time
+          // Format date and time using the barber's campus timezone
           const scheduledTime = new Date(booking.scheduled_time);
-          // Use Pacific Time for consistent display (CampusCuts is California-based)
+          const campusTimezone = booking.campus_timezone || 'America/Los_Angeles';
           const scheduledDate = scheduledTime.toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
-            timeZone: 'America/Los_Angeles'
+            timeZone: campusTimezone
           });
           const scheduledTimeStr = scheduledTime.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
             hour12: true,
-            timeZone: 'America/Los_Angeles'
+            timeZone: campusTimezone
           });
 
           // Build email details

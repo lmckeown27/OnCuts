@@ -1087,12 +1087,14 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
               consumer.first_name || ' ' || consumer.last_name as consumer_name,
-              consumer.email as consumer_email
+              consumer.email as consumer_email,
+              COALESCE(campus.timezone, 'America/Los_Angeles') as campus_timezone
        FROM bookings b
        LEFT JOIN conversations c ON c.booking_id = b.id
        JOIN barbers barber ON b."barberId" = barber.id
        JOIN users barber_user ON barber."userId" = barber_user.id
        JOIN users consumer ON b."consumerId" = consumer.id
+       LEFT JOIN campuses campus ON barber."campusId" = campus.id
        WHERE b.id = $1`,
       [id]
     );
@@ -1157,12 +1159,13 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     const paymentUrl = `${frontendUrl}/web/payment/${id}`;
     const serviceName = booking.service_name || 'Haircut';
     
-    // Format scheduled date/time - use Pacific Time for consistent display
+    // Format scheduled date/time using the barber's campus timezone
+    const campusTimezone = booking.campus_timezone || 'America/Los_Angeles';
     const scheduledDate = booking.scheduled_time 
-      ? new Date(booking.scheduled_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
+      ? new Date(booking.scheduled_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: campusTimezone })
       : 'N/A';
     const scheduledTime = booking.scheduled_time
-      ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
+      ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone })
       : 'N/A';
     
     logger.info(`[REQUEST-PAYMENT] About to send payment request email for booking ${id}`);

@@ -516,32 +516,38 @@ class MessageService {
           const senderFullName = `${sender.first_name} ${sender.last_name}`;
           const recipientFullName = `${recipient.first_name} ${recipient.last_name}`;
           
-          // Get conversation booking details if available
+          // Get conversation booking details if available, including barber's campus timezone
           const convDetails = await pool.query(
-            `SELECT service_name, service_price, scheduled_time, booking_status, booking_id
-             FROM conversations WHERE id = $1`,
+            `SELECT 
+               c.service_name, c.service_price, c.scheduled_time, c.booking_status, c.booking_id,
+               COALESCE(campus.timezone, 'America/Los_Angeles') as campus_timezone
+             FROM conversations c
+             LEFT JOIN bookings b ON c.booking_id = b.id
+             LEFT JOIN barbers barber ON b."barberId" = barber.id
+             LEFT JOIN campuses campus ON barber."campusId" = campus.id
+             WHERE c.id = $1`,
             [conversationId]
           );
           
           const convData = convDetails.rows[0];
           const hasBookingContext = convData?.service_name || convData?.booking_id;
+          const campusTimezone = convData?.campus_timezone || 'America/Los_Angeles';
           
           // Format booking details for email
           let bookingDetails = undefined;
           if (hasBookingContext) {
-            // Format the scheduled time if available
+            // Format the scheduled time if available using barber's campus timezone
             let formattedDate = '';
             let formattedTime = '';
             if (convData.scheduled_time) {
               const scheduledDate = new Date(convData.scheduled_time);
-              // Use Pacific Time for consistent display (CampusCuts is California-based)
               formattedDate = scheduledDate.toLocaleDateString('en-US', { 
                 weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                timeZone: 'America/Los_Angeles'
+                timeZone: campusTimezone
               });
               formattedTime = scheduledDate.toLocaleTimeString('en-US', { 
                 hour: 'numeric', minute: '2-digit', hour12: true,
-                timeZone: 'America/Los_Angeles'
+                timeZone: campusTimezone
               });
             }
             
