@@ -28,13 +28,36 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
 
   render() {
     if (this.state.hasError) {
+      // Check if this is a chunk loading / caching error
+      const errorMessage = this.state.error?.message || '';
+      const isChunkError = errorMessage.includes('dynamically imported module') || 
+                           errorMessage.includes('Failed to fetch') ||
+                           errorMessage.includes('Loading chunk') ||
+                           errorMessage.includes('MIME type');
+      
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-            <p className="text-gray-600 mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
+            {isChunkError ? (
+              <>
+                <div className="w-16 h-16 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 mb-2">Update Available</h1>
+                <p className="text-gray-600 mb-6">
+                  A new version of CampusCut is available. Please reload the page to get the latest updates.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+                <p className="text-gray-600 mb-4">
+                  {errorMessage || 'An unexpected error occurred'}
+                </p>
+              </>
+            )}
             <button
               onClick={() => {
                 this.setState({ hasError: false, error: null });
