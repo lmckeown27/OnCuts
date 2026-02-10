@@ -147,16 +147,19 @@ export class BarberCheckInCronService {
 
           // Format date and time
           const scheduledTime = new Date(booking.scheduled_time);
+          // Use Pacific Time for consistent display (CampusCuts is California-based)
           const scheduledDate = scheduledTime.toLocaleDateString('en-US', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'America/Los_Angeles'
           });
           const scheduledTimeStr = scheduledTime.toLocaleTimeString('en-US', {
             hour: 'numeric',
             minute: '2-digit',
-            hour12: true
+            hour12: true,
+            timeZone: 'America/Los_Angeles'
           });
 
           // Build email details

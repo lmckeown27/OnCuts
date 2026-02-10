@@ -534,11 +534,14 @@ class MessageService {
             let formattedTime = '';
             if (convData.scheduled_time) {
               const scheduledDate = new Date(convData.scheduled_time);
+              // Use Pacific Time for consistent display (CampusCuts is California-based)
               formattedDate = scheduledDate.toLocaleDateString('en-US', { 
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                timeZone: 'America/Los_Angeles'
               });
               formattedTime = scheduledDate.toLocaleTimeString('en-US', { 
-                hour: 'numeric', minute: '2-digit', hour12: true 
+                hour: 'numeric', minute: '2-digit', hour12: true,
+                timeZone: 'America/Los_Angeles'
               });
             }
             

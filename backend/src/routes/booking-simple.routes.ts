@@ -1157,12 +1157,12 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     const paymentUrl = `${frontendUrl}/web/payment/${id}`;
     const serviceName = booking.service_name || 'Haircut';
     
-    // Format scheduled date/time
+    // Format scheduled date/time - use Pacific Time for consistent display
     const scheduledDate = booking.scheduled_time 
-      ? new Date(booking.scheduled_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+      ? new Date(booking.scheduled_time).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })
       : 'N/A';
     const scheduledTime = booking.scheduled_time
-      ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      ? new Date(booking.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' })
       : 'N/A';
     
     logger.info(`[REQUEST-PAYMENT] About to send payment request email for booking ${id}`);
