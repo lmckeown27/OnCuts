@@ -2152,13 +2152,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const ITEMS_PER_PAGE = 10;
   const paginationRef = useRef<HTMLDivElement>(null);
   
-  // Handle page change with scroll to top pagination
+  // Handle page change with instant scroll to top pagination
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    // Scroll to the top pagination after a brief delay for render
+    // Instantly scroll to the top pagination after a brief delay for render
     setTimeout(() => {
-      paginationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
+      paginationRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }, 10);
   };
 
   const fetchBookings = async () => {
