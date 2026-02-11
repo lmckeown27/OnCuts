@@ -20,10 +20,12 @@ import {
   Edit2,
   Trash2,
   ChevronLeft,
+  ChevronDown,
   DollarSign,
   Star,
   X,
-  EyeOff
+  EyeOff,
+  Filter
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -2143,6 +2145,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const fetchBookings = async () => {
     try {
@@ -2407,49 +2410,97 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             : 'opacity-0 translate-y-2'
         }`}
       >
-        {/* Filter Bar */}
-        <Card className="p-4 mb-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Filter by barber:</label>
-              <select
-                value={selectedBarberId}
-                onChange={(e) => setSelectedBarberId(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              >
-                <option value="all">All Barbers</option>
-                {barbers.map((barber) => (
-                  <option key={barber.id} value={barber.id}>{barber.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Sort by date:</label>
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as 'latest' | 'furthest')}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              >
-                <option value="latest">Latest First</option>
-                <option value="furthest">Furthest First</option>
-              </select>
-            </div>
-            {activeTab === 'completed' && (
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Payment method:</label>
-                <select
-                  value={selectedPaymentMethod}
-                  onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                >
-                  <option value="all">All</option>
-                  <option value="card">Card</option>
-                  <option value="cash">Cash</option>
-                </select>
-              </div>
+        {/* Filter Button with Dropdown */}
+        <div className="relative mb-4">
+          <button
+            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filter</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`} />
+            {/* Show indicator if filters are active */}
+            {(selectedBarberId !== 'all' || sortOrder !== 'latest' || (activeTab === 'completed' && selectedPaymentMethod !== 'all')) && (
+              <span className="w-2 h-2 bg-primary-500 rounded-full" />
             )}
-          </div>
-        </Card>
+          </button>
+
+          {/* Filter Dropdown */}
+          {showFilterDropdown && (
+            <>
+              {/* Backdrop */}
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setShowFilterDropdown(false)} 
+              />
+              
+              {/* Dropdown Content */}
+              <div className="absolute left-0 top-full mt-2 z-20 bg-white rounded-xl shadow-lg border border-gray-200 p-4 min-w-[280px]">
+                <div className="space-y-4">
+                  {/* Barber Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Barber</label>
+                    <select
+                      value={selectedBarberId}
+                      onChange={(e) => setSelectedBarberId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    >
+                      <option value="all">All Barbers</option>
+                      {barbers.map((barber) => (
+                        <option key={barber.id} value={barber.id}>{barber.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Sort Order */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Sort by Date</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as 'latest' | 'furthest')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    >
+                      <option value="latest">Latest First</option>
+                      <option value="furthest">Furthest First</option>
+                    </select>
+                  </div>
+
+                  {/* Payment Method - Only for Completed tab */}
+                  {activeTab === 'completed' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Payment Method</label>
+                      <select
+                        value={selectedPaymentMethod}
+                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                      >
+                        <option value="all">All</option>
+                        <option value="card">Card</option>
+                        <option value="cash">Cash</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Clear Filters Button */}
+                  {(selectedBarberId !== 'all' || sortOrder !== 'latest' || (activeTab === 'completed' && selectedPaymentMethod !== 'all')) && (
+                    <button
+                      onClick={() => {
+                        setSelectedBarberId('all');
+                        setSortOrder('latest');
+                        if (activeTab === 'completed') {
+                          setSelectedPaymentMethod('all');
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Bookings List */}
         {bookings.length === 0 ? (
