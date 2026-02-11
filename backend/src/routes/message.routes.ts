@@ -421,6 +421,7 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
        FROM barbers b
        JOIN users u ON b."userId" = u.id
        LEFT JOIN conversations c ON c.booking_id IS NULL 
+         AND c.is_active = true
          AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
        WHERE b."campusId" = $2 
          AND b."isActive" = true 
@@ -517,6 +518,7 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
        FROM barbers b
        JOIN users u ON b."userId" = u.id
        LEFT JOIN conversations c ON c.booking_id IS NULL 
+         AND c.is_active = true
          AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
        WHERE b."campusId" = $2 
          AND b."isActive" = true 

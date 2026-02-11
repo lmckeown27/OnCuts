@@ -113,9 +113,9 @@ class MessageService {
         [userId, limit, offset]
       );
 
-      // Get total count
+      // Get total count (only active conversations)
       const countResult = await pool.query(
-        `SELECT COUNT(*) as total FROM conversations WHERE user1_id = $1 OR user2_id = $1`,
+        `SELECT COUNT(*) as total FROM conversations WHERE (user1_id = $1 OR user2_id = $1) AND is_active = true`,
         [userId]
       );
 
@@ -413,7 +413,7 @@ class MessageService {
           c.booking_id,
           c.created_at
         FROM conversations c
-        WHERE c.id = $1 AND (c.user1_id = $2 OR c.user2_id = $2)`,
+        WHERE c.id = $1 AND (c.user1_id = $2 OR c.user2_id = $2) AND c.is_active = true`,
         [conversationId, userId]
       );
 
@@ -444,10 +444,10 @@ class MessageService {
     mediaUrl: string | null = null
   ): Promise<any> {
     try {
-      // Check access
+      // Check access - only allow sending to active conversations
       const convCheck = await pool.query(
         `SELECT user1_id, user2_id FROM conversations 
-         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
+         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2) AND is_active = true`,
         [conversationId, senderId]
       );
 
