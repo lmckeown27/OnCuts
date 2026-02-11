@@ -339,10 +339,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                       <Card key={loc.assignment_id} className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary-500" />
-                              <span className="font-medium text-gray-900">{loc.name}</span>
-                            </div>
+                            <span className="font-medium text-gray-900">{loc.name}</span>
                             {loc.description && (
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
                             )}
@@ -397,10 +394,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                       <Card key={loc.id} className="p-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium text-gray-900">{loc.name}</span>
-                            </div>
+                            <span className="font-medium text-gray-900">{loc.name}</span>
                             {loc.description && (
                               <p className="text-sm text-gray-600 mt-1">{loc.description}</p>
                             )}
