@@ -2589,6 +2589,13 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </Card>
       ) : (
         <div className="space-y-3">
+          {/* Show total count above pagination */}
+          {activeTab === 'completed' && totalPages > 1 && (
+            <p className="text-sm text-gray-500 text-center">
+              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} completed bookings
+            </p>
+          )}
+          
           {/* Top pagination controls */}
           {renderPaginationControls('top')}
           
@@ -2696,13 +2703,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           {/* Bottom pagination controls */}
           {renderPaginationControls('bottom')}
         </div>
-        )}
-        
-        {/* Show total count for completed bookings */}
-        {activeTab === 'completed' && sortedBookings.length > 0 && (
-          <p className="text-sm text-gray-500 text-center mt-4">
-            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} completed bookings
-          </p>
         )}
       </div>
 
