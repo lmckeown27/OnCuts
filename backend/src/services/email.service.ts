@@ -469,7 +469,7 @@ CampusCut Team
       <ul style="color: #555555; margin: 0; padding-left: 20px;">
         <li>Discover talented barbers on your campus</li>
         <li>Book appointments that fit your schedule</li>
-        <li>Pay securely through the app</li>
+        <li>Pay securely through the website</li>
         <li>Leave reviews and help others find great cuts</li>
       </ul>
     </div>
