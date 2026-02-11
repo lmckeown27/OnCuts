@@ -2146,6 +2146,10 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  
+  // Pagination state for completed bookings (10 per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const fetchBookings = async () => {
     try {
@@ -2187,6 +2191,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   useEffect(() => {
     setIsContentVisible(false);
+    setCurrentPage(1); // Reset to first page when filters change
     fetchBookings();
     // Re-fetch when tab changes or when the current tab's filters change
   }, [campusId, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod]);
@@ -2213,6 +2218,12 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     // Latest = closest to current date, Furthest = furthest from current date
     return sortOrder === 'latest' ? distanceA - distanceB : distanceB - distanceA;
   });
+
+  // Pagination for completed tab only
+  const totalPages = activeTab === 'completed' ? Math.ceil(sortedBookings.length / ITEMS_PER_PAGE) : 1;
+  const paginatedBookings = activeTab === 'completed' 
+    ? sortedBookings.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : sortedBookings;
 
   const renderStars = (rating: number) => {
     return (
@@ -2517,7 +2528,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </Card>
       ) : (
         <div className="space-y-3">
-          {sortedBookings.map((booking) => (
+          {paginatedBookings.map((booking) => (
             <Card 
               key={booking.id} 
               className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
@@ -2617,7 +2628,72 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               </div>
             </Card>
           ))}
+          
+          {/* Pagination controls for completed tab */}
+          {activeTab === 'completed' && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {/* Show page numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  // Show first page, last page, current page, and pages around current
+                  const showPage = page === 1 || 
+                    page === totalPages || 
+                    Math.abs(page - currentPage) <= 1;
+                  
+                  if (!showPage) {
+                    // Show ellipsis
+                    if (page === 2 && currentPage > 3) {
+                      return <span key={page} className="px-1 text-gray-400">...</span>;
+                    }
+                    if (page === totalPages - 1 && currentPage < totalPages - 2) {
+                      return <span key={page} className="px-1 text-gray-400">...</span>;
+                    }
+                    return null;
+                  }
+                  
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-primary-500 text-white'
+                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next page"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600 rotate-180" />
+              </button>
+            </div>
+          )}
         </div>
+        )}
+        
+        {/* Show total count for completed bookings */}
+        {activeTab === 'completed' && sortedBookings.length > 0 && (
+          <p className="text-sm text-gray-500 text-center mt-4">
+            Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} completed bookings
+          </p>
         )}
       </div>
 
