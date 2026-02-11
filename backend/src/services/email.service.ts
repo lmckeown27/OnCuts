@@ -655,7 +655,7 @@ function generateBookingConfirmationHtml(
     
     <div style="background-color: #f0fdf4; border-radius: 12px; padding: 25px; margin: 20px 0; border: 1px solid #bbf7d0;">
       <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">
-        📋 Booking Details
+        Booking Details
       </h3>
       
       <table style="width: 100%; border-collapse: collapse;">
