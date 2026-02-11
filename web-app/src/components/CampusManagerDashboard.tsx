@@ -5,7 +5,7 @@
  * Reuses 100% of existing Barber page styles and layout
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -2150,16 +2150,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   // Pagination state for completed bookings (10 per page)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-  const paginationRef = useRef<HTMLDivElement>(null);
-  
-  // Handle page change with instant scroll to top pagination
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    // Instantly scroll to the top pagination after a brief delay for render
-    setTimeout(() => {
-      paginationRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' });
-    }, 10);
-  };
 
   const fetchBookings = async () => {
     try {
@@ -2255,14 +2245,11 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     if (activeTab !== 'completed' || totalPages <= 1) return null;
     
     return (
-      <div 
-        ref={position === 'top' ? paginationRef : undefined}
-        className={`flex items-center justify-center gap-2 ${
-          position === 'top' ? 'mb-4 pb-4 border-b border-gray-200' : 'mt-6 pt-4 border-t border-gray-200'
-        }`}
-      >
+      <div className={`flex items-center justify-center gap-2 ${
+        position === 'top' ? 'mb-4 pb-4 border-b border-gray-200' : 'mt-6 pt-4 border-t border-gray-200'
+      }`}>
         <button
-          onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Previous page"
@@ -2289,7 +2276,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             return (
               <button
                 key={page}
-                onClick={() => handlePageChange(page)}
+                onClick={() => setCurrentPage(page)}
                 className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === page
                     ? 'bg-primary-500 text-white'
@@ -2303,7 +2290,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
         
         <button
-          onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
           disabled={currentPage === totalPages}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Next page"
