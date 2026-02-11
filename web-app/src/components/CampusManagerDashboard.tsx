@@ -2240,6 +2240,67 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     );
   };
 
+  // Reusable pagination controls component
+  const renderPaginationControls = (position: 'top' | 'bottom') => {
+    if (activeTab !== 'completed' || totalPages <= 1) return null;
+    
+    return (
+      <div className={`flex items-center justify-center gap-2 ${
+        position === 'top' ? 'mb-4 pb-4 border-b border-gray-200' : 'mt-6 pt-4 border-t border-gray-200'
+      }`}>
+        <button
+          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous page"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        
+        <div className="flex items-center gap-1">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+            const showPage = page === 1 || 
+              page === totalPages || 
+              Math.abs(page - currentPage) <= 1;
+            
+            if (!showPage) {
+              if (page === 2 && currentPage > 3) {
+                return <span key={page} className="px-1 text-gray-400">...</span>;
+              }
+              if (page === totalPages - 1 && currentPage < totalPages - 2) {
+                return <span key={page} className="px-1 text-gray-400">...</span>;
+              }
+              return null;
+            }
+            
+            return (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === page
+                    ? 'bg-primary-500 text-white'
+                    : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+        
+        <button
+          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Next page"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600 rotate-180" />
+        </button>
+      </div>
+    );
+  };
+
   // Group bookings by barber for summary
   const bookingsByBarber = bookings.reduce((acc, booking) => {
     if (!acc[booking.barberName]) {
@@ -2528,6 +2589,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </Card>
       ) : (
         <div className="space-y-3">
+          {/* Top pagination controls */}
+          {renderPaginationControls('top')}
+          
           {paginatedBookings.map((booking) => (
             <Card 
               key={booking.id} 
@@ -2629,63 +2693,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             </Card>
           ))}
           
-          {/* Pagination controls for completed tab */}
-          {activeTab === 'completed' && totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {/* Show page numbers */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                  // Show first page, last page, current page, and pages around current
-                  const showPage = page === 1 || 
-                    page === totalPages || 
-                    Math.abs(page - currentPage) <= 1;
-                  
-                  if (!showPage) {
-                    // Show ellipsis
-                    if (page === 2 && currentPage > 3) {
-                      return <span key={page} className="px-1 text-gray-400">...</span>;
-                    }
-                    if (page === totalPages - 1 && currentPage < totalPages - 2) {
-                      return <span key={page} className="px-1 text-gray-400">...</span>;
-                    }
-                    return null;
-                  }
-                  
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
-                        currentPage === page
-                          ? 'bg-primary-500 text-white'
-                          : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next page"
-              >
-                <ChevronLeft className="w-5 h-5 text-gray-600 rotate-180" />
-              </button>
-            </div>
-          )}
+          {/* Bottom pagination controls */}
+          {renderPaginationControls('bottom')}
         </div>
         )}
         
