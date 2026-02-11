@@ -905,6 +905,15 @@ export default function MessagesPage() {
                 selectedConversation?.id === conv.id ? 'bg-primary-50' : ''
               }`}
             >
+              {/* Delete button - visible on hover */}
+              <button
+                onClick={(e) => openDeleteConfirm(conv, e)}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-white shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:border-red-200 transition-all z-10"
+                title="Delete conversation"
+              >
+                <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+              </button>
+
               <div className="flex items-start gap-3">
                 {/* Avatar */}
                 <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
