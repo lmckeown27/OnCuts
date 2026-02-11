@@ -1847,7 +1847,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <MapPin className="w-4 h-4 text-primary-500" />
                       <h4 className="font-semibold text-gray-900">{location.name}</h4>
                       {!location.is_active && (
                         <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">Inactive</span>
