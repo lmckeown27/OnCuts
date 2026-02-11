@@ -374,7 +374,7 @@ export default function MobileBarberPage() {
                 onClick={() => navigate(`${platformPrefix}/barber/services`)}
                 className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
               >
-                <span className="font-medium text-gray-900">My Services</span>
+                <span className="font-medium text-gray-900">Services</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
               

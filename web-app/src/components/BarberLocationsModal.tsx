@@ -203,7 +203,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h2 className="text-2xl font-bold">My Locations</h2>
+            <h2 className="text-2xl font-bold">Locations</h2>
             <p className="text-white/80 text-sm">Manage where you offer services</p>
           </div>
           <button 

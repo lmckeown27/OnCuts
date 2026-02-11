@@ -491,7 +491,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <Scissors className="w-4 h-4 text-gray-500" />
-                    My Services
+                    Services
                   </button>
                   <button
                     onClick={() => {
@@ -501,7 +501,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <MapPin className="w-4 h-4 text-gray-500" />
-                    My Locations
+                    Locations
                   </button>
                   <button
                     onClick={() => {
@@ -656,7 +656,7 @@ export default function BarberPage() {
           >
             <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <h2 className="text-2xl font-bold">My Services & Pricing</h2>
+                <h2 className="text-2xl font-bold">Services & Pricing</h2>
                 <p className="text-white/80 text-sm">Manage your service offerings</p>
               </div>
               <button
