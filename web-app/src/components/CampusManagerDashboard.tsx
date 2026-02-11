@@ -2130,9 +2130,23 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
-  const [selectedBarberId, setSelectedBarberId] = useState<string>('all');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('all');
-  const [sortOrder, setSortOrder] = useState<'latest' | 'furthest'>('latest');
+  
+  // Separate filter states for each tab
+  const [upcomingBarberId, setUpcomingBarberId] = useState<string>('all');
+  const [upcomingSortOrder, setUpcomingSortOrder] = useState<'latest' | 'furthest'>('latest');
+  
+  const [completedBarberId, setCompletedBarberId] = useState<string>('all');
+  const [completedSortOrder, setCompletedSortOrder] = useState<'latest' | 'furthest'>('latest');
+  const [completedPaymentMethod, setCompletedPaymentMethod] = useState<string>('all');
+  
+  // Get current tab's filter values
+  const selectedBarberId = activeTab === 'upcoming' ? upcomingBarberId : completedBarberId;
+  const setSelectedBarberId = activeTab === 'upcoming' ? setUpcomingBarberId : setCompletedBarberId;
+  const sortOrder = activeTab === 'upcoming' ? upcomingSortOrder : completedSortOrder;
+  const setSortOrder = activeTab === 'upcoming' ? setUpcomingSortOrder : setCompletedSortOrder;
+  const selectedPaymentMethod = activeTab === 'completed' ? completedPaymentMethod : 'all';
+  const setSelectedPaymentMethod = setCompletedPaymentMethod;
+  
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<CompletedBooking | null>(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
@@ -2178,7 +2192,8 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   useEffect(() => {
     setIsContentVisible(false);
     fetchBookings();
-  }, [campusId, selectedBarberId, selectedPaymentMethod, activeTab]);
+    // Re-fetch when tab changes or when the current tab's filters change
+  }, [campusId, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
