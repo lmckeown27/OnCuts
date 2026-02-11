@@ -1400,10 +1400,10 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       });
     }
 
-    // Update booking with payment info and mark as completed
+    // Update booking with payment info and mark as PAID
     await pool.query(
       `UPDATE bookings 
-       SET status = 'COMPLETED',
+       SET status = 'PAID',
            "completedAt" = CURRENT_TIMESTAMP,
            "tipAmountCents" = $1,
            "totalPaidCents" = $2,
