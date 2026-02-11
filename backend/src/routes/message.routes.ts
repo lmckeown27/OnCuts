@@ -317,9 +317,11 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     }
 
     // Check if conversation already exists (booking_id = NULL for CM-barber chats)
+    // Only find active conversations - deleted ones (is_active = false) should allow new conversation creation
     const existingConv = await pool.query(
       `SELECT * FROM conversations 
        WHERE booking_id IS NULL 
+         AND is_active = true
          AND ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
        LIMIT 1`,
       [userId, otherUserId]
@@ -596,9 +598,11 @@ router.post('/barber-chats', authenticate, async (req, res, next) => {
     }
 
     // Check if conversation already exists (booking_id = NULL for direct chats)
+    // Only find active conversations - deleted ones (is_active = false) should allow new conversation creation
     const existingConv = await pool.query(
       `SELECT * FROM conversations 
        WHERE booking_id IS NULL 
+         AND is_active = true
          AND ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
        LIMIT 1`,
       [userId, otherBarberUserId]
