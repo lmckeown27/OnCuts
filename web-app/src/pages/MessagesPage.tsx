@@ -905,10 +905,10 @@ export default function MessagesPage() {
                 selectedConversation?.id === conv.id ? 'bg-primary-50' : ''
               }`}
             >
-              {/* Delete button - visible on hover */}
+              {/* Delete button - visible on hover (desktop only, mobile has it in chat header) */}
               <button
                 onClick={(e) => openDeleteConfirm(conv, e)}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-white shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:border-red-200 transition-all z-10"
+                className="hidden md:block absolute top-2 right-2 p-1.5 rounded-full bg-white shadow-sm border border-gray-200 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:border-red-200 transition-all z-10"
                 title="Delete conversation"
               >
                 <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
@@ -1048,6 +1048,15 @@ export default function MessagesPage() {
               title="View Service Details"
             >
               <Info className="w-5 h-5 text-primary-600" />
+            </button>
+
+            {/* Delete Conversation Button - Mobile Only */}
+            <button 
+              onClick={(e) => openDeleteConfirm(selectedConversation, e)}
+              className="md:hidden p-2 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete conversation"
+            >
+              <Trash2 className="w-5 h-5 text-gray-400 hover:text-red-500" />
             </button>
           </div>
 
