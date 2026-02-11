@@ -5,7 +5,7 @@
  * Reuses 100% of existing Barber page styles and layout
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -2150,6 +2150,18 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   // Pagination state for completed bookings (10 per page)
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
+  const topPaginationRef = useRef<HTMLDivElement>(null);
+  const bottomPaginationRef = useRef<HTMLDivElement>(null);
+  
+  // Handle page change - keep the clicked pagination in view
+  const handlePageChange = (newPage: number, position: 'top' | 'bottom') => {
+    setCurrentPage(newPage);
+    // After render, scroll to keep the pagination controls in the same position
+    requestAnimationFrame(() => {
+      const ref = position === 'top' ? topPaginationRef : bottomPaginationRef;
+      ref.current?.scrollIntoView({ behavior: 'instant', block: 'nearest' });
+    });
+  };
 
   const fetchBookings = async () => {
     try {
@@ -2245,11 +2257,14 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     if (activeTab !== 'completed' || totalPages <= 1) return null;
     
     return (
-      <div className={`flex items-center justify-center gap-2 ${
-        position === 'top' ? 'mb-4 pb-4 border-b border-gray-200' : 'mt-6 pt-4 border-t border-gray-200'
-      }`}>
+      <div 
+        ref={position === 'top' ? topPaginationRef : bottomPaginationRef}
+        className={`flex items-center justify-center gap-2 ${
+          position === 'top' ? 'mb-4 pb-4 border-b border-gray-200' : 'mt-6 pt-4 border-t border-gray-200'
+        }`}
+      >
         <button
-          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          onClick={() => handlePageChange(Math.max(currentPage - 1, 1), position)}
           disabled={currentPage === 1}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Previous page"
@@ -2276,7 +2291,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             return (
               <button
                 key={page}
-                onClick={() => setCurrentPage(page)}
+                onClick={() => handlePageChange(page, position)}
                 className={`min-w-[36px] h-9 rounded-lg text-sm font-medium transition-colors ${
                   currentPage === page
                     ? 'bg-primary-500 text-white'
@@ -2290,7 +2305,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         </div>
         
         <button
-          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages), position)}
           disabled={currentPage === totalPages}
           className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Next page"
@@ -2599,14 +2614,16 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           {/* Top pagination controls */}
           {renderPaginationControls('top')}
           
-          {paginatedBookings.map((booking) => (
-            <Card 
-              key={booking.id} 
-              className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
-                activeTab === 'upcoming' 
-                  ? booking.status === 'PENDING' 
-                    ? 'border-l-amber-400' 
-                    : 'border-l-blue-400'
+          {/* Booking cards wrapper - min-height prevents layout shift when switching pages */}
+          <div className="space-y-3">
+            {paginatedBookings.map((booking) => (
+              <Card 
+                key={booking.id} 
+                className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
+                  activeTab === 'upcoming' 
+                    ? booking.status === 'PENDING' 
+                      ? 'border-l-amber-400' 
+                      : 'border-l-blue-400'
                   : 'border-l-green-400'
               }`}
               onClick={() => setSelectedBooking(booking)}
@@ -2697,8 +2714,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                   </div>
                 </div>
               </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
           
           {/* Bottom pagination controls */}
           {renderPaginationControls('bottom')}
