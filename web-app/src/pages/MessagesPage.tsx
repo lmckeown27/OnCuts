@@ -2018,9 +2018,11 @@ export default function MessagesPage() {
           >
             {/* Header */}
             <div className="p-6 text-center">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Cancel Booking?</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {deletingConversation.booking ? 'Cancel Booking?' : 'Delete Conversation?'}
+              </h3>
               <p className="text-sm text-gray-600">
-                Are you sure you want to cancel your booking with{' '}
+                Are you sure you want to {deletingConversation.booking ? 'cancel your booking' : 'delete your conversation'} with{' '}
                 <span className="font-semibold">
                   {deletingConversation.otherUser?.firstName} {deletingConversation.otherUser?.lastName}
                 </span>
@@ -2043,7 +2045,7 @@ export default function MessagesPage() {
                 variant="secondary"
                 className="flex-1"
               >
-                Keep Booking
+                {deletingConversation.booking ? 'Keep Booking' : 'Keep Conversation'}
               </Button>
               <Button
                 onClick={handleCancelBooking}
@@ -2053,7 +2055,7 @@ export default function MessagesPage() {
                 {isDeleting ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  'Cancel Booking'
+                  deletingConversation.booking ? 'Cancel Booking' : 'Delete Conversation'
                 )}
               </Button>
             </div>
