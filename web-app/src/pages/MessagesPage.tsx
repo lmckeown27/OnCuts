@@ -2003,7 +2003,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      {/* Cancel Booking Confirmation Modal */}
+      {/* Delete/Cancel Confirmation Modal - Shows "Delete Conversation" for direct chats, "Cancel Booking" for booking chats */}
       {showDeleteConfirm && deletingConversation && (
         <div 
           className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
