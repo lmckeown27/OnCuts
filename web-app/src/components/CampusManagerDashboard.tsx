@@ -1543,10 +1543,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                     onClick={() => !isAssigned && !saving && handleAssignLocationToBarber(showAssignModal.barberId, location.id)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MapPin className={`w-4 h-4 ${isAssigned ? 'text-green-500' : 'text-primary-500'}`} />
-                        <span className="font-medium text-gray-900">{location.name}</span>
-                      </div>
+                      <span className="font-medium text-gray-900">{location.name}</span>
                       {isAssigned ? (
                         <button
                           onClick={(e) => {
@@ -1742,10 +1739,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                             key={loc.assignment_id} 
                             className="flex items-center justify-between p-2 rounded-lg bg-white"
                           >
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary-500" />
-                              <span className="text-sm font-medium text-gray-900">{loc.name}</span>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900">{loc.name}</span>
                             <button
                               onClick={() => handleRevokeLocationFromBarber(barber.id, loc.location_id)}
                               disabled={saving}
