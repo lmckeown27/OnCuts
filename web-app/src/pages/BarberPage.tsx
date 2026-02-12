@@ -629,7 +629,19 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} barberProfileId={barberProfile?.id} onViewDetails={openBookingDetails} onRefreshBookings={handleBookingUpdated} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
+        <DashboardView 
+          navigate={navigate} 
+          barberId={barberId} 
+          barberProfileId={barberProfile?.id} 
+          onViewDetails={openBookingDetails} 
+          onRefreshBookings={handleBookingUpdated} 
+          refreshKey={bookingsRefreshKey} 
+          campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'}
+          onBlockTime={(date, startTime, endTime) => {
+            setBlockTimeInitialValues({ date, startTime, endTime });
+            setShowBlockTimeModal(true);
+          }}
+        />
       </div>
 
       {/* Profile Editor Modal */}
@@ -1083,6 +1095,7 @@ interface DashboardViewProps {
   onRefreshBookings?: () => void; // Callback to trigger refresh without opening modal
   refreshKey?: number;
   campusTimezone?: string;
+  onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
 }
 
 // Type for confirmed bookings
@@ -1115,7 +1128,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   
@@ -2059,14 +2072,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       return (
                         <div 
                           key={idx}
-                          onClick={() => {
-                            setBlockTimeInitialValues({
-                              date: dateStr,
-                              startTime: slot.start,
-                              endTime: slot.end
-                            });
-                            setShowBlockTimeModal(true);
-                          }}
+                          onClick={() => onBlockTime?.(dateStr, slot.start, slot.end)}
                           className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
                         >
                           <div className="w-2 h-2 rounded-full bg-primary-400"></div>
@@ -3047,12 +3053,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               <div 
                                 key={idx}
                                 onClick={() => {
-                                  setBlockTimeInitialValues({
-                                    date: dateStr,
-                                    startTime: slot.start,
-                                    endTime: slot.end
-                                  });
-                                  setShowBlockTimeModal(true);
+                                  onBlockTime?.(dateStr, slot.start, slot.end);
                                   setSelectedDate(null); // Close the day detail modal
                                 }}
                                 className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
