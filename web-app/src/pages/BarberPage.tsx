@@ -1888,84 +1888,175 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           const dayLabel = dayOffset === 0 ? 'Today' : dayOffset === 1 ? 'Tomorrow' : dayOffset === -1 ? 'Yesterday' : '';
           const dateFormatted = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
+          // Get availability for this day
+          const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+          const dayOfWeek = displayDate.getDay();
+          const dayKey = dayNames[dayOfWeek];
+          const daySchedule = weeklySchedule?.[dayKey];
+          
+          // Get time blocks for this day
+          const dateStr = `${displayDate.getFullYear()}-${String(displayDate.getMonth() + 1).padStart(2, '0')}-${String(displayDate.getDate()).padStart(2, '0')}`;
+          const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+          
+          // Get intervals (support both new and legacy format)
+          let intervals: { start: string; end: string }[] = [];
+          if (daySchedule?.enabled) {
+            if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+              intervals = daySchedule.intervals.map((i: any) => ({ start: i.start, end: i.end }));
+            } else if (daySchedule.start && daySchedule.end) {
+              intervals = [{ start: daySchedule.start, end: daySchedule.end }];
+            }
+          }
+          
+          // Format time for display (12-hour)
+          const formatTime12 = (time: string) => {
+            const [hours, minutes] = time.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+            return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+          };
+          
+          // Generate hourly slots from intervals
+          const generateHourlySlots = (intervals: { start: string; end: string }[]) => {
+            const slots: { start: string; end: string }[] = [];
+            intervals.forEach(interval => {
+              const [startHour] = interval.start.split(':').map(Number);
+              const [endHour] = interval.end.split(':').map(Number);
+              for (let hour = startHour; hour < endHour; hour++) {
+                slots.push({
+                  start: `${String(hour).padStart(2, '0')}:00`,
+                  end: `${String(hour + 1).padStart(2, '0')}:00`
+                });
+              }
+            });
+            return slots;
+          };
+          
+          const hourlySlots = generateHourlySlots(intervals);
+          
+          // Helper to convert time to minutes
+          const timeToMinutes = (time: string) => {
+            const [h, m] = time.split(':').map(Number);
+            return h * 60 + m;
+          };
+          
+          // Helper to check if slot is blocked
+          const getBlockForSlot = (slot: { start: string; end: string }) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            return dayBlocks.find(block => {
+              const blockStart = timeToMinutes(block.startTime);
+              const blockEnd = timeToMinutes(block.endTime);
+              return slotStart < blockEnd && slotEnd > blockStart;
+            });
+          };
+          
+          // Helper to get appointment for slot
+          const getAppointmentForSlot = (slot: { start: string; end: string }) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            return dailyAppointments.find(apt => {
+              const aptTime = new Date(apt.scheduledTime);
+              const aptMinutes = aptTime.getHours() * 60 + aptTime.getMinutes();
+              return aptMinutes >= slotStart && aptMinutes < slotEnd;
+            });
+          };
+          
+          const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+          const bookedCount = hourlySlots.filter(slot => getAppointmentForSlot(slot)).length;
+          const blockedCount = hourlySlots.filter(slot => getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+
           return (
-            <div>
+            <div className="max-w-2xl mx-auto">
               {isLoadingBookings ? (
                 <div className="text-center py-8 sm:py-12">
                   <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
                   <p className="text-gray-500">Loading appointments...</p>
-                        </div>
-              ) : dailyAppointments.length === 0 ? (
-                <div className="text-center py-8 sm:py-12">
-                  <Calendar className="w-14 h-14 sm:w-20 sm:h-20 text-gray-400 mx-auto mb-4 sm:mb-5" />
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No appointments scheduled</h3>
-                  <p className="text-base sm:text-lg text-gray-600">You have no appointments scheduled for {dayOffset === 0 ? 'today' : 'this day'}.</p>
-                      </div>
+                </div>
+              ) : !daySchedule?.enabled || intervals.length === 0 ? (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-500 text-center">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                </div>
               ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {dailyAppointments.map((apt) => {
-                    const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
-                    return (
-                    <div 
-                      key={apt.id} 
-                      onClick={() => onViewDetails(apt)}
-                      className={`p-5 sm:p-6 lg:p-4 rounded-xl border active:scale-98 transition-all cursor-pointer max-w-2xl mx-auto ${
-                        isCompleted 
-                          ? 'bg-green-50 border-green-200 hover:border-green-400' 
-                          : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
-                      }`}
-                    >
-                      {/* Top row: Client name + Status/Price */}
-                      <div className="flex items-start justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-gray-900 text-lg sm:text-xl lg:text-2xl">{apt.consumer.firstName} {apt.consumer.lastName}</p>
-                          {isCompleted && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
-                          )}
-                        </div>
-                        <p className="font-bold text-green-600 text-xl sm:text-2xl lg:text-3xl">{formatPrice(apt.priceUsdCents)}</p>
-                      </div>
-                      {/* Service - prefer serviceName from input, fallback to serviceType */}
-                      <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-2">
-                        {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                      </p>
-                      {/* Location and Notes if available */}
-                      {(apt.location || apt.notes) && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {apt.location && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm lg:text-base">
-                              <MapPin className="w-3 h-3 lg:w-4 lg:h-4" />
-                              {apt.location}
-                            </span>
-                          )}
-                          {apt.notes && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm lg:text-base">
-                              {apt.notes}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {/* Review display for completed/paid bookings */}
-                      {(apt.status === 'COMPLETED' || apt.status === 'PAID') && apt.review && (
-                        <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
-                          <div className="flex items-center gap-1 mb-1">
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <span key={star} className={star <= apt.review.rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
-                            ))}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
+                  </h4>
+                  <div className="space-y-2">
+                    {hourlySlots.map((slot, idx) => {
+                      const block = getBlockForSlot(slot);
+                      const appointment = getAppointmentForSlot(slot);
+                      
+                      // Appointment takes priority
+                      if (appointment) {
+                        const isCompleted = appointment.status === 'COMPLETED' || appointment.status === 'PAID';
+                        return (
+                          <div 
+                            key={idx}
+                            onClick={() => onViewDetails(appointment)}
+                            className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                              isCompleted 
+                                ? 'bg-green-50 border-green-200 hover:border-green-400' 
+                                : 'bg-blue-50 border-blue-200 hover:border-blue-400'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-blue-100'}`}>
+                                  <User className={`w-5 h-5 ${isCompleted ? 'text-green-600' : 'text-blue-600'}`} />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">
+                                    {formatTime12(slot.start)} - {formatTime12(slot.end)}
+                                  </p>
+                                  <p className="text-sm text-gray-700">
+                                    {appointment.consumer.firstName} {appointment.consumer.lastName}
+                                    {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
+                                <p className="text-xs text-gray-400">Tap →</p>
+                              </div>
+                            </div>
                           </div>
-                          {apt.review.comment && (
-                            <p className="text-sm text-gray-600 italic">"{apt.review.comment}"</p>
-                          )}
+                        );
+                      }
+                      
+                      // Blocked slot
+                      if (block) {
+                        return (
+                          <div 
+                            key={idx}
+                            className="px-3 py-2 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-red-500" />
+                              <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
+                            </div>
+                            <span className="text-xs text-red-500">{block.reason || 'Blocked'}</span>
+                          </div>
+                        );
+                      }
+                      
+                      // Available slot
+                      return (
+                        <div 
+                          key={idx}
+                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                          {formatTime12(slot.start)} - {formatTime12(slot.end)}
+                          <span className="text-xs text-primary-500 ml-auto">Available</span>
                         </div>
-                      )}
-                      {/* Bottom row: Time */}
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold text-primary-400 text-base sm:text-lg lg:text-xl">{formatTime(apt.scheduledTime)}</p>
-                        <span className="text-sm sm:text-base lg:text-lg text-gray-500">Tap for details →</span>
-                      </div>
-                    </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
