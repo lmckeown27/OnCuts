@@ -111,16 +111,17 @@ class BarberService {
     const params: Record<string, string> = {};
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    const response = await api.get<{ success: boolean; data: TimeBlock[] }>(`/barbers/${barberId}/time-blocks`, params);
-    return response.data;
+    // api.get already extracts response.data.data, so we get TimeBlock[] directly
+    const blocks = await api.get<TimeBlock[]>(`/barbers/${barberId}/time-blocks`, params);
+    return blocks || [];
   }
 
   /**
    * Create a new time block
    */
   async createTimeBlock(barberId: string, block: CreateTimeBlockData): Promise<TimeBlock> {
-    const response = await api.post<{ success: boolean; data: TimeBlock }>(`/barbers/${barberId}/time-blocks`, block);
-    return response.data;
+    // api.post already extracts response.data.data
+    return await api.post<TimeBlock>(`/barbers/${barberId}/time-blocks`, block);
   }
 
   /**
