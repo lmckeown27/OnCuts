@@ -1181,6 +1181,11 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       [id]
     );
 
+    // Prevent caching of weekly availability data to ensure fresh data on login
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.json({
       success: true,
       data: {

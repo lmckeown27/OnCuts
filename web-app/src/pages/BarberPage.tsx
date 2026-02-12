@@ -1165,6 +1165,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
+  const [isLoadingWeeklySchedule, setIsLoadingWeeklySchedule] = useState(true); // Loading state for availability
   const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0); // Trigger refresh when availability changes
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
@@ -1215,18 +1216,52 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   // Fetch barber's weekly availability schedule
   useEffect(() => {
+    // Skip fetch if we don't have the barber profile ID yet
+    if (!barberProfileId) {
+      console.log('[DashboardView] Waiting for barberProfileId...');
+      return;
+    }
+    
+    let isMounted = true;
+    
     const fetchWeeklySchedule = async () => {
-      if (!barberProfileId) return;
+      console.log('[DashboardView] Fetching weekly schedule for barber:', barberProfileId);
+      setIsLoadingWeeklySchedule(true);
       try {
-        const response = await api.get(`/barbers/${barberProfileId}/availability`);
-        if (response?.weeklySchedule) {
+        // Add cache-busting timestamp to prevent stale 304 responses on initial load
+        const response = await api.get(`/barbers/${barberProfileId}/availability`, {
+          _t: Date.now() // Cache buster
+        });
+        
+        if (!isMounted) return;
+        
+        console.log('[DashboardView] Received weekly schedule:', response?.weeklySchedule ? 'has data' : 'empty');
+        
+        // Set the schedule even if empty (to distinguish from loading state)
+        if (response?.weeklySchedule !== undefined) {
           setWeeklySchedule(response.weeklySchedule);
+        } else {
+          // If no weeklySchedule in response, set empty object
+          setWeeklySchedule({});
         }
       } catch (error) {
-        console.error('Failed to fetch weekly schedule:', error);
+        console.error('[DashboardView] Failed to fetch weekly schedule:', error);
+        if (isMounted) {
+          // Set empty object on error so UI doesn't stay in loading state
+          setWeeklySchedule({});
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingWeeklySchedule(false);
+        }
       }
     };
+    
     fetchWeeklySchedule();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [barberProfileId, availabilityRefreshKey]);
   
   // Fetch confirmed bookings using the API service (handles auth automatically)
@@ -2044,10 +2079,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
           return (
             <div className="max-w-2xl mx-auto">
-              {isLoadingBookings ? (
+              {isLoadingBookings || isLoadingWeeklySchedule ? (
                 <div className="text-center py-8 sm:py-12">
                   <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
-                  <p className="text-gray-500">Loading appointments...</p>
+                  <p className="text-gray-500">{isLoadingWeeklySchedule ? 'Loading availability...' : 'Loading appointments...'}</p>
                 </div>
               ) : !daySchedule?.enabled || intervals.length === 0 ? (
                 <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
@@ -2957,7 +2992,15 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 <>
                   {/* Unified Timeline View */}
                   {(() => {
-                    if (!weeklySchedule) return null;
+                    // Show loading spinner while fetching availability
+                    if (isLoadingWeeklySchedule || !weeklySchedule) {
+                      return (
+                        <div className="text-center py-8">
+                          <div className="animate-spin w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-3"></div>
+                          <p className="text-gray-500 text-sm">Loading availability...</p>
+                        </div>
+                      );
+                    }
                     
                     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
                     const dayOfWeek = selectedDate.getDay();
