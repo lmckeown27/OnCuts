@@ -31,6 +31,7 @@ import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdo
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
+import barberService, { TimeBlock } from '../services/barber.service';
 import type { Campus } from '../types';
 import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useGeolocation, useDynamicViewportHeight } from '../hooks';
@@ -381,6 +382,30 @@ export default function BarberPage() {
     };
     fetchBarberProfile();
   }, [barberId, user]);
+
+  // Fetch time blocks for calendar display
+  useEffect(() => {
+    const fetchMonthlyTimeBlocks = async () => {
+      if (!barberProfile?.id) return;
+      try {
+        // Calculate start and end dates for current displayed month
+        const today = new Date();
+        const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+        const firstDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
+        const lastDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
+        
+        const startDate = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
+        const endDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth.getDate()).padStart(2, '0')}`;
+        
+        const blocks = await barberService.getTimeBlocks(barberProfile.id, startDate, endDate);
+        setMonthlyTimeBlocks(blocks);
+      } catch (error) {
+        console.error('Failed to fetch monthly time blocks:', error);
+        setMonthlyTimeBlocks([]);
+      }
+    };
+    fetchMonthlyTimeBlocks();
+  }, [barberProfile?.id, monthOffset]);
 
   // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
@@ -1124,6 +1149,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
   const [monthOffset, setMonthOffset] = useState(0); // 0 = current month, 1 = next month, etc.
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
+  const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
@@ -2142,6 +2168,19 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
           
           const totalMonthAppointments = Object.values(monthAppointmentsByDay).reduce((sum, arr) => sum + arr.length, 0);
           
+          // Group time blocks by day of month
+          const monthTimeBlocksByDay: { [day: number]: TimeBlock[] } = {};
+          monthlyTimeBlocks.forEach(block => {
+            // block.blockDate is in YYYY-MM-DD format
+            const [blockYear, blockMonth, blockDay] = block.blockDate.split('-').map(Number);
+            if (blockMonth - 1 === displayMonth && blockYear === displayYear) {
+              if (!monthTimeBlocksByDay[blockDay]) {
+                monthTimeBlocksByDay[blockDay] = [];
+              }
+              monthTimeBlocksByDay[blockDay].push(block);
+            }
+          });
+          
           // Create array with empty slots for padding
           const calendarDays: (number | null)[] = [];
           for (let i = 0; i < startDayOfWeek; i++) {
@@ -2168,7 +2207,9 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                   }
                   
                   const dayBookings = monthAppointmentsByDay[day] || [];
+                  const dayTimeBlocks = monthTimeBlocksByDay[day] || [];
                   const hasAppointments = dayBookings.length > 0;
+                  const hasTimeBlocks = dayTimeBlocks.length > 0;
                   // Check if this day is "today" in campus timezone (must match day, month, and year)
                   const isToday = day === today.getDate() && displayMonth === today.getMonth() && displayYear === today.getFullYear();
                   
@@ -2200,13 +2241,18 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                   +{pendingCount}
                                 </div>
                               )}
+                              {hasTimeBlocks && (
+                                <div className={`text-xs font-bold ${isToday ? 'text-white/70' : 'text-red-500'}`}>
+                                  {dayTimeBlocks.length}🚫
+                                </div>
+                              )}
                             </>
                           );
                         })()}
                       </div>
                       {/* Desktop: Show names with color-coded counts */}
                       <div className="hidden sm:block text-sm space-y-0.5 overflow-hidden">
-                        {dayBookings.length === 0 ? (
+                        {dayBookings.length === 0 && !hasTimeBlocks ? (
                           <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                         ) : (
                           (() => {
@@ -2222,6 +2268,11 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
                                 {pendingCount > 0 && (
                                   <div className={`text-xs font-bold ${isToday ? 'text-white/80' : 'text-amber-500'}`}>
                                     {pendingCount} booked
+                                  </div>
+                                )}
+                                {hasTimeBlocks && (
+                                  <div className={`text-xs font-bold ${isToday ? 'text-white/70' : 'text-red-500'}`}>
+                                    {dayTimeBlocks.length} blocked
                                   </div>
                                 )}
                               </div>
