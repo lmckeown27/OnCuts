@@ -2124,22 +2124,17 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-blue-100'}`}>
-                                  <User className={`w-5 h-5 ${isCompleted ? 'text-green-600' : 'text-blue-600'}`} />
-                                </div>
-                                <div>
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    {formatTime12(slot.start)} - {formatTime12(slot.end)}
-                                  </p>
-                                  <p className="text-sm text-gray-700">
-                                    {appointment.consumer.firstName} {appointment.consumer.lastName}
-                                    {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
-                                  </p>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {formatTime12(slot.start)} - {formatTime12(slot.end)}
+                                </p>
+                                <p className="text-sm text-gray-700">
+                                  {appointment.consumer.firstName} {appointment.consumer.lastName}
+                                  {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
+                                </p>
                                   <p className="text-xs text-gray-500">
                                     {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                                   </p>
-                                </div>
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
@@ -3144,22 +3139,17 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   }`}
                                 >
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-blue-100'}`}>
-                                        <User className={`w-5 h-5 ${isCompleted ? 'text-green-600' : 'text-blue-600'}`} />
-                                      </div>
-                                      <div>
-                                        <p className="text-sm font-semibold text-gray-900">
-                                          {formatTime(slot.start)} - {formatTime(slot.end)}
-                                        </p>
-                                        <p className="text-sm text-gray-700">
-                                          {appointment.consumer.firstName} {appointment.consumer.lastName}
-                                          {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                          {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                        </p>
-                                      </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-gray-900">
+                                        {formatTime(slot.start)} - {formatTime(slot.end)}
+                                      </p>
+                                      <p className="text-sm text-gray-700">
+                                        {appointment.consumer.firstName} {appointment.consumer.lastName}
+                                        {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                      </p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
