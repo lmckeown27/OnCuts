@@ -1356,7 +1356,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           id: data.timeBlock!.id,
           blockDate: data.timeBlock!.blockDate,
           startTime: data.timeBlock!.startTime,
-          endTime: data.timeBlock!.endTime
+          endTime: data.timeBlock!.endTime,
+          createdAt: new Date().toISOString()
         }]);
         toast.success('Time blocked successfully');
       } else if (data.action === 'deleted' && data.blockId) {
