@@ -641,7 +641,7 @@ export default function BarberPage() {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
           }}
-          onEditAvailability={() => setShowAvailability(true)}
+          onEditAvailability={openAvailability}
         />
       </div>
 
