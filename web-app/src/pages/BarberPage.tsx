@@ -641,6 +641,7 @@ export default function BarberPage() {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
           }}
+          onEditAvailability={() => setShowAvailability(true)}
         />
       </div>
 
@@ -1096,6 +1097,7 @@ interface DashboardViewProps {
   refreshKey?: number;
   campusTimezone?: string;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
+  onEditAvailability?: () => void; // Open weekly availability modal
 }
 
 // Type for confirmed bookings
@@ -1128,7 +1130,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   
@@ -1998,15 +2000,31 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   <p className="text-gray-500">Loading appointments...</p>
                 </div>
               ) : !daySchedule?.enabled || intervals.length === 0 ? (
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-500 text-center">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                  <p className="text-sm text-gray-500 mb-3">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                  <button
+                    onClick={() => onEditAvailability?.()}
+                    className="text-sm px-3 py-1.5 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Add Availability
+                  </button>
                 </div>
               ) : (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
+                    </h4>
+                    <button
+                      onClick={() => onEditAvailability?.()}
+                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3" />
+                      Edit Hours
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {hourlySlots.map((slot, idx) => {
                       const block = getBlockForSlot(slot);
@@ -2898,8 +2916,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     if (!daySchedule?.enabled) {
                       return (
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-sm text-gray-500 text-center">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                          <p className="text-sm text-gray-500 mb-3">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                          <button
+                            onClick={() => {
+                              setSelectedDate(null);
+                              onEditAvailability?.();
+                            }}
+                            className="text-sm px-3 py-1.5 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Add Availability
+                          </button>
                         </div>
                       );
                     }
@@ -2914,8 +2942,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     if (intervals.length === 0) {
                       return (
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-sm text-gray-500 text-center">No availability set for {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                          <p className="text-sm text-gray-500 mb-3">No availability set for {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                          <button
+                            onClick={() => {
+                              setSelectedDate(null);
+                              onEditAvailability?.();
+                            }}
+                            className="text-sm px-3 py-1.5 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <Settings className="w-4 h-4" />
+                            Add Availability
+                          </button>
                         </div>
                       );
                     }
@@ -2983,10 +3021,22 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
-                        </h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
+                          </h4>
+                          <button
+                            onClick={() => {
+                              setSelectedDate(null);
+                              onEditAvailability?.();
+                            }}
+                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <Settings className="w-3 h-3" />
+                            Edit Hours
+                          </button>
+                        </div>
                         <div className="space-y-2">
                           {hourlySlots.map((slot, idx) => {
                             const block = getBlockForSlot(slot);
