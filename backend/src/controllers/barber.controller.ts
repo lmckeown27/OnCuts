@@ -1469,11 +1469,17 @@ export const createTimeBlock = async (req: AuthRequest, res: Response, next: Nex
     }
 
     // Validate that blockDate is not in the past
-    const blockDateObj = new Date(blockDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Compare date strings directly to avoid timezone issues
+    // blockDate is in YYYY-MM-DD format from frontend
+    const todayUTC = new Date().toISOString().split('T')[0]; // YYYY-MM-DD in UTC
     
-    if (blockDateObj < today) {
+    // Allow today and future dates (blockDate >= todayUTC would be too strict for timezone differences)
+    // Instead, allow dates from yesterday UTC onwards to account for timezone differences
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterdayUTC = yesterdayDate.toISOString().split('T')[0];
+    
+    if (blockDate < yesterdayUTC) {
       throw new ApiError(400, 'Cannot create time blocks for past dates');
     }
 
