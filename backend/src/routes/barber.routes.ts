@@ -242,8 +242,8 @@ router.post(
   [
     param('id').isUUID(),
     body('blockDate').isISO8601().withMessage('Valid date required (YYYY-MM-DD)'),
-    body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid start time required (HH:MM)'),
-    body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid end time required (HH:MM)'),
+    body('startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid start time required (HH:MM)'),
+    body('endTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Valid end time required (HH:MM)'),
     body('reason').optional().isString().isLength({ max: 255 }),
     validate
   ],

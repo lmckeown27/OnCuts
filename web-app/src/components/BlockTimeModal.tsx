@@ -135,8 +135,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
       await barberService.createTimeBlock(barberId, {
         blockDate: selectedDate,
         startTime,
-        endTime,
-        reason: undefined
+        endTime
       });
       
       toast.success('Time blocked successfully');
@@ -147,6 +146,8 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
       fetchTimeBlocks();
     } catch (error: any) {
       console.error('Failed to create time block:', error);
+      console.error('Request data:', { blockDate: selectedDate, startTime, endTime });
+      console.error('Response:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to block time');
     } finally {
       setSaving(false);
