@@ -1127,6 +1127,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
+  const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
@@ -1173,6 +1174,22 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     };
     fetchMonthlyTimeBlocks();
   }, [barberProfileId, monthOffset]);
+
+  // Fetch barber's weekly availability schedule
+  useEffect(() => {
+    const fetchWeeklySchedule = async () => {
+      if (!barberProfileId) return;
+      try {
+        const response = await api.get(`/barbers/${barberProfileId}/availability`);
+        if (response?.weeklySchedule) {
+          setWeeklySchedule(response.weeklySchedule);
+        }
+      } catch (error) {
+        console.error('Failed to fetch weekly schedule:', error);
+      }
+    };
+    fetchWeeklySchedule();
+  }, [barberProfileId]);
   
   // Fetch confirmed bookings using the API service (handles auth automatically)
   useEffect(() => {
@@ -2736,6 +2753,67 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               ) : (
                 /* Appointments list view */
                 <>
+                  {/* Show availability for this day */}
+                  {(() => {
+                    if (!weeklySchedule) return null;
+                    
+                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+                    const dayOfWeek = selectedDate.getDay();
+                    const dayKey = dayNames[dayOfWeek];
+                    const daySchedule = weeklySchedule[dayKey];
+                    
+                    if (!daySchedule?.enabled) {
+                      return (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-500 text-center">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                        </div>
+                      );
+                    }
+                    
+                    // Get intervals (support both new and legacy format)
+                    let intervals: { start: string; end: string }[] = [];
+                    if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+                      intervals = daySchedule.intervals.map((i: any) => ({ start: i.start, end: i.end }));
+                    } else if (daySchedule.start && daySchedule.end) {
+                      intervals = [{ start: daySchedule.start, end: daySchedule.end }];
+                    }
+                    
+                    if (intervals.length === 0) {
+                      return (
+                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-sm text-gray-500 text-center">No availability set for {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
+                        </div>
+                      );
+                    }
+                    
+                    // Format time for display
+                    const formatTime = (time: string) => {
+                      const [hours, minutes] = time.split(':').map(Number);
+                      const period = hours >= 12 ? 'PM' : 'AM';
+                      const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                      return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+                    };
+                    
+                    return (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-primary-600 mb-2 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Available Hours
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {intervals.map((interval, idx) => (
+                            <div 
+                              key={idx}
+                              className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200"
+                            >
+                              {formatTime(interval.start)} - {formatTime(interval.end)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  
                   {/* Show blocked times for this day */}
                   {(() => {
                     const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
