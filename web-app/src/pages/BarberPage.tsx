@@ -2033,6 +2033,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 {weekDays.map(day => {
                   const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
                   const isToday = day.fullDate.toDateString() === today.toDateString();
+                  // Get time blocks for this day
+                  const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
+                  const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+                  const hasTimeBlocks = dayTimeBlocks.length > 0;
 
                   return (
                     <div
@@ -2058,7 +2062,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
                             const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
                             
-                            if (dayBookings.length === 0) {
+                            if (dayBookings.length === 0 && !hasTimeBlocks) {
                               return (
                                 <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
                                   No appointments
@@ -2076,6 +2080,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 {pendingCount > 0 && (
                                   <div className={`text-sm ${isToday ? 'text-white/70' : 'text-amber-600 font-bold'}`}>
                                     {pendingCount} booked
+                                  </div>
+                                )}
+                                {hasTimeBlocks && (
+                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
+                                    {dayTimeBlocks.length} blocked
                                   </div>
                                 )}
                               </div>
@@ -2101,6 +2110,10 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 {weekDays.map(day => {
                   const dayBookings = weekAppointmentsByDate[day.fullDate.toDateString()] || [];
                   const isToday = day.fullDate.toDateString() === today.toDateString();
+                  // Get time blocks for this day
+                  const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
+                  const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+                  const hasTimeBlocks = dayTimeBlocks.length > 0;
 
                   return (
                     <div
@@ -2124,7 +2137,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
                           const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
                           
-                          if (dayBookings.length === 0) {
+                          if (dayBookings.length === 0 && !hasTimeBlocks) {
                             return (
                               <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                             );
@@ -2140,6 +2153,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               {pendingCount > 0 && (
                                 <div className={`${isToday ? 'text-white/80' : 'text-amber-600 font-bold'}`}>
                                   {pendingCount} booked
+                                </div>
+                              )}
+                              {hasTimeBlocks && (
+                                <div className={`${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
+                                  {dayTimeBlocks.length} blocked
                                 </div>
                               )}
                             </div>
