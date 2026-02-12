@@ -2753,7 +2753,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               ) : (
                 /* Appointments list view */
                 <>
-                  {/* Show availability for this day */}
+                  {/* Unified Timeline View */}
                   {(() => {
                     if (!weeklySchedule) return null;
                     
@@ -2764,7 +2764,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     if (!daySchedule?.enabled) {
                       return (
-                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                           <p className="text-sm text-gray-500 text-center">Not available on {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
                         </div>
                       );
@@ -2780,7 +2780,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     if (intervals.length === 0) {
                       return (
-                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                           <p className="text-sm text-gray-500 text-center">No availability set for {dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s</p>
                         </div>
                       );
@@ -2811,153 +2811,125 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     };
                     
                     const hourlySlots = generateHourlySlots(intervals);
+                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+                    const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+                    const dayAppointments = getAppointmentsForDate(selectedDate);
+                    
+                    // Helper to convert time to minutes
+                    const timeToMinutes = (time: string) => {
+                      const [h, m] = time.split(':').map(Number);
+                      return h * 60 + m;
+                    };
+                    
+                    // Helper to check if slot is blocked
+                    const getBlockForSlot = (slot: { start: string; end: string }) => {
+                      const slotStart = timeToMinutes(slot.start);
+                      const slotEnd = timeToMinutes(slot.end);
+                      return dayBlocks.find(block => {
+                        const blockStart = timeToMinutes(block.startTime);
+                        const blockEnd = timeToMinutes(block.endTime);
+                        return slotStart < blockEnd && slotEnd > blockStart;
+                      });
+                    };
+                    
+                    // Helper to get appointment for slot
+                    const getAppointmentForSlot = (slot: { start: string; end: string }) => {
+                      const slotStart = timeToMinutes(slot.start);
+                      const slotEnd = timeToMinutes(slot.end);
+                      return dayAppointments.find(apt => {
+                        const aptTime = new Date(apt.scheduledTime);
+                        const aptMinutes = aptTime.getHours() * 60 + aptTime.getMinutes();
+                        return aptMinutes >= slotStart && aptMinutes < slotEnd;
+                      });
+                    };
+                    
+                    const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+                    const bookedCount = hourlySlots.filter(slot => getAppointmentForSlot(slot)).length;
+                    const blockedCount = hourlySlots.filter(slot => getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
                     
                     return (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-primary-600 mb-2 flex items-center gap-2">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          Available Hours ({hourlySlots.length})
+                          Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
                         </h4>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                          {hourlySlots.map((slot, idx) => (
-                            <div 
-                              key={idx}
-                              className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200"
-                            >
-                              {formatTime(slot.start)} - {formatTime(slot.end)}
-                            </div>
-                          ))}
+                        <div className="space-y-2">
+                          {hourlySlots.map((slot, idx) => {
+                            const block = getBlockForSlot(slot);
+                            const appointment = getAppointmentForSlot(slot);
+                            
+                            // Appointment takes priority
+                            if (appointment) {
+                              const isCompleted = appointment.status === 'COMPLETED' || appointment.status === 'PAID';
+                              return (
+                                <div 
+                                  key={idx}
+                                  onClick={() => selectBookingForInlineView(appointment)}
+                                  className={`p-3 rounded-lg border transition-colors cursor-pointer ${
+                                    isCompleted 
+                                      ? 'bg-green-50 border-green-200 hover:border-green-400' 
+                                      : 'bg-blue-50 border-blue-200 hover:border-blue-400'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-blue-100'}`}>
+                                        <User className={`w-5 h-5 ${isCompleted ? 'text-green-600' : 'text-blue-600'}`} />
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-semibold text-gray-900">
+                                          {formatTime(slot.start)} - {formatTime(slot.end)}
+                                        </p>
+                                        <p className="text-sm text-gray-700">
+                                          {appointment.consumer.firstName} {appointment.consumer.lastName}
+                                          {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                          {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
+                                      <p className="text-xs text-gray-400">Tap →</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            
+                            // Blocked slot
+                            if (block) {
+                              return (
+                                <div 
+                                  key={idx}
+                                  className="px-3 py-2 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200 flex items-center justify-between"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-red-500" />
+                                    <span className="font-medium">{formatTime(slot.start)} - {formatTime(slot.end)}</span>
+                                  </div>
+                                  <span className="text-xs text-red-500">{block.reason || 'Blocked'}</span>
+                                </div>
+                              );
+                            }
+                            
+                            // Available slot
+                            return (
+                              <div 
+                                key={idx}
+                                className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2"
+                              >
+                                <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                                {formatTime(slot.start)} - {formatTime(slot.end)}
+                                <span className="text-xs text-primary-500 ml-auto">Available</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
                   })()}
-                  
-                  {/* Show blocked times for this day */}
-                  {(() => {
-                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-                    const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
-                    
-                    if (dayBlocks.length > 0) {
-                      return (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Blocked Times ({dayBlocks.length})
-                          </h4>
-                          <div className="space-y-2">
-                            {dayBlocks.map((block) => (
-                              <div 
-                                key={block.id}
-                                className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                                    <Clock className="w-5 h-5 text-red-500" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-900">
-                                      {(() => {
-                                        const [hours, minutes] = block.startTime.split(':').map(Number);
-                                        const startPeriod = hours >= 12 ? 'PM' : 'AM';
-                                        const startHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-                                        
-                                        const [endH, endM] = block.endTime.split(':').map(Number);
-                                        const endPeriod = endH >= 12 ? 'PM' : 'AM';
-                                        const endHours = endH === 0 ? 12 : endH > 12 ? endH - 12 : endH;
-                                        
-                                        return `${startHours}:${String(minutes).padStart(2, '0')} ${startPeriod} - ${endHours}:${String(endM).padStart(2, '0')} ${endPeriod}`;
-                                      })()}
-                                    </p>
-                                    {block.reason && (
-                                      <p className="text-xs text-gray-500">{block.reason}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                  
-                  {getAppointmentsForDate(selectedDate).length === 0 && monthlyTimeBlocks.filter(block => {
-                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-                    return block.blockDate === dateStr;
-                  }).length === 0 ? (
-                    <div className="text-center py-12">
-                      <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
-                      <p className="text-gray-600">You have no appointments scheduled for this day.</p>
-                    </div>
-                  ) : getAppointmentsForDate(selectedDate).length > 0 ? (
-                    <div className="space-y-3">
-                      {getAppointmentsForDate(selectedDate).map((apt) => {
-                        const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
-                        return (
-                        <div 
-                          key={apt.id} 
-                          onClick={() => selectBookingForInlineView(apt)}
-                          className={`p-5 rounded-lg border transition-colors cursor-pointer ${
-                            isCompleted 
-                              ? 'bg-green-50 border-green-200 hover:border-green-400' 
-                              : 'bg-gray-50 border-gray-200 hover:border-primary-300 hover:bg-gray-100'
-                          }`}
-                        >
-                          {/* Top row: Client name + Price */}
-                          <div className="flex items-start justify-between mb-1.5">
-                            <div className="flex items-center gap-2">
-                              <p className="font-bold text-gray-900 text-lg">{apt.consumer.firstName} {apt.consumer.lastName}</p>
-                              {isCompleted && (
-                                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">✓ Completed</span>
-                              )}
-                            </div>
-                            <p className="font-bold text-green-600 text-xl">${(apt.priceUsdCents / 100).toFixed(0)}</p>
-                          </div>
-                          {/* Service - prefer serviceName from input, fallback to serviceType */}
-                          <p className="text-base text-gray-600 mb-2">
-                            {apt.serviceName || apt.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                          </p>
-                          {/* Location and Notes if available */}
-                          {(apt.location || apt.notes) && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {apt.location && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm">
-                                  <MapPin className="w-3 h-3" />
-                                  {apt.location}
-                              </span>
-                              )}
-                              {apt.notes && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm">
-                                  {apt.notes}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {/* Review display for completed/paid bookings */}
-                          {(apt.status === 'COMPLETED' || apt.status === 'PAID') && apt.review && (
-                            <div className="mt-2 p-2 bg-white rounded-lg border border-green-100">
-                              <div className="flex items-center gap-1 mb-1">
-                                {[1, 2, 3, 4, 5].map(star => (
-                                  <span key={star} className={star <= apt.review.rating ? 'text-yellow-400' : 'text-gray-300'}>★</span>
-                                ))}
-                              </div>
-                              {apt.review.comment && (
-                                <p className="text-sm text-gray-600 italic">"{apt.review.comment}"</p>
-                              )}
-                            </div>
-                          )}
-                          {/* Bottom row: Time */}
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-primary-400 text-base">{new Date(apt.scheduledTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</p>
-                            <span className="text-sm text-gray-500">Tap for details →</span>
-                          </div>
-                        </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
                 </>
               )}
             </div>
