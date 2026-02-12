@@ -17,6 +17,9 @@ interface BlockTimeModalProps {
   isVisible: boolean;
   onClose: () => void;
   barberId: string;
+  initialDate?: string; // YYYY-MM-DD format
+  initialStartTime?: string; // HH:MM format
+  initialEndTime?: string; // HH:MM format
 }
 
 // Helper to format date for display
@@ -74,16 +77,29 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   isVisible,
   onClose,
   barberId,
+  initialDate,
+  initialStartTime,
+  initialEndTime,
 }) => {
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // New block form state
+  // New block form state - use initial values if provided
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(getTodayStr());
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [selectedDate, setSelectedDate] = useState(initialDate || getTodayStr());
+  const [startTime, setStartTime] = useState(initialStartTime || '09:00');
+  const [endTime, setEndTime] = useState(initialEndTime || '10:00');
+  
+  // Auto-show create form when initial values are provided
+  useEffect(() => {
+    if (isVisible && initialDate && initialStartTime) {
+      setSelectedDate(initialDate);
+      setStartTime(initialStartTime);
+      setEndTime(initialEndTime || initialStartTime.replace(/:\d{2}$/, ':00').replace(/^(\d{2})/, (_, h) => String(parseInt(h) + 1).padStart(2, '0')));
+      setShowCreateForm(true);
+    }
+  }, [isVisible, initialDate, initialStartTime, initialEndTime]);
   
   // Delete confirmation
   const [deletingBlockId, setDeletingBlockId] = useState<string | null>(null);

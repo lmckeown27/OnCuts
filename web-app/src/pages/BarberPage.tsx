@@ -76,6 +76,11 @@ export default function BarberPage() {
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
   const [stripeConnectCompleted, setStripeConnectCompleted] = useState<boolean | null>(null); // null = loading
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
+  const [blockTimeInitialValues, setBlockTimeInitialValues] = useState<{
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+  }>({});
   
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
@@ -846,8 +851,14 @@ export default function BarberPage() {
       {barberProfile?.id && (
         <BlockTimeModal
           isVisible={showBlockTimeModal}
-          onClose={() => setShowBlockTimeModal(false)}
+          onClose={() => {
+            setShowBlockTimeModal(false);
+            setBlockTimeInitialValues({});
+          }}
           barberId={barberProfile.id}
+          initialDate={blockTimeInitialValues.date}
+          initialStartTime={blockTimeInitialValues.startTime}
+          initialEndTime={blockTimeInitialValues.endTime}
         />
       )}
 
@@ -2044,15 +2055,23 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         );
                       }
                       
-                      // Available slot
+                      // Available slot - clickable to block
                       return (
                         <div 
                           key={idx}
-                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2"
+                          onClick={() => {
+                            setBlockTimeInitialValues({
+                              date: dateStr,
+                              startTime: slot.start,
+                              endTime: slot.end
+                            });
+                            setShowBlockTimeModal(true);
+                          }}
+                          className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
                         >
                           <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                           {formatTime12(slot.start)} - {formatTime12(slot.end)}
-                          <span className="text-xs text-primary-500 ml-auto">Available</span>
+                          <span className="text-xs text-primary-500 ml-auto">Tap to block</span>
                         </div>
                       );
                     })}
@@ -3023,15 +3042,24 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Available slot
+                            // Available slot - clickable to block
                             return (
                               <div 
                                 key={idx}
-                                className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2"
+                                onClick={() => {
+                                  setBlockTimeInitialValues({
+                                    date: dateStr,
+                                    startTime: slot.start,
+                                    endTime: slot.end
+                                  });
+                                  setShowBlockTimeModal(true);
+                                  setSelectedDate(null); // Close the day detail modal
+                                }}
+                                className="px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200 flex items-center gap-2 cursor-pointer hover:bg-primary-100 hover:border-primary-300 transition-colors"
                               >
                                 <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                                 {formatTime(slot.start)} - {formatTime(slot.end)}
-                                <span className="text-xs text-primary-500 ml-auto">Available</span>
+                                <span className="text-xs text-primary-500 ml-auto">Tap to block</span>
                               </div>
                             );
                           })}
