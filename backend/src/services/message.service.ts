@@ -517,6 +517,7 @@ class MessageService {
           const recipientFullName = `${recipient.first_name} ${recipient.last_name}`;
           
           // Get conversation booking details if available, including barber's campus timezone
+          // Note: campusId is on the users table, not barbers table
           const convDetails = await pool.query(
             `SELECT 
                c.service_name, c.service_price, c.scheduled_time, c.booking_status, c.booking_id,
@@ -524,7 +525,8 @@ class MessageService {
              FROM conversations c
              LEFT JOIN bookings b ON c.booking_id = b.id
              LEFT JOIN barbers barber ON b."barberId" = barber.id
-             LEFT JOIN campuses campus ON barber."campusId" = campus.id
+             LEFT JOIN users barber_user ON barber."userId" = barber_user.id
+             LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
              WHERE c.id = $1`,
             [conversationId]
           );

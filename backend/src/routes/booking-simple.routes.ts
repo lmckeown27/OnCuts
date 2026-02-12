@@ -462,7 +462,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
     }
     
-    let whereClause = `barber."campusId" = $1 AND ${statusClause} AND ${dateFilter}`;
+    let whereClause = `barber_user."campusId" = $1 AND ${statusClause} AND ${dateFilter}`;
     const params: any[] = [campusId];
     let paramIndex = 2;
 
@@ -522,7 +522,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       `SELECT b.id, u.first_name, u.last_name
        FROM barbers b
        JOIN users u ON b."userId" = u.id
-       WHERE b."campusId" = $1 AND b."isActive" = true
+       WHERE u."campusId" = $1 AND b."isActive" = true
        ORDER BY u.first_name, u.last_name`,
       [campusId]
     );
@@ -760,7 +760,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
        JOIN users consumer ON b."consumerId" = consumer.id
        JOIN users barber_user ON barber."userId" = barber_user.id
        LEFT JOIN conversations c ON c.booking_id = b.id
-       LEFT JOIN campuses campus ON barber."campusId" = campus.id
+       LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
        WHERE b.id = $1 AND barber."userId" = $2`,
       [id, userId]
     );
@@ -1094,7 +1094,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
        JOIN barbers barber ON b."barberId" = barber.id
        JOIN users barber_user ON barber."userId" = barber_user.id
        JOIN users consumer ON b."consumerId" = consumer.id
-       LEFT JOIN campuses campus ON barber."campusId" = campus.id
+       LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
        WHERE b.id = $1`,
       [id]
     );

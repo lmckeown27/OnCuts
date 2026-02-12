@@ -106,7 +106,7 @@ export class BookingReminderCronService {
         LEFT JOIN users consumer ON b."consumerId" = consumer.id
         LEFT JOIN barbers barber ON b."barberId" = barber.id
         LEFT JOIN users barber_user ON barber."userId" = barber_user.id
-        LEFT JOIN campuses campus ON barber."campusId" = campus.id
+        LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
         WHERE b.status = 'accepted'
           AND b."requestedAt" BETWEEN NOW() + INTERVAL '55 minutes' AND NOW() + INTERVAL '65 minutes'
           AND b.reminder_sent IS NOT TRUE

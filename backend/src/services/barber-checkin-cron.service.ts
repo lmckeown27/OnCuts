@@ -114,7 +114,7 @@ export class BarberCheckInCronService {
         LEFT JOIN users consumer ON b."consumerId" = consumer.id
         LEFT JOIN barbers barber ON b."barberId" = barber.id
         LEFT JOIN users barber_user ON barber."userId" = barber_user.id
-        LEFT JOIN campuses campus ON barber."campusId" = campus.id
+        LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
         WHERE b.status = 'accepted'
           AND b."requestedAt" < NOW() - INTERVAL '1 hour'
           AND b."requestedAt" > NOW() - INTERVAL '48 hours'
@@ -293,7 +293,7 @@ export class BarberCheckInCronService {
         LEFT JOIN users consumer ON b."consumerId" = consumer.id
         LEFT JOIN barbers barber ON b."barberId" = barber.id
         LEFT JOIN users barber_user ON barber."userId" = barber_user.id
-        LEFT JOIN campuses campus ON barber."campusId" = campus.id
+        LEFT JOIN campuses campus ON barber_user."campusId" = campus.id
         WHERE b.status = 'accepted'
           AND b."requestedAt" < NOW() - INTERVAL '24 hours'
           AND b."requestedAt" > NOW() - INTERVAL '7 days'
