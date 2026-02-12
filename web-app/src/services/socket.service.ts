@@ -226,6 +226,17 @@ class SocketService {
     this.off('time-block-update', handler);
   }
 
+  // Availability update methods (for barbers - when weekly schedule changes)
+  onAvailabilityUpdate(handler: (data: {
+    barberId: string;
+  }) => void): void {
+    this.on('availability-update', handler);
+  }
+
+  offAvailabilityUpdate(handler?: (data: any) => void): void {
+    this.off('availability-update', handler);
+  }
+
   getConnectionStatus(): boolean {
     return this.isConnected;
   }

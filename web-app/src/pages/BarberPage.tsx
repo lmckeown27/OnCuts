@@ -1165,6 +1165,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
+  const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0); // Trigger refresh when availability changes
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
   
@@ -1226,7 +1227,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       }
     };
     fetchWeeklySchedule();
-  }, [barberProfileId]);
+  }, [barberProfileId, availabilityRefreshKey]);
   
   // Fetch confirmed bookings using the API service (handles auth automatically)
   useEffect(() => {
@@ -1379,11 +1380,22 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     socketService.onTimeBlockUpdate(handleTimeBlockUpdate);
     
+    // Listen for availability updates (when weekly schedule changes)
+    const handleAvailabilityUpdate = (data: { barberId: string }) => {
+      console.log('📅 Received availability-update event:', data);
+      // Trigger a refresh of the weekly schedule
+      setAvailabilityRefreshKey(prev => prev + 1);
+      toast.success('Availability updated');
+    };
+    
+    socketService.onAvailabilityUpdate(handleAvailabilityUpdate);
+    
     return () => {
       socketService.offBookingUpdate(handleBookingUpdate);
       socketService.offBookingConfirmed(handleBookingConfirmed);
       socketService.offPaymentReceived(handlePaymentReceived);
       socketService.offTimeBlockUpdate(handleTimeBlockUpdate);
+      socketService.offAvailabilityUpdate(handleAvailabilityUpdate);
     };
   }, []);
 

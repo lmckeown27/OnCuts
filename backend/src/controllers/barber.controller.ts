@@ -900,6 +900,19 @@ export const updateAvailability = async (req: AuthRequest, res: Response, next: 
       );
     }
 
+    // Emit WebSocket event for real-time updates
+    try {
+      const io = getSocketIO();
+      if (io) {
+        io.to(`user-${userId}`).emit('availability-update', {
+          barberId: id
+        });
+        logger.info(`Emitted availability-update to user-${userId}`);
+      }
+    } catch (wsError: any) {
+      logger.error(`Error emitting availability-update: ${wsError.message}`);
+    }
+
     res.json({
       success: true,
       message: 'Availability updated successfully',
