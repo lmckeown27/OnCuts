@@ -84,7 +84,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
-  const [reason, setReason] = useState('');
   
   // Delete confirmation
   const [deletingBlockId, setDeletingBlockId] = useState<string | null>(null);
@@ -121,7 +120,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
         blockDate: selectedDate,
         startTime,
         endTime,
-        reason: reason.trim() || undefined
+        reason: undefined
       });
       
       toast.success('Time blocked successfully');
@@ -218,9 +217,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                             </p>
                             <p className="text-xs text-gray-500">
                               {formatTimeForDisplay(block.startTime)} - {formatTimeForDisplay(block.endTime)}
-                              {block.reason && (
-                                <span className="ml-1 text-gray-400">• {block.reason}</span>
-                              )}
                             </p>
                           </div>
                         </div>
@@ -308,21 +304,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                         ))}
                       </select>
                     </div>
-                  </div>
-
-                  {/* Reason (optional) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reason (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      placeholder="e.g., Doctor appointment"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      maxLength={255}
-                    />
                   </div>
 
                   {/* Time validation warning */}
