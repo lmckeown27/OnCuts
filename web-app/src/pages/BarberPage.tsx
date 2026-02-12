@@ -624,7 +624,7 @@ export default function BarberPage() {
 
       {/* Content - Combined Dashboard & Requests */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <DashboardView navigate={navigate} barberId={barberId} onViewDetails={openBookingDetails} onRefreshBookings={handleBookingUpdated} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
+        <DashboardView navigate={navigate} barberId={barberId} barberProfileId={barberProfile?.id} onViewDetails={openBookingDetails} onRefreshBookings={handleBookingUpdated} refreshKey={bookingsRefreshKey} campusTimezone={barberProfile?.campusTimezone || 'America/Los_Angeles'} />
       </div>
 
       {/* Profile Editor Modal */}
@@ -1067,6 +1067,7 @@ export default function BarberPage() {
 interface DashboardViewProps {
   navigate: any;
   barberId: string;
+  barberProfileId?: string; // ID from barbers table (for API calls that need it)
   onViewDetails: (booking: any) => void;
   onRefreshBookings?: () => void; // Callback to trigger refresh without opening modal
   refreshKey?: number;
@@ -1103,7 +1104,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles' }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   
@@ -1152,7 +1153,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
   // Fetch time blocks for calendar display
   useEffect(() => {
     const fetchMonthlyTimeBlocks = async () => {
-      if (!barberProfile?.id) return;
+      if (!barberProfileId) return;
       try {
         // Calculate start and end dates for current displayed month
         const today = new Date();
@@ -1163,7 +1164,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
         const startDate = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
         const endDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth.getDate()).padStart(2, '0')}`;
         
-        const blocks = await barberService.getTimeBlocks(barberProfile.id, startDate, endDate);
+        const blocks = await barberService.getTimeBlocks(barberProfileId, startDate, endDate);
         setMonthlyTimeBlocks(blocks);
       } catch (error) {
         console.error('Failed to fetch monthly time blocks:', error);
@@ -1171,7 +1172,7 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
       }
     };
     fetchMonthlyTimeBlocks();
-  }, [barberProfile?.id, monthOffset]);
+  }, [barberProfileId, monthOffset]);
   
   // Fetch confirmed bookings using the API service (handles auth automatically)
   useEffect(() => {
