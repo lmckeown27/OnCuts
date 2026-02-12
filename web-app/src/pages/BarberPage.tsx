@@ -2794,19 +2794,37 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
                     };
                     
+                    // Generate hourly slots from intervals
+                    const generateHourlySlots = (intervals: { start: string; end: string }[]) => {
+                      const slots: { start: string; end: string }[] = [];
+                      intervals.forEach(interval => {
+                        const [startHour] = interval.start.split(':').map(Number);
+                        const [endHour] = interval.end.split(':').map(Number);
+                        for (let hour = startHour; hour < endHour; hour++) {
+                          slots.push({
+                            start: `${String(hour).padStart(2, '0')}:00`,
+                            end: `${String(hour + 1).padStart(2, '0')}:00`
+                          });
+                        }
+                      });
+                      return slots;
+                    };
+                    
+                    const hourlySlots = generateHourlySlots(intervals);
+                    
                     return (
                       <div className="mb-4">
                         <h4 className="text-sm font-semibold text-primary-600 mb-2 flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          Available Hours
+                          Available Hours ({hourlySlots.length})
                         </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {intervals.map((interval, idx) => (
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          {hourlySlots.map((slot, idx) => (
                             <div 
                               key={idx}
                               className="px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium border border-primary-200"
                             >
-                              {formatTime(interval.start)} - {formatTime(interval.end)}
+                              {formatTime(slot.start)} - {formatTime(slot.end)}
                             </div>
                           ))}
                         </div>
