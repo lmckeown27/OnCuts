@@ -2116,9 +2116,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             </div>
                             <button
                               onClick={() => onUnblockTime?.(block.id)}
-                              className="text-xs text-red-600 hover:text-red-800 hover:underline font-medium transition-colors"
+                              className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded transition-colors border border-red-300"
                             >
-                              Unblock?
+                              Unblock
                             </button>
                           </div>
                         );
@@ -3128,9 +3128,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   </div>
                                   <button
                                     onClick={() => onUnblockTime?.(block.id)}
-                                    className="text-xs text-red-600 hover:text-red-800 hover:underline font-medium transition-colors"
+                                    className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded transition-colors border border-red-300"
                                   >
-                                    Unblock?
+                                    Unblock
                                   </button>
                                 </div>
                               );
