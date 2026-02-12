@@ -2015,10 +2015,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   <div className="flex justify-center mb-3">
                     <button
                       onClick={() => onEditAvailability?.()}
-                      className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
+                      className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                     >
-                      <Settings className="w-3 h-3" />
-                      Edit Hours
+                      Edit Availability
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -3023,10 +3022,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               setSelectedDate(null);
                               onEditAvailability?.();
                             }}
-                            className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
+                            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                           >
-                            <Settings className="w-3 h-3" />
-                            Edit Hours
+                            Edit Availability
                           </button>
                         </div>
                         <div className="space-y-2">
