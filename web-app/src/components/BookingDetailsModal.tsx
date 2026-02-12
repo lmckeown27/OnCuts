@@ -33,6 +33,30 @@ export default function BookingDetailsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
+  // Animation states for smooth open/close
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  
+  // Handle mount/unmount with animation
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Small delay to trigger CSS transition after mount
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsVisible(true);
+        });
+      });
+    } else {
+      setIsVisible(false);
+      // Wait for animation to complete before unmounting
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 200); // Match transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+  
   // Editable fields (notes are read-only - set by consumer)
   const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
   const [editedTime, setEditedTime] = useState(''); // HH:MM (24-hour for TimePickerDropdown)
@@ -197,7 +221,7 @@ export default function BookingDetailsModal({
   }, [isEditing, isSaving, handleSaveChanges]);
 
   // Early return AFTER all hooks
-  if (!isOpen || !booking) return null;
+  if (!shouldRender || !booking) return null;
 
   const scheduledTime = new Date(booking.scheduledTime);
   const formattedDate = scheduledTime.toLocaleDateString('en-US', { 
@@ -281,11 +305,17 @@ export default function BookingDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-[60] flex items-start justify-center p-2 pt-8 sm:pt-4 sm:items-center sm:p-4 overflow-y-auto"
+      className={`fixed inset-0 min-h-[100dvh] z-[60] flex items-start justify-center p-2 pt-8 sm:pt-4 sm:items-center sm:p-4 overflow-y-auto transition-all duration-200 ease-out ${
+        isVisible ? 'bg-black/50' : 'bg-black/0'
+      }`}
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] sm:max-h-[90vh] overflow-hidden"
+        className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-200 ease-out ${
+          isVisible 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 translate-y-4'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
