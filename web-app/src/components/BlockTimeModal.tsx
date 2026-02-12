@@ -21,7 +21,15 @@ interface BlockTimeModalProps {
 
 // Helper to format date for display
 const formatDateForDisplay = (dateStr: string): string => {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  // Handle various date formats from API (ISO, YYYY-MM-DD, etc.)
+  // Extract just the date part if it includes time
+  const datePart = dateStr.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return 'Invalid Date';
+  }
+  
   const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('en-US', {
     weekday: 'short',

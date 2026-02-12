@@ -1369,8 +1369,14 @@ export const getTimeBlocks = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Build query with optional date filters
+    // Use TO_CHAR to ensure consistent date/time string formats
     let query = `
-      SELECT id, block_date, start_time, end_time, reason, created_at
+      SELECT id, 
+        TO_CHAR(block_date, 'YYYY-MM-DD') as block_date, 
+        TO_CHAR(start_time, 'HH24:MI') as start_time, 
+        TO_CHAR(end_time, 'HH24:MI') as end_time, 
+        reason, 
+        created_at
       FROM barber_time_blocks
       WHERE barber_id = $1
     `;
@@ -1466,7 +1472,12 @@ export const createTimeBlock = async (req: AuthRequest, res: Response, next: Nex
     const insertResult = await pool.query(
       `INSERT INTO barber_time_blocks (barber_id, block_date, start_time, end_time, reason)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, block_date, start_time, end_time, reason, created_at`,
+       RETURNING id, 
+         TO_CHAR(block_date, 'YYYY-MM-DD') as block_date, 
+         TO_CHAR(start_time, 'HH24:MI') as start_time, 
+         TO_CHAR(end_time, 'HH24:MI') as end_time, 
+         reason, 
+         created_at`,
       [id, blockDate, startTime, endTime, reason || null]
     );
 
