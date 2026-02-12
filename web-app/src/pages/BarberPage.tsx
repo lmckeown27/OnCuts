@@ -642,6 +642,16 @@ export default function BarberPage() {
             setShowBlockTimeModal(true);
           }}
           onEditAvailability={openAvailability}
+          onUnblockTime={async (blockId) => {
+            if (!barberProfile?.id) return;
+            try {
+              await barberService.deleteTimeBlock(barberProfile.id, blockId);
+              // WebSocket will handle the UI update via time-block-update event
+            } catch (error) {
+              console.error('Failed to unblock time:', error);
+              toast.error('Failed to unblock time');
+            }
+          }}
         />
       </div>
 
@@ -1098,6 +1108,7 @@ interface DashboardViewProps {
   campusTimezone?: string;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
   onEditAvailability?: () => void; // Open weekly availability modal
+  onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
 }
 
 // Type for confirmed bookings
@@ -1130,7 +1141,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   
@@ -2092,7 +2103,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         );
                       }
                       
-                      // Blocked slot (display only, no interaction)
+                      // Blocked slot - with unblock option
                       if (block) {
                         return (
                           <div 
@@ -2103,7 +2114,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               <Clock className="w-4 h-4 text-red-500" />
                               <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
                             </div>
-                            <span className="text-xs text-red-500">Blocked</span>
+                            <button
+                              onClick={() => onUnblockTime?.(block.id)}
+                              className="text-xs text-red-600 hover:text-red-800 hover:underline font-medium transition-colors"
+                            >
+                              Unblock?
+                            </button>
                           </div>
                         );
                       }
@@ -3099,7 +3115,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Blocked slot (display only, no interaction)
+                            // Blocked slot - with unblock option
                             if (block) {
                               return (
                                 <div 
@@ -3110,7 +3126,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                     <Clock className="w-4 h-4 text-red-500" />
                                     <span className="font-medium">{formatTime(slot.start)} - {formatTime(slot.end)}</span>
                                   </div>
-                                  <span className="text-xs text-red-500">Blocked</span>
+                                  <button
+                                    onClick={() => onUnblockTime?.(block.id)}
+                                    className="text-xs text-red-600 hover:text-red-800 hover:underline font-medium transition-colors"
+                                  >
+                                    Unblock?
+                                  </button>
                                 </div>
                               );
                             }
