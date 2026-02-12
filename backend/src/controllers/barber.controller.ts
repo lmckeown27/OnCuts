@@ -1084,12 +1084,31 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         [id, date]
       );
 
-      const bookedSlots = bookingsResult.rows.map(row => ({
-        start: row.start_time,
-        end: row.end_time
-      }));
+      // Get time blocks for this specific date (one-time blocks that don't affect weekly schedule)
+      const timeBlocksResult = await pool.query(
+        `SELECT 
+          TO_CHAR(start_time, 'HH24:MI') as start_time,
+          TO_CHAR(end_time, 'HH24:MI') as end_time
+        FROM barber_time_blocks 
+        WHERE barber_id = $1 
+          AND block_date = $2
+        ORDER BY start_time`,
+        [id, date]
+      );
 
-      console.log(`[Availability] Found ${bookedSlots.length} booked slots for ${date}:`, bookedSlots);
+      // Combine booked slots with time blocks
+      const bookedSlots = [
+        ...bookingsResult.rows.map(row => ({
+          start: row.start_time,
+          end: row.end_time
+        })),
+        ...timeBlocksResult.rows.map(row => ({
+          start: row.start_time,
+          end: row.end_time
+        }))
+      ];
+
+      console.log(`[Availability] Found ${bookingsResult.rows.length} booked slots and ${timeBlocksResult.rows.length} time blocks for ${date}:`, bookedSlots);
 
       // Check if the selected date is today (to filter out past times)
       // Use Pacific timezone since all barbers are at Cal Poly SLO
@@ -1317,6 +1336,198 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
     } finally {
       client.release();
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+// =====================================================
+// TIME BLOCKS - One-time date-specific availability blocks
+// =====================================================
+
+/**
+ * Get barber's time blocks (optionally filtered by date range)
+ */
+export const getTimeBlocks = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+    const userId = req.user!.userId;
+
+    // Verify the user owns this barber profile
+    const barberResult = await pool.query(
+      'SELECT "userId" FROM barbers WHERE id = $1',
+      [id]
+    );
+
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    if (barberResult.rows[0].userId !== userId) {
+      throw new ApiError(403, 'Not authorized to view this barber\'s time blocks');
+    }
+
+    // Build query with optional date filters
+    let query = `
+      SELECT id, block_date, start_time, end_time, reason, created_at
+      FROM barber_time_blocks
+      WHERE barber_id = $1
+    `;
+    const params: any[] = [id];
+
+    // Filter to only future blocks by default, or use provided date range
+    if (startDate) {
+      params.push(startDate);
+      query += ` AND block_date >= $${params.length}`;
+    } else {
+      // Default: only show today and future blocks
+      query += ` AND block_date >= CURRENT_DATE`;
+    }
+
+    if (endDate) {
+      params.push(endDate);
+      query += ` AND block_date <= $${params.length}`;
+    }
+
+    query += ` ORDER BY block_date, start_time`;
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      success: true,
+      data: result.rows.map(row => ({
+        id: row.id,
+        blockDate: row.block_date,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        reason: row.reason,
+        createdAt: row.created_at
+      }))
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create a new time block for a specific date
+ */
+export const createTimeBlock = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { blockDate, startTime, endTime, reason } = req.body;
+    const userId = req.user!.userId;
+
+    // Verify the user owns this barber profile
+    const barberResult = await pool.query(
+      'SELECT "userId" FROM barbers WHERE id = $1',
+      [id]
+    );
+
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    if (barberResult.rows[0].userId !== userId) {
+      throw new ApiError(403, 'Not authorized to create time blocks for this barber');
+    }
+
+    // Validate that blockDate is not in the past
+    const blockDateObj = new Date(blockDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (blockDateObj < today) {
+      throw new ApiError(400, 'Cannot create time blocks for past dates');
+    }
+
+    // Validate end time is after start time
+    if (startTime >= endTime) {
+      throw new ApiError(400, 'End time must be after start time');
+    }
+
+    // Check for overlapping blocks on the same date
+    const overlapResult = await pool.query(
+      `SELECT id FROM barber_time_blocks
+       WHERE barber_id = $1 
+         AND block_date = $2
+         AND (
+           (start_time < $4 AND end_time > $3) -- Overlaps
+         )`,
+      [id, blockDate, startTime, endTime]
+    );
+
+    if (overlapResult.rows.length > 0) {
+      throw new ApiError(400, 'This time block overlaps with an existing block');
+    }
+
+    // Insert the new time block
+    const insertResult = await pool.query(
+      `INSERT INTO barber_time_blocks (barber_id, block_date, start_time, end_time, reason)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, block_date, start_time, end_time, reason, created_at`,
+      [id, blockDate, startTime, endTime, reason || null]
+    );
+
+    const newBlock = insertResult.rows[0];
+
+    logger.info(`Barber ${id} created time block on ${blockDate} from ${startTime} to ${endTime}`);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: newBlock.id,
+        blockDate: newBlock.block_date,
+        startTime: newBlock.start_time,
+        endTime: newBlock.end_time,
+        reason: newBlock.reason,
+        createdAt: newBlock.created_at
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete a time block
+ */
+export const deleteTimeBlock = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id, blockId } = req.params;
+    const userId = req.user!.userId;
+
+    // Verify the user owns this barber profile
+    const barberResult = await pool.query(
+      'SELECT "userId" FROM barbers WHERE id = $1',
+      [id]
+    );
+
+    if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    if (barberResult.rows[0].userId !== userId) {
+      throw new ApiError(403, 'Not authorized to delete time blocks for this barber');
+    }
+
+    // Delete the time block
+    const deleteResult = await pool.query(
+      'DELETE FROM barber_time_blocks WHERE id = $1 AND barber_id = $2 RETURNING id',
+      [blockId, id]
+    );
+
+    if (deleteResult.rows.length === 0) {
+      throw new ApiError(404, 'Time block not found');
+    }
+
+    logger.info(`Barber ${id} deleted time block ${blockId}`);
+
+    res.json({
+      success: true,
+      message: 'Time block deleted successfully'
+    });
   } catch (error) {
     next(error);
   }

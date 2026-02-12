@@ -22,6 +22,7 @@ import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PayoutSettingsModal from '../components/PayoutSettingsModal';
+import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
@@ -73,6 +74,7 @@ export default function BarberPage() {
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
   const [stripeConnectCompleted, setStripeConnectCompleted] = useState<boolean | null>(null); // null = loading
+  const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   const [showBookings, setShowBookings] = useState(false);
   const [isBookingsVisible, setIsBookingsVisible] = useState(false);
@@ -299,8 +301,8 @@ export default function BarberPage() {
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
-  // State for barber profile data (for walk-in services and campus manager)
-  const [barberProfile, setBarberProfile] = useState<{ name: string; specialties: string[]; campusId?: string; campusTimezone?: string } | null>(null);
+  // State for barber profile data (for walk-in services, campus manager, and time blocking)
+  const [barberProfile, setBarberProfile] = useState<{ id: string; name: string; specialties: string[]; campusId?: string; campusTimezone?: string } | null>(null);
 
   // Admin campus management - admins can manage any campus
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -366,6 +368,7 @@ export default function BarberPage() {
         if (response) {
           const fullName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Barber';
           setBarberProfile({
+            id: response.id || '',
             name: response.name || fullName || 'Barber',
             specialties: response.specialties || [],
             campusId: response.campus_id || '',
@@ -522,6 +525,16 @@ export default function BarberPage() {
                   >
                     <Clock className="w-4 h-4 text-gray-500" />
                     Availability
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBlockTimeModal(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-gray-500" />
+                    Block Time
                   </button>
                   <button
                     onClick={() => {
@@ -827,6 +840,15 @@ export default function BarberPage() {
           }
         }}
       />
+
+      {/* Block Time Modal - One-time date-specific availability blocks */}
+      {barberProfile?.id && (
+        <BlockTimeModal
+          isVisible={showBlockTimeModal}
+          onClose={() => setShowBlockTimeModal(false)}
+          barberId={barberProfile.id}
+        />
+      )}
 
       {/* Service Details Modal */}
       {selectedAppointment && (

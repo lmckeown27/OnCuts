@@ -202,5 +202,70 @@ router.get(
   getBarberAnalytics
 );
 
+// =====================================================
+// TIME BLOCKS - One-time date-specific availability blocks
+// =====================================================
+
+import {
+  getTimeBlocks,
+  createTimeBlock,
+  deleteTimeBlock
+} from '../controllers/barber.controller';
+
+/**
+ * @route   GET /api/barbers/:id/time-blocks
+ * @desc    Get barber's time blocks (optionally filtered by date range)
+ * @access  Private (Owner only)
+ */
+router.get(
+  '/:id/time-blocks',
+  authenticate,
+  requireRole('barber'),
+  [
+    param('id').isUUID(),
+    query('startDate').optional().isISO8601(),
+    query('endDate').optional().isISO8601(),
+    validate
+  ],
+  getTimeBlocks
+);
+
+/**
+ * @route   POST /api/barbers/:id/time-blocks
+ * @desc    Create a new time block for a specific date
+ * @access  Private (Owner only)
+ */
+router.post(
+  '/:id/time-blocks',
+  authenticate,
+  requireRole('barber'),
+  [
+    param('id').isUUID(),
+    body('blockDate').isISO8601().withMessage('Valid date required (YYYY-MM-DD)'),
+    body('startTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid start time required (HH:MM)'),
+    body('endTime').matches(/^([01]\d|2[0-3]):([0-5]\d)$/).withMessage('Valid end time required (HH:MM)'),
+    body('reason').optional().isString().isLength({ max: 255 }),
+    validate
+  ],
+  createTimeBlock
+);
+
+/**
+ * @route   DELETE /api/barbers/:id/time-blocks/:blockId
+ * @desc    Delete a time block
+ * @access  Private (Owner only)
+ */
+router.delete(
+  '/:id/time-blocks/:blockId',
+  authenticate,
+  requireRole('barber'),
+  [
+    param('id').isUUID(),
+    param('blockId').isUUID(),
+    validate
+  ],
+  deleteTimeBlock
+);
+
 export default router;
 

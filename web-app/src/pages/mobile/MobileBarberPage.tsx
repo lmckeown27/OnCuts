@@ -16,7 +16,9 @@ import { useAuthStore } from '../../store/useAuthStore';
 import toast from 'react-hot-toast';
 import MobilePhotoUpload from '../../components/MobilePhotoUpload';
 import BarberProfileEditor from '../../components/BarberProfileEditor';
+import BlockTimeModal from '../../components/BlockTimeModal';
 import userService from '../../services/user.service';
+import api from '../../services/api.service';
 import {
   Calendar,
   Clock,
@@ -30,7 +32,8 @@ import {
   ChevronRight,
   MapPin,
   MoreVertical,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle
 } from 'lucide-react';
 
 interface BookingRequest {
@@ -69,6 +72,8 @@ export default function MobileBarberPage() {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [showFullEditor, setShowFullEditor] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
+  const [barberProfileId, setBarberProfileId] = useState<string>('');
 
   const todayEarnings = 0;
   const weekEarnings = 0;
@@ -95,6 +100,22 @@ export default function MobileBarberPage() {
       navigate(`${platformPrefix}/consumer`);
     }
   }, [user, isAuthorizedForBarberPage, isAuthLoading, navigate, platformPrefix]);
+
+  // Fetch barber profile ID for time blocking
+  useEffect(() => {
+    const fetchBarberProfileId = async () => {
+      if (!user?.id) return;
+      try {
+        const response = await api.get<{ id: string }>(`/barbers/user/${user.id}`);
+        if (response?.id) {
+          setBarberProfileId(response.id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber profile:', error);
+      }
+    };
+    fetchBarberProfileId();
+  }, [user?.id]);
 
   const handleAcceptRequest = (requestId: string) => {
     setRequests(requests.filter(r => r.id !== requestId));
@@ -385,6 +406,17 @@ export default function MobileBarberPage() {
                 <span className="font-medium text-gray-900">Availability</span>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
+              
+              <button 
+                onClick={() => setShowBlockTimeModal(true)}
+                className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <span className="font-medium text-gray-900">Block Time</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
 
             <button
@@ -531,6 +563,15 @@ export default function MobileBarberPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Block Time Modal */}
+      {barberProfileId && (
+        <BlockTimeModal
+          isVisible={showBlockTimeModal}
+          onClose={() => setShowBlockTimeModal(false)}
+          barberId={barberProfileId}
+        />
       )}
     </div>
   );

@@ -99,6 +99,53 @@ class BarberService {
   async removeBarber(barberId: string): Promise<{ success: boolean; message: string }> {
     return await api.post<{ success: boolean; message: string }>(`/barbers/${barberId}/remove`, {});
   }
+
+  // =====================================================
+  // TIME BLOCKS - One-time date-specific availability blocks
+  // =====================================================
+
+  /**
+   * Get barber's time blocks
+   */
+  async getTimeBlocks(barberId: string, startDate?: string, endDate?: string): Promise<TimeBlock[]> {
+    const params: Record<string, string> = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await api.get<{ success: boolean; data: TimeBlock[] }>(`/barbers/${barberId}/time-blocks`, params);
+    return response.data;
+  }
+
+  /**
+   * Create a new time block
+   */
+  async createTimeBlock(barberId: string, block: CreateTimeBlockData): Promise<TimeBlock> {
+    const response = await api.post<{ success: boolean; data: TimeBlock }>(`/barbers/${barberId}/time-blocks`, block);
+    return response.data;
+  }
+
+  /**
+   * Delete a time block
+   */
+  async deleteTimeBlock(barberId: string, blockId: string): Promise<void> {
+    await api.delete(`/barbers/${barberId}/time-blocks/${blockId}`);
+  }
+}
+
+// Time block types
+export interface TimeBlock {
+  id: string;
+  blockDate: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface CreateTimeBlockData {
+  blockDate: string;
+  startTime: string;
+  endTime: string;
+  reason?: string;
 }
 
 export default new BarberService();
