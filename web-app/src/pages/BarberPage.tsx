@@ -383,30 +383,6 @@ export default function BarberPage() {
     fetchBarberProfile();
   }, [barberId, user]);
 
-  // Fetch time blocks for calendar display
-  useEffect(() => {
-    const fetchMonthlyTimeBlocks = async () => {
-      if (!barberProfile?.id) return;
-      try {
-        // Calculate start and end dates for current displayed month
-        const today = new Date();
-        const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-        const firstDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
-        const lastDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
-        
-        const startDate = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
-        const endDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth.getDate()).padStart(2, '0')}`;
-        
-        const blocks = await barberService.getTimeBlocks(barberProfile.id, startDate, endDate);
-        setMonthlyTimeBlocks(blocks);
-      } catch (error) {
-        console.error('Failed to fetch monthly time blocks:', error);
-        setMonthlyTimeBlocks([]);
-      }
-    };
-    fetchMonthlyTimeBlocks();
-  }, [barberProfile?.id, monthOffset]);
-
   // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
     window.location.reload();
@@ -1172,6 +1148,30 @@ function DashboardView({ navigate, barberId, onViewDetails, onRefreshBookings, r
   
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
+
+  // Fetch time blocks for calendar display
+  useEffect(() => {
+    const fetchMonthlyTimeBlocks = async () => {
+      if (!barberProfile?.id) return;
+      try {
+        // Calculate start and end dates for current displayed month
+        const today = new Date();
+        const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+        const firstDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth(), 1);
+        const lastDayOfMonth = new Date(displayDate.getFullYear(), displayDate.getMonth() + 1, 0);
+        
+        const startDate = `${firstDayOfMonth.getFullYear()}-${String(firstDayOfMonth.getMonth() + 1).padStart(2, '0')}-01`;
+        const endDate = `${lastDayOfMonth.getFullYear()}-${String(lastDayOfMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDayOfMonth.getDate()).padStart(2, '0')}`;
+        
+        const blocks = await barberService.getTimeBlocks(barberProfile.id, startDate, endDate);
+        setMonthlyTimeBlocks(blocks);
+      } catch (error) {
+        console.error('Failed to fetch monthly time blocks:', error);
+        setMonthlyTimeBlocks([]);
+      }
+    };
+    fetchMonthlyTimeBlocks();
+  }, [barberProfile?.id, monthOffset]);
   
   // Fetch confirmed bookings using the API service (handles auth automatically)
   useEffect(() => {
