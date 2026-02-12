@@ -128,7 +128,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
       setSelectedDate(getTodayStr());
       setStartTime('09:00');
       setEndTime('10:00');
-      setReason('');
       fetchTimeBlocks();
     } catch (error: any) {
       console.error('Failed to create time block:', error);
@@ -323,7 +322,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                         setSelectedDate(getTodayStr());
                         setStartTime('09:00');
                         setEndTime('10:00');
-                        setReason('');
                       }}
                       className="flex-1"
                     >
