@@ -699,6 +699,21 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
          WHERE id = $${paramIndex}`,
         barberValues
       );
+      
+      // Emit WebSocket event if weekly_schedule was updated
+      if (weekly_schedule !== undefined) {
+        try {
+          const io = getSocketIO();
+          if (io) {
+            io.to(`user-${userId}`).emit('availability-update', {
+              barberId: id
+            });
+            logger.info(`Emitted availability-update to user-${userId} from updateBarberProfile`);
+          }
+        } catch (wsError: any) {
+          logger.error(`Error emitting availability-update: ${wsError.message}`);
+        }
+      }
     }
 
     // Update user profile fields (display_name, instagram_handle) on users table
