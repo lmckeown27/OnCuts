@@ -2012,11 +2012,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Clock className="w-4 h-4" />
-                      Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
-                    </h4>
+                  <div className="flex justify-center mb-3">
                     <button
                       onClick={() => onEditAvailability?.()}
                       className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
@@ -3021,11 +3017,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Schedule ({availableCount} available{bookedCount > 0 ? `, ${bookedCount} booked` : ''}{blockedCount > 0 ? `, ${blockedCount} blocked` : ''})
-                          </h4>
+                        <div className="flex justify-center mb-3">
                           <button
                             onClick={() => {
                               setSelectedDate(null);
