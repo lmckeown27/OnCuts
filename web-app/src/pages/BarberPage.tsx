@@ -2736,13 +2736,66 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               ) : (
                 /* Appointments list view */
                 <>
-                  {getAppointmentsForDate(selectedDate).length === 0 ? (
+                  {/* Show blocked times for this day */}
+                  {(() => {
+                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+                    const dayBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
+                    
+                    if (dayBlocks.length > 0) {
+                      return (
+                        <div className="mb-4">
+                          <h4 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            Blocked Times ({dayBlocks.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {dayBlocks.map((block) => (
+                              <div 
+                                key={block.id}
+                                className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-red-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      {(() => {
+                                        const [hours, minutes] = block.startTime.split(':').map(Number);
+                                        const startPeriod = hours >= 12 ? 'PM' : 'AM';
+                                        const startHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                                        
+                                        const [endH, endM] = block.endTime.split(':').map(Number);
+                                        const endPeriod = endH >= 12 ? 'PM' : 'AM';
+                                        const endHours = endH === 0 ? 12 : endH > 12 ? endH - 12 : endH;
+                                        
+                                        return `${startHours}:${String(minutes).padStart(2, '0')} ${startPeriod} - ${endHours}:${String(endM).padStart(2, '0')} ${endPeriod}`;
+                                      })()}
+                                    </p>
+                                    {block.reason && (
+                                      <p className="text-xs text-gray-500">{block.reason}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
+                  {getAppointmentsForDate(selectedDate).length === 0 && monthlyTimeBlocks.filter(block => {
+                    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+                    return block.blockDate === dateStr;
+                  }).length === 0 ? (
                     <div className="text-center py-12">
                       <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No appointments scheduled</h3>
                       <p className="text-gray-600">You have no appointments scheduled for this day.</p>
                     </div>
-                  ) : (
+                  ) : getAppointmentsForDate(selectedDate).length > 0 ? (
                     <div className="space-y-3">
                       {getAppointmentsForDate(selectedDate).map((apt) => {
                         const isCompleted = apt.status === 'COMPLETED' || apt.status === 'PAID';
@@ -2808,7 +2861,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         );
                       })}
                     </div>
-                  )}
+                  ) : null}
                 </>
               )}
             </div>
