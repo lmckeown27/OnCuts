@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import aptosService from '../services/aptos.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
+import { getSocketIO } from '../index';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -1485,6 +1486,26 @@ export const createTimeBlock = async (req: AuthRequest, res: Response, next: Nex
 
     logger.info(`Barber ${id} created time block on ${blockDate} from ${startTime} to ${endTime}`);
 
+    // Emit WebSocket event for real-time updates
+    try {
+      const io = getSocketIO();
+      if (io) {
+        io.to(`user-${userId}`).emit('time-block-update', {
+          barberId: id,
+          action: 'created',
+          timeBlock: {
+            id: newBlock.id,
+            blockDate: newBlock.block_date,
+            startTime: newBlock.start_time,
+            endTime: newBlock.end_time
+          }
+        });
+        logger.info(`Emitted time-block-update (created) to user-${userId}`);
+      }
+    } catch (wsError: any) {
+      logger.error(`Error emitting time-block-update: ${wsError.message}`);
+    }
+
     res.status(201).json({
       success: true,
       data: {
@@ -1534,6 +1555,21 @@ export const deleteTimeBlock = async (req: AuthRequest, res: Response, next: Nex
     }
 
     logger.info(`Barber ${id} deleted time block ${blockId}`);
+
+    // Emit WebSocket event for real-time updates
+    try {
+      const io = getSocketIO();
+      if (io) {
+        io.to(`user-${userId}`).emit('time-block-update', {
+          barberId: id,
+          action: 'deleted',
+          blockId: blockId
+        });
+        logger.info(`Emitted time-block-update (deleted) to user-${userId}`);
+      }
+    } catch (wsError: any) {
+      logger.error(`Error emitting time-block-update: ${wsError.message}`);
+    }
 
     res.json({
       success: true,

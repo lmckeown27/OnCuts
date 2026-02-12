@@ -1342,10 +1342,36 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     
     socketService.onPaymentReceived(handlePaymentReceived);
     
+    // Listen for time block updates (when blocks are created/deleted)
+    const handleTimeBlockUpdate = (data: {
+      barberId: string;
+      action: 'created' | 'deleted';
+      timeBlock?: { id: string; blockDate: string; startTime: string; endTime: string };
+      blockId?: string;
+    }) => {
+      console.log('🚫 Received time-block-update event:', data);
+      
+      if (data.action === 'created' && data.timeBlock) {
+        setMonthlyTimeBlocks(prev => [...prev, {
+          id: data.timeBlock!.id,
+          blockDate: data.timeBlock!.blockDate,
+          startTime: data.timeBlock!.startTime,
+          endTime: data.timeBlock!.endTime
+        }]);
+        toast.success('Time blocked successfully');
+      } else if (data.action === 'deleted' && data.blockId) {
+        setMonthlyTimeBlocks(prev => prev.filter(block => block.id !== data.blockId));
+        toast.success('Time block removed');
+      }
+    };
+    
+    socketService.onTimeBlockUpdate(handleTimeBlockUpdate);
+    
     return () => {
       socketService.offBookingUpdate(handleBookingUpdate);
       socketService.offBookingConfirmed(handleBookingConfirmed);
       socketService.offPaymentReceived(handlePaymentReceived);
+      socketService.offTimeBlockUpdate(handleTimeBlockUpdate);
     };
   }, []);
 
@@ -2065,7 +2091,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         );
                       }
                       
-                      // Blocked slot
+                      // Blocked slot (display only, no interaction)
                       if (block) {
                         return (
                           <div 
@@ -2076,7 +2102,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               <Clock className="w-4 h-4 text-red-500" />
                               <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
                             </div>
-                            <span className="text-xs text-red-500">{block.reason || 'Blocked'}</span>
+                            <span className="text-xs text-red-500">Blocked</span>
                           </div>
                         );
                       }
@@ -3072,7 +3098,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               );
                             }
                             
-                            // Blocked slot
+                            // Blocked slot (display only, no interaction)
                             if (block) {
                               return (
                                 <div 
@@ -3083,7 +3109,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                     <Clock className="w-4 h-4 text-red-500" />
                                     <span className="font-medium">{formatTime(slot.start)} - {formatTime(slot.end)}</span>
                                   </div>
-                                  <span className="text-xs text-red-500">{block.reason || 'Blocked'}</span>
+                                  <span className="text-xs text-red-500">Blocked</span>
                                 </div>
                               );
                             }

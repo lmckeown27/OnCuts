@@ -207,6 +207,25 @@ class SocketService {
     this.off('notification', handler);
   }
 
+  // Time block methods (for barbers - real-time availability updates)
+  onTimeBlockUpdate(handler: (data: {
+    barberId: string;
+    action: 'created' | 'deleted';
+    timeBlock?: {
+      id: string;
+      blockDate: string;
+      startTime: string;
+      endTime: string;
+    };
+    blockId?: string;
+  }) => void): void {
+    this.on('time-block-update', handler);
+  }
+
+  offTimeBlockUpdate(handler?: (data: any) => void): void {
+    this.off('time-block-update', handler);
+  }
+
   getConnectionStatus(): boolean {
     return this.isConnected;
   }
