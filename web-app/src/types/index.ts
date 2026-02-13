@@ -85,6 +85,13 @@ export const migrateDaySchedule = (day: DaySchedule): DaySchedule => {
   };
 };
 
+export interface ServiceLocation {
+  id: string;
+  name: string;
+  description?: string;
+  is_primary?: boolean;
+}
+
 export interface Barber {
   id: string;
   user_id: string;
@@ -119,6 +126,7 @@ export interface Barber {
   user_longitude?: number;
   distance_km?: number; // Calculated distance from user (when location provided)
   distance_miles?: number; // Distance in miles
+  service_locations?: ServiceLocation[]; // Barber's available service locations
 }
 
 export interface PortfolioImage {

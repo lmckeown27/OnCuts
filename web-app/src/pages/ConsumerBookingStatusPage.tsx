@@ -335,6 +335,19 @@ export default function ConsumerBookingStatusPage() {
     try {
       const barber = await barberService.getBarberById(booking.barberId);
       setEditBarber(barber);
+      
+      // If barber has service locations, auto-select appropriate location
+      if (barber.service_locations && barber.service_locations.length > 0) {
+        const currentLocation = booking.location || '';
+        const locationExists = barber.service_locations.some(loc => loc.name === currentLocation);
+        
+        // If no location set or current location isn't valid, default to primary or first location
+        if (!currentLocation || !locationExists) {
+          const primaryLocation = barber.service_locations.find(loc => loc.is_primary);
+          const defaultLocation = primaryLocation || barber.service_locations[0];
+          setEditLocation(defaultLocation.name);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch barber data:', error);
     } finally {
@@ -903,13 +916,28 @@ export default function ConsumerBookingStatusPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input
-                  type="text"
-                  value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                  placeholder="Where should the appointment take place?"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
+                {editBarber?.service_locations && editBarber.service_locations.length > 0 ? (
+                  <select
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                  >
+                    <option value="">Select a location</option>
+                    {editBarber.service_locations.map((location) => (
+                      <option key={location.id} value={location.name}>
+                        {location.name}{location.is_primary ? ' (Primary)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Where should the appointment take place?"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  />
+                )}
               </div>
               
               <div>
