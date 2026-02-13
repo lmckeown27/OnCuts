@@ -100,14 +100,11 @@ export default function AvailableTimePickerDropdown({
       if (response) {
         const { available, slots: apiSlots, intervals: apiIntervals } = response;
         
-        if (!available) {
+        if (!available || !apiSlots || apiSlots.length === 0) {
+          // No availability - just show empty state without specific error message
           setSlots([]);
           setIntervals([]);
-          setError('Barber is not available on this day');
-        } else if (!apiSlots || apiSlots.length === 0) {
-          setSlots([]);
-          setIntervals([]);
-          setError('No time slots available');
+          setError(null);
         } else {
           // Convert API slots to our format
           const formattedSlots: TimeSlot[] = apiSlots.map(slot => ({

@@ -17,7 +17,7 @@ import Button from '../components/Button';
 import Loading from '../components/Loading';
 import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
-import TimePickerDropdown from '../components/TimePickerDropdown';
+import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
 import PullToRefresh from '../components/PullToRefresh';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import { useBodyScrollLock } from '../hooks';
@@ -928,7 +928,15 @@ export default function ConsumerBookingStatusPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                <TimePickerDropdown
+                <AvailableTimePickerDropdown
+                  barberId={booking.barberId}
+                  date={(() => {
+                    // Convert MM/DD/YYYY to YYYY-MM-DD for the API
+                    const dateParts = parseDateInput(editDate);
+                    if (!dateParts) return '';
+                    const { month, day, year } = dateParts;
+                    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                  })()}
                   value={editTime}
                   onChange={setEditTime}
                 />
