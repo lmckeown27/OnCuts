@@ -1018,6 +1018,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
   const [loginRedirectBarber, setLoginRedirectBarber] = useState<Barber | null>(null);
+  const [loadingBarberDetails, setLoadingBarberDetails] = useState(false);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1126,6 +1127,25 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         preservedFormData: formData?.barberId === barber.id ? formData : undefined,
       },
     });
+  };
+
+  // Handle barber selection - fetch full details including reviews
+  const handleBarberSelect = async (barber: Barber) => {
+    // Show card immediately with list data
+    setSelectedBarber(barber);
+    setLoadingBarberDetails(true);
+    
+    try {
+      // Fetch detailed barber info (includes reviews)
+      const detailedBarber = await barberService.getBarberById(barber.id);
+      // Merge detailed data with list data (preserving any fields that might only be in list)
+      setSelectedBarber({ ...barber, ...detailedBarber });
+    } catch (error) {
+      console.error('Failed to fetch barber details:', error);
+      // Keep showing list data if fetch fails
+    } finally {
+      setLoadingBarberDetails(false);
+    }
   };
 
   const loadBarbers = async () => {
@@ -1327,7 +1347,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               <Card
                 key={barber.id}
                 className="cursor-pointer active:scale-98 transition-all duration-200 flex flex-row rounded-xl overflow-hidden"
-                onClick={() => setSelectedBarber(barber)}
+                onClick={() => handleBarberSelect(barber)}
               >
                 {/* Barber Profile Picture - Left Side */}
                 <div className="relative w-28 h-28 flex-shrink-0 bg-gray-200">
@@ -1379,7 +1399,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             <Card
               key={barber.id}
               className="cursor-pointer hover:shadow-2xl sm:hover:scale-105 active:scale-98 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col rounded-lg overflow-hidden bg-transparent p-0 shadow-none hover:bg-transparent"
-              onClick={() => setSelectedBarber(barber)}
+              onClick={() => handleBarberSelect(barber)}
             >
               {/* Barber Profile Picture with Name & Price Overlays */}
               <div className="relative mb-2 sm:mb-3 w-48 sm:w-56 aspect-square overflow-hidden rounded-lg bg-gray-200 mx-auto">
@@ -1607,7 +1627,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                 )}
 
                                 {/* Reviews Section */}
-                                {selectedBarber.reviews && selectedBarber.reviews.length > 0 && (
+                                {(selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails ? (
                                   <div className="pt-4 sm:pt-6 border-t border-gray-100">
                                     <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-700 font-medium mb-4 sm:text-lg">
                                       <span>Reviews</span>
@@ -1617,9 +1637,28 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                           <span className="text-xs font-semibold text-amber-700">{selectedBarber.five_star_count} five-star</span>
                                         </div>
                                       )}
+                                      {loadingBarberDetails && (
+                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
+                                      )}
                                     </div>
+                                    {loadingBarberDetails && !selectedBarber.reviews ? (
+                                      <div className="space-y-4">
+                                        {[1, 2].map((i) => (
+                                          <div key={i} className="bg-gray-50 rounded-xl p-4 animate-pulse">
+                                            <div className="flex items-start gap-3">
+                                              <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                              <div className="flex-1">
+                                                <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
+                                                <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                                                <div className="h-3 bg-gray-200 rounded w-3/4" />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
                                     <div className="space-y-4">
-                                      {selectedBarber.reviews.map((review) => (
+                                      {selectedBarber.reviews?.map((review) => (
                                         <div key={review.id} className="bg-gray-50 rounded-xl p-4">
                                           <div className="flex items-start gap-3">
                                             <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
@@ -1660,8 +1699,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                         </div>
                                       ))}
                                     </div>
+                                    )}
                                   </div>
-                                )}
+                                ) : null}
               </div>
             </div>
             
