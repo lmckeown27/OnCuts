@@ -2135,9 +2135,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="text-xs text-gray-500">
-                                  {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                </p>
+                                  <p className="text-xs text-gray-500">
+                                    {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                  </p>
                                 <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
                               </div>
                             </div>

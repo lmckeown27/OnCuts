@@ -19,7 +19,8 @@ import {
   User,
   Scissors,
   MessageCircle,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -395,6 +396,20 @@ export default function BookingPaymentPage() {
             </p>
           </div>
         </Card>
+
+        {/* Email Notification Info */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
+          <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <Mail className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-blue-900 text-sm">Check Your Email</p>
+            <p className="text-blue-700 text-sm mt-1">
+              After booking, you'll receive service details and appointment information at your registered email. 
+              Your barber may also send updates about your appointment via email.
+            </p>
+          </div>
+        </div>
 
         {/* Confirm Button */}
         <Button 
