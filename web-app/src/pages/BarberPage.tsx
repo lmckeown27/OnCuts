@@ -2102,7 +2102,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       onClick={() => onEditAvailability?.()}
                       className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                     >
-                      Edit Availability
+                      <span className="sm:hidden">Tap here to Edit Availability</span>
+                      <span className="hidden sm:inline">Click here to Edit Availability</span>
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -2174,7 +2175,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         >
                           <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                           {formatTime12(slot.start)} - {formatTime12(slot.end)}
-                          <span className="text-xs text-primary-500 ml-auto">Tap to block</span>
+                          <span className="text-xs text-primary-500 ml-auto sm:hidden">Tap to block</span>
+                          <span className="text-xs text-primary-500 ml-auto hidden sm:inline">Click to block</span>
                         </div>
                       );
                     })}
@@ -3116,7 +3118,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             }}
                             className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                           >
-                            Edit Availability
+                            <span className="sm:hidden">Tap here to Edit Availability</span>
+                            <span className="hidden sm:inline">Click here to Edit Availability</span>
                           </button>
                         </div>
                         <div className="space-y-2">
@@ -3191,7 +3194,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               >
                                 <div className="w-2 h-2 rounded-full bg-primary-400"></div>
                                 {formatTime(slot.start)} - {formatTime(slot.end)}
-                                <span className="text-xs text-primary-500 ml-auto">Tap to block</span>
+                                <span className="text-xs text-primary-500 ml-auto sm:hidden">Tap to block</span>
+                                <span className="text-xs text-primary-500 ml-auto hidden sm:inline">Click to block</span>
                               </div>
                             );
                           })}
