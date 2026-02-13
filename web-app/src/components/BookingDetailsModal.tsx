@@ -36,10 +36,11 @@ export default function BookingDetailsModal({
   // Animation states for smooth open/close
   const [isVisible, setIsVisible] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   
   // Handle mount/unmount with animation
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isClosing) {
       setShouldRender(true);
       // Small delay to trigger CSS transition after mount
       requestAnimationFrame(() => {
@@ -47,15 +48,28 @@ export default function BookingDetailsModal({
           setIsVisible(true);
         });
       });
-    } else {
+    } else if (!isOpen) {
       setIsVisible(false);
+      setIsClosing(false);
       // Wait for animation to complete before unmounting
       const timer = setTimeout(() => {
         setShouldRender(false);
       }, 200); // Match transition duration
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, isClosing]);
+  
+  // Smooth close handler - animates out before calling onClose
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setIsVisible(false);
+    // Wait for animation to complete before notifying parent
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 200);
+  }, [isClosing, onClose]);
   
   // Editable fields (notes are read-only - set by consumer)
   const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
@@ -257,7 +271,7 @@ export default function BookingDetailsModal({
 
       toast.success('Booking cancelled successfully');
       setIsDeleting(false);
-      onClose();
+      handleClose();
       onBookingUpdated?.();
     } catch (error: any) {
       console.error('Failed to cancel booking:', error);
@@ -274,7 +288,7 @@ export default function BookingDetailsModal({
 
       toast.success('Booking removed from schedule');
       setIsRemoving(false);
-      onClose();
+      handleClose();
       onBookingUpdated?.();
     } catch (error: any) {
       console.error('Failed to remove booking:', error);
@@ -289,7 +303,7 @@ export default function BookingDetailsModal({
       // Request payment from consumer - this sends them a notification
       await api.post(`/bookings-simple/${booking.id}/request-payment`, {});
       toast.success('Payment request sent to customer');
-      onClose();
+      handleClose();
       // Navigate to barber's payment waiting page
       navigate(`/web/payment/${booking.id}`);
     } catch (error: any) {
@@ -308,7 +322,7 @@ export default function BookingDetailsModal({
       className={`fixed inset-0 min-h-[100dvh] z-[60] flex items-start justify-center p-2 pt-8 sm:pt-4 sm:items-center sm:p-4 overflow-y-auto transition-all duration-200 ease-out ${
         isVisible ? 'bg-black/50' : 'bg-black/0'
       }`}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[88dvh] sm:max-h-[90vh] overflow-hidden transition-all duration-200 ease-out ${
@@ -327,7 +341,7 @@ export default function BookingDetailsModal({
             </span>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
           >
             <X className="w-6 h-6" />
