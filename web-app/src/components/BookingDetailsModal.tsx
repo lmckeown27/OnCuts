@@ -645,15 +645,20 @@ export default function BookingDetailsModal({
                       >
                         Complete
                       </button>
-                      {booking.conversationId && (
-                        <button
-                          onClick={() => navigate(`/web/barber/messages/${booking.conversationId}`)}
-                          className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          Message
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          if (booking.conversationId) {
+                            navigate(`/web/barber/messages/${booking.conversationId}`);
+                          } else {
+                            // Navigate to messages page - it will find/show the conversation
+                            navigate('/web/barber/messages');
+                          }
+                        }}
+                        className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Message
+                      </button>
                     </div>
                   )}
                   
