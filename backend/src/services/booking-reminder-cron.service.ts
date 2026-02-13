@@ -1,8 +1,8 @@
 /**
  * Booking Reminder Cron Service
  * 
- * Sends reminder emails to consumers 1 hour before their scheduled appointments.
- * Respects user notification preferences (booking_reminders setting).
+ * Sends reminder emails to BOTH consumers and barbers 1 hour before their scheduled appointments.
+ * Respects user notification preferences (booking_reminders setting) for consumers.
  * 
  * Schedule: Runs every 5 minutes to catch bookings within the reminder window.
  */
@@ -10,7 +10,7 @@
 import cron from 'node-cron';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import { sendBookingReminderEmail } from './email.service';
+import { sendBookingReminderEmail, sendBarberReminderEmail } from './email.service';
 
 /**
  * Helper to format service type: "HAIRCUT" -> "Haircut", "BEARD_TRIM" -> "Beard Trim"
@@ -178,14 +178,26 @@ export class BookingReminderCronService {
             barberEmail: booking.barber_email || ''
           };
 
-          // Send the reminder email
+          // Send the reminder email to consumer
           await sendBookingReminderEmail(emailDetails);
+          logger.info(`✅ Consumer reminder sent for booking ${booking.id} to ${booking.consumer_email}`);
+
+          // Send reminder email to barber
+          if (booking.barber_email) {
+            try {
+              await sendBarberReminderEmail(emailDetails);
+              logger.info(`✅ Barber reminder sent for booking ${booking.id} to ${booking.barber_email}`);
+            } catch (barberError: any) {
+              logger.error(`Failed to send barber reminder for booking ${booking.id}:`, barberError.message);
+              // Don't fail the whole process if barber email fails
+            }
+          }
 
           // Mark reminder as sent
           await this.markReminderSent(booking.id);
 
           emailsSent++;
-          logger.info(`✅ Reminder sent for booking ${booking.id} to ${booking.consumer_email}`);
+          logger.info(`✅ Reminders sent for booking ${booking.id}`);
 
         } catch (error: any) {
           emailsFailed++;

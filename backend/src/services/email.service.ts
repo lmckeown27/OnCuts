@@ -2276,6 +2276,193 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
 }
 
 /**
+ * Send Booking Reminder Email to Barber
+ * 
+ * Sends a reminder email to the barber 1 hour before their scheduled appointment.
+ * 
+ * @param details - Booking reminder details
+ */
+export async function sendBarberReminderEmail(details: BookingReminderEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping barber reminder email for booking ${details.bookingId}`);
+    return;
+  }
+
+  if (!details.barberEmail) {
+    logger.warn(`No barber email for booking ${details.bookingId}, skipping barber reminder`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  try {
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject: `⏰ Reminder: ${details.consumerName}'s ${details.serviceName} is in 1 hour!`,
+      text: generateBarberReminderText(details),
+      html: generateBarberReminderHtml(details, frontendUrl)
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Booking reminder email sent to barber: ${details.barberEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send barber reminder email to ${details.barberEmail}:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Generate Barber Reminder Plain Text
+ */
+function generateBarberReminderText(details: BookingReminderEmailDetails): string {
+  const barberFirstName = details.barberName.split(' ')[0];
+  
+  return `
+Hi ${barberFirstName}!
+
+This is a reminder that you have an upcoming ${details.serviceName} appointment in 1 hour!
+
+APPOINTMENT DETAILS
+-------------------
+Customer: ${details.consumerName}
+Service: ${details.serviceName}
+Date: ${details.scheduledDate}
+Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+${details.notes ? `\nCustomer Notes: ${details.notes}` : ''}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+CHECKLIST
+---------
+✓ Make sure your equipment is ready
+✓ Review any style preferences the customer mentioned
+✓ Be ready to greet ${details.consumerName.split(' ')[0]} on time
+
+Time to deliver another great cut! 💈
+
+---
+CampusCut
+`.trim();
+}
+
+/**
+ * Generate Barber Reminder HTML Email
+ */
+function generateBarberReminderHtml(details: BookingReminderEmailDetails, frontendUrl: string): string {
+  const barberFirstName = details.barberName.split(' ')[0];
+  const consumerFirstName = details.consumerName.split(' ')[0];
+  
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header with Clock Icon -->
+    <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">⏰</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Upcoming Appointment</h1>
+      <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${barberFirstName}!</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+        You have a <strong>${details.serviceName}</strong> appointment with <strong>${details.consumerName}</strong> coming up soon!
+      </p>
+      
+      <!-- Countdown Badge -->
+      <div style="text-align: center; margin: 20px 0;">
+        <span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
+          ⏱️ Starts in approximately 1 hour
+        </span>
+      </div>
+      
+      <!-- Customer Info Card -->
+      <div style="background-color: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #bbf7d0;">
+        <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">👤 Customer</h3>
+        <p style="color: #1f2937; margin: 0; font-size: 18px; font-weight: 600;">${details.consumerName}</p>
+      </div>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Appointment Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #3b82f6; font-weight: 700; text-align: right; font-size: 16px;">${details.scheduledTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">You'll Earn</td>
+            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+        
+        ${details.notes ? `
+        <div style="border-top: 1px solid #e5e7eb; margin-top: 15px; padding-top: 15px;">
+          <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 12px;">Customer Notes:</p>
+          <p style="color: #1f2937; margin: 0; font-style: italic;">"${details.notes}"</p>
+        </div>` : ''}
+      </div>
+      
+      <!-- Checklist Section -->
+      <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">✅ Quick Checklist:</h4>
+        <ul style="color: #78350f; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+          <li>Equipment ready and clean</li>
+          <li>Review customer's style preferences</li>
+          <li>Be ready to greet ${consumerFirstName} on time</li>
+        </ul>
+      </div>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          View Appointment
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        Time to deliver another great cut! 💈
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+}
+
+/**
  * Send Guest Application Approved Email
  * 
  * Notifies a guest applicant that their barber application has been approved
