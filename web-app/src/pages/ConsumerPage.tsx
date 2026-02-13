@@ -95,27 +95,15 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
     });
 }
 
-// Algorithmic ranking function (capitalistic-but-fair)
-function rankBarbers(barbers: Barber[]): Barber[] {
-  return barbers
-    .map((barber) => {
-      // Base score: rating weighted heavily (default to 0 if null)
-      const rating = Number(barber.average_rating) || 0;
-      let score = rating * 100;
-      
-      // Bonus for experience and bookings
-      score += Math.log((barber.total_bookings || 0) + 1) * 10;
-      score += (barber.years_experience || 0) * 5;
-      
-      // Newcomer adjustment: if low bookings but high rating, boost slightly
-      if ((barber.total_bookings || 0) < 20 && rating >= 4.5) {
-        score += 20; // Give new high-rated barbers a chance
-      }
-      
-      return { barber, score };
-    })
-    .sort((a, b) => b.score - a.score)
-    .map(({ barber }) => barber);
+// Fisher-Yates shuffle for fair random ordering of barbers
+// This gives every barber an equal chance of being seen first
+function shuffleBarbers(barbers: Barber[]): Barber[] {
+  const shuffled = [...barbers];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 export default function ConsumerPage() {
@@ -1162,10 +1150,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       
       const barbersData = response.data || [];
       
-      // Apply algorithmic ranking (only if not already sorted by distance)
-      const rankedBarbers = (latitude && longitude) ? barbersData : rankBarbers(barbersData);
-      setBarbers(rankedBarbers);
-      setFilteredBarbers(rankedBarbers);
+      // Randomly shuffle barbers to give every barber a fair chance at being seen
+      const shuffledBarbers = shuffleBarbers(barbersData);
+      setBarbers(shuffledBarbers);
+      setFilteredBarbers(shuffledBarbers);
       
       setLoading(false);
     } catch (error) {
@@ -1207,12 +1195,8 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       filtered = filtered.filter(() => true);
     }
 
-    // Backend already sorts by distance when location is provided
-    // Only apply client-side sorting if no location (fallback to rating)
-    if (!latitude || !longitude) {
-      filtered.sort((a, b) => (Number(b.average_rating) || 0) - (Number(a.average_rating) || 0));
-    }
-    // When location is available, barbers are already sorted by distance from backend
+    // Keep random order from initial shuffle - no additional sorting
+    // This ensures every barber has a fair chance at being seen
 
     setFilteredBarbers(filtered);
   };
