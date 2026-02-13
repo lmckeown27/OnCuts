@@ -2117,7 +2117,7 @@ export async function sendBookingReminderEmail(details: BookingReminderEmailDeta
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
       to: details.consumerEmail,
-      subject: `⏰ Reminder: Your ${details.serviceName} with ${details.barberName} is in 1 hour!`,
+      subject: `Reminder: Your ${details.serviceName} with ${details.barberName} is in 1 hour!`,
       text: generateBookingReminderText(details),
       html: generateBookingReminderHtml(details, frontendUrl)
     };
@@ -2301,7 +2301,7 @@ export async function sendBarberReminderEmail(details: BookingReminderEmailDetai
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
       to: details.barberEmail,
-      subject: `⏰ Reminder: ${details.consumerName}'s ${details.serviceName} is in 1 hour!`,
+      subject: `Reminder: ${details.consumerName}'s ${details.serviceName} is in 1 hour!`,
       text: generateBarberReminderText(details),
       html: generateBarberReminderHtml(details, frontendUrl)
     };
@@ -2343,7 +2343,7 @@ CHECKLIST
 ✓ Review any style preferences the customer mentioned
 ✓ Be ready to greet ${details.consumerName.split(' ')[0]} on time
 
-Time to deliver another great cut! 💈
+Time to deliver another great cut!
 
 ---
 CampusCut
@@ -2366,10 +2366,9 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <!-- Header with Clock Icon -->
+    <!-- Header -->
     <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">⏰</span>
-      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Upcoming Appointment</h1>
+      <h1 style="color: white; margin: 0; font-size: 24px;">Upcoming Appointment</h1>
       <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
     </div>
     
@@ -2382,13 +2381,13 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       <!-- Countdown Badge -->
       <div style="text-align: center; margin: 20px 0;">
         <span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
-          ⏱️ Starts in approximately 1 hour
+          Starts in approximately 1 hour
         </span>
       </div>
       
       <!-- Customer Info Card -->
       <div style="background-color: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #bbf7d0;">
-        <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">👤 Customer</h3>
+        <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Customer</h3>
         <p style="color: #1f2937; margin: 0; font-size: 18px; font-weight: 600;">${details.consumerName}</p>
       </div>
       
@@ -2428,7 +2427,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       
       <!-- Checklist Section -->
       <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">✅ Quick Checklist:</h4>
+        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">Quick Checklist:</h4>
         <ul style="color: #78350f; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Equipment ready and clean</li>
           <li>Review customer's style preferences</li>
@@ -2450,7 +2449,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        Time to deliver another great cut! 💈
+        Time to deliver another great cut!
       </p>
     </div>
     
