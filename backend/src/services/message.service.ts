@@ -518,11 +518,12 @@ class MessageService {
           
           // Get conversation booking details if available, including barber's campus timezone
           // Note: campusId is on the users table, not barbers table
-          // Use b."requestedAt" as source of truth for scheduled time (not c.scheduled_time which may be stale)
+          // ALWAYS use b."requestedAt" as the source of truth - it's stored as TIMESTAMPTZ
+          // The c.scheduled_time is TIMESTAMP without timezone and causes issues
           const convDetails = await pool.query(
             `SELECT 
                c.service_name, c.service_price, c.booking_status, c.booking_id,
-               COALESCE(b."requestedAt", c.scheduled_time) as scheduled_time,
+               b."requestedAt" as scheduled_time,
                COALESCE(campus.timezone, 'America/Los_Angeles') as campus_timezone
              FROM conversations c
              LEFT JOIN bookings b ON c.booking_id = b.id
