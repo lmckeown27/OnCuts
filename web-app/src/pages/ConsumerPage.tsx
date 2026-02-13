@@ -1633,9 +1633,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                   <div className="pt-4 sm:pt-6 border-t border-gray-100">
                                     <button
                                       onClick={() => setReviewsExpanded(!reviewsExpanded)}
-                                      className="w-full flex items-center justify-between gap-2 text-gray-700 font-medium sm:text-lg hover:text-gray-900 transition-colors"
+                                      className="w-full flex items-center justify-between text-gray-700 font-medium sm:text-lg hover:text-gray-900 transition-colors"
                                     >
-                                      <div className="flex items-center justify-center sm:justify-start gap-2">
+                                      <div className="flex flex-col items-center sm:items-start gap-1">
                                         <span>Reviews</span>
                                         {(selectedBarber.review_count ?? 0) > 0 && (
                                           <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full">
