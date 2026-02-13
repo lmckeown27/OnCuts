@@ -1672,9 +1672,16 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                           {selectedBarber.reviews?.map((review) => (
                                             <div key={review.id} className="bg-gray-50 rounded-xl p-4">
                                               <div className="flex items-center justify-between gap-2 mb-1">
-                                                <span className="font-medium text-gray-900 truncate">
-                                                  {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
-                                                </span>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                  <span className="font-medium text-gray-900 truncate">
+                                                    {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
+                                                  </span>
+                                                  {review.service_name && (
+                                                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full flex-shrink-0">
+                                                      {review.service_name}
+                                                    </span>
+                                                  )}
+                                                </div>
                                                 <div className="flex items-center gap-0.5 flex-shrink-0">
                                                   {[...Array(5)].map((_, i) => (
                                                     <Star 

@@ -100,6 +100,7 @@ export interface Review {
   first_name?: string;
   last_name?: string;
   profile_picture_url?: string;
+  service_name?: string;
 }
 
 export interface Barber {

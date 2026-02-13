@@ -545,9 +545,11 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         b."reviewedAt" as created_at,
         u.first_name,
         u.last_name,
-        u."avatarUrl" as profile_picture_url
+        u."avatarUrl" as profile_picture_url,
+        c.service_name
       FROM bookings b
       JOIN users u ON b."consumerId" = u.id
+      LEFT JOIN conversations c ON b.id = c.booking_id
       WHERE b."barberId" = $1 AND b."reviewRating" IS NOT NULL
       ORDER BY b."reviewedAt" DESC
       LIMIT 10`,
