@@ -117,7 +117,6 @@ export interface Barber {
   years_experience: number;
   years_of_experience?: number; // Alias for backwards compatibility
   pricing: Service[];
-  average_rating: number;
   total_bookings: number;
   total_reviews?: number;
   is_active: boolean;
