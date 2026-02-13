@@ -2132,13 +2132,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   {appointment.consumer.firstName} {appointment.consumer.lastName}
                                   {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
                                 </p>
-                                  <p className="text-xs text-gray-500">
-                                    {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                                  </p>
                               </div>
                               <div className="text-right">
+                                <p className="text-xs text-gray-500">
+                                  {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                </p>
                                 <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
-                                <p className="text-xs text-gray-400">Tap →</p>
                               </div>
                             </div>
                           </div>
@@ -3147,13 +3146,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                         {appointment.consumer.firstName} {appointment.consumer.lastName}
                                         {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
                                       </p>
+                                    </div>
+                                    <div className="text-right">
                                       <p className="text-xs text-gray-500">
                                         {appointment.serviceName || appointment.serviceType.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                                       </p>
-                                    </div>
-                                    <div className="text-right">
                                       <p className="font-bold text-green-600">${(appointment.priceUsdCents / 100).toFixed(0)}</p>
-                                      <p className="text-xs text-gray-400">Tap →</p>
                                     </div>
                                   </div>
                                 </div>
