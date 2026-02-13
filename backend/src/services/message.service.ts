@@ -567,23 +567,24 @@ class MessageService {
           
           // Determine if sender/recipient are barbers by checking the barbers table
           // This is more reliable than checking users.role which may not be set correctly
+          // Only check for ACTIVE barbers - deactivated barbers should be treated as consumers
           const senderBarberCheck = await pool.query(
-            `SELECT b.id FROM barbers b WHERE b."userId" = $1`,
+            `SELECT b.id FROM barbers b WHERE b."userId" = $1 AND b."isActive" = true`,
             [senderId]
           );
           const recipientBarberCheck = await pool.query(
-            `SELECT b.id FROM barbers b WHERE b."userId" = $1`,
+            `SELECT b.id FROM barbers b WHERE b."userId" = $1 AND b."isActive" = true`,
             [recipientId]
           );
           
           const senderIsBarber = senderBarberCheck.rows.length > 0;
           const recipientIsBarber = recipientBarberCheck.rows.length > 0;
           
-          // Determine roles - barber status from barbers table takes priority
+          // Determine roles - active barber status from barbers table takes priority
           const senderRoleFromDb = sender.role?.toUpperCase() || 'CONSUMER';
           const recipientRoleFromDb = recipient.role?.toUpperCase() || 'CONSUMER';
           
-          // If user is in barbers table, treat them as BARBER regardless of users.role
+          // If user is an ACTIVE barber, treat them as BARBER regardless of users.role
           const senderRole = senderIsBarber ? 'BARBER' : senderRoleFromDb;
           const recipientRole = recipientIsBarber ? 'BARBER' : recipientRoleFromDb;
           
