@@ -503,6 +503,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         barber_user.last_name as barber_last_name,
         barber_user."avatarUrl" as barber_avatar,
         barber.id as barber_record_id,
+        c.id as conversation_id,
         c.location as conv_location,
         c.notes as conv_notes,
         c.service_name as conv_service_name
@@ -563,6 +564,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           barberAvatar: row.barber_avatar || null,
           consumerName: `${row.consumer_first_name || ''} ${row.consumer_last_name || ''}`.trim() || 'Customer',
           consumerAvatar: row.consumer_avatar || null,
+          conversationId: row.conversation_id || null,
         })),
         barbers: barbersResult.rows.map(row => ({
           id: row.id,
@@ -606,6 +608,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."reviewRating",
         b."reviewComment",
         b."reviewedAt",
+        conv.id as conversation_id,
         conv.service_name,
         conv.location,
         conv.notes,
@@ -666,6 +669,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         lastName: row.consumer_last_name,
         profileImageUrl: row.consumer_profile_url,
       },
+      conversationId: row.conversation_id || null,
     };
 
     res.json({

@@ -636,14 +636,25 @@ export default function BookingDetailsModal({
               {/* Action Buttons */}
               {(canComplete || canEdit || canCancel) && (
                 <div className="space-y-3 pt-4 border-t border-gray-100">
-                  {/* Complete Button - Navigates to Payment Page */}
+                  {/* Complete & Message Buttons */}
                   {canComplete && (
-                    <button
-                      onClick={handleCompleteBooking}
-                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
-                    >
-                      Complete
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleCompleteBooking}
+                        className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
+                      >
+                        Complete
+                      </button>
+                      {booking.conversationId && (
+                        <button
+                          onClick={() => navigate(`/web/barber/messages/${booking.conversationId}`)}
+                          className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          Message
+                        </button>
+                      )}
+                    </div>
                   )}
                   
                   {/* Edit & Cancel Buttons */}
