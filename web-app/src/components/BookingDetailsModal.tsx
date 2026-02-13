@@ -668,7 +668,7 @@ export default function BookingDetailsModal({
                       {canEdit && (
                         <button
                           onClick={() => setIsEditing(true)}
-                          className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                          className="flex-1 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
                         >
                           <Pencil className="w-4 h-4" />
                           Edit
