@@ -1668,45 +1668,28 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                           ))}
                                         </div>
                                       ) : (
-                                        <div className="space-y-4">
+                                        <div className="space-y-3">
                                           {selectedBarber.reviews?.map((review) => (
                                             <div key={review.id} className="bg-gray-50 rounded-xl p-4">
-                                              <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
-                                                  {review.profile_picture_url ? (
-                                                    <img 
-                                                      src={review.profile_picture_url} 
-                                                      alt={review.first_name || 'User'} 
-                                                      className="w-full h-full object-cover"
+                                              <div className="flex items-center justify-between gap-2 mb-1">
+                                                <span className="font-medium text-gray-900 truncate">
+                                                  {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
+                                                </span>
+                                                <div className="flex items-center gap-0.5 flex-shrink-0">
+                                                  {[...Array(5)].map((_, i) => (
+                                                    <Star 
+                                                      key={i} 
+                                                      className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} 
                                                     />
-                                                  ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                      <UserIcon className="w-5 h-5 text-gray-400" />
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="flex items-center justify-between gap-2 mb-1">
-                                                    <span className="font-medium text-gray-900 truncate">
-                                                      {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
-                                                    </span>
-                                                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                                                      {[...Array(5)].map((_, i) => (
-                                                        <Star 
-                                                          key={i} 
-                                                          className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} 
-                                                        />
-                                                      ))}
-                                                    </div>
-                                                  </div>
-                                                  {review.review_text && (
-                                                    <p className="text-gray-600 text-sm leading-relaxed">{review.review_text}</p>
-                                                  )}
-                                                  <p className="text-gray-400 text-xs mt-2">
-                                                    {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                  </p>
+                                                  ))}
                                                 </div>
                                               </div>
+                                              {review.review_text && (
+                                                <p className="text-gray-600 text-sm leading-relaxed">{review.review_text}</p>
+                                              )}
+                                              <p className="text-gray-400 text-xs mt-2">
+                                                {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                              </p>
                                             </div>
                                           ))}
                                         </div>
