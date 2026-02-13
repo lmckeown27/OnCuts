@@ -18,7 +18,10 @@ import Loading from '../components/Loading';
 import { CampusCutLogo } from '@assets';
 import Avatar from '../components/Avatar';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
+import DatePicker from '../components/DatePicker';
 import PullToRefresh from '../components/PullToRefresh';
+import barberService from '../services/barber.service';
+import type { Barber } from '../types';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import { useBodyScrollLock } from '../hooks';
 import toast from 'react-hot-toast';
@@ -64,13 +67,14 @@ export default function ConsumerBookingStatusPage() {
   const profileEditorRef = useRef<ConsumerProfileEditorRef>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [editDate, setEditDate] = useState('');
+  const [editDate, setEditDate] = useState(''); // YYYY-MM-DD format for DatePicker
   const [editTime, setEditTime] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [editBarber, setEditBarber] = useState<Barber | null>(null);
+  const [isLoadingBarber, setIsLoadingBarber] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [originalDateParts, setOriginalDateParts] = useState<{ month: number; day: number; year: number } | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -81,66 +85,6 @@ export default function ConsumerBookingStatusPage() {
     message: string;
   } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Auto-format date input (MM/DD/YYYY)
-  const handleDateChange = (value: string) => {
-    // Remove all non-digits
-    let digits = value.replace(/\D/g, '');
-    
-    // Limit to 8 digits
-    digits = digits.slice(0, 8);
-    
-    // Auto-format with slashes
-    let formatted = '';
-    if (digits.length > 0) {
-      formatted = digits.slice(0, 2);
-    }
-    if (digits.length > 2) {
-      formatted += '/' + digits.slice(2, 4);
-    }
-    if (digits.length > 4) {
-      formatted += '/' + digits.slice(4, 8);
-    }
-    
-    setEditDate(formatted);
-  };
-
-  // Parse date input with smart autocomplete from original date
-  // - Just day (DD) → use original month and year
-  // - Month and day (MM/DD) → use original year
-  // - Full date (MM/DD/YYYY) → use as-is
-  const parseDateInput = (dateStr: string): { month: number; day: number; year: number } | null => {
-    const parts = dateStr.split('/').filter(p => p.length > 0);
-    
-    if (parts.length === 0) return null;
-    
-    const month = parseInt(parts[0]);
-    if (isNaN(month) || month < 1 || month > 12) return null;
-    
-    // Get day - from input or original
-    let day: number;
-    if (parts.length >= 2 && parts[1].length > 0) {
-      day = parseInt(parts[1]);
-      if (isNaN(day) || day < 1 || day > 31) return null;
-    } else if (originalDateParts) {
-      day = originalDateParts.day;
-    } else {
-      return null;
-    }
-    
-    // Get year - from input or original
-    let year: number;
-    if (parts.length >= 3 && parts[2].length === 4) {
-      year = parseInt(parts[2]);
-      if (isNaN(year) || year < 2024 || year > 2099) return null;
-    } else if (originalDateParts) {
-      year = originalDateParts.year;
-    } else {
-      return null;
-    }
-    
-    return { month, day, year };
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -364,21 +308,17 @@ export default function ConsumerBookingStatusPage() {
     }
   };
 
-  const handleOpenEditModal = () => {
+  const handleOpenEditModal = async () => {
     if (!booking) return;
     
     // Initialize edit fields with current booking values
     const scheduledDate = new Date(booking.scheduledTime);
-    const monthNum = scheduledDate.getMonth() + 1;
-    const dayNum = scheduledDate.getDate();
-    const yearNum = scheduledDate.getFullYear();
+    const year = scheduledDate.getFullYear();
+    const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
+    const day = String(scheduledDate.getDate()).padStart(2, '0');
     
-    // Store original date parts for smart autocomplete
-    setOriginalDateParts({ month: monthNum, day: dayNum, year: yearNum });
-    
-    const month = String(monthNum).padStart(2, '0');
-    const day = String(dayNum).padStart(2, '0');
-    setEditDate(`${month}/${day}/${yearNum}`);
+    // Set date in YYYY-MM-DD format for DatePicker
+    setEditDate(`${year}-${month}-${day}`);
     
     // Set time in 24-hour format (HH:MM) for TimePickerDropdown
     const hours = String(scheduledDate.getHours()).padStart(2, '0');
@@ -389,6 +329,17 @@ export default function ConsumerBookingStatusPage() {
     setEditNotes(booking.notes || '');
     
     setShowEditModal(true);
+    
+    // Fetch barber data to get weekly schedule for date picker
+    setIsLoadingBarber(true);
+    try {
+      const barber = await barberService.getBarberById(booking.barberId);
+      setEditBarber(barber);
+    } catch (error) {
+      console.error('Failed to fetch barber data:', error);
+    } finally {
+      setIsLoadingBarber(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -396,9 +347,15 @@ export default function ConsumerBookingStatusPage() {
     setIsSaving(true);
     
     try {
-      // Parse the edited date with smart autocomplete
-      const dateParts = parseDateInput(editDate);
-      if (!dateParts) {
+      // Parse the YYYY-MM-DD date from DatePicker
+      if (!editDate) {
+        toast.error('Please select a date');
+        setIsSaving(false);
+        return;
+      }
+      
+      const [year, month, day] = editDate.split('-').map(Number);
+      if (isNaN(year) || isNaN(month) || isNaN(day)) {
         toast.error('Invalid date format');
         setIsSaving(false);
         return;
@@ -408,12 +365,12 @@ export default function ConsumerBookingStatusPage() {
       const [hours, minutes] = editTime.split(':').map(Number);
       
       if (isNaN(hours) || isNaN(minutes)) {
-        toast.error('Invalid time format');
+        toast.error('Please select a time');
         setIsSaving(false);
         return;
       }
       
-      const newScheduledTime = new Date(dateParts.year, dateParts.month - 1, dateParts.day, hours, minutes);
+      const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
       
       await api.put(`/bookings-simple/${booking.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
@@ -914,29 +871,31 @@ export default function ConsumerBookingStatusPage() {
             </h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date (MM/DD/YYYY)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
+              {/* Date Picker - shows calendar with barber's availability */}
+              {isLoadingBarber ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin" />
+                  <span className="ml-2 text-gray-500 text-sm">Loading availability...</span>
+                </div>
+              ) : (
+                <DatePicker
+                  label="Date"
                   value={editDate}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  placeholder="MM/DD/YYYY"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  onChange={(newDate) => {
+                    setEditDate(newDate);
+                    // Reset time when date changes since availability may differ
+                    setEditTime('');
+                  }}
+                  minDate={new Date().toISOString().split('T')[0]}
+                  weeklySchedule={editBarber?.weekly_schedule}
                 />
-              </div>
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                 <AvailableTimePickerDropdown
                   barberId={booking.barberId}
-                  date={(() => {
-                    // Convert MM/DD/YYYY to YYYY-MM-DD for the API
-                    const dateParts = parseDateInput(editDate);
-                    if (!dateParts) return '';
-                    const { month, day, year } = dateParts;
-                    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                  })()}
+                  date={editDate}
                   value={editTime}
                   onChange={setEditTime}
                 />
