@@ -654,7 +654,7 @@ export default function BookingDetailsModal({
                             navigate('/web/barber/messages');
                           }
                         }}
-                        className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                       >
                         <MessageSquare className="w-4 h-4" />
                         Message
