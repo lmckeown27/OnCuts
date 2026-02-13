@@ -138,7 +138,8 @@ export interface Barber {
   distance_km?: number; // Calculated distance from user (when location provided)
   distance_miles?: number; // Distance in miles
   service_locations?: ServiceLocation[]; // Barber's available service locations
-  five_star_count?: number; // Number of 5-star reviews
+  average_rating?: number; // Average rating from submitted reviews
+  review_count?: number; // Total number of submitted reviews
   reviews?: Review[]; // Recent reviews
 }
 

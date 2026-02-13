@@ -195,12 +195,17 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         [barber.id]
       );
 
-      // Get 5-star review count from bookings
-      const fiveStarCountResult = await pool.query(
-        `SELECT COUNT(*) as count FROM bookings WHERE "barberId" = $1 AND "reviewRating" = 5`,
+      // Get review stats from bookings (average and count of submitted reviews only)
+      const reviewStatsResult = await pool.query(
+        `SELECT 
+          AVG("reviewRating")::numeric(3,2) as average_rating,
+          COUNT(*) as review_count
+        FROM bookings 
+        WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL`,
         [barber.id]
       );
-      const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
+      const averageRating = parseFloat(reviewStatsResult.rows[0]?.average_rating || '0');
+      const reviewCount = parseInt(reviewStatsResult.rows[0]?.review_count || '0', 10);
       
       // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services
       const customPricing = barber.pricing || [];
@@ -219,7 +224,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
         service_locations: locationsResult.rows,
-        five_star_count: fiveStarCount,
+        average_rating: averageRating,
+        review_count: reviewCount,
       };
     }));
 
@@ -556,12 +562,17 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       [id]
     );
 
-    // Get 5-star review count from bookings
-    const fiveStarCountResult = await pool.query(
-      `SELECT COUNT(*) as count FROM bookings WHERE "barberId" = $1 AND "reviewRating" = 5`,
+    // Get review stats from bookings (average and count of submitted reviews only)
+    const reviewStatsResult = await pool.query(
+      `SELECT 
+        AVG("reviewRating")::numeric(3,2) as average_rating,
+        COUNT(*) as review_count
+      FROM bookings 
+      WHERE "barberId" = $1 AND "reviewRating" IS NOT NULL`,
       [id]
     );
-    const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
+    const averageRating = parseFloat(reviewStatsResult.rows[0]?.average_rating || '0');
+    const reviewCount = parseInt(reviewStatsResult.rows[0]?.review_count || '0', 10);
 
     // Get barber's assigned service locations
     const locationsResult = await pool.query(
@@ -593,7 +604,8 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
         service_locations: locationsResult.rows,
-        five_star_count: fiveStarCount,
+        average_rating: averageRating,
+        review_count: reviewCount,
       },
     });
   } catch (error) {
