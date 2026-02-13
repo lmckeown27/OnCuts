@@ -1019,6 +1019,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [loginPromptAction, setLoginPromptAction] = useState<'schedule' | 'become_barber' | 'general'>('general');
   const [loginRedirectBarber, setLoginRedirectBarber] = useState<Barber | null>(null);
   const [loadingBarberDetails, setLoadingBarberDetails] = useState(false);
+  const [reviewsExpanded, setReviewsExpanded] = useState(false);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1134,6 +1135,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     // Show card immediately with list data
     setSelectedBarber(barber);
     setLoadingBarberDetails(true);
+    setReviewsExpanded(false); // Reset reviews dropdown when selecting new barber
     
     try {
       // Fetch detailed barber info (includes reviews)
@@ -1626,80 +1628,90 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                   </div>
                                 )}
 
-                                {/* Reviews Section */}
+                                {/* Reviews Section - Collapsible */}
                                 {(selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails ? (
                                   <div className="pt-4 sm:pt-6 border-t border-gray-100">
-                                    <div className="flex items-center justify-center sm:justify-start gap-2 text-gray-700 font-medium mb-4 sm:text-lg">
-                                      <span>Reviews</span>
-                                      {(selectedBarber.five_star_count ?? 0) > 0 && (
-                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full">
-                                          <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                          <span className="text-xs font-semibold text-amber-700">{selectedBarber.five_star_count} five-star</span>
-                                        </div>
-                                      )}
-                                      {loadingBarberDetails && (
-                                        <div className="w-4 h-4 border-2 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
-                                      )}
-                                    </div>
-                                    {loadingBarberDetails && !selectedBarber.reviews ? (
-                                      <div className="space-y-4">
-                                        {[1, 2].map((i) => (
-                                          <div key={i} className="bg-gray-50 rounded-xl p-4 animate-pulse">
-                                            <div className="flex items-start gap-3">
-                                              <div className="w-10 h-10 rounded-full bg-gray-200" />
-                                              <div className="flex-1">
-                                                <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-                                                <div className="h-3 bg-gray-200 rounded w-full mb-1" />
-                                                <div className="h-3 bg-gray-200 rounded w-3/4" />
-                                              </div>
-                                            </div>
+                                    <button
+                                      onClick={() => setReviewsExpanded(!reviewsExpanded)}
+                                      className="w-full flex items-center justify-between gap-2 text-gray-700 font-medium sm:text-lg hover:text-gray-900 transition-colors"
+                                    >
+                                      <div className="flex items-center justify-center sm:justify-start gap-2">
+                                        <span>Reviews</span>
+                                        {(selectedBarber.five_star_count ?? 0) > 0 && (
+                                          <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full">
+                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                            <span className="text-xs font-semibold text-amber-700">{selectedBarber.five_star_count} five-star</span>
                                           </div>
-                                        ))}
+                                        )}
+                                        {loadingBarberDetails && (
+                                          <div className="w-4 h-4 border-2 border-gray-300 border-t-primary-500 rounded-full animate-spin" />
+                                        )}
                                       </div>
-                                    ) : (
-                                    <div className="space-y-4">
-                                      {selectedBarber.reviews?.map((review) => (
-                                        <div key={review.id} className="bg-gray-50 rounded-xl p-4">
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
-                                              {review.profile_picture_url ? (
-                                                <img 
-                                                  src={review.profile_picture_url} 
-                                                  alt={review.first_name || 'User'} 
-                                                  className="w-full h-full object-cover"
-                                                />
-                                              ) : (
-                                                <div className="w-full h-full flex items-center justify-center">
-                                                  <UserIcon className="w-5 h-5 text-gray-400" />
-                                                </div>
-                                              )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                              <div className="flex items-center justify-between gap-2 mb-1">
-                                                <span className="font-medium text-gray-900 truncate">
-                                                  {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
-                                                </span>
-                                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                                  {[...Array(5)].map((_, i) => (
-                                                    <Star 
-                                                      key={i} 
-                                                      className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} 
-                                                    />
-                                                  ))}
+                                      <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${reviewsExpanded ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    
+                                    {/* Collapsible Reviews Content */}
+                                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${reviewsExpanded ? 'max-h-[2000px] opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                                      {loadingBarberDetails && !selectedBarber.reviews ? (
+                                        <div className="space-y-4">
+                                          {[1, 2].map((i) => (
+                                            <div key={i} className="bg-gray-50 rounded-xl p-4 animate-pulse">
+                                              <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gray-200" />
+                                                <div className="flex-1">
+                                                  <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
+                                                  <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                                                  <div className="h-3 bg-gray-200 rounded w-3/4" />
                                                 </div>
                                               </div>
-                                              {review.review_text && (
-                                                <p className="text-gray-600 text-sm leading-relaxed">{review.review_text}</p>
-                                              )}
-                                              <p className="text-gray-400 text-xs mt-2">
-                                                {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                              </p>
                                             </div>
-                                          </div>
+                                          ))}
                                         </div>
-                                      ))}
+                                      ) : (
+                                        <div className="space-y-4">
+                                          {selectedBarber.reviews?.map((review) => (
+                                            <div key={review.id} className="bg-gray-50 rounded-xl p-4">
+                                              <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+                                                  {review.profile_picture_url ? (
+                                                    <img 
+                                                      src={review.profile_picture_url} 
+                                                      alt={review.first_name || 'User'} 
+                                                      className="w-full h-full object-cover"
+                                                    />
+                                                  ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                      <UserIcon className="w-5 h-5 text-gray-400" />
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                                    <span className="font-medium text-gray-900 truncate">
+                                                      {review.first_name || 'Anonymous'} {review.last_name ? review.last_name.charAt(0) + '.' : ''}
+                                                    </span>
+                                                    <div className="flex items-center gap-0.5 flex-shrink-0">
+                                                      {[...Array(5)].map((_, i) => (
+                                                        <Star 
+                                                          key={i} 
+                                                          className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} 
+                                                        />
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                  {review.review_text && (
+                                                    <p className="text-gray-600 text-sm leading-relaxed">{review.review_text}</p>
+                                                  )}
+                                                  <p className="text-gray-400 text-xs mt-2">
+                                                    {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
-                                    )}
                                   </div>
                                 ) : null}
               </div>
