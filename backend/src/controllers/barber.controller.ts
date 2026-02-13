@@ -195,9 +195,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         [barber.id]
       );
 
-      // Get 5-star review count
+      // Get 5-star review count from bookings
       const fiveStarCountResult = await pool.query(
-        `SELECT COUNT(*) as count FROM reviews WHERE "barberId" = $1 AND rating = 5`,
+        `SELECT COUNT(*) as count FROM bookings WHERE "barberId" = $1 AND "reviewRating" = 5`,
         [barber.id]
       );
       const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
@@ -536,27 +536,27 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       [id]
     );
 
-    // Get reviews
+    // Get reviews from bookings table (reviews are stored as reviewRating and reviewComment on bookings)
     const reviewsResult = await pool.query(
       `SELECT 
-        r.id,
-        r.rating,
-        r.comment as review_text,
-        r."createdAt" as created_at,
+        b.id,
+        b."reviewRating" as rating,
+        b."reviewComment" as review_text,
+        b."reviewedAt" as created_at,
         u.first_name,
         u.last_name,
         u."avatarUrl" as profile_picture_url
-      FROM reviews r
-      JOIN users u ON r."consumerId" = u.id
-      WHERE r."barberId" = $1
-      ORDER BY r."createdAt" DESC
+      FROM bookings b
+      JOIN users u ON b."consumerId" = u.id
+      WHERE b."barberId" = $1 AND b."reviewRating" IS NOT NULL
+      ORDER BY b."reviewedAt" DESC
       LIMIT 10`,
       [id]
     );
 
-    // Get 5-star review count
+    // Get 5-star review count from bookings
     const fiveStarCountResult = await pool.query(
-      `SELECT COUNT(*) as count FROM reviews WHERE "barberId" = $1 AND rating = 5`,
+      `SELECT COUNT(*) as count FROM bookings WHERE "barberId" = $1 AND "reviewRating" = 5`,
       [id]
     );
     const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
