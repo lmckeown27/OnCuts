@@ -194,6 +194,13 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         ORDER BY bsl.is_primary DESC, sl.name ASC`,
         [barber.id]
       );
+
+      // Get 5-star review count
+      const fiveStarCountResult = await pool.query(
+        `SELECT COUNT(*) as count FROM reviews WHERE "barberId" = $1 AND rating = 5`,
+        [barber.id]
+      );
+      const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
       
       // Use barber.pricing (from barbers table JSONB) if available, otherwise fall back to barber_services
       const customPricing = barber.pricing || [];
@@ -212,6 +219,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         pricing: customPricing.length > 0 ? customPricing : servicePricing,
         portfolio_images: portfolioResult.rows,
         service_locations: locationsResult.rows,
+        five_star_count: fiveStarCount,
       };
     }));
 
@@ -546,6 +554,13 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       [id]
     );
 
+    // Get 5-star review count
+    const fiveStarCountResult = await pool.query(
+      `SELECT COUNT(*) as count FROM reviews WHERE "barberId" = $1 AND rating = 5`,
+      [id]
+    );
+    const fiveStarCount = parseInt(fiveStarCountResult.rows[0]?.count || '0', 10);
+
     // Get barber's assigned service locations
     const locationsResult = await pool.query(
       `SELECT 
@@ -576,6 +591,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
         service_locations: locationsResult.rows,
+        five_star_count: fiveStarCount,
       },
     });
   } catch (error) {
