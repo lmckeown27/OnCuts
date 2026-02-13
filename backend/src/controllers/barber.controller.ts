@@ -546,7 +546,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         u.first_name,
         u.last_name,
         u."avatarUrl" as profile_picture_url,
-        COALESCE(c.service_name, b."serviceType") as service_name
+        COALESCE(c.service_name, b."serviceType"::text) as service_name
       FROM bookings b
       JOIN users u ON b."consumerId" = u.id
       LEFT JOIN conversations c ON b.id = c.booking_id
