@@ -154,6 +154,7 @@ export default function MessagesPage() {
   const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [editBarberId, setEditBarberId] = useState<string>('');
+  const [editBarberWeeklySchedule, setEditBarberWeeklySchedule] = useState<any>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -386,21 +387,34 @@ export default function MessagesPage() {
     setEditBarberId(barberId);
     console.log('[MessagesPage] Edit barber ID set to:', barberId);
     
-    // Fetch barber's available locations
+    // Fetch barber's available locations and weekly schedule
     if (barberId) {
       try {
         setLocationsLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/locations/for-booking/${barberId}`, {
+        
+        // Fetch locations
+        const locationsResponse = await fetch(`${import.meta.env.VITE_API_URL}/locations/for-booking/${barberId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
-        if (response.ok) {
-          const data = await response.json();
+        if (locationsResponse.ok) {
+          const data = await locationsResponse.json();
           setBarberLocations(data.data || []);
         }
+        
+        // Fetch weekly schedule for DatePicker availability indicators
+        const availabilityResponse = await fetch(`${import.meta.env.VITE_API_URL}/barbers/${barberId}/availability`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        if (availabilityResponse.ok) {
+          const data = await availabilityResponse.json();
+          setEditBarberWeeklySchedule(data.weeklySchedule || null);
+        }
       } catch (error) {
-        console.error('Failed to fetch barber locations:', error);
+        console.error('Failed to fetch barber data:', error);
       } finally {
         setLocationsLoading(false);
       }
@@ -415,6 +429,7 @@ export default function MessagesPage() {
     setEditDate('');
     setEditTime('');
     setEditLocation('');
+    setEditBarberWeeklySchedule(null);
   };
 
   // Save booking edits
@@ -1531,6 +1546,7 @@ export default function MessagesPage() {
                             setEditTime(''); // Reset time when date changes
                           }}
                           minDate={new Date().toISOString().split('T')[0]}
+                          weeklySchedule={editBarberWeeklySchedule}
                           required
                         />
                       </div>
@@ -1792,6 +1808,7 @@ export default function MessagesPage() {
                         setEditTime(''); // Reset time when date changes
                       }}
                       minDate={new Date().toISOString().split('T')[0]}
+                      weeklySchedule={editBarberWeeklySchedule}
                       required
                     />
                   </div>
