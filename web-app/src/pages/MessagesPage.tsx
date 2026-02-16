@@ -1698,8 +1698,8 @@ export default function MessagesPage() {
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors text-sm font-medium"
                             disabled={isSavingEdit}
                           >
-                            <X className="w-4 h-4" />
-                            Cancel
+                            <ArrowLeft className="w-4 h-4" />
+                            Back
                           </button>
                           <button
                             onClick={saveBookingEdits}
@@ -1972,8 +1972,8 @@ export default function MessagesPage() {
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
                         disabled={isSavingEdit}
                       >
-                        <X className="w-4 h-4" />
-                        Cancel
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
                       </button>
                       <button
                         onClick={saveBookingEdits}
