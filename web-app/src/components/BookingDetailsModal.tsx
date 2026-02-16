@@ -2,7 +2,7 @@
  * BookingDetailsModal - In-depth booking details popup for barbers
  * Allows viewing all booking details and editing/cancelling bookings
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
@@ -10,8 +10,11 @@ import {
   Phone, Mail, Save
 } from 'lucide-react';
 import api from '../services/api.service';
+import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
-import TimePickerDropdown from './TimePickerDropdown';
+import DatePicker from './DatePicker';
+import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
+import type { Barber } from '../types';
 
 interface BookingDetailsModalProps {
   isOpen: boolean;
@@ -72,90 +75,13 @@ export default function BookingDetailsModal({
   }, [isClosing, onClose]);
   
   // Editable fields (notes are read-only - set by consumer)
-  const [editedDate, setEditedDate] = useState(''); // MM/DD/YYYY
-  const [editedTime, setEditedTime] = useState(''); // HH:MM (24-hour for TimePickerDropdown)
-  const [editedLocation, setEditedLocation] = useState('');
+  const [editDate, setEditDate] = useState(''); // YYYY-MM-DD format for DatePicker
+  const [editTime, setEditTime] = useState(''); // HH:MM (24-hour)
+  const [editLocation, setEditLocation] = useState('');
   
-  // Store original date parts for smart autocomplete
-  const [originalDateParts, setOriginalDateParts] = useState<{ month: number; day: number; year: number } | null>(null);
-  
-  // Barber's weekly availability schedule for time filtering
-  const [weeklySchedule, setWeeklySchedule] = useState<Record<string, { enabled: boolean; intervals: { start: string; end: string }[] }> | null>(null);
-
-  // Format date as MM/DD/YYYY
-  const formatDateForDisplay = (date: Date): string => {
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${month}/${day}/${year}`;
-  };
-
-  // Format time as HH:MM (24-hour) for TimePickerDropdown
-  const formatTimeFor24Hour = (date: Date): string => {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
-  // Auto-format date input (MM/DD/YYYY)
-  const handleDateChange = (value: string) => {
-    // Remove all non-digits
-    let digits = value.replace(/\D/g, '');
-    
-    // Limit to 8 digits
-    digits = digits.slice(0, 8);
-    
-    // Auto-format with slashes
-    let formatted = '';
-    if (digits.length > 0) {
-      formatted = digits.slice(0, 2);
-    }
-    if (digits.length > 2) {
-      formatted += '/' + digits.slice(2, 4);
-    }
-    if (digits.length > 4) {
-      formatted += '/' + digits.slice(4, 8);
-    }
-    
-    setEditedDate(formatted);
-  };
-
-  // Parse date input with smart autocomplete from original date
-  // - Just month (MM) → use original day and year
-  // - Month and day (MM/DD) → use original year
-  // - Full date (MM/DD/YYYY) → use as-is
-  const parseDateInput = (dateStr: string): { month: number; day: number; year: number } | null => {
-    const parts = dateStr.split('/').filter(p => p.length > 0);
-    
-    if (parts.length === 0) return null;
-    
-    const month = parseInt(parts[0]);
-    if (isNaN(month) || month < 1 || month > 12) return null;
-    
-    // Get day - from input or original
-    let day: number;
-    if (parts.length >= 2 && parts[1].length > 0) {
-      day = parseInt(parts[1]);
-      if (isNaN(day) || day < 1 || day > 31) return null;
-    } else if (originalDateParts) {
-      day = originalDateParts.day;
-    } else {
-      return null;
-    }
-    
-    // Get year - from input or original
-    let year: number;
-    if (parts.length >= 3 && parts[2].length === 4) {
-      year = parseInt(parts[2]);
-      if (isNaN(year) || year < 2024 || year > 2099) return null;
-    } else if (originalDateParts) {
-      year = originalDateParts.year;
-    } else {
-      return null;
-    }
-    
-    return { month, day, year };
-  };
+  // Barber data for edit form (weekly_schedule, service_locations)
+  const [editBarber, setEditBarber] = useState<Barber | null>(null);
+  const [isLoadingBarber, setIsLoadingBarber] = useState(false);
 
   // Parse HH:MM (24-hour) to hours and minutes
   const parseTimeInput = (timeStr: string): { hours: number; minutes: number } | null => {
@@ -172,84 +98,81 @@ export default function BookingDetailsModal({
   useEffect(() => {
     if (booking) {
       const scheduledTime = new Date(booking.scheduledTime);
-      setEditedDate(formatDateForDisplay(scheduledTime));
-      setEditedTime(formatTimeFor24Hour(scheduledTime));
-      setEditedLocation(booking.location || '');
-      // Store original date parts for smart autocomplete
-      setOriginalDateParts({
-        month: scheduledTime.getMonth() + 1,
-        day: scheduledTime.getDate(),
-        year: scheduledTime.getFullYear(),
-      });
+      
+      // Format date as YYYY-MM-DD for DatePicker
+      const year = scheduledTime.getFullYear();
+      const month = String(scheduledTime.getMonth() + 1).padStart(2, '0');
+      const day = String(scheduledTime.getDate()).padStart(2, '0');
+      setEditDate(`${year}-${month}-${day}`);
+      
+      // Format time as HH:MM (24-hour)
+      const hours = String(scheduledTime.getHours()).padStart(2, '0');
+      const minutes = String(scheduledTime.getMinutes()).padStart(2, '0');
+      setEditTime(`${hours}:${minutes}`);
+      
+      setEditLocation(booking.location || '');
     }
   }, [booking]);
 
-  // Fetch barber's weekly availability when booking changes
+  // Fetch barber data (including weekly_schedule and service_locations) when editing starts
   useEffect(() => {
-    const fetchBarberAvailability = async () => {
+    const fetchBarberData = async () => {
       // Get barber ID from booking (try recordId first, then barberId)
       const barberId = booking?.barber?.recordId || booking?.barberId;
-      if (!barberId) return;
+      if (!barberId || !isEditing) return;
       
+      setIsLoadingBarber(true);
       try {
-        const response = await api.get(`/barbers/${barberId}/availability`);
-        if (response?.weeklySchedule) {
-          setWeeklySchedule(response.weeklySchedule);
+        const barber = await barberService.getBarberById(barberId);
+        setEditBarber(barber);
+        
+        // If barber has service locations and current location matches one, keep it
+        // Otherwise auto-select primary location
+        if (barber.service_locations && barber.service_locations.length > 0) {
+          const currentLocationMatch = barber.service_locations.find(
+            loc => loc.name === editLocation
+          );
+          if (!currentLocationMatch) {
+            const primaryLocation = barber.service_locations.find(loc => loc.is_primary);
+            if (primaryLocation) {
+              setEditLocation(primaryLocation.name);
+            }
+          }
         }
       } catch (error) {
-        console.error('Failed to fetch barber availability:', error);
+        console.error('Failed to fetch barber data:', error);
+      } finally {
+        setIsLoadingBarber(false);
       }
     };
     
-    if (booking) {
-      fetchBarberAvailability();
+    if (isEditing && booking) {
+      fetchBarberData();
     }
-  }, [booking]);
-
-  // Compute available time intervals for the selected date based on barber's weekly schedule
-  const availableIntervals = useMemo(() => {
-    if (!weeklySchedule || !editedDate) return undefined;
-    
-    // Parse edited date to get day of week
-    const dateParts = editedDate.split('/').filter(p => p.length > 0);
-    if (dateParts.length < 2) return undefined;
-    
-    const month = parseInt(dateParts[0]);
-    const day = parseInt(dateParts[1]);
-    const year = dateParts.length >= 3 && dateParts[2].length === 4 
-      ? parseInt(dateParts[2]) 
-      : originalDateParts?.year || new Date().getFullYear();
-    
-    if (isNaN(month) || isNaN(day) || isNaN(year)) return undefined;
-    
-    const date = new Date(year, month - 1, day);
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-    const dayKey = dayNames[date.getDay()];
-    
-    const daySchedule = weeklySchedule[dayKey];
-    if (!daySchedule?.enabled || !daySchedule.intervals || daySchedule.intervals.length === 0) {
-      return []; // No availability for this day
-    }
-    
-    return daySchedule.intervals.map(interval => ({
-      start: interval.start,
-      end: interval.end,
-    }));
-  }, [weeklySchedule, editedDate, originalDateParts]);
+  }, [isEditing, booking]);
 
   // All hooks must be called before any early returns
   const handleSaveChanges = useCallback(async () => {
     if (!booking) return;
     
-    // Validate date format
-    const dateParts = parseDateInput(editedDate);
-    if (!dateParts) {
-      toast.error('Please enter a valid date (MM/DD/YYYY)');
+    // Validate date format (YYYY-MM-DD from DatePicker)
+    if (!editDate) {
+      toast.error('Please select a date');
+      return;
+    }
+    
+    const [yearStr, monthStr, dayStr] = editDate.split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
+    const day = parseInt(dayStr);
+    
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      toast.error('Please select a valid date');
       return;
     }
 
     // Validate time format (HH:MM from dropdown)
-    const timeParts = parseTimeInput(editedTime);
+    const timeParts = parseTimeInput(editTime);
     if (!timeParts) {
       toast.error('Please select a valid time');
       return;
@@ -259,16 +182,16 @@ export default function BookingDetailsModal({
     try {
       // Combine date and time into scheduledTime
       const newScheduledTime = new Date(
-        dateParts.year,
-        dateParts.month - 1, // months are 0-indexed
-        dateParts.day,
+        year,
+        month - 1, // months are 0-indexed
+        day,
         timeParts.hours,
         timeParts.minutes
       );
       
       await api.put(`/bookings-simple/${booking.id}`, {
         scheduledTime: newScheduledTime.toISOString(),
-        location: editedLocation || null,
+        location: editLocation || null,
       });
 
       toast.success('Booking updated successfully!');
@@ -280,7 +203,7 @@ export default function BookingDetailsModal({
     } finally {
       setIsSaving(false);
     }
-  }, [editedDate, editedTime, editedLocation, booking, onBookingUpdated]);
+  }, [editDate, editTime, editLocation, booking, onBookingUpdated]);
 
   // Handle Enter key to save changes
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -459,65 +382,87 @@ export default function BookingDetailsModal({
               </div>
             </div>
           ) : isEditing ? (
-            /* Edit View */
+            /* Edit View - matches consumer edit booking UI */
             <div className="space-y-4">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-primary-500" />
-                Edit
+                Edit Booking
               </h3>
 
-              {/* Date & Time */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="MM/DD/YYYY"
-                    value={editedDate}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                  />
+              {/* Date Picker - shows calendar with barber's availability */}
+              {isLoadingBarber ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-500 rounded-full animate-spin" />
+                  <span className="ml-2 text-gray-500 text-sm">Loading availability...</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <TimePickerDropdown
-                    value={editedTime}
-                    onChange={setEditedTime}
-                    availableIntervals={availableIntervals}
-                  />
-                </div>
+              ) : (
+                <DatePicker
+                  label="Date"
+                  value={editDate}
+                  onChange={(newDate) => {
+                    setEditDate(newDate);
+                    // Reset time when date changes since availability may differ
+                    setEditTime('');
+                  }}
+                  minDate={new Date().toISOString().split('T')[0]}
+                  weeklySchedule={editBarber?.weekly_schedule}
+                />
+              )}
+
+              {/* Time Picker - shows available times for selected date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <AvailableTimePickerDropdown
+                  barberId={booking.barber?.recordId || booking.barberId}
+                  date={editDate}
+                  value={editTime}
+                  onChange={setEditTime}
+                />
               </div>
 
-              {/* Location */}
+              {/* Location - dropdown if barber has service locations */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input
-                  type="text"
-                  value={editedLocation}
-                  onChange={(e) => setEditedLocation(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Enter location..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                />
+                {editBarber?.service_locations && editBarber.service_locations.length > 0 ? (
+                  <select
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
+                  >
+                    <option value="">Select a location</option>
+                    {editBarber.service_locations.map((location) => (
+                      <option key={location.id} value={location.name}>
+                        {location.name}{location.is_primary ? ' (Primary)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Enter location..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                  />
+                )}
               </div>
 
               {/* Consumer Notes - Read-only display */}
               {booking.notes && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Customer Notes</label>
-                  <div className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 italic">
+                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-700 italic">
                     "{booking.notes}"
                   </div>
                 </div>
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-2 pb-4 sm:pb-0">
+              <div className="flex gap-3 mt-6">
                 <button
+                  type="button"
                   onClick={() => setIsEditing(false)}
-                  className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                   disabled={isSaving}
                 >
                   Cancel
@@ -525,7 +470,7 @@ export default function BookingDetailsModal({
                 <button
                   onClick={handleSaveChanges}
                   disabled={isSaving}
-                  className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSaving ? (
                     <>
@@ -533,10 +478,7 @@ export default function BookingDetailsModal({
                       Saving...
                     </>
                   ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      Save Changes
-                    </>
+                    'Save Changes'
                   )}
                 </button>
               </div>
