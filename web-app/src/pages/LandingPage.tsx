@@ -401,7 +401,7 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex items-center justify-center min-h-[50vh]">
         <div className="max-w-5xl mx-auto text-center">
           {/* University Selector */}
-          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto mb-8">
+          <div className="w-full max-w-2xl mx-auto mb-8">
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
               <UniversitySelector
                 value={selectedUniversity}
