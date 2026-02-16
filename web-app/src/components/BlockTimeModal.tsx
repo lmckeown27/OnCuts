@@ -85,11 +85,43 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
+  // Animation states
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  
   // New block form state - use initial values if provided
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(initialDate || getTodayStr());
   const [startTime, setStartTime] = useState(initialStartTime || '09:00');
   const [endTime, setEndTime] = useState(initialEndTime || '10:00');
+  
+  // Handle open/close animations
+  useEffect(() => {
+    if (isVisible) {
+      setShouldRender(true);
+      // Small delay to trigger enter animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
+    } else {
+      setIsAnimating(false);
+      // Wait for exit animation before unmounting
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+  
+  // Handle close with animation
+  const handleClose = () => {
+    setIsAnimating(false);
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  };
   
   // Auto-show create form when initial values are provided
   useEffect(() => {
@@ -169,15 +201,21 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
     }
   };
 
-  if (!isVisible) return null;
+  if (!shouldRender) return null;
 
   return (
     <div 
-      className="fixed inset-0 min-h-[100dvh] bg-black/50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      className={`fixed inset-0 min-h-[100dvh] z-50 flex items-center justify-center p-4 transition-colors duration-200 ${
+        isAnimating ? 'bg-black/50' : 'bg-black/0'
+      }`}
+      onClick={handleClose}
     >
       <div 
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[85dvh] sm:max-h-[90vh] overflow-hidden flex flex-col"
+        className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85dvh] sm:max-h-[90vh] overflow-hidden flex flex-col transition-all duration-200 ease-out ${
+          isAnimating 
+            ? 'opacity-100 scale-100 translate-y-0' 
+            : 'opacity-0 scale-95 translate-y-4'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -187,7 +225,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
             <p className="text-primary-100 text-sm">One-time blocks only</p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-white/20 rounded-full transition-colors"
           >
             <X className="w-5 h-5 text-white" />
