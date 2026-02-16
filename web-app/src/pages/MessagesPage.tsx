@@ -54,6 +54,7 @@ interface BarberLocation {
   name: string;
   description: string | null;
   address: string | null;
+  is_primary?: boolean;
 }
 
 interface ConversationWithDetails extends Conversation {
@@ -1614,7 +1615,7 @@ export default function MessagesPage() {
                           <option value="">Select a location</option>
                           {barberLocations.map((loc) => (
                             <option key={loc.id} value={loc.name}>
-                              {loc.name}
+                              {loc.name}{loc.is_primary ? ' (Primary)' : ''}
                             </option>
                           ))}
                         </select>
@@ -1877,7 +1878,7 @@ export default function MessagesPage() {
                       <option value="">Select a location</option>
                       {barberLocations.map((loc) => (
                         <option key={loc.id} value={loc.name}>
-                          {loc.name}
+                          {loc.name}{loc.is_primary ? ' (Primary)' : ''}
                         </option>
                       ))}
                     </select>

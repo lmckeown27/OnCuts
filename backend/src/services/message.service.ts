@@ -64,6 +64,7 @@ class MessageService {
           c.consumer_name as conv_consumer_name,
           -- Fallback to linked booking if exists
           b.id as booking_id_ref,
+          b."barberId" as booking_barber_id,
           b."serviceType" as booking_service_type,
           b."priceUsdCents" as booking_price_cents,
           b."requestedAt" as booking_scheduled_time,
@@ -128,7 +129,8 @@ class MessageService {
         // Booking details - prefer conversation context, fallback to linked booking
         booking: (conv.conv_service_name || conv.booking_id_ref) ? {
           id: conv.booking_id_ref || null,
-          barberId: conv.barber_id || null, // Include barber ID for availability lookups
+          // Use booking's barberId first (from bookings table), fallback to other user's barber profile
+          barberId: conv.booking_barber_id || conv.barber_id || null,
           serviceName: conv.conv_service_name || conv.booking_service_type || 'Service',
           servicePrice: conv.conv_service_price ? parseFloat(conv.conv_service_price) : 
                        (conv.booking_price_cents ? (conv.booking_price_cents / 100) : null),
