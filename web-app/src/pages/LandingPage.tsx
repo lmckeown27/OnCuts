@@ -1000,7 +1000,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You pay after your haircut is complete. Once the barber marks the service as done, you'll see a payment prompt. Pay securely with card, Apple Pay, or Google Pay—and add a tip if you'd like (15%, 20%, or 25%).</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You pay after your haircut is complete. Once the barber marks the service as done, you'll see a payment prompt. Pay securely with card, Apple Pay, or Google Pay and add a tip if you'd like (15%, 20%, or 25%).</p>
                     </div>
                   </div>
                 </div>
@@ -1015,7 +1015,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You choose the location when booking—your dorm, apartment, or a common area on campus. Enter your preferred spot, and the barber will come to you.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You choose from the barber's available service locations when booking. These could be on-campus spots, dorms, or other areas. Select your preferred location from the options provided.</p>
                     </div>
                   </div>
                 </div>
@@ -1030,7 +1030,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can edit the time, date, or location, or cancel entirely—just do it before the barber marks the service as complete. Find these options in your booking details.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can edit the time, date, or location, or cancel entirely. Just do it before the barber marks the service as complete. Find these options in your booking details.</p>
                     </div>
                   </div>
                 </div>
@@ -1045,7 +1045,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Use the in-app messaging feature to chat directly with your barber. Coordinate details, share reference photos, or ask questions—all in one place.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Use the in-app messaging feature to chat directly with your barber. Coordinate details, share reference photos, or ask questions all in one place.</p>
                     </div>
                   </div>
                 </div>
@@ -1083,7 +1083,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 85% of every payment, plus 100% of tips. We only take a 15% platform fee—way less than the 40-60% traditional barbershops take.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 85% of every payment, plus 100% of tips. We only take a 15% platform fee, way less than the 40-60% traditional barbershops take.</p>
                     </div>
                   </div>
                 </div>
@@ -1098,7 +1098,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">After you complete a haircut, mark the booking as "Complete." The customer pays through the app, and funds are deposited directly to your connected Stripe account—no chasing payments.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">After you complete a haircut, mark the booking as "Complete." The customer pays through the app, and funds are deposited directly to your connected Stripe account. No chasing payments.</p>
                     </div>
                   </div>
                 </div>
@@ -1113,7 +1113,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile—choose which days and hours you're open for bookings. Customers can only request times you've made available. Update it anytime as your schedule changes.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile by choosing which days and hours you're open for bookings. You can also block specific dates and times for one-time events without affecting your recurring schedule. Customers can only request times you've made available.</p>
                     </div>
                   </div>
                 </div>
