@@ -398,7 +398,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <div className="pb-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50">
+      <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex items-center justify-center min-h-[50vh]">
         <div className="max-w-5xl mx-auto text-center">
           {/* University Selector */}
           <div className="max-w-md mx-auto mb-8">
