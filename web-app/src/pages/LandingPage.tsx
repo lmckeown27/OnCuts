@@ -402,7 +402,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto text-center">
           {/* University Selector */}
           <div className="w-full max-w-2xl mx-auto mb-8">
-            <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+            <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
               <UniversitySelector
                 value={selectedUniversity}
                 onChange={handleUniversitySelect}
