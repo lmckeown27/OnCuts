@@ -2,7 +2,7 @@
  * BookingDetailsModal - In-depth booking details popup for barbers
  * Allows viewing all booking details and editing/cancelling bookings
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
@@ -78,6 +78,9 @@ export default function BookingDetailsModal({
   
   // Store original date parts for smart autocomplete
   const [originalDateParts, setOriginalDateParts] = useState<{ month: number; day: number; year: number } | null>(null);
+  
+  // Barber's weekly availability schedule for time filtering
+  const [weeklySchedule, setWeeklySchedule] = useState<Record<string, { enabled: boolean; intervals: { start: string; end: string }[] }> | null>(null);
 
   // Format date as MM/DD/YYYY
   const formatDateForDisplay = (date: Date): string => {
@@ -180,6 +183,59 @@ export default function BookingDetailsModal({
       });
     }
   }, [booking]);
+
+  // Fetch barber's weekly availability when booking changes
+  useEffect(() => {
+    const fetchBarberAvailability = async () => {
+      // Get barber ID from booking (try recordId first, then barberId)
+      const barberId = booking?.barber?.recordId || booking?.barberId;
+      if (!barberId) return;
+      
+      try {
+        const response = await api.get(`/barbers/${barberId}/availability`);
+        if (response?.weeklySchedule) {
+          setWeeklySchedule(response.weeklySchedule);
+        }
+      } catch (error) {
+        console.error('Failed to fetch barber availability:', error);
+      }
+    };
+    
+    if (booking) {
+      fetchBarberAvailability();
+    }
+  }, [booking]);
+
+  // Compute available time intervals for the selected date based on barber's weekly schedule
+  const availableIntervals = useMemo(() => {
+    if (!weeklySchedule || !editedDate) return undefined;
+    
+    // Parse edited date to get day of week
+    const dateParts = editedDate.split('/').filter(p => p.length > 0);
+    if (dateParts.length < 2) return undefined;
+    
+    const month = parseInt(dateParts[0]);
+    const day = parseInt(dateParts[1]);
+    const year = dateParts.length >= 3 && dateParts[2].length === 4 
+      ? parseInt(dateParts[2]) 
+      : originalDateParts?.year || new Date().getFullYear();
+    
+    if (isNaN(month) || isNaN(day) || isNaN(year)) return undefined;
+    
+    const date = new Date(year, month - 1, day);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    const dayKey = dayNames[date.getDay()];
+    
+    const daySchedule = weeklySchedule[dayKey];
+    if (!daySchedule?.enabled || !daySchedule.intervals || daySchedule.intervals.length === 0) {
+      return []; // No availability for this day
+    }
+    
+    return daySchedule.intervals.map(interval => ({
+      start: interval.start,
+      end: interval.end,
+    }));
+  }, [weeklySchedule, editedDate, originalDateParts]);
 
   // All hooks must be called before any early returns
   const handleSaveChanges = useCallback(async () => {
@@ -429,6 +485,7 @@ export default function BookingDetailsModal({
                   <TimePickerDropdown
                     value={editedTime}
                     onChange={setEditedTime}
+                    availableIntervals={availableIntervals}
                   />
                 </div>
               </div>
@@ -639,12 +696,12 @@ export default function BookingDetailsModal({
                   {/* Complete & Message Buttons */}
                   {canComplete && (
                     <div className="flex gap-3">
-                      <button
-                        onClick={handleCompleteBooking}
+                    <button
+                      onClick={handleCompleteBooking}
                         className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
-                      >
-                        Complete
-                      </button>
+                    >
+                      Complete
+                    </button>
                       <button
                         onClick={() => {
                           if (booking.conversationId) {

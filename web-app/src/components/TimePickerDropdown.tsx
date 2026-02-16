@@ -8,6 +8,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Clock, ChevronDown } from 'lucide-react';
 
+interface TimeInterval {
+  start: string; // HH:MM format (24-hour)
+  end: string;   // HH:MM format (24-hour)
+}
+
 interface TimePickerDropdownProps {
   value: string; // HH:MM format (24-hour)
   onChange: (value: string) => void;
@@ -15,6 +20,7 @@ interface TimePickerDropdownProps {
   disabled?: boolean;
   minTime?: string; // Optional minimum time (HH:MM)
   maxTime?: string; // Optional maximum time (HH:MM)
+  availableIntervals?: TimeInterval[]; // Optional: only show times within these intervals
   className?: string;
 }
 
@@ -67,6 +73,7 @@ export default function TimePickerDropdown({
   disabled = false,
   minTime,
   maxTime,
+  availableIntervals,
   className = '',
 }: TimePickerDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,7 +81,7 @@ export default function TimePickerDropdown({
   const listRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLButtonElement>(null);
 
-  // Filter slots based on min/max time
+  // Filter slots based on min/max time and available intervals
   const filteredSlots = TIME_SLOTS.filter((slot) => {
     const slotMinutes = timeToMinutes(slot.value);
     
@@ -86,6 +93,17 @@ export default function TimePickerDropdown({
     if (maxTime) {
       const maxMinutes = timeToMinutes(maxTime);
       if (slotMinutes > maxMinutes) return false;
+    }
+    
+    // If availableIntervals is provided, only show times within those intervals
+    if (availableIntervals && availableIntervals.length > 0) {
+      const isWithinInterval = availableIntervals.some((interval) => {
+        const startMinutes = timeToMinutes(interval.start);
+        const endMinutes = timeToMinutes(interval.end);
+        // Time slot must be >= start and < end (can start at a time, but end time is exclusive)
+        return slotMinutes >= startMinutes && slotMinutes < endMinutes;
+      });
+      if (!isWithinInterval) return false;
     }
     
     return true;
