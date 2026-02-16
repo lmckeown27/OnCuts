@@ -194,7 +194,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         ORDER BY bsl.is_primary DESC, sl.name ASC`,
         [barber.id]
       );
-
+      
       // Get review stats from bookings (average and count of submitted reviews only)
       const reviewStatsResult = await pool.query(
         `SELECT 

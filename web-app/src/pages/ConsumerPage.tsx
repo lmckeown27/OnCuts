@@ -1657,7 +1657,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                                   />
                                                 );
                                               })}
-                                            </div>
+              </div>
                                             <span className="text-xs font-semibold text-amber-700">
                                               {(selectedBarber.average_rating ?? 0).toFixed(1)} ({selectedBarber.review_count})
                                             </span>
