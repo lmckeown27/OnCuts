@@ -71,6 +71,10 @@ export default function BookingDetailsModal({
     setTimeout(() => {
       onClose();
       setIsClosing(false);
+      // Reset to details view so modal opens in default state next time
+      setIsEditing(false);
+      setIsDeleting(false);
+      setIsRemoving(false);
     }, 200);
   }, [isClosing, onClose]);
   
