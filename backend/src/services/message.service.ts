@@ -14,6 +14,7 @@ import { pool } from '../database/connection';
 import { redisGet, redisSet, redisDel, generateCacheKey, CACHE_TTL } from '../config/redis';
 import pushNotificationService from './pushNotification.service';
 import notificationService from './notification.service';
+import { ApiError } from '../middleware/errorHandler';
 import { 
   sendConsumerNewMessageEmail, 
   sendBarberNewMessageFromConsumerEmail, 
@@ -208,7 +209,7 @@ class MessageService {
       );
 
       if (convCheck.rows.length === 0) {
-        throw new Error('Access denied to this conversation');
+        throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
       const offset = (page - 1) * limit;
@@ -420,7 +421,7 @@ class MessageService {
       );
 
       if (result.rows.length === 0) {
-        throw new Error('Conversation not found or access denied');
+        throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
       return {
@@ -454,7 +455,7 @@ class MessageService {
       );
 
       if (convCheck.rows.length === 0) {
-        throw new Error('Access denied to this conversation');
+        throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
       const conversation = convCheck.rows[0];
@@ -734,7 +735,7 @@ class MessageService {
       );
 
       if (convCheck.rows.length === 0) {
-        throw new Error('Access denied to this conversation');
+        throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
       const result = await pool.query(
@@ -777,7 +778,7 @@ class MessageService {
       );
 
       if (convCheck.rows.length === 0) {
-        throw new Error('Access denied to this conversation');
+        throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
       const { user1_id, user2_id } = convCheck.rows[0];
