@@ -167,6 +167,32 @@ export default function ConsumerBookingStatusPage() {
     };
   }, [user?.id, navigate, platformPrefix]);
 
+  // WebSocket: Listen for booking status changes (e.g., barber undoes completion)
+  useEffect(() => {
+    if (!user || !booking) return;
+
+    const handleStatusChanged = (data: {
+      bookingId: string;
+      status: string;
+      message?: string;
+    }) => {
+      console.log('Received booking-status-changed event:', data);
+      
+      // Check if this is for the current booking
+      if (data.bookingId === booking.id) {
+        // Refresh booking data to get the updated status
+        toast.success(data.message || 'Booking status updated');
+        fetchActiveBooking();
+      }
+    };
+
+    socketService.onBookingStatusChanged(handleStatusChanged);
+
+    return () => {
+      socketService.offBookingStatusChanged(handleStatusChanged);
+    };
+  }, [user?.id, booking?.id]);
+
   // Lock body scroll when profile editor is open (must be before any early returns)
   useBodyScrollLock(showProfileEditor);
 
