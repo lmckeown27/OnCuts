@@ -1348,10 +1348,10 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 
     const booking = bookingCheck.rows[0];
 
-    if (booking.status !== 'ACCEPTED') {
+    if (booking.status !== 'ACCEPTED' && booking.status !== 'COMPLETED') {
       return res.status(400).json({
         success: false,
-        error: 'Can only pay for accepted bookings'
+        error: 'Can only pay for accepted or completed bookings'
       });
     }
 
