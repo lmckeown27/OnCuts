@@ -945,10 +945,11 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
       });
     }
 
-    // Revert booking status back to ACCEPTED
+    // Revert booking status back to ACCEPTED and clear paymentRequestedAt
     const result = await pool.query(
       `UPDATE bookings 
        SET status = 'ACCEPTED', 
+           "paymentRequestedAt" = NULL,
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING id, status`,
@@ -960,7 +961,7 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
       `UPDATE conversations SET is_active = true WHERE booking_id = $1`,
       [id]
     );
-    logger.info(`Reactivated conversation for booking ${id}`);
+    logger.info(`Reactivated conversation for booking ${id}, cleared paymentRequestedAt`);
 
     logger.info(`Booking ${id} reverted from COMPLETED to ACCEPTED by barber ${userId}`);
 
