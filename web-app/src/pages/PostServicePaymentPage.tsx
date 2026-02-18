@@ -558,6 +558,16 @@ export default function PostServicePaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
   const [isUndoing, setIsUndoing] = useState(false);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  // Redirect to login if not authenticated (security: require identity verification)
+  useEffect(() => {
+    if (!isAuthLoading && !user) {
+      // Save the current URL to redirect back after login
+      const returnUrl = encodeURIComponent(location.pathname);
+      navigate(`/login?redirect=${returnUrl}`, { replace: true });
+    }
+  }, [isAuthLoading, user, location.pathname, navigate]);
 
   // Handle undo completion (for barbers who accidentally pressed complete)
   const handleUndoComplete = async () => {
@@ -591,8 +601,10 @@ export default function PostServicePaymentPage() {
   });
 
   useEffect(() => {
-    fetchBooking();
-  }, [bookingId]);
+    if (user) {
+      fetchBooking();
+    }
+  }, [bookingId, user?.id]);
 
   // Listen for payment-received WebSocket event (for barber view)
   useEffect(() => {
@@ -666,9 +678,16 @@ export default function PostServicePaymentPage() {
       return;
     }
 
+    // Don't fetch if not authenticated yet
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get(`/bookings-simple/${bookingId}`);
       setBooking(response.booking || response);
+      setAccessDenied(false);
       
       // If already paid, go to review step
       if (response.booking?.paidAt || response.paidAt) {
@@ -676,7 +695,13 @@ export default function PostServicePaymentPage() {
       }
     } catch (err: any) {
       console.error('Failed to fetch booking:', err);
-      setError(err.message || 'Failed to load booking details');
+      // Check if this is a 404 (access denied or not found)
+      if (err.response?.status === 404 || err.response?.status === 403) {
+        setAccessDenied(true);
+        setError('You don\'t have access to this booking. Please log in with the account that made this booking.');
+      } else {
+        setError(err.message || 'Failed to load booking details');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -720,18 +745,46 @@ export default function PostServicePaymentPage() {
   }
 
   if (error || !booking) {
+    const handleLogoutAndLogin = async () => {
+      // Clear current session and redirect to login with return URL
+      const { logout } = useAuthStore.getState();
+      await logout();
+      const returnUrl = encodeURIComponent(location.pathname);
+      navigate(`/login?redirect=${returnUrl}`, { replace: true });
+    };
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            {accessDenied ? 'Access Denied' : 'Error'}
+          </h2>
           <p className="text-gray-600 mb-6">{error || 'Booking not found'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
-          >
-            Go Back
-          </button>
+          
+          {accessDenied ? (
+            <div className="space-y-3">
+              <button
+                onClick={handleLogoutAndLogin}
+                className="w-full px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                Log in with a different account
+              </button>
+              <button
+                onClick={() => navigate(-1)}
+                className="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate(-1)}
+              className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+            >
+              Go Back
+            </button>
+          )}
         </div>
       </div>
     );

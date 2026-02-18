@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -13,6 +13,7 @@ interface LoginForm {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -49,6 +50,18 @@ export default function LoginPage() {
     try {
       const result = await login(formData.email, formData.password);
       toast.success('Login successful!');
+      
+      // Check for redirect parameter (e.g., from payment link)
+      const redirectUrl = searchParams.get('redirect');
+      if (redirectUrl) {
+        // Decode and navigate to the redirect URL
+        const decodedUrl = decodeURIComponent(redirectUrl);
+        // Security: only allow internal redirects (starting with /)
+        if (decodedUrl.startsWith('/')) {
+          navigate(decodedUrl, { replace: true });
+          return;
+        }
+      }
       
       // Get the user from the store after login to check their role
       const currentUser = useAuthStore.getState().user;
