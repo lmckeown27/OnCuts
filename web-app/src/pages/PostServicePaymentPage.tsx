@@ -709,6 +709,28 @@ export default function PostServicePaymentPage() {
   // Barber View - Waiting for Payment OR Payment Confirmed
   if (isBarber) {
     const isPaid = step === 'review' || step === 'complete' || booking.status === 'PAID';
+    const isCompleted = booking.status === 'COMPLETED';
+    
+    // If booking is not COMPLETED or PAID, barber shouldn't be on this page
+    if (!isPaid && !isCompleted) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+            <AlertCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Service Not Yet Complete</h2>
+            <p className="text-gray-600 mb-6">
+              This booking hasn't been marked as complete yet. Mark it as complete after finishing the service.
+            </p>
+            <button
+              onClick={() => navigate('/web/barber')}
+              className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className="min-h-screen bg-gray-50">
