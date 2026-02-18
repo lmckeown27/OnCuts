@@ -788,18 +788,23 @@ export default function PostServicePaymentPage() {
                 Return to Dashboard
               </button>
             ) : (
-              <button
-                onClick={handleUndoComplete}
-                disabled={isUndoing}
-                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {isUndoing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Undo2 className="w-5 h-5" />
-                )}
-                {isUndoing ? 'Reverting...' : 'Undo Completion'}
-              </button>
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500">
+                  Didn't mean to mark this service as complete?
+                </p>
+                <button
+                  onClick={handleUndoComplete}
+                  disabled={isUndoing}
+                  className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isUndoing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Undo2 className="w-5 h-5" />
+                  )}
+                  {isUndoing ? 'Reverting...' : 'Undo Completion'}
+                </button>
+              </div>
             )}
           </div>
         </div>
