@@ -12,7 +12,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, Check, Clock, DollarSign, User, Calendar,
-  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Banknote
+  MapPin, ArrowLeft, Star, AlertCircle, Loader2, Banknote, Undo2
 } from 'lucide-react';
 import api from '../services/api.service';
 import { useAuthStore } from '../store/useAuthStore';
@@ -557,6 +557,24 @@ export default function PostServicePaymentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'payment' | 'review' | 'complete'>('payment');
+  const [isUndoing, setIsUndoing] = useState(false);
+
+  // Handle undo completion (for barbers who accidentally pressed complete)
+  const handleUndoComplete = async () => {
+    if (!bookingId || isUndoing) return;
+    
+    setIsUndoing(true);
+    try {
+      await api.put(`/bookings-simple/${bookingId}/undo-complete`);
+      toast.success('Completion undone. Booking returned to active status.');
+      navigate('/web/barber');
+    } catch (err: any) {
+      console.error('Error undoing completion:', err);
+      toast.error(err.response?.data?.error || 'Failed to undo completion');
+    } finally {
+      setIsUndoing(false);
+    }
+  };
 
   // Check if current user is barber or consumer for this booking
   // Use ID matching - this is the most reliable way since a user can be both barber and consumer
@@ -762,12 +780,25 @@ export default function PostServicePaymentPage() {
               )}
             </div>
 
-            {isPaid && (
+            {isPaid ? (
               <button
                 onClick={() => navigate('/web/barber')}
                 className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
               >
                 Return to Dashboard
+              </button>
+            ) : (
+              <button
+                onClick={handleUndoComplete}
+                disabled={isUndoing}
+                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isUndoing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Undo2 className="w-5 h-5" />
+                )}
+                {isUndoing ? 'Reverting...' : 'Undo Completion'}
               </button>
             )}
           </div>

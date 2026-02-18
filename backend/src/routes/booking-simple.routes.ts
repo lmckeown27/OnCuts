@@ -888,6 +888,78 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
 });
 
 /**
+ * PUT /api/v1/bookings-simple/:id/undo-complete
+ * Revert a booking from COMPLETED back to ACCEPTED
+ * Only the barber can undo completion, and only if payment hasn't been made yet
+ */
+router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    // Verify user is the barber for this booking
+    const barberCheck = await pool.query(
+      `SELECT b.id, b.status, b."consumerId",
+              barber."userId" as barber_user_id,
+              consumer.first_name || ' ' || consumer.last_name as consumer_name
+       FROM bookings b
+       JOIN barbers barber ON b."barberId" = barber.id
+       JOIN users consumer ON b."consumerId" = consumer.id
+       WHERE b.id = $1 AND barber."userId" = $2`,
+      [id, userId]
+    );
+
+    if (barberCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Only the barber can undo completion of this booking' 
+      });
+    }
+
+    const booking = barberCheck.rows[0];
+
+    // Only allow undo if status is COMPLETED (not yet paid)
+    if (booking.status !== 'COMPLETED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Cannot undo completion. Booking status is ${booking.status}, expected COMPLETED.` 
+      });
+    }
+
+    // Revert booking status back to ACCEPTED
+    const result = await pool.query(
+      `UPDATE bookings 
+       SET status = 'ACCEPTED', 
+           "updatedAt" = CURRENT_TIMESTAMP
+       WHERE id = $1
+       RETURNING id, status`,
+      [id]
+    );
+
+    logger.info(`Booking ${id} reverted from COMPLETED to ACCEPTED by barber ${userId}`);
+
+    // Notify consumer that the completion was undone
+    const io = getSocketIO();
+    if (io) {
+      io.to(`user-${booking.consumerId}`).emit('booking-status-changed', {
+        bookingId: id,
+        status: 'ACCEPTED',
+        message: 'The barber has reverted the service completion.',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { booking: result.rows[0] },
+      message: 'Booking completion undone. Status reverted to ACCEPTED.',
+    });
+  } catch (error: any) {
+    logger.error('Error undoing booking completion:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * GET /api/v1/bookings-simple
  * Get bookings for the authenticated user (barber or consumer)
  * Query params:
