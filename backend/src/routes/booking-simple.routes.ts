@@ -1228,16 +1228,23 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       });
     }
 
-    // Update booking with payment_requested_at timestamp
+    // Update booking with payment_requested_at timestamp and set status to COMPLETED
     await pool.query(
       `UPDATE bookings 
-       SET "paymentRequestedAt" = CURRENT_TIMESTAMP, 
+       SET status = 'COMPLETED',
+           "paymentRequestedAt" = CURRENT_TIMESTAMP, 
            "updatedAt" = CURRENT_TIMESTAMP
        WHERE id = $1`,
       [id]
     );
 
-    logger.info(`Payment requested for booking ${id} by barber ${userId}`);
+    // Mark conversation as inactive (allows undo if barber made a mistake)
+    await pool.query(
+      `UPDATE conversations SET is_active = false WHERE booking_id = $1`,
+      [id]
+    );
+
+    logger.info(`Payment requested for booking ${id} by barber ${userId}, status set to COMPLETED`);
 
     // Send notification to consumer
     try {
