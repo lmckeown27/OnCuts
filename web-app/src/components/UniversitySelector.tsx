@@ -227,7 +227,7 @@ export default function UniversitySelector({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 pl-4 pr-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-base"
+          className="flex-1 pl-4 pr-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-sm sm:text-base"
           readOnly={!!value}
           onClick={() => {
             if (value) {
