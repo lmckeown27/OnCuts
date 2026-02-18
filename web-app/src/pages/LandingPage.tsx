@@ -399,9 +399,9 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex items-center justify-center min-h-[50vh]">
-        <div className="max-w-5xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center">
           {/* University Selector */}
-          <div className="w-full max-w-4xl mx-auto mb-8">
+          <div className="w-full max-w-5xl mx-auto mb-8">
             <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
               <UniversitySelector
                 value={selectedUniversity}
