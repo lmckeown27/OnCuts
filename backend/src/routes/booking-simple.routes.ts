@@ -788,19 +788,13 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Delete the conversation and its messages when booking is completed
-    // First delete messages (due to foreign key constraint)
+    // Mark conversation as inactive (don't delete yet - allows undo if barber made a mistake)
+    // Conversations will be cleaned up after payment is confirmed
     await pool.query(
-      `DELETE FROM messages 
-       WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+      `UPDATE conversations SET is_active = false WHERE booking_id = $1`,
       [id]
     );
-    // Then delete the conversation
-    await pool.query(
-      `DELETE FROM conversations WHERE booking_id = $1`,
-      [id]
-    );
-    logger.info(`Deleted conversation for completed booking ${id}`);
+    logger.info(`Marked conversation as inactive for completed booking ${id}`);
 
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
@@ -960,6 +954,13 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
        RETURNING id, status`,
       [id]
     );
+
+    // Reactivate the conversation (it was marked inactive on completion)
+    await pool.query(
+      `UPDATE conversations SET is_active = true WHERE booking_id = $1`,
+      [id]
+    );
+    logger.info(`Reactivated conversation for booking ${id}`);
 
     logger.info(`Booking ${id} reverted from COMPLETED to ACCEPTED by barber ${userId}`);
 
