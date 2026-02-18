@@ -248,20 +248,26 @@ export default function ConsumerBookingStatusPage() {
 
   const fetchActiveBooking = async () => {
     try {
-      // Fetch consumer's active bookings (PENDING or ACCEPTED)
+      // Fetch consumer's active bookings (PENDING, ACCEPTED, or COMPLETED awaiting payment)
       // Add timestamp to bust cache after edits
       const response = await api.get('/bookings-simple', { 
         role: 'consumer',
-        status: 'PENDING,ACCEPTED',
+        status: 'PENDING,ACCEPTED,COMPLETED',
         _t: Date.now() // Cache buster
       });
       
       const bookings = response.bookings || [];
       
-      // Get the most recent active booking
+      // Get the most recent active booking (prioritize COMPLETED awaiting payment, then ACCEPTED, then PENDING)
       const activeBooking = bookings
-        .filter((b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED')
-        .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+        .filter((b: any) => b.status === 'PENDING' || b.status === 'ACCEPTED' || b.status === 'COMPLETED')
+        .sort((a: any, b: any) => {
+          // Prioritize COMPLETED (awaiting payment) over ACCEPTED over PENDING
+          const statusPriority: Record<string, number> = { 'COMPLETED': 0, 'ACCEPTED': 1, 'PENDING': 2 };
+          const priorityDiff = (statusPriority[a.status] || 3) - (statusPriority[b.status] || 3);
+          if (priorityDiff !== 0) return priorityDiff;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })[0];
       
       if (activeBooking) {
         // Fetch notifications to check for booking updates
@@ -710,13 +716,16 @@ export default function ConsumerBookingStatusPage() {
 
         {/* Payment Required Alert */}
         {(() => {
-          // Check if payment is required: barber requested OR 15 mins past scheduled time
+          // Check if payment is required:
+          // - Status is COMPLETED (barber marked service complete) and not paid
+          // - OR status is ACCEPTED and (payment requested OR 15 mins past scheduled time)
           const scheduledDate = new Date(booking.scheduledTime);
           const fifteenMinsAfter = new Date(scheduledDate.getTime() + 15 * 60 * 1000);
           const now = new Date();
-          const isPaymentRequired = booking.status === 'ACCEPTED' && 
-            !booking.paidAt && 
-            (booking.paymentRequestedAt || now >= fifteenMinsAfter);
+          const isPaymentRequired = !booking.paidAt && (
+            booking.status === 'COMPLETED' ||
+            (booking.status === 'ACCEPTED' && (booking.paymentRequestedAt || now >= fifteenMinsAfter))
+          );
           
           if (!isPaymentRequired) return null;
           
@@ -725,7 +734,7 @@ export default function ConsumerBookingStatusPage() {
               <div className="flex flex-col items-center text-center">
                 <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
                 <p className="text-gray-600 text-sm mb-4">
-                  {booking.paymentRequestedAt 
+                  {(booking.status === 'COMPLETED' || booking.paymentRequestedAt)
                     ? `${booking.barberName} has marked your service as complete. Please complete your payment.`
                     : `Your appointment time has passed. Please complete your payment to ${booking.barberName}.`
                   }
