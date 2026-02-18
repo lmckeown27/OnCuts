@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { 
@@ -550,7 +550,6 @@ function ReviewForm({
 export default function PostServicePaymentPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, isLoading: isAuthLoading } = useAuthStore();
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
@@ -563,11 +562,10 @@ export default function PostServicePaymentPage() {
   // Redirect to login if not authenticated (security: require identity verification)
   useEffect(() => {
     if (!isAuthLoading && !user) {
-      // Save the current URL to redirect back after login
-      const returnUrl = encodeURIComponent(location.pathname);
-      navigate(`/web/auth?redirect=${returnUrl}`, { replace: true });
+      // Redirect to universal auth page - system will route user after login
+      navigate('/web', { replace: true });
     }
-  }, [isAuthLoading, user, location.pathname, navigate]);
+  }, [isAuthLoading, user, navigate]);
 
   // Handle undo completion (for barbers who accidentally pressed complete)
   const handleUndoComplete = async () => {
@@ -746,11 +744,10 @@ export default function PostServicePaymentPage() {
 
   if (error || !booking) {
     const handleLogoutAndLogin = async () => {
-      // Clear current session and redirect to login with return URL
+      // Clear current session and redirect to login
       const { logout } = useAuthStore.getState();
       await logout();
-      const returnUrl = encodeURIComponent(location.pathname);
-      navigate(`/web/auth?redirect=${returnUrl}`, { replace: true });
+      navigate('/web', { replace: true });
     };
 
     return (

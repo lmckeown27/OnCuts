@@ -346,10 +346,37 @@ export default function AuthPage() {
         }
       }
       
-      // Default redirect based on user role
+      // Get the user from the store after login
       const currentUser = useAuthStore.getState().user;
       
-      // Redirect based on user role
+      // For consumers, check if they have a pending payment
+      if (currentUser?.user_type !== 'barber' && !result.isAdmin && !result.isCampusManager) {
+        try {
+          // Import api service dynamically to check for pending payments
+          const api = (await import('../services/api.service')).default;
+          const response = await api.get('/bookings-simple', { 
+            role: 'consumer',
+            status: 'COMPLETED'
+          });
+          
+          const completedBookings = response.bookings || [];
+          // Find a booking that's COMPLETED but not paid
+          const pendingPayment = completedBookings.find((b: any) => 
+            b.status === 'COMPLETED' && !b.paidAt
+          );
+          
+          if (pendingPayment) {
+            // Redirect consumer to payment page
+            navigate(`/web/payment/${pendingPayment.id}`);
+            return;
+          }
+        } catch (err) {
+          console.error('Error checking for pending payments:', err);
+          // Continue to default redirect if check fails
+        }
+      }
+      
+      // Default redirect based on user role
       if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
         navigate('/web/barber');
       } else {
