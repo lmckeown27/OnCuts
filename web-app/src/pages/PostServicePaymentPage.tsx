@@ -565,7 +565,7 @@ export default function PostServicePaymentPage() {
     if (!isAuthLoading && !user) {
       // Save the current URL to redirect back after login
       const returnUrl = encodeURIComponent(location.pathname);
-      navigate(`/login?redirect=${returnUrl}`, { replace: true });
+      navigate(`/web/auth?redirect=${returnUrl}`, { replace: true });
     }
   }, [isAuthLoading, user, location.pathname, navigate]);
 
@@ -750,7 +750,7 @@ export default function PostServicePaymentPage() {
       const { logout } = useAuthStore.getState();
       await logout();
       const returnUrl = encodeURIComponent(location.pathname);
-      navigate(`/login?redirect=${returnUrl}`, { replace: true });
+      navigate(`/web/auth?redirect=${returnUrl}`, { replace: true });
     };
 
     return (
