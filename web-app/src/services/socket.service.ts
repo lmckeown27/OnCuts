@@ -198,6 +198,19 @@ class SocketService {
     this.off('payment-received', handler);
   }
 
+  // Booking status change methods (for consumers - when barber undoes completion)
+  onBookingStatusChanged(handler: (data: {
+    bookingId: string;
+    status: string;
+    message?: string;
+  }) => void): void {
+    this.on('booking-status-changed', handler);
+  }
+
+  offBookingStatusChanged(handler?: (data: any) => void): void {
+    this.off('booking-status-changed', handler);
+  }
+
   // Notification methods
   onNotification(handler: (notification: any) => void): void {
     this.on('notification', handler);

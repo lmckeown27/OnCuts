@@ -628,6 +628,37 @@ export default function PostServicePaymentPage() {
     };
   }, [bookingId]);
 
+  // Listen for booking-status-changed WebSocket event (for consumer view - when barber undoes completion)
+  useEffect(() => {
+    if (!bookingId) return;
+
+    const handleStatusChanged = (data: {
+      bookingId: string;
+      status: string;
+      message?: string;
+    }) => {
+      console.log('📬 Booking status changed WebSocket event:', data);
+      
+      // Check if this is for the current booking
+      if (data.bookingId === bookingId) {
+        // If barber reverted completion, redirect consumer back to messages or home
+        if (data.status === 'ACCEPTED') {
+          toast.success('The barber has reverted the service completion. Please wait for them to mark it complete when finished.');
+          navigate('/web/consumer');
+        } else {
+          // For other status changes, just refresh the booking
+          fetchBooking();
+        }
+      }
+    };
+
+    socketService.onBookingStatusChanged(handleStatusChanged);
+
+    return () => {
+      socketService.offBookingStatusChanged(handleStatusChanged);
+    };
+  }, [bookingId, navigate]);
+
   const fetchBooking = async () => {
     if (!bookingId) {
       setError('Invalid booking');
