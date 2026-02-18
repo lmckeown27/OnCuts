@@ -227,7 +227,7 @@ export default function UniversitySelector({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 pl-4 pr-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-sm sm:text-base"
+          className="flex-1 pl-4 pr-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-base"
           readOnly={!!value}
           onClick={() => {
             if (value) {
@@ -247,13 +247,26 @@ export default function UniversitySelector({
             <X className="w-5 h-5" />
           </button>
         ) : (
-          <div className="pr-4 text-gray-400">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isOpen) {
+                setIsOpen(false);
+                inputRef.current?.blur();
+              } else {
+                setIsOpen(true);
+                inputRef.current?.focus();
+              }
+            }}
+            className="pr-4 pl-2 py-3 text-gray-400 hover:text-gray-600 transition-colors"
+          >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <ChevronDown className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             )}
-          </div>
+          </button>
         )}
       </div>
 
