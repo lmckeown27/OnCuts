@@ -918,11 +918,36 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
 
     const booking = barberCheck.rows[0];
 
+    logger.info(`[UNDO-COMPLETE] Booking ${id} current status: ${booking.status}`);
+
     // Only allow undo if status is COMPLETED (not yet paid)
+    // Also block if already PAID, CANCELLED, or REJECTED
+    if (booking.status === 'PAID') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot undo completion. The customer has already paid for this service.' 
+      });
+    }
+    
+    if (booking.status === 'CANCELLED' || booking.status === 'REJECTED') {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Cannot undo completion. Booking was ${booking.status.toLowerCase()}.` 
+      });
+    }
+    
+    if (booking.status === 'ACCEPTED' || booking.status === 'PENDING') {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'This booking has not been marked as complete yet.' 
+      });
+    }
+    
+    // Only proceed if status is COMPLETED
     if (booking.status !== 'COMPLETED') {
       return res.status(400).json({ 
         success: false, 
-        error: `Cannot undo completion. Booking status is ${booking.status}, expected COMPLETED.` 
+        error: `Cannot undo completion. Unexpected booking status: ${booking.status}` 
       });
     }
 
