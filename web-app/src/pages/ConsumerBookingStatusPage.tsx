@@ -171,6 +171,9 @@ export default function ConsumerBookingStatusPage() {
   useEffect(() => {
     if (!user || !booking) return;
 
+    // Ensure socket is connected
+    socketService.connect();
+
     const handleStatusChanged = (data: {
       bookingId: string;
       status: string;

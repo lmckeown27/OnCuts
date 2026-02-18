@@ -966,11 +966,14 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
     // Notify consumer that the completion was undone
     const io = getSocketIO();
     if (io) {
+      logger.info(`[UNDO-COMPLETE] Emitting booking-status-changed to user-${booking.consumerId} for booking ${id}`);
       io.to(`user-${booking.consumerId}`).emit('booking-status-changed', {
         bookingId: id,
         status: 'ACCEPTED',
         message: 'The barber has reverted the service completion.',
       });
+    } else {
+      logger.warn(`[UNDO-COMPLETE] Socket.IO not available, could not notify consumer ${booking.consumerId}`);
     }
 
     res.json({
