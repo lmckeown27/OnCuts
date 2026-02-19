@@ -35,5 +35,8 @@ router.get('/audit-logs', authenticate, adminController.getAuditLogs);
 // Treasury Stats
 router.get('/treasury', authenticate, adminController.getTreasuryStats);
 
+// Platform Stats (total users, bookings, etc.)
+router.get('/stats', authenticate, adminController.getPlatformStats);
+
 export default router;
 

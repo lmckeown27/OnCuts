@@ -465,3 +465,44 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+/**
+ * Get platform stats (total users, etc.)
+ * GET /api/admin/stats
+ */
+export const getPlatformStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Verify admin role
+    if (req.user!.role !== 'admin') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get total users count
+    const usersResult = await pool.query('SELECT COUNT(*) FROM users');
+    const totalUsers = parseInt(usersResult.rows[0].count);
+
+    // Get total bookings count
+    const bookingsResult = await pool.query('SELECT COUNT(*) FROM bookings');
+    const totalBookings = parseInt(bookingsResult.rows[0].count);
+
+    // Get total barbers count
+    const barbersResult = await pool.query('SELECT COUNT(*) FROM barbers WHERE "isActive" = true');
+    const totalBarbers = parseInt(barbersResult.rows[0].count);
+
+    // Get total campuses count
+    const campusesResult = await pool.query('SELECT COUNT(*) FROM campuses');
+    const totalCampuses = parseInt(campusesResult.rows[0].count);
+
+    res.json({
+      success: true,
+      data: {
+        total_users: totalUsers,
+        total_bookings: totalBookings,
+        total_barbers: totalBarbers,
+        total_campuses: totalCampuses,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

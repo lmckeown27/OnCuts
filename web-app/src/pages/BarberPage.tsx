@@ -353,12 +353,9 @@ export default function BarberPage() {
     const fetchPlatformStats = async () => {
       if (!isAdmin) return;
       try {
-        // Use the API_BASE_URL but go up one level since /health is at root, not /api/v1
-        const healthUrl = API_BASE_URL.replace('/api/v1', '') + '/health';
-        const response = await fetch(healthUrl);
-        const data = await response.json();
-        if (data.stats?.total_users) {
-          setTotalPlatformUsers(data.stats.total_users);
+        const response = await api.get('/admin/stats');
+        if (response.success && response.data?.total_users) {
+          setTotalPlatformUsers(response.data.total_users);
         }
       } catch (error) {
         console.error('Failed to fetch platform stats:', error);
