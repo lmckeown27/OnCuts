@@ -2,9 +2,9 @@
  * Barber Dashboard Page - Version 4.0 (Cache Buster)
  * Last updated: 2025-12-18 00:15:00
  */
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -318,6 +318,7 @@ export default function BarberPage() {
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const campusSelectorRef = useRef<HTMLDivElement>(null);
   const [totalPlatformUsers, setTotalPlatformUsers] = useState<number | null>(null);
+  const [isLoadingPlatformStats, setIsLoadingPlatformStats] = useState(false);
 
   // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
   // For admins, use the selected campus (or first available campus)
@@ -349,26 +350,30 @@ export default function BarberPage() {
   }, [isAdmin, user?.campus_id]);
 
   // Fetch total platform users for admin view
-  useEffect(() => {
-    const fetchPlatformStats = async () => {
-      if (!isAdmin) return;
-      try {
-        // Admin routes are at /api/admin, not /api/v1/admin
-        const token = localStorage.getItem('accessToken');
-        const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
-        const response = await fetch(`${adminApiUrl}/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (data.success && data.data?.total_users) {
-          setTotalPlatformUsers(data.data.total_users);
-        }
-      } catch (error) {
-        console.error('Failed to fetch platform stats:', error);
+  const fetchPlatformStats = useCallback(async () => {
+    if (!isAdmin) return;
+    setIsLoadingPlatformStats(true);
+    try {
+      // Admin routes are at /api/admin, not /api/v1/admin
+      const token = localStorage.getItem('accessToken');
+      const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
+      const response = await fetch(`${adminApiUrl}/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.success && data.data?.total_users) {
+        setTotalPlatformUsers(data.data.total_users);
       }
-    };
-    fetchPlatformStats();
+    } catch (error) {
+      console.error('Failed to fetch platform stats:', error);
+    } finally {
+      setIsLoadingPlatformStats(false);
+    }
   }, [isAdmin]);
+
+  useEffect(() => {
+    fetchPlatformStats();
+  }, [fetchPlatformStats]);
 
   // Close campus selector when clicking outside
   useEffect(() => {
@@ -785,9 +790,17 @@ export default function BarberPage() {
                       </div>
                       {/* Total Platform Users - Admin Only */}
                       {totalPlatformUsers !== null && (
-                        <div className="text-sm text-gray-600">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
-                          <span className="ml-1">total users</span>
+                          <span>total users</span>
+                          <button
+                            onClick={fetchPlatformStats}
+                            disabled={isLoadingPlatformStats}
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+                            title="Refresh user count"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
+                          </button>
                         </div>
                       )}
                     </div>
