@@ -353,9 +353,15 @@ export default function BarberPage() {
     const fetchPlatformStats = async () => {
       if (!isAdmin) return;
       try {
-        const response = await api.get('/admin/stats');
-        if (response.success && response.data?.total_users) {
-          setTotalPlatformUsers(response.data.total_users);
+        // Admin routes are at /api/admin, not /api/v1/admin
+        const token = localStorage.getItem('accessToken');
+        const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
+        const response = await fetch(`${adminApiUrl}/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success && data.data?.total_users) {
+          setTotalPlatformUsers(data.data.total_users);
         }
       } catch (error) {
         console.error('Failed to fetch platform stats:', error);
