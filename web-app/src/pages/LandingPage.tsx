@@ -70,7 +70,7 @@ export default function LandingPage() {
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
   
   // Viewport detection for responsive layout
-  const { isMobile, isMobilePortrait, viewport } = useViewport();
+  const { isMobile, isMobilePortrait, isMd, viewport } = useViewport();
   
   // Handle university selection - save to localStorage and navigate to consumer page
   const handleUniversitySelect = useCallback((university: University | null) => {
@@ -112,12 +112,13 @@ export default function LandingPage() {
     }
   };
   
-  // Close mobile menu when viewport changes to desktop
+  // Close mobile menu when viewport changes to desktop (md breakpoint = 768px)
+  // Use isMd check since hamburger is visible via md:hidden (< 768px)
   useEffect(() => {
-    if (!isMobile && mobileMenuOpen) {
+    if (isMd && mobileMenuOpen) {
       closeMobileMenu();
     }
-  }, [isMobile, mobileMenuOpen]);
+  }, [isMd, mobileMenuOpen]);
 
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
