@@ -732,7 +732,7 @@ export default function BarberPage() {
                 {/* Campus Selector for Admins */}
                 {isAdmin && allCampuses.length > 0 && (
                   <div className="mt-2 relative" ref={campusSelectorRef}>
-                    <div className="relative">
+                    <div className="relative max-w-xs">
                       <input
                         type="text"
                         value={showCampusSelector ? campusSearchQuery : (campusName || '')}
@@ -755,7 +755,7 @@ export default function BarberPage() {
                           }, 150);
                         }}
                         placeholder="Search campuses..."
-                        className="w-full max-w-xs text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                        className="w-full text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
                       />
                       <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusSelector ? 'rotate-180' : ''}`} />
                     </div>
