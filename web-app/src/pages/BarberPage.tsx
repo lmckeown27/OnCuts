@@ -317,6 +317,7 @@ export default function BarberPage() {
   const [showCampusSelector, setShowCampusSelector] = useState(false);
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const campusSelectorRef = useRef<HTMLDivElement>(null);
+  const [totalPlatformUsers, setTotalPlatformUsers] = useState<number | null>(null);
 
   // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
   // For admins, use the selected campus (or first available campus)
@@ -346,6 +347,23 @@ export default function BarberPage() {
     };
     fetchCampuses();
   }, [isAdmin, user?.campus_id]);
+
+  // Fetch total platform users for admin view
+  useEffect(() => {
+    const fetchPlatformStats = async () => {
+      if (!isAdmin) return;
+      try {
+        const response = await fetch('/health');
+        const data = await response.json();
+        if (data.stats?.total_users) {
+          setTotalPlatformUsers(data.stats.total_users);
+        }
+      } catch (error) {
+        console.error('Failed to fetch platform stats:', error);
+      }
+    };
+    fetchPlatformStats();
+  }, [isAdmin]);
 
   // Close campus selector when clicking outside
   useEffect(() => {
@@ -732,32 +750,41 @@ export default function BarberPage() {
                 {/* Campus Selector for Admins */}
                 {isAdmin && allCampuses.length > 0 && (
                   <div className="mt-2 relative" ref={campusSelectorRef}>
-                    <div className="relative max-w-xs">
-                      <input
-                        type="text"
-                        value={showCampusSelector ? campusSearchQuery : (campusName || '')}
-                        onChange={(e) => {
-                          setCampusSearchQuery(e.target.value);
-                          if (!showCampusSelector) setShowCampusSelector(true);
-                        }}
-                        onFocus={() => {
-                          setShowCampusSelector(true);
-                          setCampusSearchQuery('');
-                        }}
-                        onBlur={(e) => {
-                          // Delay to allow click on dropdown items to register first
-                          setTimeout(() => {
-                            // Only close if focus moved outside the selector container
-                            if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
-                              setShowCampusSelector(false);
-                              setCampusSearchQuery('');
-                            }
-                          }, 150);
-                        }}
-                        placeholder="Search campuses..."
-                        className="w-full text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
-                      />
-                      <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusSelector ? 'rotate-180' : ''}`} />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="relative max-w-xs">
+                        <input
+                          type="text"
+                          value={showCampusSelector ? campusSearchQuery : (campusName || '')}
+                          onChange={(e) => {
+                            setCampusSearchQuery(e.target.value);
+                            if (!showCampusSelector) setShowCampusSelector(true);
+                          }}
+                          onFocus={() => {
+                            setShowCampusSelector(true);
+                            setCampusSearchQuery('');
+                          }}
+                          onBlur={(e) => {
+                            // Delay to allow click on dropdown items to register first
+                            setTimeout(() => {
+                              // Only close if focus moved outside the selector container
+                              if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
+                                setShowCampusSelector(false);
+                                setCampusSearchQuery('');
+                              }
+                            }, 150);
+                          }}
+                          placeholder="Search campuses..."
+                          className="w-full text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                        />
+                        <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusSelector ? 'rotate-180' : ''}`} />
+                      </div>
+                      {/* Total Platform Users - Admin Only */}
+                      {totalPlatformUsers !== null && (
+                        <div className="text-sm text-gray-600">
+                          <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
+                          <span className="ml-1">total users</span>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Campus Dropdown */}
