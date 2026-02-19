@@ -471,8 +471,9 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
  */
 export const getPlatformStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Verify admin role
-    if (req.user!.role !== 'admin') {
+    // Verify admin role (handle both uppercase from DB and lowercase from frontend)
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
       throw new ApiError(403, 'Admin access required');
     }
 
