@@ -82,9 +82,16 @@ export default function ScheduleServicePage() {
   const [locationsLoading, setLocationsLoading] = useState(false);
 
   // Available services based on barber's specialties (fallback to shared config)
-  const availableServices = (Array.isArray(barber?.specialties) && barber.specialties.length > 0)
+  // Filter to only show services that have pricing info (excludes deleted services)
+  const rawServices = (Array.isArray(barber?.specialties) && barber.specialties.length > 0)
     ? barber.specialties 
     : SPECIALTY_OPTIONS;
+  
+  const availableServices = rawServices.filter((service: string) => {
+    // Only show services that have pricing info from this barber
+    if (!barber?.pricing || barber.pricing.length === 0) return true;
+    return barber.pricing.some((p: any) => p.name?.toLowerCase() === service.toLowerCase());
+  });
 
   // Fetch locations when barber is available
   useEffect(() => {
