@@ -275,10 +275,36 @@ router.post('/', authenticate, async (req, res, next) => {
     const consumerName = consumerResult.rows[0]?.name || 'A customer';
     
     const barberUserResult = await pool.query(
-      `SELECT "userId" FROM barbers WHERE id = $1`,
+      `SELECT "userId", b.id as barber_id FROM barbers b WHERE b.id = $1`,
       [barberRecordId]
     );
     const barberUserId = barberUserResult.rows[0]?.userId;
+
+    // Create a conversation linked to the booking with the original service name
+    // This ensures the service name is preserved for display (not the enum value)
+    if (barberUserId) {
+      try {
+        await pool.query(
+          `INSERT INTO conversations (
+            user1_id, user2_id, booking_id, 
+            service_name, service_price, scheduled_time,
+            location, notes, booking_status,
+            is_active, created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ON CONFLICT (booking_id) DO UPDATE SET 
+            service_name = EXCLUDED.service_name,
+            service_price = EXCLUDED.service_price,
+            scheduled_time = EXCLUDED.scheduled_time,
+            location = EXCLUDED.location,
+            notes = EXCLUDED.notes`,
+          [consumerId, barberUserId, booking.id, serviceType, price, requestedTime, location || null, notes || null]
+        );
+        logger.info(`Created conversation for booking ${booking.id} with service name: ${serviceType}`);
+      } catch (convError) {
+        // Non-fatal - conversation can be created later
+        logger.warn(`Failed to create conversation for booking ${booking.id}:`, convError);
+      }
+    }
     
     // Send notification to barber about new booking request
     if (barberUserId) {
