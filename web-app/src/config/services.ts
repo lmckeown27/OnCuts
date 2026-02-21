@@ -38,6 +38,7 @@ export const SERVICE_TYPES: ServiceType[] = [
   { id: 'kids-cut', name: 'Kids Cut', description: 'Haircuts for children', basePrice: 28 },
   { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35 },
   { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Full haircut with fade', basePrice: 35 },
+  { id: 'mullet', name: 'Mullet', description: 'Business in the front, party in the back', basePrice: 35 },
   { id: 'design', name: 'Design/Art', description: 'Hair designs and artwork', basePrice: 38 },
   { id: 'afro', name: 'Afro Textures', description: 'Afro and textured hair styling', basePrice: 38 },
   { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women', basePrice: 40 },
