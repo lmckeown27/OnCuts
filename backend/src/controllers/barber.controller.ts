@@ -214,6 +214,18 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         price: s.price / 100 // Convert cents to dollars for frontend
       }));
       
+      // Filter out services that have been deleted (is_active = false in services table)
+      let filteredPricing = customPricing.length > 0 ? customPricing : servicePricing;
+      if (filteredPricing.length > 0) {
+        const activeServicesResult = await pool.query(
+          `SELECT LOWER(name) as name FROM services WHERE is_active = true`
+        );
+        const activeServiceNames = new Set(activeServicesResult.rows.map(s => s.name.toLowerCase()));
+        filteredPricing = filteredPricing.filter((p: any) => 
+          activeServiceNames.has(p.name?.toLowerCase())
+        );
+      }
+      
       return {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
@@ -221,7 +233,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         distance_km: barber.distance_km !== null ? Math.round(barber.distance_km * 10) / 10 : null,
         // Convert km to miles for US users
         distance_miles: barber.distance_km !== null ? Math.round(barber.distance_km * 0.621371 * 10) / 10 : null,
-        pricing: customPricing.length > 0 ? customPricing : servicePricing,
+        pricing: filteredPricing,
         portfolio_images: portfolioResult.rows,
         service_locations: locationsResult.rows,
         average_rating: averageRating,
@@ -316,15 +328,27 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
       [barber.id]
     );
 
+    // Filter out services that have been deleted (is_active = false in services table)
+    let servicePricing = servicesResult.rows.map(s => ({
+      ...s,
+      price: s.price / 100
+    }));
+    if (servicePricing.length > 0) {
+      const activeServicesResult = await pool.query(
+        `SELECT LOWER(name) as name FROM services WHERE is_active = true`
+      );
+      const activeServiceNames = new Set(activeServicesResult.rows.map(s => s.name.toLowerCase()));
+      servicePricing = servicePricing.filter((p: any) => 
+        activeServiceNames.has(p.name?.toLowerCase())
+      );
+    }
+
     res.json({
       success: true,
       data: {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-        pricing: servicesResult.rows.map(s => ({
-          ...s,
-          price: s.price / 100
-        })),
+        pricing: servicePricing,
       },
     });
   } catch (error) {
@@ -595,12 +619,24 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       price: s.price / 100 // Convert cents to dollars
     }));
 
+    // Filter out services that have been deleted (is_active = false in services table)
+    let filteredPricing = customPricing.length > 0 ? customPricing : servicePricing;
+    if (filteredPricing.length > 0) {
+      const activeServicesResult = await pool.query(
+        `SELECT LOWER(name) as name FROM services WHERE is_active = true`
+      );
+      const activeServiceNames = new Set(activeServicesResult.rows.map(s => s.name.toLowerCase()));
+      filteredPricing = filteredPricing.filter((p: any) => 
+        activeServiceNames.has(p.name?.toLowerCase())
+      );
+    }
+
     res.json({
       success: true,
       data: {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-        pricing: customPricing.length > 0 ? customPricing : servicePricing,
+        pricing: filteredPricing,
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
         service_locations: locationsResult.rows,
