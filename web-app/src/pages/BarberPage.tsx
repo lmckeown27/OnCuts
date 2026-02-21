@@ -353,6 +353,7 @@ export default function BarberPage() {
   const fetchPlatformStats = useCallback(async () => {
     if (!isAdmin) return;
     setIsLoadingPlatformStats(true);
+    const startTime = Date.now();
     try {
       // Admin routes are at /api/admin, not /api/v1/admin
       const token = localStorage.getItem('accessToken');
@@ -367,6 +368,12 @@ export default function BarberPage() {
     } catch (error) {
       console.error('Failed to fetch platform stats:', error);
     } finally {
+      // Ensure minimum 500ms animation for visual feedback
+      const elapsed = Date.now() - startTime;
+      const minDuration = 500;
+      if (elapsed < minDuration) {
+        await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
+      }
       setIsLoadingPlatformStats(false);
     }
   }, [isAdmin]);
