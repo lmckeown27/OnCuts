@@ -2667,6 +2667,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                   <div className="text-sm text-gray-600 space-y-1 ml-13">
                     <p><span className="text-gray-500">Customer:</span> {booking.consumerName}</p>
                     <p><span className="text-gray-500">Date:</span> {formatDate(booking.scheduledTime)}</p>
+                    {activeTab === 'completed' && booking.paidAt && (
+                      <p><span className="text-gray-500">Paid for:</span> {formatDate(booking.paidAt)}</p>
+                    )}
                     {booking.location && (
                       <p><span className="text-gray-500">Location:</span> {booking.location}</p>
                     )}
@@ -2703,10 +2706,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                       </span>
                     ) : (
                       <>
-                        {booking.paidAt && (
-                          <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
-                        )}
-                        
                         {/* Review */}
                         {booking.review ? (
                           <div className="mt-2 p-2 bg-gray-50 rounded-lg">
