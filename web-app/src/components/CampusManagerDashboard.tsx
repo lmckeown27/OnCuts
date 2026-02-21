@@ -2791,7 +2791,7 @@ const ServicesManagementPanel: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services?includeInactive=${showInactive}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services?includeInactive=${showInactive}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -2827,7 +2827,7 @@ const ServicesManagementPanel: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2873,7 +2873,7 @@ const ServicesManagementPanel: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${editingService.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${editingService.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2907,7 +2907,7 @@ const ServicesManagementPanel: React.FC = () => {
     try {
       setActionLoading(service.id);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${service.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${service.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
@@ -2931,7 +2931,7 @@ const ServicesManagementPanel: React.FC = () => {
     try {
       setActionLoading(service.id);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${service.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${service.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
