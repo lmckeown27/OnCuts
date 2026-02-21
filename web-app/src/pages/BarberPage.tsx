@@ -1006,13 +1006,13 @@ export default function BarberPage() {
           onClick={closeNotifications}
         >
           <div 
-            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden transition-all duration-150 ease-out ${
+            className={`bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80dvh] sm:max-h-[80vh] overflow-hidden flex flex-col transition-all duration-150 ease-out ${
               isNotificationsVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
+            <div className="flex-shrink-0 bg-gradient-to-r from-primary-500 to-primary-400 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Notifications</h2>
                 <p className="text-white/80 text-sm">
@@ -1046,7 +1046,7 @@ export default function BarberPage() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto">
+            <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto">
               <div className="flex gap-1 min-w-max">
                 {[
                   { key: 'all', label: 'All' },
@@ -1072,7 +1072,7 @@ export default function BarberPage() {
             </div>
 
             {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="p-8 text-center">
                   <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -1213,11 +1213,11 @@ export default function BarberPage() {
     </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
               <Button
                 onClick={closeNotifications}
                 variant="secondary"
-                className="w-full"
+                className="w-full text-lg py-3"
               >
                 Close
               </Button>
