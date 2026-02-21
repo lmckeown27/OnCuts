@@ -316,6 +316,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/v2/bookings', bookingV2Routes);
 app.use('/api/v2/wallet', walletV2Routes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/v1/admin', adminRoutes);  // Also mount at v1 for frontend compatibility
 app.use('/api/admin/live-feed', liveFeedRoutes);  // Live transaction monitoring
 app.use('/api/admin/transactions', adminTransactionsRoutes);  // Transaction history
 app.use('/api/admin/users', adminUsersRoutes);  // User management (block, ban, etc.)
