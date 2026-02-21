@@ -801,13 +801,13 @@ export default function BarberPage() {
                       </div>
                       {/* Total Platform Users - Admin Only */}
                       {totalPlatformUsers !== null && (
-                        <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg">
+                        <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
                           <span>Total Users:</span>
                           <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
                           <button
                             onClick={fetchPlatformStats}
                             disabled={isLoadingPlatformStats}
-                            className="p-1 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50 ml-1"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
                             title="Refresh user count"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
