@@ -111,6 +111,7 @@ router.post('/', authenticate, async (req, res, next) => {
       'Kids Cut': 'HAIRCUT',           // Maps to HAIRCUT (no KIDS_CUT enum)
       'Fade': 'FADE',
       'Haircut & Fade': 'FADE',        // Maps to FADE (combo service)
+      'Mullet': 'MULLET',              // Mullet haircut
       'Design/Art': 'STYLING',         // Maps to STYLING
       'Afro Textures': 'STYLING',      // Maps to STYLING
       "Women's Cut": 'HAIRCUT',        // Maps to HAIRCUT
