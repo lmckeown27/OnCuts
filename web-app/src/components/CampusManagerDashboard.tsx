@@ -3036,7 +3036,7 @@ const ServicesManagementPanel: React.FC = () => {
             >
               {/* Header with name and actions */}
               <div className="flex items-start justify-between gap-1 mb-1">
-                <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate flex-1">
+                <h4 className="font-semibold text-gray-900 text-sm leading-tight flex-1">
                   {service.name}
                 </h4>
                 <div className="flex items-center gap-0.5 flex-shrink-0">
