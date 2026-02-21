@@ -3022,6 +3022,58 @@ const ServicesManagementPanel: React.FC = () => {
 
       {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        {/* Inline Add Service Form */}
+        {showAddModal && (
+          <form
+            onSubmit={handleAddService}
+            className="p-3 rounded-lg border-2 border-dashed border-primary-400 bg-primary-50"
+          >
+            <div className="mb-2">
+              <input
+                type="text"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                className="w-full px-2 py-1 text-sm font-semibold text-gray-900 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+                placeholder="Service name"
+                autoFocus
+              />
+            </div>
+            <div className="flex items-center gap-0.5 mb-2">
+              <DollarSign className="w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={formBasePrice}
+                onChange={(e) => setFormBasePrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                className="w-14 text-lg font-bold text-gray-900 border-b-2 border-primary-300 focus:border-primary-500 focus:outline-none bg-transparent"
+                placeholder="0"
+              />
+            </div>
+            {formError && (
+              <p className="text-xs text-red-600 mb-2">{formError}</p>
+            )}
+            <div className="flex gap-1">
+              <button
+                type="submit"
+                className="flex-1 text-xs px-2 py-1 bg-primary-500 text-white rounded hover:bg-primary-600"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  resetForm();
+                }}
+                className="flex-1 text-xs px-2 py-1 border border-gray-300 text-gray-600 rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+        
         {services.map((service) => {
           const isEditing = editingServiceId === service.id;
           
@@ -3148,76 +3200,6 @@ const ServicesManagementPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Add Service Modal */}
-      {showAddModal && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
-          onClick={() => setShowAddModal(false)}
-        >
-          <div 
-            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Service</h3>
-            <form onSubmit={handleAddService} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Service Name *
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="e.g., Buzz Cut"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Brief description of the service"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Base Price ($) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formBasePrice}
-                  onChange={(e) => setFormBasePrice(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="25.00"
-                />
-              </div>
-              {formError && (
-                <p className="text-sm text-red-600">{formError}</p>
-              )}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  Add Service
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       </div>
   );
