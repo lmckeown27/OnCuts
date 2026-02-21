@@ -793,7 +793,10 @@ export default function BarberPage() {
                           placeholder="Search campuses..."
                           className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
                         />
-                        <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform pointer-events-none ${showCampusSelector ? 'rotate-180' : ''}`} />
+                        <ChevronDown 
+                          onClick={() => setShowCampusSelector(!showCampusSelector)}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showCampusSelector ? 'rotate-180' : ''}`} 
+                        />
                       </div>
                       {/* Total Platform Users - Admin Only */}
                       {totalPlatformUsers !== null && (
