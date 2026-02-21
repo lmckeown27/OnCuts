@@ -1153,10 +1153,14 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     fetchBarbers();
   }, [campusId, activeFilter]);
 
-  // Scroll to top of assign panel when it opens
+  // Scroll modal container to top when assign panel opens
   useEffect(() => {
     if (showAssignModal && assignPanelRef.current) {
-      assignPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Find the scrollable modal container and scroll it to top instantly
+      const modalContainer = assignPanelRef.current.closest('.overflow-y-auto');
+      if (modalContainer) {
+        modalContainer.scrollTop = 0;
+      }
     }
   }, [showAssignModal]);
 
