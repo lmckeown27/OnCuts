@@ -102,6 +102,7 @@ export default function BarberPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isNotificationsVisible, setIsNotificationsVisible] = useState(false);
   const [showBookingDetailsModal, setShowBookingDetailsModal] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'bookings' | 'payments' | 'reviews' | 'cancellations' | 'messages'>('all');
   
   // Lock body scroll when any modal is open
   const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
@@ -1044,6 +1045,32 @@ export default function BarberPage() {
               </div>
             </div>
 
+            {/* Filter Tabs */}
+            <div className="px-4 py-2 border-b border-gray-200 bg-gray-50 overflow-x-auto">
+              <div className="flex gap-1 min-w-max">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'bookings', label: 'Bookings' },
+                  { key: 'payments', label: 'Payments' },
+                  { key: 'reviews', label: 'Reviews' },
+                  { key: 'cancellations', label: 'Cancelled' },
+                  { key: 'messages', label: 'Messages' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setNotificationFilter(tab.key as any)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                      notificationFilter === tab.key
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Content */}
             <div className="max-h-[60vh] overflow-y-auto">
               {notifications.length === 0 ? (
@@ -1053,7 +1080,29 @@ export default function BarberPage() {
           </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {notifications.map((notification) => {
+                  {notifications
+                    .filter((notification) => {
+                      if (notificationFilter === 'all') return true;
+                      const notifType = (notification.type || '').toLowerCase().trim();
+                      const title = (notification.title || '').toLowerCase();
+                      
+                      switch (notificationFilter) {
+                        case 'bookings':
+                          return notifType === 'new_booking_request' || notifType === 'booking_accepted' || 
+                                 title.includes('booking request') || title.includes('booking confirmed');
+                        case 'payments':
+                          return notifType === 'payment_received' || title.includes('payment');
+                        case 'reviews':
+                          return notifType === 'review' || notifType === 'new_review' || title.includes('review') || title.includes('star');
+                        case 'cancellations':
+                          return notifType === 'booking_rejected' || notifType === 'booking_cancelled' || title.includes('cancelled') || title.includes('rejected');
+                        case 'messages':
+                          return notifType === 'new_message' || title.includes('message');
+                        default:
+                          return true;
+                      }
+                    })
+                    .map((notification) => {
                     // Normalize type for matching (handle case/whitespace variations)
                     const notifType = (notification.type || '').toLowerCase().trim();
                     const isMessageNotification = notifType === 'new_message' || notification.title?.toLowerCase().includes('message');
@@ -1132,6 +1181,33 @@ export default function BarberPage() {
                       </div>
                     );
                   })}
+                  {/* Empty state for filtered results */}
+                  {notifications.filter((notification) => {
+                    if (notificationFilter === 'all') return true;
+                    const notifType = (notification.type || '').toLowerCase().trim();
+                    const title = (notification.title || '').toLowerCase();
+                    
+                    switch (notificationFilter) {
+                      case 'bookings':
+                        return notifType === 'new_booking_request' || notifType === 'booking_accepted' || 
+                               title.includes('booking request') || title.includes('booking confirmed');
+                      case 'payments':
+                        return notifType === 'payment_received' || title.includes('payment');
+                      case 'reviews':
+                        return notifType === 'review' || notifType === 'new_review' || title.includes('review') || title.includes('star');
+                      case 'cancellations':
+                        return notifType === 'booking_rejected' || notifType === 'booking_cancelled' || title.includes('cancelled') || title.includes('rejected');
+                      case 'messages':
+                        return notifType === 'new_message' || title.includes('message');
+                      default:
+                        return true;
+                    }
+                  }).length === 0 && (
+                    <div className="p-8 text-center">
+                      <Bell className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">No {notificationFilter} notifications</p>
+                    </div>
+                  )}
                 </div>
       )}
     </div>
