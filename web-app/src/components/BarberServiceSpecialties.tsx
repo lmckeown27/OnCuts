@@ -229,7 +229,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           Select services and set your prices.
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
           {barberServices.map((service) => {
             const priceChanged = service.isEditing && service.price !== service.originalPrice;
             
