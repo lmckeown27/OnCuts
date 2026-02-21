@@ -2787,11 +2787,15 @@ const ServicesManagementPanel: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingService, setEditingService] = useState<Service | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
-  // Form state
+  // Inline price editing state
+  const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
+  const [editingPrice, setEditingPrice] = useState('');
+  const [savingPrice, setSavingPrice] = useState(false);
+
+  // Add modal form state
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formBasePrice, setFormBasePrice] = useState('');
@@ -2865,50 +2869,54 @@ const ServicesManagementPanel: React.FC = () => {
     }
   };
 
-  const handleUpdateService = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingService) return;
-    setFormError('');
+  // Start inline price editing
+  const startEditingPrice = (service: Service) => {
+    setEditingServiceId(service.id);
+    setEditingPrice(Math.round(service.basePriceCents / 100).toString());
+  };
 
-    if (!formName.trim()) {
-      setFormError('Service name is required');
+  // Save inline price edit
+  const saveInlinePrice = async (serviceId: number) => {
+    const newPrice = parseInt(editingPrice);
+    if (isNaN(newPrice) || newPrice <= 0) {
+      toast.error('Please enter a valid price');
       return;
     }
 
-    const basePrice = parseFloat(formBasePrice);
-    if (isNaN(basePrice) || basePrice <= 0) {
-      setFormError('Please enter a valid price');
-      return;
-    }
-
+    setSavingPrice(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${editingService.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${serviceId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formName.trim(),
-          description: formDescription.trim() || null,
-          basePriceCents: Math.round(basePrice * 100),
+          basePriceCents: newPrice * 100,
         }),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Service updated successfully');
-        setEditingService(null);
-        resetForm();
+        toast.success('Price updated');
+        setEditingServiceId(null);
         fetchServices();
       } else {
-        setFormError(data.message || 'Failed to update service');
+        toast.error(data.message || 'Failed to update price');
       }
     } catch (error) {
-      console.error('Failed to update service:', error);
-      setFormError('Failed to update service');
+      console.error('Failed to update price:', error);
+      toast.error('Failed to update price');
+    } finally {
+      setSavingPrice(false);
     }
+  };
+
+  // Cancel inline price editing
+  const cancelEditingPrice = () => {
+    setEditingServiceId(null);
+    setEditingPrice('');
   };
 
   const handleDeleteService = async (service: Service) => {
@@ -2972,14 +2980,6 @@ const ServicesManagementPanel: React.FC = () => {
     setFormError('');
   };
 
-  const openEditModal = (service: Service) => {
-    setEditingService(service);
-    setFormName(service.name);
-    setFormDescription(service.description || '');
-    setFormBasePrice((service.basePriceCents / 100).toFixed(2));
-    setFormError('');
-  };
-
   if (loading) {
     return (
       <div className="p-6 text-center">
@@ -3022,74 +3022,113 @@ const ServicesManagementPanel: React.FC = () => {
 
       {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
-        {services.map((service) => (
-          <div
-            key={service.id}
-            className={`p-3 rounded-lg border-2 transition-all ${
-              service.isActive
-                ? 'border-primary-400 bg-primary-50'
-                : 'border-red-200 bg-red-50 opacity-60'
-            }`}
-          >
-            {/* Header with name and actions */}
-            <div className="flex items-start justify-between gap-1 mb-1">
-              <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate flex-1">
-                {service.name}
-              </h4>
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                <button
-                  onClick={() => openEditModal(service)}
-                  className="p-1 text-gray-400 hover:text-primary-600 rounded transition-colors"
-                  title="Edit service"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                {service.isActive ? (
-                  <button
-                    onClick={() => handleDeleteService(service)}
-                    disabled={actionLoading === service.id}
-                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
-                    title="Delete service"
-                  >
-                    {actionLoading === service.id ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleReactivateService(service)}
-                    disabled={actionLoading === service.id}
-                    className="p-1 text-green-500 hover:text-green-600 rounded transition-colors disabled:opacity-50"
-                    title="Restore service"
-                  >
-                    {actionLoading === service.id ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                )}
+        {services.map((service) => {
+          const isEditing = editingServiceId === service.id;
+          
+          return (
+            <div
+              key={service.id}
+              className={`p-3 rounded-lg border-2 transition-all ${
+                service.isActive
+                  ? 'border-primary-400 bg-primary-50'
+                  : 'border-red-200 bg-red-50 opacity-60'
+              }`}
+            >
+              {/* Header with name and actions */}
+              <div className="flex items-start justify-between gap-1 mb-1">
+                <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate flex-1">
+                  {service.name}
+                </h4>
+                <div className="flex items-center gap-0.5 flex-shrink-0">
+                  {!isEditing && (
+                    <button
+                      onClick={() => startEditingPrice(service)}
+                      className="p-1 text-gray-400 hover:text-primary-600 rounded transition-colors"
+                      title="Edit price"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {service.isActive ? (
+                    <button
+                      onClick={() => handleDeleteService(service)}
+                      disabled={actionLoading === service.id}
+                      className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
+                      title="Delete service"
+                    >
+                      {actionLoading === service.id ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleReactivateService(service)}
+                      disabled={actionLoading === service.id}
+                      className="p-1 text-green-500 hover:text-green-600 rounded transition-colors disabled:opacity-50"
+                      title="Restore service"
+                    >
+                      {actionLoading === service.id ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Deleted badge */}
-            {!service.isActive && (
-              <span className="inline-block px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded mb-1">
-                Deleted
-              </span>
-            )}
+              {/* Deleted badge */}
+              {!service.isActive && (
+                <span className="inline-block px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded mb-1">
+                  Deleted
+                </span>
+              )}
 
-            {/* Price */}
-            <div className="flex items-center gap-0.5 mt-1">
-              <DollarSign className="w-4 h-4 text-gray-400" />
-              <span className="text-lg font-bold text-gray-900">
-                {Math.round(service.basePriceCents / 100)}
-              </span>
+              {/* Price - editable or display */}
+              {isEditing ? (
+                <div className="mt-2">
+                  <div className="flex items-center gap-0.5">
+                    <DollarSign className="w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={editingPrice}
+                      onChange={(e) => setEditingPrice(e.target.value.replace(/[^0-9]/g, ''))}
+                      autoFocus
+                      className="w-14 text-lg font-bold text-gray-900 border-b-2 border-primary-400 focus:border-primary-500 focus:outline-none bg-transparent"
+                    />
+                  </div>
+                  <div className="flex gap-1 mt-2">
+                    <button
+                      onClick={() => saveInlinePrice(service.id)}
+                      disabled={savingPrice}
+                      className="flex-1 text-xs px-2 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50"
+                    >
+                      {savingPrice ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={cancelEditingPrice}
+                      disabled={savingPrice}
+                      className="flex-1 text-xs px-2 py-1 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-0.5 mt-1">
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                  <span className="text-lg font-bold text-gray-900">
+                    {Math.round(service.basePriceCents / 100)}
+                  </span>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {services.length === 0 && (
@@ -3180,74 +3219,7 @@ const ServicesManagementPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Service Modal */}
-      {editingService && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
-          onClick={() => setEditingService(null)}
-        >
-          <div 
-            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Service</h3>
-            <form onSubmit={handleUpdateService} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Service Name *
-                </label>
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Base Price ($) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formBasePrice}
-                  onChange={(e) => setFormBasePrice(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-              {formError && (
-                <p className="text-sm text-red-600">{formError}</p>
-              )}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditingService(null)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" className="flex-1">
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
   );
 };
 
