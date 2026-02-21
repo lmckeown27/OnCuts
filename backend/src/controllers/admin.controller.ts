@@ -475,13 +475,13 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
  */
 export const getServices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Allow admin and campus managers
+    // Any authenticated user can read active services
+    // Only admin/campus_manager can see inactive services
     const userRole = req.user!.role?.toUpperCase();
-    if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
-      throw new ApiError(403, 'Admin or Campus Manager access required');
-    }
-
-    const includeInactive = req.query.includeInactive === 'true';
+    const isAdmin = userRole === 'ADMIN' || userRole === 'CAMPUS_MANAGER';
+    
+    // Only allow includeInactive for admins
+    const includeInactive = isAdmin && req.query.includeInactive === 'true';
     
     let query = `
       SELECT id, slug, name, description, 

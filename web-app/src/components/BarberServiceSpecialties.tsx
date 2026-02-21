@@ -28,8 +28,17 @@ interface Props {
   barberId: string;
 }
 
-// Use shared service types from config
-const AVAILABLE_SERVICES = SERVICE_TYPES;
+// Fallback to config if API unavailable
+const FALLBACK_SERVICES = SERVICE_TYPES;
+
+interface ApiService {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  basePriceCents: number;
+  isActive: boolean;
+}
 
 export default function BarberServiceSpecialties({ barberId }: Props) {
   const [loading, setLoading] = useState(true);
@@ -51,18 +60,51 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       const currentSpecialties: string[] = barberData?.specialties || [];
       const currentPricing: { name: string; price: number }[] = barberData?.pricing || [];
       
+      // Fetch platform services with current base prices from database
+      let availableServices: { id: string; name: string; description: string; basePrice: number }[] = [];
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          availableServices = data.data
+            .filter((s: ApiService) => s.isActive)
+            .map((s: ApiService) => ({
+              id: s.slug,
+              name: s.name,
+              description: s.description || '',
+              basePrice: Math.round(s.basePriceCents / 100),
+            }));
+        }
+      } catch {
+        // Fall back to config if API fails
+        console.log('Using fallback services from config');
+      }
+      
+      // If API didn't return services, use fallback config
+      if (availableServices.length === 0) {
+        availableServices = FALLBACK_SERVICES.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description || '',
+          basePrice: s.basePrice || 25,
+        }));
+      }
+      
       // Map all available services with real data where available
-      const services: BarberService[] = AVAILABLE_SERVICES.map((service) => {
+      const services: BarberService[] = availableServices.map((service) => {
         // Check if this service is offered by matching service name
         const isOffered = currentSpecialties.some(
           s => s.toLowerCase() === service.name.toLowerCase()
         );
         
-        // Get the barber's custom price for this service, or use suggested price
+        // Get the barber's custom price for this service, or use platform base price
         const savedPrice = currentPricing.find(
           p => p.name?.toLowerCase() === service.name.toLowerCase()
         );
-        const price = savedPrice?.price || service.basePrice || 25;
+        const price = savedPrice?.price || service.basePrice;
 
         return {
           serviceId: service.id,
@@ -70,7 +112,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           description: service.description || '',
           isOffered,
           price,
-          suggestedPrice: service.basePrice || 25,
+          suggestedPrice: service.basePrice,
           originalPrice: price,
           isEditing: false,
         };
@@ -82,7 +124,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       toast.error('Failed to load services');
       
       // Initialize with default services on error
-      const defaultServices: BarberService[] = AVAILABLE_SERVICES.map((service) => ({
+      const defaultServices: BarberService[] = FALLBACK_SERVICES.map((service) => ({
         serviceId: service.id,
         serviceName: service.name,
         description: service.description || '',
