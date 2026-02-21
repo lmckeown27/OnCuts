@@ -1394,8 +1394,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </button>
 
         <Card className="p-4 sm:p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary-600" />
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
             {editingLocation ? 'Edit Location' : 'Add New Location'}
           </h3>
 
@@ -1532,8 +1531,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         </button>
 
         <Card className="p-4 sm:p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-primary-600" />
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
             Assign Location to {showAssignModal.barberName}
           </h3>
 
