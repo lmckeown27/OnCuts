@@ -2995,7 +2995,7 @@ const ServicesManagementPanel: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Service Types</h3>
-          <p className="text-sm text-gray-500">Manage available service types for barbers</p>
+          <p className="text-sm text-gray-500">Default prices for barbers who haven't set their own</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-gray-600">
