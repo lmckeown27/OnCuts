@@ -38,5 +38,11 @@ router.get('/treasury', authenticate, adminController.getTreasuryStats);
 // Platform Stats (total users, bookings, etc.)
 router.get('/stats', authenticate, adminController.getPlatformStats);
 
+// Services Management (for campus managers and admins)
+router.get('/services', authenticate, adminController.getServices);
+router.post('/services', authenticate, adminController.createService);
+router.put('/services/:id', authenticate, adminController.updateService);
+router.delete('/services/:id', authenticate, adminController.deleteService);
+
 export default router;
 

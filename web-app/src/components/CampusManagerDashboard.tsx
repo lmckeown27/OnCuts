@@ -229,7 +229,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusId, 
   campusName 
 }) => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'locations' | 'bookings'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'locations' | 'bookings' | 'services'>('applications');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedTab, setDisplayedTab] = useState(activeTab);
 
@@ -293,6 +293,17 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           >
             Bookings
           </button>
+          
+          <button
+            onClick={() => handleTabChange('services')}
+            className={`py-3 sm:py-4 px-3 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'services'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Services
+          </button>
         </nav>
       </div>
 
@@ -310,6 +321,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
         {displayedTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
         {displayedTab === 'locations' && <CampusLocationsPanel campusId={campusId} />}
         {displayedTab === 'bookings' && <CompletedBookingsPanel campusId={campusId} />}
+        {displayedTab === 'services' && <ServicesManagementPanel />}
       </div>
     </div>
   );
@@ -2742,6 +2754,486 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         )}
       </div>
 
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SERVICES MANAGEMENT PANEL
+// ═══════════════════════════════════════════════════════════════
+
+interface Service {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+  basePriceCents: number;
+  minPriceCents: number;
+  maxPriceCents: number;
+  isActive: boolean;
+}
+
+const ServicesManagementPanel: React.FC = () => {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+
+  // Form state
+  const [formName, setFormName] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formBasePrice, setFormBasePrice] = useState('');
+  const [formError, setFormError] = useState('');
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services?includeInactive=${showInactive}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (data.success) {
+        setServices(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch services:', error);
+      toast.error('Failed to load services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, [showInactive]);
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!formName.trim()) {
+      setFormError('Service name is required');
+      return;
+    }
+
+    const basePrice = parseFloat(formBasePrice);
+    if (isNaN(basePrice) || basePrice <= 0) {
+      setFormError('Please enter a valid price');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formName.trim(),
+          description: formDescription.trim() || null,
+          basePriceCents: Math.round(basePrice * 100),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Service added successfully');
+        setShowAddModal(false);
+        resetForm();
+        fetchServices();
+      } else {
+        setFormError(data.message || 'Failed to add service');
+      }
+    } catch (error) {
+      console.error('Failed to add service:', error);
+      setFormError('Failed to add service');
+    }
+  };
+
+  const handleUpdateService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingService) return;
+    setFormError('');
+
+    if (!formName.trim()) {
+      setFormError('Service name is required');
+      return;
+    }
+
+    const basePrice = parseFloat(formBasePrice);
+    if (isNaN(basePrice) || basePrice <= 0) {
+      setFormError('Please enter a valid price');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${editingService.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formName.trim(),
+          description: formDescription.trim() || null,
+          basePriceCents: Math.round(basePrice * 100),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Service updated successfully');
+        setEditingService(null);
+        resetForm();
+        fetchServices();
+      } else {
+        setFormError(data.message || 'Failed to update service');
+      }
+    } catch (error) {
+      console.error('Failed to update service:', error);
+      setFormError('Failed to update service');
+    }
+  };
+
+  const handleDeleteService = async (service: Service) => {
+    if (!confirm(`Are you sure you want to deactivate "${service.name}"?`)) return;
+
+    try {
+      setActionLoading(service.id);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${service.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Service deactivated');
+        fetchServices();
+      } else {
+        toast.error(data.message || 'Failed to deactivate service');
+      }
+    } catch (error) {
+      console.error('Failed to delete service:', error);
+      toast.error('Failed to deactivate service');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReactivateService = async (service: Service) => {
+    try {
+      setActionLoading(service.id);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/admin/services/${service.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isActive: true }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Service reactivated');
+        fetchServices();
+      } else {
+        toast.error(data.message || 'Failed to reactivate service');
+      }
+    } catch (error) {
+      console.error('Failed to reactivate service:', error);
+      toast.error('Failed to reactivate service');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const resetForm = () => {
+    setFormName('');
+    setFormDescription('');
+    setFormBasePrice('');
+    setFormError('');
+  };
+
+  const openEditModal = (service: Service) => {
+    setEditingService(service);
+    setFormName(service.name);
+    setFormDescription(service.description || '');
+    setFormBasePrice((service.basePriceCents / 100).toFixed(2));
+    setFormError('');
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-primary-500" />
+        <p className="text-sm text-gray-500 mt-2">Loading services...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Service Types</h3>
+          <p className="text-sm text-gray-500">Manage available service types for barbers</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            />
+            Show inactive
+          </label>
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Service
+          </Button>
+        </div>
+      </div>
+
+      {/* Services Grid */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {services.map((service) => (
+          <Card
+            key={service.id}
+            className={`p-4 ${!service.isActive ? 'opacity-60 bg-gray-50' : ''}`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-gray-900 truncate">{service.name}</h4>
+                  {!service.isActive && (
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+                {service.description && (
+                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{service.description}</p>
+                )}
+                <div className="flex items-center gap-1 mt-2">
+                  <DollarSign className="w-4 h-4 text-green-600" />
+                  <span className="font-semibold text-green-600">
+                    {(service.basePriceCents / 100).toFixed(2)}
+                  </span>
+                  <span className="text-xs text-gray-400 ml-1">base price</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 ml-2">
+                <button
+                  onClick={() => openEditModal(service)}
+                  className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                  title="Edit service"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                {service.isActive ? (
+                  <button
+                    onClick={() => handleDeleteService(service)}
+                    disabled={actionLoading === service.id}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                    title="Deactivate service"
+                  >
+                    {actionLoading === service.id ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleReactivateService(service)}
+                    disabled={actionLoading === service.id}
+                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                    title="Reactivate service"
+                  >
+                    {actionLoading === service.id ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {services.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No services found</p>
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            variant="outline"
+            className="mt-4"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add your first service
+          </Button>
+        </div>
+      )}
+
+      {/* Add Service Modal */}
+      {showAddModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Service</h3>
+            <form onSubmit={handleAddService} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., Buzz Cut"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Brief description of the service"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Base Price ($) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formBasePrice}
+                  onChange={(e) => setFormBasePrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="25.00"
+                />
+              </div>
+              {formError && (
+                <p className="text-sm text-red-600">{formError}</p>
+              )}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Add Service
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Service Modal */}
+      {editingService && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          onClick={() => setEditingService(null)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Service</h3>
+            <form onSubmit={handleUpdateService} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Name *
+                </label>
+                <input
+                  type="text"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Base Price ($) *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formBasePrice}
+                  onChange={(e) => setFormBasePrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              {formError && (
+                <p className="text-sm text-red-600">{formError}</p>
+              )}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingService(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

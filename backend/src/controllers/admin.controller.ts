@@ -465,6 +465,294 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+// ═══════════════════════════════════════════════════════════════
+// SERVICES MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get all services
+ * GET /api/admin/services
+ */
+export const getServices = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Allow admin and campus managers
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
+      throw new ApiError(403, 'Admin or Campus Manager access required');
+    }
+
+    const includeInactive = req.query.includeInactive === 'true';
+    
+    let query = `
+      SELECT id, slug, name, description, 
+             default_base_price_cents, 
+             default_min_price_cents, 
+             default_max_price_cents,
+             is_active, created_at, updated_at
+      FROM services
+    `;
+    
+    if (!includeInactive) {
+      query += ' WHERE is_active = true';
+    }
+    
+    query += ' ORDER BY name ASC';
+    
+    const result = await pool.query(query);
+
+    res.json({
+      success: true,
+      data: result.rows.map(row => ({
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        basePriceCents: row.default_base_price_cents,
+        minPriceCents: row.default_min_price_cents,
+        maxPriceCents: row.default_max_price_cents,
+        isActive: row.is_active,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create a new service
+ * POST /api/admin/services
+ */
+export const createService = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
+      throw new ApiError(403, 'Admin or Campus Manager access required');
+    }
+
+    const { name, description, basePriceCents, minPriceCents, maxPriceCents } = req.body;
+
+    if (!name || !basePriceCents) {
+      throw new ApiError(400, 'Name and base price are required');
+    }
+
+    // Generate slug from name
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+
+    // Validate price bounds
+    const baseCents = parseInt(basePriceCents);
+    const minCents = minPriceCents ? parseInt(minPriceCents) : Math.round(baseCents * 0.8);
+    const maxCents = maxPriceCents ? parseInt(maxPriceCents) : Math.round(baseCents * 1.5);
+
+    if (minCents > baseCents || baseCents > maxCents) {
+      throw new ApiError(400, 'Invalid price bounds: min <= base <= max');
+    }
+
+    const result = await pool.query(
+      `INSERT INTO services (slug, name, description, default_base_price_cents, default_min_price_cents, default_max_price_cents)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [slug, name, description || null, baseCents, minCents, maxCents]
+    );
+
+    const row = result.rows[0];
+
+    // Audit log
+    await auditService.log({
+      actor_user_id: req.user!.userId,
+      action: 'service_created',
+      object_type: 'service',
+      object_id: row.id.toString(),
+      details: { name, slug, basePriceCents: baseCents },
+    });
+
+    logger.info('Service created', { id: row.id, name, slug, by: req.user!.userId });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        basePriceCents: row.default_base_price_cents,
+        minPriceCents: row.default_min_price_cents,
+        maxPriceCents: row.default_max_price_cents,
+        isActive: row.is_active,
+      },
+      message: 'Service created successfully',
+    });
+  } catch (error: any) {
+    if (error.code === '23505') { // Unique violation
+      return next(new ApiError(400, 'A service with this name already exists'));
+    }
+    next(error);
+  }
+};
+
+/**
+ * Update a service
+ * PUT /api/admin/services/:id
+ */
+export const updateService = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
+      throw new ApiError(403, 'Admin or Campus Manager access required');
+    }
+
+    const { id } = req.params;
+    const { name, description, basePriceCents, minPriceCents, maxPriceCents, isActive } = req.body;
+
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIndex++}`);
+      values.push(name);
+      // Also update slug
+      const slug = name.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      updates.push(`slug = $${paramIndex++}`);
+      values.push(slug);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(description);
+    }
+    if (basePriceCents !== undefined) {
+      updates.push(`default_base_price_cents = $${paramIndex++}`);
+      values.push(parseInt(basePriceCents));
+    }
+    if (minPriceCents !== undefined) {
+      updates.push(`default_min_price_cents = $${paramIndex++}`);
+      values.push(parseInt(minPriceCents));
+    }
+    if (maxPriceCents !== undefined) {
+      updates.push(`default_max_price_cents = $${paramIndex++}`);
+      values.push(parseInt(maxPriceCents));
+    }
+    if (isActive !== undefined) {
+      updates.push(`is_active = $${paramIndex++}`);
+      values.push(isActive);
+    }
+
+    if (updates.length === 0) {
+      throw new ApiError(400, 'No fields to update');
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(id);
+
+    const result = await pool.query(
+      `UPDATE services SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      throw new ApiError(404, 'Service not found');
+    }
+
+    const row = result.rows[0];
+
+    // Audit log
+    await auditService.log({
+      actor_user_id: req.user!.userId,
+      action: 'service_updated',
+      object_type: 'service',
+      object_id: id,
+      details: req.body,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        basePriceCents: row.default_base_price_cents,
+        minPriceCents: row.default_min_price_cents,
+        maxPriceCents: row.default_max_price_cents,
+        isActive: row.is_active,
+      },
+      message: 'Service updated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete (deactivate) a service
+ * DELETE /api/admin/services/:id
+ */
+export const deleteService = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
+      throw new ApiError(403, 'Admin or Campus Manager access required');
+    }
+
+    const { id } = req.params;
+    const hardDelete = req.query.hard === 'true';
+
+    if (hardDelete) {
+      // Only admin can hard delete
+      if (userRole !== 'ADMIN') {
+        throw new ApiError(403, 'Only admins can permanently delete services');
+      }
+      
+      await pool.query('DELETE FROM services WHERE id = $1', [id]);
+      
+      await auditService.log({
+        actor_user_id: req.user!.userId,
+        action: 'service_deleted_hard',
+        object_type: 'service',
+        object_id: id,
+        details: {},
+      });
+    } else {
+      // Soft delete - just deactivate
+      const result = await pool.query(
+        'UPDATE services SET is_active = false, updated_at = NOW() WHERE id = $1 RETURNING *',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        throw new ApiError(404, 'Service not found');
+      }
+
+      await auditService.log({
+        actor_user_id: req.user!.userId,
+        action: 'service_deactivated',
+        object_type: 'service',
+        object_id: id,
+        details: { name: result.rows[0].name },
+      });
+    }
+
+    logger.info('Service deleted', { id, hard: hardDelete, by: req.user!.userId });
+
+    res.json({
+      success: true,
+      message: hardDelete ? 'Service permanently deleted' : 'Service deactivated successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * Get platform stats (total users, etc.)
  * GET /api/admin/stats
