@@ -2902,7 +2902,7 @@ const ServicesManagementPanel: React.FC = () => {
   };
 
   const handleDeleteService = async (service: Service) => {
-    if (!confirm(`Are you sure you want to deactivate "${service.name}"?`)) return;
+    if (!confirm(`Are you sure you want to delete "${service.name}"?`)) return;
 
     try {
       setActionLoading(service.id);
@@ -2914,14 +2914,14 @@ const ServicesManagementPanel: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Service deactivated');
+        toast.success('Service deleted');
         fetchServices();
       } else {
-        toast.error(data.message || 'Failed to deactivate service');
+        toast.error(data.message || 'Failed to delete service');
       }
     } catch (error) {
       console.error('Failed to delete service:', error);
-      toast.error('Failed to deactivate service');
+      toast.error('Failed to delete service');
     } finally {
       setActionLoading(null);
     }
@@ -2942,14 +2942,14 @@ const ServicesManagementPanel: React.FC = () => {
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Service reactivated');
+        toast.success('Service restored');
         fetchServices();
       } else {
-        toast.error(data.message || 'Failed to reactivate service');
+        toast.error(data.message || 'Failed to restore service');
       }
     } catch (error) {
-      console.error('Failed to reactivate service:', error);
-      toast.error('Failed to reactivate service');
+      console.error('Failed to restore service:', error);
+      toast.error('Failed to restore service');
     } finally {
       setActionLoading(null);
     }
@@ -2995,7 +2995,7 @@ const ServicesManagementPanel: React.FC = () => {
               onChange={(e) => setShowInactive(e.target.checked)}
               className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
             />
-            Show inactive
+            Show Deleted
           </label>
           <Button
             onClick={() => {
@@ -3022,8 +3022,8 @@ const ServicesManagementPanel: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold text-gray-900 truncate">{service.name}</h4>
                   {!service.isActive && (
-                    <span className="px-1.5 py-0.5 text-xs font-medium bg-gray-200 text-gray-600 rounded">
-                      Inactive
+                    <span className="px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded">
+                      Deleted
                     </span>
                   )}
                 </div>
@@ -3051,7 +3051,7 @@ const ServicesManagementPanel: React.FC = () => {
                     onClick={() => handleDeleteService(service)}
                     disabled={actionLoading === service.id}
                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                    title="Deactivate service"
+                    title="Delete service"
                   >
                     {actionLoading === service.id ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
@@ -3064,7 +3064,7 @@ const ServicesManagementPanel: React.FC = () => {
                     onClick={() => handleReactivateService(service)}
                     disabled={actionLoading === service.id}
                     className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-                    title="Reactivate service"
+                    title="Restore service"
                   >
                     {actionLoading === service.id ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
