@@ -2621,7 +2621,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             {paginatedBookings.map((booking) => (
               <Card 
                 key={booking.id} 
-                className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 ${
+                className={`p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 relative ${
                   activeTab === 'upcoming' 
                     ? booking.status === 'PENDING' 
                       ? 'border-l-amber-400' 
@@ -2630,6 +2630,21 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               }`}
               onClick={() => setSelectedBooking(booking)}
             >
+              {/* Payment Method Badge - Top Left (Completed bookings only) */}
+              {activeTab === 'completed' && booking.paymentMethod && (
+                <div className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                  booking.paymentMethod === 'card'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-green-100 text-green-700'
+                }`}>
+                  {booking.paymentMethod === 'card' ? (
+                    <CreditCard className="w-3 h-3" />
+                  ) : (
+                    <Banknote className="w-3 h-3" />
+                  )}
+                  {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 {/* Left side - booking info */}
                 <div className="flex-1">
@@ -2688,22 +2703,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                       <>
                         {booking.paidAt && (
                           <p className="text-xs text-gray-500">Paid {formatDate(booking.paidAt)}</p>
-                        )}
-                        
-                        {/* Payment Method Label */}
-                        {booking.paymentMethod && (
-                          <div className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                            booking.paymentMethod === 'card'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}>
-                            {booking.paymentMethod === 'card' ? (
-                              <CreditCard className="w-3 h-3" />
-                            ) : (
-                              <Banknote className="w-3 h-3" />
-                            )}
-                            {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
-                          </div>
                         )}
                         
                         {/* Review */}
