@@ -3010,72 +3010,75 @@ const ServicesManagementPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Services Grid */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
         {services.map((service) => (
-          <Card
+          <div
             key={service.id}
-            className={`p-4 ${!service.isActive ? 'opacity-60 bg-gray-50' : ''}`}
+            className={`p-3 rounded-lg border-2 transition-all ${
+              service.isActive
+                ? 'border-primary-400 bg-primary-50'
+                : 'border-red-200 bg-red-50 opacity-60'
+            }`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-gray-900 truncate">{service.name}</h4>
-                  {!service.isActive && (
-                    <span className="px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded">
-                      Deleted
-                    </span>
-                  )}
-                </div>
-                {service.description && (
-                  <p className="text-sm text-gray-500 mt-1 line-clamp-2">{service.description}</p>
-                )}
-                <div className="flex items-center gap-1 mt-2">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <span className="font-semibold text-green-600">
-                    {(service.basePriceCents / 100).toFixed(2)}
-                  </span>
-                  <span className="text-xs text-gray-400 ml-1">base price</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 ml-2">
+            {/* Header with name and actions */}
+            <div className="flex items-start justify-between gap-1 mb-1">
+              <h4 className="font-semibold text-gray-900 text-sm leading-tight truncate flex-1">
+                {service.name}
+              </h4>
+              <div className="flex items-center gap-0.5 flex-shrink-0">
                 <button
                   onClick={() => openEditModal(service)}
-                  className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                  className="p-1 text-gray-400 hover:text-primary-600 rounded transition-colors"
                   title="Edit service"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-3.5 h-3.5" />
                 </button>
                 {service.isActive ? (
                   <button
                     onClick={() => handleDeleteService(service)}
                     disabled={actionLoading === service.id}
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                     title="Delete service"
                   >
                     {actionLoading === service.id ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     )}
                   </button>
                 ) : (
                   <button
                     onClick={() => handleReactivateService(service)}
                     disabled={actionLoading === service.id}
-                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                    className="p-1 text-green-500 hover:text-green-600 rounded transition-colors disabled:opacity-50"
                     title="Restore service"
                   >
                     {actionLoading === service.id ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-3.5 h-3.5" />
                     )}
                   </button>
                 )}
               </div>
             </div>
-          </Card>
+
+            {/* Deleted badge */}
+            {!service.isActive && (
+              <span className="inline-block px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded mb-1">
+                Deleted
+              </span>
+            )}
+
+            {/* Price */}
+            <div className="flex items-center gap-0.5 mt-1">
+              <DollarSign className="w-4 h-4 text-gray-400" />
+              <span className="text-lg font-bold text-gray-900">
+                {Math.round(service.basePriceCents / 100)}
+              </span>
+            </div>
+          </div>
         ))}
       </div>
 
