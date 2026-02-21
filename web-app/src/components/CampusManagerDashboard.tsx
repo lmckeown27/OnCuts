@@ -2790,7 +2790,7 @@ const ServicesManagementPanel: React.FC = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services?includeInactive=${showInactive}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -2826,7 +2826,7 @@ const ServicesManagementPanel: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
         method: 'POST',
         headers: {
@@ -2872,7 +2872,7 @@ const ServicesManagementPanel: React.FC = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${editingService.id}`, {
         method: 'PUT',
         headers: {
@@ -2906,7 +2906,7 @@ const ServicesManagementPanel: React.FC = () => {
 
     try {
       setActionLoading(service.id);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${service.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -2930,7 +2930,7 @@ const ServicesManagementPanel: React.FC = () => {
   const handleReactivateService = async (service: Service) => {
     try {
       setActionLoading(service.id);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${service.id}`, {
         method: 'PUT',
         headers: {
