@@ -91,7 +91,7 @@ function PaymentFormInner({
       <div className="text-center py-4 bg-gradient-to-r from-green-50 to-primary-50 rounded-xl border-2 border-green-200">
         <p className="text-sm text-gray-600">Charging {customerName}</p>
         <p className="text-4xl font-bold text-green-600">${amount.toFixed(2)}</p>
-        <p className="text-gray-500">{serviceName}</p>
+        <p className="text-gray-500 font-semibold">{serviceName}</p>
       </div>
 
       {/* Payment Element - Shows Apple Pay, Google Pay, and Card options */}
@@ -452,7 +452,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                     <div className="text-right">
                       <p className="text-sm text-gray-600">Customer</p>
                       <p className="font-semibold text-gray-900">{customerName}</p>
-                      <p className="text-sm text-gray-500">{getServiceName()}</p>
+                      <p className="text-sm text-gray-500 font-semibold">{getServiceName()}</p>
                     </div>
                   </div>
                 </Card>
@@ -486,7 +486,7 @@ export default function WalkInPaymentModal({ isOpen, onClose, barberName, barber
                   </div>
                   <div>
                     <p className="text-4xl font-bold text-green-600">${price.toFixed(2)}</p>
-                    <p className="text-gray-500">{getServiceName()}</p>
+                    <p className="text-gray-500 font-semibold">{getServiceName()}</p>
                   </div>
                 </div>
               </Card>
