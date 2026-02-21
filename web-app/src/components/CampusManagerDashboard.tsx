@@ -1717,6 +1717,10 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowAssignModal({ barberId: barber.id, barberName: barber.name });
+                        // Scroll to top of the panel
+                        setTimeout(() => {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }, 50);
                       }}
                       className="text-xs px-2 py-1"
                     >
