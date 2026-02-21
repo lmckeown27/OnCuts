@@ -965,6 +965,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [loadingBarberAssignments, setLoadingBarberAssignments] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState<{ barberId: string; barberName: string } | null>(null);
   const [expandedBarbers, setExpandedBarbers] = useState<Set<string>>(new Set());
+  const assignPanelRef = useRef<HTMLDivElement>(null);
   
   // Subtab state
   const [activeSubTab, setActiveSubTab] = useState<'barbers' | 'requested' | 'approved'>('barbers');
@@ -1151,6 +1152,13 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     fetchLocations();
     fetchBarbers();
   }, [campusId, activeFilter]);
+
+  // Scroll to top of assign panel when it opens
+  useEffect(() => {
+    if (showAssignModal && assignPanelRef.current) {
+      assignPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showAssignModal]);
 
   const handleAddLocation = async () => {
     if (!formData.name.trim()) {
@@ -1521,7 +1529,7 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
     );
     
     return (
-      <div className="space-y-4">
+      <div ref={assignPanelRef} className="space-y-4">
         <button 
           onClick={() => setShowAssignModal(null)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -1717,13 +1725,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowAssignModal({ barberId: barber.id, barberName: barber.name });
-                        // Scroll the modal container to top
-                        setTimeout(() => {
-                          const modalContainer = (e.target as HTMLElement).closest('.overflow-y-auto');
-                          if (modalContainer) {
-                            modalContainer.scrollTo({ top: 0, behavior: 'smooth' });
-                          }
-                        }, 50);
                       }}
                       className="text-xs px-2 py-1"
                     >
