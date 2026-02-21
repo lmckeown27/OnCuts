@@ -243,17 +243,30 @@ function PaymentForm({
     }
   }, [paymentMethod]);
 
-  // Recreate payment intent when tip changes (debounced, only for card)
+  // Update payment intent when tip changes (debounced, only for card)
+  // Note: We use a ref to track if we should update (not recreate) to avoid remounting PaymentElement
+  const [isUpdatingTip, setIsUpdatingTip] = useState(false);
+  
   useEffect(() => {
-    if (paymentMethod !== 'card') return;
+    if (paymentMethod !== 'card' || !paymentIntentId) return;
     
-    const timer = setTimeout(() => {
-      if (clientSecret) {
-        createPaymentIntent();
+    const timer = setTimeout(async () => {
+      // Update the existing payment intent instead of creating a new one
+      // This avoids remounting the PaymentElement which would deselect Apple Pay
+      setIsUpdatingTip(true);
+      try {
+        await api.post(`/bookings-simple/${booking.id}/update-payment-intent`, {
+          paymentIntentId,
+          tipAmountCents: Math.round(tipAmount * 100),
+        });
+      } catch (err) {
+        console.error('Failed to update payment intent:', err);
+      } finally {
+        setIsUpdatingTip(false);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [tipAmount]);
+  }, [tipAmount, paymentIntentId, paymentMethod, booking.id]);
 
   if (paymentMethod === 'card' && isCreatingIntent && !clientSecret) {
     return (
@@ -419,7 +432,7 @@ function PaymentForm({
       {/* Card Payment Form with Elements Provider */}
       {paymentMethod === 'card' && clientSecret && (
         <Elements 
-          key={clientSecret} // Force remount when clientSecret changes to ensure correct payment intent
+          key={booking.id} // Use stable key so PaymentElement doesn't remount when tip changes
           stripe={stripePromise} 
           options={{
             clientSecret,
@@ -437,7 +450,7 @@ function PaymentForm({
             tipAmount={tipAmount}
             totalAmount={totalAmount}
             onSuccess={onSuccess}
-            isUpdatingIntent={isCreatingIntent}
+            isUpdatingIntent={isCreatingIntent || isUpdatingTip}
           />
         </Elements>
       )}

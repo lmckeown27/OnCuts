@@ -1469,6 +1469,70 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 });
 
 /**
+ * POST /api/v1/bookings-simple/:id/update-payment-intent
+ * Update an existing payment intent amount (when tip changes)
+ * This avoids recreating the payment intent which would reset payment method selection
+ */
+router.post('/:id/update-payment-intent', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { paymentIntentId, tipAmountCents = 0 } = req.body;
+    const userId = (req as any).user.userId;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'paymentIntentId is required'
+      });
+    }
+
+    // Verify user is the consumer for this booking
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", b."priceUsdCents"
+       FROM bookings b
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Booking not found or access denied' 
+      });
+    }
+
+    const booking = bookingCheck.rows[0];
+    const totalAmountCents = booking.priceUsdCents + tipAmountCents;
+
+    // Import Stripe and update the payment intent
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    await stripe.paymentIntents.update(paymentIntentId, {
+      amount: totalAmountCents,
+      metadata: {
+        bookingId: id,
+        tipAmountCents: tipAmountCents.toString(),
+        baseAmountCents: booking.priceUsdCents.toString(),
+      },
+    });
+
+    logger.info('Payment intent updated', { bookingId: id, paymentIntentId, totalAmountCents, tipAmountCents });
+
+    res.json({
+      success: true,
+      data: {
+        totalAmountCents,
+        tipAmountCents,
+      },
+    });
+  } catch (error: any) {
+    logger.error('Error updating payment intent:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * POST /api/v1/bookings-simple/:id/confirm-payment
  * Confirm payment was successful and mark booking as completed
  * Only the consumer can confirm their payment
