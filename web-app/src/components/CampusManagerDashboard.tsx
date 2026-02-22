@@ -27,7 +27,8 @@ import {
   EyeOff,
   Filter,
   CreditCard,
-  Banknote
+  Banknote,
+  RotateCcw
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -3101,7 +3102,7 @@ const ServicesManagementPanel: React.FC = () => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  {service.isActive ? (
+                  {service.isActive && (
                     <button
                       onClick={() => handleDeleteService(service)}
                       disabled={actionLoading === service.id}
@@ -3114,28 +3115,24 @@ const ServicesManagementPanel: React.FC = () => {
                         <Trash2 className="w-3.5 h-3.5" />
                       )}
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => handleReactivateService(service)}
-                      disabled={actionLoading === service.id}
-                      className="p-1 text-green-500 hover:text-green-600 rounded transition-colors disabled:opacity-50"
-                      title="Restore service"
-                    >
-                      {actionLoading === service.id ? (
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle className="w-3.5 h-3.5" />
-                      )}
-                    </button>
                   )}
                 </div>
               </div>
 
-              {/* Deleted badge */}
+              {/* Restore button for deleted services */}
               {!service.isActive && (
-                <span className="inline-block px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded mb-1">
-                  Deleted
-                </span>
+                <button
+                  onClick={() => handleReactivateService(service)}
+                  disabled={actionLoading === service.id}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors disabled:opacity-50 mb-1"
+                >
+                  {actionLoading === service.id ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3 h-3" />
+                  )}
+                  Restore Service
+                </button>
               )}
 
               {/* Price - editable or display */}
