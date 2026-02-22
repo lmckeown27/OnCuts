@@ -249,53 +249,51 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Tab Navigation - Scrollable on mobile */}
-      <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
-        <nav className="flex justify-center gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
-          <button
-            onClick={() => handleTabChange('barbers')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'barbers'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Barbers
-          </button>
-          
-          <button
-            onClick={() => handleTabChange('locations')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'locations'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Locations
-          </button>
-          
-          <button
-            onClick={() => handleTabChange('bookings')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'bookings'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Bookings
-          </button>
-          
-          <button
-            onClick={() => handleTabChange('services')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'services'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Services
-          </button>
-        </nav>
+      {/* Tab Navigation - Centered button style */}
+      <div className="flex justify-center gap-2 flex-wrap">
+        <button
+          onClick={() => handleTabChange('barbers')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === 'barbers'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Barbers
+        </button>
+        
+        <button
+          onClick={() => handleTabChange('locations')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === 'locations'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Locations
+        </button>
+        
+        <button
+          onClick={() => handleTabChange('bookings')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === 'bookings'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Bookings
+        </button>
+        
+        <button
+          onClick={() => handleTabChange('services')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeTab === 'services'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Services
+        </button>
       </div>
 
       {/* Tab Content with smooth transition */}
