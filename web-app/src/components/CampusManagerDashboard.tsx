@@ -2680,7 +2680,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                     ? booking.status === 'PENDING' 
                       ? 'border-l-amber-400' 
                       : 'border-l-blue-400'
-                  : 'border-l-green-400'
+                    : activeTab === 'cancelled'
+                      ? 'border-l-red-400'
+                      : 'border-l-green-400'
               }`}
               onClick={() => setSelectedBooking(booking)}
             >
@@ -2736,7 +2738,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                   <p className={`text-xs mt-2 sm:hidden ${
                     activeTab === 'upcoming' 
                       ? booking.status === 'PENDING' ? 'text-amber-500' : 'text-blue-500'
-                      : 'text-green-500'
+                      : activeTab === 'cancelled'
+                        ? 'text-red-500'
+                        : 'text-green-500'
                   }`}>Tap for details →</p>
               </div>
 
@@ -2746,7 +2750,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                     <p className={`font-bold text-lg ${
                       activeTab === 'upcoming' 
                         ? booking.status === 'PENDING' ? 'text-amber-600' : 'text-blue-600'
-                        : 'text-green-600'
+                        : activeTab === 'cancelled'
+                          ? 'text-red-600'
+                          : 'text-green-600'
                     }`}>{formatPrice(booking.priceUsdCents)}</p>
                     
                     {activeTab === 'upcoming' ? (
@@ -2780,7 +2786,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                   <div className={`hidden sm:flex items-center mt-1 ${
                     activeTab === 'upcoming'
                       ? booking.status === 'PENDING' ? 'text-amber-400' : 'text-blue-400'
-                      : 'text-green-400'
+                      : activeTab === 'cancelled'
+                        ? 'text-red-400'
+                        : 'text-green-400'
                   }`}>
                     <ChevronLeft className="w-5 h-5 rotate-180" />
                   </div>
