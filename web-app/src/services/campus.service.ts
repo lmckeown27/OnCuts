@@ -152,13 +152,18 @@ function transformCampus(campus: Campus): Campus {
   };
 }
 
+// Non-university entries to hide from the selector (junk data)
+const HIDDEN_CAMPUSES = ['gmail', 'icloud'];
+
 class CampusService {
   async getCampuses(search?: string): Promise<Campus[]> {
     // api.get extracts response.data.data when no pagination is present
     // so the response is already the campuses array
     // No limit - fetch all universities in the system
     const campuses = await api.get<Campus[]>('/campus', { search });
-    return (campuses || []).map(transformCampus);
+    return (campuses || [])
+      .filter(campus => !HIDDEN_CAMPUSES.includes(campus.name?.toLowerCase()))
+      .map(transformCampus);
   }
 
   async getCampusById(id: string): Promise<Campus> {
