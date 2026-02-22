@@ -2993,13 +2993,12 @@ const ServicesManagementPanel: React.FC = () => {
   return (
     <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div>
+      <div className="mb-6">
+        {/* Row 1: Title + Show Deleted (mobile), Title + controls (desktop) */}
+        <div className="flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Service Types</h3>
-          <p className="text-sm text-gray-500">Default prices for barbers who haven't set their own</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          {/* Show Deleted - visible on mobile, hidden on desktop (moves to right side) */}
+          <label className="flex sm:hidden items-center gap-2 text-sm text-gray-600">
             <input
               type="checkbox"
               checked={showInactive}
@@ -3008,17 +3007,42 @@ const ServicesManagementPanel: React.FC = () => {
             />
             Show Deleted
           </label>
-          <Button
-            onClick={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Service
-          </Button>
+          {/* Desktop controls */}
+          <div className="hidden sm:flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              />
+              Show Deleted
+            </label>
+            <Button
+              onClick={() => {
+                resetForm();
+                setShowAddModal(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Service
+            </Button>
+          </div>
         </div>
+        {/* Description */}
+        <p className="text-sm text-gray-500 mt-1">Default prices for barbers who haven't set their own</p>
+        {/* Mobile Add Service button */}
+        <Button
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
+          className="sm:hidden w-full mt-3 flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Service
+        </Button>
       </div>
 
       {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
