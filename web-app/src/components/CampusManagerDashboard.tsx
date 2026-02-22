@@ -2277,9 +2277,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     return sortOrder === 'latest' ? distanceA - distanceB : distanceB - distanceA;
   });
 
-  // Pagination for completed tab only
-  const totalPages = activeTab === 'completed' ? Math.ceil(sortedBookings.length / ITEMS_PER_PAGE) : 1;
-  const paginatedBookings = activeTab === 'completed' 
+  // Pagination for completed and cancelled tabs
+  const totalPages = (activeTab === 'completed' || activeTab === 'cancelled') ? Math.ceil(sortedBookings.length / ITEMS_PER_PAGE) : 1;
+  const paginatedBookings = (activeTab === 'completed' || activeTab === 'cancelled')
     ? sortedBookings.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
     : sortedBookings;
 
@@ -2300,7 +2300,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   // Reusable pagination controls component
   const renderPaginationControls = (position: 'top' | 'bottom') => {
-    if (activeTab !== 'completed' || totalPages <= 1) return null;
+    if ((activeTab !== 'completed' && activeTab !== 'cancelled') || totalPages <= 1) return null;
     
     return (
       <div 
@@ -2661,9 +2661,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
       ) : (
         <div className="space-y-3">
           {/* Show total count above pagination */}
-          {activeTab === 'completed' && totalPages > 1 && (
+          {(activeTab === 'completed' || activeTab === 'cancelled') && totalPages > 1 && (
             <p className="text-sm text-gray-500 text-center">
-              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} completed bookings
+              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} {activeTab} bookings
             </p>
           )}
           
