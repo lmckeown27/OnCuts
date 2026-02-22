@@ -28,6 +28,15 @@ import socketService from '../services/socket.service';
 
 // Storage keys
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
+
+// Helper to format service names from SNAKE_CASE to Title Case
+const formatServiceName = (name: string): string => {
+  return name
+    .toLowerCase()
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 const FILTER_STORAGE_KEY = 'campuscut_filter_criteria';
 
 // Format time from 24h to 12h format (e.g., "09:00" -> "9am", "17:00" -> "5pm")
@@ -1708,7 +1717,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                                                   </span>
                                                   {review.service_name && (
                                                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full flex-shrink-0">
-                                                      {review.service_name}
+                                                      {formatServiceName(review.service_name)}
                                                     </span>
                                                   )}
                                                 </div>
