@@ -311,7 +311,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
         {displayedTab === 'barbers' && (
           <div className="space-y-4">
             {/* Sub-tab buttons */}
-            <div className="flex gap-2">
+            <div className="flex justify-center gap-2">
               <button
                 onClick={() => setBarberSubTab('applications')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
