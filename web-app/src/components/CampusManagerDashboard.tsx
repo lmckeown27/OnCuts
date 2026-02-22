@@ -2163,7 +2163,7 @@ interface BarberOption {
 }
 
 const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
   
@@ -2175,11 +2175,14 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   const [completedSortOrder, setCompletedSortOrder] = useState<'latest' | 'furthest'>('latest');
   const [completedPaymentMethod, setCompletedPaymentMethod] = useState<string>('all');
   
+  const [cancelledBarberId, setCancelledBarberId] = useState<string>('all');
+  const [cancelledSortOrder, setCancelledSortOrder] = useState<'latest' | 'furthest'>('latest');
+  
   // Get current tab's filter values
-  const selectedBarberId = activeTab === 'upcoming' ? upcomingBarberId : completedBarberId;
-  const setSelectedBarberId = activeTab === 'upcoming' ? setUpcomingBarberId : setCompletedBarberId;
-  const sortOrder = activeTab === 'upcoming' ? upcomingSortOrder : completedSortOrder;
-  const setSortOrder = activeTab === 'upcoming' ? setUpcomingSortOrder : setCompletedSortOrder;
+  const selectedBarberId = activeTab === 'upcoming' ? upcomingBarberId : activeTab === 'completed' ? completedBarberId : cancelledBarberId;
+  const setSelectedBarberId = activeTab === 'upcoming' ? setUpcomingBarberId : activeTab === 'completed' ? setCompletedBarberId : setCancelledBarberId;
+  const sortOrder = activeTab === 'upcoming' ? upcomingSortOrder : activeTab === 'completed' ? completedSortOrder : cancelledSortOrder;
+  const setSortOrder = activeTab === 'upcoming' ? setUpcomingSortOrder : activeTab === 'completed' ? setCompletedSortOrder : setCancelledSortOrder;
   const selectedPaymentMethod = activeTab === 'completed' ? completedPaymentMethod : 'all';
   const setSelectedPaymentMethod = setCompletedPaymentMethod;
   
@@ -2234,7 +2237,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   };
 
   // Handle tab change with animation
-  const handleTabChange = (tab: 'upcoming' | 'completed') => {
+  const handleTabChange = (tab: 'upcoming' | 'completed' | 'cancelled') => {
     if (tab === activeTab) return;
     setIsContentVisible(false);
     setTimeout(() => {
@@ -2247,7 +2250,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
     setCurrentPage(1); // Reset to first page when filters change
     fetchBookings();
     // Re-fetch when tab changes or when the current tab's filters change
-  }, [campusId, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod]);
+  }, [campusId, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod, cancelledBarberId]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -2528,6 +2531,16 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         >
           Completed
         </button>
+        <button
+          onClick={() => handleTabChange('cancelled')}
+          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+            activeTab === 'cancelled'
+              ? 'bg-red-500 text-white shadow-md'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          Cancelled
+        </button>
       </div>
 
       {/* Content with transition */}
@@ -2640,7 +2653,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
             {selectedBarberId !== 'all' 
               ? `This barber has no ${activeTab} bookings` 
-              : `${activeTab === 'upcoming' ? 'Upcoming' : 'Completed'} bookings will appear here`}
+              : `${activeTab === 'upcoming' ? 'Upcoming' : activeTab === 'completed' ? 'Completed' : 'Cancelled'} bookings will appear here`}
           </p>
         </Card>
       ) : (
