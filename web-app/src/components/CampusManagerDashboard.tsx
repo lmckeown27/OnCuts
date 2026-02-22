@@ -1619,30 +1619,6 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header with Add Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h3 className="font-semibold text-gray-900">Service Locations</h3>
-          <p className="text-sm text-gray-500">
-            {pendingLocations.length > 0 && (
-              <span className="text-amber-600 font-medium">{pendingLocations.length} pending • </span>
-            )}
-            {approvedLocations.length} active locations
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => {
-            setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
-            setShowAddModal(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Location
-        </Button>
-      </div>
-
       {/* Subtab Navigation */}
       <div className="flex justify-center gap-2">
         <button
@@ -1683,6 +1659,30 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
         >
           Locations
         </button>
+      </div>
+
+      {/* Header with Add Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-gray-900">Service Locations</h3>
+          <p className="text-sm text-gray-500">
+            {pendingLocations.length > 0 && (
+              <span className="text-amber-600 font-medium">{pendingLocations.length} pending • </span>
+            )}
+            {approvedLocations.length} active locations
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => {
+            setFormData({ name: '', description: '', isUniversal: true, restrictedToBarberId: '' });
+            setShowAddModal(true);
+          }}
+        >
+          <Plus className="w-4 h-4 mr-1.5" />
+          Add Location
+        </Button>
       </div>
 
       {/* Barbers Subtab Content */}
