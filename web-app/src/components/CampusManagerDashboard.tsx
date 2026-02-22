@@ -230,9 +230,10 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusId, 
   campusName 
 }) => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'barbers' | 'locations' | 'bookings' | 'services'>('applications');
+  const [activeTab, setActiveTab] = useState<'barbers' | 'locations' | 'bookings' | 'services'>('barbers');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedTab, setDisplayedTab] = useState(activeTab);
+  const [barberSubTab, setBarberSubTab] = useState<'applications' | 'current'>('applications');
 
   const handleTabChange = (newTab: typeof activeTab) => {
     if (newTab === activeTab) return;
@@ -252,17 +253,6 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
         <nav className="flex justify-center gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
           <button
-            onClick={() => handleTabChange('applications')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-              activeTab === 'applications'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Applications
-          </button>
-          
-          <button
             onClick={() => handleTabChange('barbers')}
             className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'barbers'
@@ -270,7 +260,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Management
+            Barbers
           </button>
           
           <button
@@ -318,8 +308,36 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
             : 'opacity-100 translate-y-0'
         }`}
       >
-        {displayedTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
-        {displayedTab === 'barbers' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
+        {displayedTab === 'barbers' && (
+          <div className="space-y-4">
+            {/* Sub-tab buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setBarberSubTab('applications')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  barberSubTab === 'applications'
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                }`}
+              >
+                Applications
+              </button>
+              <button
+                onClick={() => setBarberSubTab('current')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  barberSubTab === 'current'
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                }`}
+              >
+                Current Barbers
+              </button>
+            </div>
+            {/* Sub-tab content */}
+            {barberSubTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
+            {barberSubTab === 'current' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
+          </div>
+        )}
         {displayedTab === 'locations' && <CampusLocationsPanel campusId={campusId} />}
         {displayedTab === 'bookings' && <CompletedBookingsPanel campusId={campusId} />}
         {displayedTab === 'services' && <ServicesManagementPanel />}
