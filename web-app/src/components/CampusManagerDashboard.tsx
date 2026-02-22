@@ -2225,7 +2225,9 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
         setBookings(data.data.bookings || []);
         setBarbers(data.data.barbers || []);
       } else {
-        console.error('Failed to fetch campus bookings:', response.status);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch campus bookings:', response.status, errorData);
+        setBookings([]); // Clear bookings on error to avoid showing stale data
       }
     } catch (error) {
       console.error('Failed to fetch campus bookings:', error);

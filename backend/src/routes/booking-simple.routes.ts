@@ -485,8 +485,8 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       statusClause = `b.status IN ('PENDING', 'ACCEPTED')`;
       dateFilter = `b."requestedAt" >= NOW() - INTERVAL '1 day'`; // Include yesterday to catch late bookings
     } else if (statusFilter === 'cancelled') {
-      // Cancelled: CANCELLED or REJECTED from last 30 days
-      statusClause = `b.status IN ('CANCELLED', 'REJECTED')`;
+      // Cancelled: CANCELLED only from last 30 days
+      statusClause = `b.status = 'CANCELLED'`;
       dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
     } else {
       // Completed: COMPLETED or PAID, from last 30 days
@@ -607,7 +607,13 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     });
   } catch (error: any) {
     logger.error('Error fetching campus bookings:', error.message || error);
-    next(error);
+    logger.error('Full error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch campus bookings',
+      details: error.detail || null,
+      query: statusFilter,
+    });
   }
 });
 
