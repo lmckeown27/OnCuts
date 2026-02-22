@@ -612,7 +612,6 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       success: false,
       error: error.message || 'Failed to fetch campus bookings',
       details: error.detail || null,
-      query: statusFilter,
     });
   }
 });
