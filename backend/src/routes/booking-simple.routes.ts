@@ -438,7 +438,7 @@ router.post('/walk-in/record-cash', authenticate, async (req, res, next) => {
  * Query params:
  *   - barberId: filter by specific barber
  *   - limit: max number of results (default 100)
- *   - statusFilter: 'upcoming' (PENDING, ACCEPTED), 'completed' (COMPLETED, PAID), or 'cancelled' (CANCELLED, DECLINED, NO_SHOW)
+ *   - statusFilter: 'upcoming' (PENDING, ACCEPTED), 'completed' (COMPLETED, PAID), or 'cancelled' (CANCELLED, REJECTED)
  */
 router.get('/campus/:campusId', authenticate, async (req, res, next) => {
   try {
@@ -476,7 +476,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     // statusFilter determines which bookings to show:
     //   - 'upcoming': PENDING, ACCEPTED (future bookings)
     //   - 'completed': COMPLETED, PAID (finished bookings)
-    //   - 'cancelled': CANCELLED, DECLINED, NO_SHOW (cancelled/failed bookings)
+    //   - 'cancelled': CANCELLED, REJECTED (cancelled/declined bookings)
     let statusClause: string;
     let dateFilter: string;
     
@@ -485,8 +485,8 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       statusClause = `b.status IN ('PENDING', 'ACCEPTED')`;
       dateFilter = `b."requestedAt" >= NOW() - INTERVAL '1 day'`; // Include yesterday to catch late bookings
     } else if (statusFilter === 'cancelled') {
-      // Cancelled: CANCELLED, DECLINED, NO_SHOW from last 30 days
-      statusClause = `b.status IN ('CANCELLED', 'DECLINED', 'NO_SHOW')`;
+      // Cancelled: CANCELLED or REJECTED from last 30 days
+      statusClause = `b.status IN ('CANCELLED', 'REJECTED')`;
       dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
     } else {
       // Completed: COMPLETED or PAID, from last 30 days
