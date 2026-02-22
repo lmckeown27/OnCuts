@@ -82,13 +82,14 @@ function searchUniversities(universities: Campus[], query: string, limit: number
   return [...startsWithMatches, ...containsMatches].slice(0, limit);
 }
 
-// Helper to get display name (use slug as shortName if it's short enough)
+// Helper to get display name (use shortName from campus service if available)
 function getDisplayName(uni: Campus): { shortName?: string; fullName: string } {
-  const slug = uni.slug?.toUpperCase().replace(/-/g, ' ');
-  // If slug is significantly shorter than name, treat it as a short name
-  if (slug && slug.length <= 10 && slug.length < uni.name.length * 0.5) {
-    return { shortName: slug, fullName: uni.name };
+  // Use the shortName derived by campus.service.ts (from UNIVERSITY_SHORT_NAMES mapping)
+  // This provides proper abbreviations like "UCLA", "USC", "Cal Poly SLO", etc.
+  if (uni.shortName) {
+    return { shortName: uni.shortName, fullName: uni.name };
   }
+  // Otherwise just show the full name
   return { fullName: uni.name };
 }
 
