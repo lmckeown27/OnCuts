@@ -63,16 +63,18 @@ function searchUniversities(universities: Campus[], query: string, limit: number
     const nameLower = uni.name.toLowerCase();
     const slugLower = uni.slug?.toLowerCase() || '';
     const cityLower = uni.city.toLowerCase();
+    const shortNameLower = uni.shortName?.toLowerCase() || '';
     
-    // Check if name or slug STARTS with the query
-    if (nameLower.startsWith(lowerQuery) || slugLower.startsWith(lowerQuery)) {
+    // Check if name, slug, or shortName STARTS with the query
+    if (nameLower.startsWith(lowerQuery) || slugLower.startsWith(lowerQuery) || shortNameLower.startsWith(lowerQuery)) {
       startsWithMatches.push(uni);
     } 
     // Otherwise check if it contains the query anywhere
     else if (
       nameLower.includes(lowerQuery) ||
       slugLower.includes(lowerQuery) ||
-      cityLower.includes(lowerQuery)
+      cityLower.includes(lowerQuery) ||
+      shortNameLower.includes(lowerQuery)
     ) {
       containsMatches.push(uni);
     }
