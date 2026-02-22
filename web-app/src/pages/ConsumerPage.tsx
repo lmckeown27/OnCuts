@@ -1020,6 +1020,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [loginRedirectBarber, setLoginRedirectBarber] = useState<Barber | null>(null);
   const [loadingBarberDetails, setLoadingBarberDetails] = useState(false);
   const [reviewsExpanded, setReviewsExpanded] = useState(false);
+  const reviewsSectionRef = useRef<HTMLDivElement>(null);
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1630,9 +1631,18 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
                                 {/* Reviews Section - Collapsible */}
                                 {(selectedBarber.reviews && selectedBarber.reviews.length > 0) || loadingBarberDetails ? (
-                                  <div className="pt-4 sm:pt-6 border-t border-gray-100">
+                                  <div ref={reviewsSectionRef} className="pt-4 sm:pt-6 border-t border-gray-100">
                                     <button
-                                      onClick={() => setReviewsExpanded(!reviewsExpanded)}
+                                      onClick={() => {
+                                        const willExpand = !reviewsExpanded;
+                                        setReviewsExpanded(willExpand);
+                                        if (willExpand) {
+                                          // Scroll to reviews section after a short delay for the animation
+                                          setTimeout(() => {
+                                            reviewsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                          }, 100);
+                                        }
+                                      }}
                                       className="w-full relative flex items-center justify-center sm:justify-between text-gray-700 font-medium sm:text-lg hover:text-gray-900 transition-colors"
                                     >
                                       <div className="flex flex-col items-center sm:items-start gap-1">
