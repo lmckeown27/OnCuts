@@ -254,7 +254,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
         <nav className="flex justify-center gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
           <button
             onClick={() => handleTabChange('barbers')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'barbers'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -265,7 +265,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           
           <button
             onClick={() => handleTabChange('locations')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'locations'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -276,7 +276,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           
           <button
             onClick={() => handleTabChange('bookings')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'bookings'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -287,7 +287,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
           
           <button
             onClick={() => handleTabChange('services')}
-            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-xs sm:text-sm transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
               activeTab === 'services'
                 ? 'border-primary-500 text-primary-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
