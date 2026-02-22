@@ -1642,48 +1642,46 @@ const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
       </div>
 
       {/* Subtab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-4">
+      <div className="flex justify-center gap-2">
+        <button
+          onClick={() => setActiveSubTab('barbers')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeSubTab === 'barbers'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Barbers
+        </button>
+        
+        {/* Requested Locations - Only show if there are pending requests */}
+        {pendingLocations.length > 0 && (
           <button
-            onClick={() => setActiveSubTab('barbers')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-              activeSubTab === 'barbers'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            onClick={() => setActiveSubTab('requested')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+              activeSubTab === 'requested'
+                ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
             }`}
           >
-            Barbers
+            Requested
+            <span className="bg-amber-200 text-amber-800 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+              {pendingLocations.length}
+            </span>
           </button>
-          
-          {/* Requested Locations - Only show if there are pending requests */}
-          {pendingLocations.length > 0 && (
-          <button
-              onClick={() => setActiveSubTab('requested')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 flex items-center gap-1.5 ${
-                activeSubTab === 'requested'
-                  ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Requested
-              <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
-                {pendingLocations.length}
-              </span>
-          </button>
-          )}
-          
-          <button
-            onClick={() => setActiveSubTab('approved')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
-              activeSubTab === 'approved'
-                ? 'border-primary-500 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Locations
-          </button>
-        </nav>
-        </div>
+        )}
+        
+        <button
+          onClick={() => setActiveSubTab('approved')}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            activeSubTab === 'approved'
+              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+          }`}
+        >
+          Locations
+        </button>
+      </div>
 
       {/* Barbers Subtab Content */}
       {activeSubTab === 'barbers' && (
