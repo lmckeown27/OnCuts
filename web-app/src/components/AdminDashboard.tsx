@@ -893,8 +893,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             
             {/* Campus Manager Selector */}
             <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-              <p className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1">
-                <Crown className="w-3.5 h-3.5" />
+              <p className="text-xs font-semibold text-amber-700 mb-2">
                 Campus Manager
               </p>
               <select
