@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Crown, Search, ChevronDown, Loader2, AlertCircle,
-  Calendar, DollarSign, TrendingUp, Scissors
+  Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
+  MessageSquare, Star, Clock
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -89,6 +90,38 @@ interface Barber {
   campusId?: string;
 }
 
+interface BarberBooking {
+  id: string;
+  service_type: string;
+  price_cents: number;
+  tip_cents: number;
+  total_paid_cents: number;
+  status: string;
+  scheduled_time: string;
+  created_at: string;
+  paid_at: string | null;
+  review_rating: number | null;
+  review_text: string | null;
+  consumer_id: string;
+  consumer_first_name: string;
+  consumer_last_name: string;
+  consumer_email: string;
+  consumer_avatar: string | null;
+  message_count: number;
+}
+
+interface BookingMessage {
+  id: string;
+  content: string;
+  sender_id: string;
+  created_at: string;
+  is_read: boolean;
+  sender_first_name: string;
+  sender_last_name: string;
+  sender_avatar: string | null;
+  sender_role: string;
+}
+
 interface AdminDashboardProps {
   initialCampusId?: string;
 }
@@ -115,6 +148,14 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
   const [adminView, setAdminView] = useState<AdminView>('performance');
+  
+  // Barber detail view state
+  const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
+  const [barberBookings, setBarberBookings] = useState<BarberBooking[]>([]);
+  const [isLoadingBarberBookings, setIsLoadingBarberBookings] = useState(false);
+  const [selectedBookingMessages, setSelectedBookingMessages] = useState<BookingMessage[]>([]);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -263,6 +304,56 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
+  };
+  
+  // Handle barber card click - fetch their bookings
+  const handleBarberClick = async (barber: Barber) => {
+    setSelectedBarber(barber);
+    setBarberBookings([]);
+    setSelectedBookingId(null);
+    setSelectedBookingMessages([]);
+    setIsLoadingBarberBookings(true);
+    
+    try {
+      const response = await api.get<{ bookings: BarberBooking[] }>(`/admin/barbers/${barber.barberRecordId}/bookings`);
+      setBarberBookings(response.bookings || []);
+    } catch (error) {
+      console.error('Failed to fetch barber bookings:', error);
+      toast.error('Failed to load bookings');
+    } finally {
+      setIsLoadingBarberBookings(false);
+    }
+  };
+  
+  // Handle booking click - fetch messages
+  const handleBookingClick = async (bookingId: string) => {
+    if (selectedBookingId === bookingId) {
+      // Toggle off
+      setSelectedBookingId(null);
+      setSelectedBookingMessages([]);
+      return;
+    }
+    
+    setSelectedBookingId(bookingId);
+    setSelectedBookingMessages([]);
+    setIsLoadingMessages(true);
+    
+    try {
+      const response = await api.get<{ messages: BookingMessage[] }>(`/admin/bookings/${bookingId}/messages`);
+      setSelectedBookingMessages(response.messages || []);
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  };
+  
+  // Go back from barber detail view
+  const handleBackToBarbers = () => {
+    setSelectedBarber(null);
+    setBarberBookings([]);
+    setSelectedBookingId(null);
+    setSelectedBookingMessages([]);
   };
   
   // Prepare chart data
@@ -632,24 +723,202 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       </div>
       )}
       
-      {/* Campus Manager Assignment */}
+      {/* Barber Management */}
       {adminView === 'barbers' && (
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
-          {selectedCampus?.managerName && (
-            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-              Current: {selectedCampus.managerName}
-            </span>
-          )}
-        </div>
-        
         {!selectedCampusId ? (
           <div className="flex items-center justify-center py-8 text-gray-400 text-sm">
-            Select a university to manage campus managers
+            Select a university to view barbers
+          </div>
+        ) : selectedBarber ? (
+          /* Barber Detail View */
+          <div>
+            {/* Back button and barber header */}
+            <button 
+              onClick={handleBackToBarbers}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-3 text-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to barbers
+            </button>
+            
+            {/* Barber info card */}
+            <div className="p-3 bg-gray-50 rounded-xl mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {selectedBarber.profileImageUrl ? (
+                    <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold text-gray-500">
+                      {selectedBarber.firstName.charAt(0)}{selectedBarber.lastName.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 flex items-center gap-2">
+                    {selectedBarber.firstName} {selectedBarber.lastName}
+                    {selectedBarber.isCampusManager && (
+                      <Crown className="w-4 h-4 text-amber-500" />
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500">{selectedBarber.email}</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Bookings list */}
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Booking History</h4>
+            
+            {isLoadingBarberBookings ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+              </div>
+            ) : barberBookings.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {barberBookings.map(booking => (
+                  <div key={booking.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Booking summary - clickable */}
+                    <button
+                      onClick={() => handleBookingClick(booking.id)}
+                      className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {booking.consumer_avatar ? (
+                              <img src={booking.consumer_avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-gray-500">
+                                {booking.consumer_first_name.charAt(0)}{booking.consumer_last_name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {booking.consumer_first_name} {booking.consumer_last_name}
+                            </p>
+                            <p className="text-xs text-gray-500">{booking.service_type}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {formatCurrency(booking.total_paid_cents || booking.price_cents)}
+                          </p>
+                          <div className="flex items-center gap-1 justify-end">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                              booking.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                              booking.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
+                              booking.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {booking.status}
+                            </span>
+                            {booking.message_count > 0 && (
+                              <span className="flex items-center gap-0.5 text-[10px] text-gray-500">
+                                <MessageSquare className="w-3 h-3" />
+                                {booking.message_count}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(booking.scheduled_time).toLocaleDateString('en-US', { 
+                            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+                          })}
+                        </span>
+                        {booking.review_rating && (
+                          <span className="flex items-center gap-1">
+                            <Star className="w-3 h-3 text-yellow-500" />
+                            {booking.review_rating}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                    
+                    {/* Messages - expanded when selected */}
+                    {selectedBookingId === booking.id && (
+                      <div className="border-t border-gray-200 bg-gray-50 p-3">
+                        <p className="text-xs font-semibold text-gray-600 mb-2">Messages</p>
+                        {isLoadingMessages ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                          </div>
+                        ) : selectedBookingMessages.length > 0 ? (
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {selectedBookingMessages.map(msg => (
+                              <div key={msg.id} className="bg-white p-2 rounded-lg border border-gray-100">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-medium text-gray-900">
+                                    {msg.sender_first_name} {msg.sender_last_name}
+                                  </span>
+                                  <span className={`text-[10px] px-1 py-0.5 rounded ${
+                                    msg.sender_role === 'BARBER' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {msg.sender_role === 'BARBER' ? 'Barber' : 'Customer'}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 ml-auto">
+                                    {new Date(msg.created_at).toLocaleTimeString('en-US', { 
+                                      hour: 'numeric', minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-700">{msg.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 text-center py-2">No messages for this booking</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                <Calendar className="w-8 h-8 mb-2" />
+                <p className="text-sm">No bookings found</p>
+              </div>
+            )}
           </div>
         ) : (
+          /* Barber List View */
           <>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
+            </div>
+            
+            {/* Campus Manager Selector */}
+            <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5" />
+                Campus Manager
+              </p>
+              <select
+                value={barbers.find(b => b.isCampusManager)?.id || ''}
+                onChange={(e) => {
+                  const currentManager = barbers.find(b => b.isCampusManager);
+                  if (currentManager && e.target.value !== currentManager.id) {
+                    handleAssignManager(currentManager.id, false);
+                  }
+                  if (e.target.value) {
+                    handleAssignManager(e.target.value, true);
+                  }
+                }}
+                className="w-full text-sm border border-amber-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="">No campus manager assigned</option>
+                {barbers.filter(b => b.isActive).map(barber => (
+                  <option key={barber.id} value={barber.id}>
+                    {barber.firstName} {barber.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             {/* Search */}
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -662,129 +931,101 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               />
             </div>
             
+            <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
+            
             {isLoadingBarbers ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-            </div>
-          ) : filteredBarbers.length > 0 ? (
-            <div className="space-y-4 max-h-80 overflow-y-auto">
-              {/* Active Barbers */}
-              {filteredBarbers.filter(b => b.isActive).length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
-                    Active ({filteredBarbers.filter(b => b.isActive).length})
-                  </p>
-                  <div className="space-y-2">
-                    {filteredBarbers.filter(b => b.isActive).map(barber => (
-                      <div 
-                        key={barber.id}
-                        className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                          barber.isCampusManager 
-                            ? 'border-green-200 bg-green-50' 
-                            : 'border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {barber.profileImageUrl ? (
-                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-bold text-gray-500">
-                                {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
-                              {barber.firstName} {barber.lastName}
-                              {barber.isCampusManager && (
-                                <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">{barber.email}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {barber.isCampusManager ? (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleAssignManager(barber.id, false)}
-                              disabled={isAssigning === barber.id}
-                              className="text-xs px-2 py-1"
-                            >
-                              {isAssigning === barber.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+              </div>
+            ) : filteredBarbers.length > 0 ? (
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {/* Active Barbers */}
+                {filteredBarbers.filter(b => b.isActive).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                      Active ({filteredBarbers.filter(b => b.isActive).length})
+                    </p>
+                    <div className="space-y-2">
+                      {filteredBarbers.filter(b => b.isActive).map(barber => (
+                        <button 
+                          key={barber.id}
+                          onClick={() => handleBarberClick(barber)}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left ${
+                            barber.isCampusManager 
+                              ? 'border-amber-200 bg-amber-50 hover:bg-amber-100' 
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {barber.profileImageUrl ? (
+                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                'Remove'
+                                <span className="text-xs font-bold text-gray-500">
+                                  {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
+                                </span>
                               )}
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleAssignManager(barber.id, true)}
-                              disabled={isAssigning === barber.id}
-                              className="text-xs px-2 py-1"
-                            >
-                              {isAssigning === barber.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                                {barber.firstName} {barber.lastName}
+                                {barber.isCampusManager && (
+                                  <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{barber.email}</p>
+                            </div>
+                          </div>
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Inactive Barbers */}
+                {filteredBarbers.filter(b => !b.isActive).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                      Inactive ({filteredBarbers.filter(b => !b.isActive).length})
+                    </p>
+                    <div className="space-y-2">
+                      {filteredBarbers.filter(b => !b.isActive).map(barber => (
+                        <button 
+                          key={barber.id}
+                          onClick={() => handleBarberClick(barber)}
+                          className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60 hover:opacity-80 text-left transition-opacity"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {barber.profileImageUrl ? (
+                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                'Assign'
+                                <span className="text-xs font-bold text-gray-500">
+                                  {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
+                                </span>
                               )}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Inactive Barbers */}
-              {filteredBarbers.filter(b => !b.isActive).length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                    Inactive ({filteredBarbers.filter(b => !b.isActive).length})
-                  </p>
-                  <div className="space-y-2">
-                    {filteredBarbers.filter(b => !b.isActive).map(barber => (
-                      <div 
-                        key={barber.id}
-                        className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {barber.profileImageUrl ? (
-                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-bold text-gray-500">
-                                {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
-                              </span>
-                            )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
+                                {barber.firstName} {barber.lastName}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate">{barber.email}</p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
-                              {barber.firstName} {barber.lastName}
-                            </p>
-                            <p className="text-xs text-gray-400 truncate">{barber.email}</p>
-                          </div>
-                        </div>
-                        
-                        <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>
-                      </div>
-                    ))}
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-              <Users className="w-10 h-10 text-gray-300 mb-2" />
-              <p className="text-sm">No barbers found</p>
-            </div>
-          )}
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                <Users className="w-10 h-10 text-gray-300 mb-2" />
+                <p className="text-sm">No barbers found</p>
+              </div>
+            )}
           </>
         )}
       </div>

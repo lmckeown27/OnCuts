@@ -1276,3 +1276,127 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
   }
 };
 
+/**
+ * Get a barber's bookings with messages
+ * GET /api/admin/barbers/:barberRecordId/bookings
+ */
+export const getBarberBookings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { barberRecordId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get bookings for this barber with consumer info and message count
+    const result = await pool.query(`
+      SELECT 
+        b.id,
+        b."serviceType" as service_type,
+        b."priceUsdCents" as price_cents,
+        b."tipAmountCents" as tip_cents,
+        b."totalPaidCents" as total_paid_cents,
+        b.status,
+        b."requestedAt" as scheduled_time,
+        b."createdAt" as created_at,
+        b."paidAt" as paid_at,
+        b."reviewRating" as review_rating,
+        b."reviewText" as review_text,
+        u.id as consumer_id,
+        u.first_name as consumer_first_name,
+        u.last_name as consumer_last_name,
+        u.email as consumer_email,
+        u."avatarUrl" as consumer_avatar,
+        (
+          SELECT COUNT(*)
+          FROM conversations c
+          JOIN messages m ON m.conversation_id = c.id
+          WHERE c.booking_id = b.id
+        ) as message_count
+      FROM bookings b
+      JOIN users u ON b."consumerId" = u.id
+      WHERE b."barberId" = $1::uuid
+      ORDER BY b."createdAt" DESC
+      LIMIT $2 OFFSET $3
+    `, [barberRecordId, limit, offset]);
+
+    // Get total count
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM bookings
+      WHERE "barberId" = $1::uuid
+    `, [barberRecordId]);
+
+    res.json({
+      bookings: result.rows,
+      pagination: {
+        page,
+        limit,
+        total: parseInt(countResult.rows[0].total),
+        pages: Math.ceil(countResult.rows[0].total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get messages for a specific booking
+ * GET /api/admin/bookings/:bookingId/messages
+ */
+export const getBookingMessages = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { bookingId } = req.params;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get conversation and messages for this booking
+    const conversationResult = await pool.query(`
+      SELECT c.id as conversation_id
+      FROM conversations c
+      WHERE c.booking_id = $1
+    `, [bookingId]);
+
+    if (conversationResult.rows.length === 0) {
+      return res.json({ messages: [], conversationId: null });
+    }
+
+    const conversationId = conversationResult.rows[0].conversation_id;
+
+    // Get messages
+    const messagesResult = await pool.query(`
+      SELECT 
+        m.id,
+        m.content,
+        m.sender_id,
+        m.created_at,
+        m.is_read,
+        u.first_name as sender_first_name,
+        u.last_name as sender_last_name,
+        u."avatarUrl" as sender_avatar,
+        u.role as sender_role
+      FROM messages m
+      JOIN users u ON m.sender_id = u.id
+      WHERE m.conversation_id = $1
+      ORDER BY m.created_at ASC
+    `, [conversationId]);
+
+    res.json({
+      conversationId,
+      messages: messagesResult.rows,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
