@@ -362,7 +362,14 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             
             {showCampusDropdown && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
-                {filteredCampuses.length > 0 ? (
+                {campusSearchQuery.trim() === '' ? (
+                  // Show "Start typing to search" when no query
+                  <div className="p-4 text-center text-gray-500">
+                    <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p>Start typing to search</p>
+                    <p className="text-xs mt-1 text-gray-400">{campuses.length} universities available</p>
+                  </div>
+                ) : filteredCampuses.length > 0 ? (
                   filteredCampuses.map(campus => (
                     <button
                       key={campus.id}
