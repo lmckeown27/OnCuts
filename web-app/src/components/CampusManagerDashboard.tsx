@@ -2267,15 +2267,21 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-  // Sort bookings based on sortOrder (by distance from current date)
+  // Sort bookings based on sortOrder
   const sortedBookings = [...bookings].sort((a, b) => {
-    const now = Date.now();
     const dateA = new Date(a.scheduledTime).getTime();
     const dateB = new Date(b.scheduledTime).getTime();
-    const distanceA = Math.abs(dateA - now);
-    const distanceB = Math.abs(dateB - now);
-    // Latest = closest to current date, Furthest = furthest from current date
-    return sortOrder === 'latest' ? distanceA - distanceB : distanceB - distanceA;
+    
+    if (activeTab === 'upcoming') {
+      // For upcoming: sort by proximity to now (closest first) or furthest first
+      const now = Date.now();
+      const distanceA = Math.abs(dateA - now);
+      const distanceB = Math.abs(dateB - now);
+      return sortOrder === 'latest' ? distanceA - distanceB : distanceB - distanceA;
+    } else {
+      // For completed/cancelled: sort by date (latest = most recent date first, furthest = oldest first)
+      return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+    }
   });
 
   // Pagination for completed and cancelled tabs
