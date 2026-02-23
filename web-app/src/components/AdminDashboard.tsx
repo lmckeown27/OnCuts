@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Calendar, DollarSign, TrendingUp, 
   Crown, Search, ChevronDown, Loader2, AlertCircle
 } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
-import Card from './Card';
 import Button from './Button';
 
 interface Campus {
@@ -59,6 +58,19 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
+  
+  const campusDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Close campus dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (campusDropdownRef.current && !campusDropdownRef.current.contains(event.target as Node)) {
+        setShowCampusDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   // Fetch all campuses
   useEffect(() => {
@@ -184,36 +196,27 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         
         {isLoadingCampuses ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
         ) : (
-          <div className="relative">
-            <div 
-              className="flex items-center justify-between p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 transition-colors"
-              onClick={() => setShowCampusDropdown(!showCampusDropdown)}
-            >
-              <span className="font-medium text-sm">
-                {selectedCampus ? selectedCampus.name : 'Select a university...'}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
-            </div>
+          <div className="relative" ref={campusDropdownRef}>
+            <input
+              type="text"
+              value={showCampusDropdown ? campusSearchQuery : (selectedCampus?.name || '')}
+              onChange={(e) => {
+                setCampusSearchQuery(e.target.value);
+                if (!showCampusDropdown) setShowCampusDropdown(true);
+              }}
+              onFocus={() => setShowCampusDropdown(true)}
+              placeholder="Search campuses..."
+              className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+            />
+            <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
             
             {showCampusDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-hidden">
-                <div className="p-2 border-b border-gray-200">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={campusSearchQuery}
-                      onChange={(e) => setCampusSearchQuery(e.target.value)}
-                      placeholder="Search universities..."
-                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {filteredCampuses.map(campus => (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto">
+                {filteredCampuses.length > 0 ? (
+                  filteredCampuses.map(campus => (
                     <button
                       key={campus.id}
                       onClick={() => {
@@ -221,8 +224,8 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                         setShowCampusDropdown(false);
                         setCampusSearchQuery('');
                       }}
-                      className={`w-full px-4 py-2.5 text-left hover:bg-purple-50 flex items-center justify-between text-sm ${
-                        campus.id === selectedCampusId ? 'bg-purple-50' : ''
+                      className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center justify-between text-sm ${
+                        campus.id === selectedCampusId ? 'bg-primary-50' : ''
                       }`}
                     >
                       <div>
@@ -235,8 +238,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                         </span>
                       )}
                     </button>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <p className="px-3 py-2 text-sm text-gray-500">No campuses found</p>
+                )}
               </div>
             )}
           </div>
