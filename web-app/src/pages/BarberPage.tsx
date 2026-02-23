@@ -3131,13 +3131,18 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             
                             {/* Undo Complete Button (for COMPLETED bookings awaiting payment) */}
                             {canUndoComplete && !isUndoingComplete && !isRemovingBooking && (
-                              <button
-                                onClick={() => setIsUndoingComplete(true)}
-                                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                                Undo Complete
-                              </button>
+                              <div className="space-y-2">
+                                <p className="text-sm text-gray-500 text-center">
+                                  Awaiting payment from customer. Need to make changes?
+                                </p>
+                                <button
+                                  onClick={() => setIsUndoingComplete(true)}
+                                  className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                  Undo Complete
+                                </button>
+                              </div>
                             )}
 
                             {/* Undo Complete Confirmation */}
