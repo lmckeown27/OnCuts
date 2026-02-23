@@ -51,6 +51,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   
   const [isLoadingCampuses, setIsLoadingCampuses] = useState(true);
+  const [campusLoadError, setCampusLoadError] = useState<string | null>(null);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(false);
   const [isAssigning, setIsAssigning] = useState<string | null>(null);
@@ -73,23 +74,25 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   }, []);
   
   // Fetch all campuses
-  useEffect(() => {
-    const fetchCampuses = async () => {
-      try {
-        const response = await api.get<{ campuses: Campus[] } | Campus[]>('/admin/campuses');
-        const campusList = Array.isArray(response) ? response : response.campuses || [];
-        setCampuses(campusList);
-        if (campusList.length > 0 && !selectedCampusId) {
-          setSelectedCampusId(campusList[0].id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch campuses:', error);
-        toast.error('Failed to load campuses');
-      } finally {
-        setIsLoadingCampuses(false);
+  const fetchCampuses = async () => {
+    setIsLoadingCampuses(true);
+    setCampusLoadError(null);
+    try {
+      const response = await api.get<{ campuses: Campus[] } | Campus[]>('/admin/campuses');
+      const campusList = Array.isArray(response) ? response : response.campuses || [];
+      setCampuses(campusList);
+      if (campusList.length > 0 && !selectedCampusId) {
+        setSelectedCampusId(campusList[0].id);
       }
-    };
-    
+    } catch (error: any) {
+      console.error('Failed to fetch campuses:', error);
+      setCampusLoadError(error.message || 'Failed to load campuses. The backend may need to be restarted.');
+    } finally {
+      setIsLoadingCampuses(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchCampuses();
   }, []);
   
@@ -198,6 +201,22 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           <div className="flex items-center justify-center py-6">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
+        ) : campusLoadError ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">Failed to load campuses</p>
+                <p className="text-xs text-red-600 mt-1">{campusLoadError}</p>
+                <button
+                  onClick={fetchCampuses}
+                  className="mt-2 text-xs font-medium text-red-700 hover:text-red-800 underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="relative" ref={campusDropdownRef}>
             <input
@@ -209,7 +228,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               }}
               onFocus={() => setShowCampusDropdown(true)}
               placeholder="Search campuses..."
-              className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+              className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-2.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
             />
             <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
             
@@ -224,7 +243,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                         setShowCampusDropdown(false);
                         setCampusSearchQuery('');
                       }}
-                      className={`w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center justify-between text-sm ${
+                      className={`w-full px-3 py-2.5 text-left hover:bg-gray-100 flex items-center justify-between text-sm ${
                         campus.id === selectedCampusId ? 'bg-primary-50' : ''
                       }`}
                     >
@@ -240,7 +259,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                     </button>
                   ))
                 ) : (
-                  <p className="px-3 py-2 text-sm text-gray-500">No campuses found</p>
+                  <p className="px-3 py-3 text-sm text-gray-500 text-center">No campuses found</p>
                 )}
               </div>
             )}
