@@ -1425,14 +1425,14 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         c.name as campus_name
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
-      WHERE u.role IN ('CONSUMER', 'STUDENT', 'consumer', 'student')
+      WHERE u.role = 'CONSUMER'
       ORDER BY u."createdAt" DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
     // Get total count of consumers
     const countResult = await pool.query(`
-      SELECT COUNT(*) as total FROM users WHERE role IN ('CONSUMER', 'STUDENT', 'consumer', 'student')
+      SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER'
     `);
 
     res.json({
