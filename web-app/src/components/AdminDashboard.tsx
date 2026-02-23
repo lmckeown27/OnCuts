@@ -410,6 +410,28 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
       </div>
       
+      {/* Total Revenue - Always visible below university selector */}
+      {selectedCampusId && (
+        <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-xs text-green-600 font-medium">Total Revenue</p>
+                <p className="text-xl font-bold text-green-700">
+                  {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-green-500">
+              All time
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* Performance Chart & Summary */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -555,26 +577,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                   metricsPeriod === 'weekly' ? 'text-orange-500' : 'text-rose-500'
                 }`}>
                   Avg Revenue/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : 'Month'}
-                </p>
-              </div>
-            </div>
-
-            {/* Total Revenue */}
-            <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <TrendingUp className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-green-600 font-medium">Total Revenue</p>
-                    <p className="text-xl font-bold text-green-700">
-                      {formatCurrency(performance.totalRevenue)}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-green-500">
-                  All time
                 </p>
               </div>
             </div>
