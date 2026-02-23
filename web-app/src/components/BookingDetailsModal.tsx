@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   X, Calendar, Clock, MapPin, User, DollarSign, FileText, 
   Pencil, Trash2, Check, AlertTriangle, Star, MessageSquare,
-  Phone, Mail, Save
+  Phone, Mail, Save, RotateCcw
 } from 'lucide-react';
 import api from '../services/api.service';
 import barberService from '../services/barber.service';
@@ -33,6 +33,7 @@ export default function BookingDetailsModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [isUndoingComplete, setIsUndoingComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   
@@ -281,6 +282,23 @@ export default function BookingDetailsModal({
     }
   };
 
+  const handleUndoComplete = async () => {
+    setIsSaving(true);
+    try {
+      await api.put(`/bookings-simple/${booking.id}/undo-complete`, {});
+
+      toast.success('Booking reverted to accepted');
+      setIsUndoingComplete(false);
+      handleClose();
+      onBookingUpdated?.();
+    } catch (error: any) {
+      console.error('Failed to undo complete:', error);
+      toast.error(error.message || 'Failed to undo completion');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCompleteBooking = async () => {
     try {
       // Request payment from consumer - this sends them a notification
@@ -299,6 +317,7 @@ export default function BookingDetailsModal({
   const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
   const canComplete = booking.status === 'ACCEPTED';
   const canRemove = booking.status === 'COMPLETED' || booking.status === 'PAID';
+  const canUndoComplete = booking.status === 'COMPLETED';
 
   return (
     <div
@@ -691,8 +710,62 @@ export default function BookingDetailsModal({
                 </div>
               )}
 
+              {/* Undo Complete Button (for COMPLETED bookings awaiting payment) */}
+              {canUndoComplete && !isUndoingComplete && !isRemoving && (
+                <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0">
+                  <button
+                    onClick={() => setIsUndoingComplete(true)}
+                    className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Undo Complete
+                  </button>
+                </div>
+              )}
+
+              {/* Undo Complete Confirmation */}
+              {isUndoingComplete && (
+                <div className="pt-4 border-t border-gray-100 space-y-4 pb-4 sm:pb-0">
+                  <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-800">Undo completion?</h3>
+                      <p className="text-sm text-gray-600">
+                        This will revert the booking to accepted status.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsUndoingComplete(false)}
+                      className="flex-1 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors"
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUndoComplete}
+                      disabled={isSaving}
+                      className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                      {isSaving ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Reverting...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-4 h-4" />
+                          Undo
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Remove from Schedule Button (for completed bookings) */}
-              {canRemove && !isRemoving && (
+              {canRemove && !isRemoving && !isUndoingComplete && (
                 <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0">
                   <button
                     onClick={() => setIsRemoving(true)}
@@ -705,7 +778,7 @@ export default function BookingDetailsModal({
               )}
 
               {/* Remove Confirmation */}
-              {isRemoving && (
+              {isRemoving && !isUndoingComplete && (
                 <div className="pt-4 border-t border-gray-100 space-y-4 pb-4 sm:pb-0">
                   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
                     <AlertTriangle className="w-6 h-6 text-gray-500 flex-shrink-0" />
