@@ -627,9 +627,8 @@ export default function BarberPage() {
                           navigate(`${platformPrefix}/admin`);
                           setShowProfileDropdown(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-3"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
-                        <Shield className="w-4 h-4 text-purple-500" />
                         Admin Dashboard
                       </button>
                     </>
