@@ -815,11 +815,11 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
       ORDER BY name
     `);
 
-    // Get campus managers separately
+    // Get campus managers separately (role column, not user_type)
     const managersResult = await pool.query(`
       SELECT u.id, u."campusId", u.first_name, u.last_name
       FROM users u
-      WHERE u.user_type = 'campus_manager' AND u."campusId" IS NOT NULL
+      WHERE u.role = 'CAMPUS_MANAGER' AND u."campusId" IS NOT NULL
     `);
 
     // Create a map of campus managers
@@ -944,7 +944,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get barbers for this campus (include user_type to check if they're campus manager)
+    // Get barbers for this campus (include role to check if they're campus manager)
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -955,7 +955,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
         u."campusId" as campus_id,
-        u.user_type
+        u.role
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       WHERE u."campusId" = $1
@@ -972,7 +972,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
-        isCampusManager: row.user_type === 'campus_manager',
+        isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
       })),
     });
@@ -1025,14 +1025,14 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
     if (action === 'assign') {
       // First, remove any existing campus manager for this campus
       await pool.query(
-        `UPDATE users SET user_type = 'barber' WHERE "campusId" = $1 AND user_type = 'campus_manager'`,
+        `UPDATE users SET role = 'BARBER' WHERE "campusId" = $1 AND role = 'CAMPUS_MANAGER'`,
         [campusId]
       );
 
-      // Update user type to campus_manager
+      // Update role to CAMPUS_MANAGER
       await pool.query(
-        'UPDATE users SET user_type = $1 WHERE id = $2',
-        ['campus_manager', barberUserId]
+        'UPDATE users SET role = $1 WHERE id = $2',
+        ['CAMPUS_MANAGER', barberUserId]
       );
 
       logger.info('Campus manager assigned', { campusId, barberUserId, by: req.user!.userId });
@@ -1042,10 +1042,10 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
         message: 'Campus manager assigned successfully',
       });
     } else {
-      // Revert user type to barber
+      // Revert role to BARBER
       await pool.query(
-        'UPDATE users SET user_type = $1 WHERE id = $2',
-        ['barber', barberUserId]
+        'UPDATE users SET role = $1 WHERE id = $2',
+        ['BARBER', barberUserId]
       );
 
       logger.info('Campus manager removed', { campusId, barberUserId, by: req.user!.userId });
