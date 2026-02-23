@@ -795,3 +795,259 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
   }
 };
 
+/**
+ * Get all campuses with manager info
+ * GET /api/admin/campuses
+ */
+export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.name,
+        c.slug,
+        c.city,
+        c.state,
+        c.manager_id,
+        u.first_name || ' ' || u.last_name as manager_name
+      FROM campuses c
+      LEFT JOIN users u ON c.manager_id = u.id
+      ORDER BY c.name
+    `);
+
+    res.json({
+      success: true,
+      campuses: result.rows.map(row => ({
+        id: row.id.toString(),
+        name: row.name,
+        slug: row.slug,
+        city: row.city,
+        state: row.state,
+        managerId: row.manager_id?.toString() || null,
+        managerName: row.manager_name || null,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get campus performance metrics
+ * GET /api/admin/campuses/:campusId/performance
+ */
+export const getCampusPerformance = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { campusId } = req.params;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get barber counts
+    const barbersResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE b."isActive" = true) as active
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE u."campusId" = $1
+    `, [campusId]);
+
+    // Get booking counts
+    const bookingsResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE bo.status IN ('COMPLETED', 'PAID')) as completed,
+        COUNT(*) FILTER (WHERE bo.status IN ('CANCELLED', 'REJECTED')) as cancelled
+      FROM bookings bo
+      JOIN barbers b ON bo."barberId" = b.id
+      JOIN users u ON b."userId" = u.id
+      WHERE u."campusId" = $1
+    `, [campusId]);
+
+    // Get total revenue
+    const revenueResult = await pool.query(`
+      SELECT COALESCE(SUM(bo."totalPaidCents"), 0) as total_revenue
+      FROM bookings bo
+      JOIN barbers b ON bo."barberId" = b.id
+      JOIN users u ON b."userId" = u.id
+      WHERE u."campusId" = $1 AND bo.status IN ('COMPLETED', 'PAID')
+    `, [campusId]);
+
+    // Get average rating and review count
+    const ratingsResult = await pool.query(`
+      SELECT 
+        COALESCE(AVG(bo."reviewRating"), 0) as avg_rating,
+        COUNT(bo."reviewRating") as total_reviews
+      FROM bookings bo
+      JOIN barbers b ON bo."barberId" = b.id
+      JOIN users u ON b."userId" = u.id
+      WHERE u."campusId" = $1 AND bo."reviewRating" IS NOT NULL
+    `, [campusId]);
+
+    res.json({
+      totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
+      activeBarbers: parseInt(barbersResult.rows[0]?.active || '0'),
+      totalBookings: parseInt(bookingsResult.rows[0]?.total || '0'),
+      completedBookings: parseInt(bookingsResult.rows[0]?.completed || '0'),
+      cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
+      totalRevenue: parseInt(revenueResult.rows[0]?.total_revenue || '0'),
+      averageRating: parseFloat(ratingsResult.rows[0]?.avg_rating || '0'),
+      totalReviews: parseInt(ratingsResult.rows[0]?.total_reviews || '0'),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get barbers for a campus
+ * GET /api/admin/campuses/:campusId/barbers
+ */
+export const getCampusBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { campusId } = req.params;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get campus manager_id
+    const campusResult = await pool.query(
+      'SELECT manager_id FROM campuses WHERE id = $1',
+      [campusId]
+    );
+    const managerId = campusResult.rows[0]?.manager_id;
+
+    // Get barbers for this campus
+    const result = await pool.query(`
+      SELECT 
+        u.id,
+        b.id as barber_record_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u."avatarUrl" as profile_image_url,
+        b."isActive" as is_active,
+        u."campusId" as campus_id
+      FROM users u
+      JOIN barbers b ON b."userId" = u.id
+      WHERE u."campusId" = $1
+      ORDER BY u.first_name, u.last_name
+    `, [campusId]);
+
+    res.json({
+      success: true,
+      barbers: result.rows.map(row => ({
+        id: row.id.toString(),
+        barberRecordId: row.barber_record_id?.toString(),
+        firstName: row.first_name,
+        lastName: row.last_name,
+        email: row.email,
+        profileImageUrl: row.profile_image_url,
+        isActive: row.is_active,
+        isCampusManager: managerId && row.id.toString() === managerId.toString(),
+        campusId: row.campus_id?.toString(),
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Assign or remove a campus manager
+ * POST /api/admin/campuses/:campusId/manager
+ */
+export const assignCampusManager = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { campusId } = req.params;
+    const { barberUserId, action } = req.body;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    if (!barberUserId) {
+      throw new ApiError(400, 'barberUserId is required');
+    }
+
+    if (!['assign', 'remove'].includes(action)) {
+      throw new ApiError(400, 'action must be "assign" or "remove"');
+    }
+
+    // Verify the campus exists
+    const campusCheck = await pool.query('SELECT id FROM campuses WHERE id = $1', [campusId]);
+    if (campusCheck.rows.length === 0) {
+      throw new ApiError(404, 'Campus not found');
+    }
+
+    // Verify the user exists and is a barber at this campus
+    const userCheck = await pool.query(`
+      SELECT u.id, u."campusId", b.id as barber_id
+      FROM users u
+      JOIN barbers b ON b."userId" = u.id
+      WHERE u.id = $1
+    `, [barberUserId]);
+
+    if (userCheck.rows.length === 0) {
+      throw new ApiError(404, 'Barber user not found');
+    }
+
+    if (action === 'assign') {
+      // Assign the user as campus manager
+      await pool.query(
+        'UPDATE campuses SET manager_id = $1 WHERE id = $2',
+        [barberUserId, campusId]
+      );
+
+      // Update user type to campus_manager
+      await pool.query(
+        'UPDATE users SET user_type = $1 WHERE id = $2',
+        ['campus_manager', barberUserId]
+      );
+
+      logger.info('Campus manager assigned', { campusId, barberUserId, by: req.user!.userId });
+
+      res.json({
+        success: true,
+        message: 'Campus manager assigned successfully',
+      });
+    } else {
+      // Remove the campus manager
+      await pool.query(
+        'UPDATE campuses SET manager_id = NULL WHERE id = $1 AND manager_id = $2',
+        [campusId, barberUserId]
+      );
+
+      // Revert user type to barber
+      await pool.query(
+        'UPDATE users SET user_type = $1 WHERE id = $2',
+        ['barber', barberUserId]
+      );
+
+      logger.info('Campus manager removed', { campusId, barberUserId, by: req.user!.userId });
+
+      res.json({
+        success: true,
+        message: 'Campus manager removed successfully',
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+

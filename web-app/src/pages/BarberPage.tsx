@@ -618,6 +618,22 @@ export default function BarberPage() {
                       </button>
                     </>
                   )}
+                  {/* Admin Dashboard (ADMIN only) */}
+                  {isAdmin && (
+                    <>
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <button
+                        onClick={() => {
+                          navigate(`${platformPrefix}/admin`);
+                          setShowProfileDropdown(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-purple-600 hover:bg-purple-50 flex items-center gap-3"
+                      >
+                        <Shield className="w-4 h-4 text-purple-500" />
+                        Admin Dashboard
+                      </button>
+                    </>
+                  )}
                   {/* Campus Manager Options (conditional) */}
                   {isCampusManager && (
                     <>
