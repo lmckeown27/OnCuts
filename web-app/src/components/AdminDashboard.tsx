@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Users, Star, 
-  Crown, Search, ChevronDown, Loader2, AlertCircle
+  Users, Crown, Search, ChevronDown, Loader2, AlertCircle
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -400,29 +399,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             )}
           </div>
         )}
-      </div>
-      
-      {/* Summary Cards - Always visible */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="p-3 bg-blue-50 rounded-xl">
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-3.5 h-3.5 text-blue-600" />
-            <span className="text-xs text-blue-600 font-medium">Barbers</span>
-          </div>
-          <p className="text-xl font-bold text-blue-700">{performance?.activeBarbers ?? 0}</p>
-          <p className="text-xs text-blue-500">{performance?.totalBarbers ?? 0} total</p>
-        </div>
-        
-        <div className="p-3 bg-purple-50 rounded-xl">
-          <div className="flex items-center gap-2 mb-1">
-            <Star className="w-3.5 h-3.5 text-purple-600" />
-            <span className="text-xs text-purple-600 font-medium">Rating</span>
-          </div>
-          <p className="text-xl font-bold text-purple-700">
-            {performance && performance.averageRating > 0 ? performance.averageRating.toFixed(1) : 'N/A'}
-          </p>
-          <p className="text-xs text-purple-500">{performance?.totalReviews ?? 0} reviews</p>
-        </div>
       </div>
       
       {/* Performance Chart - Always visible */}
