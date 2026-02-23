@@ -75,6 +75,7 @@ interface MetricsResponse {
 
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly';
 type MetricsView = 'revenue' | 'bookings';
+type AdminView = 'performance' | 'barbers';
 
 interface Barber {
   id: string;
@@ -113,6 +114,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
+  const [adminView, setAdminView] = useState<AdminView>('performance');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -432,7 +434,34 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         </div>
       )}
       
+      {/* View Tabs - Performance / Barbers */}
+      {selectedCampusId && (
+        <div className="flex rounded-lg bg-gray-100 p-1">
+          <button
+            onClick={() => setAdminView('performance')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              adminView === 'performance'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Performance
+          </button>
+          <button
+            onClick={() => setAdminView('barbers')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              adminView === 'barbers'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Barbers
+          </button>
+        </div>
+      )}
+      
       {/* Performance Chart & Summary */}
+      {adminView === 'performance' && (
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-semibold text-gray-900">Performance Trends</h3>
@@ -603,8 +632,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </div>
         )}
       </div>
+      )}
       
-      {/* Campus Manager Assignment - Always visible */}
+      {/* Campus Manager Assignment */}
+      {adminView === 'barbers' && (
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-semibold text-gray-900">Campus Manager</h3>
@@ -759,6 +790,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
