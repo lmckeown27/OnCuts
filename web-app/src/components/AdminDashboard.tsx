@@ -434,31 +434,29 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         </div>
       )}
       
-      {/* View Tabs - Performance / Barbers */}
-      {selectedCampusId && (
-        <div className="flex rounded-lg bg-gray-100 p-1">
-          <button
-            onClick={() => setAdminView('performance')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              adminView === 'performance'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Performance
-          </button>
-          <button
-            onClick={() => setAdminView('barbers')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              adminView === 'barbers'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Barbers
-          </button>
-        </div>
-      )}
+      {/* View Tabs - Performance / Barbers - Always visible */}
+      <div className="flex rounded-lg bg-gray-100 p-1">
+        <button
+          onClick={() => setAdminView('performance')}
+          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            adminView === 'performance'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Performance
+        </button>
+        <button
+          onClick={() => setAdminView('barbers')}
+          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            adminView === 'barbers'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Barbers
+        </button>
+      </div>
       
       {/* Performance Chart & Summary */}
       {adminView === 'performance' && (
