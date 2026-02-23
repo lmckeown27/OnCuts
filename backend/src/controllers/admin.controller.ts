@@ -945,6 +945,93 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 };
 
 /**
+ * Get time-series metrics for a campus
+ * GET /api/admin/campuses/:campusId/metrics?period=daily|weekly|monthly
+ */
+export const getCampusMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { campusId } = req.params;
+    const period = (req.query.period as string) || 'daily';
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    if (!campusId || campusId === 'undefined') {
+      throw new ApiError(400, 'Valid campusId is required');
+    }
+
+    // Determine date truncation and range based on period
+    let dateTrunc: string;
+    let interval: string;
+    let limit: number;
+
+    switch (period) {
+      case 'weekly':
+        dateTrunc = 'week';
+        interval = '12 weeks';
+        limit = 12;
+        break;
+      case 'monthly':
+        dateTrunc = 'month';
+        interval = '12 months';
+        limit = 12;
+        break;
+      default: // daily
+        dateTrunc = 'day';
+        interval = '30 days';
+        limit = 30;
+    }
+
+    // Get barber IDs for this campus
+    const barberIdsResult = await pool.query(`
+      SELECT b.id FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE u."campusId" = $1::uuid
+    `, [campusId]);
+
+    const barberIds = barberIdsResult.rows.map(r => r.id);
+
+    if (barberIds.length === 0) {
+      // No barbers, return empty data
+      return res.json({
+        period,
+        data: [],
+      });
+    }
+
+    // Get bookings and revenue grouped by period
+    const metricsResult = await pool.query(`
+      SELECT 
+        DATE_TRUNC($1, "createdAt") as period_start,
+        COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+      FROM bookings
+      WHERE "barberId" = ANY($2::uuid[])
+        AND "createdAt" >= NOW() - $3::interval
+      GROUP BY DATE_TRUNC($1, "createdAt")
+      ORDER BY period_start ASC
+    `, [dateTrunc, barberIds, interval]);
+
+    // Format the response
+    const data = metricsResult.rows.map(row => ({
+      date: row.period_start,
+      bookings: parseInt(row.bookings || '0'),
+      revenue: parseInt(row.revenue || '0'),
+    }));
+
+    res.json({
+      period,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get barbers for a campus
  * GET /api/admin/campuses/:campusId/barbers
  */

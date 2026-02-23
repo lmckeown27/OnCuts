@@ -1,11 +1,37 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Users, Calendar, DollarSign, TrendingUp, 
+  Users, Star, 
   Crown, Search, ChevronDown, Loader2, AlertCircle
 } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
 import Button from './Button';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface Campus {
   id: string;
@@ -27,6 +53,20 @@ interface CampusPerformance {
   averageRating: number;
   totalReviews: number;
 }
+
+interface MetricsDataPoint {
+  date: string;
+  bookings: number;
+  revenue: number;
+}
+
+interface MetricsResponse {
+  period: string;
+  data: MetricsDataPoint[];
+}
+
+type MetricsPeriod = 'daily' | 'weekly' | 'monthly';
+type MetricsView = 'revenue' | 'bookings';
 
 interface Barber {
   id: string;
@@ -55,6 +95,12 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(false);
   const [isAssigning, setIsAssigning] = useState<string | null>(null);
+  
+  // Metrics chart state
+  const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
+  const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
@@ -137,6 +183,26 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchBarbers();
   }, [selectedCampusId]);
   
+  // Fetch metrics when campus or period changes
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      if (!selectedCampusId) return;
+      
+      setIsLoadingMetrics(true);
+      try {
+        const response = await api.get<MetricsResponse>(`/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`);
+        setMetrics(response.data || []);
+      } catch (error) {
+        console.error('Failed to fetch metrics:', error);
+        setMetrics([]);
+      } finally {
+        setIsLoadingMetrics(false);
+      }
+    };
+    
+    fetchMetrics();
+  }, [selectedCampusId, metricsPeriod]);
+  
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);
   }, [campuses, selectedCampusId]);
@@ -189,6 +255,70 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
+  };
+  
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    const labels = metrics.map(m => {
+      const date = new Date(m.date);
+      if (metricsPeriod === 'daily') {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } else if (metricsPeriod === 'weekly') {
+        return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      } else {
+        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      }
+    });
+    
+    const dataValues = metrics.map(m => 
+      metricsView === 'revenue' ? m.revenue / 100 : m.bookings
+    );
+    
+    return {
+      labels,
+      datasets: [
+        {
+          label: metricsView === 'revenue' ? 'Revenue ($)' : 'Bookings',
+          data: dataValues,
+          borderColor: metricsView === 'revenue' ? '#f59e0b' : '#10b981',
+          backgroundColor: metricsView === 'revenue' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    };
+  }, [metrics, metricsPeriod, metricsView]);
+  
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const value = context.parsed.y;
+            return metricsView === 'revenue' 
+              ? `$${value.toFixed(2)}` 
+              : `${value} bookings`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => {
+            return metricsView === 'revenue' ? `$${value}` : value;
+          },
+        },
+      },
+    },
   };
   
   return (
@@ -267,59 +397,112 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
       </div>
       
-      {/* Performance Metrics */}
+      {/* Summary Cards */}
+      {selectedCampusId && performance && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 bg-blue-50 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-3.5 h-3.5 text-blue-600" />
+              <span className="text-xs text-blue-600 font-medium">Barbers</span>
+            </div>
+            <p className="text-xl font-bold text-blue-700">{performance.activeBarbers}</p>
+            <p className="text-xs text-blue-500">{performance.totalBarbers} total</p>
+          </div>
+          
+          <div className="p-3 bg-purple-50 rounded-xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Star className="w-3.5 h-3.5 text-purple-600" />
+              <span className="text-xs text-purple-600 font-medium">Rating</span>
+            </div>
+            <p className="text-xl font-bold text-purple-700">
+              {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : 'N/A'}
+            </p>
+            <p className="text-xs text-purple-500">{performance.totalReviews} reviews</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Performance Chart */}
       {selectedCampusId && (
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-3">Performance Metrics</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-gray-900">Performance Trends</h3>
+          </div>
           
-          {isLoadingPerformance ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+          {/* Period & View Selector */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            {/* View Toggle */}
+            <div className="flex rounded-lg bg-gray-100 p-0.5">
+              <button
+                onClick={() => setMetricsView('revenue')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsView === 'revenue' 
+                    ? 'bg-amber-500 text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Revenue
+              </button>
+              <button
+                onClick={() => setMetricsView('bookings')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsView === 'bookings' 
+                    ? 'bg-green-500 text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Bookings
+              </button>
             </div>
-          ) : performance ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <Users className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="text-xs text-blue-600 font-medium">Barbers</span>
-                </div>
-                <p className="text-xl font-bold text-blue-700">{performance.activeBarbers}</p>
-                <p className="text-xs text-blue-500">{performance.totalBarbers} total</p>
-              </div>
-              
-              <div className="p-3 bg-green-50 rounded-xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="w-3.5 h-3.5 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">Bookings</span>
-                </div>
-                <p className="text-xl font-bold text-green-700">{performance.completedBookings}</p>
-                <p className="text-xs text-green-500">{performance.totalBookings} total</p>
-              </div>
-              
-              <div className="p-3 bg-amber-50 rounded-xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="text-xs text-amber-600 font-medium">Revenue</span>
-                </div>
-                <p className="text-xl font-bold text-amber-700">{formatCurrency(performance.totalRevenue)}</p>
-                <p className="text-xs text-amber-500">Total processed</p>
-              </div>
-              
-              <div className="p-3 bg-purple-50 rounded-xl">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-purple-600" />
-                  <span className="text-xs text-purple-600 font-medium">Rating</span>
-                </div>
-                <p className="text-xl font-bold text-purple-700">
-                  {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : 'N/A'}
-                </p>
-                <p className="text-xs text-purple-500">{performance.totalReviews} reviews</p>
-              </div>
+            
+            {/* Period Toggle */}
+            <div className="flex rounded-lg bg-gray-100 p-0.5">
+              <button
+                onClick={() => setMetricsPeriod('daily')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsPeriod === 'daily' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setMetricsPeriod('weekly')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsPeriod === 'weekly' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setMetricsPeriod('monthly')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsPeriod === 'monthly' 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
+          </div>
+          
+          {/* Chart */}
+          {isLoadingMetrics ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+            </div>
+          ) : metrics.length > 0 ? (
+            <div className="h-48 sm:h-56">
+              <Line data={chartData} options={chartOptions} />
             </div>
           ) : (
-            <div className="flex items-center justify-center py-8 text-gray-500 text-sm">
+            <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
               <AlertCircle className="w-4 h-4 mr-2" />
-              No performance data available
+              No data available for this period
             </div>
           )}
         </div>
