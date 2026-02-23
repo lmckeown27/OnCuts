@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -1355,6 +1355,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [isEditingBooking, setIsEditingBooking] = useState(false);
   const [isDeletingBooking, setIsDeletingBooking] = useState(false);
   const [isRemovingBooking, setIsRemovingBooking] = useState(false);
+  const [isUndoingComplete, setIsUndoingComplete] = useState(false);
   const [isSavingBooking, setIsSavingBooking] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [editedDate, setEditedDate] = useState('');
@@ -1915,6 +1916,25 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     } catch (error: any) {
       console.error('Failed to request payment:', error);
       toast.error(error.message || 'Failed to request payment');
+    }
+  };
+
+  // Handle undoing a completed booking (revert to ACCEPTED)
+  const handleUndoComplete = async () => {
+    if (!selectedBookingInline) return;
+    
+    setIsSavingBooking(true);
+    try {
+      await api.put(`/bookings-simple/${selectedBookingInline.id}/undo-complete`, {});
+      toast.success('Booking reverted to accepted');
+      setIsUndoingComplete(false);
+      closeDayModal();
+      if (onRefreshBookings) onRefreshBookings();
+    } catch (error: any) {
+      console.error('Failed to undo complete:', error);
+      toast.error(error.message || 'Failed to undo completion');
+    } finally {
+      setIsSavingBooking(false);
     }
   };
 
@@ -3071,8 +3091,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
                         const canComplete = selectedBookingInline.status === 'ACCEPTED';
                         const canRemove = selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID';
+                        const canUndoComplete = selectedBookingInline.status === 'COMPLETED';
                         
-                        if (!canComplete && !canEdit && !canCancel && !canRemove) return null;
+                        if (!canComplete && !canEdit && !canCancel && !canRemove && !canUndoComplete) return null;
                         
                         return (
                           <div className="space-y-3 pt-4 border-t border-gray-100">
@@ -3108,8 +3129,58 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               </div>
                             )}
                             
+                            {/* Undo Complete Button (for COMPLETED bookings awaiting payment) */}
+                            {canUndoComplete && !isUndoingComplete && !isRemovingBooking && (
+                              <button
+                                onClick={() => setIsUndoingComplete(true)}
+                                className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                Undo Complete
+                              </button>
+                            )}
+
+                            {/* Undo Complete Confirmation */}
+                            {isUndoingComplete && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="font-semibold text-gray-800 text-sm">Undo completion?</p>
+                                    <p className="text-xs text-gray-600">This will revert the booking to accepted status.</p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-3">
+                                  <button
+                                    onClick={() => setIsUndoingComplete(false)}
+                                    className="flex-1 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold transition-colors text-sm"
+                                    disabled={isSavingBooking}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={handleUndoComplete}
+                                    disabled={isSavingBooking}
+                                    className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                                  >
+                                    {isSavingBooking ? (
+                                      <>
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Reverting...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <RotateCcw className="w-3 h-3" />
+                                        Undo
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Remove from Schedule Button (for completed bookings) */}
-                            {canRemove && !isRemovingBooking && (
+                            {canRemove && !isRemovingBooking && !isUndoingComplete && (
                               <button
                                 onClick={() => setIsRemovingBooking(true)}
                                 className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
@@ -3120,7 +3191,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             )}
 
                             {/* Remove Confirmation */}
-                            {isRemovingBooking && (
+                            {isRemovingBooking && !isUndoingComplete && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                                   <AlertTriangle className="w-5 h-5 text-gray-500 flex-shrink-0" />
