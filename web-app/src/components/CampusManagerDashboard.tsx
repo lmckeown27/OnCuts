@@ -2705,21 +2705,29 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               }`}
               onClick={() => setSelectedBooking(booking)}
             >
-              {/* Payment Method Badge - Top Left (Completed bookings only) */}
-              {activeTab === 'completed' && booking.paymentMethod && (
-                <div className="mb-2">
-                  <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                    booking.paymentMethod === 'card'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-green-100 text-green-700'
-                  }`}>
-                    {booking.paymentMethod === 'card' ? (
-                      <CreditCard className="w-3 h-3" />
-                    ) : (
-                      <Banknote className="w-3 h-3" />
-                    )}
-                    {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
-                  </div>
+              {/* Payment Method Badge or Awaiting Payment - Top Left (Completed bookings only) */}
+              {activeTab === 'completed' && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {booking.status === 'COMPLETED' && !booking.paidAt && (
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                      <Clock className="w-3 h-3" />
+                      Awaiting Payment
+                    </div>
+                  )}
+                  {booking.paymentMethod && (
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      booking.paymentMethod === 'card'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {booking.paymentMethod === 'card' ? (
+                        <CreditCard className="w-3 h-3" />
+                      ) : (
+                        <Banknote className="w-3 h-3" />
+                      )}
+                      {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
