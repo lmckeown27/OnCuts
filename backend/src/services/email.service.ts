@@ -2181,10 +2181,9 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <!-- Header with Clock Icon -->
+    <!-- Header -->
     <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">⏰</span>
-      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Appointment Reminder</h1>
+      <h1 style="color: white; margin: 0; font-size: 24px;">Appointment Reminder</h1>
       <p style="color: #fef3c7; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
     </div>
     
@@ -2197,7 +2196,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       <!-- Countdown Badge -->
       <div style="text-align: center; margin: 20px 0;">
         <span style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
-          ⏱️ Starts in approximately 1 hour
+          Starts in approximately 1 hour
         </span>
       </div>
       
@@ -2241,7 +2240,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       
       <!-- Tips Section -->
       <div style="background-color: #ecfdf5; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #166534; margin: 0 0 10px 0; font-size: 14px;">💡 Tips for your appointment:</h4>
+        <h4 style="color: #166534; margin: 0 0 10px 0; font-size: 14px;">Tips for your appointment:</h4>
         <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Please arrive on time</li>
           <li>If you need to cancel, contact your barber ASAP</li>
@@ -2263,7 +2262,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       </div>
       
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
-        See you soon! 💈
+        See you soon!
       </p>
     </div>
     
