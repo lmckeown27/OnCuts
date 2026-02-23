@@ -929,15 +929,130 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       )
     `, [campusId]);
 
+    // Get average bookings per day (last 30 days)
+    const avgDailyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(daily_count), 0) as avg_daily
+      FROM (
+        SELECT DATE_TRUNC('day', "createdAt") as day, COUNT(*) as daily_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '30 days'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('day', "createdAt")
+      ) daily_counts
+    `, [campusId]);
+
+    // Get average bookings per week (last 12 weeks)
+    const avgWeeklyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(weekly_count), 0) as avg_weekly
+      FROM (
+        SELECT DATE_TRUNC('week', "createdAt") as week, COUNT(*) as weekly_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 weeks'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('week', "createdAt")
+      ) weekly_counts
+    `, [campusId]);
+
+    // Get average bookings per month (last 12 months)
+    const avgMonthlyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(monthly_count), 0) as avg_monthly
+      FROM (
+        SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as monthly_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 months'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('month', "createdAt")
+      ) monthly_counts
+    `, [campusId]);
+
+    // Get average revenue per day (last 30 days)
+    const avgDailyRevenueResult = await pool.query(`
+      SELECT COALESCE(AVG(daily_revenue), 0) as avg_daily
+      FROM (
+        SELECT DATE_TRUNC('day', "createdAt") as day, SUM("totalPaidCents") as daily_revenue
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '30 days'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('day', "createdAt")
+      ) daily_revenues
+    `, [campusId]);
+
+    // Get average revenue per week (last 12 weeks)
+    const avgWeeklyRevenueResult = await pool.query(`
+      SELECT COALESCE(AVG(weekly_revenue), 0) as avg_weekly
+      FROM (
+        SELECT DATE_TRUNC('week', "createdAt") as week, SUM("totalPaidCents") as weekly_revenue
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 weeks'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('week', "createdAt")
+      ) weekly_revenues
+    `, [campusId]);
+
+    // Get average revenue per month (last 12 months)
+    const avgMonthlyRevenueResult = await pool.query(`
+      SELECT COALESCE(AVG(monthly_revenue), 0) as avg_monthly
+      FROM (
+        SELECT DATE_TRUNC('month', "createdAt") as month, SUM("totalPaidCents") as monthly_revenue
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 months'
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+        GROUP BY DATE_TRUNC('month', "createdAt")
+      ) monthly_revenues
+    `, [campusId]);
+
+    // Calculate average cost per appointment
+    const completedBookings = parseInt(bookingsResult.rows[0]?.completed || '0');
+    const totalRevenue = parseInt(revenueResult.rows[0]?.total_revenue || '0');
+    const averageCostPerAppointment = completedBookings > 0 ? Math.round(totalRevenue / completedBookings) : 0;
+
     res.json({
       totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
       activeBarbers: parseInt(barbersResult.rows[0]?.active || '0'),
       totalBookings: parseInt(bookingsResult.rows[0]?.total || '0'),
-      completedBookings: parseInt(bookingsResult.rows[0]?.completed || '0'),
+      completedBookings,
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
-      totalRevenue: parseInt(revenueResult.rows[0]?.total_revenue || '0'),
+      totalRevenue,
       averageRating: parseFloat(ratingsResult.rows[0]?.avg_rating || '0'),
       totalReviews: parseInt(ratingsResult.rows[0]?.total_reviews || '0'),
+      // New average metrics
+      averageBookingsPerDay: parseFloat(avgDailyBookingsResult.rows[0]?.avg_daily || '0'),
+      averageBookingsPerWeek: parseFloat(avgWeeklyBookingsResult.rows[0]?.avg_weekly || '0'),
+      averageBookingsPerMonth: parseFloat(avgMonthlyBookingsResult.rows[0]?.avg_monthly || '0'),
+      averageRevenuePerDay: parseInt(avgDailyRevenueResult.rows[0]?.avg_daily || '0'),
+      averageRevenuePerWeek: parseInt(avgWeeklyRevenueResult.rows[0]?.avg_weekly || '0'),
+      averageRevenuePerMonth: parseInt(avgMonthlyRevenueResult.rows[0]?.avg_monthly || '0'),
+      averageCostPerAppointment,
     });
   } catch (error) {
     next(error);

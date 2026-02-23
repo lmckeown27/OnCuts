@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Users, Crown, Search, ChevronDown, Loader2, AlertCircle
+  Users, Crown, Search, ChevronDown, Loader2, AlertCircle,
+  Calendar, DollarSign, TrendingUp, Scissors
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -51,6 +52,14 @@ interface CampusPerformance {
   totalRevenue: number;
   averageRating: number;
   totalReviews: number;
+  // Average metrics
+  averageBookingsPerDay: number;
+  averageBookingsPerWeek: number;
+  averageBookingsPerMonth: number;
+  averageRevenuePerDay: number;
+  averageRevenuePerWeek: number;
+  averageRevenuePerMonth: number;
+  averageCostPerAppointment: number;
 }
 
 interface MetricsDataPoint {
@@ -401,6 +410,116 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
       </div>
       
+      {/* Average Metrics Summary */}
+      {selectedCampusId && (
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Performance Summary</h3>
+          
+          {isLoadingPerformance ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+            </div>
+          ) : performance ? (
+            <div className="space-y-3">
+              {/* Average Cost Per Appointment */}
+              <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <Scissors className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-emerald-600 font-medium">Avg Cost Per Appointment</p>
+                      <p className="text-xl font-bold text-emerald-700">
+                        {formatCurrency(performance.averageCostPerAppointment)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-emerald-500">
+                    {performance.completedBookings} completed
+                  </p>
+                </div>
+              </div>
+
+              {/* Average Bookings Grid */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-blue-50 rounded-xl text-center">
+                  <Calendar className="w-3.5 h-3.5 text-blue-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-blue-700">
+                    {performance.averageBookingsPerDay.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-blue-500 font-medium">Cuts/Day</p>
+                </div>
+                <div className="p-2.5 bg-indigo-50 rounded-xl text-center">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-indigo-700">
+                    {performance.averageBookingsPerWeek.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-indigo-500 font-medium">Cuts/Week</p>
+                </div>
+                <div className="p-2.5 bg-purple-50 rounded-xl text-center">
+                  <Calendar className="w-3.5 h-3.5 text-purple-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-purple-700">
+                    {performance.averageBookingsPerMonth.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-purple-500 font-medium">Cuts/Month</p>
+                </div>
+              </div>
+
+              {/* Average Revenue Grid */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 bg-amber-50 rounded-xl text-center">
+                  <DollarSign className="w-3.5 h-3.5 text-amber-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-amber-700">
+                    {formatCurrency(performance.averageRevenuePerDay)}
+                  </p>
+                  <p className="text-[10px] text-amber-500 font-medium">Rev/Day</p>
+                </div>
+                <div className="p-2.5 bg-orange-50 rounded-xl text-center">
+                  <TrendingUp className="w-3.5 h-3.5 text-orange-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-orange-700">
+                    {formatCurrency(performance.averageRevenuePerWeek)}
+                  </p>
+                  <p className="text-[10px] text-orange-500 font-medium">Rev/Week</p>
+                </div>
+                <div className="p-2.5 bg-rose-50 rounded-xl text-center">
+                  <TrendingUp className="w-3.5 h-3.5 text-rose-500 mx-auto mb-1" />
+                  <p className="text-lg font-bold text-rose-700">
+                    {formatCurrency(performance.averageRevenuePerMonth)}
+                  </p>
+                  <p className="text-[10px] text-rose-500 font-medium">Rev/Month</p>
+                </div>
+              </div>
+
+              {/* Total Revenue */}
+              <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <DollarSign className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-green-600 font-medium">Total Revenue</p>
+                      <p className="text-xl font-bold text-green-700">
+                        {formatCurrency(performance.totalRevenue)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-green-500">
+                    All time
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              No performance data available
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Performance Chart - Always visible */}
       <div>
         <div className="flex items-center justify-between mb-3">
