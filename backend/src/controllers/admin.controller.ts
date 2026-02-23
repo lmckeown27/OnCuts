@@ -889,11 +889,12 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     `, [campusId]);
 
     // Get booking counts - simpler approach without complex joins
+    // Valid BookingStatus enum values: PENDING, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, DISPUTED, CANCELLED, REFUNDED
     const bookingsResult = await pool.query(`
       SELECT 
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as completed,
-        COUNT(*) FILTER (WHERE status IN ('CANCELLED', 'REJECTED')) as cancelled
+        COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled
       FROM bookings
       WHERE "barberId" IN (
         SELECT b.id FROM barbers b
