@@ -921,10 +921,7 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
-                <p className="text-sm text-gray-500 mt-1">Platform Administration</p>
-              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
               <button
                 onClick={closeAdminDashboard}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"

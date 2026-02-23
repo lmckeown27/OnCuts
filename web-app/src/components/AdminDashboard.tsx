@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { 
-  Building2, Users, Calendar, DollarSign, TrendingUp, 
-  UserCheck, Crown, Search, ChevronDown, Loader2, AlertCircle,
-  CheckCircle, XCircle, BarChart3
+  Users, Calendar, DollarSign, TrendingUp, 
+  Crown, Search, ChevronDown, Loader2, AlertCircle
 } from 'lucide-react';
 import api from '../services/api.service';
 import toast from 'react-hot-toast';
@@ -181,10 +180,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     <div className="space-y-4 sm:space-y-6">
       {/* Campus Selector */}
       <div>
-        <div className="flex items-center gap-3 mb-3">
-          <Building2 className="w-5 h-5 text-purple-600" />
-          <h3 className="text-base font-semibold text-gray-900">Select University</h3>
-        </div>
+        <h3 className="text-base font-semibold text-gray-900 mb-3">Select University</h3>
         
         {isLoadingCampuses ? (
           <div className="flex items-center justify-center py-6">
@@ -196,12 +192,9 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               className="flex items-center justify-between p-3 border border-gray-300 rounded-lg cursor-pointer hover:border-purple-400 transition-colors"
               onClick={() => setShowCampusDropdown(!showCampusDropdown)}
             >
-              <div className="flex items-center gap-3">
-                <Building2 className="w-4 h-4 text-gray-400" />
-                <span className="font-medium text-sm">
-                  {selectedCampus ? selectedCampus.name : 'Select a university...'}
-                </span>
-              </div>
+              <span className="font-medium text-sm">
+                {selectedCampus ? selectedCampus.name : 'Select a university...'}
+              </span>
               <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
             </div>
             
@@ -253,10 +246,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       {/* Performance Metrics */}
       {selectedCampusId && (
         <div>
-          <div className="flex items-center gap-3 mb-3">
-            <BarChart3 className="w-5 h-5 text-purple-600" />
-            <h3 className="text-base font-semibold text-gray-900">Performance Metrics</h3>
-          </div>
+          <h3 className="text-base font-semibold text-gray-900 mb-3">Performance Metrics</h3>
           
           {isLoadingPerformance ? (
             <div className="flex items-center justify-center py-8">
@@ -315,10 +305,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       {selectedCampusId && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <UserCheck className="w-5 h-5 text-purple-600" />
-              <h3 className="text-base font-semibold text-gray-900">Campus Manager</h3>
-            </div>
+            <h3 className="text-base font-semibold text-gray-900">Campus Manager</h3>
             {selectedCampus?.managerName && (
               <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
                 Current: {selectedCampus.managerName}

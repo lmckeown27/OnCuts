@@ -812,29 +812,31 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
       SELECT 
         c.id,
         c.name,
-        c.slug,
-        c.city,
-        c.state,
+        COALESCE(c.slug, '') as slug,
+        COALESCE(c.city, '') as city,
+        COALESCE(c.state, '') as state,
         cm.id as manager_id,
-        cm.first_name || ' ' || cm.last_name as manager_name
+        COALESCE(cm.first_name, '') || ' ' || COALESCE(cm.last_name, '') as manager_name
       FROM campuses c
       LEFT JOIN users cm ON cm."campusId" = c.id AND cm.user_type = 'campus_manager'
+      WHERE c."isActive" = true
       ORDER BY c.name
     `);
 
     res.json({
       success: true,
       campuses: result.rows.map(row => ({
-        id: row.id.toString(),
-        name: row.name,
-        slug: row.slug,
+        id: String(row.id),
+        name: row.name || '',
+        slug: row.slug || '',
         city: row.city || '',
         state: row.state || '',
-        managerId: row.manager_id?.toString() || null,
-        managerName: row.manager_name || null,
+        managerId: row.manager_id ? String(row.manager_id) : null,
+        managerName: row.manager_name?.trim() || null,
       })),
     });
   } catch (error) {
+    logger.error('Failed to fetch campuses:', error);
     next(error);
   }
 };
