@@ -354,70 +354,117 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
             </div>
           ) : filteredBarbers.length > 0 ? (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {filteredBarbers.map(barber => (
-                <div 
-                  key={barber.id}
-                  className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                    barber.isCampusManager 
-                      ? 'border-green-200 bg-green-50' 
-                      : 'border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                      {barber.profileImageUrl ? (
-                        <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xs font-bold text-gray-500">
-                          {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
-                        {barber.firstName} {barber.lastName}
-                        {barber.isCampusManager && (
-                          <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">{barber.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {barber.isCampusManager ? (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleAssignManager(barber.id, false)}
-                        disabled={isAssigning === barber.id}
-                        className="text-xs px-2 py-1"
+            <div className="space-y-4 max-h-80 overflow-y-auto">
+              {/* Active Barbers */}
+              {filteredBarbers.filter(b => b.isActive).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                    Active ({filteredBarbers.filter(b => b.isActive).length})
+                  </p>
+                  <div className="space-y-2">
+                    {filteredBarbers.filter(b => b.isActive).map(barber => (
+                      <div 
+                        key={barber.id}
+                        className={`flex items-center justify-between p-2.5 rounded-lg border ${
+                          barber.isCampusManager 
+                            ? 'border-green-200 bg-green-50' 
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
                       >
-                        {isAssigning === barber.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          'Remove'
-                        )}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleAssignManager(barber.id, true)}
-                        disabled={isAssigning === barber.id || !barber.isActive}
-                        className="text-xs px-2 py-1"
-                      >
-                        {isAssigning === barber.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          'Assign'
-                        )}
-                      </Button>
-                    )}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {barber.profileImageUrl ? (
+                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">
+                                {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                              {barber.firstName} {barber.lastName}
+                              {barber.isCampusManager && (
+                                <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{barber.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {barber.isCampusManager ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleAssignManager(barber.id, false)}
+                              disabled={isAssigning === barber.id}
+                              className="text-xs px-2 py-1"
+                            >
+                              {isAssigning === barber.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                'Remove'
+                              )}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleAssignManager(barber.id, true)}
+                              disabled={isAssigning === barber.id}
+                              className="text-xs px-2 py-1"
+                            >
+                              {isAssigning === barber.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                'Assign'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+              
+              {/* Inactive Barbers */}
+              {filteredBarbers.filter(b => !b.isActive).length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Inactive ({filteredBarbers.filter(b => !b.isActive).length})
+                  </p>
+                  <div className="space-y-2">
+                    {filteredBarbers.filter(b => !b.isActive).map(barber => (
+                      <div 
+                        key={barber.id}
+                        className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {barber.profileImageUrl ? (
+                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">
+                                {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
+                              {barber.firstName} {barber.lastName}
+                            </p>
+                            <p className="text-xs text-gray-400 truncate">{barber.email}</p>
+                          </div>
+                        </div>
+                        
+                        <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-gray-500">

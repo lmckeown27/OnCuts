@@ -873,46 +873,59 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get barber counts
+    // Validate campusId format
+    if (!campusId || campusId === 'undefined') {
+      throw new ApiError(400, 'Valid campusId is required');
+    }
+
+    // Get barber counts - use simpler query
     const barbersResult = await pool.query(`
       SELECT 
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1
+      WHERE u."campusId" = $1::uuid
     `, [campusId]);
 
-    // Get booking counts
+    // Get booking counts - simpler approach without complex joins
     const bookingsResult = await pool.query(`
       SELECT 
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE bo.status IN ('COMPLETED', 'PAID')) as completed,
-        COUNT(*) FILTER (WHERE bo.status IN ('CANCELLED', 'REJECTED')) as cancelled
-      FROM bookings bo
-      JOIN barbers b ON bo."barberId" = b.id
-      JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1
+        COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as completed,
+        COUNT(*) FILTER (WHERE status IN ('CANCELLED', 'REJECTED')) as cancelled
+      FROM bookings
+      WHERE "barberId" IN (
+        SELECT b.id FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        WHERE u."campusId" = $1::uuid
+      )
     `, [campusId]);
 
     // Get total revenue
     const revenueResult = await pool.query(`
-      SELECT COALESCE(SUM(bo."totalPaidCents"), 0) as total_revenue
-      FROM bookings bo
-      JOIN barbers b ON bo."barberId" = b.id
-      JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1 AND bo.status IN ('COMPLETED', 'PAID')
+      SELECT COALESCE(SUM("totalPaidCents"), 0) as total_revenue
+      FROM bookings
+      WHERE status IN ('COMPLETED', 'PAID')
+      AND "barberId" IN (
+        SELECT b.id FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        WHERE u."campusId" = $1::uuid
+      )
     `, [campusId]);
 
     // Get average rating and review count
     const ratingsResult = await pool.query(`
       SELECT 
-        COALESCE(AVG(bo."reviewRating"), 0) as avg_rating,
-        COUNT(bo."reviewRating") as total_reviews
-      FROM bookings bo
-      JOIN barbers b ON bo."barberId" = b.id
-      JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1 AND bo."reviewRating" IS NOT NULL
+        COALESCE(AVG("reviewRating"), 0) as avg_rating,
+        COUNT("reviewRating") as total_reviews
+      FROM bookings
+      WHERE "reviewRating" IS NOT NULL
+      AND "barberId" IN (
+        SELECT b.id FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        WHERE u."campusId" = $1::uuid
+      )
     `, [campusId]);
 
     res.json({
