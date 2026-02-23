@@ -1293,7 +1293,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get bookings for this barber with consumer info and message count
+    // Get bookings for this barber with consumer info
     const result = await pool.query(`
       SELECT 
         b.id,
@@ -1312,12 +1312,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         u.last_name as consumer_last_name,
         u.email as consumer_email,
         u."avatarUrl" as consumer_avatar,
-        (
-          SELECT COUNT(*)
-          FROM conversations c
-          JOIN messages m ON m.conversation_id = c.id
-          WHERE c.booking_id = b.id
-        ) as message_count
+        0 as message_count
       FROM bookings b
       JOIN users u ON b."consumerId" = u.id
       WHERE b."barberId" = $1::uuid
