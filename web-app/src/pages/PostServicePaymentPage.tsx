@@ -37,6 +37,8 @@ interface BookingDetails {
   serviceName: string;
   serviceType: string;
   priceUsdCents: number;
+  tipAmountCents?: number | null;
+  totalPaidCents?: number | null;
   scheduledTime: string;
   location?: string;
   notes?: string;
@@ -881,10 +883,34 @@ export default function PostServicePaymentPage() {
                 <span className="text-gray-600">Service</span>
                 <span className="font-semibold">{getServiceDisplayName(booking.serviceName, booking.serviceType)}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount</span>
-                <span className="font-bold text-green-600">${(booking.priceUsdCents / 100).toFixed(2)}</span>
-              </div>
+              {/* Price breakdown */}
+              {(() => {
+                // Derive tip from totalPaidCents if tipAmountCents is missing
+                const tipAmount = booking.tipAmountCents || 
+                  (booking.totalPaidCents && booking.totalPaidCents > booking.priceUsdCents 
+                    ? booking.totalPaidCents - booking.priceUsdCents 
+                    : 0);
+                const totalPaid = booking.totalPaidCents ?? (booking.priceUsdCents + tipAmount);
+                
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Service Price</span>
+                      <span className="font-medium">${(booking.priceUsdCents / 100).toFixed(2)}</span>
+                    </div>
+                    {tipAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tip</span>
+                        <span className="font-medium text-green-600">+${(tipAmount / 100).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-gray-600 font-semibold">Total</span>
+                      <span className="font-bold text-green-600">${(totalPaid / 100).toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
               {isPaid && (
                 <div className="flex justify-between pt-2 border-t">
                   <span className="text-gray-600">Status</span>
