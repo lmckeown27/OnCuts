@@ -665,7 +665,7 @@ export default function BookingDetailsModal({
                       onClick={handleCompleteBooking}
                         className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors"
                     >
-                      Complete
+                      Request Payment
                     </button>
                       <button
                         onClick={() => {
