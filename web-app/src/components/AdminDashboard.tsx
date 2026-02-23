@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Crown, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
-  MessageSquare, Star, Clock
+  MessageSquare, Star, Clock, UserPlus, Mail
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -76,7 +76,7 @@ interface MetricsResponse {
 
 type MetricsPeriod = 'daily' | 'weekly' | 'monthly';
 type MetricsView = 'revenue' | 'bookings';
-type AdminView = 'performance' | 'barbers';
+type AdminView = 'performance' | 'barbers' | 'users';
 
 interface Barber {
   id: string;
@@ -122,6 +122,18 @@ interface BookingMessage {
   sender_role: string;
 }
 
+interface PlatformUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  avatar_url: string | null;
+  campus_name: string | null;
+  created_at: string;
+  is_active: boolean;
+}
+
 interface AdminDashboardProps {
   initialCampusId?: string;
 }
@@ -156,6 +168,12 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [selectedBookingMessages, setSelectedBookingMessages] = useState<BookingMessage[]>([]);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  
+  // Users view state
+  const [users, setUsers] = useState<PlatformUser[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -252,6 +270,26 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchMetrics();
   }, [selectedCampusId, metricsPeriod]);
   
+  // Fetch users when Users tab is selected
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (adminView !== 'users') return;
+      
+      setIsLoadingUsers(true);
+      try {
+        const response = await api.get<{ users: PlatformUser[] }>('/admin/users');
+        setUsers(response.users || []);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setUsers([]);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    
+    fetchUsers();
+  }, [adminView]);
+  
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);
   }, [campuses, selectedCampusId]);
@@ -274,6 +312,27 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       b.email.toLowerCase().includes(query)
     );
   }, [barbers, barberSearchQuery]);
+  
+  const filteredUsers = useMemo(() => {
+    let filtered = users;
+    
+    // Filter by role
+    if (userRoleFilter !== 'all') {
+      filtered = filtered.filter(u => u.role.toUpperCase() === userRoleFilter.toUpperCase());
+    }
+    
+    // Filter by search query
+    if (userSearchQuery) {
+      const query = userSearchQuery.toLowerCase();
+      filtered = filtered.filter(u => 
+        u.first_name.toLowerCase().includes(query) || 
+        u.last_name.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [users, userSearchQuery, userRoleFilter]);
   
   const handleAssignManager = async (barberUserId: string, assign: boolean) => {
     setIsAssigning(barberUserId);
@@ -525,7 +584,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         </div>
       )}
       
-      {/* View Tabs - Performance / Barbers - Always visible */}
+      {/* View Tabs - Performance / Barbers / Users - Always visible */}
       <div className="flex rounded-lg bg-gray-100 p-1">
         <button
           onClick={() => setAdminView('performance')}
@@ -546,6 +605,16 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           }`}
         >
           Barbers
+        </button>
+        <button
+          onClick={() => setAdminView('users')}
+          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            adminView === 'users'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Users
         </button>
       </div>
       
@@ -1026,6 +1095,108 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               </div>
             )}
           </>
+        )}
+      </div>
+      )}
+      
+      {/* Users View */}
+      {adminView === 'users' && (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-gray-900">User Signups</h3>
+          <span className="text-xs text-gray-500">
+            {users.length} total users
+          </span>
+        </div>
+        
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              placeholder="Search users..."
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          
+          {/* Role Filter */}
+          <select
+            value={userRoleFilter}
+            onChange={(e) => setUserRoleFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="all">All Roles</option>
+            <option value="CONSUMER">Consumers</option>
+            <option value="BARBER">Barbers</option>
+            <option value="CAMPUS_MANAGER">Campus Managers</option>
+            <option value="ADMIN">Admins</option>
+          </select>
+        </div>
+        
+        {isLoadingUsers ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+          </div>
+        ) : filteredUsers.length > 0 ? (
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {filteredUsers.map(user => (
+              <div 
+                key={user.id}
+                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-gray-500">
+                        {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm truncate">
+                      {user.first_name} {user.last_name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="text-right flex-shrink-0">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
+                    user.role === 'CAMPUS_MANAGER' ? 'bg-amber-100 text-amber-700' :
+                    user.role === 'BARBER' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {user.role === 'CAMPUS_MANAGER' ? 'Manager' : user.role}
+                  </span>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    {new Date(user.created_at).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })}
+                  </p>
+                  {user.campus_name && (
+                    <p className="text-[10px] text-gray-500 truncate max-w-24">
+                      {user.campus_name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+            <UserPlus className="w-10 h-10 text-gray-300 mb-2" />
+            <p className="text-sm">No users found</p>
+          </div>
         )}
       </div>
       )}

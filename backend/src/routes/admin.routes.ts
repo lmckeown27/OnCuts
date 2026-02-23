@@ -55,5 +55,8 @@ router.post('/campuses/:campusId/manager', authenticate, adminController.assignC
 router.get('/barbers/:barberRecordId/bookings', authenticate, adminController.getBarberBookings);
 router.get('/bookings/:bookingId/messages', authenticate, adminController.getBookingMessages);
 
+// User Management (admin only)
+router.get('/users', authenticate, adminController.getAllUsers);
+
 export default router;
 

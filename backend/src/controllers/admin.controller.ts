@@ -1395,3 +1395,55 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
   }
 };
 
+/**
+ * Get all users (signups)
+ * GET /api/admin/users
+ */
+export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 100;
+    const offset = (page - 1) * limit;
+
+    // Get all users with campus info
+    const result = await pool.query(`
+      SELECT 
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.role,
+        u."avatarUrl" as avatar_url,
+        u."createdAt" as created_at,
+        u.status,
+        CASE WHEN u.status = 'active' THEN true ELSE false END as is_active,
+        c.name as campus_name
+      FROM users u
+      LEFT JOIN campuses c ON u."campusId" = c.id
+      ORDER BY u."createdAt" DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    // Get total count
+    const countResult = await pool.query('SELECT COUNT(*) as total FROM users');
+
+    res.json({
+      users: result.rows,
+      pagination: {
+        page,
+        limit,
+        total: parseInt(countResult.rows[0].total),
+        pages: Math.ceil(countResult.rows[0].total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
