@@ -169,11 +169,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   
-  // Users view state
+  // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState<string>('all');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -314,25 +313,15 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   }, [barbers, barberSearchQuery]);
   
   const filteredUsers = useMemo(() => {
-    let filtered = users;
+    if (!userSearchQuery) return users;
     
-    // Filter by role
-    if (userRoleFilter !== 'all') {
-      filtered = filtered.filter(u => u.role.toUpperCase() === userRoleFilter.toUpperCase());
-    }
-    
-    // Filter by search query
-    if (userSearchQuery) {
-      const query = userSearchQuery.toLowerCase();
-      filtered = filtered.filter(u => 
-        u.first_name.toLowerCase().includes(query) || 
-        u.last_name.toLowerCase().includes(query) ||
-        u.email.toLowerCase().includes(query)
-      );
-    }
-    
-    return filtered;
-  }, [users, userSearchQuery, userRoleFilter]);
+    const query = userSearchQuery.toLowerCase();
+    return users.filter(u => 
+      u.first_name.toLowerCase().includes(query) || 
+      u.last_name.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query)
+    );
+  }, [users, userSearchQuery]);
   
   const handleAssignManager = async (barberUserId: string, assign: boolean) => {
     setIsAssigning(barberUserId);
@@ -614,7 +603,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Users
+          Consumers
         </button>
       </div>
       
@@ -1099,42 +1088,26 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       </div>
       )}
       
-      {/* Users View */}
+      {/* Consumers View */}
       {adminView === 'users' && (
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900">User Signups</h3>
+          <h3 className="text-base font-semibold text-gray-900">Consumer Signups</h3>
           <span className="text-xs text-gray-500">
-            {users.length} total users
+            {users.length} total consumers
           </span>
         </div>
         
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-2 mb-3">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={userSearchQuery}
-              onChange={(e) => setUserSearchQuery(e.target.value)}
-              placeholder="Search users..."
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div>
-          
-          {/* Role Filter */}
-          <select
-            value={userRoleFilter}
-            onChange={(e) => setUserRoleFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="all">All Roles</option>
-            <option value="CONSUMER">Consumers</option>
-            <option value="BARBER">Barbers</option>
-            <option value="CAMPUS_MANAGER">Campus Managers</option>
-            <option value="ADMIN">Admins</option>
-          </select>
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={userSearchQuery}
+            onChange={(e) => setUserSearchQuery(e.target.value)}
+            placeholder="Search consumers..."
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
         </div>
         
         {isLoadingUsers ? (
@@ -1170,21 +1143,13 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                 </div>
                 
                 <div className="text-right flex-shrink-0">
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                    user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                    user.role === 'CAMPUS_MANAGER' ? 'bg-amber-100 text-amber-700' :
-                    user.role === 'BARBER' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {user.role === 'CAMPUS_MANAGER' ? 'Manager' : user.role}
-                  </span>
-                  <p className="text-[10px] text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500">
                     {new Date(user.created_at).toLocaleDateString('en-US', {
                       month: 'short', day: 'numeric', year: 'numeric'
                     })}
                   </p>
                   {user.campus_name && (
-                    <p className="text-[10px] text-gray-500 truncate max-w-24">
+                    <p className="text-[10px] text-gray-400 truncate max-w-28 mt-0.5">
                       {user.campus_name}
                     </p>
                   )}
@@ -1195,7 +1160,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-gray-500">
             <UserPlus className="w-10 h-10 text-gray-300 mb-2" />
-            <p className="text-sm">No users found</p>
+            <p className="text-sm">No consumers found</p>
           </div>
         )}
       </div>

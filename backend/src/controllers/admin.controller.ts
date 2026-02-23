@@ -1396,7 +1396,7 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
 };
 
 /**
- * Get all users (signups)
+ * Get all consumers (user signups)
  * GET /api/admin/users
  */
 export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1411,7 +1411,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = (page - 1) * limit;
 
-    // Get all users with campus info
+    // Get consumers only with campus info
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -1421,17 +1421,19 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         u.role,
         u."avatarUrl" as avatar_url,
         u."createdAt" as created_at,
-        u.status,
-        CASE WHEN u.status = 'active' THEN true ELSE false END as is_active,
+        COALESCE(u.is_active, true) as is_active,
         c.name as campus_name
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
+      WHERE UPPER(u.role) = 'CONSUMER'
       ORDER BY u."createdAt" DESC
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
-    // Get total count
-    const countResult = await pool.query('SELECT COUNT(*) as total FROM users');
+    // Get total count of consumers
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as total FROM users WHERE UPPER(role) = 'CONSUMER'
+    `);
 
     res.json({
       users: result.rows,
