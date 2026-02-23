@@ -127,9 +127,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       const response = await api.get<{ campuses: Campus[] } | Campus[]>('/admin/campuses');
       const campusList = Array.isArray(response) ? response : response.campuses || [];
       setCampuses(campusList);
-      if (campusList.length > 0 && !selectedCampusId) {
-        setSelectedCampusId(campusList[0].id);
-      }
+      // Don't auto-select first campus - admin should choose
     } catch (error: any) {
       console.error('Failed to fetch campuses:', error);
       setCampusLoadError(error.message || 'Failed to load campuses. The backend may need to be restarted.');
