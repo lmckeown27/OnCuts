@@ -1547,9 +1547,9 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
     await stripe.paymentIntents.update(paymentIntentId, {
       amount: totalAmountCents,
       metadata: {
-        bookingId: id,
-        tipAmountCents: tipAmountCents.toString(),
-        baseAmountCents: booking.priceUsdCents.toString(),
+        booking_id: id,
+        tip_amount_cents: tipAmountCents.toString(),
+        base_amount_cents: booking.priceUsdCents.toString(),
       },
     });
 
