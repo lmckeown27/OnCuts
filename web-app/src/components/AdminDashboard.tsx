@@ -269,14 +269,15 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchMetrics();
   }, [selectedCampusId, metricsPeriod]);
   
-  // Fetch users when Users tab is selected
+  // Fetch users when Users tab is selected and campus changes
   useEffect(() => {
     const fetchUsers = async () => {
       if (adminView !== 'users') return;
+      if (!selectedCampusId) return;
       
       setIsLoadingUsers(true);
       try {
-        const response = await api.get<{ users: PlatformUser[] }>('/admin/users');
+        const response = await api.get<{ users: PlatformUser[] }>(`/admin/users?campusId=${selectedCampusId}`);
         setUsers(response.users || []);
       } catch (error) {
         console.error('Failed to fetch users:', error);
@@ -287,7 +288,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     };
     
     fetchUsers();
-  }, [adminView]);
+  }, [adminView, selectedCampusId]);
   
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);

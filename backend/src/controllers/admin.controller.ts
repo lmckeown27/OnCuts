@@ -1396,8 +1396,8 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
 };
 
 /**
- * Get all consumers (user signups)
- * GET /api/admin/users
+ * Get all consumers (user signups) for a specific campus
+ * GET /api/admin/users?campusId=xxx
  */
 export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -1410,6 +1410,16 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 100;
     const offset = (page - 1) * limit;
+    const campusId = req.query.campusId as string | undefined;
+
+    // Build query based on whether campusId filter is provided
+    let whereClause = 'WHERE u.role = \'CONSUMER\'';
+    const params: (string | number)[] = [limit, offset];
+    
+    if (campusId && campusId !== 'undefined' && campusId !== '') {
+      whereClause += ' AND u."campusId" = $3';
+      params.push(campusId);
+    }
 
     // Get consumers only with campus info
     const result = await pool.query(`
@@ -1425,15 +1435,21 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         c.name as campus_name
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
-      WHERE u.role = 'CONSUMER'
+      ${whereClause}
       ORDER BY u."createdAt" DESC
       LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `, params);
 
-    // Get total count of consumers
-    const countResult = await pool.query(`
-      SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER'
-    `);
+    // Get total count of consumers (with same filter)
+    let countQuery = 'SELECT COUNT(*) as total FROM users u WHERE u.role = \'CONSUMER\'';
+    const countParams: string[] = [];
+    
+    if (campusId && campusId !== 'undefined' && campusId !== '') {
+      countQuery += ' AND u."campusId" = $1';
+      countParams.push(campusId);
+    }
+    
+    const countResult = await pool.query(countQuery, countParams);
 
     res.json({
       users: result.rows,
