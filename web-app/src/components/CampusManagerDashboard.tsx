@@ -2766,7 +2766,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                         : activeTab === 'cancelled'
                           ? 'text-red-600'
                           : 'text-green-600'
-                    }`}>{formatPrice(booking.priceUsdCents)}</p>
+                    }`}>{formatPrice(activeTab === 'completed' && booking.totalPaidCents ? booking.totalPaidCents : booking.priceUsdCents)}</p>
                     
                     {activeTab === 'upcoming' ? (
                       // Show status badge for upcoming bookings
