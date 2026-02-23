@@ -3133,7 +3133,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             {canUndoComplete && !isUndoingComplete && !isRemovingBooking && (
                               <div className="space-y-2">
                                 <p className="text-sm text-gray-500 text-center">
-                                  Awaiting payment from customer. Need to make changes?
+                                  Marked as complete by mistake?
                                 </p>
                                 <button
                                   onClick={() => setIsUndoingComplete(true)}

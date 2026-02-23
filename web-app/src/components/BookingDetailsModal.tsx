@@ -714,7 +714,7 @@ export default function BookingDetailsModal({
               {canUndoComplete && !isUndoingComplete && !isRemoving && (
                 <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0 space-y-3">
                   <p className="text-sm text-gray-500 text-center">
-                    Awaiting payment from customer. Need to make changes?
+                    Marked as complete by mistake?
                   </p>
                   <button
                     onClick={() => setIsUndoingComplete(true)}
