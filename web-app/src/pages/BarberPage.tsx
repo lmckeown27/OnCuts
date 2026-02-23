@@ -3103,7 +3103,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                               >
                                 <CreditCard className="w-4 h-4" />
-                                Complete
+                                Request Payment
                               </button>
                             )}
                             {(canEdit || canCancel) && (
