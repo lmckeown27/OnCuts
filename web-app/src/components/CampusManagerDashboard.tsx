@@ -2144,6 +2144,7 @@ interface CompletedBooking {
   serviceType: string;
   priceUsdCents: number;
   tipAmountCents: number | null;
+  totalPaidCents: number | null;
   scheduledTime: string;
   paidAt: string | null;
   paymentMethod: 'card' | 'cash' | null;
@@ -2466,24 +2467,36 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             <DollarSign className="w-4 h-4 text-primary-600" />
             Payment Details
           </h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Service Price</span>
-              <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
-            </div>
-            {selectedBooking.tipAmountCents !== null && selectedBooking.tipAmountCents > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Tip</span>
-                <span className="font-medium text-green-600">{formatPrice(selectedBooking.tipAmountCents)}</span>
+          {(() => {
+            // Use totalPaidCents if available, otherwise calculate from price + tip
+            const totalPaid = selectedBooking.totalPaidCents ?? (selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0));
+            // Derive tip from totalPaidCents if tipAmountCents is missing but total is higher than service price
+            const tipAmount = selectedBooking.tipAmountCents || 
+              (selectedBooking.totalPaidCents && selectedBooking.totalPaidCents > selectedBooking.priceUsdCents 
+                ? selectedBooking.totalPaidCents - selectedBooking.priceUsdCents 
+                : 0);
+            
+            return (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Service Price</span>
+                  <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
+                </div>
+                {tipAmount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tip</span>
+                    <span className="font-medium text-green-600">{formatPrice(tipAmount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="font-bold text-lg text-green-600">
+                    {formatPrice(totalPaid)}
+                  </span>
+                </div>
               </div>
-            )}
-            <div className="flex justify-between pt-2 border-t">
-              <span className="font-semibold text-gray-900">Total</span>
-              <span className="font-bold text-lg text-green-600">
-                {formatPrice(selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0))}
-              </span>
-            </div>
-          </div>
+            );
+          })()}
           {selectedBooking.paidAt && (
             <p className="text-xs text-gray-500 mt-2">Paid on {formatDate(selectedBooking.paidAt)}</p>
           )}
