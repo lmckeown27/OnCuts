@@ -2760,13 +2760,21 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                 {/* Right side - price and status/review */}
                 <div className="flex items-start gap-2">
                   <div className="text-right">
-                    <p className={`font-bold text-lg ${
-                      activeTab === 'upcoming' 
-                        ? booking.status === 'PENDING' ? 'text-amber-600' : 'text-blue-600'
-                        : activeTab === 'cancelled'
-                          ? 'text-red-600'
-                          : 'text-green-600'
-                    }`}>{formatPrice(activeTab === 'completed' && booking.totalPaidCents ? booking.totalPaidCents : booking.priceUsdCents)}</p>
+                    {/* Price breakdown for completed bookings with tips */}
+                    {activeTab === 'completed' && booking.totalPaidCents && booking.totalPaidCents > booking.priceUsdCents ? (
+                      <div className="space-y-0.5">
+                        <p className="text-xs text-gray-500">{formatPrice(booking.priceUsdCents)} + <span className="text-green-600">{formatPrice(booking.totalPaidCents - booking.priceUsdCents)} tip</span></p>
+                        <p className="font-bold text-lg text-green-600">{formatPrice(booking.totalPaidCents)}</p>
+                      </div>
+                    ) : (
+                      <p className={`font-bold text-lg ${
+                        activeTab === 'upcoming' 
+                          ? booking.status === 'PENDING' ? 'text-amber-600' : 'text-blue-600'
+                          : activeTab === 'cancelled'
+                            ? 'text-red-600'
+                            : 'text-green-600'
+                      }`}>{formatPrice(activeTab === 'completed' && booking.totalPaidCents ? booking.totalPaidCents : booking.priceUsdCents)}</p>
+                    )}
                     
                     {activeTab === 'upcoming' ? (
                       // Show status badge for upcoming bookings
