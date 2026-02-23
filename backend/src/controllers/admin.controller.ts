@@ -807,6 +807,7 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
       throw new ApiError(403, 'Admin access required');
     }
 
+    // Get campuses and their campus managers (users with user_type = 'campus_manager' at that campus)
     const result = await pool.query(`
       SELECT 
         c.id,
@@ -814,10 +815,10 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
         c.slug,
         c.city,
         c.state,
-        c.manager_id,
-        u.first_name || ' ' || u.last_name as manager_name
+        cm.id as manager_id,
+        cm.first_name || ' ' || cm.last_name as manager_name
       FROM campuses c
-      LEFT JOIN users u ON c.manager_id = u.id
+      LEFT JOIN users cm ON cm."campusId" = c.id AND cm.user_type = 'campus_manager'
       ORDER BY c.name
     `);
 
@@ -827,8 +828,8 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
         id: row.id.toString(),
         name: row.name,
         slug: row.slug,
-        city: row.city,
-        state: row.state,
+        city: row.city || '',
+        state: row.state || '',
         managerId: row.manager_id?.toString() || null,
         managerName: row.manager_name || null,
       })),
@@ -923,14 +924,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get campus manager_id
-    const campusResult = await pool.query(
-      'SELECT manager_id FROM campuses WHERE id = $1',
-      [campusId]
-    );
-    const managerId = campusResult.rows[0]?.manager_id;
-
-    // Get barbers for this campus
+    // Get barbers for this campus (include user_type to check if they're campus manager)
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -940,7 +934,8 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u.email,
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
-        u."campusId" as campus_id
+        u."campusId" as campus_id,
+        u.user_type
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       WHERE u."campusId" = $1
@@ -957,7 +952,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
-        isCampusManager: managerId && row.id.toString() === managerId.toString(),
+        isCampusManager: row.user_type === 'campus_manager',
         campusId: row.campus_id?.toString(),
       })),
     });
@@ -1008,10 +1003,10 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
     }
 
     if (action === 'assign') {
-      // Assign the user as campus manager
+      // First, remove any existing campus manager for this campus
       await pool.query(
-        'UPDATE campuses SET manager_id = $1 WHERE id = $2',
-        [barberUserId, campusId]
+        `UPDATE users SET user_type = 'barber' WHERE "campusId" = $1 AND user_type = 'campus_manager'`,
+        [campusId]
       );
 
       // Update user type to campus_manager
@@ -1027,12 +1022,6 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
         message: 'Campus manager assigned successfully',
       });
     } else {
-      // Remove the campus manager
-      await pool.query(
-        'UPDATE campuses SET manager_id = NULL WHERE id = $1 AND manager_id = $2',
-        [campusId, barberUserId]
-      );
-
       // Revert user type to barber
       await pool.query(
         'UPDATE users SET user_type = $1 WHERE id = $2',

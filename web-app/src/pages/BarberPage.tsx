@@ -18,6 +18,7 @@ import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import { CampusManagerBadge } from '../components/CampusManagerBadge';
 import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
+import { AdminDashboard } from '../components/AdminDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
@@ -70,6 +71,9 @@ export default function BarberPage() {
   const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
   const [isCampusManagerVisible, setIsCampusManagerVisible] = useState(false);
   
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
+  
   const [showBarberChats, setShowBarberChats] = useState(false);
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
@@ -105,7 +109,7 @@ export default function BarberPage() {
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'bookings' | 'payments' | 'reviews' | 'cancellations' | 'messages'>('all');
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
+  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showAdminDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -263,6 +267,9 @@ export default function BarberPage() {
   
   const openCampusManager = () => openModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
   const closeCampusManager = () => closeModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
+  
+  const openAdminDashboard = () => openModal(setShowAdminDashboard, setIsAdminDashboardVisible);
+  const closeAdminDashboard = () => closeModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   
   const openBarberChats = () => openModal(setShowBarberChats, setIsBarberChatsVisible);
   const closeBarberChats = () => closeModal(setShowBarberChats, setIsBarberChatsVisible);
@@ -624,7 +631,7 @@ export default function BarberPage() {
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
                         onClick={() => {
-                          navigate(`${platformPrefix}/admin`);
+                          openAdminDashboard();
                           setShowProfileDropdown(false);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -897,6 +904,36 @@ export default function BarberPage() {
             </div>
             <div className="p-4 sm:p-6">
               <CampusManagerDashboard campusId={campusId} campusName={campusName} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Dashboard Modal (ADMIN only) */}
+      {isAdmin && showAdminDashboard && (
+        <div 
+          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
+          onClick={closeAdminDashboard}
+        >
+          <div 
+            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto overscroll-contain transition-all duration-150 ease-out
+              ${isAdminDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
+              <div className="flex-1">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
+                <p className="text-sm text-gray-500 mt-1">Platform Administration</p>
+              </div>
+              <button
+                onClick={closeAdminDashboard}
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-6">
+              <AdminDashboard />
             </div>
           </div>
         </div>
