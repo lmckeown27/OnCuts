@@ -807,36 +807,54 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get campuses and their campus managers (users with user_type = 'campus_manager' at that campus)
+    // Use the same query pattern that works in campus.controller.ts
     const result = await pool.query(`
-      SELECT 
-        c.id,
-        c.name,
-        COALESCE(c.slug, '') as slug,
-        COALESCE(c.city, '') as city,
-        COALESCE(c.state, '') as state,
-        cm.id as manager_id,
-        COALESCE(cm.first_name, '') || ' ' || COALESCE(cm.last_name, '') as manager_name
-      FROM campuses c
-      LEFT JOIN users cm ON cm."campusId" = c.id AND cm.user_type = 'campus_manager'
-      WHERE c."isActive" = true
-      ORDER BY c.name
+      SELECT id, name, slug, city, state
+      FROM campuses 
+      WHERE "isActive" = TRUE
+      ORDER BY name
     `);
+
+    // Get campus managers separately
+    const managersResult = await pool.query(`
+      SELECT u.id, u."campusId", u.first_name, u.last_name
+      FROM users u
+      WHERE u.user_type = 'campus_manager' AND u."campusId" IS NOT NULL
+    `);
+
+    // Create a map of campus managers
+    const managerMap = new Map<string, { id: string; name: string }>();
+    for (const mgr of managersResult.rows) {
+      if (mgr.campusId) {
+        managerMap.set(String(mgr.campusId), {
+          id: String(mgr.id),
+          name: `${mgr.first_name || ''} ${mgr.last_name || ''}`.trim()
+        });
+      }
+    }
 
     res.json({
       success: true,
-      campuses: result.rows.map(row => ({
-        id: String(row.id),
-        name: row.name || '',
-        slug: row.slug || '',
-        city: row.city || '',
-        state: row.state || '',
-        managerId: row.manager_id ? String(row.manager_id) : null,
-        managerName: row.manager_name?.trim() || null,
-      })),
+      campuses: result.rows.map(row => {
+        const manager = managerMap.get(String(row.id));
+        return {
+          id: String(row.id),
+          name: row.name || '',
+          slug: row.slug || '',
+          city: row.city || '',
+          state: row.state || '',
+          managerId: manager?.id || null,
+          managerName: manager?.name || null,
+        };
+      }),
     });
-  } catch (error) {
-    logger.error('Failed to fetch campuses:', error);
+  } catch (error: any) {
+    logger.error('Failed to fetch campuses:', { 
+      message: error.message, 
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack 
+    });
     next(error);
   }
 };
