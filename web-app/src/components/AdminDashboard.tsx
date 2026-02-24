@@ -746,135 +746,70 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         
         {/* Performance Summary - Below chart */}
         {selectedCampusId && performance && (
-          <div className="space-y-3">
-            {/* Revenue Breakdown - Gross Revenue & Barber Earnings */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* Total Revenue (Money in Circulation) */}
-              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
-                <TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-500" />
-                <p className="text-lg font-bold text-green-700">
-                  {formatCurrency(performance.totalRevenue)}
-                </p>
-                <p className="text-[10px] font-medium text-green-500">Gross Revenue</p>
-                <p className="text-[9px] text-green-400">{performance.completedTransactionCount || 0} transactions</p>
+          <div className="space-y-4 text-sm">
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <p className="text-gray-500 text-xs">Gross Revenue</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(performance.totalRevenue)}</p>
+                <p className="text-xs text-gray-400">{performance.completedTransactionCount || 0} transactions</p>
               </div>
-              
-              {/* Barber Earnings (85%) */}
-              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
-                <Scissors className="w-4 h-4 mx-auto mb-1 text-blue-500" />
-                <p className="text-lg font-bold text-blue-700">
-                  {formatCurrency(performance.totalBarberEarnings || 0)}
-                </p>
-                <p className="text-[10px] font-medium text-blue-500">Barber Earnings</p>
-                <p className="text-[9px] text-blue-400">85% of gross</p>
+              <div>
+                <p className="text-gray-500 text-xs">Barber Earnings (85%)</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(performance.totalBarberEarnings || 0)}</p>
               </div>
             </div>
             
-            {/* Platform Fee Breakdown - Gross, Stripe Fees, Net */}
-            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
-              <p className="text-xs font-semibold text-amber-800 mb-2">Platform Revenue Breakdown</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {/* Gross Platform Fees (15%) */}
+            {/* Platform Revenue */}
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-medium text-gray-700 mb-3">Platform Revenue (15%)</p>
+              <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-sm font-bold text-amber-700">
-                    {formatCurrency(performance.totalPlatformFees || 0)}
-                  </p>
-                  <p className="text-[9px] text-amber-500">Gross (15%)</p>
+                  <p className="text-xs text-gray-500">Gross</p>
+                  <p className="font-semibold text-gray-900">{formatCurrency(performance.totalPlatformFees || 0)}</p>
                 </div>
-                
-                {/* Stripe Processing Fees */}
                 <div>
-                  <p className="text-sm font-bold text-red-600">
-                    -{formatCurrency(performance.estimatedStripeFees || 0)}
-                  </p>
-                  <p className="text-[9px] text-red-400">Stripe Fees</p>
+                  <p className="text-xs text-gray-500">Stripe Fees</p>
+                  <p className="font-semibold text-gray-900">-{formatCurrency(performance.estimatedStripeFees || 0)}</p>
                 </div>
-                
-                {/* Net Platform Revenue */}
                 <div>
-                  <p className="text-sm font-bold text-green-700">
-                    {formatCurrency(performance.netPlatformRevenue || 0)}
-                  </p>
-                  <p className="text-[9px] text-green-500">Net Revenue</p>
+                  <p className="text-xs text-gray-500">Net</p>
+                  <p className="font-semibold text-gray-900">{formatCurrency(performance.netPlatformRevenue || 0)}</p>
                 </div>
               </div>
             </div>
 
-            {/* Average Cost Per Appointment */}
-            <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
-                    <Scissors className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-emerald-600 font-medium">Avg Cost Per Appointment</p>
-                    <p className="text-xl font-bold text-emerald-700">
-                      {formatCurrency(performance.averageCostPerAppointment)}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-emerald-500">
-                  {performance.completedBookings} completed
+            {/* Averages */}
+            <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <p className="text-gray-500 text-xs">Avg/Appointment</p>
+                <p className="font-semibold text-gray-900">{formatCurrency(performance.averageCostPerAppointment)}</p>
+                <p className="text-xs text-gray-400">{performance.completedBookings} completed</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">
+                  Avg Cuts/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : metricsPeriod === 'monthly' ? 'Month' : 'Month'}
                 </p>
-              </div>
-            </div>
-
-            {/* Period-specific metrics */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* Bookings metric based on period */}
-              <div className={`p-3 rounded-xl text-center ${
-                metricsPeriod === 'daily' ? 'bg-blue-50' :
-                metricsPeriod === 'weekly' ? 'bg-indigo-50' : 'bg-purple-50'
-              }`}>
-                <Calendar className={`w-4 h-4 mx-auto mb-1 ${
-                  metricsPeriod === 'daily' ? 'text-blue-500' :
-                  metricsPeriod === 'weekly' ? 'text-indigo-500' : 'text-purple-500'
-                }`} />
-                <p className={`text-2xl font-bold ${
-                  metricsPeriod === 'daily' ? 'text-blue-700' :
-                  metricsPeriod === 'weekly' ? 'text-indigo-700' : 'text-purple-700'
-                }`}>
-                  {metricsPeriod === 'daily' 
+                <p className="font-semibold text-gray-900">
+                  {metricsPeriod === 'daily' || metricsPeriod === 'alltime'
                     ? performance.averageBookingsPerDay.toFixed(1)
                     : metricsPeriod === 'weekly'
                     ? performance.averageBookingsPerWeek.toFixed(1)
                     : performance.averageBookingsPerMonth.toFixed(1)
                   }
                 </p>
-                <p className={`text-xs font-medium ${
-                  metricsPeriod === 'daily' ? 'text-blue-500' :
-                  metricsPeriod === 'weekly' ? 'text-indigo-500' : 'text-purple-500'
-                }`}>
-                  Avg Cuts/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : 'Month'}
-                </p>
               </div>
-
-              {/* Revenue metric based on period */}
-              <div className={`p-3 rounded-xl text-center ${
-                metricsPeriod === 'daily' ? 'bg-amber-50' :
-                metricsPeriod === 'weekly' ? 'bg-orange-50' : 'bg-rose-50'
-              }`}>
-                <DollarSign className={`w-4 h-4 mx-auto mb-1 ${
-                  metricsPeriod === 'daily' ? 'text-amber-500' :
-                  metricsPeriod === 'weekly' ? 'text-orange-500' : 'text-rose-500'
-                }`} />
-                <p className={`text-2xl font-bold ${
-                  metricsPeriod === 'daily' ? 'text-amber-700' :
-                  metricsPeriod === 'weekly' ? 'text-orange-700' : 'text-rose-700'
-                }`}>
-                  {metricsPeriod === 'daily' 
+              <div>
+                <p className="text-gray-500 text-xs">
+                  Avg Revenue/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : metricsPeriod === 'monthly' ? 'Month' : 'Month'}
+                </p>
+                <p className="font-semibold text-gray-900">
+                  {metricsPeriod === 'daily' || metricsPeriod === 'alltime'
                     ? formatCurrency(performance.averageRevenuePerDay)
                     : metricsPeriod === 'weekly'
                     ? formatCurrency(performance.averageRevenuePerWeek)
                     : formatCurrency(performance.averageRevenuePerMonth)
                   }
-                </p>
-                <p className={`text-xs font-medium ${
-                  metricsPeriod === 'daily' ? 'text-amber-500' :
-                  metricsPeriod === 'weekly' ? 'text-orange-500' : 'text-rose-500'
-                }`}>
-                  Avg Revenue/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : 'Month'}
                 </p>
               </div>
             </div>
