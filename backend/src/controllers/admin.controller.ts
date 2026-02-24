@@ -1102,7 +1102,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
 
     // Determine date truncation and range based on period
     let dateTrunc: string;
-    let interval: string;
+    let interval: string | null;
     let limit: number;
 
     switch (period) {
@@ -1115,6 +1115,11 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         dateTrunc = 'month';
         interval = '12 months';
         limit = 12;
+        break;
+      case 'alltime':
+        dateTrunc = 'month'; // Group by month for all time view
+        interval = null; // No time limit - get all data
+        limit = 1000;
         break;
       default: // daily
         dateTrunc = 'day';
@@ -1150,18 +1155,35 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
     // Get bookings and revenue grouped by period
     // Use paidAt for accurate revenue tracking (when payment was actually made)
     // Convert to campus timezone for accurate local date grouping
-    const metricsResult = await pool.query(`
-      SELECT 
-        DATE_TRUNC($1, "paidAt" AT TIME ZONE $4) as period_start,
-        COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
-        COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
-      FROM bookings
-      WHERE "barberId" = ANY($2::uuid[])
-        AND "paidAt" IS NOT NULL
-        AND "paidAt" >= NOW() - $3::interval
-      GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
-      ORDER BY period_start ASC
-    `, [dateTrunc, barberIds, interval, campusTimezone]);
+    let metricsResult;
+    if (interval) {
+      // Time-limited query (daily, weekly, monthly)
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $4) as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "barberId" = ANY($2::uuid[])
+          AND "paidAt" IS NOT NULL
+          AND "paidAt" >= NOW() - $3::interval
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
+        ORDER BY period_start ASC
+      `, [dateTrunc, barberIds, interval, campusTimezone]);
+    } else {
+      // All time query - no time filter
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $3) as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "barberId" = ANY($2::uuid[])
+          AND "paidAt" IS NOT NULL
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
+        ORDER BY period_start ASC
+      `, [dateTrunc, barberIds, campusTimezone]);
+    }
 
     // Format the response
     const data = metricsResult.rows.map(row => ({

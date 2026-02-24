@@ -79,8 +79,7 @@ interface MetricsResponse {
   data: MetricsDataPoint[];
 }
 
-type MetricsPeriod = 'daily' | 'weekly' | 'monthly';
-type MetricsView = 'revenue' | 'bookings';
+type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'alltime';
 type AdminView = 'performance' | 'barbers' | 'users';
 
 interface Barber {
@@ -164,7 +163,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
-  const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
@@ -436,57 +434,111 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       } else if (metricsPeriod === 'weekly') {
         return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      } else if (metricsPeriod === 'monthly') {
+        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       } else {
+        // All time - just show the date
         return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       }
     });
     
-    const dataValues = metrics.map(m => 
-      metricsView === 'revenue' ? m.revenue / 100 : m.bookings
-    );
+    const revenueValues = metrics.map(m => m.revenue / 100);
+    const bookingsValues = metrics.map(m => m.bookings);
     
     return {
       labels,
       datasets: [
         {
-          label: metricsView === 'revenue' ? 'Revenue ($)' : 'Bookings',
-          data: dataValues,
-          borderColor: metricsView === 'revenue' ? '#f59e0b' : '#10b981',
-          backgroundColor: metricsView === 'revenue' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+          label: 'Revenue ($)',
+          data: revenueValues,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
           fill: true,
           tension: 0.3,
           pointRadius: 4,
           pointHoverRadius: 6,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Bookings',
+          data: bookingsValues,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          yAxisID: 'y1',
         },
       ],
     };
-  }, [metrics, metricsPeriod, metricsView]);
+  }, [metrics, metricsPeriod]);
   
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          boxWidth: 8,
+          font: { size: 11 },
+        },
       },
       tooltip: {
         callbacks: {
           label: (context: any) => {
             const value = context.parsed.y;
-            return metricsView === 'revenue' 
-              ? `$${value.toFixed(2)}` 
-              : `${value} bookings`;
+            if (context.dataset.label === 'Revenue ($)') {
+              return `Revenue: $${value.toFixed(2)}`;
+            }
+            return `Bookings: ${value}`;
           },
         },
       },
     },
     scales: {
       y: {
+        type: 'linear' as const,
+        display: true,
+        position: 'left' as const,
         beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Revenue ($)',
+          color: '#f59e0b',
+          font: { size: 11 },
+        },
         ticks: {
-          callback: (value: any) => {
-            return metricsView === 'revenue' ? `$${value}` : value;
-          },
+          callback: (value: any) => `$${value}`,
+          color: '#f59e0b',
+        },
+        grid: {
+          drawOnChartArea: true,
+        },
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Bookings',
+          color: '#10b981',
+          font: { size: 11 },
+        },
+        ticks: {
+          color: '#10b981',
+        },
+        grid: {
+          drawOnChartArea: false,
         },
       },
     },
@@ -638,33 +690,8 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           <h3 className="text-base font-semibold text-gray-900">Performance Metrics</h3>
         </div>
         
-        {/* Period & View Selector */}
+        {/* Period Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {/* View Toggle */}
-          <div className="flex rounded-lg bg-gray-100 p-0.5">
-            <button
-              onClick={() => setMetricsView('revenue')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsView === 'revenue' 
-                  ? 'bg-amber-500 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Revenue
-            </button>
-            <button
-              onClick={() => setMetricsView('bookings')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsView === 'bookings' 
-                  ? 'bg-green-500 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Bookings
-            </button>
-          </div>
-          
-          {/* Period Toggle */}
           <div className="flex rounded-lg bg-gray-100 p-0.5">
             <button
               onClick={() => setMetricsPeriod('daily')}
@@ -695,6 +722,16 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               }`}
             >
               Monthly
+            </button>
+            <button
+              onClick={() => setMetricsPeriod('alltime')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                metricsPeriod === 'alltime' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              All Time
             </button>
           </div>
         </div>
