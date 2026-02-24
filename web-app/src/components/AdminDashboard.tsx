@@ -590,23 +590,31 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
       </div>
       
-      {/* Total Revenue - Always visible below university selector */}
+      {/* Summary Stats - Always visible below university selector */}
       {selectedCampusId && (
-        <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs text-green-600 font-medium">Total Revenue</p>
-                <p className="text-xl font-bold text-green-700">
-                  {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
-                </p>
-              </div>
-            </div>
-            <p className="text-xs text-green-500">
-              All time
+        <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+          <div>
+            <p className="text-gray-500 text-xs">Total Revenue</p>
+            <p className="font-semibold text-gray-900">
+              {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Platform Revenue</p>
+            <p className="font-semibold text-gray-900">
+              {isLoadingPerformance ? '...' : formatCurrency(performance?.netPlatformRevenue ?? 0)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Total Barbers</p>
+            <p className="font-semibold text-gray-900">
+              {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Total Consumers</p>
+            <p className="font-semibold text-gray-900">
+              {isLoadingUsers ? '...' : totalUsersCount}
             </p>
           </div>
         </div>
