@@ -223,14 +223,16 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchCampuses();
   }, []);
   
-  // Fetch campus performance when campus changes
+  // Fetch campus performance when campus changes (or aggregate when none selected)
   useEffect(() => {
     const fetchPerformance = async () => {
-      if (!selectedCampusId) return;
-      
       setIsLoadingPerformance(true);
       try {
-        const response = await api.get<CampusPerformance>(`/admin/campuses/${selectedCampusId}/performance`);
+        // Use aggregate endpoint when no campus selected, otherwise campus-specific
+        const url = selectedCampusId 
+          ? `/admin/campuses/${selectedCampusId}/performance`
+          : '/admin/campuses/aggregate/performance';
+        const response = await api.get<CampusPerformance>(url);
         setPerformance(response);
       } catch (error) {
         console.error('Failed to fetch performance:', error);
@@ -266,15 +268,16 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchBarbers();
   }, [selectedCampusId]);
   
-  // Fetch metrics when campus or period changes
+  // Fetch metrics when campus or period changes (or aggregate when none selected)
   useEffect(() => {
     const fetchMetrics = async () => {
-      if (!selectedCampusId) return;
-      
       setIsLoadingMetrics(true);
       try {
-        // api.get extracts response.data.data, so response here is already the metrics array
-        const metricsData = await api.get<MetricsDataPoint[]>(`/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`);
+        // Use aggregate endpoint when no campus selected, otherwise campus-specific
+        const url = selectedCampusId 
+          ? `/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`
+          : `/admin/campuses/aggregate/metrics?period=${metricsPeriod}`;
+        const metricsData = await api.get<MetricsDataPoint[]>(url);
         setMetrics(Array.isArray(metricsData) ? metricsData : []);
       } catch (error) {
         console.error('Failed to fetch metrics:', error);
@@ -290,15 +293,19 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   // Fetch total user count whenever campus changes (for summary stats)
   useEffect(() => {
     const fetchUserCount = async () => {
-      if (!selectedCampusId) return;
-      
+      setIsLoadingUsers(true);
       try {
-        const url = `/admin/users?campusId=${selectedCampusId}`;
+        // If no campus selected, fetch all consumers; otherwise filter by campus
+        const url = selectedCampusId 
+          ? `/admin/users?campusId=${selectedCampusId}`
+          : '/admin/users';
         const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
         setTotalUsersCount(response.pagination?.total || response.users?.length || 0);
       } catch (error) {
         console.error('Failed to fetch user count:', error);
         setTotalUsersCount(0);
+      } finally {
+        setIsLoadingUsers(false);
       }
     };
     
@@ -538,7 +545,21 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     <div className="space-y-4 sm:space-y-6">
       {/* Campus Selector */}
       <div>
-        <h3 className="text-base font-semibold text-gray-900 mb-3">Select University</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-semibold text-gray-900">Select University</h3>
+          {selectedCampusId && (
+            <button
+              onClick={() => {
+                setSelectedCampusId(null);
+                setCampusSearchQuery('');
+              }}
+              className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+            >
+              <ChevronLeft className="w-3 h-3" />
+              All Universities
+            </button>
+          )}
+        </div>
         
         {isLoadingCampuses ? (
           <div className="flex items-center justify-center py-6">
@@ -618,34 +639,38 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       </div>
       
       {/* Summary Stats - Always visible below university selector */}
-      {selectedCampusId && selectedCampus && (
-        <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
-          <div>
-            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Revenue</p>
-            <p className="font-semibold text-gray-900">
-              {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">Platform Revenue</p>
-            <p className="font-semibold text-gray-900">
-              {isLoadingPerformance ? '...' : formatCurrency(performance?.netPlatformRevenue ?? 0)}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Barbers</p>
-            <p className="font-semibold text-gray-900">
-              {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Consumers</p>
-            <p className="font-semibold text-gray-900">
-              {isLoadingUsers ? '...' : totalUsersCount}
-            </p>
-          </div>
+      <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+        <div>
+          <p className="text-gray-500 text-xs">
+            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Revenue` : 'Total Revenue'}
+          </p>
+          <p className="font-semibold text-gray-900">
+            {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
+          </p>
         </div>
-      )}
+        <div>
+          <p className="text-gray-500 text-xs">Platform Revenue</p>
+          <p className="font-semibold text-gray-900">
+            {isLoadingPerformance ? '...' : formatCurrency(performance?.netPlatformRevenue ?? 0)}
+          </p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">
+            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Barbers` : 'Total Barbers'}
+          </p>
+          <p className="font-semibold text-gray-900">
+            {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
+          </p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">
+            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Consumers` : 'Total Consumers'}
+          </p>
+          <p className="font-semibold text-gray-900">
+            {isLoadingUsers ? '...' : totalUsersCount}
+          </p>
+        </div>
+      </div>
       
       {/* View Tabs - Performance / Barbers / Users - Always visible */}
       <div className="flex rounded-lg bg-gray-100 p-1">
@@ -760,11 +785,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         </div>
         
         {/* Chart - directly under toggles */}
-        {!selectedCampusId ? (
-          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">
-            Select a university to view performance data
-          </div>
-        ) : isLoadingMetrics ? (
+        {isLoadingMetrics ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
@@ -780,7 +801,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
         
         {/* Performance Summary - Below chart */}
-        {selectedCampusId && performance && (
+        {performance && (
           <div className="space-y-4 text-sm">
             {/* Main Stats Grid */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">

@@ -1202,6 +1202,213 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
 };
 
 /**
+ * Get aggregate performance across ALL campuses
+ * GET /api/admin/campuses/aggregate/performance
+ */
+export const getAggregatePerformance = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get total barber counts
+    const barbersResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE b."isActive" = true) as active
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+    `);
+
+    // Get total booking counts
+    const bookingsResult = await pool.query(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as completed,
+        COUNT(*) FILTER (WHERE status = 'CANCELLED') as cancelled
+      FROM bookings
+    `);
+
+    // Get total revenue, platform fees, and transaction count
+    const revenueResult = await pool.query(`
+      SELECT 
+        COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
+        COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
+        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings,
+        COUNT(*) as completed_transaction_count
+      FROM bookings
+      WHERE status IN ('COMPLETED', 'PAID')
+    `);
+
+    // Get average rating and review count
+    const ratingsResult = await pool.query(`
+      SELECT 
+        COALESCE(AVG("reviewRating"), 0) as avg_rating,
+        COUNT("reviewRating") as total_reviews
+      FROM bookings
+      WHERE "reviewRating" IS NOT NULL
+    `);
+
+    // Get average bookings per day (last 30 days)
+    const avgDailyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(daily_count), 0) as avg_daily
+      FROM (
+        SELECT DATE_TRUNC('day', "createdAt") as day, COUNT(*) as daily_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE_TRUNC('day', "createdAt")
+      ) daily_counts
+    `);
+
+    // Get average bookings per week (last 12 weeks)
+    const avgWeeklyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(weekly_count), 0) as avg_weekly
+      FROM (
+        SELECT DATE_TRUNC('week', "createdAt") as week, COUNT(*) as weekly_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 weeks'
+        GROUP BY DATE_TRUNC('week', "createdAt")
+      ) weekly_counts
+    `);
+
+    // Get average bookings per month (last 12 months)
+    const avgMonthlyBookingsResult = await pool.query(`
+      SELECT COALESCE(AVG(monthly_count), 0) as avg_monthly
+      FROM (
+        SELECT DATE_TRUNC('month', "createdAt") as month, COUNT(*) as monthly_count
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        AND "createdAt" >= NOW() - INTERVAL '12 months'
+        GROUP BY DATE_TRUNC('month', "createdAt")
+      ) monthly_counts
+    `);
+
+    // Calculate Stripe fees (2.9% + $0.30 per transaction)
+    const totalRevenue = parseInt(revenueResult.rows[0].total_revenue || '0');
+    const totalPlatformFees = parseInt(revenueResult.rows[0].total_platform_fees || '0');
+    const completedTransactionCount = parseInt(revenueResult.rows[0].completed_transaction_count || '0');
+    const estimatedStripeFees = Math.round((totalPlatformFees * 0.029) + (completedTransactionCount * 30));
+    const netPlatformRevenue = totalPlatformFees - estimatedStripeFees;
+
+    const completedBookings = parseInt(bookingsResult.rows[0].completed || '0');
+    const avgCostPerAppointment = completedBookings > 0 
+      ? Math.round(totalRevenue / completedBookings)
+      : 0;
+
+    res.json({
+      success: true,
+      totalBarbers: parseInt(barbersResult.rows[0].total || '0'),
+      activeBarbers: parseInt(barbersResult.rows[0].active || '0'),
+      totalBookings: parseInt(bookingsResult.rows[0].total || '0'),
+      completedBookings,
+      cancelledBookings: parseInt(bookingsResult.rows[0].cancelled || '0'),
+      totalRevenue,
+      totalPlatformFees,
+      totalBarberEarnings: parseInt(revenueResult.rows[0].total_barber_earnings || '0'),
+      estimatedStripeFees,
+      netPlatformRevenue,
+      completedTransactionCount,
+      averageRating: parseFloat(ratingsResult.rows[0].avg_rating || '0'),
+      totalReviews: parseInt(ratingsResult.rows[0].total_reviews || '0'),
+      averageBookingsPerDay: parseFloat(avgDailyBookingsResult.rows[0].avg_daily || '0'),
+      averageBookingsPerWeek: parseFloat(avgWeeklyBookingsResult.rows[0].avg_weekly || '0'),
+      averageBookingsPerMonth: parseFloat(avgMonthlyBookingsResult.rows[0].avg_monthly || '0'),
+      averageRevenuePerDay: parseFloat(avgDailyBookingsResult.rows[0].avg_daily || '0') * avgCostPerAppointment,
+      averageRevenuePerWeek: parseFloat(avgWeeklyBookingsResult.rows[0].avg_weekly || '0') * avgCostPerAppointment,
+      averageRevenuePerMonth: parseFloat(avgMonthlyBookingsResult.rows[0].avg_monthly || '0') * avgCostPerAppointment,
+      averageCostPerAppointment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get aggregate metrics across ALL campuses
+ * GET /api/admin/campuses/aggregate/metrics
+ */
+export const getAggregateMetrics = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const period = (req.query.period as string) || 'daily';
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Determine date truncation and range based on period
+    let dateTrunc: string;
+    let interval: string | null;
+
+    switch (period) {
+      case 'weekly':
+        dateTrunc = 'week';
+        interval = '12 weeks';
+        break;
+      case 'monthly':
+        dateTrunc = 'month';
+        interval = '12 months';
+        break;
+      case 'alltime':
+        dateTrunc = 'month';
+        interval = null;
+        break;
+      default: // daily
+        dateTrunc = 'day';
+        interval = '30 days';
+    }
+
+    // Get bookings and revenue grouped by period across all campuses
+    // Use UTC since we're aggregating across timezones
+    let metricsResult;
+    if (interval) {
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt") as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "paidAt" IS NOT NULL
+          AND "paidAt" >= NOW() - $2::interval
+        GROUP BY DATE_TRUNC($1, "paidAt")
+        ORDER BY period_start ASC
+      `, [dateTrunc, interval]);
+    } else {
+      // All time - no date filter
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt") as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "paidAt" IS NOT NULL
+        GROUP BY DATE_TRUNC($1, "paidAt")
+        ORDER BY period_start ASC
+      `, [dateTrunc]);
+    }
+
+    // Format the response
+    const data = metricsResult.rows.map(row => ({
+      date: row.period_start,
+      bookings: parseInt(row.bookings || '0'),
+      revenue: parseInt(row.revenue || '0'),
+    }));
+
+    res.json({
+      period,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get barbers for a campus
  * GET /api/admin/campuses/:campusId/barbers
  */

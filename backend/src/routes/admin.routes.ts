@@ -46,6 +46,8 @@ router.delete('/services/:id', authenticate, adminController.deleteService);
 
 // Campus Management (admin only)
 router.get('/campuses', authenticate, adminController.getAllCampuses);
+router.get('/campuses/aggregate/performance', authenticate, adminController.getAggregatePerformance);
+router.get('/campuses/aggregate/metrics', authenticate, adminController.getAggregateMetrics);
 router.get('/campuses/:campusId/performance', authenticate, adminController.getCampusPerformance);
 router.get('/campuses/:campusId/metrics', authenticate, adminController.getCampusMetrics);
 router.get('/campuses/:campusId/barbers', authenticate, adminController.getCampusBarbers);
