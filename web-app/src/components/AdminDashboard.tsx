@@ -609,10 +609,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       </div>
       
       {/* Summary Stats - Always visible below university selector */}
-      {selectedCampusId && (
+      {selectedCampusId && selectedCampus && (
         <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
           <div>
-            <p className="text-gray-500 text-xs">Total Revenue</p>
+            <p className="text-gray-500 text-xs">{selectedCampus.name} Revenue</p>
             <p className="font-semibold text-gray-900">
               {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
             </p>
@@ -624,13 +624,13 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Total Barbers</p>
+            <p className="text-gray-500 text-xs">{selectedCampus.name} Barbers</p>
             <p className="font-semibold text-gray-900">
               {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">Total Consumers</p>
+            <p className="text-gray-500 text-xs">{selectedCampus.name} Consumers</p>
             <p className="font-semibold text-gray-900">
               {isLoadingUsers ? '...' : totalUsersCount}
             </p>
