@@ -462,7 +462,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     };
   }, [metrics, metricsPeriod, metricsView]);
   
-  const chartOptions = {
+  const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -471,11 +471,26 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       },
       tooltip: {
         callbacks: {
+          // Show BOTH revenue and bookings in tooltip for correlation
+          afterBody: (context: any) => {
+            const index = context[0]?.dataIndex;
+            if (index !== undefined && metrics[index]) {
+              const m = metrics[index];
+              const lines = [];
+              if (metricsView === 'revenue') {
+                lines.push(`Bookings: ${m.bookings}`);
+              } else {
+                lines.push(`Revenue: $${(m.revenue / 100).toFixed(2)}`);
+              }
+              return lines;
+            }
+            return [];
+          },
           label: (context: any) => {
             const value = context.parsed.y;
             return metricsView === 'revenue' 
-              ? `$${value.toFixed(2)}` 
-              : `${value} bookings`;
+              ? `Revenue: $${value.toFixed(2)}` 
+              : `Bookings: ${value}`;
           },
         },
       },
@@ -490,7 +505,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         },
       },
     },
-  };
+  }), [metrics, metricsView]);
   
   return (
     <div className="space-y-4 sm:space-y-6">
