@@ -942,7 +942,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Visible ({barbers.filter(b => b.hasStripeSetup).length})
+          Active ({barbers.filter(b => b.hasStripeSetup).length})
         </button>
         <button
           onClick={() => setStripeFilter('not-setup')}
@@ -952,7 +952,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Hidden ({barbers.filter(b => !b.hasStripeSetup).length})
+          Inactive ({barbers.filter(b => !b.hasStripeSetup).length})
         </button>
       </div>
 
