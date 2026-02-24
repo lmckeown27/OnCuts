@@ -1141,16 +1141,17 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
 
     // Get bookings and revenue grouped by period
     // Use paidAt for accurate revenue tracking (when payment was actually made)
+    // Convert to Pacific timezone (America/Los_Angeles) for Cal Poly SLO consistency
     const metricsResult = await pool.query(`
       SELECT 
-        DATE_TRUNC($1, "paidAt") as period_start,
+        DATE_TRUNC($1, "paidAt" AT TIME ZONE 'America/Los_Angeles') as period_start,
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
         COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
       FROM bookings
       WHERE "barberId" = ANY($2::uuid[])
         AND "paidAt" IS NOT NULL
         AND "paidAt" >= NOW() - $3::interval
-      GROUP BY DATE_TRUNC($1, "paidAt")
+      GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE 'America/Los_Angeles')
       ORDER BY period_start ASC
     `, [dateTrunc, barberIds, interval]);
 
