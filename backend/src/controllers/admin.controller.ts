@@ -1122,14 +1122,22 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         limit = 30;
     }
 
-    // Get barber IDs for this campus
-    const barberIdsResult = await pool.query(`
-      SELECT b.id FROM barbers b
-      JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1::uuid
+    // Get campus timezone and barber IDs
+    const campusResult = await pool.query(`
+      SELECT c.timezone, array_agg(b.id) as barber_ids
+      FROM campuses c
+      LEFT JOIN users u ON u."campusId" = c.id
+      LEFT JOIN barbers b ON b."userId" = u.id
+      WHERE c.id = $1::uuid
+      GROUP BY c.id
     `, [campusId]);
 
-    const barberIds = barberIdsResult.rows.map(r => r.id);
+    if (campusResult.rows.length === 0) {
+      throw new ApiError(404, 'Campus not found');
+    }
+
+    const campusTimezone = campusResult.rows[0].timezone || 'America/Los_Angeles';
+    const barberIds = (campusResult.rows[0].barber_ids || []).filter((id: string | null) => id !== null);
 
     if (barberIds.length === 0) {
       // No barbers, return empty data
@@ -1141,19 +1149,19 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
 
     // Get bookings and revenue grouped by period
     // Use paidAt for accurate revenue tracking (when payment was actually made)
-    // Convert to Pacific timezone (America/Los_Angeles) for Cal Poly SLO consistency
+    // Convert to campus timezone for accurate local date grouping
     const metricsResult = await pool.query(`
       SELECT 
-        DATE_TRUNC($1, "paidAt" AT TIME ZONE 'America/Los_Angeles') as period_start,
+        DATE_TRUNC($1, "paidAt" AT TIME ZONE $4) as period_start,
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
         COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
       FROM bookings
       WHERE "barberId" = ANY($2::uuid[])
         AND "paidAt" IS NOT NULL
         AND "paidAt" >= NOW() - $3::interval
-      GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE 'America/Los_Angeles')
+      GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
       ORDER BY period_start ASC
-    `, [dateTrunc, barberIds, interval]);
+    `, [dateTrunc, barberIds, interval, campusTimezone]);
 
     // Format the response
     const data = metricsResult.rows.map(row => ({
