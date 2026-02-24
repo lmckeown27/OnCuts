@@ -1208,7 +1208,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                                     {msg.sender_first_name} {msg.sender_last_name}
                                   </span>
                                   <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    msg.sender_role === 'BARBER' ? 'bg-primary-100 text-primary-700' : 'bg-amber-100 text-amber-700'
+                                    msg.sender_role === 'BARBER' ? 'bg-primary-500 text-white' : 'bg-amber-100 text-amber-700'
                                   }`}>
                                     {msg.sender_role === 'BARBER' ? 'Barber' : 'Customer'}
                                   </span>
