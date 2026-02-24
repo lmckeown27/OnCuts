@@ -1674,17 +1674,21 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
     const offset = (page - 1) * limit;
     const campusId = req.query.campusId as string | undefined;
 
+    // Determine consumer's "primary campus" based on which university's barbers they book with most
+    // If no bookings, fall back to their campusId (signup campus)
     // Build query based on whether campusId filter is provided
     let whereClause = 'WHERE u.role = \'CONSUMER\'';
     const params: (string | number)[] = [limit, offset];
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      whereClause += ' AND u."campusId" = $3';
+      // Filter by primary campus (booking-based) or fallback to signup campus
+      whereClause += ' AND COALESCE(pc.primary_campus_id, u."campusId") = $3::uuid';
       params.push(campusId);
     }
 
-    // Get consumers with campus info and their global customer number
-    // Customer number is based on signup order across ALL consumers (not filtered by campus)
+    // Get consumers with their primary campus (based on booking history) and global customer number
+    // Primary campus = campus of barbers they've booked with most frequently
+    // Falls back to signup campus if no bookings
     const result = await pool.query(`
       WITH numbered_consumers AS (
         SELECT 
@@ -1692,6 +1696,26 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
           ROW_NUMBER() OVER (ORDER BY "createdAt" ASC) as customer_number
         FROM users
         WHERE role = 'CONSUMER'
+      ),
+      -- Calculate primary campus for each consumer based on booking history
+      consumer_booking_campuses AS (
+        SELECT 
+          bk."consumerId",
+          bu."campusId" as barber_campus_id,
+          COUNT(*) as booking_count
+        FROM bookings bk
+        JOIN barbers b ON bk."barberId" = b.id
+        JOIN users bu ON b."userId" = bu.id
+        WHERE bk.status IN ('COMPLETED', 'PAID', 'ACCEPTED', 'IN_PROGRESS')
+        GROUP BY bk."consumerId", bu."campusId"
+      ),
+      -- Get the primary campus (most booked) for each consumer
+      primary_campus AS (
+        SELECT DISTINCT ON ("consumerId")
+          "consumerId",
+          barber_campus_id as primary_campus_id
+        FROM consumer_booking_campuses
+        ORDER BY "consumerId", booking_count DESC
       )
       SELECT 
         u.id,
@@ -1702,23 +1726,52 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         u."avatarUrl" as avatar_url,
         u."createdAt" as created_at,
         true as is_active,
-        c.name as campus_name,
+        -- Use primary campus (booking-based) if available, otherwise signup campus
+        COALESCE(pc_campus.name, c.name) as campus_name,
         nc.customer_number
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
+      LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
+      LEFT JOIN campuses pc_campus ON pc.primary_campus_id = pc_campus.id
       LEFT JOIN numbered_consumers nc ON u.id = nc.id
       ${whereClause}
       ORDER BY u."createdAt" DESC
       LIMIT $1 OFFSET $2
     `, params);
 
-    // Get total count of consumers (with same filter)
-    let countQuery = 'SELECT COUNT(*) as total FROM users u WHERE u.role = \'CONSUMER\'';
-    const countParams: string[] = [];
+    // Get total count of consumers (with same filter based on primary campus)
+    let countParams: string[] = [];
+    let countQuery: string;
     
     if (campusId && campusId !== 'undefined' && campusId !== '') {
-      countQuery += ' AND u."campusId" = $1';
+      countQuery = `
+        WITH consumer_booking_campuses AS (
+          SELECT 
+            bk."consumerId",
+            bu."campusId" as barber_campus_id,
+            COUNT(*) as booking_count
+          FROM bookings bk
+          JOIN barbers b ON bk."barberId" = b.id
+          JOIN users bu ON b."userId" = bu.id
+          WHERE bk.status IN ('COMPLETED', 'PAID', 'ACCEPTED', 'IN_PROGRESS')
+          GROUP BY bk."consumerId", bu."campusId"
+        ),
+        primary_campus AS (
+          SELECT DISTINCT ON ("consumerId")
+            "consumerId",
+            barber_campus_id as primary_campus_id
+          FROM consumer_booking_campuses
+          ORDER BY "consumerId", booking_count DESC
+        )
+        SELECT COUNT(*) as total 
+        FROM users u
+        LEFT JOIN primary_campus pc ON u.id = pc."consumerId"
+        WHERE u.role = 'CONSUMER'
+          AND COALESCE(pc.primary_campus_id, u."campusId") = $1::uuid
+      `;
       countParams.push(campusId);
+    } else {
+      countQuery = 'SELECT COUNT(*) as total FROM users u WHERE u.role = \'CONSUMER\'';
     }
     
     const countResult = await pool.query(countQuery, countParams);
