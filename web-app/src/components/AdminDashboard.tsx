@@ -988,9 +988,9 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Visible</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe</span>
                         ) : barber.hasStripeAccountOnly ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled - NOT visible to consumers">Hidden</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled">No Stripe</span>
                         ) : (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
                         )}
@@ -1036,9 +1036,9 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Visible</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe</span>
                         ) : barber.hasStripeAccountOnly ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled - NOT visible to consumers">Hidden</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled">No Stripe</span>
                         ) : (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
                         )}
@@ -1070,7 +1070,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                             <p className="text-xs text-gray-400 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>
+                        <span className="text-xs text-gray-400 px-2 py-1">Hidden</span>
                       </div>
                     ))
                   ) : (
