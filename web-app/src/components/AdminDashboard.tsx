@@ -694,9 +694,29 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </div>
         </div>
         
-        {/* Performance Summary - Based on Selected Period */}
+        {/* Chart - directly under toggles */}
+        {!selectedCampusId ? (
+          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">
+            Select a university to view performance data
+          </div>
+        ) : isLoadingMetrics ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+          </div>
+        ) : metrics.length > 0 ? (
+          <div className="h-48 sm:h-56 mb-4">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
+            <AlertCircle className="w-4 h-4 mr-2" />
+            No data available for this period
+          </div>
+        )}
+        
+        {/* Performance Summary - Below chart */}
         {selectedCampusId && performance && (
-          <div className="mb-4 space-y-3">
+          <div className="space-y-3">
             {/* Average Cost Per Appointment - Always visible */}
             <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
               <div className="flex items-center justify-between">
@@ -775,26 +795,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                 </p>
               </div>
             </div>
-          </div>
-        )}
-        
-        {/* Chart */}
-        {!selectedCampusId ? (
-          <div className="flex items-center justify-center py-12 text-gray-400 text-sm">
-            Select a university to view performance data
-          </div>
-        ) : isLoadingMetrics ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-          </div>
-        ) : metrics.length > 0 ? (
-          <div className="h-48 sm:h-56">
-            <Line data={chartData} options={chartOptions} />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            No data available for this period
           </div>
         )}
       </div>
