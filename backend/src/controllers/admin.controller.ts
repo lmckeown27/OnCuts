@@ -1140,15 +1140,17 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
     }
 
     // Get bookings and revenue grouped by period
+    // Use paidAt for accurate revenue tracking (when payment was actually made)
     const metricsResult = await pool.query(`
       SELECT 
-        DATE_TRUNC($1, "createdAt") as period_start,
+        DATE_TRUNC($1, "paidAt") as period_start,
         COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
         COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
       FROM bookings
       WHERE "barberId" = ANY($2::uuid[])
-        AND "createdAt" >= NOW() - $3::interval
-      GROUP BY DATE_TRUNC($1, "createdAt")
+        AND "paidAt" IS NOT NULL
+        AND "paidAt" >= NOW() - $3::interval
+      GROUP BY DATE_TRUNC($1, "paidAt")
       ORDER BY period_start ASC
     `, [dateTrunc, barberIds, interval]);
 
