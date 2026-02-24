@@ -809,13 +809,12 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
                 onClick={() => setAllBarbersTab('managers')}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   allBarbersTab === 'managers'
                     ? 'border-amber-500 text-amber-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                <Crown className="w-3.5 h-3.5" />
                 Managers ({barbers.filter(b => b.isCampusManager).length})
               </button>
               <button
@@ -903,10 +902,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate flex items-center gap-1.5">
-                              {barber.firstName} {barber.lastName}
-                              <Crown className="w-3.5 h-3.5 text-amber-500" />
-                            </p>
+                            <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
                             <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
                           </div>
                         </div>
