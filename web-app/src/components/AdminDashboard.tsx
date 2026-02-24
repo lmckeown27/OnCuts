@@ -412,6 +412,12 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     return name;
   };
   
+  // Format service type from SNAKE_CASE to Title Case (e.g., "HAIRCUT" -> "Haircut")
+  const formatServiceType = (service: string) => {
+    if (!service) return 'Service';
+    return service.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+  
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
     setSelectedBarber(barber);
@@ -1144,7 +1150,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                             <p className="text-sm font-medium text-gray-900">
                               {booking.consumer_first_name} {booking.consumer_last_name}
                             </p>
-                            <p className="text-xs text-gray-500">{booking.service_type}</p>
+                            <p className="text-xs text-gray-500">{formatServiceType(booking.service_type)}</p>
                           </div>
                         </div>
                         <div className="text-right">
