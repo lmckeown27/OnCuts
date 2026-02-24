@@ -697,6 +697,7 @@ interface CampusBarber {
   totalBookings: number;
   completedBookings: number;
   isActive: boolean;
+  hasStripeSetup: boolean;
 }
 
 const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
@@ -707,6 +708,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const [removeConfirmBarber, setRemoveConfirmBarber] = useState<CampusBarber | null>(null);
   const [removeLoading, setRemoveLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [stripeFilter, setStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
 
   const handleRemoveBarber = async (barber: CampusBarber) => {
     try {
@@ -755,6 +757,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
         totalBookings: barber.total_bookings || 0,
         completedBookings: barber.completed_bookings || barber.total_bookings || 0,
         isActive: barber.is_active !== false,
+        hasStripeSetup: barber.has_stripe_setup === true,
       }));
       
       setBarbers(mappedBarbers);
@@ -770,10 +773,14 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
     fetchBarbers();
   }, [campusId]); // Re-fetch when campusId changes
 
-  // Filter barbers based on search
+  // Filter barbers based on search and stripe status
   const filteredBarbers = barbers.filter((barber) => {
-    return barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         barber.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          barber.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStripe = stripeFilter === 'all' ||
+                          (stripeFilter === 'setup' && barber.hasStripeSetup) ||
+                          (stripeFilter === 'not-setup' && !barber.hasStripeSetup);
+    return matchesSearch && matchesStripe;
   });
 
   if (loading) {
@@ -828,6 +835,40 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
           />
         </div>
 
+      {/* Stripe Status Filter */}
+      <div className="flex rounded-lg bg-gray-100 p-1">
+        <button
+          onClick={() => setStripeFilter('all')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            stripeFilter === 'all'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          All ({barbers.length})
+        </button>
+        <button
+          onClick={() => setStripeFilter('setup')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            stripeFilter === 'setup'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Visible ({barbers.filter(b => b.hasStripeSetup).length})
+        </button>
+        <button
+          onClick={() => setStripeFilter('not-setup')}
+          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            stripeFilter === 'not-setup'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Hidden ({barbers.filter(b => !b.hasStripeSetup).length})
+        </button>
+      </div>
+
       {/* Barbers List */}
       {filteredBarbers.length === 0 ? (
         <Card className="text-center py-8 sm:py-12">
@@ -847,6 +888,15 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
                   {/* Header Row */}
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
+                    {barber.hasStripeSetup ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                        Visible ✓
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                        No Stripe
+                      </span>
+                    )}
                     {!barber.isActive && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
                         <EyeOff className="w-3 h-3" />

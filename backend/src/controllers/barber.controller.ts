@@ -48,7 +48,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id,
         u.latitude as user_latitude,
-        u.longitude as user_longitude
+        u.longitude as user_longitude,
+        u.stripe_account_id,
+        u.stripe_payouts_enabled
     `;
     
     const params: any[] = [];
@@ -74,14 +76,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Build WHERE clause - campus managers can request to include hidden barbers
+    // When includeHidden=true (CM view), show ALL barbers including those without Stripe
+    // When includeHidden=false (consumer view), only show active barbers with Stripe setup
     const shouldIncludeHidden = includeHidden === 'true';
     
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE ${shouldIncludeHidden ? '1=1' : 'b."isActive" = true'}
-        AND u.stripe_account_id IS NOT NULL
-        AND u.stripe_payouts_enabled = true
+      WHERE ${shouldIncludeHidden ? '1=1' : 'b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
     `;
 
     // Handle campusId - can be UUID or slug
@@ -245,6 +247,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         service_locations: locationsResult.rows,
         average_rating: averageRating,
         review_count: reviewCount,
+        // Stripe status - fully set up (visible to consumers) vs not
+        has_stripe_setup: !!barber.stripe_account_id && barber.stripe_payouts_enabled === true,
       };
     }));
 
