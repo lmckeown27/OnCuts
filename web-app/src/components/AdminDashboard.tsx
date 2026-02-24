@@ -268,8 +268,9 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       
       setIsLoadingMetrics(true);
       try {
-        const response = await api.get<MetricsResponse>(`/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`);
-        setMetrics(response.data || []);
+        // api.get extracts response.data.data, so response here is already the metrics array
+        const metricsData = await api.get<MetricsDataPoint[]>(`/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`);
+        setMetrics(Array.isArray(metricsData) ? metricsData : []);
       } catch (error) {
         console.error('Failed to fetch metrics:', error);
         setMetrics([]);
