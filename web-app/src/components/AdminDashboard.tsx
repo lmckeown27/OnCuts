@@ -941,7 +941,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Visible ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                  Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
                 </button>
                 <button
                   onClick={() => setActiveBarberStripeFilter('not-setup')}
@@ -951,7 +951,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Hidden ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                  No Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
                 </button>
               </div>
             )}
