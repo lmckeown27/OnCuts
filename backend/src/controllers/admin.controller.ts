@@ -903,9 +903,12 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       )
     `, [campusId]);
 
-    // Get total revenue
+    // Get total revenue AND platform fees
     const revenueResult = await pool.query(`
-      SELECT COALESCE(SUM("totalPaidCents"), 0) as total_revenue
+      SELECT 
+        COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
+        COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
+        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
       AND "barberId" IN (
@@ -1036,13 +1039,18 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const totalRevenue = parseInt(revenueResult.rows[0]?.total_revenue || '0');
     const averageCostPerAppointment = completedBookings > 0 ? Math.round(totalRevenue / completedBookings) : 0;
 
+    const totalPlatformFees = parseInt(revenueResult.rows[0]?.total_platform_fees || '0');
+    const totalBarberEarnings = parseInt(revenueResult.rows[0]?.total_barber_earnings || '0');
+
     res.json({
       totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
       activeBarbers: parseInt(barbersResult.rows[0]?.active || '0'),
       totalBookings: parseInt(bookingsResult.rows[0]?.total || '0'),
       completedBookings,
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
-      totalRevenue,
+      totalRevenue, // Total money in circulation (what customers paid)
+      totalPlatformFees, // Platform's cut (15%)
+      totalBarberEarnings, // What barbers earned (85%)
       averageRating: parseFloat(ratingsResult.rows[0]?.avg_rating || '0'),
       totalReviews: parseInt(ratingsResult.rows[0]?.total_reviews || '0'),
       // New average metrics

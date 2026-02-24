@@ -50,7 +50,9 @@ interface CampusPerformance {
   totalBookings: number;
   completedBookings: number;
   cancelledBookings: number;
-  totalRevenue: number;
+  totalRevenue: number; // Total money in circulation (what customers paid)
+  totalPlatformFees: number; // Platform's cut (15%)
+  totalBarberEarnings: number; // What barbers earned (85%)
   averageRating: number;
   totalReviews: number;
   // Average metrics
@@ -717,7 +719,37 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         {/* Performance Summary - Below chart */}
         {selectedCampusId && performance && (
           <div className="space-y-3">
-            {/* Average Cost Per Appointment - Always visible */}
+            {/* Revenue Breakdown - Total, Platform Fees, Barber Earnings */}
+            <div className="grid grid-cols-3 gap-2">
+              {/* Total Revenue (Money in Circulation) */}
+              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
+                <TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-500" />
+                <p className="text-lg font-bold text-green-700">
+                  {formatCurrency(performance.totalRevenue)}
+                </p>
+                <p className="text-[10px] font-medium text-green-500">Total Revenue</p>
+              </div>
+              
+              {/* Platform Fees (15%) */}
+              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100">
+                <DollarSign className="w-4 h-4 mx-auto mb-1 text-amber-500" />
+                <p className="text-lg font-bold text-amber-700">
+                  {formatCurrency(performance.totalPlatformFees || 0)}
+                </p>
+                <p className="text-[10px] font-medium text-amber-500">Platform (15%)</p>
+              </div>
+              
+              {/* Barber Earnings (85%) */}
+              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
+                <Scissors className="w-4 h-4 mx-auto mb-1 text-blue-500" />
+                <p className="text-lg font-bold text-blue-700">
+                  {formatCurrency(performance.totalBarberEarnings || 0)}
+                </p>
+                <p className="text-[10px] font-medium text-blue-500">Barbers (85%)</p>
+              </div>
+            </div>
+
+            {/* Average Cost Per Appointment */}
             <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
