@@ -998,7 +998,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                      <Crown className="w-8 h-8 mb-2" />
                       <p className="text-sm">No campus managers</p>
                     </div>
                   )

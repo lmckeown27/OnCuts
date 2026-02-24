@@ -1854,7 +1854,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       LEFT JOIN campuses c ON u."campusId" = c.id
-      WHERE u.role = 'BARBER'
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER')
       ORDER BY c.name, u.first_name, u.last_name
     `);
 
