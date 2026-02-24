@@ -172,6 +172,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   
   // Consumers view state
   const [users, setUsers] = useState<PlatformUser[]>([]);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
@@ -281,11 +282,13 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         const url = selectedCampusId 
           ? `/admin/users?campusId=${selectedCampusId}`
           : '/admin/users';
-        const response = await api.get<{ users: PlatformUser[] }>(url);
+        const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
         setUsers(response.users || []);
+        setTotalUsersCount(response.pagination?.total || response.users?.length || 0);
       } catch (error) {
         console.error('Failed to fetch users:', error);
         setUsers([]);
+        setTotalUsersCount(0);
       } finally {
         setIsLoadingUsers(false);
       }
@@ -1099,7 +1102,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-semibold text-gray-900">Consumer Signups</h3>
           <span className="text-xs text-gray-500">
-            {users.length} total consumers
+            {totalUsersCount} total consumers
           </span>
         </div>
         
