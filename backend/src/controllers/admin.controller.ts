@@ -1475,3 +1475,59 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
   }
 };
 
+/**
+ * Get all barbers across all campuses
+ * GET /api/admin/barbers
+ */
+export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Get all barbers with campus info and stripe status
+    const result = await pool.query(`
+      SELECT 
+        u.id,
+        b.id as barber_record_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u."avatarUrl" as profile_image_url,
+        b."isActive" as is_active,
+        u."campusId" as campus_id,
+        c.name as campus_name,
+        u.role,
+        u.stripe_account_id,
+        u."createdAt" as created_at
+      FROM users u
+      JOIN barbers b ON b."userId" = u.id
+      LEFT JOIN campuses c ON u."campusId" = c.id
+      ORDER BY c.name, u.first_name, u.last_name
+    `);
+
+    res.json({
+      success: true,
+      barbers: result.rows.map(row => ({
+        id: row.id.toString(),
+        barberRecordId: row.barber_record_id?.toString(),
+        firstName: row.first_name,
+        lastName: row.last_name,
+        email: row.email,
+        profileImageUrl: row.profile_image_url,
+        isActive: row.is_active,
+        isCampusManager: row.role === 'CAMPUS_MANAGER',
+        campusId: row.campus_id?.toString(),
+        campusName: row.campus_name,
+        hasStripeSetup: !!row.stripe_account_id,
+        createdAt: row.created_at,
+      })),
+      total: result.rows.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

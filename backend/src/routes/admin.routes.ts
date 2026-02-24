@@ -51,7 +51,8 @@ router.get('/campuses/:campusId/metrics', authenticate, adminController.getCampu
 router.get('/campuses/:campusId/barbers', authenticate, adminController.getCampusBarbers);
 router.post('/campuses/:campusId/manager', authenticate, adminController.assignCampusManager);
 
-// Barber Activity (admin only)
+// Barber Management (admin only)
+router.get('/barbers', authenticate, adminController.getAllBarbers);
 router.get('/barbers/:barberRecordId/bookings', authenticate, adminController.getBarberBookings);
 router.get('/bookings/:bookingId/messages', authenticate, adminController.getBookingMessages);
 
