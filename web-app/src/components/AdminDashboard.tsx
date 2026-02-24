@@ -274,11 +274,14 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   useEffect(() => {
     const fetchUsers = async () => {
       if (adminView !== 'users') return;
-      if (!selectedCampusId) return;
       
       setIsLoadingUsers(true);
       try {
-        const response = await api.get<{ users: PlatformUser[] }>(`/admin/users?campusId=${selectedCampusId}`);
+        // If no campus selected, fetch all consumers; otherwise filter by campus
+        const url = selectedCampusId 
+          ? `/admin/users?campusId=${selectedCampusId}`
+          : '/admin/users';
+        const response = await api.get<{ users: PlatformUser[] }>(url);
         setUsers(response.users || []);
       } catch (error) {
         console.error('Failed to fetch users:', error);
