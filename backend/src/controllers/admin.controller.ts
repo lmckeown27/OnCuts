@@ -1584,7 +1584,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
       });
     }
 
-    // Get bookings for this barber with consumer info
+    // Get bookings for this barber with consumer info and review data
     const result = await pool.query(`
       SELECT 
         b.id,
@@ -1596,8 +1596,8 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         b."requestedAt" as scheduled_time,
         b."createdAt" as created_at,
         b."paidAt" as paid_at,
-        b."reviewRating" as review_rating,
-        b.review_text as review_text,
+        r.rating as review_rating,
+        r.comment as review_text,
         u.id as consumer_id,
         u.first_name as consumer_first_name,
         u.last_name as consumer_last_name,
@@ -1606,6 +1606,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         0 as message_count
       FROM bookings b
       JOIN users u ON b."consumerId" = u.id
+      LEFT JOIN reviews r ON r."bookingId" = b.id
       WHERE b."barberId" = $1::uuid
       ORDER BY b."createdAt" DESC
       LIMIT $2 OFFSET $3
