@@ -618,6 +618,31 @@ Campus Manager`
             </Button>
           </div>
         )}
+
+        {/* Reject button for approved applications awaiting signup */}
+        {app.status === 'approved' && app.application_type === 'guest' && !app.user_id && (
+          <div className="space-y-3">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-800">
+                <strong>Awaiting Signup:</strong> This application has been approved, but the applicant hasn't created their account yet. 
+                You can reject it if they're taking too long or if circumstances have changed.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => handleAction(app.id, 'reject')}
+              disabled={actionLoading === app.id}
+              className="w-full py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
+            >
+              {actionLoading === app.id ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <XCircle className="w-5 h-5 mr-2" />
+              )}
+              Revoke Approval
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
