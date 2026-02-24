@@ -903,12 +903,13 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       )
     `, [campusId]);
 
-    // Get total revenue AND platform fees
+    // Get total revenue, platform fees, and transaction count for Stripe fee calculation
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
         COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
-        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings
+        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings,
+        COUNT(*) as completed_transaction_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
       AND "barberId" IN (
@@ -1041,6 +1042,16 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 
     const totalPlatformFees = parseInt(revenueResult.rows[0]?.total_platform_fees || '0');
     const totalBarberEarnings = parseInt(revenueResult.rows[0]?.total_barber_earnings || '0');
+    const completedTransactionCount = parseInt(revenueResult.rows[0]?.completed_transaction_count || '0');
+    
+    // Calculate estimated Stripe processing fees (2.9% + $0.30 per transaction)
+    // Stripe fees come out of the platform's application fee
+    const stripePercentageFee = Math.round(totalRevenue * 0.029); // 2.9% of gross
+    const stripeFixedFee = completedTransactionCount * 30; // $0.30 per transaction in cents
+    const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
+    
+    // Net platform revenue = gross platform fees - Stripe processing fees
+    const netPlatformRevenue = Math.max(0, totalPlatformFees - estimatedStripeFees);
 
     res.json({
       totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
@@ -1049,8 +1060,11 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       completedBookings,
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
       totalRevenue, // Total money in circulation (what customers paid)
-      totalPlatformFees, // Platform's cut (15%)
+      totalPlatformFees, // Platform's gross cut (15%)
       totalBarberEarnings, // What barbers earned (85%)
+      estimatedStripeFees, // Stripe processing fees (2.9% + $0.30/txn)
+      netPlatformRevenue, // Platform's actual take after Stripe fees
+      completedTransactionCount, // Number of completed transactions
       averageRating: parseFloat(ratingsResult.rows[0]?.avg_rating || '0'),
       totalReviews: parseInt(ratingsResult.rows[0]?.total_reviews || '0'),
       // New average metrics

@@ -51,8 +51,11 @@ interface CampusPerformance {
   completedBookings: number;
   cancelledBookings: number;
   totalRevenue: number; // Total money in circulation (what customers paid)
-  totalPlatformFees: number; // Platform's cut (15%)
+  totalPlatformFees: number; // Platform's gross cut (15%)
   totalBarberEarnings: number; // What barbers earned (85%)
+  estimatedStripeFees: number; // Stripe processing fees (2.9% + $0.30/txn)
+  netPlatformRevenue: number; // Platform's actual take after Stripe fees
+  completedTransactionCount: number; // Number of completed transactions
   averageRating: number;
   totalReviews: number;
   // Average metrics
@@ -719,24 +722,16 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         {/* Performance Summary - Below chart */}
         {selectedCampusId && performance && (
           <div className="space-y-3">
-            {/* Revenue Breakdown - Total, Platform Fees, Barber Earnings */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Revenue Breakdown - Gross Revenue & Barber Earnings */}
+            <div className="grid grid-cols-2 gap-2">
               {/* Total Revenue (Money in Circulation) */}
               <div className="p-3 rounded-xl text-center bg-gradient-to-br from-green-50 to-emerald-50 border border-green-100">
                 <TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-500" />
                 <p className="text-lg font-bold text-green-700">
                   {formatCurrency(performance.totalRevenue)}
                 </p>
-                <p className="text-[10px] font-medium text-green-500">Total Revenue</p>
-              </div>
-              
-              {/* Platform Fees (15%) */}
-              <div className="p-3 rounded-xl text-center bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-100">
-                <DollarSign className="w-4 h-4 mx-auto mb-1 text-amber-500" />
-                <p className="text-lg font-bold text-amber-700">
-                  {formatCurrency(performance.totalPlatformFees || 0)}
-                </p>
-                <p className="text-[10px] font-medium text-amber-500">Platform (15%)</p>
+                <p className="text-[10px] font-medium text-green-500">Gross Revenue</p>
+                <p className="text-[9px] text-green-400">{performance.completedTransactionCount || 0} transactions</p>
               </div>
               
               {/* Barber Earnings (85%) */}
@@ -745,7 +740,38 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                 <p className="text-lg font-bold text-blue-700">
                   {formatCurrency(performance.totalBarberEarnings || 0)}
                 </p>
-                <p className="text-[10px] font-medium text-blue-500">Barbers (85%)</p>
+                <p className="text-[10px] font-medium text-blue-500">Barber Earnings</p>
+                <p className="text-[9px] text-blue-400">85% of gross</p>
+              </div>
+            </div>
+            
+            {/* Platform Fee Breakdown - Gross, Stripe Fees, Net */}
+            <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+              <p className="text-xs font-semibold text-amber-800 mb-2">Platform Revenue Breakdown</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {/* Gross Platform Fees (15%) */}
+                <div>
+                  <p className="text-sm font-bold text-amber-700">
+                    {formatCurrency(performance.totalPlatformFees || 0)}
+                  </p>
+                  <p className="text-[9px] text-amber-500">Gross (15%)</p>
+                </div>
+                
+                {/* Stripe Processing Fees */}
+                <div>
+                  <p className="text-sm font-bold text-red-600">
+                    -{formatCurrency(performance.estimatedStripeFees || 0)}
+                  </p>
+                  <p className="text-[9px] text-red-400">Stripe Fees</p>
+                </div>
+                
+                {/* Net Platform Revenue */}
+                <div>
+                  <p className="text-sm font-bold text-green-700">
+                    {formatCurrency(performance.netPlatformRevenue || 0)}
+                  </p>
+                  <p className="text-[9px] text-green-500">Net Revenue</p>
+                </div>
               </div>
             </div>
 
