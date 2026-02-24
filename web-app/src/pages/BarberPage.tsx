@@ -921,7 +921,24 @@ export default function BarberPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
+                {/* Total Platform Users */}
+                {totalPlatformUsers !== null && (
+                  <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
+                    <span>Total Users:</span>
+                    <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
+                    <button
+                      onClick={fetchPlatformStats}
+                      disabled={isLoadingPlatformStats}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+                      title="Refresh user count"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={closeAdminDashboard}
                 className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
