@@ -830,11 +830,66 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   if (selectedBarberId) {
     const selectedBarber = barbers.find(b => b.id === selectedBarberId);
     return (
-      <CampusManagerBarberView
-        barberId={selectedBarberId}
-        onClose={() => setSelectedBarberId(null)}
-        onRemove={selectedBarber ? () => setRemoveConfirmBarber(selectedBarber) : undefined}
-      />
+      <>
+        <CampusManagerBarberView
+          barberId={selectedBarberId}
+          onClose={() => setSelectedBarberId(null)}
+          onRemove={selectedBarber ? () => setRemoveConfirmBarber(selectedBarber) : undefined}
+        />
+        
+        {/* Remove Confirmation Modal - must be rendered even when viewing barber */}
+        {removeConfirmBarber && (
+          <div 
+            className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
+            onClick={() => !removeLoading && setRemoveConfirmBarber(null)}
+          >
+            <div 
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-red-50 px-6 py-4 border-b border-red-100">
+                <h3 className="text-lg font-bold text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  Remove Barber
+                </h3>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-700 mb-4">
+                  Are you sure you want to remove <strong>{removeConfirmBarber.name}</strong> as a barber?
+                </p>
+                <p className="text-sm text-gray-500 mb-6">
+                  This will demote them to a regular consumer. They will no longer appear as a barber on the platform and cannot accept bookings.
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setRemoveConfirmBarber(null)}
+                    disabled={removeLoading}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleRemoveBarber(removeConfirmBarber)}
+                    disabled={removeLoading}
+                    className="flex-1 bg-red-600 hover:bg-red-700 border-red-600"
+                  >
+                    {removeLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Removing...
+                      </>
+                    ) : (
+                      'Remove Barber'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
