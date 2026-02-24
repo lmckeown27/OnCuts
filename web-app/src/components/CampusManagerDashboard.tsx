@@ -501,17 +501,24 @@ Campus Manager`
                 </span>
               </div>
             </div>
+            {/* Email Interview Button */}
+            <a
+              href={generateInterviewEmail(app)}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors flex-shrink-0"
+            >
+              <Clock className="w-4 h-4" />
+              Schedule Interview
+            </a>
           </div>
+          {/* Mobile Email Button */}
+          <a
+            href={generateInterviewEmail(app)}
+            className="sm:hidden flex items-center justify-center gap-2 w-full mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+          >
+            <Clock className="w-4 h-4" />
+            Schedule Interview via Email
+          </a>
         </Card>
-
-        {/* Email Interview Button */}
-        <a
-          href={generateInterviewEmail(app)}
-          className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-        >
-          <Clock className="w-5 h-5" />
-          Schedule Interview via Email
-        </a>
 
         {/* Application Details */}
         <Card className="p-4 sm:p-6">
