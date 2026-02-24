@@ -396,6 +396,15 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     return `$${(cents / 100).toFixed(2)}`;
   };
   
+  // Format campus name for display - remove trailing "University" except for "University of X" names
+  const formatCampusName = (name: string) => {
+    // Keep "University of X" names intact
+    if (name.startsWith('University of ')) return name;
+    // Remove trailing " University" from other names
+    if (name.endsWith(' University')) return name.slice(0, -11);
+    return name;
+  };
+  
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
     setSelectedBarber(barber);
@@ -555,7 +564,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           <div className="relative" ref={campusDropdownRef}>
             <input
               type="text"
-              value={showCampusDropdown ? campusSearchQuery : (selectedCampus?.name || '')}
+              value={showCampusDropdown ? campusSearchQuery : (selectedCampus ? formatCampusName(selectedCampus.name) : '')}
               onChange={(e) => {
                 setCampusSearchQuery(e.target.value);
                 if (!showCampusDropdown) setShowCampusDropdown(true);
@@ -589,7 +598,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       }`}
                     >
                       <div>
-                        <p className="font-medium text-gray-900">{campus.name}</p>
+                        <p className="font-medium text-gray-900">{formatCampusName(campus.name)}</p>
                         <p className="text-xs text-gray-500">{campus.city}, {campus.state}</p>
                       </div>
                       {campus.managerName && (
@@ -612,7 +621,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       {selectedCampusId && selectedCampus && (
         <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
           <div>
-            <p className="text-gray-500 text-xs">{selectedCampus.name} Revenue</p>
+            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Revenue</p>
             <p className="font-semibold text-gray-900">
               {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
             </p>
@@ -624,13 +633,13 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">{selectedCampus.name} Barbers</p>
+            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Barbers</p>
             <p className="font-semibold text-gray-900">
               {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs">{selectedCampus.name} Consumers</p>
+            <p className="text-gray-500 text-xs">{formatCampusName(selectedCampus.name)} Consumers</p>
             <p className="font-semibold text-gray-900">
               {isLoadingUsers ? '...' : totalUsersCount}
             </p>
@@ -948,7 +957,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
+                            <p className="text-xs text-gray-500 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
@@ -996,7 +1005,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
+                            <p className="text-xs text-gray-500 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
@@ -1031,7 +1040,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-gray-600 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-400 truncate">{barber.campusName || 'No campus'}</p>
+                            <p className="text-xs text-gray-400 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
                           </div>
                         </div>
                         <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>

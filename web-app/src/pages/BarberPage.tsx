@@ -336,6 +336,13 @@ export default function BarberPage() {
   // Find the current campus name from the list
   const currentCampus = allCampuses.find(c => c.id?.toString() === campusId);
   const campusName = currentCampus?.name || '';
+  
+  // Format campus name for display - remove trailing "University" except for "University of X" names
+  const formatCampusName = (name: string) => {
+    if (name.startsWith('University of ')) return name;
+    if (name.endsWith(' University')) return name.slice(0, -11);
+    return name;
+  };
 
   // Fetch all campuses for admin users
   useEffect(() => {
@@ -794,7 +801,7 @@ export default function BarberPage() {
                       <div className="relative max-w-xs">
                         <input
                           type="text"
-                          value={showCampusSelector ? campusSearchQuery : (campusName || '')}
+                          value={showCampusSelector ? campusSearchQuery : (campusName ? formatCampusName(campusName) : '')}
                           onChange={(e) => {
                             setCampusSearchQuery(e.target.value);
                             if (!showCampusSelector) setShowCampusSelector(true);
@@ -866,7 +873,7 @@ export default function BarberPage() {
                                     : 'hover:bg-gray-100 text-gray-700'
                                 }`}
                               >
-                                <div className="font-medium">{campus.name}</div>
+                                <div className="font-medium">{campus.name ? formatCampusName(campus.name) : ''}</div>
                                 {campus.city && campus.state && (
                                   <div className="text-xs text-gray-500">{campus.city}, {campus.state}</div>
                                 )}
@@ -891,7 +898,7 @@ export default function BarberPage() {
                 {/* Show campus name for non-admin campus managers */}
                 {!isAdmin && campusName && (
                   <p className="text-sm text-gray-500 mt-1">
-                    {campusName}
+                    {formatCampusName(campusName)}
                   </p>
                 )}
               </div>
@@ -903,7 +910,7 @@ export default function BarberPage() {
               </button>
             </div>
             <div className="p-4 sm:p-6">
-              <CampusManagerDashboard campusId={campusId} campusName={campusName} />
+              <CampusManagerDashboard campusId={campusId} campusName={campusName ? formatCampusName(campusName) : ''} />
             </div>
           </div>
         </div>
