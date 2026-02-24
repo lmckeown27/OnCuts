@@ -287,7 +287,25 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
     fetchMetrics();
   }, [selectedCampusId, metricsPeriod]);
   
-  // Fetch users when Users tab is selected and campus changes
+  // Fetch total user count whenever campus changes (for summary stats)
+  useEffect(() => {
+    const fetchUserCount = async () => {
+      if (!selectedCampusId) return;
+      
+      try {
+        const url = `/admin/users?campusId=${selectedCampusId}`;
+        const response = await api.get<{ users: PlatformUser[]; pagination: { total: number } }>(url);
+        setTotalUsersCount(response.pagination?.total || response.users?.length || 0);
+      } catch (error) {
+        console.error('Failed to fetch user count:', error);
+        setTotalUsersCount(0);
+      }
+    };
+    
+    fetchUserCount();
+  }, [selectedCampusId]);
+  
+  // Fetch full user list when Users tab is selected
   useEffect(() => {
     const fetchUsers = async () => {
       if (adminView !== 'users') return;
