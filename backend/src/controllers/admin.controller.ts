@@ -1320,7 +1320,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       averageRevenuePerDay: parseFloat(avgDailyBookingsResult.rows[0].avg_daily || '0') * avgCostPerAppointment,
       averageRevenuePerWeek: parseFloat(avgWeeklyBookingsResult.rows[0].avg_weekly || '0') * avgCostPerAppointment,
       averageRevenuePerMonth: parseFloat(avgMonthlyBookingsResult.rows[0].avg_monthly || '0') * avgCostPerAppointment,
-      averageCostPerAppointment,
+      averageCostPerAppointment: avgCostPerAppointment,
     });
   } catch (error) {
     next(error);
