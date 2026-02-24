@@ -1555,6 +1555,35 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(403, 'Admin access required');
     }
 
+    // Validate barberRecordId
+    if (!barberRecordId || barberRecordId === 'undefined' || barberRecordId === 'null') {
+      // Return empty bookings instead of error for missing barberRecordId
+      return res.json({
+        bookings: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(barberRecordId)) {
+      console.error(`Invalid barberRecordId format: ${barberRecordId}`);
+      return res.json({
+        bookings: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      });
+    }
+
     // Get bookings for this barber with consumer info
     const result = await pool.query(`
       SELECT 
