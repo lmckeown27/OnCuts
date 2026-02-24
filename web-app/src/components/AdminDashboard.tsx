@@ -1127,8 +1127,8 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <span className="text-xs font-bold text-purple-600">
+                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <span className="text-xs font-bold text-primary-600">
                       #{user.customer_number}
                     </span>
                   </div>
