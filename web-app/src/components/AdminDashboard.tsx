@@ -906,7 +906,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Active ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
+                Visible ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
               </button>
               <button
                 onClick={() => setAllBarbersTab('inactive')}
@@ -916,7 +916,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Inactive ({barbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                Hidden ({barbers.filter(b => !b.isActive && !b.isCampusManager).length})
               </button>
             </nav>
             
@@ -958,7 +958,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Active Barbers' : 'Inactive Barbers'}
+                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : 'Hidden Barbers'}
               </h3>
               <span className="text-xs text-gray-500">{barbers.length} total barbers</span>
             </div>
