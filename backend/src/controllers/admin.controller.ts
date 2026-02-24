@@ -1488,6 +1488,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Get all barbers with campus info and stripe status
+    // Include stripe_payouts_enabled to distinguish between:
+    // - Stripe account created but onboarding incomplete
+    // - Stripe fully set up and visible to consumers
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -1501,6 +1504,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         c.name as campus_name,
         u.role,
         u.stripe_account_id,
+        u.stripe_payouts_enabled,
         u."createdAt" as created_at
       FROM users u
       JOIN barbers b ON b."userId" = u.id
@@ -1521,7 +1525,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
         campusName: row.campus_name,
-        hasStripeSetup: !!row.stripe_account_id,
+        hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
+        hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
         createdAt: row.created_at,
       })),
       total: result.rows.length,

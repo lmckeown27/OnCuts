@@ -89,7 +89,8 @@ interface Barber {
   isCampusManager: boolean;
   campusId?: string;
   campusName?: string;
-  hasStripeSetup?: boolean;
+  hasStripeSetup?: boolean; // Stripe fully complete (visible to consumers)
+  hasStripeAccountOnly?: boolean; // Stripe account created but payouts not enabled (NOT visible to consumers)
   createdAt?: string;
 }
 
@@ -860,7 +861,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Stripe ✓ ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                  Visible ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
                 </button>
                 <button
                   onClick={() => setActiveBarberStripeFilter('not-setup')}
@@ -870,7 +871,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  No Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                  Hidden ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
                 </button>
               </div>
             )}
@@ -910,9 +911,11 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Visible ✓</span>
+                        ) : barber.hasStripeAccountOnly ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled - NOT visible to consumers">Hidden ⚠</span>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">No Stripe</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
                         )}
                       </div>
                     ))
@@ -938,7 +941,9 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                       <div key={barber.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${
                         barber.hasStripeSetup 
                           ? 'border-green-200 bg-green-50' 
-                          : 'border-yellow-200 bg-yellow-50'
+                          : barber.hasStripeAccountOnly
+                          ? 'border-orange-200 bg-orange-50'
+                          : 'border-red-200 bg-red-50'
                       }`}>
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -954,9 +959,11 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                           </div>
                         </div>
                         {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Visible ✓</span>
+                        ) : barber.hasStripeAccountOnly ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled - NOT visible to consumers">Hidden ⚠</span>
                         ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">No Stripe</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
                         )}
                       </div>
                     ))
