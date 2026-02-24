@@ -1597,7 +1597,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         b."createdAt" as created_at,
         b."paidAt" as paid_at,
         b."reviewRating" as review_rating,
-        b."reviewText" as review_text,
+        b.review_text as review_text,
         u.id as consumer_id,
         u.first_name as consumer_first_name,
         u.last_name as consumer_last_name,
