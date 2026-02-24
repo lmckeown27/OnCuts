@@ -30,7 +30,7 @@ export interface GuestApplicationResponse {
 
 export interface BarberApplication {
   id: string;
-  user_id: string;
+  user_id: string | null; // null for guest applications where user hasn't signed up yet
   status: 'pending' | 'under_review' | 'interview_scheduled' | 'approved' | 'rejected';
   years_experience: number;
   has_license: boolean;
@@ -46,6 +46,8 @@ export interface BarberApplication {
   updated_at?: string;
   reviewed_at?: string;
   interview_scheduled_at?: string;
+  // Application type: 'regular' (authenticated user) or 'guest' (landing page submission)
+  application_type?: 'regular' | 'guest';
   // User fields returned flat from the backend JOIN
   email?: string;
   first_name?: string;

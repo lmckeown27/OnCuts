@@ -359,10 +359,22 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      // Pass campusId and status='pending' to only show pending applications
-      // Approved/rejected applications are removed from view after decision
-      const applications = await barberApplicationService.getAllApplications(campusId, 'pending');
-      setApplications(applications);
+      // Fetch all applications (not just pending)
+      // We want to show:
+      // 1. Pending applications (awaiting decision)
+      // 2. Approved applications where applicant hasn't created account yet (guest apps with no linked user)
+      const allApplications = await barberApplicationService.getAllApplications(campusId);
+      
+      // Filter to show actionable applications
+      const actionableApplications = allApplications.filter(app => {
+        // Always show pending applications
+        if (app.status === 'pending') return true;
+        // Show approved guest applications where user hasn't signed up yet
+        if (app.status === 'approved' && app.application_type === 'guest' && !app.user_id) return true;
+        return false;
+      });
+      
+      setApplications(actionableApplications);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
       toast.error('Failed to load barber applications');
@@ -396,7 +408,11 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     }
   };
 
-  const getStatusStyle = (status: string) => {
+  const getStatusStyle = (status: string, app?: BarberApplication) => {
+    // Special case: approved guest app with no user = awaiting signup
+    if (status === 'approved' && app?.application_type === 'guest' && !app?.user_id) {
+      return 'bg-orange-100 text-orange-700';
+    }
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-700';
       case 'under_review': return 'bg-blue-100 text-blue-700';
@@ -407,7 +423,11 @@ const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     }
   };
 
-  const formatStatus = (status: string) => {
+  const formatStatus = (status: string, app?: BarberApplication) => {
+    // Special case: approved guest app with no user = awaiting signup
+    if (status === 'approved' && app?.application_type === 'guest' && !app?.user_id) {
+      return 'Awaiting Signup';
+    }
     return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
@@ -476,8 +496,8 @@ Campus Manager`
               <div>
                 <h3 className="text-xl font-bold text-gray-900">{applicantName}</h3>
                 <p className="text-gray-600">{applicantEmail}</p>
-                <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${getStatusStyle(app.status)}`}>
-                  {formatStatus(app.status)}
+                <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${getStatusStyle(app.status, app)}`}>
+                  {formatStatus(app.status, app)}
                 </span>
               </div>
             </div>
@@ -623,8 +643,8 @@ Campus Manager`
                     <h4 className="font-semibold text-gray-900 text-base sm:text-lg">
                       {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
                     </h4>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusStyle(app.status)}`}>
-                      {formatStatus(app.status)}
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${getStatusStyle(app.status, app)}`}>
+                      {formatStatus(app.status, app)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">{app.email || app.user?.email || 'No email'}</p>
