@@ -132,6 +132,7 @@ interface PlatformUser {
   campus_name: string | null;
   created_at: string;
   is_active: boolean;
+  customer_number: number;
 }
 
 interface AdminDashboardProps {
@@ -1123,14 +1124,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
                 className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {user.avatar_url ? (
-                      <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xs font-bold text-gray-500">
-                        {user.first_name.charAt(0)}{user.last_name.charAt(0)}
-                      </span>
-                    )}
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <span className="text-xs font-bold text-purple-600">
+                      #{user.customer_number}
+                    </span>
                   </div>
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 text-sm truncate">

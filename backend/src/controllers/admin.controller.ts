@@ -1421,8 +1421,16 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
       params.push(campusId);
     }
 
-    // Get consumers only with campus info
+    // Get consumers with campus info and their global customer number
+    // Customer number is based on signup order across ALL consumers (not filtered by campus)
     const result = await pool.query(`
+      WITH numbered_consumers AS (
+        SELECT 
+          id,
+          ROW_NUMBER() OVER (ORDER BY "createdAt" ASC) as customer_number
+        FROM users
+        WHERE role = 'CONSUMER'
+      )
       SELECT 
         u.id,
         u.first_name,
@@ -1432,9 +1440,11 @@ export const getAllUsers = async (req: AuthRequest, res: Response, next: NextFun
         u."avatarUrl" as avatar_url,
         u."createdAt" as created_at,
         true as is_active,
-        c.name as campus_name
+        c.name as campus_name,
+        nc.customer_number
       FROM users u
       LEFT JOIN campuses c ON u."campusId" = c.id
+      LEFT JOIN numbered_consumers nc ON u.id = nc.id
       ${whereClause}
       ORDER BY u."createdAt" DESC
       LIMIT $1 OFFSET $2
