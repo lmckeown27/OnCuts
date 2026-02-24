@@ -179,6 +179,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
+  // All barbers view state (when no campus selected)
+  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive'>('active');
+  const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
+  
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
   // Close campus dropdown when clicking outside
@@ -798,10 +802,83 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
       {adminView === 'barbers' && (
       <div>
         {!selectedCampusId ? (
-          /* All Barbers View - organized by status */
+          /* All Barbers View - organized by status with tabs */
           <div>
+            {/* Main category tabs */}
+            <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
+              <button
+                onClick={() => setAllBarbersTab('managers')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                  allBarbersTab === 'managers'
+                    ? 'border-amber-500 text-amber-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5" />
+                Managers ({barbers.filter(b => b.isCampusManager).length})
+              </button>
+              <button
+                onClick={() => setAllBarbersTab('active')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  allBarbersTab === 'active'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Active ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
+              </button>
+              <button
+                onClick={() => setAllBarbersTab('inactive')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  allBarbersTab === 'inactive'
+                    ? 'border-gray-500 text-gray-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Inactive ({barbers.filter(b => !b.isActive && !b.isCampusManager).length})
+              </button>
+            </nav>
+            
+            {/* Stripe filter for Active tab */}
+            {allBarbersTab === 'active' && (
+              <div className="flex rounded-lg bg-gray-100 p-1 mb-3">
+                <button
+                  onClick={() => setActiveBarberStripeFilter('all')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    activeBarberStripeFilter === 'all'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
+                </button>
+                <button
+                  onClick={() => setActiveBarberStripeFilter('setup')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    activeBarberStripeFilter === 'setup'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Stripe ✓ ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                </button>
+                <button
+                  onClick={() => setActiveBarberStripeFilter('not-setup')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    activeBarberStripeFilter === 'not-setup'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  No Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                </button>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-gray-900">All Barbers</h3>
+              <h3 className="text-base font-semibold text-gray-900">
+                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Active Barbers' : 'Inactive Barbers'}
+              </h3>
               <span className="text-xs text-gray-500">{barbers.length} total barbers</span>
             </div>
             
@@ -809,131 +886,116 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
               </div>
-            ) : barbers.length > 0 ? (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {/* Campus Managers */}
-                {barbers.filter(b => b.isCampusManager).length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-2 flex items-center gap-1">
-                      <Crown className="w-3.5 h-3.5" />
-                      Campus Managers ({barbers.filter(b => b.isCampusManager).length})
-                    </p>
-                    <div className="space-y-2">
-                      {barbers.filter(b => b.isCampusManager).map(barber => (
-                        <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-amber-200 bg-amber-50">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                              <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
-                            </div>
-                          </div>
-                          {barber.hasStripeSetup && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Active with Stripe */}
-                {barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
-                      Active - Stripe Setup ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
-                    </p>
-                    <div className="space-y-2">
-                      {barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).map(barber => (
-                        <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-green-200 bg-green-50">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                              <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Active without Stripe */}
-                {barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-2">
-                      Active - No Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
-                    </p>
-                    <div className="space-y-2">
-                      {barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).map(barber => (
-                        <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-yellow-200 bg-yellow-50">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                              <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">No Stripe</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Inactive */}
-                {barbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
-                      Inactive ({barbers.filter(b => !b.isActive && !b.isCampusManager).length})
-                    </p>
-                    <div className="space-y-2">
-                      {barbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
-                        <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-600 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                              <p className="text-xs text-gray-400 truncate">{barber.campusName || 'No campus'}</p>
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                <Scissors className="w-8 h-8 mb-2" />
-                <p className="text-sm">No barbers found</p>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {/* Campus Managers Tab */}
+                {allBarbersTab === 'managers' && (
+                  barbers.filter(b => b.isCampusManager).length > 0 ? (
+                    barbers.filter(b => b.isCampusManager).map(barber => (
+                      <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-amber-200 bg-amber-50">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {barber.profileImageUrl ? (
+                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 text-sm truncate flex items-center gap-1.5">
+                              {barber.firstName} {barber.lastName}
+                              <Crown className="w-3.5 h-3.5 text-amber-500" />
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
+                          </div>
+                        </div>
+                        {barber.hasStripeSetup ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">No Stripe</span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <Crown className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No campus managers</p>
+                    </div>
+                  )
+                )}
+                
+                {/* Active Barbers Tab */}
+                {allBarbersTab === 'active' && (() => {
+                  const activeBarbers = barbers.filter(b => b.isActive && !b.isCampusManager);
+                  const filteredBarbers = activeBarberStripeFilter === 'all' 
+                    ? activeBarbers
+                    : activeBarberStripeFilter === 'setup'
+                    ? activeBarbers.filter(b => b.hasStripeSetup)
+                    : activeBarbers.filter(b => !b.hasStripeSetup);
+                  
+                  return filteredBarbers.length > 0 ? (
+                    filteredBarbers.map(barber => (
+                      <div key={barber.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${
+                        barber.hasStripeSetup 
+                          ? 'border-green-200 bg-green-50' 
+                          : 'border-yellow-200 bg-yellow-50'
+                      }`}>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {barber.profileImageUrl ? (
+                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="text-xs text-gray-500 truncate">{barber.campusName || 'No campus'}</p>
+                          </div>
+                        </div>
+                        {barber.hasStripeSetup ? (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe ✓</span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">No Stripe</span>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <Scissors className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No {activeBarberStripeFilter === 'setup' ? 'barbers with Stripe' : activeBarberStripeFilter === 'not-setup' ? 'barbers without Stripe' : 'active barbers'}</p>
+                    </div>
+                  );
+                })()}
+                
+                {/* Inactive Barbers Tab */}
+                {allBarbersTab === 'inactive' && (
+                  barbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
+                    barbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
+                      <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {barber.profileImageUrl ? (
+                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-600 text-sm truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="text-xs text-gray-400 truncate">{barber.campusName || 'No campus'}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-400 px-2 py-1">Inactive</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <Scissors className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No inactive barbers</p>
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
