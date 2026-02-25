@@ -773,8 +773,12 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
     const bookingsResult = await pool.query('SELECT COUNT(*) FROM bookings');
     const totalBookings = parseInt(bookingsResult.rows[0].count);
 
-    // Get total barbers count
-    const barbersResult = await pool.query('SELECT COUNT(*) FROM barbers WHERE "isActive" = true');
+    // Get total barbers count (only users who are still barbers, not demoted)
+    const barbersResult = await pool.query(`
+      SELECT COUNT(*) FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
+    `);
     const totalBarbers = parseInt(barbersResult.rows[0].count);
 
     // Get total campuses count
@@ -885,7 +889,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1::uuid
+      WHERE u."campusId" = $1::uuid AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
     `, [campusId]);
 
     // Get booking counts - simpler approach without complex joins
@@ -1220,6 +1224,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER')
     `);
 
     // Get total booking counts
