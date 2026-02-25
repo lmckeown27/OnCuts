@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
-  MessageSquare, Star, Clock, UserPlus, Mail, X
+  MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -18,6 +18,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import api from '../services/api.service';
+import barberApplicationService, { BarberApplication } from '../services/barber-application.service';
 import toast from 'react-hot-toast';
 import Button from './Button';
 
@@ -228,9 +229,14 @@ export function AdminDashboard({
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
   // All barbers view state (when no campus selected)
-  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive'>('active');
+  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive' | 'applications'>('active');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
+  
+  // Barber applications state
+  const [applications, setApplications] = useState<BarberApplication[]>([]);
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+  const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -329,6 +335,60 @@ export function AdminDashboard({
     
     fetchBarbers();
   }, [selectedCampusId]);
+  
+  // Fetch barber applications when campus changes or Applications tab is selected
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (!selectedCampusId || allBarbersTab !== 'applications') {
+        return;
+      }
+      setIsLoadingApplications(true);
+      try {
+        const allApplications = await barberApplicationService.getAllApplications(selectedCampusId);
+        // Filter to show actionable applications
+        const actionableApplications = allApplications.filter(app => {
+          if (app.status === 'pending') return true;
+          if (app.status === 'approved' && app.application_type === 'guest' && !app.user_id) return true;
+          return false;
+        });
+        setApplications(actionableApplications);
+      } catch (error) {
+        console.error('Failed to fetch applications:', error);
+        setApplications([]);
+      } finally {
+        setIsLoadingApplications(false);
+      }
+    };
+    
+    fetchApplications();
+  }, [selectedCampusId, allBarbersTab]);
+  
+  // Handle application action (approve/reject)
+  const handleApplicationAction = async (applicationId: string, action: 'approve' | 'reject') => {
+    setApplicationActionLoading(applicationId);
+    try {
+      if (action === 'approve') {
+        await barberApplicationService.updateApplicationStatus(applicationId, 'approved');
+        toast.success('Application approved!');
+      } else {
+        await barberApplicationService.updateApplicationStatus(applicationId, 'rejected');
+        toast.success('Application rejected');
+      }
+      // Remove from list
+      setApplications(prev => prev.filter(app => app.id !== applicationId));
+      // Refresh barbers list in case new barber was added
+      if (selectedCampusId) {
+        const response = await api.get<{ barbers: Barber[] } | Barber[]>(`/admin/campuses/${selectedCampusId}/barbers`);
+        const barberList = Array.isArray(response) ? response : response.barbers || [];
+        setBarbers(barberList);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} application:`, error);
+      toast.error(`Failed to ${action} application`);
+    } finally {
+      setApplicationActionLoading(null);
+    }
+  };
   
   // Fetch metrics when campus or period changes (or aggregate when none selected)
   useEffect(() => {
@@ -1221,6 +1281,18 @@ export function AdminDashboard({
               >
                 Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
               </button>
+              {selectedCampusId && (
+                <button
+                  onClick={() => setAllBarbersTab('applications')}
+                  className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                    allBarbersTab === 'applications'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Applications ({applications.length})
+                </button>
+              )}
             </nav>
             
             {/* Stripe filter for Active tab */}
@@ -1261,9 +1333,11 @@ export function AdminDashboard({
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : 'Hidden Barbers'}
+                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : allBarbersTab === 'inactive' ? 'Hidden Barbers' : 'Barber Applications'}
               </h3>
-              <span className="text-xs text-gray-500">{filteredAllBarbers.length} total barbers</span>
+              <span className="text-xs text-gray-500">
+                {allBarbersTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
+              </span>
             </div>
             
             {isLoadingBarbers ? (
@@ -1384,6 +1458,72 @@ export function AdminDashboard({
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                       <Scissors className="w-8 h-8 mb-2" />
                       <p className="text-sm">No inactive barbers</p>
+                    </div>
+                  )
+                )}
+                
+                {/* Applications Tab */}
+                {allBarbersTab === 'applications' && (
+                  isLoadingApplications ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+                    </div>
+                  ) : applications.length > 0 ? (
+                    applications.map(app => (
+                      <div
+                        key={app.id}
+                        className="p-3 rounded-lg border border-amber-200 bg-amber-50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-gray-900 text-sm truncate">
+                                {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
+                              </p>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                app.status === 'pending' 
+                                  ? 'bg-amber-100 text-amber-700' 
+                                  : 'bg-green-100 text-green-700'
+                              }`}>
+                                {app.status === 'pending' ? 'Pending' : 'Approved (Awaiting Signup)'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
+                            {app.years_experience !== undefined && (
+                              <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
+                            )}
+                          </div>
+                          {app.status === 'pending' && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => handleApplicationAction(app.id, 'approve')}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
+                                title="Approve"
+                              >
+                                {applicationActionLoading === app.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleApplicationAction(app.id, 'reject')}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+                                title="Reject"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <UserPlus className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No pending applications</p>
                     </div>
                   )
                 )}
