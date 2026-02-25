@@ -327,6 +327,12 @@ export default function BarberPage() {
   const campusSelectorRef = useRef<HTMLDivElement>(null);
   const [totalPlatformUsers, setTotalPlatformUsers] = useState<number | null>(null);
   const [isLoadingPlatformStats, setIsLoadingPlatformStats] = useState(false);
+  
+  // Admin Dashboard specific state
+  const [adminDashboardCampusId, setAdminDashboardCampusId] = useState<string | null>(null);
+  const [adminCampusSearchQuery, setAdminCampusSearchQuery] = useState('');
+  const [showAdminCampusDropdown, setShowAdminCampusDropdown] = useState(false);
+  const adminCampusDropdownRef = useRef<HTMLDivElement>(null);
 
   // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
   // For admins, use the selected campus (or first available campus)
@@ -414,6 +420,24 @@ export default function BarberPage() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showCampusSelector]);
+
+  // Close admin dashboard campus selector when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (adminCampusDropdownRef.current && !adminCampusDropdownRef.current.contains(event.target as Node)) {
+        setShowAdminCampusDropdown(false);
+        setAdminCampusSearchQuery('');
+      }
+    };
+    
+    if (showAdminCampusDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAdminCampusDropdown]);
 
   // Fetch barber profile data for walk-in modal and campus manager
   useEffect(() => {
@@ -927,34 +951,99 @@ export default function BarberPage() {
               ${isAdminDashboardVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <div className="flex items-center gap-3">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div className="flex-1">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
-                {/* Total Platform Users */}
-                {totalPlatformUsers !== null && (
-                  <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
-                    <span>Total Users:</span>
-                    <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
-                    <button
-                      onClick={fetchPlatformStats}
-                      disabled={isLoadingPlatformStats}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
-                      title="Refresh user count"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
-                    </button>
+                {/* Campus Selector Row */}
+                <div className="mt-2 relative" ref={adminCampusDropdownRef}>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    {/* Campus Search Input */}
+                    <div className="relative max-w-xs">
+                      <input
+                        type="text"
+                        value={showAdminCampusDropdown ? adminCampusSearchQuery : (adminDashboardCampusId ? formatCampusName(allCampuses.find(c => c.id?.toString() === adminDashboardCampusId)?.name || '') : '')}
+                        onChange={(e) => {
+                          setAdminCampusSearchQuery(e.target.value);
+                          if (!showAdminCampusDropdown) setShowAdminCampusDropdown(true);
+                        }}
+                        onFocus={() => {
+                          setShowAdminCampusDropdown(true);
+                          setAdminCampusSearchQuery('');
+                        }}
+                        placeholder="All Universities"
+                        className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
+                      />
+                      <ChevronDown
+                        onClick={() => setShowAdminCampusDropdown(!showAdminCampusDropdown)}
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showAdminCampusDropdown ? 'rotate-180' : ''}`}
+                      />
+                    </div>
+                    {/* Total Platform Users */}
+                    {totalPlatformUsers !== null && (
+                      <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
+                        <span>Total Users:</span>
+                        <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
+                        <button
+                          onClick={fetchPlatformStats}
+                          disabled={isLoadingPlatformStats}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
+                          title="Refresh user count"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                  {/* Campus Dropdown */}
+                  {showAdminCampusDropdown && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[300px] max-h-[300px] overflow-y-auto overscroll-contain">
+                      <div className="p-2">
+                        {allCampuses
+                          .filter(campus => {
+                            if (!adminCampusSearchQuery) return true;
+                            const query = adminCampusSearchQuery.toLowerCase();
+                            return campus.name.toLowerCase().includes(query) ||
+                                   campus.city?.toLowerCase().includes(query) ||
+                                   campus.state?.toLowerCase().includes(query);
+                          })
+                          .map(campus => (
+                            <button
+                              key={campus.id}
+                              onClick={() => {
+                                setAdminDashboardCampusId(campus.id?.toString() || null);
+                                setShowAdminCampusDropdown(false);
+                                setAdminCampusSearchQuery('');
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                                campus.id?.toString() === adminDashboardCampusId
+                                  ? 'bg-primary-100 text-primary-700 font-medium'
+                                  : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              <div className="font-medium">{formatCampusName(campus.name)}</div>
+                              <div className="text-xs text-gray-500">{campus.city}, {campus.state}</div>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 onClick={closeAdminDashboard}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors ml-2"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
             <div className="p-4 sm:p-6">
-              <AdminDashboard />
+              <AdminDashboard 
+                campuses={allCampuses}
+                selectedCampusId={adminDashboardCampusId || ''}
+                onCampusIdChange={(id) => setAdminDashboardCampusId(id)}
+                isLoadingCampuses={false}
+                hideHeader={true}
+              />
             </div>
           </div>
         </div>

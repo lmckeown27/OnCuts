@@ -145,12 +145,50 @@ interface PlatformUser {
 }
 
 interface AdminDashboardProps {
-  initialCampusId?: string;
+  campuses?: Campus[];
+  selectedCampusId?: string;
+  onCampusIdChange?: (campusId: string | null) => void;
+  isLoadingCampuses?: boolean;
+  hideHeader?: boolean;
 }
 
-export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
-  const [campuses, setCampuses] = useState<Campus[]>([]);
-  const [selectedCampusId, setSelectedCampusId] = useState<string>(initialCampusId || '');
+export function AdminDashboard({ 
+  campuses: externalCampuses,
+  selectedCampusId: externalCampusId,
+  onCampusIdChange,
+  isLoadingCampuses: externalIsLoading,
+  hideHeader = false
+}: AdminDashboardProps) {
+  // Internal state for uncontrolled mode
+  const [internalCampuses, setInternalCampuses] = useState<Campus[]>([]);
+  const [internalSelectedCampusId, setInternalSelectedCampusId] = useState<string>('');
+  const [internalIsLoadingCampuses, setInternalIsLoadingCampuses] = useState(true);
+  
+  // Use external or internal state
+  const campuses = externalCampuses || internalCampuses;
+  const selectedCampusId = externalCampusId !== undefined ? externalCampusId : internalSelectedCampusId;
+  const isLoadingCampuses = externalIsLoading !== undefined ? externalIsLoading : internalIsLoadingCampuses;
+  const isControlled = externalCampuses !== undefined;
+  
+  const setSelectedCampusId = (id: string | null) => {
+    if (onCampusIdChange) {
+      onCampusIdChange(id);
+    } else {
+      setInternalSelectedCampusId(id || '');
+    }
+  };
+  
+  const setCampuses = (campusList: Campus[]) => {
+    if (!isControlled) {
+      setInternalCampuses(campusList);
+    }
+  };
+  
+  const setIsLoadingCampuses = (loading: boolean) => {
+    if (!isControlled) {
+      setInternalIsLoadingCampuses(loading);
+    }
+  };
   const [performance, setPerformance] = useState<CampusPerformance | null>(null);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   
@@ -583,7 +621,8 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         </button>
       </div>
       
-      {/* Campus Selector */}
+      {/* Campus Selector - hidden when rendered in header */}
+      {!hideHeader && (
       <div>
         {isLoadingCampuses ? (
           <div className="flex items-center justify-center py-6">
@@ -676,6 +715,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </div>
         )}
       </div>
+      )}
       
       {/* Performance Chart & Summary */}
       {adminView === 'performance' && (
