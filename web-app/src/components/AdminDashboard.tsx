@@ -336,12 +336,9 @@ export function AdminDashboard({
     fetchBarbers();
   }, [selectedCampusId]);
   
-  // Fetch barber applications when campus changes or Applications tab is selected
+  // Fetch barber applications when campus changes (always fetch to show count)
   useEffect(() => {
     const fetchApplications = async () => {
-      if (barberViewTab !== 'applications') {
-        return;
-      }
       setIsLoadingApplications(true);
       try {
         const allApplications = await barberApplicationService.getAllApplications(selectedCampusId);
@@ -361,7 +358,7 @@ export function AdminDashboard({
     };
     
     fetchApplications();
-  }, [selectedCampusId, barberViewTab]);
+  }, [selectedCampusId]);
   
   // Handle application action (approve/reject)
   const handleApplicationAction = async (applicationId: string, action: 'approve' | 'reject') => {
@@ -1470,7 +1467,7 @@ export function AdminDashboard({
                     applications.map(app => (
                       <div
                         key={app.id}
-                        className="p-3 rounded-lg border border-amber-200 bg-amber-50"
+                        className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -1703,7 +1700,7 @@ export function AdminDashboard({
                   {applications.map(app => (
                     <div
                       key={app.id}
-                      className="p-3 rounded-lg border border-amber-200 bg-amber-50"
+                      className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
