@@ -211,14 +211,24 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
           logger.info(`Barber application notification sent to campus manager: ${manager.email}`);
         }
       } else {
-        // No campus manager for this campus - send to admin
-        await sendBarberApplicationNotification(
-          'liam.mckeown38415@gmail.com',
-          'CampusCut Admin',
-          applicationDetails
+        // No campus manager for this campus - send to all admins
+        const admins = await pool.query(
+          `SELECT id, first_name, last_name, email FROM users WHERE role = 'ADMIN'`
         );
         
-        logger.info(`Barber application notification sent to liam.mckeown38415@gmail.com (no campus manager for campus ${user.campusId})`);
+        if (admins.rows.length > 0) {
+          for (const admin of admins.rows) {
+            const adminName = `${admin.first_name} ${admin.last_name}`.trim() || 'Admin';
+            await sendBarberApplicationNotification(
+              admin.email,
+              adminName,
+              applicationDetails
+            );
+            logger.info(`Barber application notification sent to admin: ${admin.email} (no campus manager for campus ${user.campusId})`);
+          }
+        } else {
+          logger.warn(`No campus manager or admin found to notify for application ${application.id}`);
+        }
       }
     } catch (emailError: any) {
       // Don't fail the application submission if email fails
@@ -813,13 +823,24 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
           logger.info(`Guest barber application notification sent to campus manager: ${manager.email}`);
         }
       } else {
-        // No campus manager - send to admin
-        await sendBarberApplicationNotification(
-          'liam.mckeown38415@gmail.com',
-          'CampusCut Admin',
-          applicationDetails
+        // No campus manager - send to all admins
+        const admins = await pool.query(
+          `SELECT id, first_name, last_name, email FROM users WHERE role = 'ADMIN'`
         );
-        logger.info(`Guest barber application notification sent to liam.mckeown38415@gmail.com (no campus manager)`);
+        
+        if (admins.rows.length > 0) {
+          for (const admin of admins.rows) {
+            const adminName = `${admin.first_name} ${admin.last_name}`.trim() || 'Admin';
+            await sendBarberApplicationNotification(
+              admin.email,
+              adminName,
+              applicationDetails
+            );
+            logger.info(`Guest barber application notification sent to admin: ${admin.email} (no campus manager)`);
+          }
+        } else {
+          logger.warn(`No campus manager or admin found to notify for guest application ${application.id}`);
+        }
       }
     } catch (emailError: any) {
       logger.error(`Failed to send guest application notification email:`, emailError.message);
