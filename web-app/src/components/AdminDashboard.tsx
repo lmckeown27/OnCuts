@@ -884,37 +884,38 @@ export function AdminDashboard({
       </div>
       <div>
         {/* Stats Header - shows hovered data or period totals */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <span className="text-base font-semibold text-gray-900">
+        <div className="flex items-center justify-center gap-6 mb-3">
+          <div className="text-center">
+            <p className="text-gray-500 text-xs">
+              {hoveredDataPoint ? 'Date' : 'Period'}
+            </p>
+            <p className="text-base font-semibold text-gray-900">
               {hoveredDataPoint ? hoveredDataPoint.label : 
                metricsPeriod === '1w' ? '1 Week' : 
                metricsPeriod === '4w' ? '4 Weeks' : 
-               metricsPeriod === 'mtd' ? 'Month to Date' : 
-               metricsPeriod === 'qtd' ? 'Quarter to Date' : 
-               metricsPeriod === 'ytd' ? 'Year to Date' : 
+               metricsPeriod === 'mtd' ? 'MTD' : 
+               metricsPeriod === 'qtd' ? 'QTD' : 
+               metricsPeriod === 'ytd' ? 'YTD' : 
                metricsPeriod === '1y' ? '1 Year' : 'All Time'}
-            </span>
+            </p>
           </div>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="text-right">
-              <p className="text-gray-500 text-xs">Revenue</p>
-              <p className="font-semibold text-gray-900">
-                ${hoveredDataPoint 
-                  ? (hoveredDataPoint.revenue / 100).toFixed(2)
-                  : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
-                }
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-gray-500 text-xs">Bookings</p>
-              <p className="font-semibold text-gray-900">
-                {hoveredDataPoint 
-                  ? hoveredDataPoint.bookings
-                  : metrics.reduce((sum, m) => sum + m.bookings, 0)
-                }
-              </p>
-            </div>
+          <div className="text-center">
+            <p className="text-gray-500 text-xs">Revenue</p>
+            <p className="text-base font-semibold text-gray-900">
+              ${hoveredDataPoint 
+                ? (hoveredDataPoint.revenue / 100).toFixed(2)
+                : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
+              }
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-500 text-xs">Bookings</p>
+            <p className="text-base font-semibold text-gray-900">
+              {hoveredDataPoint 
+                ? hoveredDataPoint.bookings
+                : metrics.reduce((sum, m) => sum + m.bookings, 0)
+              }
+            </p>
           </div>
         </div>
         
