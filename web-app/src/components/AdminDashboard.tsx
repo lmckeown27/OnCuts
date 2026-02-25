@@ -228,6 +228,38 @@ export function AdminDashboard({
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Lock scroll when interacting with chart (for touch devices)
+  useEffect(() => {
+    const chartContainer = chartContainerRef.current;
+    if (!chartContainer) return;
+
+    const preventScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    const lockScroll = () => {
+      chartContainer.addEventListener('touchmove', preventScroll, { passive: false });
+    };
+
+    const unlockScroll = () => {
+      chartContainer.removeEventListener('touchmove', preventScroll);
+    };
+
+    chartContainer.addEventListener('touchstart', lockScroll, { passive: true });
+    chartContainer.addEventListener('touchend', unlockScroll, { passive: true });
+    chartContainer.addEventListener('touchcancel', unlockScroll, { passive: true });
+    chartContainer.addEventListener('mouseleave', unlockScroll, { passive: true });
+
+    return () => {
+      chartContainer.removeEventListener('touchstart', lockScroll);
+      chartContainer.removeEventListener('touchend', unlockScroll);
+      chartContainer.removeEventListener('touchcancel', unlockScroll);
+      chartContainer.removeEventListener('mouseleave', unlockScroll);
+      unlockScroll();
+    };
+  }, []);
   
   // Close campus dropdown when clicking outside
   useEffect(() => {
@@ -939,7 +971,7 @@ export function AdminDashboard({
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
         ) : metrics.length > 0 ? (
-          <div className="h-40 sm:h-48 mb-4 max-w-2xl">
+          <div ref={chartContainerRef} className="h-40 sm:h-48 mb-4 max-w-2xl">
             <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
           </div>
         ) : (
