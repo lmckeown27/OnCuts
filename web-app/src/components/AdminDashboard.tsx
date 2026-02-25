@@ -883,8 +883,39 @@ export function AdminDashboard({
         </div>
       </div>
       <div>
+        {/* Stats Header - shows hovered data or period totals */}
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900">Performance Metrics</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-base font-semibold text-gray-900">
+              {hoveredDataPoint ? hoveredDataPoint.label : 
+               metricsPeriod === '1w' ? '1 Week' : 
+               metricsPeriod === '4w' ? '4 Weeks' : 
+               metricsPeriod === 'mtd' ? 'Month to Date' : 
+               metricsPeriod === 'qtd' ? 'Quarter to Date' : 
+               metricsPeriod === 'ytd' ? 'Year to Date' : 
+               metricsPeriod === '1y' ? '1 Year' : 'All Time'}
+            </span>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <div className="text-right">
+              <p className="text-gray-500 text-xs">Revenue</p>
+              <p className="font-semibold text-gray-900">
+                ${hoveredDataPoint 
+                  ? (hoveredDataPoint.revenue / 100).toFixed(2)
+                  : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
+                }
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-500 text-xs">Bookings</p>
+              <p className="font-semibold text-gray-900">
+                {hoveredDataPoint 
+                  ? hoveredDataPoint.bookings
+                  : metrics.reduce((sum, m) => sum + m.bookings, 0)
+                }
+              </p>
+            </div>
+          </div>
         </div>
         
         {/* Period & View Selector */}
@@ -911,40 +942,6 @@ export function AdminDashboard({
             >
               Bookings
             </button>
-          </div>
-          
-          {/* Data Display - hovered point or period totals (right of toggle on mobile, end on desktop) */}
-          <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm sm:order-last sm:ml-auto">
-            {hoveredDataPoint ? (
-              <>
-                <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
-                <span className="font-semibold text-primary-900">
-                  ${(hoveredDataPoint.revenue / 100).toFixed(2)}
-                </span>
-                <span className="text-primary-400">•</span>
-                <span className="font-semibold text-primary-900">
-                  {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-primary-700 font-medium">
-                  {metricsPeriod === '1w' ? '1W' : 
-                   metricsPeriod === '4w' ? '4W' : 
-                   metricsPeriod === 'mtd' ? 'MTD' : 
-                   metricsPeriod === 'qtd' ? 'QTD' : 
-                   metricsPeriod === 'ytd' ? 'YTD' : 
-                   metricsPeriod === '1y' ? '1Y' : 'All'}:
-                </span>
-                <span className="font-semibold text-primary-900">
-                  ${(metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)}
-                </span>
-                <span className="text-primary-400">•</span>
-                <span className="font-semibold text-primary-900">
-                  {metrics.reduce((sum, m) => sum + m.bookings, 0)} cuts
-                </span>
-              </>
-            )}
           </div>
           
           {/* Period Toggle */}
