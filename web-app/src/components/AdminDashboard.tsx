@@ -315,7 +315,9 @@ export function AdminDashboard({
         const url = selectedCampusId 
           ? `/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`
           : `/admin/campuses/aggregate/metrics?period=${metricsPeriod}`;
-        const metricsData = await api.get<MetricsDataPoint[]>(url);
+        const response = await api.get<MetricsResponse>(url);
+        // API returns { period, data } - extract the data array
+        const metricsData = response?.data || [];
         setMetrics(Array.isArray(metricsData) ? metricsData : []);
       } catch (error) {
         console.error('Failed to fetch metrics:', error);
