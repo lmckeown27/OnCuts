@@ -203,6 +203,7 @@ export function AdminDashboard({
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('4w');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [isChartHovered, setIsChartHovered] = useState(false);
+  const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number } | null>(null);
   
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
@@ -620,39 +621,7 @@ export function AdminDashboard({
         display: false,
       },
       tooltip: {
-        enabled: true,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        titleColor: '#111827',
-        bodyColor: '#374151',
-        borderColor: '#e5e7eb',
-        borderWidth: 1,
-        cornerRadius: 8,
-        padding: 12,
-        displayColors: false,
-        titleFont: {
-          size: 13,
-          weight: 'bold' as const,
-        },
-        bodyFont: {
-          size: 12,
-        },
-        callbacks: {
-          title: (context: any) => {
-            return context[0]?.label || '';
-          },
-          // Show BOTH revenue and bookings in tooltip for correlation
-          label: (context: any) => {
-            const index = context.dataIndex;
-            if (index !== undefined && metrics[index]) {
-              const m = metrics[index];
-              const lines = [];
-              lines.push(`Revenue: $${(m.revenue / 100).toFixed(2)}`);
-              lines.push(`Bookings: ${m.bookings}`);
-              return lines;
-            }
-            return [];
-          },
-        },
+        enabled: false, // Disabled - showing data in header instead
       },
     },
     scales: {
@@ -682,8 +651,22 @@ export function AdminDashboard({
       mode: 'index' as const,
       intersect: false,
     },
-    onHover: (_event: any, activeElements: any[]) => {
-      setIsChartHovered(activeElements.length > 0);
+    onHover: (_event: any, activeElements: any[], chart: any) => {
+      if (activeElements.length > 0) {
+        setIsChartHovered(true);
+        const index = activeElements[0].index;
+        if (metrics[index]) {
+          const m = metrics[index];
+          setHoveredDataPoint({
+            label: chart.data.labels[index] || m.date,
+            revenue: m.revenue,
+            bookings: m.bookings,
+          });
+        }
+      } else {
+        setIsChartHovered(false);
+        setHoveredDataPoint(null);
+      }
     },
   }), [metrics, metricsView]);
   
@@ -906,6 +889,23 @@ export function AdminDashboard({
         
         {/* Period & View Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
+          {/* Hovered Data Display - shows when hovering chart */}
+          {hoveredDataPoint && (
+            <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm">
+              <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
+              <span className="font-semibold text-primary-900">
+                ${(hoveredDataPoint.revenue / 100).toFixed(2)}
+              </span>
+              <span className="text-primary-400">•</span>
+              <span className="font-semibold text-primary-900">
+                {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
+              </span>
+            </div>
+          )}
+          
+          {/* Spacer to push controls right when data is showing */}
+          {hoveredDataPoint && <div className="flex-1" />}
+          
           {/* View Toggle */}
           <div className="flex rounded-lg bg-gray-100 p-0.5">
             <button
@@ -965,8 +965,8 @@ export function AdminDashboard({
           <div 
             ref={chartContainerRef} 
             className="h-40 sm:h-48 mb-4 max-w-2xl"
-            onMouseLeave={() => setIsChartHovered(false)}
-            onTouchEnd={() => setIsChartHovered(false)}
+            onMouseLeave={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
+            onTouchEnd={() => { setIsChartHovered(false); setHoveredDataPoint(null); }}
           >
             <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
           </div>
