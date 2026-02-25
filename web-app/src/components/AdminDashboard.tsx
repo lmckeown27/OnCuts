@@ -703,35 +703,6 @@ export function AdminDashboard({
         </button>
       )}
       
-      {/* Campus Manager Selector - Show above tabs when campus is selected */}
-      {selectedCampusId && (
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-xs font-semibold text-gray-700 mb-2">
-            Campus Manager
-          </p>
-          <select
-            value={barbers.find(b => b.isCampusManager)?.id || ''}
-            onChange={(e) => {
-              const currentManager = barbers.find(b => b.isCampusManager);
-              if (currentManager && e.target.value !== currentManager.id) {
-                handleAssignManager(currentManager.id, false);
-              }
-              if (e.target.value) {
-                handleAssignManager(e.target.value, true);
-              }
-            }}
-            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">No campus manager assigned</option>
-            {barbers.filter(b => b.isActive).map(barber => (
-              <option key={barber.id} value={barber.id}>
-                {barber.firstName} {barber.lastName}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      
       {/* View Tabs - Performance / Barbers / Users */}
       <div className="flex rounded-lg bg-gray-100 p-1">
         <button
