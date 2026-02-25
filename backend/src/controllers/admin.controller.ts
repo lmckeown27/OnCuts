@@ -908,11 +908,13 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     `, [campusId]);
 
     // Get total revenue, platform fees, and transaction count for Stripe fee calculation
+    // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
         COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
-        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings,
+        COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
+        COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
@@ -1046,6 +1048,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 
     const totalPlatformFees = parseInt(revenueResult.rows[0]?.total_platform_fees || '0');
     const totalBarberEarnings = parseInt(revenueResult.rows[0]?.total_barber_earnings || '0');
+    const totalTips = parseInt(revenueResult.rows[0]?.total_tips || '0');
     const completedTransactionCount = parseInt(revenueResult.rows[0]?.completed_transaction_count || '0');
     
     // Calculate estimated Stripe processing fees (2.9% + $0.30 per transaction)
@@ -1065,7 +1068,8 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
       totalRevenue, // Total money in circulation (what customers paid)
       totalPlatformFees, // Platform's gross cut (15%)
-      totalBarberEarnings, // What barbers earned (85%)
+      totalBarberEarnings, // What barbers earned (85% + tips)
+      totalTips, // Total tips collected
       estimatedStripeFees, // Stripe processing fees (2.9% + $0.30/txn)
       netPlatformRevenue, // Platform's actual take after Stripe fees
       completedTransactionCount, // Number of completed transactions
@@ -1237,11 +1241,13 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     `);
 
     // Get total revenue, platform fees, and transaction count
+    // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
         COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
-        COALESCE(SUM("barberEarningsUsdCents"), 0) as total_barber_earnings,
+        COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
+        COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
@@ -1295,6 +1301,8 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     // Calculate Stripe fees (2.9% + $0.30 per transaction)
     const totalRevenue = parseInt(revenueResult.rows[0].total_revenue || '0');
     const totalPlatformFees = parseInt(revenueResult.rows[0].total_platform_fees || '0');
+    const totalBarberEarnings = parseInt(revenueResult.rows[0].total_barber_earnings || '0');
+    const totalTips = parseInt(revenueResult.rows[0].total_tips || '0');
     const completedTransactionCount = parseInt(revenueResult.rows[0].completed_transaction_count || '0');
     
     // Stripe fees are calculated on TOTAL revenue (what customer pays), not just platform fees
@@ -1319,7 +1327,8 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       cancelledBookings: parseInt(bookingsResult.rows[0].cancelled || '0'),
       totalRevenue,
       totalPlatformFees,
-      totalBarberEarnings: parseInt(revenueResult.rows[0].total_barber_earnings || '0'),
+      totalBarberEarnings, // Now includes tips (totalPaid - platformFee)
+      totalTips,
       estimatedStripeFees,
       netPlatformRevenue,
       completedTransactionCount,
