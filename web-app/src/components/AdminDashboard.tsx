@@ -678,7 +678,10 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
         )}
       </div>
       
-      {/* Summary Stats - Always visible below university selector */}
+      {/* Performance Chart & Summary */}
+      {adminView === 'performance' && (
+      <>
+      {/* Summary Stats - Only visible on Performance tab */}
       <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
         <div>
           <p className="text-gray-500 text-xs">
@@ -711,9 +714,6 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </p>
         </div>
       </div>
-      
-      {/* Performance Chart & Summary */}
-      {adminView === 'performance' && (
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-base font-semibold text-gray-900">Performance Metrics</h3>
@@ -878,6 +878,7 @@ export function AdminDashboard({ initialCampusId }: AdminDashboardProps) {
           </div>
         )}
       </div>
+      </>
       )}
       
       {/* Barber Management */}
