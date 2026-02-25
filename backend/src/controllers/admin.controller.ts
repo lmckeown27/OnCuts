@@ -1428,6 +1428,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
     }
 
     // Get barbers for this campus (include role to check if they're campus manager)
+    // Only include users who still have BARBER or CAMPUS_MANAGER role
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -1442,6 +1443,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       WHERE u."campusId" = $1
+        AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
       ORDER BY u.first_name, u.last_name
     `, [campusId]);
 
