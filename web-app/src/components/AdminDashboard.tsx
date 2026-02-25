@@ -78,6 +78,7 @@ interface MetricsDataPoint {
 interface MetricsResponse {
   period: string;
   data: MetricsDataPoint[];
+  totalUsers?: number;
 }
 
 type MetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
@@ -200,6 +201,7 @@ export function AdminDashboard({
   
   // Metrics chart state
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
+  const [metricsTotalUsers, setMetricsTotalUsers] = useState<number>(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('4w');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
@@ -337,12 +339,24 @@ export function AdminDashboard({
         const url = selectedCampusId 
           ? `/admin/campuses/${selectedCampusId}/metrics?period=${metricsPeriod}`
           : `/admin/campuses/aggregate/metrics?period=${metricsPeriod}`;
-        // api.get already extracts response.data.data, so we get the array directly
-        const metricsData = await api.get<MetricsDataPoint[]>(url);
-        setMetrics(Array.isArray(metricsData) ? metricsData : []);
+        // api.get extracts the data, which could be the full response or just the data array
+        const response = await api.get<MetricsResponse | MetricsDataPoint[]>(url);
+        
+        // Handle both response formats
+        if (Array.isArray(response)) {
+          setMetrics(response);
+          setMetricsTotalUsers(response.reduce((sum, m) => sum + (m.users || 0), 0));
+        } else if (response && typeof response === 'object') {
+          setMetrics(response.data || []);
+          setMetricsTotalUsers(response.totalUsers || response.data?.reduce((sum: number, m: MetricsDataPoint) => sum + (m.users || 0), 0) || 0);
+        } else {
+          setMetrics([]);
+          setMetricsTotalUsers(0);
+        }
       } catch (error) {
         console.error('Failed to fetch metrics:', error);
         setMetrics([]);
+        setMetricsTotalUsers(0);
       } finally {
         setIsLoadingMetrics(false);
       }
@@ -924,7 +938,7 @@ export function AdminDashboard({
             <p className="text-base font-semibold text-gray-900">
               {hoveredDataPoint 
                 ? hoveredDataPoint.users
-                : metrics.reduce((sum, m) => sum + (m.users || 0), 0)
+                : metricsTotalUsers
               }
             </p>
           </div>

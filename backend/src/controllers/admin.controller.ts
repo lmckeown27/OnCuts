@@ -1590,9 +1590,20 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
         users: usersMap.get(dateKey) || 0,
       }));
 
+    // Get total users count to match the Total Users display (handles NULL createdAt)
+    const totalUsersResult = await pool.query(
+      interval 
+        ? `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "createdAt" >= NOW() - $1::interval`
+        : startDate
+        ? `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "createdAt" >= $1::timestamp`
+        : `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER'`,
+      interval ? [interval] : startDate ? [startDate] : []
+    );
+
     res.json({
       period,
       data,
+      totalUsers: parseInt(totalUsersResult.rows[0].total || '0'),
     });
   } catch (error) {
     next(error);
