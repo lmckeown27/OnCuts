@@ -1111,28 +1111,66 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
     // Determine date truncation and range based on period
     let dateTrunc: string;
     let interval: string | null;
-    let limit: number;
+    let startDate: string | null = null;
+
+    // Get current date info for MTD, QTD, YTD calculations
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
 
     switch (period) {
+      case '1w':
+        dateTrunc = 'day';
+        interval = '7 days';
+        break;
+      case '4w':
+        dateTrunc = 'day';
+        interval = '28 days';
+        break;
+      case '1y':
+        dateTrunc = 'week';
+        interval = '1 year';
+        break;
+      case 'mtd':
+        dateTrunc = 'day';
+        interval = null;
+        startDate = startOfMonth.toISOString();
+        break;
+      case 'qtd':
+        dateTrunc = 'day';
+        interval = null;
+        startDate = startOfQuarter.toISOString();
+        break;
+      case 'ytd':
+        dateTrunc = 'week';
+        interval = null;
+        startDate = startOfYear.toISOString();
+        break;
+      case 'all':
+        dateTrunc = 'month';
+        interval = null;
+        break;
+      // Legacy support
+      case 'daily':
+        dateTrunc = 'day';
+        interval = '30 days';
+        break;
       case 'weekly':
         dateTrunc = 'week';
         interval = '12 weeks';
-        limit = 12;
         break;
       case 'monthly':
         dateTrunc = 'month';
         interval = '12 months';
-        limit = 12;
         break;
       case 'alltime':
-        dateTrunc = 'month'; // Group by month for all time view
-        interval = null; // No time limit - get all data
-        limit = 1000;
+        dateTrunc = 'month';
+        interval = null;
         break;
-      default: // daily
+      default:
         dateTrunc = 'day';
-        interval = '30 days';
-        limit = 30;
+        interval = '28 days'; // Default to 4 weeks
     }
 
     // Get campus timezone and barber IDs
@@ -1165,7 +1203,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
     // Convert to campus timezone for accurate local date grouping
     let metricsResult;
     if (interval) {
-      // Time-limited query (daily, weekly, monthly)
+      // Time interval based query (1w, 4w, 1y, etc.)
       metricsResult = await pool.query(`
         SELECT 
           DATE_TRUNC($1, "paidAt" AT TIME ZONE $4) as period_start,
@@ -1178,6 +1216,20 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
         GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
         ORDER BY period_start ASC
       `, [dateTrunc, barberIds, interval, campusTimezone]);
+    } else if (startDate) {
+      // Fixed start date query (MTD, QTD, YTD)
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $4) as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "barberId" = ANY($2::uuid[])
+          AND "paidAt" IS NOT NULL
+          AND "paidAt" >= $3::timestamp
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $4)
+        ORDER BY period_start ASC
+      `, [dateTrunc, barberIds, startDate, campusTimezone]);
     } else {
       // All time query - no time filter
       metricsResult = await pool.query(`
@@ -1364,8 +1416,51 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
     // Determine date truncation and range based on period
     let dateTrunc: string;
     let interval: string | null;
+    let startDate: string | null = null;
+
+    // Get current date info for MTD, QTD, YTD calculations
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
 
     switch (period) {
+      case '1w':
+        dateTrunc = 'day';
+        interval = '7 days';
+        break;
+      case '4w':
+        dateTrunc = 'day';
+        interval = '28 days';
+        break;
+      case '1y':
+        dateTrunc = 'week';
+        interval = '1 year';
+        break;
+      case 'mtd':
+        dateTrunc = 'day';
+        interval = null;
+        startDate = startOfMonth.toISOString();
+        break;
+      case 'qtd':
+        dateTrunc = 'day';
+        interval = null;
+        startDate = startOfQuarter.toISOString();
+        break;
+      case 'ytd':
+        dateTrunc = 'week';
+        interval = null;
+        startDate = startOfYear.toISOString();
+        break;
+      case 'all':
+        dateTrunc = 'month';
+        interval = null;
+        break;
+      // Legacy support
+      case 'daily':
+        dateTrunc = 'day';
+        interval = '30 days';
+        break;
       case 'weekly':
         dateTrunc = 'week';
         interval = '12 weeks';
@@ -1378,15 +1473,16 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
         dateTrunc = 'month';
         interval = null;
         break;
-      default: // daily
+      default:
         dateTrunc = 'day';
-        interval = '30 days';
+        interval = '28 days'; // Default to 4 weeks
     }
 
     // Get bookings and revenue grouped by period across all campuses
     // Use UTC since we're aggregating across timezones
     let metricsResult;
     if (interval) {
+      // Time interval based query (1w, 4w, 1y, etc.)
       metricsResult = await pool.query(`
         SELECT 
           DATE_TRUNC($1, "paidAt") as period_start,
@@ -1398,6 +1494,19 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
         GROUP BY DATE_TRUNC($1, "paidAt")
         ORDER BY period_start ASC
       `, [dateTrunc, interval]);
+    } else if (startDate) {
+      // Fixed start date query (MTD, QTD, YTD)
+      metricsResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "paidAt") as period_start,
+          COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
+        FROM bookings
+        WHERE "paidAt" IS NOT NULL
+          AND "paidAt" >= $2::timestamp
+        GROUP BY DATE_TRUNC($1, "paidAt")
+        ORDER BY period_start ASC
+      `, [dateTrunc, startDate]);
     } else {
       // All time - no date filter
       metricsResult = await pool.query(`

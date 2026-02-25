@@ -79,7 +79,7 @@ interface MetricsResponse {
   data: MetricsDataPoint[];
 }
 
-type MetricsPeriod = 'daily' | 'weekly' | 'monthly' | 'alltime';
+type MetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
 type MetricsView = 'revenue' | 'bookings';
 type AdminView = 'performance' | 'barbers' | 'users';
 
@@ -200,7 +200,7 @@ export function AdminDashboard({
   // Metrics chart state
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
-  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('daily');
+  const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('4w');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
@@ -556,45 +556,76 @@ export function AdminDashboard({
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#111827',
+        bodyColor: '#374151',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: 12,
+        displayColors: false,
+        titleFont: {
+          size: 13,
+          weight: '600' as const,
+        },
+        bodyFont: {
+          size: 12,
+        },
         callbacks: {
+          title: (context: any) => {
+            return context[0]?.label || '';
+          },
           // Show BOTH revenue and bookings in tooltip for correlation
-          afterBody: (context: any) => {
-            const index = context[0]?.dataIndex;
+          label: (context: any) => {
+            const index = context.dataIndex;
             if (index !== undefined && metrics[index]) {
               const m = metrics[index];
               const lines = [];
-              if (metricsView === 'revenue') {
-                lines.push(`Bookings: ${m.bookings}`);
-              } else {
-                lines.push(`Revenue: $${(m.revenue / 100).toFixed(2)}`);
-              }
+              lines.push(`Revenue: $${(m.revenue / 100).toFixed(2)}`);
+              lines.push(`Bookings: ${m.bookings}`);
               return lines;
             }
             return [];
-          },
-          label: (context: any) => {
-            const value = context.parsed.y;
-            return metricsView === 'revenue' 
-              ? `Revenue: $${value.toFixed(2)}` 
-              : `Bookings: ${value}`;
           },
         },
       },
     },
     scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          maxRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 8,
+        },
+      },
       y: {
         beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
         ticks: {
           callback: (value: any) => {
             return metricsView === 'revenue' ? `$${value}` : value;
           },
         },
       },
+    },
+    hover: {
+      mode: 'index' as const,
+      intersect: false,
     },
   }), [metrics, metricsView]);
   
@@ -842,47 +873,28 @@ export function AdminDashboard({
           </div>
           
           {/* Period Toggle */}
-          <div className="flex rounded-lg bg-gray-100 p-0.5">
-            <button
-              onClick={() => setMetricsPeriod('daily')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsPeriod === 'daily' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Daily
-            </button>
-            <button
-              onClick={() => setMetricsPeriod('weekly')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsPeriod === 'weekly' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Weekly
-            </button>
-            <button
-              onClick={() => setMetricsPeriod('monthly')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsPeriod === 'monthly' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setMetricsPeriod('alltime')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsPeriod === 'alltime' 
-                  ? 'bg-white text-gray-900 shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              All Time
-            </button>
+          <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
+            {[
+              { key: '1w', label: '1W' },
+              { key: '4w', label: '4W' },
+              { key: 'mtd', label: 'MTD' },
+              { key: 'qtd', label: 'QTD' },
+              { key: 'ytd', label: 'YTD' },
+              { key: '1y', label: '1Y' },
+              { key: 'all', label: 'All' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setMetricsPeriod(key as MetricsPeriod)}
+                className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  metricsPeriod === key 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
         
