@@ -599,6 +599,21 @@ export function AdminDashboard({
   
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* All Universities Button - Show when campus is selected */}
+      {selectedCampusId && (
+        <button
+          onClick={() => {
+            setSelectedCampusId(null);
+            setSelectedBarber(null);
+            setBarberBookings([]);
+          }}
+          className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          All Universities
+        </button>
+      )}
+      
       {/* Campus Manager Selector - Show above tabs when campus is selected */}
       {selectedCampusId && (
         <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
