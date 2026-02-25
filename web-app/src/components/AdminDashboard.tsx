@@ -349,7 +349,8 @@ export function AdminDashboard({
     const fetchApplications = async () => {
       setIsLoadingApplications(true);
       try {
-        const allApplications = await barberApplicationService.getAllApplications(selectedCampusId);
+        // Pass campusId only if one is selected, otherwise fetch all applications
+        const allApplications = await barberApplicationService.getAllApplications(selectedCampusId || undefined);
         // Filter to show actionable applications
         const actionableApplications = allApplications.filter(app => {
           if (app.status === 'pending') return true;
