@@ -72,6 +72,7 @@ interface MetricsDataPoint {
   date: string;
   bookings: number;
   revenue: number;
+  users: number;
 }
 
 interface MetricsResponse {
@@ -203,7 +204,7 @@ export function AdminDashboard({
   const [metricsPeriod, setMetricsPeriod] = useState<MetricsPeriod>('4w');
   const [metricsView, setMetricsView] = useState<MetricsView>('revenue');
   const [isChartHovered, setIsChartHovered] = useState(false);
-  const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number } | null>(null);
+  const [hoveredDataPoint, setHoveredDataPoint] = useState<{ label: string; revenue: number; bookings: number; users: number } | null>(null);
   
   const [campusSearchQuery, setCampusSearchQuery] = useState('');
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
@@ -661,6 +662,7 @@ export function AdminDashboard({
             label: chart.data.labels[index] || m.date,
             revenue: m.revenue,
             bookings: m.bookings,
+            users: m.users || 0,
           });
         }
       } else {
@@ -884,7 +886,7 @@ export function AdminDashboard({
       </div>
       <div>
         {/* Stats Header - shows hovered data or period totals */}
-        <div className="flex items-center justify-center gap-6 mb-3">
+        <div className="flex items-center justify-center gap-4 sm:gap-6 mb-3">
           <div className="text-center">
             <p className="text-gray-500 text-xs">
               {hoveredDataPoint ? 'Date' : 'Period'}
@@ -914,6 +916,15 @@ export function AdminDashboard({
               {hoveredDataPoint 
                 ? hoveredDataPoint.bookings
                 : metrics.reduce((sum, m) => sum + m.bookings, 0)
+              }
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-500 text-xs">Users</p>
+            <p className="text-base font-semibold text-gray-900">
+              {hoveredDataPoint 
+                ? hoveredDataPoint.users
+                : metrics.reduce((sum, m) => sum + (m.users || 0), 0)
               }
             </p>
           </div>
