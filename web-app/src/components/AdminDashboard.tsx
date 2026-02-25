@@ -228,8 +228,8 @@ export function AdminDashboard({
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
-  // All barbers view state (when no campus selected)
-  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive'>('active');
+  // Barber view state (shared between all-barbers and campus-specific views)
+  const [barberViewTab, setBarberViewTab] = useState<'managers' | 'visible' | 'hidden' | 'applications'>('visible');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
@@ -237,9 +237,6 @@ export function AdminDashboard({
   const [applications, setApplications] = useState<BarberApplication[]>([]);
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
-  
-  // Campus-specific barber tab (when campus is selected)
-  const [campusBarberTab, setCampusBarberTab] = useState<'barbers' | 'applications'>('barbers');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -342,7 +339,7 @@ export function AdminDashboard({
   // Fetch barber applications when campus changes or Applications tab is selected
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!selectedCampusId || campusBarberTab !== 'applications') {
+      if (barberViewTab !== 'applications') {
         return;
       }
       setIsLoadingApplications(true);
@@ -364,7 +361,7 @@ export function AdminDashboard({
     };
     
     fetchApplications();
-  }, [selectedCampusId, campusBarberTab]);
+  }, [selectedCampusId, barberViewTab]);
   
   // Handle application action (approve/reject)
   const handleApplicationAction = async (applicationId: string, action: 'approve' | 'reject') => {
@@ -1255,9 +1252,9 @@ export function AdminDashboard({
             {/* Main category tabs */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => setAllBarbersTab('managers')}
+                onClick={() => setBarberViewTab('managers')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  allBarbersTab === 'managers'
+                  barberViewTab === 'managers'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
@@ -1265,9 +1262,9 @@ export function AdminDashboard({
                 Managers ({filteredAllBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setAllBarbersTab('active')}
+                onClick={() => setBarberViewTab('visible')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  allBarbersTab === 'active'
+                  barberViewTab === 'visible'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
@@ -1275,19 +1272,29 @@ export function AdminDashboard({
                 Visible ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setAllBarbersTab('inactive')}
+                onClick={() => setBarberViewTab('hidden')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  allBarbersTab === 'inactive'
+                  barberViewTab === 'hidden'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
               </button>
+              <button
+                onClick={() => setBarberViewTab('applications')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  barberViewTab === 'applications'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Applications ({applications.length})
+              </button>
             </nav>
             
-            {/* Stripe filter for Active tab */}
-            {allBarbersTab === 'active' && (
+            {/* Stripe filter for Visible tab */}
+            {barberViewTab === 'visible' && (
               <div className="flex rounded-lg bg-gray-100 p-1 mb-3">
                 <button
                   onClick={() => setActiveBarberStripeFilter('all')}
@@ -1324,9 +1331,11 @@ export function AdminDashboard({
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : 'Hidden Barbers'}
+                {barberViewTab === 'managers' ? 'Campus Managers' : barberViewTab === 'visible' ? 'Visible Barbers' : barberViewTab === 'hidden' ? 'Hidden Barbers' : 'Barber Applications'}
               </h3>
-              <span className="text-xs text-gray-500">{filteredAllBarbers.length} total barbers</span>
+              <span className="text-xs text-gray-500">
+                {barberViewTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
+              </span>
             </div>
             
             {isLoadingBarbers ? (
@@ -1336,7 +1345,7 @@ export function AdminDashboard({
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {/* Campus Managers Tab */}
-                {allBarbersTab === 'managers' && (
+                {barberViewTab === 'managers' && (
                   filteredAllBarbers.filter(b => b.isCampusManager).length > 0 ? (
                     filteredAllBarbers.filter(b => b.isCampusManager).map(barber => (
                       <button
@@ -1373,7 +1382,7 @@ export function AdminDashboard({
                 )}
                 
                 {/* Active Barbers Tab */}
-                {allBarbersTab === 'active' && (() => {
+                {barberViewTab === 'visible' && (() => {
                   const activeBarbers = filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? activeBarbers
@@ -1416,7 +1425,7 @@ export function AdminDashboard({
                 })()}
                 
                 {/* Inactive Barbers Tab */}
-                {allBarbersTab === 'inactive' && (
+                {barberViewTab === 'hidden' && (
                   filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
                     filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
                       <button
@@ -1450,6 +1459,76 @@ export function AdminDashboard({
                     </div>
                   )
                 )}
+                
+                {/* Applications Tab */}
+                {barberViewTab === 'applications' && (
+                  isLoadingApplications ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+                    </div>
+                  ) : applications.length > 0 ? (
+                    applications.map(app => (
+                      <div
+                        key={app.id}
+                        className="p-3 rounded-lg border border-amber-200 bg-amber-50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-medium text-gray-900 text-sm truncate">
+                                {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
+                              </p>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                app.status === 'pending' 
+                                  ? 'bg-amber-100 text-amber-700' 
+                                  : 'bg-green-100 text-green-700'
+                              }`}>
+                                {app.status === 'pending' ? 'Pending' : 'Approved (Awaiting Signup)'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
+                            <p className="text-xs text-gray-400 truncate">{app.campus_name || 'Unknown campus'}</p>
+                            {app.years_experience !== undefined && (
+                              <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
+                            )}
+                          </div>
+                          {app.status === 'pending' && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => handleApplicationAction(app.id, 'approve')}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
+                                title="Approve"
+                              >
+                                {applicationActionLoading === app.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleApplicationAction(app.id, 'reject')}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+                                title="Reject"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                      <UserPlus className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No pending applications</p>
+                      {!selectedCampusId && (
+                        <p className="text-xs text-gray-400 mt-1">Select a campus to view applications</p>
+                      )}
+                    </div>
+                  )
+                )}
               </div>
             )}
           </div>
@@ -1460,22 +1539,42 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
             </div>
             
-            {/* Tabs: Barbers / Applications */}
+            {/* Main category tabs - same as all-barbers view */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => setCampusBarberTab('barbers')}
+                onClick={() => setBarberViewTab('managers')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  campusBarberTab === 'barbers'
+                  barberViewTab === 'managers'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Barbers ({filteredBarbers.length})
+                Managers ({filteredBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setCampusBarberTab('applications')}
+                onClick={() => setBarberViewTab('visible')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  campusBarberTab === 'applications'
+                  barberViewTab === 'visible'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Visible ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+              </button>
+              <button
+                onClick={() => setBarberViewTab('hidden')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  barberViewTab === 'hidden'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Hidden ({filteredBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+              </button>
+              <button
+                onClick={() => setBarberViewTab('applications')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  barberViewTab === 'applications'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
@@ -1484,7 +1583,7 @@ export function AdminDashboard({
               </button>
             </nav>
             
-            {campusBarberTab === 'barbers' && (
+            {(barberViewTab === 'managers' || barberViewTab === 'visible' || barberViewTab === 'hidden') && (
               <>
                 {/* Search */}
                 <div className="relative mb-3">
@@ -1594,7 +1693,7 @@ export function AdminDashboard({
             )}
             
             {/* Applications Tab Content */}
-            {campusBarberTab === 'applications' && (
+            {barberViewTab === 'applications' && (
               isLoadingApplications ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
