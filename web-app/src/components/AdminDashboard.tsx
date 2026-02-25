@@ -229,7 +229,8 @@ export function AdminDashboard({
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
   // Barber view state (shared between all-barbers and campus-specific views)
-  const [barberViewTab, setBarberViewTab] = useState<'managers' | 'visible' | 'hidden' | 'applications'>('visible');
+  const [barberViewTab, setBarberViewTab] = useState<'managers' | 'barbers' | 'applications'>('barbers');
+  const [barberVisibilityFilter, setBarberVisibilityFilter] = useState<'visible' | 'hidden'>('visible');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
@@ -1259,24 +1260,14 @@ export function AdminDashboard({
                 Managers ({filteredAllBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('visible')}
+                onClick={() => setBarberViewTab('barbers')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'visible'
+                  barberViewTab === 'barbers'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Visible ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
-              </button>
-              <button
-                onClick={() => setBarberViewTab('hidden')}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'hidden'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                Barbers ({filteredAllBarbers.filter(b => !b.isCampusManager).length})
               </button>
               <button
                 onClick={() => setBarberViewTab('applications')}
@@ -1290,45 +1281,74 @@ export function AdminDashboard({
               </button>
             </nav>
             
-            {/* Stripe filter for Visible tab */}
-            {barberViewTab === 'visible' && (
-              <div className="flex rounded-lg bg-gray-100 p-1 mb-3">
-                <button
-                  onClick={() => setActiveBarberStripeFilter('all')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeBarberStripeFilter === 'all'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  All ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
-                </button>
-                <button
-                  onClick={() => setActiveBarberStripeFilter('setup')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeBarberStripeFilter === 'setup'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
-                </button>
-                <button
-                  onClick={() => setActiveBarberStripeFilter('not-setup')}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    activeBarberStripeFilter === 'not-setup'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
-                </button>
+            {/* Visibility toggle and Stripe filter for Barbers tab */}
+            {barberViewTab === 'barbers' && (
+              <div className="space-y-2 mb-3">
+                {/* Visible/Hidden toggle */}
+                <div className="flex rounded-lg bg-gray-100 p-1">
+                  <button
+                    onClick={() => setBarberVisibilityFilter('visible')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      barberVisibilityFilter === 'visible'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Visible ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                  </button>
+                  <button
+                    onClick={() => setBarberVisibilityFilter('hidden')}
+                    className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      barberVisibilityFilter === 'hidden'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                  </button>
+                </div>
+                
+                {/* Stripe filter - only for visible barbers */}
+                {barberVisibilityFilter === 'visible' && (
+                  <div className="flex rounded-lg bg-gray-100 p-1">
+                    <button
+                      onClick={() => setActiveBarberStripeFilter('all')}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        activeBarberStripeFilter === 'all'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      All ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                    </button>
+                    <button
+                      onClick={() => setActiveBarberStripeFilter('setup')}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        activeBarberStripeFilter === 'setup'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                    </button>
+                    <button
+                      onClick={() => setActiveBarberStripeFilter('not-setup')}
+                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                        activeBarberStripeFilter === 'not-setup'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                    </button>
+                  </div>
+                )}
               </div>
             )}
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {barberViewTab === 'managers' ? 'Campus Managers' : barberViewTab === 'visible' ? 'Visible Barbers' : barberViewTab === 'hidden' ? 'Hidden Barbers' : 'Barber Applications'}
+                {barberViewTab === 'managers' ? 'Campus Managers' : barberViewTab === 'barbers' ? (barberVisibilityFilter === 'visible' ? 'Visible Barbers' : 'Hidden Barbers') : 'Barber Applications'}
               </h3>
               <span className="text-xs text-gray-500">
                 {barberViewTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
@@ -1378,8 +1398,8 @@ export function AdminDashboard({
                   )
                 )}
                 
-                {/* Active Barbers Tab */}
-                {barberViewTab === 'visible' && (() => {
+                {/* Visible Barbers (within Barbers tab) */}
+                {barberViewTab === 'barbers' && barberVisibilityFilter === 'visible' && (() => {
                   const activeBarbers = filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? activeBarbers
@@ -1421,8 +1441,8 @@ export function AdminDashboard({
                   );
                 })()}
                 
-                {/* Inactive Barbers Tab */}
-                {barberViewTab === 'hidden' && (
+                {/* Hidden Barbers (within Barbers tab) */}
+                {barberViewTab === 'barbers' && barberVisibilityFilter === 'hidden' && (
                   filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
                     filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
                       <button
@@ -1549,24 +1569,14 @@ export function AdminDashboard({
                 Managers ({filteredBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('visible')}
+                onClick={() => setBarberViewTab('barbers')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'visible'
+                  barberViewTab === 'barbers'
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Visible ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager).length})
-              </button>
-              <button
-                onClick={() => setBarberViewTab('hidden')}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'hidden'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Hidden ({filteredBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                Barbers ({filteredBarbers.filter(b => !b.isCampusManager).length})
               </button>
               <button
                 onClick={() => setBarberViewTab('applications')}
@@ -1580,7 +1590,33 @@ export function AdminDashboard({
               </button>
             </nav>
             
-            {(barberViewTab === 'managers' || barberViewTab === 'visible' || barberViewTab === 'hidden') && (
+            {/* Visibility toggle for Barbers tab */}
+            {barberViewTab === 'barbers' && (
+              <div className="flex rounded-lg bg-gray-100 p-1 mb-3">
+                <button
+                  onClick={() => setBarberVisibilityFilter('visible')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    barberVisibilityFilter === 'visible'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Visible ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                </button>
+                <button
+                  onClick={() => setBarberVisibilityFilter('hidden')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    barberVisibilityFilter === 'hidden'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Hidden ({filteredBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                </button>
+              </div>
+            )}
+            
+            {(barberViewTab === 'managers' || barberViewTab === 'barbers') && (
               <>
                 {/* Search */}
                 <div className="relative mb-3">
