@@ -1558,19 +1558,37 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
       `, [dateTrunc]);
     }
 
-    // Create a map of user signups by period
+    // Create maps for both data sources
+    const bookingsMap = new Map<string, { bookings: number; revenue: number }>();
+    metricsResult.rows.forEach(row => {
+      const key = row.period_start?.toISOString() || '';
+      bookingsMap.set(key, {
+        bookings: parseInt(row.bookings || '0'),
+        revenue: parseInt(row.revenue || '0'),
+      });
+    });
+
     const usersMap = new Map<string, number>();
     usersResult.rows.forEach(row => {
       usersMap.set(row.period_start?.toISOString() || '', parseInt(row.users || '0'));
     });
 
-    // Format the response, merging bookings/revenue with user signups
-    const data = metricsResult.rows.map(row => ({
-      date: row.period_start,
-      bookings: parseInt(row.bookings || '0'),
-      revenue: parseInt(row.revenue || '0'),
-      users: usersMap.get(row.period_start?.toISOString() || '') || 0,
-    }));
+    // Get all unique dates from both queries
+    const allDates = new Set<string>([
+      ...bookingsMap.keys(),
+      ...usersMap.keys(),
+    ]);
+
+    // Format the response, merging all dates with bookings/revenue/users
+    const data = Array.from(allDates)
+      .filter(d => d) // Remove empty strings
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map(dateKey => ({
+        date: dateKey,
+        bookings: bookingsMap.get(dateKey)?.bookings || 0,
+        revenue: bookingsMap.get(dateKey)?.revenue || 0,
+        users: usersMap.get(dateKey) || 0,
+      }));
 
     res.json({
       period,
