@@ -293,9 +293,10 @@ export function AdminDashboard({
   }, []);
   
   // Fetch campus performance when campus changes (or aggregate when none selected)
+  // Also poll every 30 seconds for real-time updates
   useEffect(() => {
-    const fetchPerformance = async () => {
-      setIsLoadingPerformance(true);
+    const fetchPerformance = async (showLoading = true) => {
+      if (showLoading) setIsLoadingPerformance(true);
       try {
         // Use aggregate endpoint when no campus selected, otherwise campus-specific
         const url = selectedCampusId 
@@ -307,11 +308,17 @@ export function AdminDashboard({
         console.error('Failed to fetch performance:', error);
         setPerformance(null);
       } finally {
-        setIsLoadingPerformance(false);
+        if (showLoading) setIsLoadingPerformance(false);
       }
     };
     
-    fetchPerformance();
+    // Initial fetch with loading indicator
+    fetchPerformance(true);
+    
+    // Poll every 30 seconds without showing loading indicator
+    const intervalId = setInterval(() => fetchPerformance(false), 30000);
+    
+    return () => clearInterval(intervalId);
   }, [selectedCampusId]);
   
   // Fetch barbers for campus when campus changes (or all barbers if no campus selected)
@@ -389,9 +396,10 @@ export function AdminDashboard({
   };
   
   // Fetch metrics when campus or period changes (or aggregate when none selected)
+  // Also poll every 30 seconds for real-time updates
   useEffect(() => {
-    const fetchMetrics = async () => {
-      setIsLoadingMetrics(true);
+    const fetchMetrics = async (showLoading = true) => {
+      if (showLoading) setIsLoadingMetrics(true);
       try {
         // Use aggregate endpoint when no campus selected, otherwise campus-specific
         const url = selectedCampusId 
@@ -416,11 +424,17 @@ export function AdminDashboard({
         setMetrics([]);
         setMetricsTotalUsers(0);
       } finally {
-        setIsLoadingMetrics(false);
+        if (showLoading) setIsLoadingMetrics(false);
       }
     };
     
-    fetchMetrics();
+    // Initial fetch with loading indicator
+    fetchMetrics(true);
+    
+    // Poll every 30 seconds without showing loading indicator
+    const intervalId = setInterval(() => fetchMetrics(false), 30000);
+    
+    return () => clearInterval(intervalId);
   }, [selectedCampusId, metricsPeriod]);
   
   // Fetch total user count whenever campus changes (for summary stats)
