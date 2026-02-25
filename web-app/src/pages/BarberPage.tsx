@@ -1054,7 +1054,7 @@ export default function BarberPage() {
                       />
                     </div>
                     {/* Campus Manager Selector (only when campus selected) */}
-                    {adminDashboardCampusId && campusBarbersForManager.length > 0 && (
+                    {adminDashboardCampusId && (
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg w-full sm:w-auto max-w-xs sm:max-w-none">
                         <p className="text-sm text-gray-700 whitespace-nowrap flex-shrink-0">Campus Manager:</p>
                         <select
