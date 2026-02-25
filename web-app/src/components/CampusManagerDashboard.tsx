@@ -28,7 +28,9 @@ import {
   Filter,
   CreditCard,
   Banknote,
-  RotateCcw
+  RotateCcw,
+  Search,
+  Scissors
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -730,6 +732,7 @@ interface CampusBarber {
   completedBookings: number;
   isActive: boolean;
   hasStripeSetup: boolean;
+  profileImageUrl?: string | null;
 }
 
 const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
@@ -741,6 +744,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   const [removeLoading, setRemoveLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [stripeFilter, setStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
+  const [barberTab, setBarberTab] = useState<'visible' | 'hidden'>('visible');
 
   const handleRemoveBarber = async (barber: CampusBarber) => {
     try {
@@ -790,6 +794,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
         completedBookings: barber.completed_bookings || barber.total_bookings || 0,
         isActive: barber.is_active !== false,
         hasStripeSetup: barber.has_stripe_setup === true,
+        profileImageUrl: barber.profile_image_url || barber.profileImageUrl || null,
       }));
       
       setBarbers(mappedBarbers);
@@ -805,15 +810,25 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
     fetchBarbers();
   }, [campusId]); // Re-fetch when campusId changes
 
-  // Filter barbers based on search and stripe status
-  const filteredBarbers = barbers.filter((barber) => {
-    const matchesSearch = barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          barber.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStripe = stripeFilter === 'all' ||
-                          (stripeFilter === 'setup' && barber.hasStripeSetup) ||
-                          (stripeFilter === 'not-setup' && !barber.hasStripeSetup);
-    return matchesSearch && matchesStripe;
+  // Filter barbers based on search only (tab and stripe filter applied in render)
+  const searchFilteredBarbers = barbers.filter((barber) => {
+    return barber.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           barber.email.toLowerCase().includes(searchQuery.toLowerCase());
   });
+  
+  // Get visible and hidden counts
+  const visibleBarbers = searchFilteredBarbers.filter(b => b.isActive);
+  const hiddenBarbers = searchFilteredBarbers.filter(b => !b.isActive);
+  
+  // Apply tab and stripe filters
+  const getDisplayedBarbers = () => {
+    const tabBarbers = barberTab === 'visible' ? visibleBarbers : hiddenBarbers;
+    if (barberTab !== 'visible' || stripeFilter === 'all') return tabBarbers;
+    return stripeFilter === 'setup' 
+      ? tabBarbers.filter(b => b.hasStripeSetup)
+      : tabBarbers.filter(b => !b.hasStripeSetup);
+  };
+  const displayedBarbers = getDisplayedBarbers();
 
   if (loading) {
   return (
@@ -894,7 +909,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4">
       {/* Success Message Banner */}
       {successMessage && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
@@ -912,160 +927,129 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
       )}
 
       {/* Search */}
-      <div>
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-4 pr-4 py-2.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-          />
-        </div>
-
-      {/* Stripe Status Filter */}
-      <div className="flex rounded-lg bg-gray-100 p-1">
-        <button
-          onClick={() => setStripeFilter('all')}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            stripeFilter === 'all'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          All ({barbers.length})
-        </button>
-        <button
-          onClick={() => setStripeFilter('setup')}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            stripeFilter === 'setup'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Active ({barbers.filter(b => b.hasStripeSetup).length})
-        </button>
-        <button
-          onClick={() => setStripeFilter('not-setup')}
-          className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            stripeFilter === 'not-setup'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Inactive ({barbers.filter(b => !b.hasStripeSetup).length})
-        </button>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search barbers by name or email..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
       </div>
 
-      {/* Barbers List */}
-      {filteredBarbers.length === 0 ? (
-        <Card className="text-center py-8 sm:py-12">
-          <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-          <p className="text-gray-500 text-sm sm:text-base">No barbers found matching your criteria</p>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {filteredBarbers.map((barber) => (
-            <Card 
-              key={barber.id} 
-              className="p-3 sm:p-5 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-primary-400"
-              onClick={() => setSelectedBarberId(barber.id)}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  {/* Header Row */}
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h4 className="text-base sm:text-lg font-semibold text-gray-900">{barber.name}</h4>
-                    {barber.hasStripeSetup ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                        Visible ✓
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
-                        No Stripe
-                      </span>
-                    )}
-                    {!barber.isActive && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full font-medium">
-                        <EyeOff className="w-3 h-3" />
-                        Hidden
-                      </span>
-                    )}
-                  </div>
+      <p className="text-xs text-gray-500">Click on a barber to view their booking activity</p>
 
-                  {/* Contact Info */}
-                  <div className="text-xs sm:text-sm text-gray-600">
-                    <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                      <span className="font-medium">Email:</span>
-                      <span className="text-primary-600 truncate">
-                        {barber.email}
-                      </span>
-                    </div>
-                  </div>
+      {/* Visible / Hidden tabs */}
+      <nav className="flex justify-center gap-1 border-b border-gray-200">
+        <button
+          onClick={() => setBarberTab('visible')}
+          className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+            barberTab === 'visible'
+              ? 'border-primary-500 text-primary-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Visible ({visibleBarbers.length})
+        </button>
+        <button
+          onClick={() => setBarberTab('hidden')}
+          className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+            barberTab === 'hidden'
+              ? 'border-primary-500 text-primary-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Hidden ({hiddenBarbers.length})
+        </button>
+      </nav>
 
-                  {/* Tap hint on mobile */}
-                  <p className="text-xs text-primary-500 mt-2 sm:hidden">Tap for details →</p>
-                </div>
-
-                {/* Arrow indicator */}
-                <div className="flex items-center text-primary-400">
-                  <ChevronLeft className="w-5 h-5 rotate-180" />
-                </div>
-              </div>
-            </Card>
-          ))}
+      {/* Stripe filter for Visible tab only */}
+      {barberTab === 'visible' && (
+        <div className="flex rounded-lg bg-gray-100 p-1">
+          <button
+            onClick={() => setStripeFilter('all')}
+            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              stripeFilter === 'all'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            All ({visibleBarbers.length})
+          </button>
+          <button
+            onClick={() => setStripeFilter('setup')}
+            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              stripeFilter === 'setup'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Stripe ({visibleBarbers.filter(b => b.hasStripeSetup).length})
+          </button>
+          <button
+            onClick={() => setStripeFilter('not-setup')}
+            className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              stripeFilter === 'not-setup'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            No Stripe ({visibleBarbers.filter(b => !b.hasStripeSetup).length})
+          </button>
         </div>
       )}
 
-      {/* Remove Confirmation Modal */}
-      {removeConfirmBarber && (
-        <div 
-          className="fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-[60] p-4"
-          onClick={() => !removeLoading && setRemoveConfirmBarber(null)}
-        >
-          <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-red-50 px-6 py-4 border-b border-red-100">
-              <h3 className="text-lg font-bold text-red-800 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
-                Remove Barber
-              </h3>
-            </div>
-            <div className="p-6">
-              <p className="text-gray-700 mb-4">
-                Are you sure you want to remove <strong>{removeConfirmBarber.name}</strong> as a barber?
-              </p>
-              <p className="text-sm text-gray-500 mb-6">
-                This will demote them to a regular consumer. They will no longer appear as a barber on the platform and cannot accept bookings.
-              </p>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setRemoveConfirmBarber(null)}
-                  disabled={removeLoading}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleRemoveBarber(removeConfirmBarber)}
-                  disabled={removeLoading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 border-red-600"
-                >
-                  {removeLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Removing...
-                    </>
+      {/* Header with title and count */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-gray-900">
+          {barberTab === 'visible' ? 'Visible Barbers' : 'Hidden Barbers'}
+        </h3>
+        <span className="text-xs text-gray-500">{barbers.length} total barbers</span>
+      </div>
+
+      {/* Barbers List */}
+      {displayedBarbers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <Scissors className="w-8 h-8 mb-2" />
+          <p className="text-sm">
+            {barberTab === 'visible' 
+              ? (stripeFilter === 'setup' ? 'No barbers with Stripe' : stripeFilter === 'not-setup' ? 'No barbers without Stripe' : 'No visible barbers')
+              : 'No hidden barbers'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {displayedBarbers.map((barber) => (
+            <button
+              key={barber.id}
+              onClick={() => setSelectedBarberId(barber.id)}
+              className={`w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left ${
+                barberTab === 'hidden'
+                  ? 'border-gray-200 bg-gray-50 opacity-60 hover:opacity-80'
+                  : 'border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {barber.profileImageUrl ? (
+                    <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    'Remove Barber'
+                    <span className="text-xs font-bold text-gray-500">
+                      {barber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
+                    </span>
                   )}
-                </Button>
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-medium text-sm flex items-center gap-1.5 truncate ${barberTab === 'hidden' ? 'text-gray-600' : 'text-gray-900'}`}>
+                    {barber.name}
+                  </p>
+                  <p className={`text-xs truncate ${barberTab === 'hidden' ? 'text-gray-400' : 'text-gray-500'}`}>{barber.email}</p>
+                </div>
               </div>
-            </div>
-          </div>
+              <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+            </button>
+          ))}
         </div>
       )}
     </div>
