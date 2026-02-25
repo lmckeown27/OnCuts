@@ -970,71 +970,60 @@ export function AdminDashboard({
         
         {/* Performance Summary - Below chart */}
         {performance && (
-          <div className="space-y-4 text-sm">
-            {/* Main Stats Grid */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div>
-                <p className="text-gray-500 text-xs">Gross Revenue</p>
-                <p className="text-lg font-semibold text-gray-900">{formatCurrency(performance.totalRevenue)}</p>
-                <p className="text-xs text-gray-400">{performance.completedTransactionCount || 0} transactions</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">Barber Earnings (85%)</p>
-                <p className="text-lg font-semibold text-gray-900">{formatCurrency(performance.totalBarberEarnings || 0)}</p>
-              </div>
-            </div>
-            
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             {/* Platform Revenue */}
-            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-xs font-medium text-gray-700 mb-3">Platform Revenue (15%)</p>
-              <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-medium text-gray-700 mb-2">Platform Revenue</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-xs text-gray-500">Gross</p>
-                  <p className="font-semibold text-gray-900">{formatCurrency(performance.totalPlatformFees || 0)}</p>
+                  <p className="text-[10px] text-gray-500">Gross</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.totalPlatformFees || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Stripe Fees</p>
-                  <p className="font-semibold text-gray-900">-{formatCurrency(performance.estimatedStripeFees || 0)}</p>
+                  <p className="text-[10px] text-gray-500">Stripe</p>
+                  <p className="text-sm font-semibold text-gray-900">-{formatCurrency(performance.estimatedStripeFees || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Net</p>
-                  <p className="font-semibold text-gray-900">{formatCurrency(performance.netPlatformRevenue || 0)}</p>
+                  <p className="text-[10px] text-gray-500">Net</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.netPlatformRevenue || 0)}</p>
                 </div>
               </div>
             </div>
 
             {/* Averages */}
-            <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div>
-                <p className="text-gray-500 text-xs">Avg/Appointment</p>
-                <p className="font-semibold text-gray-900">{formatCurrency(performance.averageCostPerAppointment)}</p>
-                <p className="text-xs text-gray-400">{performance.completedBookings} completed</p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">
-                  Avg Cuts/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Week' : 'Month'}
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {['1w', '4w', 'mtd'].includes(metricsPeriod)
-                    ? performance.averageBookingsPerDay.toFixed(1)
-                    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
-                    ? performance.averageBookingsPerWeek.toFixed(1)
-                    : performance.averageBookingsPerMonth.toFixed(1)
-                  }
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-500 text-xs">
-                  Avg Revenue/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Week' : 'Month'}
-                </p>
-                <p className="font-semibold text-gray-900">
-                  {['1w', '4w', 'mtd'].includes(metricsPeriod)
-                    ? formatCurrency(performance.averageRevenuePerDay)
-                    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
-                    ? formatCurrency(performance.averageRevenuePerWeek)
-                    : formatCurrency(performance.averageRevenuePerMonth)
-                  }
-                </p>
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-medium text-gray-700 mb-2">Averages</p>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-[10px] text-gray-500">Per Cut</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.averageCostPerAppointment)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">
+                    Cuts/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Wk' : 'Mo'}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {['1w', '4w', 'mtd'].includes(metricsPeriod)
+                      ? performance.averageBookingsPerDay.toFixed(1)
+                      : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
+                      ? performance.averageBookingsPerWeek.toFixed(1)
+                      : performance.averageBookingsPerMonth.toFixed(1)
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">
+                    Rev/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Wk' : 'Mo'}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {['1w', '4w', 'mtd'].includes(metricsPeriod)
+                      ? formatCurrency(performance.averageRevenuePerDay)
+                      : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
+                      ? formatCurrency(performance.averageRevenuePerWeek)
+                      : formatCurrency(performance.averageRevenuePerMonth)
+                    }
+                  </p>
+                </div>
               </div>
             </div>
           </div>
