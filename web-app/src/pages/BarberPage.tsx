@@ -334,6 +334,11 @@ export default function BarberPage() {
   const [showAdminCampusDropdown, setShowAdminCampusDropdown] = useState(false);
   const adminCampusDropdownRef = useRef<HTMLDivElement>(null);
   
+  // Campus Manager assignment state
+  const [campusBarbersForManager, setCampusBarbersForManager] = useState<Array<{id: string; firstName: string; lastName: string; isCampusManager: boolean}>>([]);
+  const [selectedCampusManagerId, setSelectedCampusManagerId] = useState<string>('');
+  const [isAssigningCampusManager, setIsAssigningCampusManager] = useState(false);
+  
 
   // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
   // For admins, use the selected campus (or first available campus)
@@ -371,6 +376,34 @@ export default function BarberPage() {
     fetchCampuses();
   }, [isAdmin, user?.campus_id]);
   
+  // Fetch barbers for selected admin dashboard campus (for manager assignment)
+  useEffect(() => {
+    const fetchCampusBarbersForManager = async () => {
+      if (!isAdmin || !adminDashboardCampusId || !showAdminDashboard) {
+        setCampusBarbersForManager([]);
+        setSelectedCampusManagerId('');
+        return;
+      }
+      try {
+        const token = localStorage.getItem('accessToken');
+        const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
+        const response = await fetch(`${adminApiUrl}/campuses/${adminDashboardCampusId}/barbers`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.success && data.barbers) {
+          setCampusBarbersForManager(data.barbers);
+          // Set current manager if any
+          const currentManager = data.barbers.find((b: any) => b.isCampusManager);
+          setSelectedCampusManagerId(currentManager?.id || '');
+        }
+      } catch (error) {
+        console.error('Failed to fetch campus barbers:', error);
+      }
+    };
+    fetchCampusBarbersForManager();
+  }, [isAdmin, adminDashboardCampusId, showAdminDashboard]);
+
   // Fetch total platform users for admin view
   const fetchPlatformStats = useCallback(async () => {
     if (!isAdmin) return;
@@ -403,6 +436,47 @@ export default function BarberPage() {
   useEffect(() => {
     fetchPlatformStats();
   }, [fetchPlatformStats]);
+  
+  // Handle campus manager assignment
+  const handleCampusManagerChange = async (barberUserId: string) => {
+    if (!adminDashboardCampusId) return;
+    
+    setIsAssigningCampusManager(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
+      
+      const response = await fetch(`${adminApiUrl}/campuses/${adminDashboardCampusId}/manager`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          barberUserId: barberUserId || null,
+          action: barberUserId ? 'assign' : 'remove',
+        }),
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setSelectedCampusManagerId(barberUserId);
+        // Update the local barbers list to reflect the change
+        setCampusBarbersForManager(prev => prev.map(b => ({
+          ...b,
+          isCampusManager: b.id === barberUserId,
+        })));
+        toast.success(barberUserId ? 'Campus manager assigned' : 'Campus manager removed');
+      } else {
+        toast.error(data.error || 'Failed to update campus manager');
+      }
+    } catch (error) {
+      console.error('Failed to assign campus manager:', error);
+      toast.error('Failed to update campus manager');
+    } finally {
+      setIsAssigningCampusManager(false);
+    }
+  };
 
   // Close campus selector when clicking outside
   useEffect(() => {
@@ -979,19 +1053,23 @@ export default function BarberPage() {
                         className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showAdminCampusDropdown ? 'rotate-180' : ''}`}
                       />
                     </div>
-                    {/* Total Platform Users */}
-                    {totalPlatformUsers !== null && (
-                      <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
-                        <span>Total Users:</span>
-                        <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
-                        <button
-                          onClick={fetchPlatformStats}
-                          disabled={isLoadingPlatformStats}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
-                          title="Refresh user count"
+                    {/* Campus Manager Selector (only when campus selected) */}
+                    {adminDashboardCampusId && campusBarbersForManager.length > 0 && (
+                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Campus Manager</p>
+                        <select
+                          value={selectedCampusManagerId}
+                          onChange={(e) => handleCampusManagerChange(e.target.value)}
+                          disabled={isAssigningCampusManager}
+                          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
                         >
-                          <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
-                        </button>
+                          <option value="">No campus manager assigned</option>
+                          {campusBarbersForManager.map(barber => (
+                            <option key={barber.id} value={barber.id}>
+                              {barber.firstName} {barber.lastName}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </div>
