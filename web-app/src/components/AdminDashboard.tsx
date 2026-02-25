@@ -583,6 +583,14 @@ export function AdminDashboard({
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        left: 0,
+        right: 8, // Small padding so last point is easily hoverable
+        top: 8,
+        bottom: 0,
+      },
+    },
     interaction: {
       mode: 'index' as const,
       intersect: false,
@@ -931,7 +939,7 @@ export function AdminDashboard({
             <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
           </div>
         ) : metrics.length > 0 ? (
-          <div className="h-48 sm:h-56 mb-4">
+          <div className="h-40 sm:h-48 mb-4 max-w-2xl">
             <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
           </div>
         ) : (
