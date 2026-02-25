@@ -225,6 +225,7 @@ export function AdminDashboard({
   // All barbers view state (when no campus selected)
   const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive'>('active');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
+  const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -397,6 +398,18 @@ export function AdminDashboard({
       b.email.toLowerCase().includes(query)
     );
   }, [barbers, barberSearchQuery]);
+  
+  // Filtered barbers for the "all barbers" view (when no campus selected)
+  const filteredAllBarbers = useMemo(() => {
+    if (!allBarberSearchQuery) return barbers;
+    const query = allBarberSearchQuery.toLowerCase();
+    return barbers.filter(b => 
+      b.firstName.toLowerCase().includes(query) || 
+      b.lastName.toLowerCase().includes(query) ||
+      b.email.toLowerCase().includes(query) ||
+      (b.campusName && b.campusName.toLowerCase().includes(query))
+    );
+  }, [barbers, allBarberSearchQuery]);
   
   const filteredUsers = useMemo(() => {
     if (!userSearchQuery) return users;
@@ -925,6 +938,20 @@ export function AdminDashboard({
         {!selectedCampusId ? (
           /* All Barbers View - organized by status with tabs */
           <div>
+            {/* Search bar */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search barbers by name, email, or campus..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={allBarberSearchQuery}
+                onChange={(e) => setAllBarberSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
+            
             {/* Main category tabs */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
@@ -935,7 +962,7 @@ export function AdminDashboard({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Managers ({barbers.filter(b => b.isCampusManager).length})
+                Managers ({filteredAllBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
                 onClick={() => setAllBarbersTab('active')}
@@ -945,7 +972,7 @@ export function AdminDashboard({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Visible ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
+                Visible ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
               </button>
               <button
                 onClick={() => setAllBarbersTab('inactive')}
@@ -955,7 +982,7 @@ export function AdminDashboard({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Hidden ({barbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
               </button>
             </nav>
             
@@ -970,7 +997,7 @@ export function AdminDashboard({
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  All ({barbers.filter(b => b.isActive && !b.isCampusManager).length})
+                  All ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
                 </button>
                 <button
                   onClick={() => setActiveBarberStripeFilter('setup')}
@@ -980,7 +1007,7 @@ export function AdminDashboard({
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                  Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
                 </button>
                 <button
                   onClick={() => setActiveBarberStripeFilter('not-setup')}
@@ -990,7 +1017,7 @@ export function AdminDashboard({
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  No Stripe ({barbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                  No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
                 </button>
               </div>
             )}
@@ -999,7 +1026,7 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">
                 {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : 'Hidden Barbers'}
               </h3>
-              <span className="text-xs text-gray-500">{barbers.length} total barbers</span>
+              <span className="text-xs text-gray-500">{filteredAllBarbers.length} total barbers</span>
             </div>
             
             {isLoadingBarbers ? (
@@ -1010,9 +1037,13 @@ export function AdminDashboard({
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {/* Campus Managers Tab */}
                 {allBarbersTab === 'managers' && (
-                  barbers.filter(b => b.isCampusManager).length > 0 ? (
-                    barbers.filter(b => b.isCampusManager).map(barber => (
-                      <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-amber-200 bg-amber-50">
+                  filteredAllBarbers.filter(b => b.isCampusManager).length > 0 ? (
+                    filteredAllBarbers.filter(b => b.isCampusManager).map(barber => (
+                      <button
+                        key={barber.id}
+                        onClick={() => handleBarberClick(barber)}
+                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-amber-200 bg-amber-50 hover:bg-amber-100"
+                      >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {barber.profileImageUrl ? (
@@ -1022,18 +1053,18 @@ export function AdminDashboard({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-500 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
+                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                              {barber.firstName} {barber.lastName}
+                              <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
                         </div>
-                        {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe</span>
-                        ) : barber.hasStripeAccountOnly ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled">No Stripe</span>
-                        ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
-                        )}
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </div>
+                      </button>
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
@@ -1044,22 +1075,20 @@ export function AdminDashboard({
                 
                 {/* Active Barbers Tab */}
                 {allBarbersTab === 'active' && (() => {
-                  const activeBarbers = barbers.filter(b => b.isActive && !b.isCampusManager);
-                  const filteredBarbers = activeBarberStripeFilter === 'all' 
+                  const activeBarbers = filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager);
+                  const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? activeBarbers
                     : activeBarberStripeFilter === 'setup'
                     ? activeBarbers.filter(b => b.hasStripeSetup)
                     : activeBarbers.filter(b => !b.hasStripeSetup);
                   
-                  return filteredBarbers.length > 0 ? (
-                    filteredBarbers.map(barber => (
-                      <div key={barber.id} className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                        barber.hasStripeSetup 
-                          ? 'border-green-200 bg-green-50' 
-                          : barber.hasStripeAccountOnly
-                          ? 'border-orange-200 bg-orange-50'
-                          : 'border-red-200 bg-red-50'
-                      }`}>
+                  return stripeFilteredBarbers.length > 0 ? (
+                    stripeFilteredBarbers.map(barber => (
+                      <button
+                        key={barber.id}
+                        onClick={() => handleBarberClick(barber)}
+                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-gray-200 hover:bg-gray-50"
+                      >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {barber.profileImageUrl ? (
@@ -1069,18 +1098,15 @@ export function AdminDashboard({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-500 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
+                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
                         </div>
-                        {barber.hasStripeSetup ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 text-green-700">Stripe</span>
-                        ) : barber.hasStripeAccountOnly ? (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700" title="Stripe account created but payouts not enabled">No Stripe</span>
-                        ) : (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">No Stripe</span>
-                        )}
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </div>
+                      </button>
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
@@ -1092,9 +1118,13 @@ export function AdminDashboard({
                 
                 {/* Inactive Barbers Tab */}
                 {allBarbersTab === 'inactive' && (
-                  barbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
-                    barbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
-                      <div key={barber.id} className="flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60">
+                  filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
+                    filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
+                      <button
+                        key={barber.id}
+                        onClick={() => handleBarberClick(barber)}
+                        className="w-full flex items-center justify-between p-2.5 rounded-lg border border-gray-200 bg-gray-50 opacity-60 hover:opacity-80 text-left transition-opacity"
+                      >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                             {barber.profileImageUrl ? (
@@ -1104,12 +1134,15 @@ export function AdminDashboard({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-600 text-sm truncate">{barber.firstName} {barber.lastName}</p>
-                            <p className="text-xs text-gray-400 truncate">{barber.campusName ? formatCampusName(barber.campusName) : 'No campus'}</p>
+                            <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-400 px-2 py-1">Hidden</span>
-                      </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </div>
+                      </button>
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
