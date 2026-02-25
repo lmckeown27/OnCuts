@@ -1529,25 +1529,25 @@ export function AdminDashboard({
             <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
           </div>
         ) : filteredUsers.length > 0 ? (
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden">
             {filteredUsers.map(user => (
               <div 
                 key={user.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 w-full"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                     <span className="text-xs font-bold text-primary-600">
                       #{user.customer_number}
                     </span>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 text-sm truncate">
                       {user.first_name} {user.last_name}
                     </p>
-                    <p className="text-xs text-gray-500 truncate flex items-center gap-1">
-                      <Mail className="w-3 h-3" />
-                      {user.email}
+                    <p className="text-xs text-gray-500 flex items-center gap-1 min-w-0">
+                      <Mail className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{user.email}</span>
                     </p>
                   </div>
                 </div>
