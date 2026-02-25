@@ -1420,7 +1420,7 @@ export function AdminDashboard({
                 {/* Active Barbers */}
                 {filteredBarbers.filter(b => b.isActive).length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-2">
+                    <p className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">
                       Active ({filteredBarbers.filter(b => b.isActive).length})
                     </p>
                     <div className="space-y-2">
