@@ -1296,8 +1296,14 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     const totalRevenue = parseInt(revenueResult.rows[0].total_revenue || '0');
     const totalPlatformFees = parseInt(revenueResult.rows[0].total_platform_fees || '0');
     const completedTransactionCount = parseInt(revenueResult.rows[0].completed_transaction_count || '0');
-    const estimatedStripeFees = Math.round((totalPlatformFees * 0.029) + (completedTransactionCount * 30));
-    const netPlatformRevenue = totalPlatformFees - estimatedStripeFees;
+    
+    // Stripe fees are calculated on TOTAL revenue (what customer pays), not just platform fees
+    const stripePercentageFee = Math.round(totalRevenue * 0.029); // 2.9% of gross
+    const stripeFixedFee = completedTransactionCount * 30; // $0.30 per transaction in cents
+    const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
+    
+    // Net platform revenue = gross platform fees - Stripe processing fees
+    const netPlatformRevenue = Math.max(0, totalPlatformFees - estimatedStripeFees);
 
     const completedBookings = parseInt(bookingsResult.rows[0].completed || '0');
     const avgCostPerAppointment = completedBookings > 0 
