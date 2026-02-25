@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
-  Users, Crown, Search, ChevronDown, Loader2, AlertCircle,
+  Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
   MessageSquare, Star, Clock, UserPlus, Mail, X
 } from 'lucide-react';
@@ -1055,7 +1055,6 @@ export function AdminDashboard({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
-                              <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
@@ -1179,11 +1178,8 @@ export function AdminDashboard({
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 flex items-center gap-2">
+                  <p className="font-semibold text-gray-900">
                     {selectedBarber.firstName} {selectedBarber.lastName}
-                    {selectedBarber.isCampusManager && (
-                      <Crown className="w-4 h-4 text-amber-500" />
-                    )}
                   </p>
                   <p className="text-xs text-gray-500">{selectedBarber.email}</p>
                 </div>
@@ -1392,9 +1388,6 @@ export function AdminDashboard({
                             <div className="min-w-0">
                               <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                                 {barber.firstName} {barber.lastName}
-                                {barber.isCampusManager && (
-                                  <Crown className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                                )}
                               </p>
                               <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                             </div>
