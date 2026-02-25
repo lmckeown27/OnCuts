@@ -99,9 +99,9 @@ class ApiService {
   async get<T = any>(url: string, params?: any): Promise<T> {
     const response = await this.client.get(url, { params });
     
-    // If response has both 'data' and 'pagination', return the whole response
-    // Otherwise, extract just the data field
-    if (response.data.pagination) {
+    // If response has 'pagination' or 'totalUsers', return the whole response object
+    // These indicate a structured response that shouldn't be unwrapped
+    if (response.data.pagination || response.data.totalUsers !== undefined) {
       return response.data as T;
     }
     
