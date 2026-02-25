@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Crown, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
-  MessageSquare, Star, Clock, UserPlus, Mail
+  MessageSquare, Star, Clock, UserPlus, Mail, X
 } from 'lucide-react';
 import {
   Chart as ChartJS,
