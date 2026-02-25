@@ -37,9 +37,9 @@ ChartJS.register(
 interface Campus {
   id: string;
   name: string;
-  slug: string;
-  city: string;
-  state: string;
+  slug?: string;
+  city?: string;
+  state?: string;
   managerId?: string;
   managerName?: string;
 }
@@ -192,7 +192,6 @@ export function AdminDashboard({
   const [performance, setPerformance] = useState<CampusPerformance | null>(null);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   
-  const [isLoadingCampuses, setIsLoadingCampuses] = useState(true);
   const [campusLoadError, setCampusLoadError] = useState<string | null>(null);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(false);
