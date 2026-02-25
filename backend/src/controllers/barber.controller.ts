@@ -80,13 +80,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     // When includeHidden=false (consumer view), only show active barbers with Stripe setup
     const shouldIncludeHidden = includeHidden === 'true';
     
-    // Always filter by user role = 'BARBER' to exclude demoted users
+    // Filter by user role = 'BARBER' or 'CAMPUS_MANAGER' to exclude demoted users
+    // Campus managers are still barbers who can accept bookings
     // When includeHidden=true (CM view), show all barbers including those without Stripe or inactive
     // When includeHidden=false (consumer view), only show active barbers with Stripe setup
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u.role = 'BARBER' ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
     `;
 
     // Handle campusId - can be UUID or slug
