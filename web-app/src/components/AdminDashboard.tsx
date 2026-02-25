@@ -919,32 +919,8 @@ export function AdminDashboard({
           </div>
         </div>
         
-        {/* Period & View Selector */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {/* View Toggle */}
-          <div className="flex rounded-lg bg-gray-100 p-0.5">
-            <button
-              onClick={() => setMetricsView('revenue')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsView === 'revenue' 
-                  ? 'bg-primary-500 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Revenue
-            </button>
-            <button
-              onClick={() => setMetricsView('bookings')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                metricsView === 'bookings' 
-                  ? 'bg-primary-500 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Bookings
-            </button>
-          </div>
-          
+        {/* Period Selector */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
           {/* Period Toggle */}
           <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
             {[
