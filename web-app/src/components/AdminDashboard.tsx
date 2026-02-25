@@ -1354,7 +1354,7 @@ export function AdminDashboard({
                 value={barberSearchQuery}
                 onChange={(e) => setBarberSearchQuery(e.target.value)}
                 placeholder="Search barbers..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             
@@ -1473,7 +1473,7 @@ export function AdminDashboard({
             value={userSearchQuery}
             onChange={(e) => setUserSearchQuery(e.target.value)}
             placeholder="Search consumers..."
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         
