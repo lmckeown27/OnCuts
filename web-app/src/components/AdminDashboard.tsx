@@ -1183,7 +1183,7 @@ export function AdminDashboard({
                       <button
                         key={barber.id}
                         onClick={() => handleBarberClick(barber)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-amber-200 bg-amber-50 hover:bg-amber-100"
+                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-gray-200 hover:bg-gray-50"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -1361,7 +1361,7 @@ export function AdminDashboard({
                           onClick={() => handleBarberClick(barber)}
                           className={`w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left ${
                             barber.isCampusManager 
-                              ? 'border-amber-200 bg-amber-50 hover:bg-amber-100' 
+                              ? 'border-gray-200 hover:bg-gray-50' 
                               : 'border-gray-200 hover:bg-gray-50'
                           }`}
                         >
