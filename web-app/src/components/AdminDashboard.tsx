@@ -542,8 +542,8 @@ export function AdminDashboard({
         {
           label: metricsView === 'revenue' ? 'Revenue ($)' : 'Bookings',
           data: dataValues,
-          borderColor: metricsView === 'revenue' ? '#f59e0b' : '#10b981',
-          backgroundColor: metricsView === 'revenue' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+          borderColor: '#708d81', // primary color for both views
+          backgroundColor: 'rgba(112, 141, 129, 0.15)', // primary color with opacity
           fill: true,
           tension: 0.3,
           pointRadius: 4,
@@ -823,7 +823,7 @@ export function AdminDashboard({
               onClick={() => setMetricsView('revenue')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 metricsView === 'revenue' 
-                  ? 'bg-amber-500 text-white' 
+                  ? 'bg-primary-500 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -833,7 +833,7 @@ export function AdminDashboard({
               onClick={() => setMetricsView('bookings')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 metricsView === 'bookings' 
-                  ? 'bg-green-500 text-white' 
+                  ? 'bg-primary-500 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
