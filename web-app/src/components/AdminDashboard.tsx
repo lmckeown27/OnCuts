@@ -1477,6 +1477,11 @@ export function AdminDashboard({
                       month: 'short', day: 'numeric', year: 'numeric'
                     })}
                   </p>
+                  <p className="text-[10px] text-gray-400">
+                    {new Date(user.created_at).toLocaleTimeString('en-US', {
+                      hour: 'numeric', minute: '2-digit'
+                    })}
+                  </p>
                   {user.campus_name && (
                     <p className="text-[10px] text-gray-400 truncate max-w-28 mt-0.5">
                       {user.campus_name}
