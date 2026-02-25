@@ -889,23 +889,6 @@ export function AdminDashboard({
         
         {/* Period & View Selector */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {/* Hovered Data Display - shows when hovering chart */}
-          {hoveredDataPoint && (
-            <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm">
-              <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
-              <span className="font-semibold text-primary-900">
-                ${(hoveredDataPoint.revenue / 100).toFixed(2)}
-              </span>
-              <span className="text-primary-400">•</span>
-              <span className="font-semibold text-primary-900">
-                {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
-              </span>
-            </div>
-          )}
-          
-          {/* Spacer to push controls right when data is showing */}
-          {hoveredDataPoint && <div className="flex-1" />}
-          
           {/* View Toggle */}
           <div className="flex rounded-lg bg-gray-100 p-0.5">
             <button
@@ -953,6 +936,40 @@ export function AdminDashboard({
                 {label}
               </button>
             ))}
+          </div>
+          
+          {/* Data Display - hovered point or period totals */}
+          <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm ml-auto">
+            {hoveredDataPoint ? (
+              <>
+                <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
+                <span className="font-semibold text-primary-900">
+                  ${(hoveredDataPoint.revenue / 100).toFixed(2)}
+                </span>
+                <span className="text-primary-400">•</span>
+                <span className="font-semibold text-primary-900">
+                  {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-primary-700 font-medium">
+                  {metricsPeriod === '1w' ? '1 Week' : 
+                   metricsPeriod === '4w' ? '4 Weeks' : 
+                   metricsPeriod === 'mtd' ? 'MTD' : 
+                   metricsPeriod === 'qtd' ? 'QTD' : 
+                   metricsPeriod === 'ytd' ? 'YTD' : 
+                   metricsPeriod === '1y' ? '1 Year' : 'All Time'}:
+                </span>
+                <span className="font-semibold text-primary-900">
+                  ${(metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)}
+                </span>
+                <span className="text-primary-400">•</span>
+                <span className="font-semibold text-primary-900">
+                  {metrics.reduce((sum, m) => sum + m.bookings, 0)} cuts
+                </span>
+              </>
+            )}
           </div>
         </div>
         
