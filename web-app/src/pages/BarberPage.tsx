@@ -1056,12 +1056,12 @@ export default function BarberPage() {
                     {/* Campus Manager Selector (only when campus selected) */}
                     {adminDashboardCampusId && campusBarbersForManager.length > 0 && (
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg w-full sm:w-auto max-w-xs sm:max-w-none">
-                        <p className="text-sm text-gray-700 whitespace-nowrap">Campus Manager:</p>
+                        <p className="text-sm text-gray-700 whitespace-nowrap flex-shrink-0">Campus Manager:</p>
                         <select
                           value={selectedCampusManagerId}
                           onChange={(e) => handleCampusManagerChange(e.target.value)}
                           disabled={isAssigningCampusManager}
-                          className="text-sm bg-transparent focus:outline-none disabled:opacity-50 cursor-pointer text-primary-600 font-semibold"
+                          className="text-sm bg-transparent focus:outline-none disabled:opacity-50 cursor-pointer text-primary-600 font-semibold flex-1 min-w-0"
                         >
                           <option value="">No campus manager assigned</option>
                           {campusBarbersForManager.map(barber => (
