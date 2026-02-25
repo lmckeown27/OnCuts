@@ -935,7 +935,148 @@ export function AdminDashboard({
       {/* Barber Management */}
       {adminView === 'barbers' && (
       <div>
-        {!selectedCampusId ? (
+        {selectedBarber ? (
+          /* Barber Detail View */
+          <div>
+            {/* Back button and barber header */}
+            <button 
+              onClick={handleBackToBarbers}
+              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-3 text-sm"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to barbers
+            </button>
+            
+            <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {selectedBarber.profileImageUrl ? (
+                  <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold text-gray-500">{selectedBarber.firstName.charAt(0)}{selectedBarber.lastName.charAt(0)}</span>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {selectedBarber.firstName} {selectedBarber.lastName}
+                </p>
+                <p className="text-xs text-gray-500">{selectedBarber.email}</p>
+              </div>
+            </div>
+            
+            {/* Bookings list */}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Booking History</h3>
+              <span className="text-xs text-gray-500">{barberBookings.length} bookings</span>
+            </div>
+            
+            {isLoadingBarberBookings ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+              </div>
+            ) : barberBookings.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {barberBookings.map(booking => (
+                  <div 
+                    key={booking.id} 
+                    className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleBookingClick(booking.id)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          booking.status === 'COMPLETED' || booking.status === 'PAID' 
+                            ? 'bg-green-100 text-green-700' 
+                            : booking.status === 'CANCELLED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {booking.status}
+                        </span>
+                        {booking.review_rating && (
+                          <span className="flex items-center gap-0.5 text-xs text-amber-600">
+                            <Star className="w-3 h-3 fill-amber-400" />
+                            {booking.review_rating}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        ${(booking.total_paid_cents / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <p className="font-medium text-sm text-gray-900 mb-1">
+                      {booking.consumer_first_name} {booking.consumer_last_name}
+                    </p>
+                    <p className="text-xs text-gray-500">{formatServiceType(booking.service_type)}</p>
+                    
+                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(booking.scheduled_time).toLocaleDateString('en-US', { 
+                          month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+                        })}
+                      </span>
+                      {booking.message_count > 0 && (
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3" />
+                          {booking.message_count}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Expandable messages section */}
+                    {selectedBookingId === booking.id && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Messages</p>
+                        {isLoadingMessages ? (
+                          <div className="flex items-center justify-center py-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                          </div>
+                        ) : selectedBookingMessages.length > 0 ? (
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {selectedBookingMessages.map(msg => (
+                              <div key={msg.id} className="text-xs p-2 bg-gray-100 rounded">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <span className={`text-[10px] px-1 py-0.5 rounded ${
+                                    msg.sender_role === 'BARBER' 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {msg.sender_role === 'BARBER' ? 'Barber' : 'Customer'}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 ml-auto">
+                                    {new Date(msg.created_at).toLocaleTimeString('en-US', { 
+                                      hour: 'numeric', minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-gray-700">{msg.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">No messages</p>
+                        )}
+                        
+                        {booking.review_text && (
+                          <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-100">
+                            <p className="text-xs font-semibold text-amber-700 mb-1">Review</p>
+                            <p className="text-xs text-gray-700">{booking.review_text}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                <Calendar className="w-8 h-8 mb-2" />
+                <p className="text-sm">No bookings found</p>
+              </div>
+            )}
+          </div>
+        ) : !selectedCampusId ? (
           /* All Barbers View - organized by status with tabs */
           <div>
             {/* Search bar */}
@@ -1153,159 +1294,8 @@ export function AdminDashboard({
               </div>
             )}
           </div>
-        ) : selectedBarber ? (
-          /* Barber Detail View */
-          <div>
-            {/* Back button and barber header */}
-            <button 
-              onClick={handleBackToBarbers}
-              className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-3 text-sm"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to barbers
-            </button>
-            
-            {/* Barber info card */}
-            <div className="p-3 bg-gray-50 rounded-xl mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {selectedBarber.profileImageUrl ? (
-                    <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm font-bold text-gray-500">
-                      {selectedBarber.firstName.charAt(0)}{selectedBarber.lastName.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {selectedBarber.firstName} {selectedBarber.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500">{selectedBarber.email}</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Bookings list */}
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Booking History</h4>
-            
-            {isLoadingBarberBookings ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-              </div>
-            ) : barberBookings.length > 0 ? (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {barberBookings.map(booking => (
-                  <div key={booking.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Booking summary - clickable */}
-                    <button
-                      onClick={() => handleBookingClick(booking.id)}
-                      className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {booking.consumer_avatar ? (
-                              <img src={booking.consumer_avatar} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] font-bold text-gray-500">
-                                {booking.consumer_first_name.charAt(0)}{booking.consumer_last_name.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {booking.consumer_first_name} {booking.consumer_last_name}
-                            </p>
-                            <p className="text-xs text-gray-500">{formatServiceType(booking.service_type)}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
-                            {formatCurrency(booking.total_paid_cents || booking.price_cents)}
-                          </p>
-                          <div className="flex items-center gap-1 justify-end">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                              booking.status === 'PAID' ? 'bg-green-100 text-green-700' :
-                              booking.status === 'COMPLETED' ? 'bg-blue-100 text-blue-700' :
-                              booking.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {booking.status}
-                            </span>
-                            {booking.message_count > 0 && (
-                              <span className="flex items-center gap-0.5 text-[10px] text-gray-500">
-                                <MessageSquare className="w-3 h-3" />
-                                {booking.message_count}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(booking.scheduled_time).toLocaleDateString('en-US', { 
-                            month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
-                          })}
-                        </span>
-                        {booking.review_rating && (
-                          <span className="flex items-center gap-1">
-                            <Star className="w-3 h-3 text-yellow-500" />
-                            {booking.review_rating}
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                    
-                    {/* Messages - expanded when selected */}
-                    {selectedBookingId === booking.id && (
-                      <div className="border-t border-gray-200 bg-gray-50 p-3">
-                        <p className="text-xs font-semibold text-gray-600 mb-2">Messages</p>
-                        {isLoadingMessages ? (
-                          <div className="flex items-center justify-center py-4">
-                            <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                          </div>
-                        ) : selectedBookingMessages.length > 0 ? (
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {selectedBookingMessages.map(msg => (
-                              <div key={msg.id} className="bg-white p-2 rounded-lg border border-gray-100">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium text-gray-900">
-                                    {msg.sender_first_name} {msg.sender_last_name}
-                                  </span>
-                                  <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    msg.sender_role === 'BARBER' ? 'bg-primary-500 text-white' : 'bg-amber-100 text-amber-700'
-                                  }`}>
-                                    {msg.sender_role === 'BARBER' ? 'Barber' : 'Customer'}
-                                  </span>
-                                  <span className="text-[10px] text-gray-400 ml-auto">
-                                    {new Date(msg.created_at).toLocaleTimeString('en-US', { 
-                                      hour: 'numeric', minute: '2-digit'
-                                    })}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-gray-700">{msg.content}</p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-gray-400 text-center py-2">No messages for this booking</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                <Calendar className="w-8 h-8 mb-2" />
-                <p className="text-sm">No bookings found</p>
-              </div>
-            )}
-          </div>
         ) : (
-          /* Barber List View */
+          /* Barber List View (Campus-specific) */
           <>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
