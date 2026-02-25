@@ -913,6 +913,40 @@ export function AdminDashboard({
             </button>
           </div>
           
+          {/* Data Display - hovered point or period totals (right of toggle on mobile, end on desktop) */}
+          <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm sm:order-last sm:ml-auto">
+            {hoveredDataPoint ? (
+              <>
+                <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
+                <span className="font-semibold text-primary-900">
+                  ${(hoveredDataPoint.revenue / 100).toFixed(2)}
+                </span>
+                <span className="text-primary-400">•</span>
+                <span className="font-semibold text-primary-900">
+                  {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-primary-700 font-medium">
+                  {metricsPeriod === '1w' ? '1W' : 
+                   metricsPeriod === '4w' ? '4W' : 
+                   metricsPeriod === 'mtd' ? 'MTD' : 
+                   metricsPeriod === 'qtd' ? 'QTD' : 
+                   metricsPeriod === 'ytd' ? 'YTD' : 
+                   metricsPeriod === '1y' ? '1Y' : 'All'}:
+                </span>
+                <span className="font-semibold text-primary-900">
+                  ${(metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)}
+                </span>
+                <span className="text-primary-400">•</span>
+                <span className="font-semibold text-primary-900">
+                  {metrics.reduce((sum, m) => sum + m.bookings, 0)} cuts
+                </span>
+              </>
+            )}
+          </div>
+          
           {/* Period Toggle */}
           <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
             {[
@@ -936,40 +970,6 @@ export function AdminDashboard({
                 {label}
               </button>
             ))}
-          </div>
-          
-          {/* Data Display - hovered point or period totals */}
-          <div className="flex items-center gap-2 px-2 py-1 bg-primary-50 rounded-md border border-primary-200 text-sm ml-auto">
-            {hoveredDataPoint ? (
-              <>
-                <span className="text-primary-700 font-medium">{hoveredDataPoint.label}:</span>
-                <span className="font-semibold text-primary-900">
-                  ${(hoveredDataPoint.revenue / 100).toFixed(2)}
-                </span>
-                <span className="text-primary-400">•</span>
-                <span className="font-semibold text-primary-900">
-                  {hoveredDataPoint.bookings} {hoveredDataPoint.bookings === 1 ? 'cut' : 'cuts'}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="text-primary-700 font-medium">
-                  {metricsPeriod === '1w' ? '1 Week' : 
-                   metricsPeriod === '4w' ? '4 Weeks' : 
-                   metricsPeriod === 'mtd' ? 'MTD' : 
-                   metricsPeriod === 'qtd' ? 'QTD' : 
-                   metricsPeriod === 'ytd' ? 'YTD' : 
-                   metricsPeriod === '1y' ? '1 Year' : 'All Time'}:
-                </span>
-                <span className="font-semibold text-primary-900">
-                  ${(metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)}
-                </span>
-                <span className="text-primary-400">•</span>
-                <span className="font-semibold text-primary-900">
-                  {metrics.reduce((sum, m) => sum + m.bookings, 0)} cuts
-                </span>
-              </>
-            )}
           </div>
         </div>
         
