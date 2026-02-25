@@ -1144,7 +1144,7 @@ export function AdminDashboard({
                 onClick={() => setAllBarbersTab('managers')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   allBarbersTab === 'managers'
-                    ? 'border-amber-500 text-amber-600'
+                    ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -1154,7 +1154,7 @@ export function AdminDashboard({
                 onClick={() => setAllBarbersTab('active')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   allBarbersTab === 'active'
-                    ? 'border-green-500 text-green-600'
+                    ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -1164,7 +1164,7 @@ export function AdminDashboard({
                 onClick={() => setAllBarbersTab('inactive')}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   allBarbersTab === 'inactive'
-                    ? 'border-gray-500 text-gray-600'
+                    ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
