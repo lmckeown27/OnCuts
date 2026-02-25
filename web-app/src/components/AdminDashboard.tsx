@@ -229,7 +229,7 @@ export function AdminDashboard({
   const [userSearchQuery, setUserSearchQuery] = useState('');
   
   // All barbers view state (when no campus selected)
-  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive' | 'applications'>('active');
+  const [allBarbersTab, setAllBarbersTab] = useState<'managers' | 'active' | 'inactive'>('active');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
   
@@ -237,6 +237,9 @@ export function AdminDashboard({
   const [applications, setApplications] = useState<BarberApplication[]>([]);
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
+  
+  // Campus-specific barber tab (when campus is selected)
+  const [campusBarberTab, setCampusBarberTab] = useState<'barbers' | 'applications'>('barbers');
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -339,7 +342,7 @@ export function AdminDashboard({
   // Fetch barber applications when campus changes or Applications tab is selected
   useEffect(() => {
     const fetchApplications = async () => {
-      if (!selectedCampusId || allBarbersTab !== 'applications') {
+      if (!selectedCampusId || campusBarberTab !== 'applications') {
         return;
       }
       setIsLoadingApplications(true);
@@ -361,7 +364,7 @@ export function AdminDashboard({
     };
     
     fetchApplications();
-  }, [selectedCampusId, allBarbersTab]);
+  }, [selectedCampusId, campusBarberTab]);
   
   // Handle application action (approve/reject)
   const handleApplicationAction = async (applicationId: string, action: 'approve' | 'reject') => {
@@ -1281,18 +1284,6 @@ export function AdminDashboard({
               >
                 Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
               </button>
-              {selectedCampusId && (
-                <button
-                  onClick={() => setAllBarbersTab('applications')}
-                  className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                    allBarbersTab === 'applications'
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Applications ({applications.length})
-                </button>
-              )}
             </nav>
             
             {/* Stripe filter for Active tab */}
@@ -1333,11 +1324,9 @@ export function AdminDashboard({
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : allBarbersTab === 'inactive' ? 'Hidden Barbers' : 'Barber Applications'}
+                {allBarbersTab === 'managers' ? 'Campus Managers' : allBarbersTab === 'active' ? 'Visible Barbers' : 'Hidden Barbers'}
               </h3>
-              <span className="text-xs text-gray-500">
-                {allBarbersTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
-              </span>
+              <span className="text-xs text-gray-500">{filteredAllBarbers.length} total barbers</span>
             </div>
             
             {isLoadingBarbers ? (
@@ -1461,72 +1450,6 @@ export function AdminDashboard({
                     </div>
                   )
                 )}
-                
-                {/* Applications Tab */}
-                {allBarbersTab === 'applications' && (
-                  isLoadingApplications ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
-                    </div>
-                  ) : applications.length > 0 ? (
-                    applications.map(app => (
-                      <div
-                        key={app.id}
-                        className="p-3 rounded-lg border border-amber-200 bg-amber-50"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-medium text-gray-900 text-sm truncate">
-                                {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
-                              </p>
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                app.status === 'pending' 
-                                  ? 'bg-amber-100 text-amber-700' 
-                                  : 'bg-green-100 text-green-700'
-                              }`}>
-                                {app.status === 'pending' ? 'Pending' : 'Approved (Awaiting Signup)'}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
-                            {app.years_experience !== undefined && (
-                              <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
-                            )}
-                          </div>
-                          {app.status === 'pending' && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <button
-                                onClick={() => handleApplicationAction(app.id, 'approve')}
-                                disabled={applicationActionLoading === app.id}
-                                className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
-                                title="Approve"
-                              >
-                                {applicationActionLoading === app.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleApplicationAction(app.id, 'reject')}
-                                disabled={applicationActionLoading === app.id}
-                                className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
-                                title="Reject"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                      <UserPlus className="w-8 h-8 mb-2" />
-                      <p className="text-sm">No pending applications</p>
-                    </div>
-                  )
-                )}
               </div>
             )}
           </div>
@@ -1537,19 +1460,45 @@ export function AdminDashboard({
               <h3 className="text-base font-semibold text-gray-900">Barber Management</h3>
             </div>
             
-            {/* Search */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={barberSearchQuery}
-                onChange={(e) => setBarberSearchQuery(e.target.value)}
-                placeholder="Search barbers..."
-                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+            {/* Tabs: Barbers / Applications */}
+            <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
+              <button
+                onClick={() => setCampusBarberTab('barbers')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  campusBarberTab === 'barbers'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Barbers ({filteredBarbers.length})
+              </button>
+              <button
+                onClick={() => setCampusBarberTab('applications')}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  campusBarberTab === 'applications'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Applications ({applications.length})
+              </button>
+            </nav>
             
-            <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
+            {campusBarberTab === 'barbers' && (
+              <>
+                {/* Search */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={barberSearchQuery}
+                    onChange={(e) => setBarberSearchQuery(e.target.value)}
+                    placeholder="Search barbers..."
+                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                
+                <p className="text-xs text-gray-500 mb-2">Click on a barber to view their booking activity</p>
             
             {isLoadingBarbers ? (
               <div className="flex items-center justify-center py-8">
@@ -1640,6 +1589,76 @@ export function AdminDashboard({
                 <Users className="w-10 h-10 text-gray-300 mb-2" />
                 <p className="text-sm">No barbers found</p>
               </div>
+            )}
+              </>
+            )}
+            
+            {/* Applications Tab Content */}
+            {campusBarberTab === 'applications' && (
+              isLoadingApplications ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+                </div>
+              ) : applications.length > 0 ? (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {applications.map(app => (
+                    <div
+                      key={app.id}
+                      className="p-3 rounded-lg border border-amber-200 bg-amber-50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-gray-900 text-sm truncate">
+                              {app.first_name || app.user?.first_name || 'Unknown'} {app.last_name || app.user?.last_name || 'User'}
+                            </p>
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              app.status === 'pending' 
+                                ? 'bg-amber-100 text-amber-700' 
+                                : 'bg-green-100 text-green-700'
+                            }`}>
+                              {app.status === 'pending' ? 'Pending' : 'Approved (Awaiting Signup)'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{app.email || app.user?.email || 'No email'}</p>
+                          {app.years_experience !== undefined && (
+                            <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
+                          )}
+                        </div>
+                        {app.status === 'pending' && (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => handleApplicationAction(app.id, 'approve')}
+                              disabled={applicationActionLoading === app.id}
+                              className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
+                              title="Approve"
+                            >
+                              {applicationActionLoading === app.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleApplicationAction(app.id, 'reject')}
+                              disabled={applicationActionLoading === app.id}
+                              className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+                              title="Reject"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                  <UserPlus className="w-8 h-8 mb-2" />
+                  <p className="text-sm">No pending applications</p>
+                </div>
+              )
             )}
           </>
         )}
