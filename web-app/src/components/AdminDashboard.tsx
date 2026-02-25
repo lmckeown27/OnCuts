@@ -523,10 +523,13 @@ export function AdminDashboard({
   const chartData = useMemo(() => {
     const labels = metrics.map(m => {
       const date = new Date(m.date);
-      if (metricsPeriod === 'daily') {
+      // Daily granularity periods: 1w, 4w, mtd, qtd
+      if (['1w', '4w', 'mtd', 'qtd'].includes(metricsPeriod)) {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      } else if (metricsPeriod === 'weekly') {
+      // Weekly granularity periods: 1y, ytd
+      } else if (['1y', 'ytd'].includes(metricsPeriod)) {
         return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      // Monthly granularity: all
       } else {
         return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       }
@@ -576,7 +579,7 @@ export function AdminDashboard({
         displayColors: false,
         titleFont: {
           size: 13,
-          weight: '600' as const,
+          weight: 'bold' as const,
         },
         bodyFont: {
           size: 12,
@@ -958,12 +961,12 @@ export function AdminDashboard({
               </div>
               <div>
                 <p className="text-gray-500 text-xs">
-                  Avg Cuts/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : metricsPeriod === 'monthly' ? 'Month' : 'Month'}
+                  Avg Cuts/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Week' : 'Month'}
                 </p>
                 <p className="font-semibold text-gray-900">
-                  {metricsPeriod === 'daily' || metricsPeriod === 'alltime'
+                  {['1w', '4w', 'mtd'].includes(metricsPeriod)
                     ? performance.averageBookingsPerDay.toFixed(1)
-                    : metricsPeriod === 'weekly'
+                    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
                     ? performance.averageBookingsPerWeek.toFixed(1)
                     : performance.averageBookingsPerMonth.toFixed(1)
                   }
@@ -971,12 +974,12 @@ export function AdminDashboard({
               </div>
               <div>
                 <p className="text-gray-500 text-xs">
-                  Avg Revenue/{metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Week' : metricsPeriod === 'monthly' ? 'Month' : 'Month'}
+                  Avg Revenue/{['1w', '4w', 'mtd'].includes(metricsPeriod) ? 'Day' : ['1y', 'ytd', 'qtd'].includes(metricsPeriod) ? 'Week' : 'Month'}
                 </p>
                 <p className="font-semibold text-gray-900">
-                  {metricsPeriod === 'daily' || metricsPeriod === 'alltime'
+                  {['1w', '4w', 'mtd'].includes(metricsPeriod)
                     ? formatCurrency(performance.averageRevenuePerDay)
-                    : metricsPeriod === 'weekly'
+                    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
                     ? formatCurrency(performance.averageRevenuePerWeek)
                     : formatCurrency(performance.averageRevenuePerMonth)
                   }
