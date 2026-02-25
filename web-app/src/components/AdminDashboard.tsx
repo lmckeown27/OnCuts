@@ -556,6 +556,30 @@ export function AdminDashboard({
     };
   }, [metrics, metricsPeriod, metricsView]);
   
+  // Custom crosshair plugin for vertical line on hover
+  const crosshairPlugin = useMemo(() => ({
+    id: 'crosshair',
+    afterDraw: (chart: any) => {
+      if (chart.tooltip?._active?.length) {
+        const activePoint = chart.tooltip._active[0];
+        const ctx = chart.ctx;
+        const x = activePoint.element.x;
+        const topY = chart.scales.y.top;
+        const bottomY = chart.scales.y.bottom;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, topY);
+        ctx.lineTo(x, bottomY);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(112, 141, 129, 0.5)'; // Primary color with opacity
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    },
+  }), []);
+
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -908,7 +932,7 @@ export function AdminDashboard({
           </div>
         ) : metrics.length > 0 ? (
           <div className="h-48 sm:h-56 mb-4">
-            <Line data={chartData} options={chartOptions} />
+            <Line data={chartData} options={chartOptions} plugins={[crosshairPlugin]} />
           </div>
         ) : (
           <div className="flex items-center justify-center py-12 text-gray-500 text-sm">
