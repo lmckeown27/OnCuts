@@ -1287,32 +1287,59 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 
   const renderBarberWeekView = (barber: BarberForAvailability) => {
     const weekDates = getWeekDates();
-    return (
-      <div className="grid grid-cols-7 gap-1 mt-2">
-        {weekDates.map((date, idx) => {
-          const schedule = getDaySchedule(barber.weeklySchedule || {}, date);
-          const isToday = date.toDateString() === new Date().toDateString();
-          const hasSlots = schedule.length > 0;
-          return (
-            <div key={idx} className={`p-1.5 rounded border text-center ${isToday ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}>
-              <p className={`text-xs font-medium ${isToday ? 'text-primary-700' : 'text-gray-600'}`}>{shortDayNames[idx]}</p>
-              <p className={`text-xs ${isToday ? 'text-primary-600' : 'text-gray-500'}`}>{date.getDate()}</p>
-              {hasSlots ? (
-                <div className="mt-1 space-y-0.5">
-                  {schedule.slice(0, 2).map((slot, slotIdx) => (
-                    <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-0.5 py-0.5 truncate">
-                      {formatTime(slot.start).replace(' ', '')}
-                    </div>
-                  ))}
-                  {schedule.length > 2 && <p className="text-xs text-primary-500">+{schedule.length - 2}</p>}
+    
+    // Get 3 days starting from the current selected date for mobile
+    const getMobileDates = () => {
+      const dates = [];
+      for (let i = 0; i < 3; i++) {
+        const date = new Date(currentDate);
+        date.setDate(currentDate.getDate() + i);
+        dates.push(date);
+      }
+      return dates;
+    };
+    
+    const mobileDates = getMobileDates();
+    
+    const renderDayCard = (date: Date, isMobileOnly: boolean = false) => {
+      const schedule = getDaySchedule(barber.weeklySchedule || {}, date);
+      const isCurrentDate = date.toDateString() === currentDate.toDateString();
+      const hasSlots = schedule.length > 0;
+      return (
+        <div 
+          key={date.toISOString()} 
+          className={`p-1.5 rounded border text-center ${isCurrentDate ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}
+        >
+          <p className={`text-xs font-medium ${isCurrentDate ? 'text-primary-700' : 'text-gray-600'}`}>{shortDayNames[date.getDay()]}</p>
+          <p className={`text-xs ${isCurrentDate ? 'text-primary-600' : 'text-gray-500'}`}>{date.getDate()}</p>
+          {hasSlots ? (
+            <div className="mt-1 space-y-0.5">
+              {schedule.slice(0, 2).map((slot, slotIdx) => (
+                <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-0.5 py-0.5 truncate">
+                  {formatTime(slot.start).replace(' ', '')}
                 </div>
-              ) : (
-                <p className="text-xs text-gray-400 mt-1">—</p>
-              )}
+              ))}
+              {schedule.length > 2 && <p className="text-xs text-primary-500">+{schedule.length - 2}</p>}
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1">—</p>
+          )}
+        </div>
+      );
+    };
+    
+    return (
+      <>
+        {/* Mobile view: 3 days starting from current date */}
+        <div className="grid grid-cols-3 gap-1 mt-2 sm:hidden">
+          {mobileDates.map(date => renderDayCard(date, true))}
+        </div>
+        
+        {/* Desktop view: full week */}
+        <div className="hidden sm:grid grid-cols-7 gap-1 mt-2">
+          {weekDates.map(date => renderDayCard(date))}
+        </div>
+      </>
     );
   };
 
