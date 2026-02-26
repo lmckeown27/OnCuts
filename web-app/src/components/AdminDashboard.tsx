@@ -981,9 +981,9 @@ export function AdminDashboard({
             </p>
             {!hoveredDataPoint && performance && (performance.cardRevenue > 0 || performance.cashRevenue > 0) && (
               <p className="text-[10px] text-gray-400">
-                {performance.cardRevenue > 0 && <span className="text-blue-500">💳${(performance.cardRevenue / 100).toFixed(0)}</span>}
+                {performance.cardRevenue > 0 && <span>Card ${(performance.cardRevenue / 100).toFixed(0)}</span>}
                 {performance.cardRevenue > 0 && performance.cashRevenue > 0 && ' · '}
-                {performance.cashRevenue > 0 && <span className="text-green-500">💵${(performance.cashRevenue / 100).toFixed(0)}</span>}
+                {performance.cashRevenue > 0 && <span>Cash ${(performance.cashRevenue / 100).toFixed(0)}</span>}
               </p>
             )}
           </div>
@@ -997,9 +997,9 @@ export function AdminDashboard({
             </p>
             {!hoveredDataPoint && performance && (performance.cardCount > 0 || performance.cashCount > 0) && (
               <p className="text-[10px] text-gray-400">
-                {performance.cardCount > 0 && <span className="text-blue-500">💳{performance.cardCount}</span>}
+                {performance.cardCount > 0 && <span>Card {performance.cardCount}</span>}
                 {performance.cardCount > 0 && performance.cashCount > 0 && ' · '}
-                {performance.cashCount > 0 && <span className="text-green-500">💵{performance.cashCount}</span>}
+                {performance.cashCount > 0 && <span>Cash {performance.cashCount}</span>}
               </p>
             )}
           </div>
