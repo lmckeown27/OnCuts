@@ -1136,6 +1136,7 @@ interface BarberForAvailability {
   name: string;
   profileImageUrl: string | null;
   weeklySchedule?: WeeklySchedule;
+  isActive: boolean;
 }
 
 const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
@@ -1177,6 +1178,7 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
               id: barber.id,
               name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
               profileImageUrl: barber.profile_picture_url || barber.profile_image_url || barber.profileImageUrl || barber.avatarUrl || barber.avatar_url || null,
+              isActive: barber.is_active !== false,
               weeklySchedule,
             };
           })
@@ -1278,6 +1280,10 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   };
 
   const renderBarberDayView = (barber: BarberForAvailability) => {
+    // Hidden barbers don't show availability
+    if (!barber.isActive) {
+      return null;
+    }
     const schedule = getDaySchedule(barber.weeklySchedule || {}, currentDate);
     if (schedule.length === 0) {
       return <span className="text-gray-400 text-sm">No availability</span>;
@@ -1427,8 +1433,8 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
         {barbers.map(barber => (
           <Card key={barber.id} className="p-3">
             <button
-              onClick={() => setExpandedBarber(expandedBarber === barber.id ? null : barber.id)}
-              className="w-full flex items-center gap-3 text-left"
+              onClick={() => barber.isActive && setExpandedBarber(expandedBarber === barber.id ? null : barber.id)}
+              className={`w-full flex items-center gap-3 text-left ${!barber.isActive ? 'cursor-default' : ''}`}
             >
               <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {barber.profileImageUrl ? (
@@ -1440,14 +1446,21 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900">{barber.name}</p>
-                {viewMode === 'day' && !expandedBarber && renderBarberDayView(barber)}
+                <div className="flex items-center gap-2">
+                  <p className={`font-medium ${barber.isActive ? 'text-gray-900' : 'text-gray-500'}`}>{barber.name}</p>
+                  {!barber.isActive && (
+                    <span className="text-xs bg-gray-200 text-gray-600 rounded px-1.5 py-0.5">Hidden</span>
+                  )}
+                </div>
+                {barber.isActive && viewMode === 'day' && !expandedBarber && renderBarberDayView(barber)}
               </div>
-              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarber === barber.id ? 'rotate-180' : ''}`} />
+              {barber.isActive && (
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarber === barber.id ? 'rotate-180' : ''}`} />
+              )}
             </button>
             
-            {/* Expanded view */}
-            {expandedBarber === barber.id && (
+            {/* Expanded view - only for active barbers */}
+            {barber.isActive && expandedBarber === barber.id && (
               <div className="mt-3 pt-3 border-t border-gray-100">
                 {viewMode === 'day' && (
                   <div>
