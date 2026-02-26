@@ -241,10 +241,10 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
           ) : (
             <>
               {/* Info banner */}
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
+              <div className="bg-primary-50 border border-primary-100 rounded-lg p-3 mb-4">
                 <div className="flex gap-2">
-                  <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-blue-700">
+                  <AlertCircle className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-primary-700">
                     Block specific times without affecting your weekly availability. 
                     Perfect for one-time events or appointments.
                   </p>
