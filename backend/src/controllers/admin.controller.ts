@@ -909,13 +909,18 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 
     // Get total revenue, platform fees, and transaction count for Stripe fee calculation
     // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
+    // Also break out card vs cash payments
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
         COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
-        COUNT(*) as completed_transaction_count
+        COUNT(*) as completed_transaction_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
+        COUNT(*) FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL) as card_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'cash'), 0) as cash_revenue,
+        COUNT(*) FILTER (WHERE "paymentMethod" = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
       AND "barberId" IN (
@@ -1051,10 +1056,16 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const totalTips = parseInt(revenueResult.rows[0]?.total_tips || '0');
     const completedTransactionCount = parseInt(revenueResult.rows[0]?.completed_transaction_count || '0');
     
+    // Card vs Cash breakdown
+    const cardRevenue = parseInt(revenueResult.rows[0]?.card_revenue || '0');
+    const cardCount = parseInt(revenueResult.rows[0]?.card_count || '0');
+    const cashRevenue = parseInt(revenueResult.rows[0]?.cash_revenue || '0');
+    const cashCount = parseInt(revenueResult.rows[0]?.cash_count || '0');
+    
     // Calculate estimated Stripe processing fees (2.9% + $0.30 per transaction)
-    // Stripe fees come out of the platform's application fee
-    const stripePercentageFee = Math.round(totalRevenue * 0.029); // 2.9% of gross
-    const stripeFixedFee = completedTransactionCount * 30; // $0.30 per transaction in cents
+    // Only applies to card transactions
+    const stripePercentageFee = Math.round(cardRevenue * 0.029); // 2.9% of card gross
+    const stripeFixedFee = cardCount * 30; // $0.30 per card transaction in cents
     const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
     
     // Net platform revenue = gross platform fees - Stripe processing fees
@@ -1073,6 +1084,11 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       estimatedStripeFees, // Stripe processing fees (2.9% + $0.30/txn)
       netPlatformRevenue, // Platform's actual take after Stripe fees
       completedTransactionCount, // Number of completed transactions
+      // Card vs Cash breakdown
+      cardRevenue,
+      cardCount,
+      cashRevenue,
+      cashCount,
       averageRating: parseFloat(ratingsResult.rows[0]?.avg_rating || '0'),
       totalReviews: parseInt(ratingsResult.rows[0]?.total_reviews || '0'),
       // New average metrics
@@ -1294,13 +1310,18 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
 
     // Get total revenue, platform fees, and transaction count
     // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
+    // Also break out card vs cash payments
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
         COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
-        COUNT(*) as completed_transaction_count
+        COUNT(*) as completed_transaction_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
+        COUNT(*) FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL) as card_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'cash'), 0) as cash_revenue,
+        COUNT(*) FILTER (WHERE "paymentMethod" = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
     `);
@@ -1357,9 +1378,15 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     const totalTips = parseInt(revenueResult.rows[0].total_tips || '0');
     const completedTransactionCount = parseInt(revenueResult.rows[0].completed_transaction_count || '0');
     
-    // Stripe fees are calculated on TOTAL revenue (what customer pays), not just platform fees
-    const stripePercentageFee = Math.round(totalRevenue * 0.029); // 2.9% of gross
-    const stripeFixedFee = completedTransactionCount * 30; // $0.30 per transaction in cents
+    // Card vs Cash breakdown
+    const cardRevenue = parseInt(revenueResult.rows[0].card_revenue || '0');
+    const cardCount = parseInt(revenueResult.rows[0].card_count || '0');
+    const cashRevenue = parseInt(revenueResult.rows[0].cash_revenue || '0');
+    const cashCount = parseInt(revenueResult.rows[0].cash_count || '0');
+    
+    // Stripe fees are calculated on CARD revenue only (cash doesn't have Stripe fees)
+    const stripePercentageFee = Math.round(cardRevenue * 0.029); // 2.9% of card gross
+    const stripeFixedFee = cardCount * 30; // $0.30 per card transaction in cents
     const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
     
     // Net platform revenue = gross platform fees - Stripe processing fees
@@ -1384,6 +1411,11 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       estimatedStripeFees,
       netPlatformRevenue,
       completedTransactionCount,
+      // Card vs Cash breakdown
+      cardRevenue,
+      cardCount,
+      cashRevenue,
+      cashCount,
       averageRating: parseFloat(ratingsResult.rows[0].avg_rating || '0'),
       totalReviews: parseInt(ratingsResult.rows[0].total_reviews || '0'),
       averageBookingsPerDay: parseFloat(avgDailyBookingsResult.rows[0].avg_daily || '0'),

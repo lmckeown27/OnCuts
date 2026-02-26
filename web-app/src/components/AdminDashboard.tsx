@@ -57,6 +57,11 @@ interface CampusPerformance {
   estimatedStripeFees: number; // Stripe processing fees (2.9% + $0.30/txn)
   netPlatformRevenue: number; // Platform's actual take after Stripe fees
   completedTransactionCount: number; // Number of completed transactions
+  // Card vs Cash breakdown
+  cardRevenue: number;
+  cardCount: number;
+  cashRevenue: number;
+  cashCount: number;
   averageRating: number;
   totalReviews: number;
   // Average metrics
@@ -974,6 +979,13 @@ export function AdminDashboard({
                 : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
               }
             </p>
+            {!hoveredDataPoint && performance && (performance.cardRevenue > 0 || performance.cashRevenue > 0) && (
+              <p className="text-[10px] text-gray-400">
+                {performance.cardRevenue > 0 && <span className="text-blue-500">💳${(performance.cardRevenue / 100).toFixed(0)}</span>}
+                {performance.cardRevenue > 0 && performance.cashRevenue > 0 && ' · '}
+                {performance.cashRevenue > 0 && <span className="text-green-500">💵${(performance.cashRevenue / 100).toFixed(0)}</span>}
+              </p>
+            )}
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs">Bookings</p>
@@ -983,6 +995,13 @@ export function AdminDashboard({
                 : metrics.reduce((sum, m) => sum + m.bookings, 0)
               }
             </p>
+            {!hoveredDataPoint && performance && (performance.cardCount > 0 || performance.cashCount > 0) && (
+              <p className="text-[10px] text-gray-400">
+                {performance.cardCount > 0 && <span className="text-blue-500">💳{performance.cardCount}</span>}
+                {performance.cardCount > 0 && performance.cashCount > 0 && ' · '}
+                {performance.cashCount > 0 && <span className="text-green-500">💵{performance.cashCount}</span>}
+              </p>
+            )}
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs">Users</p>
