@@ -1407,12 +1407,14 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
           </button>
           <div className="text-center">
             <p className="font-medium text-gray-900">{getDateRangeLabel()}</p>
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="text-xs text-primary-600 hover:underline"
-            >
-              Go to today
-            </button>
+            {currentDate.toDateString() !== new Date().toDateString() && (
+              <button
+                onClick={() => setCurrentDate(new Date())}
+                className="text-xs text-primary-600 hover:underline"
+              >
+                Go to today
+              </button>
+            )}
           </div>
           <button
             onClick={() => navigateDate('next')}
