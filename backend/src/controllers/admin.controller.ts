@@ -917,10 +917,10 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count,
-        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
-        COUNT(*) FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL) as card_count,
-        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'cash'), 0) as cash_revenue,
-        COUNT(*) FILTER (WHERE "paymentMethod" = 'cash') as cash_count
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
+        COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL) as card_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) as cash_revenue,
+        COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
       AND "barberId" IN (
@@ -1318,10 +1318,10 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count,
-        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
-        COUNT(*) FILTER (WHERE "paymentMethod" = 'card' OR "paymentMethod" IS NULL) as card_count,
-        COALESCE(SUM("totalPaidCents") FILTER (WHERE "paymentMethod" = 'cash'), 0) as cash_revenue,
-        COUNT(*) FILTER (WHERE "paymentMethod" = 'cash') as cash_count
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) as card_revenue,
+        COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL) as card_count,
+        COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) as cash_revenue,
+        COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') as cash_count
       FROM bookings
       WHERE status IN ('COMPLETED', 'PAID')
     `);
