@@ -1604,11 +1604,7 @@ export function AdminDashboard({
                     ))
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                      <UserPlus className="w-8 h-8 mb-2" />
-                      <p className="text-sm">No pending applications</p>
-                      {!selectedCampusId && (
-                        <p className="text-xs text-gray-400 mt-1">Select a campus to view applications</p>
-                      )}
+                      <p className="text-sm">No incoming barber applications yet</p>
                     </div>
                   )
                 )}
@@ -1945,8 +1941,7 @@ export function AdminDashboard({
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                  <UserPlus className="w-8 h-8 mb-2" />
-                  <p className="text-sm">No pending applications</p>
+                  <p className="text-sm">No incoming barber applications yet</p>
                 </div>
               )
             )}
