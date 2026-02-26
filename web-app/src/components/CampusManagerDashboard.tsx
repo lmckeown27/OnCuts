@@ -2857,16 +2857,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                     </div>
                   )}
                   {booking.paymentMethod && (
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      booking.paymentMethod === 'card'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      {booking.paymentMethod === 'card' ? (
-                        <CreditCard className="w-3 h-3" />
-                      ) : (
-                        <Banknote className="w-3 h-3" />
-                      )}
+                    <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-500 text-white">
                       {booking.paymentMethod === 'card' ? 'Card' : 'Cash'}
                     </div>
                   )}
@@ -2894,9 +2885,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                     <p><span className="text-gray-500">Date:</span> {formatDate(booking.scheduledTime)}</p>
                     {activeTab === 'completed' && booking.completedAt && (
                       <p><span className="text-gray-500">Completed:</span> {formatDate(booking.completedAt)}</p>
-                    )}
-                    {activeTab === 'completed' && booking.paidAt && (
-                      <p><span className="text-gray-500">Paid:</span> {formatDate(booking.paidAt)}</p>
                     )}
                     {booking.location && (
                       <p><span className="text-gray-500">Location:</span> {booking.location}</p>
