@@ -1158,7 +1158,8 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
             let weeklySchedule: WeeklySchedule = {};
             try {
               const availResponse = await barberService.getBarberAvailability(barber.id);
-              weeklySchedule = availResponse?.data?.weeklySchedule || {};
+              // api.get already unwraps the response, so weeklySchedule is directly on availResponse
+              weeklySchedule = availResponse?.weeklySchedule || {};
             } catch (e) {
               console.error(`Failed to fetch availability for barber ${barber.id}:`, e);
             }
