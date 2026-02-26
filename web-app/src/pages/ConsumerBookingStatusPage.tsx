@@ -730,7 +730,7 @@ export default function ConsumerBookingStatusPage() {
           if (!isPaymentRequired) return null;
           
           return (
-            <div className="bg-white rounded-2xl shadow-sm border-2 border-green-400 p-6 mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border-2 border-primary-400 p-6 mb-6">
               <div className="flex flex-col items-center text-center">
                 <h3 className="font-bold text-gray-900 mb-2">Payment Required</h3>
                 <p className="text-gray-600 text-sm mb-4">
@@ -742,7 +742,7 @@ export default function ConsumerBookingStatusPage() {
                 
                 <button
                   onClick={() => navigate(`${platformPrefix}/payment/${booking.id}`)}
-                  className="px-12 py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-xl transition-colors"
+                  className="px-12 py-4 bg-primary-500 hover:bg-primary-600 text-white text-lg font-bold rounded-xl transition-colors"
                 >
                   Pay ${(booking.priceUsdCents / 100).toFixed(2)}
                 </button>
@@ -782,7 +782,7 @@ export default function ConsumerBookingStatusPage() {
               <div className="flex gap-3 w-full max-w-md">
                 <button
                   onClick={handleAcknowledgeEdits}
-                  className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                  className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
                 >
                   OK with Changes
                 </button>
