@@ -1028,9 +1028,8 @@ export default function BarberPage() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-start justify-between rounded-t-xl z-10">
               <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Admin Dashboard</h2>
                 {/* Campus Selector Row */}
-                <div className="mt-2 relative" ref={adminCampusDropdownRef}>
+                <div className="relative" ref={adminCampusDropdownRef}>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                     {/* Campus Search Input */}
                     <div className="relative max-w-xs">
