@@ -2522,7 +2522,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 </p>
                                 <p className="text-sm text-gray-700">
                                   {appointment.consumer.firstName} {appointment.consumer.lastName}
-                                  {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
                                 </p>
                               </div>
                               <div className="text-right">
@@ -3594,7 +3593,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                       </p>
                                       <p className="text-sm text-gray-700">
                                         {appointment.consumer.firstName} {appointment.consumer.lastName}
-                                        {isCompleted && <span className="ml-2 text-green-600 text-xs">✓</span>}
                                       </p>
                                     </div>
                                     <div className="text-right">
