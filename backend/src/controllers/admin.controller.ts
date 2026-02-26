@@ -1659,6 +1659,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
 
     // Get barbers for this campus (include role to check if they're campus manager)
     // Only include users who still have BARBER or CAMPUS_MANAGER role
+    // Include stripe fields to check Stripe setup status
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -1669,7 +1670,9 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u."avatarUrl" as profile_image_url,
         b."isActive" as is_active,
         u."campusId" as campus_id,
-        u.role
+        u.role,
+        u.stripe_account_id,
+        u.stripe_payouts_enabled
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       WHERE u."campusId" = $1
@@ -1689,6 +1692,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         isActive: row.is_active,
         isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
+        hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
       })),
     });
   } catch (error) {
