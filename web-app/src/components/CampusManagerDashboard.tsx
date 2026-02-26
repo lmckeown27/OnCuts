@@ -1142,7 +1142,6 @@ interface BarberForAvailability {
 const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [barbers, setBarbers] = useState<BarberForAvailability[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedBarber, setExpandedBarber] = useState<string | null>(null);
 
@@ -1237,13 +1236,7 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    if (viewMode === 'day') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
-    } else if (viewMode === 'week') {
-      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-    } else {
-      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
-    }
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
     setCurrentDate(newDate);
   };
 
@@ -1269,14 +1262,7 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   };
 
   const getDateRangeLabel = () => {
-    if (viewMode === 'day') {
-      return `${dayNames[currentDate.getDay()]}, ${currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-    } else if (viewMode === 'week') {
-      const weekDates = getWeekDates();
-      return `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    } else {
-      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    }
+    return `${dayNames[currentDate.getDay()]}, ${currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
   };
 
   const renderBarberDayView = (barber: BarberForAvailability) => {
@@ -1384,23 +1370,6 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 
   return (
     <div className="space-y-4">
-      {/* View mode selector */}
-      <div className="flex justify-center gap-2">
-        {(['day', 'week', 'month'] as const).map(mode => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              viewMode === mode
-                ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
-            }`}
-          >
-            {mode.charAt(0).toUpperCase() + mode.slice(1)}
-          </button>
-        ))}
-      </div>
-
       {/* Date navigation */}
       <Card className="p-3">
         <div className="flex items-center justify-between">
@@ -1452,23 +1421,17 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
                     <span className="text-xs bg-gray-200 text-gray-600 rounded px-1.5 py-0.5">Hidden</span>
                   )}
                 </div>
-                {barber.isActive && viewMode === 'day' && !expandedBarber && renderBarberDayView(barber)}
+                {barber.isActive && expandedBarber !== barber.id && renderBarberDayView(barber)}
               </div>
               {barber.isActive && (
                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarber === barber.id ? 'rotate-180' : ''}`} />
               )}
             </button>
             
-            {/* Expanded view - only for active barbers */}
+            {/* Expanded view - only for active barbers, shows week availability */}
             {barber.isActive && expandedBarber === barber.id && (
               <div className="mt-3 pt-3 border-t border-gray-100">
-                {viewMode === 'day' && (
-                  <div>
-                    {renderBarberDayView(barber)}
-                  </div>
-                )}
-                {viewMode === 'week' && renderBarberWeekView(barber)}
-                {viewMode === 'month' && renderBarberMonthView(barber)}
+                {renderBarberWeekView(barber)}
               </div>
             )}
           </Card>
