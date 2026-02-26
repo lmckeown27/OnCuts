@@ -1288,10 +1288,10 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const renderBarberWeekView = (barber: BarberForAvailability) => {
     const weekDates = getWeekDates();
     
-    // Get 3 days starting from the current selected date for mobile
+    // Get 2 days starting from the current selected date for mobile (today + tomorrow)
     const getMobileDates = () => {
       const dates = [];
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
         const date = new Date(currentDate);
         date.setDate(currentDate.getDate() + i);
         dates.push(date);
@@ -1333,8 +1333,8 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     
     return (
       <>
-        {/* Mobile view: 3 days starting from current date, show full time ranges */}
-        <div className="grid grid-cols-3 gap-1 mt-2 sm:hidden">
+        {/* Mobile view: 2 days (today + tomorrow), show full time ranges */}
+        <div className="grid grid-cols-2 gap-2 mt-2 sm:hidden">
           {mobileDates.map(date => renderDayCard(date, true))}
         </div>
         
