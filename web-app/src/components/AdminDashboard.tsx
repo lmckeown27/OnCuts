@@ -1420,7 +1420,7 @@ export function AdminDashboard({
                       <button
                         key={barber.id}
                         onClick={() => handleBarberClick(barber)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-gray-200 hover:bg-gray-50"
+                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-primary-200 bg-primary-50 hover:bg-primary-100"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -1433,6 +1433,10 @@ export function AdminDashboard({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
+                              <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
+                              {barber.hasStripeSetup && (
+                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                              )}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
@@ -1475,7 +1479,12 @@ export function AdminDashboard({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                              {barber.firstName} {barber.lastName}
+                              {barber.hasStripeSetup && (
+                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                              )}
+                            </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
                           </div>
                         </div>
@@ -1511,7 +1520,12 @@ export function AdminDashboard({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">{barber.firstName} {barber.lastName}</p>
+                            <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
+                              {barber.firstName} {barber.lastName}
+                              {barber.hasStripeSetup && (
+                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                              )}
+                            </p>
                             <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                           </div>
                         </div>
