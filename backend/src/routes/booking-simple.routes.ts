@@ -17,6 +17,43 @@ import { getSocketIO } from '../index';
 const router = express.Router();
 
 /**
+ * Archive messages for a booking before deletion
+ * This preserves message history for admin viewing
+ */
+async function archiveBookingMessages(bookingId: string, client: any = pool): Promise<void> {
+  try {
+    // Archive messages with sender info before deletion
+    await client.query(`
+      INSERT INTO archived_booking_messages (
+        booking_id, original_message_id, original_conversation_id,
+        sender_id, sender_first_name, sender_last_name, sender_avatar, sender_role,
+        content, message_type, created_at
+      )
+      SELECT 
+        c.booking_id,
+        m.id,
+        m.conversation_id,
+        m.sender_id,
+        u.first_name,
+        u.last_name,
+        u."avatarUrl",
+        u.role,
+        m.content,
+        m.message_type,
+        m.created_at
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      JOIN users u ON m.sender_id = u.id
+      WHERE c.booking_id = $1
+    `, [bookingId]);
+    logger.info(`Archived messages for booking ${bookingId}`);
+  } catch (error: any) {
+    // Table might not exist yet or no messages to archive - that's fine
+    logger.warn(`Could not archive messages for booking ${bookingId}: ${error.message}`);
+  }
+}
+
+/**
  * POST /api/v1/bookings-simple
  * Create a simple booking record
  */
@@ -1632,8 +1669,9 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       [tipAmountCents, totalAmountCents, id]
     );
 
-    // Delete the conversation and its messages when payment is confirmed
+    // Archive messages for admin viewing, then delete the conversation
     try {
+      await archiveBookingMessages(id);
       await pool.query(
         `DELETE FROM messages 
          WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
@@ -1643,7 +1681,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
         `DELETE FROM conversations WHERE booking_id = $1`,
         [id]
       );
-      logger.info(`Deleted conversation for paid booking ${id}`);
+      logger.info(`Archived and deleted conversation for paid booking ${id}`);
     } catch (convError: any) {
       // Conversation may already be deleted - that's fine
       logger.debug(`No conversation to delete for booking ${id}`);
@@ -1770,8 +1808,9 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       [tipAmountCents, totalAmountCents, paymentMethod, id]
     );
 
-    // Delete the conversation and its messages when payment is processed
+    // Archive messages for admin viewing, then delete the conversation
     try {
+      await archiveBookingMessages(id);
       await pool.query(
         `DELETE FROM messages 
          WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
@@ -1781,7 +1820,7 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
         `DELETE FROM conversations WHERE booking_id = $1`,
         [id]
       );
-      logger.info(`Deleted conversation for paid booking ${id}`);
+      logger.info(`Archived and deleted conversation for paid booking ${id}`);
     } catch (convError: any) {
       // Conversation may already be deleted - that's fine
       logger.debug(`No conversation to delete for booking ${id}`);

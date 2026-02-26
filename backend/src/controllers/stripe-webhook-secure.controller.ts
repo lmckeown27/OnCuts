@@ -24,6 +24,41 @@ const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 const PLATFORM_FEE_PERCENTAGE = 0.15;
 
 /**
+ * Archive messages for a booking before deletion
+ * This preserves message history for admin viewing
+ */
+async function archiveBookingMessages(bookingId: string, client: any): Promise<void> {
+  try {
+    await client.query(`
+      INSERT INTO archived_booking_messages (
+        booking_id, original_message_id, original_conversation_id,
+        sender_id, sender_first_name, sender_last_name, sender_avatar, sender_role,
+        content, message_type, created_at
+      )
+      SELECT 
+        c.booking_id,
+        m.id,
+        m.conversation_id,
+        m.sender_id,
+        u.first_name,
+        u.last_name,
+        u."avatarUrl",
+        u.role,
+        m.content,
+        m.message_type,
+        m.created_at
+      FROM messages m
+      JOIN conversations c ON m.conversation_id = c.id
+      JOIN users u ON m.sender_id = u.id
+      WHERE c.booking_id = $1
+    `, [bookingId]);
+    logger.info(`Archived messages for booking ${bookingId}`);
+  } catch (error: any) {
+    logger.warn(`Could not archive messages for booking ${bookingId}: ${error.message}`);
+  }
+}
+
+/**
  * Check if event was already processed (idempotency)
  */
 async function isEventProcessed(eventId: string): Promise<boolean> {
@@ -371,8 +406,9 @@ async function handlePaymentIntentSucceeded(
     const booking = updateBookingResult.rows[0];
     logger.info(`✅ Booking ${booking_id} marked as COMPLETED (paid)`);
 
-    // Delete the conversation and its messages when payment is confirmed
+    // Archive messages for admin viewing, then delete the conversation
     try {
+      await archiveBookingMessages(booking_id, client);
       await client.query(
         `DELETE FROM messages 
          WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
@@ -382,7 +418,7 @@ async function handlePaymentIntentSucceeded(
         `DELETE FROM conversations WHERE booking_id = $1`,
         [booking_id]
       );
-      logger.info(`Deleted conversation for paid booking ${booking_id}`);
+      logger.info(`Archived and deleted conversation for paid booking ${booking_id}`);
     } catch (convError: any) {
       // Conversation may already be deleted - that's fine
       logger.debug(`No conversation to delete for booking ${booking_id}`);

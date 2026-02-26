@@ -1946,6 +1946,8 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
 /**
  * Get messages for a specific booking
  * GET /api/admin/bookings/:bookingId/messages
+ * 
+ * Checks both live conversations and archived messages (for completed bookings)
  */
 export const getBookingMessages = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -1957,43 +1959,72 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get conversation for this booking
+    // First check live conversations
     const conversationResult = await pool.query(`
       SELECT id as conversation_id
       FROM conversations
       WHERE booking_id = $1
     `, [bookingId]);
 
-    if (conversationResult.rows.length === 0) {
-      return res.json({ bookingId, messages: [] });
+    if (conversationResult.rows.length > 0) {
+      // Get live messages from the conversation
+      const conversationId = conversationResult.rows[0].conversation_id;
+      const messagesResult = await pool.query(`
+        SELECT 
+          m.id,
+          m.content,
+          m.sender_id,
+          m.message_type,
+          m.created_at,
+          m.is_read,
+          u.first_name as sender_first_name,
+          u.last_name as sender_last_name,
+          u."avatarUrl" as sender_avatar,
+          u.role as sender_role
+        FROM messages m
+        JOIN users u ON m.sender_id = u.id
+        WHERE m.conversation_id = $1
+        ORDER BY m.created_at ASC
+      `, [conversationId]);
+
+      return res.json({
+        bookingId,
+        conversationId,
+        source: 'live',
+        messages: messagesResult.rows,
+      });
     }
 
-    const conversationId = conversationResult.rows[0].conversation_id;
+    // No live conversation - check archived messages (for completed/paid bookings)
+    try {
+      const archivedResult = await pool.query(`
+        SELECT 
+          id,
+          content,
+          sender_id,
+          message_type,
+          created_at,
+          true as is_read,
+          sender_first_name,
+          sender_last_name,
+          sender_avatar,
+          sender_role
+        FROM archived_booking_messages
+        WHERE booking_id = $1
+        ORDER BY created_at ASC
+      `, [bookingId]);
 
-    // Get messages from the conversation
-    const messagesResult = await pool.query(`
-      SELECT 
-        m.id,
-        m.content,
-        m.sender_id,
-        m.message_type,
-        m.created_at,
-        m.is_read,
-        u.first_name as sender_first_name,
-        u.last_name as sender_last_name,
-        u."avatarUrl" as sender_avatar,
-        u.role as sender_role
-      FROM messages m
-      JOIN users u ON m.sender_id = u.id
-      WHERE m.conversation_id = $1
-      ORDER BY m.created_at ASC
-    `, [conversationId]);
-
-    res.json({
-      bookingId,
-      conversationId,
-      messages: messagesResult.rows,
-    });
+      return res.json({
+        bookingId,
+        conversationId: null,
+        source: 'archived',
+        messages: archivedResult.rows,
+      });
+    } catch (archiveError: any) {
+      // Archive table might not exist yet
+      logger.warn(`Could not query archived messages: ${archiveError.message}`);
+      return res.json({ bookingId, messages: [] });
+    }
   } catch (error) {
     next(error);
   }
