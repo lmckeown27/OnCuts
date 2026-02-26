@@ -816,7 +816,7 @@ export default function ConsumerPage() {
                         case 'booking_cancelled':
                           return { bg: 'bg-red-100', icon: <AlertCircle className="w-5 h-5 text-red-600" /> };
                         case 'new_booking_request':
-                          return { bg: 'bg-blue-100', icon: <Calendar className="w-5 h-5 text-blue-600" /> };
+                          return { bg: 'bg-primary-100', icon: <Calendar className="w-5 h-5 text-primary-600" /> };
                         default:
                           return { bg: 'bg-primary-100', icon: <Bell className="w-5 h-5 text-primary-600" /> };
                       }
