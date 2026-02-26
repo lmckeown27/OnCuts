@@ -631,16 +631,23 @@ export function AdminDashboard({
   // Prepare chart data
   const chartData = useMemo(() => {
     const labels = metrics.map(m => {
+      // Parse date as UTC but display the UTC values directly (backend already converted to Pacific Time)
       const date = new Date(m.date);
+      // Use UTC methods to avoid local timezone conversion since backend already did the conversion
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = monthNames[date.getUTCMonth()];
+      const day = date.getUTCDate();
+      const year = String(date.getUTCFullYear()).slice(-2);
+      
       // Daily granularity periods: 1w, 4w, mtd, qtd
       if (['1w', '4w', 'mtd', 'qtd'].includes(metricsPeriod)) {
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `${month} ${day}`;
       // Weekly granularity periods: 1y, ytd
       } else if (['1y', 'ytd'].includes(metricsPeriod)) {
-        return `Week of ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        return `Week of ${month} ${day}`;
       // Monthly granularity: all
       } else {
-        return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        return `${month} '${year}`;
       }
     });
     
