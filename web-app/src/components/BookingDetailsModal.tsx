@@ -718,7 +718,7 @@ export default function BookingDetailsModal({
                   </p>
                   <button
                     onClick={() => setIsUndoingComplete(true)}
-                    className="w-full py-3 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-xl font-semibold transition-colors border border-primary-200"
+                    className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors shadow-sm"
                   >
                     Undo Complete
                   </button>
