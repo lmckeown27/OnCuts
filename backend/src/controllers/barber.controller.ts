@@ -87,7 +87,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
     `;
 
     // Handle campusId - can be UUID or slug

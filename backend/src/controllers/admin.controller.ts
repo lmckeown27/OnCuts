@@ -777,7 +777,7 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
     const barbersResult = await pool.query(`
       SELECT COUNT(*) FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
+      WHERE b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
     `);
     const totalBarbers = parseInt(barbersResult.rows[0].count);
 
@@ -889,7 +889,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u."campusId" = $1::uuid AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
+      WHERE u."campusId" = $1::uuid AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
     `, [campusId]);
 
     // Get booking counts - simpler approach without complex joins
@@ -1365,7 +1365,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
         COUNT(*) FILTER (WHERE b."isActive" = true) as active
       FROM barbers b
       JOIN users u ON b."userId" = u.id
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER')
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
     `);
 
     // Get total booking counts
@@ -1745,7 +1745,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       WHERE u."campusId" = $1
-        AND u.role IN ('BARBER', 'CAMPUS_MANAGER')
+        AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
       ORDER BY u.first_name, u.last_name
     `, [campusId]);
 
@@ -2197,7 +2197,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       LEFT JOIN campuses c ON u."campusId" = c.id
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER')
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
       ORDER BY c.name, u.first_name, u.last_name
     `);
 
