@@ -20,6 +20,7 @@ import {
   Edit2,
   Trash2,
   ChevronLeft,
+  ChevronRight,
   ChevronDown,
   DollarSign,
   Star,
@@ -30,7 +31,8 @@ import {
   Banknote,
   RotateCcw,
   Search,
-  Scissors
+  Scissors,
+  Calendar
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -235,7 +237,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'barbers' | 'locations' | 'bookings' | 'services'>('barbers');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedTab, setDisplayedTab] = useState(activeTab);
-  const [barberSubTab, setBarberSubTab] = useState<'applications' | 'current'>('applications');
+  const [barberSubTab, setBarberSubTab] = useState<'applications' | 'current' | 'availability'>('applications');
 
   const handleTabChange = (newTab: typeof activeTab) => {
     if (newTab === activeTab) return;
@@ -334,10 +336,21 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
               >
                 Current Barbers
               </button>
+              <button
+                onClick={() => setBarberSubTab('availability')}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  barberSubTab === 'availability'
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                }`}
+              >
+                Availability
+              </button>
             </div>
             {/* Sub-tab content */}
             {barberSubTab === 'applications' && <BarberApplicationsPanel campusId={campusId} />}
             {barberSubTab === 'current' && <BarberManagementPanel campusId={campusId} campusName={campusName} />}
+            {barberSubTab === 'availability' && <BarberAvailabilityPanel campusId={campusId} />}
           </div>
         )}
         {displayedTab === 'locations' && <CampusLocationsPanel campusId={campusId} />}
@@ -1098,6 +1111,387 @@ interface BarberWithLocations {
   profilePicture: string | null;
   locations: BarberLocationAssignment[];
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BARBER AVAILABILITY PANEL
+// ═══════════════════════════════════════════════════════════════
+
+interface AvailabilitySlot {
+  start: string;
+  end: string;
+}
+
+interface WeeklySchedule {
+  [day: string]: AvailabilitySlot[];
+}
+
+interface BarberForAvailability {
+  id: string;
+  name: string;
+  profileImageUrl: string | null;
+}
+
+const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+  const [barbers, setBarbers] = useState<BarberForAvailability[]>([]);
+  const [selectedBarber, setSelectedBarber] = useState<BarberForAvailability | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Fetch barbers for this campus
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        setLoading(true);
+        const barberServiceModule = await import('../services/barber.service');
+        const barberService = barberServiceModule.default;
+        const response = await barberService.getBarbers({ campusId, includeHidden: true } as any);
+        const barbersArray = Array.isArray(response) ? response : (response?.data || []);
+        
+        const mappedBarbers: BarberForAvailability[] = barbersArray.map((barber: any) => ({
+          id: barber.id,
+          name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
+          profileImageUrl: barber.profile_picture_url || barber.profile_image_url || barber.profileImageUrl || barber.avatarUrl || barber.avatar_url || null,
+        }));
+        
+        setBarbers(mappedBarbers);
+      } catch (error) {
+        console.error('Failed to fetch barbers:', error);
+        toast.error('Failed to load barbers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBarbers();
+  }, [campusId]);
+
+  // Fetch availability when barber is selected
+  useEffect(() => {
+    if (!selectedBarber) return;
+
+    const fetchAvailability = async () => {
+      try {
+        setAvailabilityLoading(true);
+        const barberServiceModule = await import('../services/barber.service');
+        const barberService = barberServiceModule.default;
+        const response = await barberService.getBarberAvailability(selectedBarber.id);
+        setWeeklySchedule(response?.data?.weeklySchedule || {});
+      } catch (error) {
+        console.error('Failed to fetch availability:', error);
+        toast.error('Failed to load availability');
+      } finally {
+        setAvailabilityLoading(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [selectedBarber]);
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const getWeekDates = () => {
+    const dates = [];
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      dates.push(date);
+    }
+    return dates;
+  };
+
+  const getMonthDates = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const dates = [];
+    
+    // Add padding for days before the first of the month
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      dates.push(null);
+    }
+    
+    // Add all days of the month
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      dates.push(new Date(year, month, i));
+    }
+    
+    return dates;
+  };
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    if (viewMode === 'day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (viewMode === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
+    }
+    setCurrentDate(newDate);
+  };
+
+  const getDaySchedule = (date: Date) => {
+    const dayName = dayNames[date.getDay()].toLowerCase();
+    return weeklySchedule[dayName] || [];
+  };
+
+  const renderDayView = () => {
+    const schedule = getDaySchedule(currentDate);
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-900">
+            {dayNames[currentDate.getDay()]}, {currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </p>
+        </div>
+        {schedule.length > 0 ? (
+          <div className="space-y-2">
+            {schedule.map((slot, idx) => (
+              <div key={idx} className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                <p className="font-medium text-primary-700">
+                  {formatTime(slot.start)} - {formatTime(slot.end)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-500 py-8">No availability set for this day</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderWeekView = () => {
+    const weekDates = getWeekDates();
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </p>
+        </div>
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
+          {weekDates.map((date, idx) => {
+            const schedule = getDaySchedule(date);
+            const isToday = date.toDateString() === new Date().toDateString();
+            return (
+              <div key={idx} className={`p-2 rounded-lg border ${isToday ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}>
+                <p className={`text-xs font-medium text-center ${isToday ? 'text-primary-700' : 'text-gray-600'}`}>
+                  {shortDayNames[idx]}
+                </p>
+                <p className={`text-xs text-center mb-2 ${isToday ? 'text-primary-600' : 'text-gray-500'}`}>
+                  {date.getDate()}
+                </p>
+                {schedule.length > 0 ? (
+                  <div className="space-y-1">
+                    {schedule.map((slot, slotIdx) => (
+                      <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-1 py-0.5 text-center truncate">
+                        {formatTime(slot.start).replace(' ', '')}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 text-center">—</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMonthView = () => {
+    const monthDates = getMonthDates();
+    return (
+      <div className="space-y-4">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-900">
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {shortDayNames.map(day => (
+            <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
+              {day}
+            </div>
+          ))}
+          {monthDates.map((date, idx) => {
+            if (!date) {
+              return <div key={idx} className="h-12" />;
+            }
+            const schedule = getDaySchedule(date);
+            const isToday = date.toDateString() === new Date().toDateString();
+            const hasAvailability = schedule.length > 0;
+            return (
+              <div
+                key={idx}
+                className={`h-12 rounded-lg border flex flex-col items-center justify-center ${
+                  isToday ? 'border-primary-400 bg-primary-50' : hasAvailability ? 'border-primary-200 bg-primary-50' : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                <p className={`text-sm ${isToday ? 'font-bold text-primary-700' : hasAvailability ? 'text-primary-600' : 'text-gray-500'}`}>
+                  {date.getDate()}
+                </p>
+                {hasAvailability && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-0.5" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (barbers.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <Calendar className="w-12 h-12 mb-3" />
+          <p className="text-sm">No barbers found for this campus</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // Show barber list if none selected
+  if (!selectedBarber) {
+    return (
+      <Card className="p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Select a barber to view availability</h3>
+        <div className="space-y-2">
+          {barbers.map(barber => (
+            <button
+              key={barber.id}
+              onClick={() => setSelectedBarber(barber)}
+              className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {barber.profileImageUrl ? (
+                  <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold text-gray-500">
+                    {barber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <span className="font-medium text-gray-900">{barber.name}</span>
+              <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
+            </button>
+          ))}
+        </div>
+      </Card>
+    );
+  }
+
+  // Show availability view for selected barber
+  return (
+    <Card className="p-4">
+      {/* Back button and barber info */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => setSelectedBarber(null)}
+          className="p-1 rounded hover:bg-gray-100 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {selectedBarber.profileImageUrl ? (
+            <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-xs font-bold text-gray-500">
+              {selectedBarber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <span className="font-semibold text-gray-900">{selectedBarber.name}</span>
+      </div>
+
+      {/* View mode selector */}
+      <div className="flex justify-center gap-2 mb-4">
+        {(['day', 'week', 'month'] as const).map(mode => (
+          <button
+            key={mode}
+            onClick={() => setViewMode(mode)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              viewMode === mode
+                ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+            }`}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Date navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => navigateDate('prev')}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <button
+          onClick={() => setCurrentDate(new Date())}
+          className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+        >
+          Today
+        </button>
+        <button
+          onClick={() => navigateDate('next')}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Availability content */}
+      {availabilityLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          {viewMode === 'day' && renderDayView()}
+          {viewMode === 'week' && renderWeekView()}
+          {viewMode === 'month' && renderMonthView()}
+        </>
+      )}
+    </Card>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CAMPUS LOCATIONS PANEL
+// ═══════════════════════════════════════════════════════════════
 
 const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [locations, setLocations] = useState<CampusLocation[]>([]);
