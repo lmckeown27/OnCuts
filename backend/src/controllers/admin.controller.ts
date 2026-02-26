@@ -1479,7 +1479,8 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
     }
 
     // Get bookings and revenue grouped by period across all campuses
-    // Use UTC since we're aggregating across timezones
+    // Use Pacific Time (America/Los_Angeles) since admins are based at Cal Poly SLO
+    const aggregateTimezone = 'America/Los_Angeles';
     let metricsResult;
     let usersResult;
     
@@ -1487,75 +1488,75 @@ export const getAggregateMetrics = async (req: AuthRequest, res: Response, next:
       // Time interval based query (1w, 4w, 1y, etc.)
       metricsResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "paidAt") as period_start,
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $3) as period_start,
           COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
           COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
         FROM bookings
         WHERE "paidAt" IS NOT NULL
           AND "paidAt" >= NOW() - $2::interval
-        GROUP BY DATE_TRUNC($1, "paidAt")
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
-      `, [dateTrunc, interval]);
+      `, [dateTrunc, interval, aggregateTimezone]);
       
       // Get user signups in same period
       usersResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "createdAt") as period_start,
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $3) as period_start,
           COUNT(*) as users
         FROM users
         WHERE role = 'CONSUMER'
           AND "createdAt" >= NOW() - $2::interval
-        GROUP BY DATE_TRUNC($1, "createdAt")
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
-      `, [dateTrunc, interval]);
+      `, [dateTrunc, interval, aggregateTimezone]);
     } else if (startDate) {
       // Fixed start date query (MTD, QTD, YTD)
       metricsResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "paidAt") as period_start,
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $3) as period_start,
           COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
           COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
         FROM bookings
         WHERE "paidAt" IS NOT NULL
           AND "paidAt" >= $2::timestamp
-        GROUP BY DATE_TRUNC($1, "paidAt")
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
-      `, [dateTrunc, startDate]);
+      `, [dateTrunc, startDate, aggregateTimezone]);
       
       // Get user signups in same period
       usersResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "createdAt") as period_start,
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $3) as period_start,
           COUNT(*) as users
         FROM users
         WHERE role = 'CONSUMER'
           AND "createdAt" >= $2::timestamp
-        GROUP BY DATE_TRUNC($1, "createdAt")
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $3)
         ORDER BY period_start ASC
-      `, [dateTrunc, startDate]);
+      `, [dateTrunc, startDate, aggregateTimezone]);
     } else {
       // All time - no date filter
       metricsResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "paidAt") as period_start,
+          DATE_TRUNC($1, "paidAt" AT TIME ZONE $2) as period_start,
           COUNT(*) FILTER (WHERE status IN ('COMPLETED', 'PAID')) as bookings,
           COALESCE(SUM("totalPaidCents") FILTER (WHERE status IN ('COMPLETED', 'PAID')), 0) as revenue
         FROM bookings
         WHERE "paidAt" IS NOT NULL
-        GROUP BY DATE_TRUNC($1, "paidAt")
+        GROUP BY DATE_TRUNC($1, "paidAt" AT TIME ZONE $2)
         ORDER BY period_start ASC
-      `, [dateTrunc]);
+      `, [dateTrunc, aggregateTimezone]);
       
       // Get all user signups
       usersResult = await pool.query(`
         SELECT 
-          DATE_TRUNC($1, "createdAt") as period_start,
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $2) as period_start,
           COUNT(*) as users
         FROM users
         WHERE role = 'CONSUMER'
-        GROUP BY DATE_TRUNC($1, "createdAt")
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $2)
         ORDER BY period_start ASC
-      `, [dateTrunc]);
+      `, [dateTrunc, aggregateTimezone]);
     }
 
     // Create maps for both data sources
