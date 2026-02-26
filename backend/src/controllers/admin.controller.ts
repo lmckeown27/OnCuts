@@ -1957,39 +1957,27 @@ export const getBookingMessages = async (req: AuthRequest, res: Response, next: 
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get conversation and messages for this booking
-    const conversationResult = await pool.query(`
-      SELECT c.id as conversation_id
-      FROM conversations c
-      WHERE c.booking_id = $1
-    `, [bookingId]);
-
-    if (conversationResult.rows.length === 0) {
-      return res.json({ messages: [], conversationId: null });
-    }
-
-    const conversationId = conversationResult.rows[0].conversation_id;
-
-    // Get messages
+    // Get messages from booking_messages table (the actual message storage)
     const messagesResult = await pool.query(`
       SELECT 
-        m.id,
-        m.content,
-        m.sender_id,
-        m.created_at,
-        m.is_read,
+        bm.message_id as id,
+        bm.message as content,
+        bm.sender_id,
+        bm.sender_type,
+        bm.created_at,
+        bm.read as is_read,
         u.first_name as sender_first_name,
         u.last_name as sender_last_name,
         u."avatarUrl" as sender_avatar,
         u.role as sender_role
-      FROM messages m
-      JOIN users u ON m.sender_id = u.id
-      WHERE m.conversation_id = $1
-      ORDER BY m.created_at ASC
-    `, [conversationId]);
+      FROM booking_messages bm
+      JOIN users u ON bm.sender_id = u.id
+      WHERE bm.booking_id = $1
+      ORDER BY bm.created_at ASC
+    `, [bookingId]);
 
     res.json({
-      conversationId,
+      bookingId,
       messages: messagesResult.rows,
     });
   } catch (error) {
