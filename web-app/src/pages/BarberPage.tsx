@@ -590,10 +590,10 @@ export default function BarberPage() {
                 )}
               </button>
               
-              {/* Campus Manager Badge */}
-                {isCampusManager && (
+              {/* Role Badge */}
+                {(isAdmin || isCampusManager) && (
                 <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-600">Campus Manager</span>
+                  <span className="text-xs font-semibold text-gray-600">{isAdmin ? 'Admin' : 'Campus Manager'}</span>
                 </div>
                 )}
               </div>
