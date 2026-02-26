@@ -3338,12 +3338,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             {/* Undo Complete Confirmation */}
                             {isUndoingComplete && (
                               <div className="space-y-3">
-                                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                                  <div>
-                                    <p className="font-semibold text-gray-800 text-sm">Undo completion?</p>
-                                    <p className="text-xs text-gray-600">This will revert the booking to accepted status.</p>
-                                  </div>
+                                <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                                  <p className="font-semibold text-gray-800 text-sm">Undo completion?</p>
+                                  <p className="text-xs text-gray-600">This will revert the booking to accepted status.</p>
                                 </div>
                                 <div className="flex gap-3">
                                   <button
@@ -3356,7 +3353,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                   <button
                                     onClick={handleUndoComplete}
                                     disabled={isSavingBooking}
-                                    className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
+                                    className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 text-sm"
                                   >
                                     {isSavingBooking ? (
                                       <>
@@ -3364,10 +3361,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                         Reverting...
                                       </>
                                     ) : (
-                                      <>
-                                        <RotateCcw className="w-3 h-3" />
-                                        Undo
-                                      </>
+                                      'Undo'
                                     )}
                                   </button>
                                 </div>

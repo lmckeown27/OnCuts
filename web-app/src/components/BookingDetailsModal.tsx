@@ -729,14 +729,11 @@ export default function BookingDetailsModal({
               {/* Undo Complete Confirmation */}
               {isUndoingComplete && (
                 <div className="pt-4 border-t border-gray-100 space-y-4 pb-4 sm:pb-0">
-                  <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                    <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
-                    <div>
-                      <h3 className="font-semibold text-gray-800">Undo completion?</h3>
-                      <p className="text-sm text-gray-600">
-                        This will revert the booking to accepted status.
-                      </p>
-                    </div>
+                  <div className="p-4 bg-primary-50 rounded-xl border border-primary-200">
+                    <h3 className="font-semibold text-gray-800">Undo completion?</h3>
+                    <p className="text-sm text-gray-600">
+                      This will revert the booking to accepted status.
+                    </p>
                   </div>
                   <div className="flex gap-3">
                     <button
@@ -749,7 +746,7 @@ export default function BookingDetailsModal({
                     <button
                       onClick={handleUndoComplete}
                       disabled={isSaving}
-                      className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
                     >
                       {isSaving ? (
                         <>
@@ -757,10 +754,7 @@ export default function BookingDetailsModal({
                           Reverting...
                         </>
                       ) : (
-                        <>
-                          <RotateCcw className="w-4 h-4" />
-                          Undo
-                        </>
+                        'Undo'
                       )}
                     </button>
                   </div>
