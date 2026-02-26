@@ -1129,23 +1129,22 @@ interface BarberForAvailability {
   id: string;
   name: string;
   profileImageUrl: string | null;
+  weeklySchedule?: WeeklySchedule;
 }
 
 const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [barbers, setBarbers] = useState<BarberForAvailability[]>([]);
-  const [selectedBarber, setSelectedBarber] = useState<BarberForAvailability | null>(null);
   const [loading, setLoading] = useState(true);
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('day');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [expandedBarber, setExpandedBarber] = useState<string | null>(null);
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Fetch barbers for this campus
+  // Fetch barbers and their availability for this campus
   useEffect(() => {
-    const fetchBarbers = async () => {
+    const fetchBarbersWithAvailability = async () => {
       try {
         setLoading(true);
         const barberServiceModule = await import('../services/barber.service');
@@ -1153,11 +1152,24 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
         const response = await barberService.getBarbers({ campusId, includeHidden: true } as any);
         const barbersArray = Array.isArray(response) ? response : (response?.data || []);
         
-        const mappedBarbers: BarberForAvailability[] = barbersArray.map((barber: any) => ({
-          id: barber.id,
-          name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
-          profileImageUrl: barber.profile_picture_url || barber.profile_image_url || barber.profileImageUrl || barber.avatarUrl || barber.avatar_url || null,
-        }));
+        // Map barbers and fetch their availability
+        const mappedBarbers: BarberForAvailability[] = await Promise.all(
+          barbersArray.map(async (barber: any) => {
+            let weeklySchedule: WeeklySchedule = {};
+            try {
+              const availResponse = await barberService.getBarberAvailability(barber.id);
+              weeklySchedule = availResponse?.data?.weeklySchedule || {};
+            } catch (e) {
+              console.error(`Failed to fetch availability for barber ${barber.id}:`, e);
+            }
+            return {
+              id: barber.id,
+              name: barber.name || barber.display_name || `${barber.first_name || ''} ${barber.last_name || ''}`.trim() || 'Unknown',
+              profileImageUrl: barber.profile_picture_url || barber.profile_image_url || barber.profileImageUrl || barber.avatarUrl || barber.avatar_url || null,
+              weeklySchedule,
+            };
+          })
+        );
         
         setBarbers(mappedBarbers);
       } catch (error) {
@@ -1168,30 +1180,8 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
       }
     };
 
-    fetchBarbers();
+    fetchBarbersWithAvailability();
   }, [campusId]);
-
-  // Fetch availability when barber is selected
-  useEffect(() => {
-    if (!selectedBarber) return;
-
-    const fetchAvailability = async () => {
-      try {
-        setAvailabilityLoading(true);
-        const barberServiceModule = await import('../services/barber.service');
-        const barberService = barberServiceModule.default;
-        const response = await barberService.getBarberAvailability(selectedBarber.id);
-        setWeeklySchedule(response?.data?.weeklySchedule || {});
-      } catch (error) {
-        console.error('Failed to fetch availability:', error);
-        toast.error('Failed to load availability');
-      } finally {
-        setAvailabilityLoading(false);
-      }
-    };
-
-    fetchAvailability();
-  }, [selectedBarber]);
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -1221,12 +1211,10 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     const lastDay = new Date(year, month + 1, 0);
     const dates = [];
     
-    // Add padding for days before the first of the month
     for (let i = 0; i < firstDay.getDay(); i++) {
       dates.push(null);
     }
     
-    // Add all days of the month
     for (let i = 1; i <= lastDay.getDate(); i++) {
       dates.push(new Date(year, month, i));
     }
@@ -1246,112 +1234,92 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     setCurrentDate(newDate);
   };
 
-  const getDaySchedule = (date: Date) => {
+  const getDaySchedule = (schedule: WeeklySchedule, date: Date) => {
     const dayName = dayNames[date.getDay()].toLowerCase();
-    return weeklySchedule[dayName] || [];
+    return schedule[dayName] || [];
   };
 
-  const renderDayView = () => {
-    const schedule = getDaySchedule(currentDate);
+  const getDateRangeLabel = () => {
+    if (viewMode === 'day') {
+      return `${dayNames[currentDate.getDay()]}, ${currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+    } else if (viewMode === 'week') {
+      const weekDates = getWeekDates();
+      return `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    } else {
+      return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+  };
+
+  const renderBarberDayView = (barber: BarberForAvailability) => {
+    const schedule = getDaySchedule(barber.weeklySchedule || {}, currentDate);
+    if (schedule.length === 0) {
+      return <span className="text-gray-400 text-sm">No availability</span>;
+    }
     return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            {dayNames[currentDate.getDay()]}, {currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
-        </div>
-        {schedule.length > 0 ? (
-          <div className="space-y-2">
-            {schedule.map((slot, idx) => (
-              <div key={idx} className="p-3 bg-primary-50 rounded-lg border border-primary-200">
-                <p className="font-medium text-primary-700">
-                  {formatTime(slot.start)} - {formatTime(slot.end)}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500 py-8">No availability set for this day</p>
-        )}
+      <div className="flex flex-wrap gap-1">
+        {schedule.map((slot, idx) => (
+          <span key={idx} className="text-xs bg-primary-100 text-primary-700 rounded px-2 py-0.5">
+            {formatTime(slot.start)} - {formatTime(slot.end)}
+          </span>
+        ))}
       </div>
     );
   };
 
-  const renderWeekView = () => {
+  const renderBarberWeekView = (barber: BarberForAvailability) => {
     const weekDates = getWeekDates();
     return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            {weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-          </p>
-        </div>
-        <div className="grid grid-cols-7 gap-1 sm:gap-2">
-          {weekDates.map((date, idx) => {
-            const schedule = getDaySchedule(date);
-            const isToday = date.toDateString() === new Date().toDateString();
-            return (
-              <div key={idx} className={`p-2 rounded-lg border ${isToday ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}>
-                <p className={`text-xs font-medium text-center ${isToday ? 'text-primary-700' : 'text-gray-600'}`}>
-                  {shortDayNames[idx]}
-                </p>
-                <p className={`text-xs text-center mb-2 ${isToday ? 'text-primary-600' : 'text-gray-500'}`}>
-                  {date.getDate()}
-                </p>
-                {schedule.length > 0 ? (
-                  <div className="space-y-1">
-                    {schedule.map((slot, slotIdx) => (
-                      <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-1 py-0.5 text-center truncate">
-                        {formatTime(slot.start).replace(' ', '')}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400 text-center">—</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-7 gap-1 mt-2">
+        {weekDates.map((date, idx) => {
+          const schedule = getDaySchedule(barber.weeklySchedule || {}, date);
+          const isToday = date.toDateString() === new Date().toDateString();
+          const hasSlots = schedule.length > 0;
+          return (
+            <div key={idx} className={`p-1.5 rounded border text-center ${isToday ? 'border-primary-400 bg-primary-50' : 'border-gray-200 bg-gray-50'}`}>
+              <p className={`text-xs font-medium ${isToday ? 'text-primary-700' : 'text-gray-600'}`}>{shortDayNames[idx]}</p>
+              <p className={`text-xs ${isToday ? 'text-primary-600' : 'text-gray-500'}`}>{date.getDate()}</p>
+              {hasSlots ? (
+                <div className="mt-1 space-y-0.5">
+                  {schedule.slice(0, 2).map((slot, slotIdx) => (
+                    <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-0.5 py-0.5 truncate">
+                      {formatTime(slot.start).replace(' ', '')}
+                    </div>
+                  ))}
+                  {schedule.length > 2 && <p className="text-xs text-primary-500">+{schedule.length - 2}</p>}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">—</p>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
 
-  const renderMonthView = () => {
+  const renderBarberMonthView = (barber: BarberForAvailability) => {
     const monthDates = getMonthDates();
     return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">
-            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-        <div className="grid grid-cols-7 gap-1">
+      <div className="mt-2">
+        <div className="grid grid-cols-7 gap-0.5 mb-1">
           {shortDayNames.map(day => (
-            <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
-              {day}
-            </div>
+            <div key={day} className="text-xs font-medium text-gray-500 text-center">{day.charAt(0)}</div>
           ))}
+        </div>
+        <div className="grid grid-cols-7 gap-0.5">
           {monthDates.map((date, idx) => {
-            if (!date) {
-              return <div key={idx} className="h-12" />;
-            }
-            const schedule = getDaySchedule(date);
+            if (!date) return <div key={idx} className="h-6" />;
+            const schedule = getDaySchedule(barber.weeklySchedule || {}, date);
             const isToday = date.toDateString() === new Date().toDateString();
             const hasAvailability = schedule.length > 0;
             return (
               <div
                 key={idx}
-                className={`h-12 rounded-lg border flex flex-col items-center justify-center ${
-                  isToday ? 'border-primary-400 bg-primary-50' : hasAvailability ? 'border-primary-200 bg-primary-50' : 'border-gray-200 bg-gray-50'
+                className={`h-6 rounded flex items-center justify-center text-xs ${
+                  isToday ? 'bg-primary-500 text-white font-bold' : hasAvailability ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'
                 }`}
               >
-                <p className={`text-sm ${isToday ? 'font-bold text-primary-700' : hasAvailability ? 'text-primary-600' : 'text-gray-500'}`}>
-                  {date.getDate()}
-                </p>
-                {hasAvailability && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 mt-0.5" />
-                )}
+                {date.getDate()}
               </div>
             );
           })}
@@ -1381,61 +1349,10 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     );
   }
 
-  // Show barber list if none selected
-  if (!selectedBarber) {
-    return (
-      <Card className="p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Select a barber to view availability</h3>
-        <div className="space-y-2">
-          {barbers.map(barber => (
-            <button
-              key={barber.id}
-              onClick={() => setSelectedBarber(barber)}
-              className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-left"
-            >
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {barber.profileImageUrl ? (
-                  <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-sm font-bold text-gray-500">
-                    {barber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <span className="font-medium text-gray-900">{barber.name}</span>
-              <ChevronRight className="w-5 h-5 text-gray-400 ml-auto" />
-            </button>
-          ))}
-        </div>
-      </Card>
-    );
-  }
-
-  // Show availability view for selected barber
   return (
-    <Card className="p-4">
-      {/* Back button and barber info */}
-      <div className="flex items-center gap-3 mb-4">
-        <button
-          onClick={() => setSelectedBarber(null)}
-          className="p-1 rounded hover:bg-gray-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-          {selectedBarber.profileImageUrl ? (
-            <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-xs font-bold text-gray-500">
-              {selectedBarber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
-            </span>
-          )}
-        </div>
-        <span className="font-semibold text-gray-900">{selectedBarber.name}</span>
-      </div>
-
+    <div className="space-y-4">
       {/* View mode selector */}
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex justify-center gap-2">
         {(['day', 'week', 'month'] as const).map(mode => (
           <button
             key={mode}
@@ -1452,40 +1369,72 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
       </div>
 
       {/* Date navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => navigateDate('prev')}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <ChevronLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <button
-          onClick={() => setCurrentDate(new Date())}
-          className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-        >
-          Today
-        </button>
-        <button
-          onClick={() => navigateDate('next')}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <ChevronRight className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
-
-      {/* Availability content */}
-      {availabilityLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <Card className="p-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigateDate('prev')}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <div className="text-center">
+            <p className="font-medium text-gray-900">{getDateRangeLabel()}</p>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="text-xs text-primary-600 hover:underline"
+            >
+              Go to today
+            </button>
+          </div>
+          <button
+            onClick={() => navigateDate('next')}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
-      ) : (
-        <>
-          {viewMode === 'day' && renderDayView()}
-          {viewMode === 'week' && renderWeekView()}
-          {viewMode === 'month' && renderMonthView()}
-        </>
-      )}
-    </Card>
+      </Card>
+
+      {/* Barbers list with availability */}
+      <div className="space-y-2">
+        {barbers.map(barber => (
+          <Card key={barber.id} className="p-3">
+            <button
+              onClick={() => setExpandedBarber(expandedBarber === barber.id ? null : barber.id)}
+              className="w-full flex items-center gap-3 text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {barber.profileImageUrl ? (
+                  <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-bold text-gray-500">
+                    {barber.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900">{barber.name}</p>
+                {viewMode === 'day' && !expandedBarber && renderBarberDayView(barber)}
+              </div>
+              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedBarber === barber.id ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {/* Expanded view */}
+            {expandedBarber === barber.id && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                {viewMode === 'day' && (
+                  <div>
+                    {renderBarberDayView(barber)}
+                  </div>
+                )}
+                {viewMode === 'week' && renderBarberWeekView(barber)}
+                {viewMode === 'month' && renderBarberMonthView(barber)}
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 };
 
