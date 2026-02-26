@@ -3187,11 +3187,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       {/* Service Details */}
                       <div className="space-y-3">
                         <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Service</h4>
-                        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                        <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100">
                           <span className="font-semibold text-gray-900">
                             {selectedBookingInline.serviceName || selectedBookingInline.serviceType}
                           </span>
-                          <span className="font-bold text-green-600 text-lg">
+                          <span className="font-bold text-primary-600 text-lg">
                             ${(selectedBookingInline.priceUsdCents / 100).toFixed(2)}
                           </span>
                         </div>

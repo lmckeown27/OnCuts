@@ -544,11 +544,11 @@ export default function BookingDetailsModal({
               {/* Service Details */}
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Service</h4>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
+                <div className="flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100">
                   <span className="font-semibold text-gray-900">
                     {booking.serviceName || booking.serviceType}
                   </span>
-                  <span className="font-bold text-green-600 text-lg">
+                  <span className="font-bold text-primary-600 text-lg">
                     {formatPrice(booking.priceUsdCents)}
                   </span>
                 </div>
@@ -625,20 +625,20 @@ export default function BookingDetailsModal({
               {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.paidAt && (
                 <div className="space-y-3">
                   <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Payment</h4>
-                  <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                  <div className="p-4 bg-primary-50 rounded-xl border border-primary-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <DollarSign className="w-5 h-5 text-primary-600" />
                         <span className="font-medium text-gray-700">Total Paid</span>
                       </div>
-                      <span className="font-bold text-green-600 text-lg">
+                      <span className="font-bold text-primary-600 text-lg">
                         {formatPrice(booking.totalPaidCents || booking.priceUsdCents)}
                       </span>
                     </div>
                     {booking.tipAmountCents > 0 && (
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-200">
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-primary-200">
                         <span className="text-sm text-gray-600">Includes tip</span>
-                        <span className="font-semibold text-green-600">
+                        <span className="font-semibold text-primary-600">
                           +{formatPrice(booking.tipAmountCents)}
                         </span>
                       </div>
