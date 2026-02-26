@@ -1435,7 +1435,7 @@ export function AdminDashboard({
                               {barber.firstName} {barber.lastName}
                               <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
                               {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                               )}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
@@ -1482,7 +1482,7 @@ export function AdminDashboard({
                             <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
                               {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                               )}
                             </p>
                             <p className="text-xs text-gray-500 truncate">{barber.email}</p>
@@ -1523,7 +1523,7 @@ export function AdminDashboard({
                             <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
                               {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                               )}
                             </p>
                             <p className="text-xs text-gray-400 truncate">{barber.email}</p>
@@ -1773,7 +1773,7 @@ export function AdminDashboard({
                               <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                                 {barber.firstName} {barber.lastName}
                                 {barber.hasStripeSetup && (
-                                  <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded">Stripe</span>
+                                  <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                                 )}
                               </p>
                               <p className="text-xs text-gray-500 truncate">{barber.email}</p>
