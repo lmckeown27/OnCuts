@@ -1301,7 +1301,7 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     
     const mobileDates = getMobileDates();
     
-    const renderDayCard = (date: Date, isMobileOnly: boolean = false) => {
+    const renderDayCard = (date: Date, showFullRange: boolean = false) => {
       const schedule = getDaySchedule(barber.weeklySchedule || {}, date);
       const isCurrentDate = date.toDateString() === currentDate.toDateString();
       const hasSlots = schedule.length > 0;
@@ -1314,12 +1314,15 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
           <p className={`text-xs ${isCurrentDate ? 'text-primary-600' : 'text-gray-500'}`}>{date.getDate()}</p>
           {hasSlots ? (
             <div className="mt-1 space-y-0.5">
-              {schedule.slice(0, 2).map((slot, slotIdx) => (
+              {schedule.slice(0, showFullRange ? 3 : 2).map((slot, slotIdx) => (
                 <div key={slotIdx} className="text-xs bg-primary-100 text-primary-700 rounded px-0.5 py-0.5 truncate">
-                  {formatTime(slot.start).replace(' ', '')}
+                  {showFullRange 
+                    ? `${formatTime(slot.start).replace(' ', '')}-${formatTime(slot.end).replace(' ', '')}`
+                    : formatTime(slot.start).replace(' ', '')
+                  }
                 </div>
               ))}
-              {schedule.length > 2 && <p className="text-xs text-primary-500">+{schedule.length - 2}</p>}
+              {schedule.length > (showFullRange ? 3 : 2) && <p className="text-xs text-primary-500">+{schedule.length - (showFullRange ? 3 : 2)}</p>}
             </div>
           ) : (
             <p className="text-xs text-gray-400 mt-1">—</p>
@@ -1330,14 +1333,14 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     
     return (
       <>
-        {/* Mobile view: 3 days starting from current date */}
+        {/* Mobile view: 3 days starting from current date, show full time ranges */}
         <div className="grid grid-cols-3 gap-1 mt-2 sm:hidden">
           {mobileDates.map(date => renderDayCard(date, true))}
         </div>
         
-        {/* Desktop view: full week */}
+        {/* Desktop view: full week, show only start times */}
         <div className="hidden sm:grid grid-cols-7 gap-1 mt-2">
-          {weekDates.map(date => renderDayCard(date))}
+          {weekDates.map(date => renderDayCard(date, false))}
         </div>
       </>
     );
