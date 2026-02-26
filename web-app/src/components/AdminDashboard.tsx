@@ -979,13 +979,6 @@ export function AdminDashboard({
                 : (metrics.reduce((sum, m) => sum + m.revenue, 0) / 100).toFixed(2)
               }
             </p>
-            {!hoveredDataPoint && performance && (performance.cardRevenue > 0 || performance.cashRevenue > 0) && (
-              <p className="text-[10px] text-gray-400">
-                {performance.cardRevenue > 0 && <span>Card ${(performance.cardRevenue / 100).toFixed(0)}</span>}
-                {performance.cardRevenue > 0 && performance.cashRevenue > 0 && ' · '}
-                {performance.cashRevenue > 0 && <span>Cash ${(performance.cashRevenue / 100).toFixed(0)}</span>}
-              </p>
-            )}
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs">Bookings</p>
@@ -995,13 +988,6 @@ export function AdminDashboard({
                 : metrics.reduce((sum, m) => sum + m.bookings, 0)
               }
             </p>
-            {!hoveredDataPoint && performance && (performance.cardCount > 0 || performance.cashCount > 0) && (
-              <p className="text-[10px] text-gray-400">
-                {performance.cardCount > 0 && <span>Card {performance.cardCount}</span>}
-                {performance.cardCount > 0 && performance.cashCount > 0 && ' · '}
-                {performance.cashCount > 0 && <span>Cash {performance.cashCount}</span>}
-              </p>
-            )}
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs">Users</p>
@@ -1066,6 +1052,31 @@ export function AdminDashboard({
         {/* Performance Summary - Below chart */}
         {performance && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {/* Payment Methods - Card vs Cash (All Time) */}
+            {(performance.cardCount > 0 || performance.cashCount > 0) && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 sm:col-span-2">
+                <p className="text-xs font-medium text-gray-700 mb-2">Payment Methods (All Time)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] text-gray-500">Card Revenue</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.cardRevenue || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500">Card Bookings</p>
+                    <p className="text-sm font-semibold text-gray-900">{performance.cardCount || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500">Cash Revenue</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.cashRevenue || 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500">Cash Bookings</p>
+                    <p className="text-sm font-semibold text-gray-900">{performance.cashCount || 0}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Platform Revenue */}
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs font-medium text-gray-700 mb-2">Platform Revenue</p>
