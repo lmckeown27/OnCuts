@@ -700,12 +700,12 @@ export default function ConsumerBookingStatusPage() {
           )}
           
           {isAccepted && (
-            <div className="mt-6 p-4 bg-green-50 rounded-xl border border-green-100">
+            <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
               <div className="flex items-start gap-3">
-                <CheckCircle className="w-5 h-5 text-green-500 mt-0.5" />
+                <CheckCircle className="w-5 h-5 text-primary-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-green-800">Booking Confirmed!</p>
-                  <p className="text-sm text-green-600 mt-1">
+                  <p className="font-semibold text-primary-800">Booking Confirmed!</p>
+                  <p className="text-sm text-primary-600 mt-1">
                     Your appointment with {booking.barberName} is confirmed.
                   </p>
                 </div>
