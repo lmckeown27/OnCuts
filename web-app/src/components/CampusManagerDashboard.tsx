@@ -1117,12 +1117,18 @@ interface BarberWithLocations {
 // ═══════════════════════════════════════════════════════════════
 
 interface AvailabilitySlot {
+  id?: string;
   start: string;
   end: string;
 }
 
+interface DaySchedule {
+  enabled: boolean;
+  intervals: AvailabilitySlot[];
+}
+
 interface WeeklySchedule {
-  [day: string]: AvailabilitySlot[];
+  [day: string]: DaySchedule | AvailabilitySlot[];
 }
 
 interface BarberForAvailability {
@@ -1242,8 +1248,22 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
   const getDaySchedule = (schedule: WeeklySchedule, date: Date): AvailabilitySlot[] => {
     const dayName = dayNames[date.getDay()].toLowerCase();
     const daySchedule = schedule[dayName];
-    // Ensure we always return an array
-    return Array.isArray(daySchedule) ? daySchedule : [];
+    
+    // Handle the new format: { enabled: boolean, intervals: [] }
+    if (daySchedule && typeof daySchedule === 'object' && !Array.isArray(daySchedule)) {
+      const dayObj = daySchedule as DaySchedule;
+      if (dayObj.enabled && Array.isArray(dayObj.intervals)) {
+        return dayObj.intervals;
+      }
+      return [];
+    }
+    
+    // Handle legacy format: direct array of slots
+    if (Array.isArray(daySchedule)) {
+      return daySchedule;
+    }
+    
+    return [];
   };
 
   const getDateRangeLabel = () => {
