@@ -686,12 +686,12 @@ export default function ConsumerBookingStatusPage() {
           </div>
           
           {isPending && (
-            <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
+            <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
               <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-amber-500 mt-0.5" />
+                <Clock className="w-5 h-5 text-primary-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-amber-800">Waiting for barber confirmation</p>
-                  <p className="text-sm text-amber-600 mt-1">
+                  <p className="font-semibold text-primary-800">Waiting for barber confirmation</p>
+                  <p className="text-sm text-primary-600 mt-1">
                     {booking.barberName} will review and confirm your booking request.
                   </p>
                 </div>
@@ -818,12 +818,12 @@ export default function ConsumerBookingStatusPage() {
           </div>
           
           {/* Service & Price */}
-          <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl mb-4">
+          <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl mb-4">
             <div>
               <p className="text-sm text-gray-500">Service</p>
               <p className="font-semibold text-gray-900">{booking.serviceName || booking.serviceType}</p>
             </div>
-            <p className="text-2xl font-bold text-green-600">{formatPrice(booking.priceUsdCents)}</p>
+            <p className="text-2xl font-bold text-primary-600">{formatPrice(booking.priceUsdCents)}</p>
           </div>
           
           {/* Date & Time */}
