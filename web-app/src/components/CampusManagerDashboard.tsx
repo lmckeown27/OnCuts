@@ -794,7 +794,7 @@ const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> 
         completedBookings: barber.completed_bookings || barber.total_bookings || 0,
         isActive: barber.is_active !== false,
         hasStripeSetup: barber.has_stripe_setup === true,
-        profileImageUrl: barber.profile_image_url || barber.profileImageUrl || null,
+        profileImageUrl: barber.profile_picture_url || barber.profile_image_url || barber.profileImageUrl || barber.avatarUrl || barber.avatar_url || null,
       }));
       
       setBarbers(mappedBarbers);
