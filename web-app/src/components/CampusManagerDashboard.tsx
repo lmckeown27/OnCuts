@@ -1159,7 +1159,11 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
             try {
               const availResponse = await barberService.getBarberAvailability(barber.id);
               // api.get already unwraps the response, so weeklySchedule is directly on availResponse
-              weeklySchedule = availResponse?.weeklySchedule || {};
+              const rawSchedule = availResponse?.weeklySchedule;
+              // Ensure weeklySchedule is an object with array values
+              if (rawSchedule && typeof rawSchedule === 'object') {
+                weeklySchedule = rawSchedule;
+              }
             } catch (e) {
               console.error(`Failed to fetch availability for barber ${barber.id}:`, e);
             }
@@ -1235,9 +1239,11 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
     setCurrentDate(newDate);
   };
 
-  const getDaySchedule = (schedule: WeeklySchedule, date: Date) => {
+  const getDaySchedule = (schedule: WeeklySchedule, date: Date): AvailabilitySlot[] => {
     const dayName = dayNames[date.getDay()].toLowerCase();
-    return schedule[dayName] || [];
+    const daySchedule = schedule[dayName];
+    // Ensure we always return an array
+    return Array.isArray(daySchedule) ? daySchedule : [];
   };
 
   const getDateRangeLabel = () => {
