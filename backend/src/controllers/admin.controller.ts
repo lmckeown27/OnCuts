@@ -1261,16 +1261,85 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
       `, [dateTrunc, barberIds, campusTimezone]);
     }
 
-    // Format the response
-    const data = metricsResult.rows.map(row => ({
-      date: row.period_start,
-      bookings: parseInt(row.bookings || '0'),
-      revenue: parseInt(row.revenue || '0'),
-    }));
+    // Get user signups for this campus (consumers who signed up with this campus)
+    let usersResult;
+    if (interval) {
+      usersResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $4) as period_start,
+          COUNT(*) as users
+        FROM users
+        WHERE role = 'CONSUMER'
+          AND "campusId" = $2::uuid
+          AND "createdAt" >= NOW() - $3::interval
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $4)
+        ORDER BY period_start ASC
+      `, [dateTrunc, campusId, interval, campusTimezone]);
+    } else if (startDate) {
+      usersResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $4) as period_start,
+          COUNT(*) as users
+        FROM users
+        WHERE role = 'CONSUMER'
+          AND "campusId" = $2::uuid
+          AND "createdAt" >= $3::timestamp
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $4)
+        ORDER BY period_start ASC
+      `, [dateTrunc, campusId, startDate, campusTimezone]);
+    } else {
+      usersResult = await pool.query(`
+        SELECT 
+          DATE_TRUNC($1, "createdAt" AT TIME ZONE $3) as period_start,
+          COUNT(*) as users
+        FROM users
+        WHERE role = 'CONSUMER'
+          AND "campusId" = $2::uuid
+        GROUP BY DATE_TRUNC($1, "createdAt" AT TIME ZONE $3)
+        ORDER BY period_start ASC
+      `, [dateTrunc, campusId, campusTimezone]);
+    }
+
+    // Create maps for easier merging
+    const bookingsMap = new Map(metricsResult.rows.map(row => [
+      row.period_start?.toISOString(),
+      { bookings: parseInt(row.bookings || '0'), revenue: parseInt(row.revenue || '0') }
+    ]));
+    const usersMap = new Map(usersResult.rows.map(row => [
+      row.period_start?.toISOString(),
+      parseInt(row.users || '0')
+    ]));
+
+    // Get all unique dates from both queries
+    const allDates = new Set<string>([
+      ...bookingsMap.keys(),
+      ...usersMap.keys(),
+    ].filter(Boolean));
+
+    // Merge all data
+    const data = Array.from(allDates)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map(dateKey => ({
+        date: dateKey,
+        bookings: bookingsMap.get(dateKey)?.bookings || 0,
+        revenue: bookingsMap.get(dateKey)?.revenue || 0,
+        users: usersMap.get(dateKey) || 0,
+      }));
+
+    // Get total users count for the period
+    const totalUsersResult = await pool.query(
+      interval 
+        ? `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "campusId" = $1::uuid AND "createdAt" >= NOW() - $2::interval`
+        : startDate
+        ? `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "campusId" = $1::uuid AND "createdAt" >= $2::timestamp`
+        : `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "campusId" = $1::uuid`,
+      interval ? [campusId, interval] : startDate ? [campusId, startDate] : [campusId]
+    );
 
     res.json({
       period,
       data,
+      totalUsers: parseInt(totalUsersResult.rows[0].total || '0'),
     });
   } catch (error) {
     next(error);
