@@ -718,9 +718,8 @@ export default function BookingDetailsModal({
                   </p>
                   <button
                     onClick={() => setIsUndoingComplete(true)}
-                    className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 border border-amber-200"
+                    className="w-full py-3 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-xl font-semibold transition-colors border border-primary-200"
                   >
-                    <RotateCcw className="w-4 h-4" />
                     Undo Complete
                   </button>
                 </div>
@@ -766,9 +765,8 @@ export default function BookingDetailsModal({
                 <div className="pt-4 border-t border-gray-100 pb-4 sm:pb-0">
                   <button
                     onClick={() => setIsRemoving(true)}
-                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
                     Remove from Schedule
                   </button>
                 </div>
