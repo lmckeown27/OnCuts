@@ -601,7 +601,7 @@ export default function SignupPage() {
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
                   {termsAccepted ? (
-                    <div className="w-5 h-5 bg-green-500 rounded flex items-center justify-center">
+                    <div className="w-5 h-5 bg-primary-500 rounded flex items-center justify-center">
                       <CheckCircle size={14} className="text-white" />
                     </div>
                   ) : (
@@ -625,7 +625,7 @@ export default function SignupPage() {
                     </p>
                   )}
                   {termsAccepted && (
-                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <p className="text-xs text-primary-600 mt-1 flex items-center gap-1">
                       <CheckCircle size={12} />
                       Terms accepted
                     </p>
