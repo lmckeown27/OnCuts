@@ -945,7 +945,7 @@ export function AdminDashboard({
       <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
         <div>
           <p className="text-gray-500 text-xs">
-            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Revenue` : 'Total Revenue'}
+            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Money Flow` : 'Money Flow'}
           </p>
           <p className="font-semibold text-gray-900">
             {isLoadingPerformance ? '...' : formatCurrency(performance?.totalRevenue ?? 0)}
@@ -1078,7 +1078,7 @@ export function AdminDashboard({
                 <p className="text-xs font-medium text-gray-700 mb-2">Payment Methods (All Time)</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                   <div>
-                    <p className="text-[10px] text-gray-500">Card Revenue</p>
+                    <p className="text-[10px] text-gray-500">Card Flow</p>
                     <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.cardRevenue || 0)}</p>
                   </div>
                   <div>
@@ -1086,7 +1086,7 @@ export function AdminDashboard({
                     <p className="text-sm font-semibold text-gray-900">{performance.cardCount || 0}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500">Cash Revenue</p>
+                    <p className="text-[10px] text-gray-500">Cash Flow</p>
                     <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.cashRevenue || 0)}</p>
                   </div>
                   <div>
