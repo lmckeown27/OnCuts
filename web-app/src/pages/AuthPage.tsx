@@ -1105,10 +1105,7 @@ export default function AuthPage() {
                   }`}
                 >
                   {hasScrolledToBottom ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <CheckCircle size={18} />
-                      I Accept the Terms
-                    </span>
+                    'I Accept the Terms'
                   ) : (
                     'Scroll to Accept'
                   )}
