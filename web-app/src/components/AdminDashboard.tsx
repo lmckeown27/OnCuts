@@ -1217,6 +1217,11 @@ export function AdminDashboard({
                         }`}>
                           {booking.status}
                         </span>
+                        {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                            {booking.payment_method === 'card' ? 'Card' : 'Cash'}
+                          </span>
+                        )}
                         {booking.review_rating && (
                           <span className="flex items-center gap-0.5 text-xs text-amber-600">
                             <Star className="w-3 h-3 fill-amber-400" />

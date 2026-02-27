@@ -1903,6 +1903,7 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
         b."tipAmountCents" as tip_cents,
         b."totalPaidCents" as total_paid_cents,
         b.status,
+        b."paymentMethod" as payment_method,
         b."requestedAt" as scheduled_time,
         b."createdAt" as created_at,
         b."paidAt" as paid_at,
