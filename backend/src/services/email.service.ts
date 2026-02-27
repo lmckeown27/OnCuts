@@ -3151,11 +3151,10 @@ CampusCut
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <!-- Header with Warning Icon -->
-    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">⚠️</span>
-      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Action Needed</h1>
-      <p style="color: #fef3c7; margin: 5px 0 0 0; font-size: 14px;">Booking Status Update Required</p>
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">Action Needed</h1>
+      <p style="color: #d1e0d9; margin: 8px 0 0 0; font-size: 14px;">Booking Status Update Required</p>
     </div>
     
     <div style="padding: 30px;">
@@ -3186,7 +3185,7 @@ CampusCut
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
-            <td style="padding: 8px 0; color: #f59e0b; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
           </tr>
           ${details.location ? `
           <tr>
@@ -3206,26 +3205,26 @@ CampusCut
         
         <!-- Option 1: Complete -->
         <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #5a7268;">
-          <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">✅ If the haircut was completed:</p>
-          <p style="color: #15803d; margin: 8px 0 0 0; font-size: 13px;">Mark the booking as "Complete" to request payment from ${details.consumerName}</p>
+          <p style="color: #3d5149; margin: 0; font-weight: 600; font-size: 14px;">If the haircut was completed:</p>
+          <p style="color: #4a6258; margin: 8px 0 0 0; font-size: 13px;">Mark the booking as "Complete" to request payment from ${details.consumerName}</p>
         </div>
         
         <!-- Option 2: Edit -->
-        <div style="background-color: #eff6ff; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #3b82f6;">
-          <p style="color: #1e40af; margin: 0; font-weight: 600; font-size: 14px;">📝 If you need to reschedule:</p>
-          <p style="color: #1d4ed8; margin: 8px 0 0 0; font-size: 13px;">Edit the booking to set a new date/time</p>
+        <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #5a7268;">
+          <p style="color: #3d5149; margin: 0; font-weight: 600; font-size: 14px;">If you need to reschedule:</p>
+          <p style="color: #4a6258; margin: 8px 0 0 0; font-size: 13px;">Edit the booking to set a new date/time</p>
         </div>
         
         <!-- Option 3: Cancel -->
-        <div style="background-color: #fef2f2; border-radius: 10px; padding: 15px; border-left: 4px solid #ef4444;">
-          <p style="color: #991b1b; margin: 0; font-weight: 600; font-size: 14px;">❌ If you cannot complete this booking:</p>
-          <p style="color: #b91c1c; margin: 8px 0 0 0; font-size: 13px;">Cancel the booking so ${details.consumerName} can book with another barber</p>
+        <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; border-left: 4px solid #5a7268;">
+          <p style="color: #3d5149; margin: 0; font-weight: 600; font-size: 14px;">If you cannot complete this booking:</p>
+          <p style="color: #4a6258; margin: 8px 0 0 0; font-size: 13px;">Cancel the booking so ${details.consumerName} can book with another barber</p>
         </div>
       </div>
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
           Update Booking Status
         </a>
       </div>
@@ -3239,7 +3238,6 @@ CampusCut
     
     <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
       <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
-      <p style="color: #9ca3af; font-size: 11px; margin: 8px 0 0 0;">Keeping your booking pipeline clean 💈</p>
     </div>
   </div>
 </body>
