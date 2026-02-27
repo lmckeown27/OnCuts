@@ -93,7 +93,7 @@ router.get(
         SELECT 
           b.id,
           COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
-          u.profile_picture_url as avatar,
+          u."avatarUrl" as avatar,
           b."weeklySchedule" as weekly_schedule,
           b.pricing as services,
           (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as average_rating,
