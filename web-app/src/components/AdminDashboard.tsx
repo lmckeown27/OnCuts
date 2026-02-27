@@ -245,6 +245,8 @@ export function AdminDashboard({
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
   const [pendingApplicationAction, setPendingApplicationAction] = useState<{ app: BarberApplication; action: 'approve' | 'reject' } | null>(null);
+  const [showContactModal, setShowContactModal] = useState<BarberApplication | null>(null);
+  const [copiedField, setCopiedField] = useState<'email' | 'phone' | null>(null);
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -1598,19 +1600,19 @@ export function AdminDashboard({
                               </span>
                             </div>
                           </div>
-                          <a
-                            href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                          <button
+                            onClick={() => setShowContactModal(selectedApplication)}
                             className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
                           >
                             Schedule Interview
-                          </a>
+                          </button>
                         </div>
-                        <a
-                          href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                        <button
+                          onClick={() => setShowContactModal(selectedApplication)}
                           className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
                         >
-                          Schedule Interview via Email
-                        </a>
+                          Schedule Interview
+                        </button>
                       </div>
 
                       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
@@ -2070,19 +2072,19 @@ export function AdminDashboard({
                           </span>
                         </div>
                       </div>
-                      <a
-                        href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                      <button
+                        onClick={() => setShowContactModal(selectedApplication)}
                         className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
                       >
                         Schedule Interview
-                      </a>
+                      </button>
                     </div>
-                    <a
-                      href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                    <button
+                      onClick={() => setShowContactModal(selectedApplication)}
                       className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
                     >
-                      Schedule Interview via Email
-                    </a>
+                      Schedule Interview
+                    </button>
                   </div>
 
                   <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
@@ -2360,6 +2362,79 @@ export function AdminDashboard({
                   {pendingApplicationAction.action === 'approve' ? 'Yes, Approve' : 'Yes, Reject'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal for Scheduling Interview */}
+      {showContactModal && (
+        <div className="fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 bg-black/50" onClick={() => { setShowContactModal(null); setCopiedField(null); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 bg-primary-600 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Contact Applicant</h2>
+              <button onClick={() => { setShowContactModal(null); setCopiedField(null); }} className="text-white/80 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-gray-600 text-sm mb-4">
+                Reach out to <span className="font-semibold">{showContactModal.first_name || showContactModal.user?.first_name}</span> to schedule an interview:
+              </p>
+              
+              {/* Email */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Email</p>
+                    <p className="font-medium text-gray-900 truncate">{showContactModal.email || showContactModal.user?.email || 'No email'}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(showContactModal.email || showContactModal.user?.email || '');
+                      setCopiedField('email');
+                      setTimeout(() => setCopiedField(null), 2000);
+                    }}
+                    className={`ml-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      copiedField === 'email' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                    }`}
+                  >
+                    {copiedField === 'email' ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Phone</p>
+                    <p className="font-medium text-gray-900 truncate">{showContactModal.phone_number || 'Not provided'}</p>
+                  </div>
+                  {showContactModal.phone_number && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(showContactModal.phone_number || '');
+                        setCopiedField('phone');
+                        setTimeout(() => setCopiedField(null), 2000);
+                      }}
+                      className={`ml-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        copiedField === 'phone' 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
+                      }`}
+                    >
+                      {copiedField === 'phone' ? 'Copied!' : 'Copy'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-4 text-center">
+                Use either contact method to reach out and schedule an interview to discuss their application.
+              </p>
             </div>
           </div>
         </div>
