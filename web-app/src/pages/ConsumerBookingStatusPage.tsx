@@ -445,7 +445,41 @@ export default function ConsumerBookingStatusPage() {
           editsAcknowledged: editsAlreadyAcknowledged || !hasEdits, // Acknowledged if notification was read or no edits
         });
       } else {
+        // No active booking - check for recent cancellation by barber to show alternative barbers
         setBooking(null);
+        
+        // Check if there's a recent barber-initiated cancellation notification
+        try {
+          const notifResponse = await notificationService.getNotifications();
+          const recentCancellation = notifResponse.notifications
+            .filter((n: any) => 
+              n.type === 'booking_cancelled' && 
+              n.data?.cancelledBy === 'barber' &&
+              n.data?.scheduledTime
+            )
+            .sort((a: any, b: any) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )[0];
+          
+          if (recentCancellation && !recentCancellation.is_read) {
+            // Extract barber name from the message (format: "Barber Name has cancelled...")
+            const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
+            const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
+            
+            setCancelledBookingDetails({
+              scheduledTime: recentCancellation.data.scheduledTime,
+              serviceType: recentCancellation.data.serviceType,
+              campusId: recentCancellation.data.campusId || '',
+              cancelledBarberId: recentCancellation.data.cancelledBarberId || '',
+              barberName,
+            });
+            
+            // Mark as read so we don't show it again
+            await notificationService.markAsRead(recentCancellation.id);
+          }
+        } catch (notifError) {
+          console.error('Failed to check for cancellation notifications:', notifError);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch active booking:', error);

@@ -2436,12 +2436,14 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
         
         // Fetch all barbers at the same campus who offer the same service
+        // Services are stored in barbers.pricing JSONB array as objects with 'type' field
         const barbersResult = await pool.query(`
           SELECT 
             b.id,
             COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
             u.avatar_url as avatar,
             b."weeklySchedule" as weekly_schedule,
+            b.pricing,
             (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as avg_rating,
             (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
           FROM barbers b
@@ -2450,18 +2452,24 @@ router.delete('/:id', authenticate, async (req, res, next) => {
             AND b.id != $2
             AND b."isActive" = true
             AND b."isOnboarded" = true
-            AND EXISTS (
-              SELECT 1 FROM barber_services bs 
-              WHERE bs.barber_id = b.id 
-                AND bs.service_type = $3
-            )
-        `, [booking.campus_id, booking.barberId, booking.serviceType]);
+        `, [booking.campus_id, booking.barberId]);
         
-        // Check availability for each barber
+        // Filter barbers who offer the service
+        const serviceType = booking.serviceType?.toUpperCase();
+        const barbersWithService = barbersResult.rows.filter(barber => {
+          const pricing = barber.pricing || [];
+          return pricing.some((service: any) => 
+            service.type?.toUpperCase() === serviceType
+          );
+        });
+        
+        logger.info(`Found ${barbersResult.rows.length} barbers at campus, ${barbersWithService.length} offer service ${serviceType}`);
+        
+        // Check availability for each barber who offers the service
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
         const dayName = dayNames[scheduledDate.getDay()];
         
-        for (const barber of barbersResult.rows) {
+        for (const barber of barbersWithService) {
           const weeklySchedule = barber.weekly_schedule || {};
           const daySchedule = weeklySchedule[dayName];
           
