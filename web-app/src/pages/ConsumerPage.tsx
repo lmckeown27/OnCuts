@@ -498,11 +498,10 @@ export default function ConsumerPage() {
               ) : (
                 <button
                   onClick={handleBecomeBarberClick}
-                  className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-white hover:bg-gray-50 transition-colors shadow-md hover:shadow-lg active:scale-95"
+                  className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors shadow-md hover:shadow-lg active:scale-95"
                   title="Apply to become a barber"
                 >
-                  <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
-                  <span className="text-sm sm:text-base font-bold text-primary-600">Become a Barber</span>
+                  <span className="text-sm sm:text-base font-semibold text-white">Become a Barber</span>
                 </button>
               )}
             </div>
@@ -1321,10 +1320,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
             </p>
             <button
               onClick={onBecomeBarberClick}
-              className="flex items-center gap-2 px-6 py-4 rounded-lg bg-white hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-6 py-4 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              <Scissors className="w-5 h-5 text-primary-600" />
-              <span className="text-lg font-bold text-primary-600">Become a Barber</span>
+              <span className="text-lg font-semibold text-white">Become a Barber</span>
             </button>
           </div>
         </Card>

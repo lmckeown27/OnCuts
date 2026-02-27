@@ -1156,10 +1156,9 @@ export default function LandingPage() {
           <div className="flex justify-center">
             <button 
               onClick={() => setShowBarberApplication(true)}
-              className="flex items-center gap-2 px-6 py-4 rounded-lg bg-white hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-6 py-4 rounded-lg bg-primary-500 hover:bg-primary-600 transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              <Scissors className="w-5 h-5 text-primary-600" />
-              <span className="text-lg font-bold text-primary-600">Become a Barber</span>
+              <span className="text-lg font-semibold text-white">Become a Barber</span>
             </button>
           </div>
         </div>
