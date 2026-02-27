@@ -310,10 +310,6 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
               {/* Create form */}
               {showCreateForm ? (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-700">
-                    Block New Time
-                  </h3>
-                  
                   {/* Date picker */}
                   <DatePicker
                     value={selectedDate}
