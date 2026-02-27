@@ -955,8 +955,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
-                  <p className="font-medium flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-primary-600" />
+                  <p className="font-medium">
                     {(campuses || []).find(c => c.id === form.campusId)?.name || 'Not selected'}
                   </p>
                 </div>
