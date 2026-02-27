@@ -663,9 +663,6 @@ export default function ConsumerPage() {
               ${isPendingPopupVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Clock className="w-8 h-8 text-primary-600" />
-            </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
             <p className="text-gray-600 mb-4">
               Please be patient as the campus manager goes over your application.
