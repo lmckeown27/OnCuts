@@ -84,6 +84,16 @@ export default function ConsumerBookingStatusPage() {
     reason: string;
     message: string;
   } | null>(null);
+  // State for showing alternative barbers when booking is cancelled by barber
+  const [cancelledBookingDetails, setCancelledBookingDetails] = useState<{
+    scheduledTime: string;
+    serviceType: string;
+    campusId: string;
+    cancelledBarberId: string;
+    barberName: string;
+  } | null>(null);
+  const [alternativeBarbers, setAlternativeBarbers] = useState<Barber[]>([]);
+  const [loadingAlternativeBarbers, setLoadingAlternativeBarbers] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -195,6 +205,133 @@ export default function ConsumerBookingStatusPage() {
       socketService.offBookingStatusChanged(handleStatusChanged);
     };
   }, [user?.id, booking?.id]);
+
+  // Listen for booking cancellation by barber
+  useEffect(() => {
+    if (!user?.id || !booking) return;
+
+    socketService.connect();
+
+    const handleBookingUpdate = (data: any) => {
+      console.log('Received booking-update event:', data);
+      
+      // Check if this is for the current booking and it was cancelled by barber
+      if (data.id === booking.id && (data.cancelled || data.status?.toUpperCase() === 'CANCELLED')) {
+        // Save the booking details for showing alternative barbers
+        setCancelledBookingDetails({
+          scheduledTime: booking.scheduledTime,
+          serviceType: booking.serviceType,
+          campusId: data.campusId || '', // May need to be passed from backend
+          cancelledBarberId: booking.barberId,
+          barberName: booking.barberName,
+        });
+        
+        // Clear the current booking to show "No Active Booking" with alternatives
+        setBooking(null);
+        toast('Your booking has been cancelled by the barber', { icon: 'ℹ️' });
+      }
+    };
+
+    socketService.onBookingUpdate(handleBookingUpdate);
+
+    return () => {
+      socketService.offBookingUpdate(handleBookingUpdate);
+    };
+  }, [user?.id, booking?.id, booking?.scheduledTime, booking?.serviceType, booking?.barberId, booking?.barberName]);
+
+  // Fetch alternative barbers when booking is cancelled by barber
+  useEffect(() => {
+    const fetchAlternativeBarbers = async () => {
+      if (!cancelledBookingDetails) return;
+      
+      setLoadingAlternativeBarbers(true);
+      try {
+        // Parse the scheduled time
+        const scheduledDate = new Date(cancelledBookingDetails.scheduledTime);
+        const dateStr = scheduledDate.toISOString().split('T')[0];
+        const requestedHour = scheduledDate.getHours();
+        const requestedMinutes = scheduledDate.getMinutes();
+        const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
+        
+        // Fetch barbers at the same campus (or all if campusId not available)
+        const params: any = {};
+        if (cancelledBookingDetails.campusId) {
+          params.campusId = cancelledBookingDetails.campusId;
+        }
+        const response = await api.get('/barbers', params);
+        
+        const allBarbers: Barber[] = response.barbers || [];
+        
+        // Filter out the cancelled barber and filter to those who offer the service
+        const eligibleBarbers = allBarbers.filter(barber => {
+          if (barber.id === cancelledBookingDetails.cancelledBarberId) return false;
+          const offersService = barber.services?.some(
+            (s: any) => s.type?.toUpperCase() === cancelledBookingDetails.serviceType?.toUpperCase()
+          );
+          return offersService;
+        });
+        
+        // Check availability for each eligible barber at the specific time
+        const availableBarbers: Barber[] = [];
+        
+        for (const barber of eligibleBarbers) {
+          try {
+            const availabilityResponse = await api.get(`/barbers/${barber.id}/availability`, {
+              date: dateStr,
+            });
+            
+            const availData = availabilityResponse.data || availabilityResponse;
+            if (!availData.available) continue;
+            
+            // Check slots or intervals
+            const slots = availData.slots || [];
+            let isAvailable = slots.some((slot: { time: string; available: boolean }) => {
+              if (!slot.available) return false;
+              const [slotHour, slotMin] = slot.time.split(':').map(Number);
+              const slotTimeMinutes = slotHour * 60 + slotMin;
+              return Math.abs(slotTimeMinutes - requestedTimeInMinutes) < 15;
+            });
+            
+            // Fallback to intervals check
+            if (!isAvailable && availData.intervals) {
+              const intervals = availData.intervals || [];
+              const bookedSlots = availData.bookedSlots || [];
+              
+              const inInterval = intervals.some((interval: { start: string; end: string }) => {
+                const [startHour, startMin] = interval.start.split(':').map(Number);
+                const [endHour, endMin] = interval.end.split(':').map(Number);
+                return requestedTimeInMinutes >= startHour * 60 + startMin && requestedTimeInMinutes < endHour * 60 + endMin;
+              });
+              
+              if (inInterval) {
+                const isBlocked = bookedSlots.some((blocked: { start: string; end: string }) => {
+                  const [startHour, startMin] = blocked.start.split(':').map(Number);
+                  const [endHour, endMin] = blocked.end.split(':').map(Number);
+                  return requestedTimeInMinutes >= startHour * 60 + startMin && requestedTimeInMinutes < endHour * 60 + endMin;
+                });
+                isAvailable = !isBlocked;
+              }
+            }
+            
+            if (isAvailable) {
+              availableBarbers.push(barber);
+            }
+          } catch (error) {
+            console.error(`Failed to check availability for barber ${barber.id}:`, error);
+          }
+        }
+        
+        setAlternativeBarbers(availableBarbers);
+      } catch (error) {
+        console.error('Failed to fetch alternative barbers:', error);
+        setAlternativeBarbers([]);
+      } finally {
+        setLoadingAlternativeBarbers(false);
+      }
+    };
+    
+    fetchAlternativeBarbers();
+  }, [cancelledBookingDetails]);
 
   // Lock body scroll when profile editor is open (must be before any early returns)
   useBodyScrollLock(showProfileEditor);
@@ -514,16 +651,129 @@ export default function ConsumerBookingStatusPage() {
           </div>
         </div>
         
-        <div className="max-w-2xl mx-auto px-4 py-12 text-center">
-          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Booking</h2>
-          <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
-          <button
-            onClick={handleBackToDiscover}
-            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
-          >
-            Find a Barber
-          </button>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          {/* Cancelled by Barber - Show Alternative Barbers */}
+          {cancelledBookingDetails ? (
+            <div className="space-y-6">
+              {/* Cancellation Notice */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                <h2 className="text-xl font-bold text-red-800 mb-2">Booking Cancelled</h2>
+                <p className="text-red-700">
+                  <span className="font-semibold">{cancelledBookingDetails.barberName}</span> has cancelled your appointment.
+                </p>
+              </div>
+
+              {/* Original Time Slot */}
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 text-center">
+                <h4 className="font-semibold text-primary-800 mb-1">Your Original Time Slot</h4>
+                <p className="text-primary-700">
+                  {new Date(cancelledBookingDetails.scheduledTime).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })} at {new Date(cancelledBookingDetails.scheduledTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
+              </div>
+
+              {/* Alternative Barbers */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3 text-center">
+                  {loadingAlternativeBarbers 
+                    ? 'Finding available barbers...' 
+                    : alternativeBarbers.length > 0 
+                      ? `${alternativeBarbers.length} barber${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
+                      : 'No barbers available at this time'
+                  }
+                </h3>
+
+                {loadingAlternativeBarbers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  </div>
+                ) : alternativeBarbers.length > 0 ? (
+                  <div className="space-y-3">
+                    {alternativeBarbers.map((barber) => (
+                      <button
+                        key={barber.id}
+                        onClick={() => {
+                          navigate(`${platformPrefix}/consumer/schedule/${barber.id}`, {
+                            state: {
+                              preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
+                              preselectedService: cancelledBookingDetails.serviceType,
+                            }
+                          });
+                        }}
+                        className="w-full p-4 bg-white border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-colors text-left flex items-center gap-4 shadow-sm"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                          {barber.avatar ? (
+                            <img src={barber.avatar} alt={barber.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-primary-100">
+                              <span className="text-primary-600 font-semibold text-lg">
+                                {barber.name?.charAt(0) || 'B'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{barber.name}</p>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            {barber.avgRating && (
+                              <span className="flex items-center gap-1">
+                                ⭐ {barber.avgRating.toFixed(1)}
+                              </span>
+                            )}
+                            {barber.totalReviews > 0 && (
+                              <span>({barber.totalReviews} reviews)</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 text-sm">
+                      No other barbers are available at this specific time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Browse All Barbers Button */}
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => {
+                    setCancelledBookingDetails(null);
+                    setAlternativeBarbers([]);
+                    handleBackToDiscover();
+                  }}
+                  className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+                >
+                  Browse All Barbers
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Standard No Active Booking */
+            <div className="text-center py-4">
+              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Booking</h2>
+              <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
+              <button
+                onClick={handleBackToDiscover}
+                className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                Find a Barber
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

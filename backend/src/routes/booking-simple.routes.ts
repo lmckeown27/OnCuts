@@ -2446,6 +2446,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       status: 'CANCELLED',
       barberId: booking.barberId,
       consumerId: booking.consumerId,
+      campusId: booking.campus_id,
       updatedBy: isBarber ? 'barber' : 'consumer',
       cancelled: true,
     };
