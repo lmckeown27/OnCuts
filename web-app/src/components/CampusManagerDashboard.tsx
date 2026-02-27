@@ -519,18 +519,16 @@ Campus Manager`
             {/* Email Interview Button */}
             <a
               href={generateInterviewEmail(app)}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors flex-shrink-0"
+              className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
             >
-              <Clock className="w-4 h-4" />
               Schedule Interview
             </a>
           </div>
           {/* Mobile Email Button */}
           <a
             href={generateInterviewEmail(app)}
-            className="sm:hidden flex items-center justify-center gap-2 w-full mt-4 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+            className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
           >
-            <Clock className="w-4 h-4" />
             Schedule Interview via Email
           </a>
         </Card>
@@ -590,8 +588,8 @@ Campus Manager`
 
           {/* Why Be a Barber */}
           {app.why_be_barber && (
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-              <p className="text-xs text-blue-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
+            <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
+              <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
               <p className="text-gray-700 italic">"{app.why_be_barber}"</p>
             </div>
           )}
