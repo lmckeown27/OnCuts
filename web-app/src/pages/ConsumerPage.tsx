@@ -627,11 +627,10 @@ export default function ConsumerPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => profileEditorRef.current?.showDeleteModal()}
-                  className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 rounded-lg px-3 py-1.5 transition-colors flex items-center gap-1.5 text-sm font-medium border border-red-200"
+                  className="bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 rounded-lg px-3 py-1.5 transition-colors text-sm font-medium border border-red-200"
                   title="Delete Account"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Account</span>
+                  Delete Account
                 </button>
                 <button
                   onClick={closeProfileEditor}
