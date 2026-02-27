@@ -244,6 +244,7 @@ export function AdminDashboard({
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
+  const [pendingApplicationAction, setPendingApplicationAction] = useState<{ app: BarberApplication; action: 'approve' | 'reject' } | null>(null);
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -375,19 +376,33 @@ export function AdminDashboard({
     fetchApplications();
   }, [selectedCampusId]);
   
-  // Handle application action (approve/reject)
-  const handleApplicationAction = async (applicationId: string, action: 'approve' | 'reject') => {
-    setApplicationActionLoading(applicationId);
+  // Show confirmation for application action
+  const requestApplicationAction = (app: BarberApplication, action: 'approve' | 'reject') => {
+    setPendingApplicationAction({ app, action });
+  };
+
+  // Handle application action (approve/reject) - called after confirmation
+  const confirmApplicationAction = async () => {
+    if (!pendingApplicationAction) return;
+    
+    const { app, action } = pendingApplicationAction;
+    setApplicationActionLoading(app.id);
+    setPendingApplicationAction(null);
+    
     try {
       if (action === 'approve') {
-        await barberApplicationService.updateApplicationStatus(applicationId, 'approved');
+        await barberApplicationService.updateApplicationStatus(app.id, 'approved');
         toast.success('Application approved!');
       } else {
-        await barberApplicationService.updateApplicationStatus(applicationId, 'rejected');
+        await barberApplicationService.updateApplicationStatus(app.id, 'rejected');
         toast.success('Application rejected');
       }
       // Remove from list
-      setApplications(prev => prev.filter(app => app.id !== applicationId));
+      setApplications(prev => prev.filter(a => a.id !== app.id));
+      // Clear selected application if it was the one being actioned
+      if (selectedApplication?.id === app.id) {
+        setSelectedApplication(null);
+      }
       // Refresh barbers list in case new barber was added
       if (selectedCampusId) {
         const response = await api.get<{ barbers: Barber[] } | Barber[]>(`/admin/campuses/${selectedCampusId}/barbers`);
@@ -1650,8 +1665,7 @@ export function AdminDashboard({
                         <div className="flex flex-col sm:flex-row gap-3">
                           <Button
                             onClick={() => {
-                              handleApplicationAction(selectedApplication.id, 'approve');
-                              setSelectedApplication(null);
+                              requestApplicationAction(selectedApplication, 'approve');
                             }}
                             disabled={applicationActionLoading === selectedApplication.id}
                             className="flex-1 py-3 justify-center"
@@ -1662,8 +1676,7 @@ export function AdminDashboard({
                           <Button
                             variant="outline"
                             onClick={() => {
-                              handleApplicationAction(selectedApplication.id, 'reject');
-                              setSelectedApplication(null);
+                              requestApplicationAction(selectedApplication, 'reject');
                             }}
                             disabled={applicationActionLoading === selectedApplication.id}
                             className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
@@ -1705,7 +1718,7 @@ export function AdminDashboard({
                             {app.status === 'pending' && (
                               <div className="flex items-center gap-1">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'approve'); }}
+                                  onClick={(e) => { e.stopPropagation(); requestApplicationAction(app, 'approve'); }}
                                   disabled={applicationActionLoading === app.id}
                                   className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
                                   title="Approve"
@@ -1717,7 +1730,7 @@ export function AdminDashboard({
                                   )}
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'reject'); }}
+                                  onClick={(e) => { e.stopPropagation(); requestApplicationAction(app, 'reject'); }}
                                   disabled={applicationActionLoading === app.id}
                                   className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
                                   title="Reject"
@@ -2110,7 +2123,7 @@ export function AdminDashboard({
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Button
                         onClick={() => {
-                          handleApplicationAction(selectedApplication.id, 'approve');
+                          requestApplicationAction(selectedApplication, 'approve');
                           setSelectedApplication(null);
                         }}
                         disabled={applicationActionLoading === selectedApplication.id}
@@ -2122,7 +2135,7 @@ export function AdminDashboard({
                       <Button
                         variant="outline"
                         onClick={() => {
-                          handleApplicationAction(selectedApplication.id, 'reject');
+                          requestApplicationAction(selectedApplication, 'reject');
                           setSelectedApplication(null);
                         }}
                         disabled={applicationActionLoading === selectedApplication.id}
@@ -2165,7 +2178,7 @@ export function AdminDashboard({
                           {app.status === 'pending' && (
                             <div className="flex items-center gap-1">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'approve'); }}
+                                onClick={(e) => { e.stopPropagation(); requestApplicationAction(app, 'approve'); }}
                                 disabled={applicationActionLoading === app.id}
                                 className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
                                 title="Approve"
@@ -2177,7 +2190,7 @@ export function AdminDashboard({
                                 )}
                               </button>
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'reject'); }}
+                                onClick={(e) => { e.stopPropagation(); requestApplicationAction(app, 'reject'); }}
                                 disabled={applicationActionLoading === app.id}
                                 className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
                                 title="Reject"
@@ -2280,6 +2293,56 @@ export function AdminDashboard({
           </div>
         )}
       </div>
+      )}
+
+      {/* Application Action Confirmation Modal */}
+      {pendingApplicationAction && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className={`px-6 py-4 ${pendingApplicationAction.action === 'approve' ? 'bg-primary-500' : 'bg-red-500'}`}>
+              <h3 className="text-lg font-bold text-white">
+                {pendingApplicationAction.action === 'approve' ? 'Approve Application' : 'Reject Application'}
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to <strong>{pendingApplicationAction.action}</strong> the application from{' '}
+                <strong>
+                  {pendingApplicationAction.app.first_name || pendingApplicationAction.app.user?.first_name || 'Unknown'}{' '}
+                  {pendingApplicationAction.app.last_name || pendingApplicationAction.app.user?.last_name || 'User'}
+                </strong>?
+              </p>
+              {pendingApplicationAction.action === 'approve' && (
+                <p className="text-sm text-gray-500 mb-4">
+                  This will grant them barber access and they will be able to set up their profile and receive bookings.
+                </p>
+              )}
+              {pendingApplicationAction.action === 'reject' && (
+                <p className="text-sm text-gray-500 mb-4">
+                  This will reject their application. They will need to submit a new application if they want to apply again.
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPendingApplicationAction(null)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmApplicationAction}
+                  className={`flex-1 px-4 py-2.5 text-white rounded-lg font-medium transition-colors ${
+                    pendingApplicationAction.action === 'approve'
+                      ? 'bg-primary-600 hover:bg-primary-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {pendingApplicationAction.action === 'approve' ? 'Yes, Approve' : 'Yes, Reject'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
