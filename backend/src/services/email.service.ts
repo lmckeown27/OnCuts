@@ -849,7 +849,6 @@ function generatePendingBookingHtml(
   const subtitle = isConsumer 
     ? `Awaiting confirmation from ${details.barberName}`
     : `${details.consumerName} wants to book with you`;
-  const statusColor = '#f59e0b'; // Amber for pending
   const statusText = 'PENDING CONFIRMATION';
   
   const ctaText = isConsumer ? 'Track Your Booking' : 'View Request';
@@ -863,18 +862,18 @@ function generatePendingBookingHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+  <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
-    <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 16px;">${title}</p>
+    <p style="color: #d1e0d9; margin: 10px 0 0 0; font-size: 16px;">${title}</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-    <h2 style="color: #022b19; margin: 0 0 10px 0;">${isConsumer ? `Hi ${details.consumerName.split(' ')[0]}!` : `Hi ${details.barberName.split(' ')[0]}!`}</h2>
+    <h2 style="color: #3d5149; margin: 0 0 10px 0;">${isConsumer ? `Hi ${details.consumerName.split(' ')[0]}!` : `Hi ${details.barberName.split(' ')[0]}!`}</h2>
     <p style="color: #6b7280; margin: 0 0 20px 0;">${subtitle}</p>
     
     <!-- Status Badge -->
     <div style="text-align: center; margin: 20px 0;">
-      <span style="display: inline-block; background-color: ${statusColor}20; color: ${statusColor}; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px;">
+      <span style="display: inline-block; background-color: #f2f5f4; color: #5a7268; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 1px;">
         ${statusText}
       </span>
     </div>
@@ -922,7 +921,7 @@ function generatePendingBookingHtml(
     
     <!-- Person Info -->
     <div style="background-color: #f2f5f4; border-radius: 8px; padding: 15px; margin: 20px 0;">
-      <p style="color: #166534; margin: 0; font-size: 14px;">
+      <p style="color: #3d5149; margin: 0; font-size: 14px;">
         <strong>${isConsumer ? 'Your Barber:' : 'Customer:'}</strong> ${isConsumer ? details.barberName : details.consumerName}
       </p>
     </div>
@@ -943,7 +942,7 @@ function generatePendingBookingHtml(
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 10px 0 15px 0;">
       <tr>
         <td align="center">
-          <a href="${ctaLink}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          <a href="${ctaLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
             ${ctaText}
           </a>
         </td>
