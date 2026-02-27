@@ -389,155 +389,43 @@ export default function ConsumerPage() {
       
       setLoadingAlternativeBarbers(true);
       try {
-        // Parse the scheduled time - handle UTC to Pacific conversion
+        // Parse the scheduled time to get date and time in Pacific timezone
         const scheduledDate = new Date(alternativeBarbersData.scheduledTime);
-        
-        // Get date in Pacific timezone for the API
-        const dateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD format
-        
-        // Get time in Pacific timezone
-        const pacificTimeStr = scheduledDate.toLocaleTimeString('en-US', { 
+        const dateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD
+        const timeStr = scheduledDate.toLocaleTimeString('en-US', { 
           timeZone: 'America/Los_Angeles', 
           hour: '2-digit', 
           minute: '2-digit', 
           hour12: false 
-        });
-        const [requestedHour, requestedMinutes] = pacificTimeStr.split(':').map(Number);
-        const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
+        }); // HH:MM
         
-        // Fetch barbers at the same campus
-        const response = await api.get('/barbers', {
+        console.log('[Alternative Barbers] Fetching barbers available at:', { 
+          date: dateStr, 
+          time: timeStr, 
           campusId: alternativeBarbersData.campusId,
+          serviceType: alternativeBarbersData.serviceType 
         });
         
-        const allBarbers: Barber[] = response.barbers || [];
-        
-        // Filter out the cancelled barber and filter to those who offer the service
-        const eligibleBarbers = allBarbers.filter(barber => {
-          // Skip the barber who cancelled
-          if (barber.id === alternativeBarbersData.cancelledBarberId) {
-            console.log(`[Alternative Barbers] Skipping ${barber.name} - this is the cancelled barber`);
-            return false;
-          }
-          
-          // Check if barber offers this service - match by name, type, or service_type field
-          const serviceType = alternativeBarbersData.serviceType?.toUpperCase() || '';
-          
-          // If no service type specified, include all barbers
-          if (!serviceType) {
-            console.log(`[Alternative Barbers] ${barber.name} - No service type filter, including`);
-            return true;
-          }
-          
-          const offersService = barber.pricing?.some((s: any) => {
-            const serviceName = (s.name || s.type || s.service_type || '').toUpperCase();
-            // Also format service type for comparison: "HAIRCUT_FADE" -> "HAIRCUT & FADE"
-            const formattedServiceType = serviceType.replace(/_/g, ' ').replace(/AND/g, '&');
-            const formattedServiceName = serviceName.replace(/_/g, ' ').replace(/AND/g, '&');
-            
-            // More flexible matching - also check without underscores/spaces
-            const normalizedServiceType = serviceType.replace(/[_\s&]/g, '');
-            const normalizedServiceName = serviceName.replace(/[_\s&]/g, '');
-            
-            const matches = serviceName === serviceType || 
-                   formattedServiceName === formattedServiceType ||
-                   serviceName.includes(serviceType) || 
-                   serviceType.includes(serviceName) ||
-                   normalizedServiceName === normalizedServiceType ||
-                   normalizedServiceName.includes(normalizedServiceType) ||
-                   normalizedServiceType.includes(normalizedServiceName);
-            
-            if (matches) {
-              console.log(`[Alternative Barbers] ${barber.name} - Service "${serviceName}" matches "${serviceType}"`);
-            }
-            return matches;
-          });
-          
-          if (!offersService) {
-            console.log(`[Alternative Barbers] ${barber.name} does not offer "${alternativeBarbersData.serviceType}". Services:`, barber.pricing?.map((s: any) => s.name || s.type || s.service_type).join(', '));
-          }
-          return offersService;
+        // Use the dedicated backend endpoint
+        const response = await api.get('/barbers/available-at-time', {
+          campusId: alternativeBarbersData.campusId,
+          date: dateStr,
+          time: timeStr,
+          serviceType: alternativeBarbersData.serviceType,
+          excludeBarberId: alternativeBarbersData.cancelledBarberId,
         });
         
-        // Check availability for each eligible barber at the specific time
-        // This accounts for: weekly schedule, blocked time slots, and existing bookings
-        const availableBarbers: Barber[] = [];
+        const availableBarbers = response.data?.barbers || response.barbers || [];
+        console.log('[Alternative Barbers] Found:', availableBarbers.length, 'barbers');
         
-        for (const barber of eligibleBarbers) {
-          try {
-            const availabilityResponse = await api.get(`/barbers/${barber.id}/availability`, {
-              date: dateStr,
-            });
-            
-            const data = availabilityResponse.data || availabilityResponse;
-            
-            // Check if day is available at all
-            if (!data.available) {
-              continue;
-            }
-            
-            // Check if the requested time slot is available
-            // The slots array contains time slots with 'available' property
-            const slots = data.slots || [];
-            
-            // Find if there's an available slot at or near the requested time
-            const isAvailable = slots.some((slot: { time: string; available: boolean }) => {
-              if (!slot.available) return false;
-              
-              // Parse slot time (HH:MM format)
-              const [slotHour, slotMin] = slot.time.split(':').map(Number);
-              const slotTimeMinutes = slotHour * 60 + slotMin;
-              
-              // Check if slot time matches requested time (within 15 min tolerance for slot intervals)
-              return Math.abs(slotTimeMinutes - requestedTimeInMinutes) < 15;
-            });
-            
-            // Also check using intervals if slots aren't granular enough
-            if (!isAvailable && data.intervals) {
-              const intervals = data.intervals || [];
-              const bookedSlots = data.bookedSlots || [];
-              
-              // Check if requested time falls within any interval
-              const inInterval = intervals.some((interval: { start: string; end: string }) => {
-                const [startHour, startMin] = interval.start.split(':').map(Number);
-                const [endHour, endMin] = interval.end.split(':').map(Number);
-                const intervalStartMinutes = startHour * 60 + startMin;
-                const intervalEndMinutes = endHour * 60 + endMin;
-                
-                return requestedTimeInMinutes >= intervalStartMinutes && requestedTimeInMinutes < intervalEndMinutes;
-              });
-              
-              if (!inInterval) {
-                continue;
-              }
-              
-              // Check if requested time conflicts with any booked/blocked slot
-              const isBlocked = bookedSlots.some((blocked: { start: string; end: string }) => {
-                const [startHour, startMin] = blocked.start.split(':').map(Number);
-                const [endHour, endMin] = blocked.end.split(':').map(Number);
-                const blockedStartMinutes = startHour * 60 + startMin;
-                const blockedEndMinutes = endHour * 60 + endMin;
-                
-                // Check if requested time overlaps with blocked time
-                return requestedTimeInMinutes >= blockedStartMinutes && requestedTimeInMinutes < blockedEndMinutes;
-              });
-              
-              if (!isBlocked) {
-                availableBarbers.push(barber);
-              }
-              continue;
-            }
-            
-            if (isAvailable) {
-              availableBarbers.push(barber);
-            }
-          } catch (error) {
-            // If we can't check availability, skip this barber
-            console.error(`Failed to check availability for barber ${barber.id}:`, error);
-          }
-        }
-        
-        setAlternativeBarbers(availableBarbers);
+        // Map to Barber type
+        setAlternativeBarbers(availableBarbers.map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          profile_picture_url: b.avatar,
+          average_rating: b.average_rating,
+          total_reviews: b.total_reviews,
+        })));
       } catch (error) {
         console.error('Failed to fetch alternative barbers:', error);
         setAlternativeBarbers([]);

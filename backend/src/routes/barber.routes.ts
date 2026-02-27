@@ -177,6 +177,172 @@ router.get(
 );
 
 /**
+ * @route   GET /api/barbers/available-at-time
+ * @desc    Get barbers available at a specific date/time (for rebooking after cancellation)
+ * @access  Public
+ */
+router.get(
+  '/available-at-time',
+  async (req, res, next) => {
+    try {
+      const { campusId, date, time, serviceType, excludeBarberId } = req.query;
+      
+      if (!campusId || !date || !time) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'campusId, date (YYYY-MM-DD), and time (HH:MM) are required' 
+        });
+      }
+      
+      const { pool } = require('../database/connection');
+      const { logger } = require('../utils/logger');
+      
+      logger.info(`[available-at-time] Searching for barbers at campus ${campusId} on ${date} at ${time}`);
+      
+      // Parse the requested time
+      const [requestedHour, requestedMin] = (time as string).split(':').map(Number);
+      const requestedTimeInMinutes = requestedHour * 60 + requestedMin;
+      
+      // Parse date to get day of week
+      const [year, month, day] = (date as string).split('-').map(Number);
+      const targetDate = new Date(year, month - 1, day, 12, 0, 0);
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayNames[targetDate.getDay()];
+      
+      logger.info(`[available-at-time] Day: ${dayName}, Time: ${requestedTimeInMinutes} minutes`);
+      
+      // Get all active barbers at this campus
+      const barbersResult = await pool.query(`
+        SELECT 
+          b.id,
+          COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
+          u.profile_picture_url as avatar,
+          b."weeklySchedule" as weekly_schedule,
+          b.pricing as services,
+          (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as average_rating,
+          (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+        FROM barbers b
+        JOIN users u ON b."userId" = u.id
+        WHERE b."campusId" = $1
+          AND b."isActive" = true
+          AND b."isOnboarded" = true
+          ${excludeBarberId ? `AND b.id != $2` : ''}
+      `, excludeBarberId ? [campusId, excludeBarberId] : [campusId]);
+      
+      logger.info(`[available-at-time] Found ${barbersResult.rows.length} barbers at campus`);
+      
+      const availableBarbers = [];
+      
+      for (const barber of barbersResult.rows) {
+        // Check if barber offers the service (if serviceType provided)
+        if (serviceType) {
+          const serviceTypeUpper = (serviceType as string).toUpperCase().replace(/_/g, ' ').replace(/AND/g, '&');
+          const offersService = (barber.services || []).some((s: any) => {
+            const serviceName = (s.name || s.type || s.service_type || '').toUpperCase().replace(/_/g, ' ').replace(/AND/g, '&');
+            return serviceName === serviceTypeUpper || 
+                   serviceName.includes(serviceTypeUpper) || 
+                   serviceTypeUpper.includes(serviceName);
+          });
+          
+          if (!offersService) {
+            logger.info(`[available-at-time] ${barber.name} does not offer ${serviceType}`);
+            continue;
+          }
+        }
+        
+        // Check weekly schedule for this day
+        const weeklySchedule = barber.weekly_schedule || {};
+        const daySchedule = weeklySchedule[dayName];
+        
+        if (!daySchedule || !daySchedule.enabled) {
+          logger.info(`[available-at-time] ${barber.name} not available on ${dayName}`);
+          continue;
+        }
+        
+        // Get intervals
+        let intervals: { start: string; end: string }[] = [];
+        if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+          intervals = daySchedule.intervals;
+        } else if (daySchedule.start && daySchedule.end) {
+          intervals = [{ start: daySchedule.start, end: daySchedule.end }];
+        }
+        
+        if (intervals.length === 0) {
+          logger.info(`[available-at-time] ${barber.name} has no intervals on ${dayName}`);
+          continue;
+        }
+        
+        // Check if requested time falls within any interval
+        let inSchedule = false;
+        for (const interval of intervals) {
+          const [startHour, startMin] = interval.start.split(':').map(Number);
+          const [endHour, endMin] = interval.end.split(':').map(Number);
+          const startMinutes = startHour * 60 + startMin;
+          const endMinutes = endHour * 60 + endMin;
+          
+          if (requestedTimeInMinutes >= startMinutes && requestedTimeInMinutes < endMinutes) {
+            inSchedule = true;
+            break;
+          }
+        }
+        
+        if (!inSchedule) {
+          logger.info(`[available-at-time] ${barber.name} - ${time} not within schedule intervals`);
+          continue;
+        }
+        
+        // Check for existing bookings or time blocks at this time
+        const conflictsResult = await pool.query(`
+          SELECT 1 FROM bookings 
+          WHERE "barberId" = $1 
+            AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
+            AND EXTRACT(HOUR FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') * 60 + 
+                EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') <= $3
+            AND EXTRACT(HOUR FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') * 60 + 
+                EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') + 60 > $3
+            AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+          UNION ALL
+          SELECT 1 FROM barber_time_blocks
+          WHERE barber_id = $1
+            AND block_date = $2
+            AND EXTRACT(HOUR FROM start_time) * 60 + EXTRACT(MINUTE FROM start_time) <= $3
+            AND EXTRACT(HOUR FROM end_time) * 60 + EXTRACT(MINUTE FROM end_time) > $3
+        `, [barber.id, date, requestedTimeInMinutes]);
+        
+        if (conflictsResult.rows.length > 0) {
+          logger.info(`[available-at-time] ${barber.name} has conflict at ${time}`);
+          continue;
+        }
+        
+        logger.info(`[available-at-time] ${barber.name} IS AVAILABLE at ${time}`);
+        availableBarbers.push({
+          id: barber.id,
+          name: barber.name,
+          avatar: barber.avatar,
+          average_rating: parseFloat(barber.average_rating) || null,
+          total_reviews: parseInt(barber.total_reviews) || 0,
+        });
+      }
+      
+      logger.info(`[available-at-time] Total available: ${availableBarbers.length}`);
+      
+      res.json({
+        success: true,
+        data: {
+          barbers: availableBarbers,
+          date,
+          time,
+          campusId,
+        }
+      });
+    } catch (error: any) {
+      console.error('Error in available-at-time:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
+
+/**
  * @route   GET /api/barbers/:id/earnings
  * @desc    Get barber earnings summary
  * @access  Private (Owner only)
