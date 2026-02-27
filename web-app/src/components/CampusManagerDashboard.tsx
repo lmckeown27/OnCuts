@@ -664,8 +664,8 @@ Campus Manager`
         {/* Reject button for approved applications awaiting signup */}
         {app.status === 'approved' && app.application_type === 'guest' && !app.user_id && (
           <div className="space-y-3">
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <p className="text-sm text-orange-800">
+            <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
+              <p className="text-sm text-primary-800">
                 <strong>Awaiting Signup:</strong> This application has been approved, but the applicant hasn't created their account yet. 
                 You can reject it if they're taking too long or if circumstances have changed.
               </p>
