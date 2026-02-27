@@ -473,8 +473,9 @@ export const deleteAccount = async (req: Request, res: Response) => {
     // 8. Delete barber applications
     await safeDelete('DELETE FROM barber_applications WHERE user_id = $1', [id]);
 
-    // 9. Unlink guest barber applications (set linked_user_id to NULL)
-    await safeDelete('UPDATE guest_barber_applications SET linked_user_id = NULL WHERE linked_user_id = $1', [id]);
+    // 9. Delete guest barber applications linked to this user
+    // If the user is deleted, their linked guest application should also be removed
+    await safeDelete('DELETE FROM guest_barber_applications WHERE linked_user_id = $1', [id]);
 
     // 10. Delete barber record
     await safeDelete('DELETE FROM barbers WHERE "userId" = $1', [id]);
