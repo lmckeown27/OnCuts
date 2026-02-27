@@ -3320,8 +3320,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
               {activeTab === 'completed' && (
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {booking.status === 'COMPLETED' && !booking.paidAt && (
-                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                      <Clock className="w-3 h-3" />
+                    <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                       Awaiting Payment
                     </div>
                   )}
