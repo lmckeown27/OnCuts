@@ -489,10 +489,9 @@ export default function ConsumerPage() {
               {user?.user_type === 'barber' || user?.user_type === 'admin' || user?.has_barber_profile ? (
                 <button
                   onClick={() => navigate('/web/barber')}
-                  className="flex items-center gap-1.5 px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
+                  className="px-3 py-2 sm:px-4 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors border border-primary-200"
                   title="Switch to barber view"
                 >
-                  <Scissors className="w-4 h-4 text-primary-600" />
                   <span className="text-xs sm:text-sm font-medium text-primary-700">Barber View</span>
                 </button>
               ) : (
