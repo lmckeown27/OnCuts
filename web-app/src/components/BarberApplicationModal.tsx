@@ -258,7 +258,18 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   };
 
   // Email validation helper
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = (email: string) => {
+    // Basic format validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return false;
+    
+    // Check for common TLD typos
+    const invalidTLDs = ['con', 'cmo', 'ocm', 'coom', 'comm', 'ner', 'ogr', 'eduu', 'orgg'];
+    const tld = email.split('.').pop()?.toLowerCase();
+    if (tld && invalidTLDs.includes(tld)) return false;
+    
+    return true;
+  };
   
   // Step 1: Experience & Skills (+ name/email in guest mode)
   const canProceedStep1 = form.yearsExperience && form.specialties.length > 0 && 

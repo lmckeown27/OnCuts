@@ -257,8 +257,16 @@ export default function SignupPage() {
   };
 
   const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    // Basic format validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return false;
+    
+    // Check for common TLD typos
+    const invalidTLDs = ['con', 'cmo', 'ocm', 'coom', 'comm', 'ner', 'ogr', 'eduu', 'orgg'];
+    const tld = email.split('.').pop()?.toLowerCase();
+    if (tld && invalidTLDs.includes(tld)) return false;
+    
+    return true;
   };
 
   // Check if email has a valid domain (any email allowed for testing)
