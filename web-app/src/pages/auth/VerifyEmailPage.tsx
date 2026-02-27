@@ -318,10 +318,7 @@ export default function VerifyEmailPage() {
                   <span>Verifying...</span>
                 </>
               ) : (
-                <>
-                  <CheckCircle size={20} />
-                  <span>Verify Email</span>
-                </>
+                'Verify Email'
               )}
             </button>
           </form>
