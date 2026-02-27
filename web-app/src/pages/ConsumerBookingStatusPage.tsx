@@ -217,18 +217,22 @@ export default function ConsumerBookingStatusPage() {
       
       // Check if this is for the current booking and it was cancelled by barber
       if (data.id === booking.id && (data.cancelled || data.status?.toUpperCase() === 'CANCELLED')) {
-        // Save the booking details for showing alternative barbers
-        setCancelledBookingDetails({
-          scheduledTime: booking.scheduledTime,
-          serviceType: booking.serviceType,
-          campusId: data.campusId || '', // May need to be passed from backend
-          cancelledBarberId: booking.barberId,
-          barberName: booking.barberName,
-        });
+        // Only show alternative barbers if cancelled by barber
+        if (data.cancelledBy === 'barber' || data.updatedBy === 'barber') {
+          // Save the booking details for showing alternative barbers
+          // Use data from WebSocket event (backend sends these now) with fallback to local booking state
+          setCancelledBookingDetails({
+            scheduledTime: data.scheduledTime || booking.scheduledTime,
+            serviceType: data.serviceType || booking.serviceType,
+            campusId: data.campusId || '',
+            cancelledBarberId: data.barberId || booking.barberId,
+            barberName: booking.barberName,
+          });
+          toast('Your booking has been cancelled by the barber', { icon: 'ℹ️' });
+        }
         
         // Clear the current booking to show "No Active Booking" with alternatives
         setBooking(null);
-        toast('Your booking has been cancelled by the barber', { icon: 'ℹ️' });
       }
     };
 

@@ -2571,6 +2571,9 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       barberId: booking.barberId,
       consumerId: booking.consumerId,
       campusId: booking.campus_id,
+      scheduledTime: booking.scheduledTime,
+      serviceType: booking.serviceType,
+      cancelledBy: isBarber ? 'barber' : 'consumer',
       updatedBy: isBarber ? 'barber' : 'consumer',
       cancelled: true,
     };
