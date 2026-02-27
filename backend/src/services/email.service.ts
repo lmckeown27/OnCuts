@@ -3472,3 +3472,181 @@ CampusCut
     throw error;
   }
 }
+
+// ============================================
+// PAYMENT REMINDER EMAIL
+// ============================================
+
+/**
+ * Payment Reminder Email Details Interface
+ */
+interface PaymentReminderEmailDetails {
+  bookingId: string;
+  consumerEmail: string;
+  consumerName: string;
+  barberName: string;
+  serviceName: string;
+  price: number; // in dollars
+  completedDate: string; // formatted date string
+  completedTime: string; // formatted time string
+  location?: string;
+  hoursAwaiting: number;
+}
+
+/**
+ * Send Payment Reminder Email to Consumer
+ * 
+ * Sends a reminder email to the consumer when their completed booking
+ * has been awaiting payment for a specified period.
+ */
+export async function sendPaymentReminderEmail(details: PaymentReminderEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping payment reminder email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const paymentUrl = `${frontendUrl}/web/booking/${details.bookingId}`;
+
+  const firstName = details.consumerName.split(' ')[0];
+  const subject = `Payment Pending - Complete your ${details.serviceName} payment`;
+
+  const text = `
+Hi ${firstName},
+
+Your ${details.serviceName} with ${details.barberName} has been completed and is awaiting payment.
+
+BOOKING DETAILS
+---------------
+Service: ${details.serviceName}
+Barber: ${details.barberName}
+Completed: ${details.completedDate} at ${details.completedTime}
+${details.location ? `Location: ${details.location}` : ''}
+Amount Due: $${details.price.toFixed(2)}
+
+Please complete your payment to support your barber.
+
+Pay Now: ${paymentUrl}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">Payment Reminder</h1>
+      <p style="color: #d1e0d9; margin: 8px 0 0 0; font-size: 14px;">Complete your transaction</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+        Your <strong>${details.serviceName}</strong> with <strong>${details.barberName}</strong> has been completed and is awaiting payment.
+      </p>
+      
+      <!-- Status Badge -->
+      <div style="text-align: center; margin: 20px 0;">
+        <span style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: 600;">
+          Awaiting Payment
+        </span>
+      </div>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Completed Service</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Barber</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.barberName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.completedDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.completedTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+        </table>
+        
+        <div style="border-top: 2px solid #e5e7eb; margin: 15px 0; padding-top: 15px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="color: #1f2937; font-weight: 700; font-size: 16px;">Amount Due</td>
+              <td style="color: #5a7268; font-weight: 700; text-align: right; font-size: 24px;">$${details.price.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Support Message -->
+      <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <p style="color: #3d5149; margin: 0; font-size: 14px; line-height: 1.6;">
+          <strong>Support your barber!</strong><br>
+          ${details.barberName} has completed your service and is waiting for payment. Please complete your transaction to help support campus barbers.
+        </p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${paymentUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 50px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+          Complete Payment
+        </a>
+      </div>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        Thank you for using CampusCut!
+      </p>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Payment reminder email sent to consumer: ${details.consumerEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send payment reminder email to ${details.consumerEmail}:`, error.message);
+    throw error;
+  }
+}

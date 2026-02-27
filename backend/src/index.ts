@@ -70,6 +70,7 @@ import marketplaceRoutes from './routes/marketplace.routes';
 import { marketplaceCronService } from './services/marketplace-cron.service';
 import { bookingReminderCronService } from './services/booking-reminder-cron.service';
 import { barberCheckInCronService } from './services/barber-checkin-cron.service';
+import { paymentReminderCronService } from './services/payment-reminder-cron.service';
 
 // Booking Request Routes (AirBnb-style)
 import bookingRequestRoutes from './routes/booking-request.routes';
@@ -457,6 +458,9 @@ httpServer.listen(PORT, async () => {
 
   // Start barber check-in cron job (sends check-ins 1 hour after appointments if not updated)
   barberCheckInCronService.start();
+
+  // Start payment reminder cron job (sends reminders when awaiting payment for 1+ hours)
+  paymentReminderCronService.start();
 
   // NOTE: Blockchain sync disabled - platform uses Stripe for payments
   // To re-enable blockchain features, uncomment below:
