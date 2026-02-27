@@ -20,6 +20,8 @@ import {
 import { authenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 import { upload } from '../middleware/upload';
+import { pool } from '../database/connection';
+import { logger } from '../utils/logger';
 
 const router: Router = express.Router();
 
@@ -71,9 +73,6 @@ router.get(
           error: 'campusId, date (YYYY-MM-DD), and time (HH:MM) are required' 
         });
       }
-      
-      const { pool } = require('../database/connection');
-      const { logger } = require('../utils/logger');
       
       logger.info(`[available-at-time] Searching for barbers at campus ${campusId} on ${date} at ${time}`);
       
