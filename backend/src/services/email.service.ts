@@ -2861,9 +2861,9 @@ CampusCut
 </head>
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px 20px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 24px;">CampusCut</h1>
-      <p style="color: #4ade80; margin: 10px 0 0 0; font-size: 14px;">New Message from Customer</p>
+      <p style="color: #d1e0d9; margin: 10px 0 0 0; font-size: 14px;">New Message from Customer</p>
     </div>
     
     <div style="padding: 30px;">
@@ -2873,8 +2873,8 @@ CampusCut
       </p>
       
       <!-- Message Content -->
-      <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
-        <p style="color: #1e40af; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
+      <div style="background-color: #f2f5f4; border-left: 4px solid #5a7268; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
+        <p style="color: #3d5149; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
           "${details.messageContent.length > 200 ? details.messageContent.substring(0, 200) + '...' : details.messageContent}"
         </p>
         <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 12px;">- ${details.senderName}</p>
