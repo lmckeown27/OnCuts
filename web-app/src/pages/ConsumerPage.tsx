@@ -415,20 +415,47 @@ export default function ConsumerPage() {
         // Filter out the cancelled barber and filter to those who offer the service
         const eligibleBarbers = allBarbers.filter(barber => {
           // Skip the barber who cancelled
-          if (barber.id === alternativeBarbersData.cancelledBarberId) return false;
+          if (barber.id === alternativeBarbersData.cancelledBarberId) {
+            console.log(`[Alternative Barbers] Skipping ${barber.name} - this is the cancelled barber`);
+            return false;
+          }
           
           // Check if barber offers this service - match by name, type, or service_type field
-          const serviceType = alternativeBarbersData.serviceType?.toUpperCase();
+          const serviceType = alternativeBarbersData.serviceType?.toUpperCase() || '';
+          
+          // If no service type specified, include all barbers
+          if (!serviceType) {
+            console.log(`[Alternative Barbers] ${barber.name} - No service type filter, including`);
+            return true;
+          }
+          
           const offersService = barber.pricing?.some((s: any) => {
             const serviceName = (s.name || s.type || s.service_type || '').toUpperCase();
             // Also format service type for comparison: "HAIRCUT_FADE" -> "HAIRCUT & FADE"
-            const formattedServiceType = serviceType?.replace(/_/g, ' ').replace(/AND/g, '&');
+            const formattedServiceType = serviceType.replace(/_/g, ' ').replace(/AND/g, '&');
             const formattedServiceName = serviceName.replace(/_/g, ' ').replace(/AND/g, '&');
-            return serviceName === serviceType || 
+            
+            // More flexible matching - also check without underscores/spaces
+            const normalizedServiceType = serviceType.replace(/[_\s&]/g, '');
+            const normalizedServiceName = serviceName.replace(/[_\s&]/g, '');
+            
+            const matches = serviceName === serviceType || 
                    formattedServiceName === formattedServiceType ||
                    serviceName.includes(serviceType) || 
-                   serviceType?.includes(serviceName);
+                   serviceType.includes(serviceName) ||
+                   normalizedServiceName === normalizedServiceType ||
+                   normalizedServiceName.includes(normalizedServiceType) ||
+                   normalizedServiceType.includes(normalizedServiceName);
+            
+            if (matches) {
+              console.log(`[Alternative Barbers] ${barber.name} - Service "${serviceName}" matches "${serviceType}"`);
+            }
+            return matches;
           });
+          
+          if (!offersService) {
+            console.log(`[Alternative Barbers] ${barber.name} does not offer "${alternativeBarbersData.serviceType}". Services:`, barber.pricing?.map((s: any) => s.name || s.type || s.service_type).join(', '));
+          }
           return offersService;
         });
         

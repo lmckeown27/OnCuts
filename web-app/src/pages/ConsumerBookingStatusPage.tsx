@@ -286,30 +286,54 @@ export default function ConsumerBookingStatusPage() {
         
         const allBarbers: Barber[] = response.barbers || [];
         console.log('[Alternative Barbers] Fetched barbers:', allBarbers.length);
+        console.log('[Alternative Barbers] Service type to match:', cancelledBookingDetails.serviceType);
         
         // Filter out the cancelled barber and filter to those who offer the service
         const eligibleBarbers = allBarbers.filter(barber => {
-          if (barber.id === cancelledBookingDetails.cancelledBarberId) return false;
+          if (barber.id === cancelledBookingDetails.cancelledBarberId) {
+            console.log(`[Alternative Barbers] Skipping ${barber.name} - this is the cancelled barber`);
+            return false;
+          }
           
           // Check if barber offers this service - match by name, type, or service_type field
-          const serviceType = cancelledBookingDetails.serviceType?.toUpperCase();
+          const serviceType = cancelledBookingDetails.serviceType?.toUpperCase() || '';
+          
+          // If no service type specified, include all barbers
+          if (!serviceType) {
+            console.log(`[Alternative Barbers] ${barber.name} - No service type filter, including`);
+            return true;
+          }
+          
           const offersService = barber.pricing?.some((s: any) => {
             const serviceName = (s.name || s.type || s.service_type || '').toUpperCase();
             // Also format service type for comparison: "HAIRCUT_FADE" -> "HAIRCUT & FADE" or "Haircut & Fade"
-            const formattedServiceType = serviceType?.replace(/_/g, ' ').replace(/AND/g, '&');
+            const formattedServiceType = serviceType.replace(/_/g, ' ').replace(/AND/g, '&');
             const formattedServiceName = serviceName.replace(/_/g, ' ').replace(/AND/g, '&');
-            return serviceName === serviceType || 
+            
+            // More flexible matching - also check without underscores/spaces
+            const normalizedServiceType = serviceType.replace(/[_\s&]/g, '');
+            const normalizedServiceName = serviceName.replace(/[_\s&]/g, '');
+            
+            const matches = serviceName === serviceType || 
                    formattedServiceName === formattedServiceType ||
                    serviceName.includes(serviceType) || 
-                   serviceType?.includes(serviceName);
+                   serviceType.includes(serviceName) ||
+                   normalizedServiceName === normalizedServiceType ||
+                   normalizedServiceName.includes(normalizedServiceType) ||
+                   normalizedServiceType.includes(normalizedServiceName);
+            
+            if (matches) {
+              console.log(`[Alternative Barbers] ${barber.name} - Service "${serviceName}" matches "${serviceType}"`);
+            }
+            return matches;
           });
           
           if (!offersService) {
-            console.log(`[Alternative Barbers] ${barber.name} does not offer ${cancelledBookingDetails.serviceType}. Pricing:`, barber.pricing?.map((s: any) => s.name || s.type));
+            console.log(`[Alternative Barbers] ${barber.name} does not offer "${cancelledBookingDetails.serviceType}". Services:`, barber.pricing?.map((s: any) => s.name || s.type || s.service_type).join(', '));
           }
           return offersService;
         });
-        console.log('[Alternative Barbers] Eligible barbers (offer service):', eligibleBarbers.length);
+        console.log('[Alternative Barbers] Eligible barbers (offer service):', eligibleBarbers.length, eligibleBarbers.map(b => b.name));
         
         // Check availability for each eligible barber at the specific time
         const availableBarbers: Barber[] = [];
@@ -504,26 +528,45 @@ export default function ConsumerBookingStatusPage() {
         // Check if there's a recent barber-initiated cancellation notification
         try {
           const notifResponse = await notificationService.getNotifications();
+          
+          // Parse notification data properly - it might be a string or object
+          const parseNotificationData = (n: any) => {
+            if (!n.data) return {};
+            if (typeof n.data === 'string') {
+              try {
+                return JSON.parse(n.data);
+              } catch {
+                return {};
+              }
+            }
+            return n.data;
+          };
+          
           const recentCancellation = notifResponse.notifications
-            .filter((n: any) => 
-              n.type === 'booking_cancelled' && 
-              n.data?.cancelledBy === 'barber' &&
-              n.data?.scheduledTime
-            )
+            .filter((n: any) => {
+              const data = parseNotificationData(n);
+              return n.type === 'booking_cancelled' && 
+                data.cancelledBy === 'barber' &&
+                data.scheduledTime;
+            })
             .sort((a: any, b: any) => 
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             )[0];
           
           if (recentCancellation && !recentCancellation.is_read) {
+            const cancellationData = parseNotificationData(recentCancellation);
+            
             // Extract barber name from the message (format: "Barber Name has cancelled...")
             const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
             const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
             
+            console.log('[Alternative Barbers] Cancellation notification data:', cancellationData);
+            
             setCancelledBookingDetails({
-              scheduledTime: recentCancellation.data.scheduledTime,
-              serviceType: recentCancellation.data.serviceType,
-              campusId: recentCancellation.data.campusId || '',
-              cancelledBarberId: recentCancellation.data.cancelledBarberId || '',
+              scheduledTime: cancellationData.scheduledTime,
+              serviceType: cancellationData.serviceType,
+              campusId: cancellationData.campusId || '',
+              cancelledBarberId: cancellationData.cancelledBarberId || '',
               barberName,
             });
             
