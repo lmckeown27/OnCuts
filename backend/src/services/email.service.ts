@@ -1537,11 +1537,11 @@ function generateBarberApplicationHtml(
       </p>
       
       <!-- Applicant Card -->
-      <div style="background-color: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <div style="background-color: #f2f5f4; border: 2px solid #5a7268; border-radius: 12px; padding: 20px; margin: 20px 0;">
         <div style="margin-bottom: 15px;">
-          <h3 style="color: #166534; margin: 0; font-size: 18px;">${details.applicantName}</h3>
-          <p style="color: #15803d; margin: 5px 0 0 0; font-size: 14px;">
-            <a href="mailto:${details.applicantEmail}" style="color: #15803d;">${details.applicantEmail}</a>
+          <h3 style="color: #2e3c38; margin: 0; font-size: 18px;">${details.applicantName}</h3>
+          <p style="color: #445750; margin: 5px 0 0 0; font-size: 14px;">
+            <a href="mailto:${details.applicantEmail}" style="color: #5a7268;">${details.applicantEmail}</a>
           </p>
         </div>
         <p style="color: #6b7280; font-size: 12px; margin: 0;">Submitted ${details.submittedAt}</p>
@@ -1573,14 +1573,14 @@ function generateBarberApplicationHtml(
       <div style="margin: 20px 0;">
         <h4 style="color: #1f2937; margin: 0 0 10px 0; font-size: 14px;">Services/Specialties:</h4>
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          ${details.specialties.map(s => `<span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">${s}</span>`).join('')}
+          ${details.specialties.map(s => `<span style="display: inline-block; background-color: #e6ebea; color: #2e3c38; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 500;">${s}</span>`).join('')}
         </div>
       </div>
       
       <!-- Why They Want to Be a Barber -->
-      <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">Why They Want to Be a CampusCut Barber:</h4>
-        <p style="color: #78350f; margin: 0; font-style: italic; line-height: 1.6;">"${details.whyBeBarber}"</p>
+      <div style="background-color: #f2f5f4; border: 1px solid #bfcdc8; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #445750; margin: 0 0 10px 0; font-size: 14px;">Why They Want to Be a CampusCut Barber:</h4>
+        <p style="color: #2e3c38; margin: 0; font-style: italic; line-height: 1.6;">"${details.whyBeBarber}"</p>
       </div>
       
       ${details.portfolioDescription ? `
@@ -1607,13 +1607,13 @@ function generateBarberApplicationHtml(
       ` : ''}
       
       <!-- Action Required -->
-      <div style="background-color: #dcfce7; border: 2px solid #22c55e; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
-        <h3 style="color: #166534; margin: 0 0 15px 0;">Ready to Schedule an Interview?</h3>
-        <p style="color: #15803d; margin: 0 0 20px 0; font-size: 14px; line-height: 1.6;">
+      <div style="background-color: #f2f5f4; border: 2px solid #5a7268; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+        <h3 style="color: #2e3c38; margin: 0 0 15px 0;">Ready to Schedule an Interview?</h3>
+        <p style="color: #445750; margin: 0 0 20px 0; font-size: 14px; line-height: 1.6;">
           ${applicantFirstName} is excited to join your campus! Consider reaching out to schedule a quick interview to verify their skills and discuss expectations.
         </p>
         <a href="mailto:${details.applicantEmail}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${encodeURIComponent(applicantFirstName)}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%0A%0ABest%2C%0A${encodeURIComponent(firstName)}" 
-           style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+           style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Email ${applicantFirstName} for Interview
         </a>
       </div>
@@ -1638,7 +1638,7 @@ function generateBarberApplicationHtml(
       
       <!-- Dashboard Link -->
       <p style="text-align: center; margin: 25px 0;">
-        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #1f2937; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #5a7268; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
           View in Dashboard
         </a>
       </p>
