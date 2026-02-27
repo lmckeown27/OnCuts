@@ -163,11 +163,14 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       const applicant = applicantInfo.rows[0];
 
       // Find campus manager(s) for this campus
+      // Check both: barbers with isCampusManager=true, OR users with role='CAMPUS_MANAGER' at this campus
       const campusManagers = await pool.query(
-        `SELECT u.id, u.first_name, u.last_name, u.email
+        `SELECT DISTINCT u.id, u.first_name, u.last_name, u.email
          FROM users u
-         JOIN barbers b ON u.id = b."userId"
-         WHERE b."campusId" = $1 AND b."isCampusManager" = true AND u.role = 'CAMPUS_MANAGER'`,
+         LEFT JOIN barbers b ON u.id = b."userId"
+         WHERE 
+           (b."campusId" = $1 AND b."isCampusManager" = true)
+           OR (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')`,
         [user.campusId]
       );
 
@@ -794,11 +797,14 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
 
     // Send notification email to campus manager(s)
     try {
+      // Check both: barbers with isCampusManager=true, OR users with role='CAMPUS_MANAGER' at this campus
       const campusManagers = await pool.query(
-        `SELECT u.id, u.first_name, u.last_name, u.email
+        `SELECT DISTINCT u.id, u.first_name, u.last_name, u.email
          FROM users u
-         JOIN barbers b ON u.id = b."userId"
-         WHERE b."campusId" = $1 AND b."isCampusManager" = true AND u.role = 'CAMPUS_MANAGER'`,
+         LEFT JOIN barbers b ON u.id = b."userId"
+         WHERE 
+           (b."campusId" = $1 AND b."isCampusManager" = true)
+           OR (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')`,
         [campusId]
       );
 
