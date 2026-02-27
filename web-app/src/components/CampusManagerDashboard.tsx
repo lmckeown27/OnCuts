@@ -547,10 +547,6 @@ Campus Manager`
               <p className="font-semibold text-gray-900">{app.available_hours || 'Not specified'}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-1">Has License</p>
-              <p className="font-semibold text-gray-900">{app.has_license ? 'Yes' : 'No'}</p>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
               <p className="font-semibold text-gray-900">{app.has_own_tools ? 'Yes' : 'No'}</p>
             </div>
