@@ -294,7 +294,7 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
       please enter the verification code below.
     </p>
     
-    <div style="text-align: center; margin: 30px 0; padding: 25px; background-color: #dcfce7; border-radius: 12px; border: 2px dashed #22c55e;">
+    <div style="text-align: center; margin: 30px 0; padding: 25px; background-color: #e6ebea; border-radius: 12px; border: 2px dashed #5a7268;">
       <p style="color: #166534; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
         Your Verification Code
       </p>
@@ -307,7 +307,7 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
     </div>
     
     <p style="text-align: center;">
-      <a href="${frontendUrl}/web/verify-email" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${frontendUrl}/web/verify-email" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Verify My Account
       </a>
     </p>
@@ -322,7 +322,7 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
     <p style="margin: 5px 0 0 0;">
-      <a href="${frontendUrl}/privacy" style="color: #22c55e; text-decoration: none;">Privacy Policy</a>
+      <a href="${frontendUrl}/privacy" style="color: #5a7268; text-decoration: none;">Privacy Policy</a>
     </p>
   </div>
 </body>
@@ -377,7 +377,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
     </p>
     
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${resetLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${resetLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Reset My Password
       </a>
     </p>
@@ -389,7 +389,7 @@ function generatePasswordResetEmailHtml(resetLink: string): string {
     <p style="color: #6b7280; font-size: 13px; margin-top: 20px;">
       If the button doesn't work, copy and paste this link into your browser:
     </p>
-    <p style="word-break: break-all; color: #22c55e; font-size: 13px;">${resetLink}</p>
+    <p style="word-break: break-all; color: #5a7268; font-size: 13px;">${resetLink}</p>
     
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
     
@@ -464,7 +464,7 @@ CampusCut Team
       Your account has been verified and you're all set! Welcome to the CampusCut community.
     </p>
     
-    <div style="background-color: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0;">
+    <div style="background-color: #f2f5f4; border-radius: 8px; padding: 20px; margin: 20px 0;">
       <p style="color: #166534; font-weight: 600; margin: 0 0 10px 0;">Here's what you can do now:</p>
       <ul style="color: #555555; margin: 0; padding-left: 20px;">
         <li>Discover talented barbers on your campus</li>
@@ -475,7 +475,7 @@ CampusCut Team
     </div>
     
     <p style="text-align: center; margin: 30px 0;">
-      <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Find Your Barber
       </a>
     </p>
@@ -653,42 +653,42 @@ function generateBookingConfirmationHtml(
       ${intro}
     </p>
     
-    <div style="background-color: #f0fdf4; border-radius: 12px; padding: 25px; margin: 20px 0; border: 1px solid #bbf7d0;">
+    <div style="background-color: #f2f5f4; border-radius: 12px; padding: 25px; margin: 20px 0; border: 1px solid #bfcdc8;">
       <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">
         Booking Details
       </h3>
       
       <table style="width: 100%; border-collapse: collapse;">
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #6b7280; width: 40%;">Service</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #1f2937; font-weight: 600;">${details.serviceName}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #6b7280; width: 40%;">Service</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #1f2937; font-weight: 600;">${details.serviceName}</td>
         </tr>
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #6b7280;">Date</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #1f2937; font-weight: 600;">${details.scheduledDate}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #6b7280;">Date</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #1f2937; font-weight: 600;">${details.scheduledDate}</td>
         </tr>
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #6b7280;">Time</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #1f2937; font-weight: 600;">${details.scheduledTime}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #6b7280;">Time</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #1f2937; font-weight: 600;">${details.scheduledTime}</td>
         </tr>
         ${details.location ? `
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #6b7280;">Location</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #1f2937; font-weight: 600;">${details.location}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #6b7280;">Location</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #1f2937; font-weight: 600;">${details.location}</td>
         </tr>
         ` : ''}
         <tr>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #6b7280;">${isConsumer ? 'Your Barber' : 'Customer'}</td>
-          <td style="padding: 10px 0; border-bottom: 1px solid #dcfce7; color: #1f2937; font-weight: 600;">${isConsumer ? details.barberName : details.consumerName}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #6b7280;">${isConsumer ? 'Your Barber' : 'Customer'}</td>
+          <td style="padding: 10px 0; border-bottom: 1px solid #e6ebea; color: #1f2937; font-weight: 600;">${isConsumer ? details.barberName : details.consumerName}</td>
         </tr>
         <tr>
           <td style="padding: 10px 0; color: #6b7280;">Price</td>
-          <td style="padding: 10px 0; color: #22c55e; font-weight: 700; font-size: 20px;">$${details.price.toFixed(2)}</td>
+          <td style="padding: 10px 0; color: #5a7268; font-weight: 700; font-size: 20px;">$${details.price.toFixed(2)}</td>
         </tr>
       </table>
       
       ${details.notes ? `
-      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #dcfce7;">
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e6ebea;">
         <p style="color: #6b7280; margin: 0 0 5px 0; font-size: 14px;">Notes:</p>
         <p style="color: #1f2937; margin: 0; font-style: italic;">"${details.notes}"</p>
       </div>
@@ -707,7 +707,7 @@ function generateBookingConfirmationHtml(
     </p>
     
     <p style="text-align: center; margin: 30px 0 20px 0;">
-      <a href="${ctaLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${ctaLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         ${ctaText}
       </a>
     </p>
@@ -908,7 +908,7 @@ function generatePendingBookingHtml(
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="color: #6b7280; font-weight: 600;">Total</td>
-            <td style="color: #22c55e; font-weight: 700; font-size: 20px; text-align: right;">$${details.price.toFixed(2)}</td>
+            <td style="color: #5a7268; font-weight: 700; font-size: 20px; text-align: right;">$${details.price.toFixed(2)}</td>
           </tr>
         </table>
       </div>
@@ -921,7 +921,7 @@ function generatePendingBookingHtml(
     ` : ''}
     
     <!-- Person Info -->
-    <div style="background-color: #f0fdf4; border-radius: 8px; padding: 15px; margin: 20px 0;">
+    <div style="background-color: #f2f5f4; border-radius: 8px; padding: 15px; margin: 20px 0;">
       <p style="color: #166534; margin: 0; font-size: 14px;">
         <strong>${isConsumer ? 'Your Barber:' : 'Customer:'}</strong> ${isConsumer ? details.barberName : details.consumerName}
       </p>
@@ -1036,7 +1036,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     </div>
     <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <p><strong>Service:</strong> ${details.serviceName}</p>
-      <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
+      <p><strong>Price:</strong> <span style="color: #5a7268; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
       ${details.newLocation ? `<p><strong>Location:</strong> ${details.newLocation}</p>` : ''}
     </div>
     <div style="text-align: center; margin: 20px 0;">
@@ -1101,7 +1101,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
     <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0;">
       <p><strong>Customer:</strong> ${details.consumerName}</p>
       <p><strong>Service:</strong> ${details.serviceName}</p>
-      <p><strong>Price:</strong> <span style="color: #22c55e; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
+      <p><strong>Price:</strong> <span style="color: #5a7268; font-weight: 700;">$${details.price.toFixed(2)}</span></p>
       ${details.newLocation ? `<p><strong>Location:</strong> ${details.newLocation}</p>` : ''}
     </div>
     <div style="text-align: center; margin: 20px 0;">
@@ -1294,12 +1294,12 @@ function generateBookingCompletedHtml(
     ? details.consumerName.split(' ')[0] 
     : details.barberName.split(' ')[0];
 
-  const headerColor = isConsumer ? '#22c55e' : '#3b82f6'; // Green for consumer (pay), Blue for barber
+  const headerColor = isConsumer ? '#5a7268' : '#3b82f6'; // Primary green for consumer (pay), Blue for barber
   const headerText = isConsumer ? 'Payment Required' : 'Service Complete';
   const headerEmoji = isConsumer ? '' : '✅'; // No emoji for consumer, show CampusCut text instead
 
   const ctaButton = isConsumer
-    ? `<a href="${details.paymentUrl}" style="display: inline-block; background-color: #22c55e; color: white; padding: 16px 48px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">Pay $${details.price.toFixed(2)} Now</a>`
+    ? `<a href="${details.paymentUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 48px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">Pay $${details.price.toFixed(2)} Now</a>`
     : `<a href="${frontendUrl}/web/barber" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Dashboard</a>`;
 
   const introText = isConsumer
@@ -1355,7 +1355,7 @@ function generateBookingCompletedHtml(
           <table style="width: 100%;">
             <tr>
               <td style="color: #1f2937; font-size: 18px; font-weight: 700;">${isConsumer ? 'Amount Due' : 'Amount'}</td>
-              <td style="color: #22c55e; font-size: 24px; font-weight: 700; text-align: right;">$${details.price.toFixed(2)}</td>
+              <td style="color: #5a7268; font-size: 24px; font-weight: 700; text-align: right;">$${details.price.toFixed(2)}</td>
             </tr>
           </table>
         </div>
@@ -1568,7 +1568,7 @@ function generateBarberApplicationHtml(
           </tr>
           <tr>
             <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280;">Has Own Tools</td>
-            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasOwnTools ? '#22c55e' : '#6b7280'}; font-weight: 600;">
+            <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; color: ${details.hasOwnTools ? '#5a7268' : '#6b7280'}; font-weight: 600;">
               ${details.hasOwnTools ? '✓ Yes' : 'No'}
             </td>
           </tr>
@@ -1872,7 +1872,7 @@ function generateBookingCancellationHtml(
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${ctaLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">${ctaText}</a>
+        <a href="${ctaLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">${ctaText}</a>
       </div>
 
       <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
@@ -2064,7 +2064,7 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
     
     <!-- CTA Button -->
     <p style="text-align: center; margin: 30px 0 20px 0;">
-      <a href="${frontendUrl}/web/consumer" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${frontendUrl}/web/consumer" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Find Another Barber
       </a>
     </p>
@@ -2237,7 +2237,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
           </tr>
         </table>
         
@@ -2249,7 +2249,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       </div>
       
       <!-- Tips Section -->
-      <div style="background-color: #ecfdf5; border-radius: 12px; padding: 20px; margin: 20px 0;">
+      <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0;">
         <h4 style="color: #166534; margin: 0 0 10px 0; font-size: 14px;">Tips for your appointment:</h4>
         <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Please arrive on time</li>
@@ -2266,7 +2266,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 25px 0;">
-        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           View Booking Details
         </a>
       </div>
@@ -2395,7 +2395,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       </div>
       
       <!-- Customer Info Card -->
-      <div style="background-color: #f0fdf4; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #bbf7d0;">
+      <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #bfcdc8;">
         <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Customer</h3>
         <p style="color: #1f2937; margin: 0; font-size: 18px; font-weight: 600;">${details.consumerName}</p>
       </div>
@@ -2423,7 +2423,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
           </tr>` : ''}
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">You'll Earn</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
           </tr>
         </table>
         
@@ -2522,7 +2522,7 @@ The CampusCut Team
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
   <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 16px; overflow: hidden; margin-top: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 40px 30px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #445750 100%); padding: 40px 30px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Application Approved!</h1>
       <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">Welcome to the CampusCut barber team</p>
     </div>
@@ -2544,7 +2544,7 @@ The CampusCut Team
         </p>
       </div>
       
-      <div style="background-color: #ecfdf5; border-radius: 12px; padding: 15px; margin: 20px 0;">
+      <div style="background-color: #f2f5f4; border-radius: 12px; padding: 15px; margin: 20px 0;">
         <p style="color: #166534; margin: 0; font-size: 14px;">
           <strong>Important:</strong> Use the same email address (<strong>${email}</strong>) when signing up, and you'll be automatically set up as a barber.
         </p>
@@ -2552,7 +2552,7 @@ The CampusCut Team
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${signUpLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 16px 50px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px;">
+        <a href="${signUpLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 50px; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 18px;">
           Create Your Account
         </a>
       </div>
@@ -2692,7 +2692,7 @@ CampusCut
       </p>
       
       <!-- Message Content -->
-      <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
+      <div style="background-color: #f2f5f4; border-left: 4px solid #5a7268; border-radius: 0 12px 12px 0; padding: 20px; margin: 20px 0;">
         <p style="color: #166534; margin: 0; font-size: 15px; line-height: 1.6; font-style: italic;">
           "${details.messageContent.length > 200 ? details.messageContent.substring(0, 200) + '...' : details.messageContent}"
         </p>
@@ -2721,7 +2721,7 @@ CampusCut
           ${details.booking.price ? `
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
           </tr>` : ''}
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Status</td>
@@ -2733,7 +2733,7 @@ CampusCut
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Reply to Message
         </a>
       </div>
@@ -2864,7 +2864,7 @@ CampusCut
           ${details.booking.price ? `
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right;">$${details.booking.price.toFixed(2)}</td>
           </tr>` : ''}
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Status</td>
@@ -2876,7 +2876,7 @@ CampusCut
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Reply to Message
         </a>
       </div>
@@ -2988,7 +2988,7 @@ CampusCut
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${conversationLink}" style="display: inline-block; background-color: #22c55e; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${conversationLink}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           Reply to Message
         </a>
       </div>
@@ -3157,7 +3157,7 @@ CampusCut
           </tr>` : ''}
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
           </tr>
         </table>
       </div>
@@ -3167,7 +3167,7 @@ CampusCut
         <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Please Update the Booking</h3>
         
         <!-- Option 1: Complete -->
-        <div style="background-color: #ecfdf5; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #22c55e;">
+        <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #5a7268;">
           <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">✅ If the haircut was completed:</p>
           <p style="color: #15803d; margin: 8px 0 0 0; font-size: 13px;">Mark the booking as "Complete" to request payment from ${details.consumerName}</p>
         </div>
@@ -3338,7 +3338,7 @@ CampusCut
           </tr>` : ''}
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
-            <td style="padding: 8px 0; color: #22c55e; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
           </tr>
         </table>
       </div>
@@ -3348,7 +3348,7 @@ CampusCut
         <h3 style="color: #dc2626; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Immediate Action Required</h3>
         
         <!-- Option 1: Complete -->
-        <div style="background-color: #ecfdf5; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #22c55e;">
+        <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #5a7268;">
           <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">✅ Haircut was completed?</p>
           <p style="color: #15803d; margin: 8px 0 0 0; font-size: 13px;">Mark as "Complete" to request payment</p>
         </div>
