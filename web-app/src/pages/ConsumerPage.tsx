@@ -416,6 +416,7 @@ export default function ConsumerPage() {
         });
         
         // Check availability for each eligible barber at the specific time
+        // This accounts for: weekly schedule, blocked time slots, and existing bookings
         const availableBarbers: Barber[] = [];
         
         for (const barber of eligibleBarbers) {
@@ -424,18 +425,64 @@ export default function ConsumerPage() {
               date: dateStr,
             });
             
-            const slots = availabilityResponse.availableSlots || [];
+            const data = availabilityResponse.data || availabilityResponse;
             
-            // Check if the requested time falls within any available slot
-            const isAvailable = slots.some((slot: { start: string; end: string }) => {
-              const [startHour, startMin] = slot.start.split(':').map(Number);
-              const [endHour, endMin] = slot.end.split(':').map(Number);
-              const slotStartMinutes = startHour * 60 + startMin;
-              const slotEndMinutes = endHour * 60 + endMin;
+            // Check if day is available at all
+            if (!data.available) {
+              continue;
+            }
+            
+            // Check if the requested time slot is available
+            // The slots array contains time slots with 'available' property
+            const slots = data.slots || [];
+            
+            // Find if there's an available slot at or near the requested time
+            const isAvailable = slots.some((slot: { time: string; available: boolean }) => {
+              if (!slot.available) return false;
               
-              // Check if requested time is within this slot (with some buffer for appointment duration)
-              return requestedTimeInMinutes >= slotStartMinutes && requestedTimeInMinutes < slotEndMinutes;
+              // Parse slot time (HH:MM format)
+              const [slotHour, slotMin] = slot.time.split(':').map(Number);
+              const slotTimeMinutes = slotHour * 60 + slotMin;
+              
+              // Check if slot time matches requested time (within 15 min tolerance for slot intervals)
+              return Math.abs(slotTimeMinutes - requestedTimeInMinutes) < 15;
             });
+            
+            // Also check using intervals if slots aren't granular enough
+            if (!isAvailable && data.intervals) {
+              const intervals = data.intervals || [];
+              const bookedSlots = data.bookedSlots || [];
+              
+              // Check if requested time falls within any interval
+              const inInterval = intervals.some((interval: { start: string; end: string }) => {
+                const [startHour, startMin] = interval.start.split(':').map(Number);
+                const [endHour, endMin] = interval.end.split(':').map(Number);
+                const intervalStartMinutes = startHour * 60 + startMin;
+                const intervalEndMinutes = endHour * 60 + endMin;
+                
+                return requestedTimeInMinutes >= intervalStartMinutes && requestedTimeInMinutes < intervalEndMinutes;
+              });
+              
+              if (!inInterval) {
+                continue;
+              }
+              
+              // Check if requested time conflicts with any booked/blocked slot
+              const isBlocked = bookedSlots.some((blocked: { start: string; end: string }) => {
+                const [startHour, startMin] = blocked.start.split(':').map(Number);
+                const [endHour, endMin] = blocked.end.split(':').map(Number);
+                const blockedStartMinutes = startHour * 60 + startMin;
+                const blockedEndMinutes = endHour * 60 + endMin;
+                
+                // Check if requested time overlaps with blocked time
+                return requestedTimeInMinutes >= blockedStartMinutes && requestedTimeInMinutes < blockedEndMinutes;
+              });
+              
+              if (!isBlocked) {
+                availableBarbers.push(barber);
+              }
+              continue;
+            }
             
             if (isAvailable) {
               availableBarbers.push(barber);
