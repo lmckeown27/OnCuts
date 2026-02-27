@@ -2230,9 +2230,9 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px 20px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 24px;">Appointment Reminder</h1>
-      <p style="color: #fef3c7; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
+      <p style="color: #d1e0d9; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
     </div>
     
     <div style="padding: 30px;">
@@ -2243,7 +2243,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       
       <!-- Countdown Badge -->
       <div style="text-align: center; margin: 20px 0;">
-        <span style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
+        <span style="display: inline-block; background-color: #f2f5f4; color: #3d5149; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
           Starts in approximately 1 hour
         </span>
       </div>
@@ -2262,7 +2262,7 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
-            <td style="padding: 8px 0; color: #f59e0b; font-weight: 700; text-align: right; font-size: 16px;">${details.scheduledTime}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 16px;">${details.scheduledTime}</td>
           </tr>
           ${details.location ? `
           <tr>
@@ -2288,8 +2288,8 @@ function generateBookingReminderHtml(details: BookingReminderEmailDetails, front
       
       <!-- Tips Section -->
       <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #166534; margin: 0 0 10px 0; font-size: 14px;">Tips for your appointment:</h4>
-        <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+        <h4 style="color: #3d5149; margin: 0 0 10px 0; font-size: 14px;">Tips for your appointment:</h4>
+        <ul style="color: #4a6258; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Please arrive on time</li>
           <li>If you need to cancel, contact your barber ASAP</li>
           <li>Bring any reference photos if you have a specific style in mind</li>
@@ -2414,9 +2414,9 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
       <h1 style="color: white; margin: 0; font-size: 24px;">Upcoming Appointment</h1>
-      <p style="color: #bfdbfe; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
+      <p style="color: #d1e0d9; margin: 5px 0 0 0; font-size: 14px;">Starting in 1 hour!</p>
     </div>
     
     <div style="padding: 30px;">
@@ -2427,14 +2427,14 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       
       <!-- Countdown Badge -->
       <div style="text-align: center; margin: 20px 0;">
-        <span style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
+        <span style="display: inline-block; background-color: #f2f5f4; color: #3d5149; padding: 12px 24px; border-radius: 30px; font-size: 16px; font-weight: 700;">
           Starts in approximately 1 hour
         </span>
       </div>
       
       <!-- Customer Info Card -->
       <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #bfcdc8;">
-        <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Customer</h3>
+        <h3 style="color: #3d5149; margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Customer</h3>
         <p style="color: #1f2937; margin: 0; font-size: 18px; font-weight: 600;">${details.consumerName}</p>
       </div>
       
@@ -2452,7 +2452,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Time</td>
-            <td style="padding: 8px 0; color: #3b82f6; font-weight: 700; text-align: right; font-size: 16px;">${details.scheduledTime}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 16px;">${details.scheduledTime}</td>
           </tr>
           ${details.location ? `
           <tr>
@@ -2473,9 +2473,9 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       </div>
       
       <!-- Checklist Section -->
-      <div style="background-color: #fef3c7; border-radius: 12px; padding: 20px; margin: 20px 0;">
-        <h4 style="color: #92400e; margin: 0 0 10px 0; font-size: 14px;">Quick Checklist:</h4>
-        <ul style="color: #78350f; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
+      <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 20px 0;">
+        <h4 style="color: #3d5149; margin: 0 0 10px 0; font-size: 14px;">Quick Checklist:</h4>
+        <ul style="color: #4a6258; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.8;">
           <li>Equipment ready and clean</li>
           <li>Review customer's style preferences</li>
           <li>Be ready to greet ${consumerFirstName} on time</li>
@@ -2490,7 +2490,7 @@ function generateBarberReminderHtml(details: BookingReminderEmailDetails, fronte
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 25px 0;">
-        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        <a href="${frontendUrl}/web" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
           View Appointment
         </a>
       </div>
