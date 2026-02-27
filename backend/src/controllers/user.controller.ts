@@ -473,10 +473,13 @@ export const deleteAccount = async (req: Request, res: Response) => {
     // 8. Delete barber applications
     await safeDelete('DELETE FROM barber_applications WHERE user_id = $1', [id]);
 
-    // 9. Delete barber record
+    // 9. Unlink guest barber applications (set linked_user_id to NULL)
+    await safeDelete('UPDATE guest_barber_applications SET linked_user_id = NULL WHERE linked_user_id = $1', [id]);
+
+    // 10. Delete barber record
     await safeDelete('DELETE FROM barbers WHERE "userId" = $1', [id]);
 
-    // 10. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
+    // 11. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
     await client.query('DELETE FROM users WHERE id = $1', [id]);
 
     await client.query('COMMIT');
