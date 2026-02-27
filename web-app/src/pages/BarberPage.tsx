@@ -1515,6 +1515,7 @@ interface ConfirmedBooking {
 function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
+  const isAdmin = user?.is_admin || user?.user_type === 'admin';
   
   // Helper to get the current date in campus timezone
   const getTodayInCampusTimezone = () => {
