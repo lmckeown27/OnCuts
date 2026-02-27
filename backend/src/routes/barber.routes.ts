@@ -96,8 +96,8 @@ router.get(
           u."avatarUrl" as avatar,
           b."weeklySchedule" as weekly_schedule,
           b.pricing as services,
-          (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as average_rating,
-          (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+          (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r."barberId" = b.id) as average_rating,
+          (SELECT COUNT(*) FROM reviews r WHERE r."barberId" = b.id) as total_reviews
         FROM barbers b
         JOIN users u ON b."userId" = u.id
         WHERE b."campusId" = $1
