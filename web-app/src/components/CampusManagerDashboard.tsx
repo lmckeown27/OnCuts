@@ -32,7 +32,9 @@ import {
   RotateCcw,
   Search,
   Scissors,
-  Calendar
+  Calendar,
+  Copy,
+  Check
 } from 'lucide-react';
 import Card from './Card';
 import Button from './Button';
@@ -775,13 +777,14 @@ Campus Manager`
                       setCopiedField('email');
                       setTimeout(() => setCopiedField(null), 2000);
                     }}
-                    className={`ml-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    className={`ml-3 p-2 rounded-lg transition-colors ${
                       copiedField === 'email' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
                     }`}
+                    title={copiedField === 'email' ? 'Copied!' : 'Copy to clipboard'}
                   >
-                    {copiedField === 'email' ? 'Copied!' : 'Copy'}
+                    {copiedField === 'email' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -800,13 +803,14 @@ Campus Manager`
                         setCopiedField('phone');
                         setTimeout(() => setCopiedField(null), 2000);
                       }}
-                      className={`ml-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      className={`ml-3 p-2 rounded-lg transition-colors ${
                         copiedField === 'phone' 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
                       }`}
+                      title={copiedField === 'phone' ? 'Copied!' : 'Copy to clipboard'}
                     >
-                      {copiedField === 'phone' ? 'Copied!' : 'Copy'}
+                      {copiedField === 'phone' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                     </button>
                   )}
                 </div>
