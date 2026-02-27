@@ -417,10 +417,18 @@ export default function ConsumerPage() {
           // Skip the barber who cancelled
           if (barber.id === alternativeBarbersData.cancelledBarberId) return false;
           
-          // Check if barber offers this service type
-          const offersService = barber.pricing?.some(
-            (s: any) => s.type?.toUpperCase() === alternativeBarbersData.serviceType?.toUpperCase()
-          );
+          // Check if barber offers this service - match by name, type, or service_type field
+          const serviceType = alternativeBarbersData.serviceType?.toUpperCase();
+          const offersService = barber.pricing?.some((s: any) => {
+            const serviceName = (s.name || s.type || s.service_type || '').toUpperCase();
+            // Also format service type for comparison: "HAIRCUT_FADE" -> "HAIRCUT & FADE"
+            const formattedServiceType = serviceType?.replace(/_/g, ' ').replace(/AND/g, '&');
+            const formattedServiceName = serviceName.replace(/_/g, ' ').replace(/AND/g, '&');
+            return serviceName === serviceType || 
+                   formattedServiceName === formattedServiceType ||
+                   serviceName.includes(serviceType) || 
+                   serviceType?.includes(serviceName);
+          });
           return offersService;
         });
         

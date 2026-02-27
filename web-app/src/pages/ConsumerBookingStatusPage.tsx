@@ -290,11 +290,22 @@ export default function ConsumerBookingStatusPage() {
         // Filter out the cancelled barber and filter to those who offer the service
         const eligibleBarbers = allBarbers.filter(barber => {
           if (barber.id === cancelledBookingDetails.cancelledBarberId) return false;
-          const offersService = barber.pricing?.some(
-            (s: any) => s.type?.toUpperCase() === cancelledBookingDetails.serviceType?.toUpperCase()
-          );
+          
+          // Check if barber offers this service - match by name, type, or service_type field
+          const serviceType = cancelledBookingDetails.serviceType?.toUpperCase();
+          const offersService = barber.pricing?.some((s: any) => {
+            const serviceName = (s.name || s.type || s.service_type || '').toUpperCase();
+            // Also format service type for comparison: "HAIRCUT_FADE" -> "HAIRCUT & FADE" or "Haircut & Fade"
+            const formattedServiceType = serviceType?.replace(/_/g, ' ').replace(/AND/g, '&');
+            const formattedServiceName = serviceName.replace(/_/g, ' ').replace(/AND/g, '&');
+            return serviceName === serviceType || 
+                   formattedServiceName === formattedServiceType ||
+                   serviceName.includes(serviceType) || 
+                   serviceType?.includes(serviceName);
+          });
+          
           if (!offersService) {
-            console.log(`[Alternative Barbers] ${barber.name} does not offer ${cancelledBookingDetails.serviceType}`);
+            console.log(`[Alternative Barbers] ${barber.name} does not offer ${cancelledBookingDetails.serviceType}. Pricing:`, barber.pricing?.map((s: any) => s.name || s.type));
           }
           return offersService;
         });
