@@ -988,7 +988,6 @@ export default function MessagesPage() {
     if (!selectedConversation) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gray-50">
-          <MessageCircle className="w-20 h-20 text-gray-300 mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">Select a conversation</h3>
           <p className="text-gray-500">Choose a conversation from the list to start messaging</p>
         </div>
