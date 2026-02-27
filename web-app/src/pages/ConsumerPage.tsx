@@ -389,6 +389,13 @@ export default function ConsumerPage() {
       
       setLoadingAlternativeBarbers(true);
       try {
+        // Parse the scheduled time
+        const scheduledDate = new Date(alternativeBarbersData.scheduledTime);
+        const dateStr = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const requestedHour = scheduledDate.getHours();
+        const requestedMinutes = scheduledDate.getMinutes();
+        const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
+        
         // Fetch barbers at the same campus
         const response = await api.get('/barbers', {
           campusId: alternativeBarbersData.campusId,
@@ -408,7 +415,38 @@ export default function ConsumerPage() {
           return offersService;
         });
         
-        setAlternativeBarbers(eligibleBarbers);
+        // Check availability for each eligible barber at the specific time
+        const availableBarbers: Barber[] = [];
+        
+        for (const barber of eligibleBarbers) {
+          try {
+            const availabilityResponse = await api.get(`/barbers/${barber.id}/availability`, {
+              date: dateStr,
+            });
+            
+            const slots = availabilityResponse.availableSlots || [];
+            
+            // Check if the requested time falls within any available slot
+            const isAvailable = slots.some((slot: { start: string; end: string }) => {
+              const [startHour, startMin] = slot.start.split(':').map(Number);
+              const [endHour, endMin] = slot.end.split(':').map(Number);
+              const slotStartMinutes = startHour * 60 + startMin;
+              const slotEndMinutes = endHour * 60 + endMin;
+              
+              // Check if requested time is within this slot (with some buffer for appointment duration)
+              return requestedTimeInMinutes >= slotStartMinutes && requestedTimeInMinutes < slotEndMinutes;
+            });
+            
+            if (isAvailable) {
+              availableBarbers.push(barber);
+            }
+          } catch (error) {
+            // If we can't check availability, skip this barber
+            console.error(`Failed to check availability for barber ${barber.id}:`, error);
+          }
+        }
+        
+        setAlternativeBarbers(availableBarbers);
       } catch (error) {
         console.error('Failed to fetch alternative barbers:', error);
         setAlternativeBarbers([]);
@@ -1126,10 +1164,10 @@ export default function ConsumerPage() {
               {/* Alternative Barbers */}
               <h4 className="font-semibold text-gray-800 mb-3">
                 {loadingAlternativeBarbers 
-                  ? 'Finding barbers...' 
+                  ? 'Checking availability...' 
                   : alternativeBarbers.length > 0 
-                    ? `${alternativeBarbers.length} other barber${alternativeBarbers.length !== 1 ? 's' : ''} offer this service`
-                    : 'No other barbers offer this service'
+                    ? `${alternativeBarbers.length} barber${alternativeBarbers.length !== 1 ? 's' : ''} available at this time`
+                    : 'No barbers available at this time'
                 }
               </h4>
 
