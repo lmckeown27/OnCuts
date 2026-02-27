@@ -683,8 +683,23 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </p>
                 <input
                   type="tel"
+                  inputMode="numeric"
                   value={form.phoneNumber}
-                  onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                  onChange={(e) => {
+                    // Only allow digits, format as (XXX) XXX-XXXX
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    let formatted = '';
+                    if (digits.length > 0) {
+                      formatted = '(' + digits.slice(0, 3);
+                      if (digits.length > 3) {
+                        formatted += ') ' + digits.slice(3, 6);
+                        if (digits.length > 6) {
+                          formatted += '-' + digits.slice(6, 10);
+                        }
+                      }
+                    }
+                    setForm({ ...form, phoneNumber: formatted });
+                  }}
                   placeholder="(555) 123-4567"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                 />
