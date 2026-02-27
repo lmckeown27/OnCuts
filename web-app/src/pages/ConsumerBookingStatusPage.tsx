@@ -253,6 +253,18 @@ export default function ConsumerBookingStatusPage() {
         const requestedMinutes = scheduledDate.getMinutes();
         const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
         
+        console.log('[Alternative Barbers] Cancelled booking details:', {
+          scheduledTime: cancelledBookingDetails.scheduledTime,
+          parsedDate: scheduledDate.toString(),
+          dateStr,
+          requestedHour,
+          requestedMinutes,
+          requestedTimeInMinutes,
+          serviceType: cancelledBookingDetails.serviceType,
+          campusId: cancelledBookingDetails.campusId,
+          cancelledBarberId: cancelledBookingDetails.cancelledBarberId,
+        });
+        
         // Fetch barbers at the same campus (or all if campusId not available)
         const params: any = {};
         if (cancelledBookingDetails.campusId) {
@@ -261,6 +273,7 @@ export default function ConsumerBookingStatusPage() {
         const response = await api.get('/barbers', params);
         
         const allBarbers: Barber[] = response.barbers || [];
+        console.log('[Alternative Barbers] Fetched barbers:', allBarbers.length);
         
         // Filter out the cancelled barber and filter to those who offer the service
         const eligibleBarbers = allBarbers.filter(barber => {
@@ -268,8 +281,12 @@ export default function ConsumerBookingStatusPage() {
           const offersService = barber.pricing?.some(
             (s: any) => s.type?.toUpperCase() === cancelledBookingDetails.serviceType?.toUpperCase()
           );
+          if (!offersService) {
+            console.log(`[Alternative Barbers] ${barber.name} does not offer ${cancelledBookingDetails.serviceType}`);
+          }
           return offersService;
         });
+        console.log('[Alternative Barbers] Eligible barbers (offer service):', eligibleBarbers.length);
         
         // Check availability for each eligible barber at the specific time
         const availableBarbers: Barber[] = [];
@@ -281,7 +298,16 @@ export default function ConsumerBookingStatusPage() {
             });
             
             const availData = availabilityResponse.data || availabilityResponse;
-            if (!availData.available) continue;
+            console.log(`[Alternative Barbers] ${barber.name} availability:`, {
+              available: availData.available,
+              intervals: availData.intervals,
+              slotsCount: availData.slots?.length,
+              bookedSlotsCount: availData.bookedSlots?.length,
+            });
+            if (!availData.available) {
+              console.log(`[Alternative Barbers] ${barber.name} - day not available`);
+              continue;
+            }
             
             // Check slots or intervals
             const slots = availData.slots || [];
@@ -314,13 +340,17 @@ export default function ConsumerBookingStatusPage() {
             }
             
             if (isAvailable) {
+              console.log(`[Alternative Barbers] ${barber.name} - AVAILABLE at ${requestedTimeInMinutes} minutes`);
               availableBarbers.push(barber);
+            } else {
+              console.log(`[Alternative Barbers] ${barber.name} - NOT available at ${requestedTimeInMinutes} minutes`);
             }
           } catch (error) {
             console.error(`Failed to check availability for barber ${barber.id}:`, error);
           }
         }
         
+        console.log('[Alternative Barbers] Final available barbers:', availableBarbers.length);
         setAlternativeBarbers(availableBarbers);
       } catch (error) {
         console.error('Failed to fetch alternative barbers:', error);
