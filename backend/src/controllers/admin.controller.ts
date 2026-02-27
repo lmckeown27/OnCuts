@@ -910,10 +910,11 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     // Get total revenue, platform fees, and transaction count for Stripe fee calculation
     // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
     // Also break out card vs cash payments
+    // NOTE: Platform fees only apply to CARD payments - cash payments generate no platform revenue
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
-        COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
+        COALESCE(SUM("platformFeeUsdCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) as total_platform_fees,
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count,
@@ -1380,10 +1381,11 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     // Get total revenue, platform fees, and transaction count
     // Calculate barber earnings as totalPaidCents - platformFeeUsdCents to include tips
     // Also break out card vs cash payments
+    // NOTE: Platform fees only apply to CARD payments - cash payments generate no platform revenue
     const revenueResult = await pool.query(`
       SELECT 
         COALESCE(SUM("totalPaidCents"), 0) as total_revenue,
-        COALESCE(SUM("platformFeeUsdCents"), 0) as total_platform_fees,
+        COALESCE(SUM("platformFeeUsdCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) as total_platform_fees,
         COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) as total_barber_earnings,
         COALESCE(SUM("tipAmountCents"), 0) as total_tips,
         COUNT(*) as completed_transaction_count,
