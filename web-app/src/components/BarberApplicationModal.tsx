@@ -794,7 +794,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               {/* Campus Selection */}
               <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-2 text-primary-600" />
                   Which campus do you want to cut at? *
                 </label>
                 <p className="text-xs text-gray-600 mb-3">
@@ -894,7 +893,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-2" />
                     Hours per week? *
                   </label>
                   <select
@@ -912,7 +910,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Camera className="w-4 h-4 inline mr-2" />
                     Social Media (optional)
                   </label>
                   <input
