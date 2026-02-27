@@ -389,11 +389,20 @@ export default function ConsumerPage() {
       
       setLoadingAlternativeBarbers(true);
       try {
-        // Parse the scheduled time
+        // Parse the scheduled time - handle UTC to Pacific conversion
         const scheduledDate = new Date(alternativeBarbersData.scheduledTime);
-        const dateStr = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        const requestedHour = scheduledDate.getHours();
-        const requestedMinutes = scheduledDate.getMinutes();
+        
+        // Get date in Pacific timezone for the API
+        const dateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD format
+        
+        // Get time in Pacific timezone
+        const pacificTimeStr = scheduledDate.toLocaleTimeString('en-US', { 
+          timeZone: 'America/Los_Angeles', 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        });
+        const [requestedHour, requestedMinutes] = pacificTimeStr.split(':').map(Number);
         const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
         
         // Fetch barbers at the same campus

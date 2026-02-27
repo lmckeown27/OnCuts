@@ -246,17 +246,27 @@ export default function ConsumerBookingStatusPage() {
       
       setLoadingAlternativeBarbers(true);
       try {
-        // Parse the scheduled time
+        // Parse the scheduled time - handle both UTC and local time formats
         const scheduledDate = new Date(cancelledBookingDetails.scheduledTime);
-        const dateStr = scheduledDate.toISOString().split('T')[0];
-        const requestedHour = scheduledDate.getHours();
-        const requestedMinutes = scheduledDate.getMinutes();
+        
+        // Get date in Pacific timezone for the API
+        const pacificDateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); // YYYY-MM-DD format
+        
+        // Get time in Pacific timezone
+        const pacificTimeStr = scheduledDate.toLocaleTimeString('en-US', { 
+          timeZone: 'America/Los_Angeles', 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        });
+        const [requestedHour, requestedMinutes] = pacificTimeStr.split(':').map(Number);
         const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
         
         console.log('[Alternative Barbers] Cancelled booking details:', {
           scheduledTime: cancelledBookingDetails.scheduledTime,
           parsedDate: scheduledDate.toString(),
-          dateStr,
+          pacificDateStr,
+          pacificTimeStr,
           requestedHour,
           requestedMinutes,
           requestedTimeInMinutes,
@@ -264,6 +274,8 @@ export default function ConsumerBookingStatusPage() {
           campusId: cancelledBookingDetails.campusId,
           cancelledBarberId: cancelledBookingDetails.cancelledBarberId,
         });
+        
+        const dateStr = pacificDateStr;
         
         // Fetch barbers at the same campus (or all if campusId not available)
         const params: any = {};
