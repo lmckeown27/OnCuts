@@ -115,6 +115,7 @@ interface BarberBooking {
   tip_cents: number;
   total_paid_cents: number;
   status: string;
+  payment_method: string | null;
   scheduled_time: string;
   created_at: string;
   paid_at: string | null;
