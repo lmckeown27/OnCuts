@@ -265,7 +265,7 @@ export default function ConsumerBookingStatusPage() {
         // Filter out the cancelled barber and filter to those who offer the service
         const eligibleBarbers = allBarbers.filter(barber => {
           if (barber.id === cancelledBookingDetails.cancelledBarberId) return false;
-          const offersService = barber.services?.some(
+          const offersService = barber.pricing?.some(
             (s: any) => s.type?.toUpperCase() === cancelledBookingDetails.serviceType?.toUpperCase()
           );
           return offersService;
@@ -710,8 +710,8 @@ export default function ConsumerBookingStatusPage() {
                         className="w-full p-4 bg-white border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-colors text-left flex items-center gap-4 shadow-sm"
                       >
                         <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                          {barber.avatar ? (
-                            <img src={barber.avatar} alt={barber.name} className="w-full h-full object-cover" />
+                          {(barber.profile_picture_url || barber.profile_photo_url) ? (
+                            <img src={barber.profile_picture_url || barber.profile_photo_url} alt={barber.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-primary-100">
                               <span className="text-primary-600 font-semibold text-lg">
@@ -723,13 +723,13 @@ export default function ConsumerBookingStatusPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 truncate">{barber.name}</p>
                           <div className="flex items-center gap-2 text-sm text-gray-500">
-                            {barber.avgRating && (
+                            {barber.average_rating && (
                               <span className="flex items-center gap-1">
-                                ⭐ {barber.avgRating.toFixed(1)}
+                                ⭐ {barber.average_rating.toFixed(1)}
                               </span>
                             )}
-                            {barber.totalReviews > 0 && (
-                              <span>({barber.totalReviews} reviews)</span>
+                            {(barber.total_reviews ?? 0) > 0 && (
+                              <span>({barber.total_reviews} reviews)</span>
                             )}
                           </div>
                         </div>
