@@ -766,7 +766,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   What services will you offer? * (Select all that apply)
                 </label>
                 <p className="text-xs text-gray-500 mb-3">These will be your specialties on your barber profile.</p>
-                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto">
+                <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto">
                   {SERVICE_TYPES.map((service) => {
                     const isSelected = form.specialties.includes(service.name);
                     return (
