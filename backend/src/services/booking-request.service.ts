@@ -13,6 +13,148 @@ import { logger } from '../utils/logger';
 import notificationService from './notification.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
+interface TimeInterval {
+  start: string;
+  end: string;
+}
+
+interface AlternativeBarber {
+  id: string;
+  name: string;
+  avatar?: string;
+  average_rating?: number;
+  total_reviews?: number;
+}
+
+/**
+ * Fetch alternative barbers available at the given time
+ */
+async function fetchAlternativeBarbers(
+  campusId: string,
+  excludeBarberId: string,
+  serviceType: string,
+  scheduledTime: Date
+): Promise<AlternativeBarber[]> {
+  try {
+    const dateStr = scheduledTime.toISOString().split('T')[0];
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+    const dayName = dayNames[scheduledTime.getDay()];
+    const requestedTimeInMinutes = scheduledTime.getHours() * 60 + scheduledTime.getMinutes();
+
+    // Fetch barbers at the same campus who offer the same service
+    const barbersResult = await pool.query(`
+      SELECT
+        b.id,
+        COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
+        u.profile_picture_url as avatar,
+        b."weeklySchedule" as weekly_schedule,
+        (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as average_rating,
+        (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."campusId" = $1
+        AND b.id != $2
+        AND b."isActive" = true
+        AND b."isOnboarded" = true
+        AND EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(b.pricing) AS service_item
+          WHERE UPPER(service_item ->> 'type') = UPPER($3)
+             OR UPPER(service_item ->> 'service_type') = UPPER($3)
+        )
+      LIMIT 10
+    `, [campusId, excludeBarberId, serviceType]);
+
+    const alternativeBarbers: AlternativeBarber[] = [];
+
+    for (const barber of barbersResult.rows) {
+      const weeklySchedule = barber.weekly_schedule || {};
+      const daySchedule = weeklySchedule[dayName];
+
+      if (!daySchedule || !daySchedule.enabled) continue;
+
+      const intervals: TimeInterval[] = daySchedule.intervals && Array.isArray(daySchedule.intervals)
+        ? daySchedule.intervals
+        : (daySchedule.start && daySchedule.end ? [{ start: daySchedule.start, end: daySchedule.end }] : []);
+
+      if (intervals.length === 0) continue;
+
+      // Check for conflicting bookings and blocked times
+      const conflictsResult = await pool.query(
+        `SELECT
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH24:MI') as start_time,
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + INTERVAL '60 minutes', 'HH24:MI') as end_time
+        FROM bookings
+        WHERE "barberId" = $1
+          AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
+          AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+        UNION ALL
+        SELECT
+          TO_CHAR(start_time, 'HH24:MI') as start_time,
+          TO_CHAR(end_time, 'HH24:MI') as end_time
+        FROM barber_time_blocks
+        WHERE barber_id = $1
+          AND block_date = $2
+        ORDER BY start_time`,
+        [barber.id, dateStr]
+      );
+
+      const bookedSlots = conflictsResult.rows.map(row => ({
+        start: row.start_time,
+        end: row.end_time
+      }));
+
+      let isAvailable = false;
+      for (const interval of intervals) {
+        const [intervalStartHour, intervalStartMin] = interval.start.split(':').map(Number);
+        const [intervalEndHour, intervalEndMin] = interval.end.split(':').map(Number);
+        const intervalStartTimeMinutes = intervalStartHour * 60 + intervalStartMin;
+        const intervalEndTimeMinutes = intervalEndHour * 60 + intervalEndMin;
+
+        if (requestedTimeInMinutes >= intervalStartTimeMinutes && requestedTimeInMinutes < intervalEndTimeMinutes) {
+          let isBlocked = false;
+          for (const blocked of bookedSlots) {
+            const [blockedStartHour, blockedStartMin] = blocked.start.split(':').map(Number);
+            const [blockedEndHour, blockedEndMin] = blocked.end.split(':').map(Number);
+            const blockedStartTimeMinutes = blockedStartHour * 60 + blockedStartMin;
+            const blockedEndTimeMinutes = blockedEndHour * 60 + blockedEndMin;
+
+            if (
+              (requestedTimeInMinutes >= blockedStartTimeMinutes && requestedTimeInMinutes < blockedEndTimeMinutes) ||
+              (requestedTimeInMinutes + 30 > blockedStartTimeMinutes && requestedTimeInMinutes + 30 <= blockedEndTimeMinutes)
+            ) {
+              isBlocked = true;
+              break;
+            }
+          }
+          if (!isBlocked) {
+            isAvailable = true;
+            break;
+          }
+        }
+      }
+
+      if (isAvailable) {
+        alternativeBarbers.push({
+          id: barber.id,
+          name: barber.name,
+          avatar: barber.avatar,
+          average_rating: barber.average_rating ? parseFloat(barber.average_rating) : undefined,
+          total_reviews: barber.total_reviews ? parseInt(barber.total_reviews, 10) : undefined,
+        });
+      }
+
+      // Limit to 5 barbers
+      if (alternativeBarbers.length >= 5) break;
+    }
+
+    return alternativeBarbers;
+  } catch (error) {
+    logger.error('Error fetching alternative barbers for decline email:', error);
+    return [];
+  }
+}
+
 interface BookingRequest {
   bookingId: string;
   customerId: string;
@@ -596,7 +738,8 @@ export class BookingRequestService {
           SELECT 
             c.user1_id, c.user2_id, c.booking_id,
             c.service_name, c.service_price, c.scheduled_time, c.location,
-            b."serviceType", b."priceUsdCents", b."requestedAt",
+            b."serviceType", b."priceUsdCents", b."requestedAt", b."barberId",
+            bar."campusId" as campus_id,
             COALESCE(campus.timezone, 'America/New_York') as campus_timezone
           FROM conversations c
           LEFT JOIN bookings b ON c.booking_id = b.id
@@ -658,31 +801,51 @@ export class BookingRequestService {
           data: { bookingId: linkedBookingId, reason },
         });
 
-        // Send decline email to consumer
+        // Send decline email to consumer with alternative barbers
         if (consumerEmail) {
           const convData = convResult.rows[0];
           const campusTimezone = convData.campus_timezone || 'America/New_York';
           const scheduledTime = convData.requestedAt || convData.scheduled_time || new Date();
           const scheduledDate = new Date(scheduledTime);
+          const serviceName = convData.service_name || convData.serviceType || 'Haircut';
+          const declinedBarberId = convData.barberId || barberId;
+          const campusId = convData.campus_id;
           
-          sendBookingDeclineEmail({
-            consumerEmail,
-            consumerName,
-            barberName,
-            serviceName: convData.service_name || convData.serviceType || 'Haircut',
-            scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
-              timeZone: campusTimezone 
-            }),
-            scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
-              hour: 'numeric', minute: '2-digit', hour12: true, 
-              timeZone: campusTimezone 
-            }),
-            price: (convData.priceUsdCents || convData.service_price * 100 || 0) / 100,
-            location: convData.location || undefined,
-            reason: reason || undefined,
-            bookingId: linkedBookingId || conversationId,
-          }).catch(err => logger.error('Failed to send decline email:', err));
+          // Fetch alternative barbers asynchronously
+          (async () => {
+            let alternativeBarbers: AlternativeBarber[] = [];
+            if (campusId && declinedBarberId) {
+              alternativeBarbers = await fetchAlternativeBarbers(
+                campusId,
+                declinedBarberId,
+                serviceName,
+                scheduledDate
+              );
+            }
+            
+            sendBookingDeclineEmail({
+              consumerEmail,
+              consumerName,
+              barberName,
+              barberId: declinedBarberId,
+              serviceName,
+              scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+                timeZone: campusTimezone 
+              }),
+              scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
+                hour: 'numeric', minute: '2-digit', hour12: true, 
+                timeZone: campusTimezone 
+              }),
+              price: (convData.priceUsdCents || convData.service_price * 100 || 0) / 100,
+              location: convData.location || undefined,
+              reason: reason || undefined,
+              bookingId: linkedBookingId || conversationId,
+              campusId,
+              originalScheduledTime: scheduledDate.toISOString(),
+              alternativeBarbers,
+            }).catch(err => logger.error('Failed to send decline email:', err));
+          })();
         }
 
         // Delete the conversation and its messages (cascading delete should handle messages)
@@ -698,8 +861,9 @@ export class BookingRequestService {
       // Traditional booking flow - first get booking details for email
       const bookingDetailsResult = await client.query(`
         SELECT 
-          b.id, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt",
+          b.id, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt", b."barberId",
           c.service_name, c.location,
+          bar."campusId" as campus_id,
           u_consumer.first_name || ' ' || u_consumer.last_name as consumer_name,
           u_consumer.email as consumer_email,
           u_barber.first_name || ' ' || u_barber.last_name as barber_name,
@@ -756,29 +920,49 @@ export class BookingRequestService {
         data: { bookingId, reason },
       });
 
-      // Send decline email to consumer
+      // Send decline email to consumer with alternative barbers
       if (consumerEmail) {
         const campusTimezone = bookingData.campus_timezone || 'America/New_York';
         const scheduledDate = new Date(bookingData.requestedAt);
+        const serviceName = bookingData.service_name || bookingData.serviceType || 'Haircut';
+        const declinedBarberId = bookingData.barberId;
+        const campusId = bookingData.campus_id;
         
-        sendBookingDeclineEmail({
-          consumerEmail,
-          consumerName,
-          barberName,
-          serviceName: bookingData.service_name || bookingData.serviceType || 'Haircut',
-          scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
-            timeZone: campusTimezone 
-          }),
-          scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
-            hour: 'numeric', minute: '2-digit', hour12: true, 
-            timeZone: campusTimezone 
-          }),
-          price: (bookingData.priceUsdCents || 0) / 100,
-          location: bookingData.location || undefined,
-          reason: reason || undefined,
-          bookingId,
-        }).catch(err => logger.error('Failed to send decline email:', err));
+        // Fetch alternative barbers asynchronously
+        (async () => {
+          let alternativeBarbers: AlternativeBarber[] = [];
+          if (campusId && declinedBarberId) {
+            alternativeBarbers = await fetchAlternativeBarbers(
+              campusId,
+              declinedBarberId,
+              serviceName,
+              scheduledDate
+            );
+          }
+          
+          sendBookingDeclineEmail({
+            consumerEmail,
+            consumerName,
+            barberName,
+            barberId: declinedBarberId,
+            serviceName,
+            scheduledDate: scheduledDate.toLocaleDateString('en-US', { 
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', 
+              timeZone: campusTimezone 
+            }),
+            scheduledTime: scheduledDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', minute: '2-digit', hour12: true, 
+              timeZone: campusTimezone 
+            }),
+            price: (bookingData.priceUsdCents || 0) / 100,
+            location: bookingData.location || undefined,
+            reason: reason || undefined,
+            bookingId,
+            campusId,
+            originalScheduledTime: scheduledDate.toISOString(),
+            alternativeBarbers,
+          }).catch(err => logger.error('Failed to send decline email:', err));
+        })();
       }
 
       await client.query('COMMIT');

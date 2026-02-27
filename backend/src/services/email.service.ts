@@ -1940,6 +1940,7 @@ interface BookingDeclineEmailDetails {
   consumerEmail: string;
   consumerName: string;
   barberName: string;
+  barberId?: string;
   serviceName: string;
   scheduledDate: string;
   scheduledTime: string;
@@ -1947,6 +1948,15 @@ interface BookingDeclineEmailDetails {
   location?: string;
   reason?: string;
   bookingId: string;
+  campusId?: string;
+  originalScheduledTime?: string; // ISO timestamp for availability checking
+  alternativeBarbers?: {
+    id: string;
+    name: string;
+    avatar?: string;
+    average_rating?: number;
+    total_reviews?: number;
+  }[];
 }
 
 /**
@@ -2020,6 +2030,31 @@ CampusCut
 function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, frontendUrl: string): string {
   const firstName = details.consumerName.split(' ')[0];
   
+  // Generate alternative barbers HTML if available
+  const alternativeBarbersHtml = details.alternativeBarbers && details.alternativeBarbers.length > 0 ? `
+    <!-- Alternative Barbers -->
+    <div style="background-color: #f2f5f4; border-radius: 12px; padding: 20px; margin: 25px 0;">
+      <h3 style="color: #3d5149; margin: 0 0 15px 0; font-size: 16px; text-align: center;">Other Barbers Available at ${details.scheduledTime}</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${details.alternativeBarbers.map(barber => `
+          <a href="${frontendUrl}/web/barber/${barber.id}?date=${encodeURIComponent(details.originalScheduledTime?.split('T')[0] || '')}&time=${encodeURIComponent(details.scheduledTime)}&service=${encodeURIComponent(details.serviceName)}" 
+             style="display: flex; align-items: center; gap: 12px; padding: 10px; background-color: #ffffff; border-radius: 8px; text-decoration: none; color: #1f2937; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background-color: #d1e0d9; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              ${barber.avatar ? `<img src="${barber.avatar}" alt="${barber.name}" style="width: 100%; height: 100%; object-fit: cover;">` : `<span style="color: #5a7268; font-weight: 600; font-size: 16px;">${barber.name?.charAt(0) || 'B'}</span>`}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="margin: 0; font-weight: 600; font-size: 15px; line-height: 1.4;">${barber.name}</p>
+              ${barber.average_rating ? `
+                <p style="margin: 2px 0 0 0; font-size: 13px; color: #6b7280;">⭐ ${barber.average_rating.toFixed(1)} (${barber.total_reviews || 0} reviews)</p>
+              ` : `<p style="margin: 2px 0 0 0; font-size: 13px; color: #6b7280;">No reviews yet</p>`}
+            </div>
+            <span style="color: #5a7268; font-size: 14px; font-weight: 500;">Book Now →</span>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+  
   return `
 <!DOCTYPE html>
 <html>
@@ -2028,13 +2063,13 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-  <div style="background: linear-gradient(135deg, #022b19 0%, #034d2e 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+  <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 28px;">CampusCut</h1>
     <p style="color: #fca5a5; margin: 10px 0 0 0; font-size: 16px;">Booking Request Declined</p>
   </div>
   
   <div style="background-color: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-    <h2 style="color: #022b19; margin: 0 0 10px 0;">Hi ${firstName},</h2>
+    <h2 style="color: #3d5149; margin: 0 0 10px 0;">Hi ${firstName},</h2>
     <p style="color: #6b7280; margin: 0 0 20px 0;">Unfortunately, ${details.barberName} was unable to accept your booking request.</p>
     
     <!-- Status Badge -->
@@ -2087,12 +2122,7 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
     </div>
     ` : ''}
     
-    <!-- Barber Info -->
-    <div style="background-color: #f9fafb; border-radius: 8px; padding: 15px; margin: 20px 0;">
-      <p style="color: #6b7280; margin: 0; font-size: 14px;">
-        <strong>Barber:</strong> ${details.barberName}
-      </p>
-    </div>
+    ${alternativeBarbersHtml}
     
     <!-- Booking Reference -->
     <div style="text-align: center; margin: 20px 0;">
@@ -2102,16 +2132,16 @@ function generateBookingDeclineHtml(details: BookingDeclineEmailDetails, fronten
     
     <!-- CTA Button -->
     <p style="text-align: center; margin: 30px 0 20px 0;">
-      <a href="${frontendUrl}/web/consumer" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Find Another Barber
       </a>
     </p>
     
     <!-- Support Box -->
-    <div style="background-color: #fefce8; border: 1px solid #fde047; border-radius: 8px; padding: 15px; margin: 20px 0;">
-      <p style="color: #854d0e; margin: 0; font-size: 14px;">
+    <div style="background-color: #f2f5f4; border: 1px solid #bfcdc8; border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <p style="color: #3d5149; margin: 0; font-size: 14px;">
         <strong>Think a mistake was made?</strong><br>
-        Contact us at <a href="mailto:campuscuthelp@gmail.com" style="color: #ca8a04; font-weight: 600;">campuscuthelp@gmail.com</a> and we'll be happy to help.
+        Contact us at <a href="mailto:campuscuthelp@gmail.com" style="color: #5a7268; font-weight: 600;">campuscuthelp@gmail.com</a> and we'll be happy to help.
       </p>
     </div>
   </div>
