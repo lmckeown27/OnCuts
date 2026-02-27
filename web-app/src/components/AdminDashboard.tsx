@@ -1601,14 +1601,16 @@ export function AdminDashboard({
                             </div>
                           </div>
                           <button
-                            onClick={() => setShowContactModal(selectedApplication)}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
                             className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
                           >
                             Schedule Interview
                           </button>
                         </div>
                         <button
-                          onClick={() => setShowContactModal(selectedApplication)}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
                           className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
                         >
                           Schedule Interview
@@ -2073,14 +2075,16 @@ export function AdminDashboard({
                         </div>
                       </div>
                       <button
-                        onClick={() => setShowContactModal(selectedApplication)}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
                         className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
                       >
                         Schedule Interview
                       </button>
                     </div>
                     <button
-                      onClick={() => setShowContactModal(selectedApplication)}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setShowContactModal(selectedApplication); }}
                       className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
                     >
                       Schedule Interview

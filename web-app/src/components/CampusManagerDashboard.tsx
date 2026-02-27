@@ -520,7 +520,8 @@ Campus Manager`
             </div>
             {/* Contact Button */}
             <button
-              onClick={() => setShowContactModal(app)}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setShowContactModal(app); }}
               className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
             >
               Schedule Interview
@@ -528,7 +529,8 @@ Campus Manager`
           </div>
           {/* Mobile Contact Button */}
           <button
-            onClick={() => setShowContactModal(app)}
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setShowContactModal(app); }}
             className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
           >
             Schedule Interview
