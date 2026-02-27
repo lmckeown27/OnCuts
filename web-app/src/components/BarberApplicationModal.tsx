@@ -709,7 +709,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <Clock className="w-4 h-4 inline mr-2" />
                     Years of Experience *
                   </label>
                   <select
@@ -762,7 +761,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <Scissors className="w-4 h-4 inline mr-2" />
                   What services will you offer? * (Select all that apply)
                 </label>
                 <p className="text-xs text-gray-500 mb-3">These will be your specialties on your barber profile.</p>
