@@ -3280,7 +3280,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         const canEdit = selectedBookingInline.status === 'ACCEPTED';
                         const canCancel = selectedBookingInline.status === 'ACCEPTED' || selectedBookingInline.status === 'PENDING';
                         const canComplete = selectedBookingInline.status === 'ACCEPTED';
-                        const canRemove = selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID';
+                        const canRemove = isAdmin && (selectedBookingInline.status === 'COMPLETED' || selectedBookingInline.status === 'PAID');
                         const canUndoComplete = selectedBookingInline.status === 'COMPLETED';
                         
                         if (!canComplete && !canEdit && !canCancel && !canRemove && !canUndoComplete) return null;

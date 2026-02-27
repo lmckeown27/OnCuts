@@ -2302,8 +2302,15 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const isBarber = booking.barber_user_id === userId;
     const isConsumer = booking.consumerId === userId;
 
-    // Allow barbers to remove completed/paid bookings from their schedule
-    if ((booking.status === 'COMPLETED' || booking.status === 'PAID') && isBarber) {
+    // Check if user is an admin (only admins can remove completed/paid bookings)
+    const adminCheck = await pool.query(
+      `SELECT role FROM users WHERE id = $1`,
+      [userId]
+    );
+    const isAdmin = adminCheck.rows.length > 0 && adminCheck.rows[0].role === 'ADMIN';
+
+    // Only allow ADMINS to remove completed/paid bookings from schedule
+    if ((booking.status === 'COMPLETED' || booking.status === 'PAID') && isAdmin) {
       // For completed bookings, actually delete instead of just cancelling
       // Delete conversation first if exists
       const convResult = await pool.query(
@@ -2325,7 +2332,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       // Delete the booking
       await pool.query(`DELETE FROM bookings WHERE id = $1`, [id]);
       
-      logger.info(`Barber ${userId} removed completed booking ${id} from schedule`);
+      logger.info(`Admin ${userId} removed completed booking ${id} from schedule`);
       
       return res.json({
         success: true,
@@ -2333,7 +2340,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    // Consumers cannot delete completed bookings
+    // Barbers and consumers cannot delete completed bookings
     if (booking.status === 'COMPLETED' || booking.status === 'PAID') {
       return res.status(400).json({ 
         success: false, 

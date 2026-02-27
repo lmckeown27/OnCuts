@@ -21,13 +21,15 @@ interface BookingDetailsModalProps {
   onClose: () => void;
   booking: any;
   onBookingUpdated?: () => void;
+  isAdmin?: boolean;
 }
 
 export default function BookingDetailsModal({ 
   isOpen, 
   onClose, 
   booking, 
-  onBookingUpdated 
+  onBookingUpdated,
+  isAdmin = false
 }: BookingDetailsModalProps) {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -316,7 +318,7 @@ export default function BookingDetailsModal({
   const canEdit = booking.status === 'ACCEPTED';
   const canCancel = booking.status === 'ACCEPTED' || booking.status === 'PENDING';
   const canComplete = booking.status === 'ACCEPTED';
-  const canRemove = booking.status === 'COMPLETED' || booking.status === 'PAID';
+  const canRemove = isAdmin && (booking.status === 'COMPLETED' || booking.status === 'PAID');
   const canUndoComplete = booking.status === 'COMPLETED';
 
   return (
