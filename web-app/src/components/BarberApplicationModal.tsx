@@ -840,37 +840,45 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     {/* Campus Dropdown */}
                     {showCampusDropdown && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-[250px] overflow-y-auto overscroll-contain">
-                        <div className="p-1">
-                          {campuses
-                            .filter(campus => 
+                        {campusSearchQuery.trim() === '' ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p>Start typing to search</p>
+                            <p className="text-xs mt-1 text-gray-400">{campuses.length} universities available</p>
+                          </div>
+                        ) : (
+                          <div className="p-1">
+                            {campuses
+                              .filter(campus => 
+                                campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                              )
+                              .map(campus => (
+                                <button
+                                  key={campus.id}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent blur from firing
+                                    setForm({ ...form, campusId: campus.id });
+                                    setCampusSearchQuery(campus.name);
+                                    setShowCampusDropdown(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
+                                    form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {campus.name}
+                                </button>
+                              ))
+                            }
+                            {campuses.filter(campus => 
                               campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                            )
-                            .map(campus => (
-                              <button
-                                key={campus.id}
-                                type="button"
-                                onMouseDown={(e) => {
-                                  e.preventDefault(); // Prevent blur from firing
-                                  setForm({ ...form, campusId: campus.id });
-                                  setCampusSearchQuery(campus.name);
-                                  setShowCampusDropdown(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
-                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
-                                }`}
-                              >
-                                {campus.name}
-                              </button>
-                            ))
-                          }
-                          {campuses.filter(campus => 
-                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                          ).length === 0 && (
-                            <div className="px-3 py-2 text-gray-500 text-sm">
-                              No campuses found
-                            </div>
-                          )}
-                        </div>
+                            ).length === 0 && (
+                              <div className="px-3 py-2 text-gray-500 text-sm">
+                                No campuses found
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
