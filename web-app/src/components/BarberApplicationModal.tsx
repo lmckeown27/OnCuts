@@ -953,6 +953,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <p className="font-medium">{guestMode ? form.email : user?.email}</p>
                 </div>
 
+                {/* Show phone number */}
+                <div className="border-t pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
+                  <p className="font-medium">{form.phoneNumber || 'Not provided'}</p>
+                </div>
+
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
                   <p className="font-medium">
@@ -981,6 +987,13 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 <div className="border-t pt-4">
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Availability</p>
                   <p className="font-medium">{form.availableHours} hours/week</p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Tools</p>
+                  <p className="font-medium">
+                    {form.needsTools ? `Needs tools${form.toolsNeeded ? `: ${form.toolsNeeded}` : ''}` : 'Has own tools'}
+                  </p>
                 </div>
 
                 <div className="border-t pt-4">
