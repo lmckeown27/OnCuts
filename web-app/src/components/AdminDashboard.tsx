@@ -243,6 +243,7 @@ export function AdminDashboard({
   const [applications, setApplications] = useState<BarberApplication[]>([]);
   const [isLoadingApplications, setIsLoadingApplications] = useState(false);
   const [applicationActionLoading, setApplicationActionLoading] = useState<string | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<BarberApplication | null>(null);
   
   const campusDropdownRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -1302,7 +1303,7 @@ export function AdminDashboard({
             {/* Main category tabs */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => setBarberViewTab('managers')}
+                onClick={() => { setBarberViewTab('managers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'managers'
                     ? 'border-primary-500 text-primary-600'
@@ -1312,7 +1313,7 @@ export function AdminDashboard({
                 Managers ({filteredAllBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('barbers')}
+                onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
                     ? 'border-primary-500 text-primary-600'
@@ -1322,7 +1323,7 @@ export function AdminDashboard({
                 Barbers ({filteredAllBarbers.filter(b => !b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('applications')}
+                onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'applications'
                     ? 'border-primary-500 text-primary-600'
@@ -1549,11 +1550,136 @@ export function AdminDashboard({
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
                     </div>
+                  ) : selectedApplication ? (
+                    // Detailed Application View
+                    <div className="space-y-4">
+                      <button
+                        onClick={() => setSelectedApplication(null)}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                        <span className="text-sm font-medium">Back to Applications</span>
+                      </button>
+                      
+                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                              <Users className="w-7 h-7 text-primary-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900">
+                                {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
+                              </h3>
+                              <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
+                              <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${
+                                selectedApplication.status === 'pending' 
+                                  ? 'bg-amber-100 text-amber-700' 
+                                  : selectedApplication.status === 'approved'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
+                              </span>
+                            </div>
+                          </div>
+                          <a
+                            href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                            className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
+                          >
+                            Schedule Interview
+                          </a>
+                        </div>
+                        <a
+                          href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                          className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
+                        >
+                          Schedule Interview via Email
+                        </a>
+                      </div>
+
+                      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                        <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Campus</p>
+                            <p className="font-semibold text-gray-900">{selectedApplication.campus_name || 'Unknown'}</p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Experience</p>
+                            <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Available Hours</p>
+                            <p className="font-semibold text-gray-900">{selectedApplication.available_hours || 'Not specified'}</p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
+                            <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Yes' : 'No'}</p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Applied On</p>
+                            <p className="font-semibold text-gray-900">
+                              {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-xs text-gray-500 mb-2">Specialties</p>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedApplication.specialties.map((specialty, idx) => (
+                                <span key={idx} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                                  {specialty}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedApplication.why_be_barber && (
+                          <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                            <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
+                            <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedApplication.status === 'pending' && (
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button
+                            onClick={() => {
+                              handleApplicationAction(selectedApplication.id, 'approve');
+                              setSelectedApplication(null);
+                            }}
+                            disabled={applicationActionLoading === selectedApplication.id}
+                            className="flex-1 py-3 justify-center"
+                          >
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            Approve Application
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              handleApplicationAction(selectedApplication.id, 'reject');
+                              setSelectedApplication(null);
+                            }}
+                            disabled={applicationActionLoading === selectedApplication.id}
+                            className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
+                          >
+                            <XCircle className="w-5 h-5 mr-2" />
+                            Reject Application
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   ) : applications.length > 0 ? (
                     applications.map(app => (
                       <div
                         key={app.id}
-                        className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+                        onClick={() => setSelectedApplication(app)}
+                        className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -1575,30 +1701,33 @@ export function AdminDashboard({
                               <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
                             )}
                           </div>
-                          {app.status === 'pending' && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <button
-                                onClick={() => handleApplicationAction(app.id, 'approve')}
-                                disabled={applicationActionLoading === app.id}
-                                className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
-                                title="Approve"
-                              >
-                                {applicationActionLoading === app.id ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <CheckCircle className="w-4 h-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => handleApplicationAction(app.id, 'reject')}
-                                disabled={applicationActionLoading === app.id}
-                                className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
-                                title="Reject"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {app.status === 'pending' && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'approve'); }}
+                                  disabled={applicationActionLoading === app.id}
+                                  className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
+                                  title="Approve"
+                                >
+                                  {applicationActionLoading === app.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'reject'); }}
+                                  disabled={applicationActionLoading === app.id}
+                                  className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+                                  title="Reject"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                          </div>
                         </div>
                       </div>
                     ))
@@ -1621,7 +1750,7 @@ export function AdminDashboard({
             {/* Main category tabs - same as all-barbers view */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => setBarberViewTab('managers')}
+                onClick={() => { setBarberViewTab('managers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'managers'
                     ? 'border-primary-500 text-primary-600'
@@ -1631,7 +1760,7 @@ export function AdminDashboard({
                 Managers ({filteredBarbers.filter(b => b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('barbers')}
+                onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
                     ? 'border-primary-500 text-primary-600'
@@ -1641,7 +1770,7 @@ export function AdminDashboard({
                 Barbers ({filteredBarbers.filter(b => !b.isCampusManager).length})
               </button>
               <button
-                onClick={() => setBarberViewTab('applications')}
+                onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'applications'
                     ? 'border-primary-500 text-primary-600'
@@ -1885,12 +2014,133 @@ export function AdminDashboard({
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
                 </div>
+              ) : selectedApplication ? (
+                // Detailed Application View (Campus-specific)
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setSelectedApplication(null)}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                    <span className="text-sm font-medium">Back to Applications</span>
+                  </button>
+                  
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                          <Users className="w-7 h-7 text-primary-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">
+                            {selectedApplication.first_name || selectedApplication.user?.first_name || 'Unknown'} {selectedApplication.last_name || selectedApplication.user?.last_name || 'User'}
+                          </h3>
+                          <p className="text-gray-600">{selectedApplication.email || selectedApplication.user?.email || 'No email'}</p>
+                          <span className={`inline-block mt-2 text-xs font-medium px-2 py-1 rounded-full ${
+                            selectedApplication.status === 'pending' 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : selectedApplication.status === 'approved'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {selectedApplication.status === 'pending' ? 'Pending' : selectedApplication.status === 'approved' ? 'Approved' : selectedApplication.status}
+                          </span>
+                        </div>
+                      </div>
+                      <a
+                        href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                        className="hidden sm:flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
+                      >
+                        Schedule Interview
+                      </a>
+                    </div>
+                    <a
+                      href={`mailto:${selectedApplication.email || selectedApplication.user?.email}?subject=CampusCut%20Barber%20Application%20-%20Interview%20Request&body=Hi%20${selectedApplication.first_name || selectedApplication.user?.first_name}%2C%0A%0AThank%20you%20for%20applying%20to%20become%20a%20barber%20on%20CampusCut!%20I'd%20like%20to%20schedule%20a%20brief%20interview%20to%20learn%20more%20about%20your%20experience%20and%20discuss%20next%20steps.%0A%0AAre%20you%20available%20for%20a%2015-minute%20call%20this%20week%3F%20Please%20let%20me%20know%20a%20few%20times%20that%20work%20for%20you.%0A%0ABest%20regards%2C%0AAdmin`}
+                      className="sm:hidden flex items-center justify-center w-full mt-4 px-4 py-2.5 bg-primary-600 text-white rounded-lg font-medium text-sm hover:bg-primary-700 transition-colors"
+                    >
+                      Schedule Interview via Email
+                    </a>
+                  </div>
+
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4">Application Details</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Experience</p>
+                        <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Available Hours</p>
+                        <p className="font-semibold text-gray-900">{selectedApplication.available_hours || 'Not specified'}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Has Own Tools</p>
+                        <p className="font-semibold text-gray-900">{selectedApplication.has_own_tools ? 'Yes' : 'No'}</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Applied On</p>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(selectedApplication.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedApplication.specialties && selectedApplication.specialties.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-xs text-gray-500 mb-2">Specialties</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedApplication.specialties.map((specialty, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                              {specialty}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedApplication.why_be_barber && (
+                      <div className="mt-4 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                        <p className="text-xs text-primary-600 font-semibold mb-2 uppercase tracking-wide">Why They Want to Join</p>
+                        <p className="text-gray-700 italic">"{selectedApplication.why_be_barber}"</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedApplication.status === 'pending' && (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={() => {
+                          handleApplicationAction(selectedApplication.id, 'approve');
+                          setSelectedApplication(null);
+                        }}
+                        disabled={applicationActionLoading === selectedApplication.id}
+                        className="flex-1 py-3 justify-center"
+                      >
+                        <CheckCircle className="w-5 h-5 mr-2" />
+                        Approve Application
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          handleApplicationAction(selectedApplication.id, 'reject');
+                          setSelectedApplication(null);
+                        }}
+                        disabled={applicationActionLoading === selectedApplication.id}
+                        className="flex-1 py-3 justify-center text-red-600 border-red-300 hover:bg-red-50"
+                      >
+                        <XCircle className="w-5 h-5 mr-2" />
+                        Reject Application
+                      </Button>
+                    </div>
+                  )}
+                </div>
               ) : applications.length > 0 ? (
                 <div className="space-y-2 max-h-80 overflow-y-auto">
                   {applications.map(app => (
                     <div
                       key={app.id}
-                      className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+                      onClick={() => setSelectedApplication(app)}
+                      className="p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -1911,30 +2161,33 @@ export function AdminDashboard({
                             <p className="text-xs text-gray-600 mt-1">{app.years_experience} years experience</p>
                           )}
                         </div>
-                        {app.status === 'pending' && (
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
-                              onClick={() => handleApplicationAction(app.id, 'approve')}
-                              disabled={applicationActionLoading === app.id}
-                              className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
-                              title="Approve"
-                            >
-                              {applicationActionLoading === app.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleApplicationAction(app.id, 'reject')}
-                              disabled={applicationActionLoading === app.id}
-                              className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
-                              title="Reject"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {app.status === 'pending' && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'approve'); }}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors disabled:opacity-50"
+                                title="Approve"
+                              >
+                                {applicationActionLoading === app.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleApplicationAction(app.id, 'reject'); }}
+                                disabled={applicationActionLoading === app.id}
+                                className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50"
+                                title="Reject"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
+                        </div>
                       </div>
                     </div>
                   ))}
