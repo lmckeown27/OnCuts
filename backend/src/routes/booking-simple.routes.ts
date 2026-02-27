@@ -2280,7 +2280,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     const bookingCheck = await pool.query(
       `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt" as "scheduledTime",
               c.location, c.service_name as original_service_name,
-              bar."userId" as barber_user_id,
+              bar.id as "barberId", bar."userId" as barber_user_id, bar."campusId" as campus_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
               u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
               COALESCE(campus.timezone, 'America/New_York') as campus_timezone
@@ -2392,13 +2392,22 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // Notify the OTHER party about the cancellation
     if (isBarber) {
-      // Barber cancelled, notify consumer
+      // Barber cancelled, notify consumer - include booking details for rebooking with alternative barbers
       await notificationService.saveNotification({
         userId: booking.consumerId,
         type: 'booking_cancelled',
         title: 'Booking Cancelled',
         message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
-        data: { bookingId: id, reason, cancelledBy: 'barber' },
+        data: { 
+          bookingId: id, 
+          reason, 
+          cancelledBy: 'barber',
+          // Include details for showing alternative barbers
+          scheduledTime: booking.scheduledTime,
+          serviceType: booking.serviceType,
+          campusId: booking.campus_id,
+          cancelledBarberId: booking.barberId,
+        },
       });
     } else {
       // Consumer cancelled, notify barber

@@ -154,6 +154,17 @@ export default function ConsumerPage() {
     reason: string;
     message: string;
   } | null>(null);
+  const [showAlternativeBarbersModal, setShowAlternativeBarbersModal] = useState(false);
+  const [alternativeBarbersData, setAlternativeBarbersData] = useState<{
+    scheduledTime: string;
+    serviceType: string;
+    campusId: string;
+    cancelledBarberId: string;
+    barberName: string;
+    reason?: string;
+  } | null>(null);
+  const [alternativeBarbers, setAlternativeBarbers] = useState<Barber[]>([]);
+  const [loadingAlternativeBarbers, setLoadingAlternativeBarbers] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   // Preserve form data from ScheduleServicePage when user clicks back
@@ -163,7 +174,7 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
@@ -370,6 +381,44 @@ export default function ConsumerPage() {
       loadUnreadCount();
     }
   }, [user?.id, loadUnreadCount]);
+
+  // Fetch alternative barbers when the modal opens
+  useEffect(() => {
+    const fetchAlternativeBarbers = async () => {
+      if (!showAlternativeBarbersModal || !alternativeBarbersData) return;
+      
+      setLoadingAlternativeBarbers(true);
+      try {
+        // Fetch barbers at the same campus
+        const response = await api.get('/barbers', {
+          campusId: alternativeBarbersData.campusId,
+        });
+        
+        const allBarbers: Barber[] = response.barbers || [];
+        
+        // Filter out the cancelled barber and filter to those who offer the service
+        const eligibleBarbers = allBarbers.filter(barber => {
+          // Skip the barber who cancelled
+          if (barber.id === alternativeBarbersData.cancelledBarberId) return false;
+          
+          // Check if barber offers this service type
+          const offersService = barber.services?.some(
+            (s: any) => s.type?.toUpperCase() === alternativeBarbersData.serviceType?.toUpperCase()
+          );
+          return offersService;
+        });
+        
+        setAlternativeBarbers(eligibleBarbers);
+      } catch (error) {
+        console.error('Failed to fetch alternative barbers:', error);
+        setAlternativeBarbers([]);
+      } finally {
+        setLoadingAlternativeBarbers(false);
+      }
+    };
+    
+    fetchAlternativeBarbers();
+  }, [showAlternativeBarbersModal, alternativeBarbersData]);
 
   // WebSocket: Listen for booking completion (payment request) in real-time
   useEffect(() => {
@@ -854,6 +903,21 @@ export default function ConsumerPage() {
                         });
                         setShowDeclinedModal(true);
                         closeNotifications();
+                      } else if (notification.type === 'booking_cancelled' && data.cancelledBy === 'barber' && data.scheduledTime) {
+                        // Barber cancelled - show alternative barbers modal
+                        // Extract barber name from the message (format: "Barber Name has cancelled...")
+                        const barberNameMatch = notification.message?.match(/^(.+?) has cancelled/);
+                        const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
+                        setAlternativeBarbersData({
+                          scheduledTime: data.scheduledTime,
+                          serviceType: data.serviceType,
+                          campusId: data.campusId,
+                          cancelledBarberId: data.cancelledBarberId,
+                          barberName,
+                          reason: data.reason,
+                        });
+                        setShowAlternativeBarbersModal(true);
+                        closeNotifications();
                       } else {
                         // Default: close modal
                         closeNotifications();
@@ -995,6 +1059,162 @@ export default function ConsumerPage() {
                 className="w-full px-6 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors"
               >
                 Find Another Barber
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alternative Barbers Modal (shown when barber cancels) */}
+      {showAlternativeBarbersModal && alternativeBarbersData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => {
+              setShowAlternativeBarbersModal(false);
+              setAlternativeBarbersData(null);
+              setAlternativeBarbers([]);
+            }}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-slide-up flex flex-col">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
+              <div className="flex flex-col items-center text-center">
+                <h2 className="text-xl font-bold text-white">Booking Cancelled</h2>
+                <p className="text-white/80 text-sm mt-1">Find an available barber for this time</p>
+              </div>
+              <button 
+                className="absolute right-4 top-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+                onClick={() => {
+                  setShowAlternativeBarbersModal(false);
+                  setAlternativeBarbersData(null);
+                  setAlternativeBarbers([]);
+                }}
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Cancellation Info */}
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                <p className="text-red-800 text-sm">
+                  <span className="font-semibold">{alternativeBarbersData.barberName}</span> has cancelled your appointment
+                  {alternativeBarbersData.reason && (
+                    <>: <span className="italic">"{alternativeBarbersData.reason}"</span></>
+                  )}
+                </p>
+              </div>
+
+              {/* Original Time Slot */}
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-6">
+                <h4 className="font-semibold text-primary-800 mb-2">Original Time Slot</h4>
+                <p className="text-primary-700 text-sm">
+                  {new Date(alternativeBarbersData.scheduledTime).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                  })} at {new Date(alternativeBarbersData.scheduledTime).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
+              </div>
+
+              {/* Alternative Barbers */}
+              <h4 className="font-semibold text-gray-800 mb-3">
+                {loadingAlternativeBarbers 
+                  ? 'Finding barbers...' 
+                  : alternativeBarbers.length > 0 
+                    ? `${alternativeBarbers.length} other barber${alternativeBarbers.length !== 1 ? 's' : ''} offer this service`
+                    : 'No other barbers offer this service'
+                }
+              </h4>
+
+              {loadingAlternativeBarbers ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                </div>
+              ) : alternativeBarbers.length > 0 ? (
+                <div className="space-y-3">
+                  {alternativeBarbers.map((barber) => (
+                    <button
+                      key={barber.id}
+                      onClick={() => {
+                        setShowAlternativeBarbersModal(false);
+                        setAlternativeBarbersData(null);
+                        setAlternativeBarbers([]);
+                        // Navigate to schedule with this barber
+                        navigate(`${platformPrefix}/consumer/schedule/${barber.id}`, {
+                          state: {
+                            preselectedDate: alternativeBarbersData.scheduledTime.split('T')[0],
+                            preselectedService: alternativeBarbersData.serviceType,
+                          }
+                        });
+                      }}
+                      className="w-full p-4 border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-colors text-left flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                        {barber.avatar ? (
+                          <img src={barber.avatar} alt={barber.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary-100">
+                            <span className="text-primary-600 font-semibold text-lg">
+                              {barber.name?.charAt(0) || 'B'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{barber.name}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          {barber.avgRating && (
+                            <span className="flex items-center gap-1">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              {barber.avgRating.toFixed(1)}
+                            </span>
+                          )}
+                          {barber.totalReviews > 0 && (
+                            <span>({barber.totalReviews} reviews)</span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 text-sm mb-4">
+                    No other barbers are available at this specific time.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowAlternativeBarbersModal(false);
+                      setAlternativeBarbersData(null);
+                      setAlternativeBarbers([]);
+                    }}
+                    className="text-primary-600 font-medium text-sm hover:text-primary-700"
+                  >
+                    Browse all barbers
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowAlternativeBarbersModal(false);
+                  setAlternativeBarbersData(null);
+                  setAlternativeBarbers([]);
+                }}
+                className="w-full px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
