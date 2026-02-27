@@ -39,6 +39,7 @@ function generatePricingFromSpecialties(specialties: string[]): { name: string; 
 
 interface BarberApplicationBody {
   campusId: string;
+  phoneNumber: string;
   yearsExperience: string;
   hasLicense: boolean;
   licenseNumber?: string;
@@ -65,6 +66,7 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
 
     const {
       campusId,
+      phoneNumber,
       yearsExperience,
       hasLicense,
       licenseNumber,
@@ -78,8 +80,8 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     }: BarberApplicationBody = req.body;
 
     // Validate required fields
-    if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
-      throw new ApiError(400, 'Missing required fields: campusId, yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    if (!campusId || !phoneNumber || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
+      throw new ApiError(400, 'Missing required fields: campusId, phoneNumber, yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
     // Verify the campus exists
@@ -122,14 +124,15 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     // Insert the application
     const result = await pool.query(
       `INSERT INTO barber_applications (
-        user_id, campus_id, years_experience, has_license, license_number,
+        user_id, campus_id, phone_number, years_experience, has_license, license_number,
         specialties, has_own_tools, available_hours, why_be_barber,
         portfolio_description, social_media, additional_notes, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending')
       RETURNING id, status, created_at`,
       [
         userId,
         user.campusId,
+        phoneNumber,
         yearsExperience,
         hasLicense || false,
         licenseNumber || null,
@@ -175,6 +178,7 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       const applicationDetails = {
         applicantName: `${applicant.first_name} ${applicant.last_name}`.trim(),
         applicantEmail: applicant.email,
+        applicantPhone: phoneNumber || undefined,
         campusName,
         yearsExperience,
         hasLicense: hasLicense || false,
@@ -333,6 +337,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
           ba.has_own_tools,
           ba.available_hours,
           ba.why_be_barber,
+          ba.phone_number,
           ba.social_media,
           ba.additional_notes,
           ba.created_at,
@@ -365,6 +370,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
           gba.has_own_tools,
           gba.available_hours,
           gba.why_be_barber,
+          gba.phone_number,
           gba.social_media,
           gba.additional_notes,
           gba.created_at,
@@ -651,6 +657,7 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       email,
       firstName,
       lastName,
+      phoneNumber,
       campusId,
       yearsExperience,
       hasLicense,
@@ -681,6 +688,10 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new ApiError(400, 'Please enter a valid email address');
+    }
+
+    if (!phoneNumber || !phoneNumber.trim()) {
+      throw new ApiError(400, 'Phone number is required');
     }
 
     if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
@@ -718,13 +729,14 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       throw new ApiError(400, 'You already have a pending application with this email. Please wait for it to be reviewed or sign up to check your status.');
     }
 
-    // Ensure the guest_barber_applications table exists
+    // Ensure the guest_barber_applications table exists with phone_number column
     await pool.query(`
       CREATE TABLE IF NOT EXISTS guest_barber_applications (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         email VARCHAR(255) NOT NULL,
         first_name VARCHAR(100),
         last_name VARCHAR(100),
+        phone_number VARCHAR(50),
         campus_id UUID NOT NULL REFERENCES campuses(id),
         years_experience VARCHAR(50) NOT NULL,
         has_license BOOLEAN DEFAULT FALSE,
@@ -742,19 +754,26 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Add phone_number column if it doesn't exist (for existing tables)
+    await pool.query(`
+      ALTER TABLE guest_barber_applications 
+      ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50)
+    `);
 
     // Insert the guest application
     const result = await pool.query(
       `INSERT INTO guest_barber_applications (
-        email, first_name, last_name, campus_id, years_experience, has_license, license_number,
+        email, first_name, last_name, phone_number, campus_id, years_experience, has_license, license_number,
         specialties, has_own_tools, available_hours, why_be_barber,
         portfolio_description, social_media, additional_notes, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'pending')
       RETURNING id, status, created_at`,
       [
         email.toLowerCase(),
         firstName || null,
         lastName || null,
+        phoneNumber || null,
         campusId,
         yearsExperience,
         hasLicense || false,
@@ -790,6 +809,7 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
       const applicationDetails = {
         applicantName,
         applicantEmail: email,
+        applicantPhone: phoneNumber || undefined,
         campusName,
         yearsExperience,
         hasLicense: hasLicense || false,

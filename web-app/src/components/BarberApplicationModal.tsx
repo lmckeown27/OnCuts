@@ -20,6 +20,7 @@ interface ApplicationForm {
   firstName: string; // Added for guest mode
   lastName: string; // Added for guest mode
   email: string; // Added for guest mode
+  phoneNumber: string; // Required for contact
   campusId: string;
   yearsExperience: string;
   hasLicense: boolean;
@@ -144,6 +145,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
     campusId: '',
     yearsExperience: '',
     hasLicense: false,
@@ -178,6 +180,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
+          phoneNumber: form.phoneNumber,
           campusId: form.campusId,
           yearsExperience: form.yearsExperience,
           hasLicense: form.hasLicense,
@@ -195,6 +198,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         // Authenticated mode - use regular endpoint
         result = await barberApplicationService.submit({
           campusId: form.campusId,
+          phoneNumber: form.phoneNumber,
           yearsExperience: form.yearsExperience,
           hasLicense: form.hasLicense,
           licenseNumber: form.licenseNumber || undefined,
@@ -643,6 +647,23 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   </div>
                 </>
               )}
+
+              {/* Phone Number Field - Always required */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Phone Number *
+                </label>
+                <p className="text-xs text-gray-500 mb-2">
+                  The campus manager may reach out to you via text or call.
+                </p>
+                <input
+                  type="tel"
+                  value={form.phoneNumber}
+                  onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                  placeholder="(555) 123-4567"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
+              </div>
 
               {/* Experience and Tools - Side by side */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">

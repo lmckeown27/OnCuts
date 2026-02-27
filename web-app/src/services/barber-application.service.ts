@@ -2,6 +2,7 @@ import api from './api.service';
 
 export interface BarberApplicationForm {
   campusId: string;
+  phoneNumber: string;
   yearsExperience: string;
   hasLicense: boolean;
   licenseNumber?: string;
@@ -19,6 +20,7 @@ export interface GuestBarberApplicationForm extends BarberApplicationForm {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
 }
 
 export interface GuestApplicationResponse {
@@ -39,6 +41,7 @@ export interface BarberApplication {
   has_own_tools: boolean;
   available_hours: string;
   why_be_barber: string;
+  phone_number?: string;
   portfolio_description?: string;
   social_media?: string;
   additional_notes?: string;

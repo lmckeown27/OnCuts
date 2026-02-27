@@ -543,6 +543,26 @@ Campus Manager`
               <p className="font-semibold text-gray-900">{formatExperience(app.years_experience)}</p>
             </div>
             <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Phone Number</p>
+              <p className="font-semibold text-gray-900">{app.phone_number || 'Not provided'}</p>
+              {app.phone_number && (
+                <div className="flex gap-2 mt-2">
+                  <a 
+                    href={`tel:${app.phone_number}`}
+                    className="text-xs text-primary-600 hover:underline"
+                  >
+                    Call
+                  </a>
+                  <a 
+                    href={`sms:${app.phone_number}`}
+                    className="text-xs text-primary-600 hover:underline"
+                  >
+                    Text
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 mb-1">Available Hours</p>
               <p className="font-semibold text-gray-900">{app.available_hours || 'Not specified'}</p>
             </div>

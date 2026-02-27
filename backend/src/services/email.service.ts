@@ -1392,6 +1392,7 @@ function generateBookingCompletedHtml(
 interface BarberApplicationEmailDetails {
   applicantName: string;
   applicantEmail: string;
+  applicantPhone?: string;
   campusName: string;
   yearsExperience: string;
   hasLicense: boolean;
@@ -1465,6 +1466,7 @@ APPLICANT INFORMATION
 ---------------------
 Name: ${details.applicantName}
 Email: ${details.applicantEmail}
+Phone: ${details.applicantPhone || 'Not provided'}
 Campus: ${details.campusName}
 Submitted: ${details.submittedAt}
 
@@ -1543,6 +1545,14 @@ function generateBarberApplicationHtml(
           <p style="color: #445750; margin: 5px 0 0 0; font-size: 14px;">
             <a href="mailto:${details.applicantEmail}" style="color: #5a7268;">${details.applicantEmail}</a>
           </p>
+          ${details.applicantPhone ? `
+          <p style="color: #445750; margin: 5px 0 0 0; font-size: 14px;">
+            <a href="tel:${details.applicantPhone}" style="color: #5a7268;">${details.applicantPhone}</a>
+            <span style="color: #6b7280; margin-left: 10px; font-size: 12px;">
+              <a href="sms:${details.applicantPhone}" style="color: #5a7268; text-decoration: none;">📱 Text</a>
+            </span>
+          </p>
+          ` : ''}
         </div>
         <p style="color: #6b7280; font-size: 12px; margin: 0;">Submitted ${details.submittedAt}</p>
       </div>
