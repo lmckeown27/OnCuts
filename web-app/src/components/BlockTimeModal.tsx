@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Clock, Plus, X, Trash2, Calendar, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, Plus, X, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import Button from './Button';
 import DatePicker from './DatePicker';
 import toast from 'react-hot-toast';
@@ -310,8 +310,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
               {/* Create form */}
               {showCreateForm ? (
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
+                  <h3 className="text-sm font-semibold text-gray-700">
                     Block New Time
                   </h3>
                   
