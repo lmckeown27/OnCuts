@@ -2423,12 +2423,127 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     // Send cancellation emails to both parties (use campus timezone)
     const scheduledDate = new Date(booking.scheduledTime);
     const campusTimezone = booking.campus_timezone || 'America/New_York';
+    
+    // If barber cancelled, fetch alternative barbers for the consumer email
+    let alternativeBarbers: { id: string; name: string; avatar?: string; avgRating?: number; totalReviews?: number }[] = [];
+    
+    if (isBarber && booking.campus_id) {
+      try {
+        // Get the date and time in local format for availability check
+        const dateStr = scheduledDate.toISOString().split('T')[0];
+        const requestedHour = scheduledDate.getHours();
+        const requestedMinutes = scheduledDate.getMinutes();
+        const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
+        
+        // Fetch all barbers at the same campus who offer the same service
+        const barbersResult = await pool.query(`
+          SELECT 
+            b.id,
+            COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
+            u.avatar_url as avatar,
+            b."weeklySchedule" as weekly_schedule,
+            (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as avg_rating,
+            (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+          FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE b."campusId" = $1 
+            AND b.id != $2
+            AND b."isActive" = true
+            AND b."isOnboarded" = true
+            AND EXISTS (
+              SELECT 1 FROM barber_services bs 
+              WHERE bs.barber_id = b.id 
+                AND bs.service_type = $3
+            )
+        `, [booking.campus_id, booking.barberId, booking.serviceType]);
+        
+        // Check availability for each barber
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+        const dayName = dayNames[scheduledDate.getDay()];
+        
+        for (const barber of barbersResult.rows) {
+          const weeklySchedule = barber.weekly_schedule || {};
+          const daySchedule = weeklySchedule[dayName];
+          
+          // Check if barber works on this day
+          if (!daySchedule || !daySchedule.enabled) continue;
+          
+          // Get intervals
+          let intervals: { start: string; end: string }[] = [];
+          if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
+            intervals = daySchedule.intervals;
+          } else if (daySchedule.start && daySchedule.end) {
+            intervals = [{ start: daySchedule.start, end: daySchedule.end }];
+          }
+          
+          // Check if requested time is within any interval
+          const inInterval = intervals.some(interval => {
+            const [startHour, startMin] = interval.start.split(':').map(Number);
+            const [endHour, endMin] = interval.end.split(':').map(Number);
+            const intervalStart = startHour * 60 + startMin;
+            const intervalEnd = endHour * 60 + endMin;
+            return requestedTimeInMinutes >= intervalStart && requestedTimeInMinutes < intervalEnd;
+          });
+          
+          if (!inInterval) continue;
+          
+          // Check for conflicting bookings
+          const conflictCheck = await pool.query(`
+            SELECT 1 FROM bookings 
+            WHERE "barberId" = $1 
+              AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
+              AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+              AND (
+                EXTRACT(HOUR FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') * 60 +
+                EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles')
+              ) BETWEEN $3 AND $4
+            LIMIT 1
+          `, [barber.id, dateStr, requestedTimeInMinutes - 59, requestedTimeInMinutes + 59]);
+          
+          if (conflictCheck.rows.length > 0) continue;
+          
+          // Check for blocked times
+          const blockCheck = await pool.query(`
+            SELECT 1 FROM barber_time_blocks 
+            WHERE barber_id = $1 
+              AND block_date = $2
+              AND (
+                (EXTRACT(HOUR FROM start_time) * 60 + EXTRACT(MINUTE FROM start_time)) <= $3
+                AND (EXTRACT(HOUR FROM end_time) * 60 + EXTRACT(MINUTE FROM end_time)) > $3
+              )
+            LIMIT 1
+          `, [barber.id, dateStr, requestedTimeInMinutes]);
+          
+          if (blockCheck.rows.length > 0) continue;
+          
+          // Barber is available!
+          alternativeBarbers.push({
+            id: barber.id,
+            name: barber.name,
+            avatar: barber.avatar,
+            avgRating: barber.avg_rating ? parseFloat(barber.avg_rating) : undefined,
+            totalReviews: barber.total_reviews ? parseInt(barber.total_reviews) : undefined,
+          });
+          
+          // Limit to 5 alternative barbers for the email
+          if (alternativeBarbers.length >= 5) break;
+        }
+        
+        logger.info(`Found ${alternativeBarbers.length} alternative barbers for cancelled booking ${id}`);
+      } catch (altError: any) {
+        logger.error('Error fetching alternative barbers for cancellation email:', altError.message);
+        // Continue without alternative barbers
+      }
+    }
+    
     await sendBookingCancellationEmails({
       bookingId: id,
       serviceName: serviceName,
+      serviceType: booking.serviceType,
       price: (booking.priceUsdCents || 0) / 100,
       scheduledDate: scheduledDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: campusTimezone }),
       scheduledTime: scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: campusTimezone }),
+      scheduledDateTime: booking.scheduledTime,
       location: booking.location,
       consumerName: consumerName,
       consumerEmail: booking.consumer_email,
@@ -2436,6 +2551,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       barberEmail: booking.barber_email,
       cancelledBy: isBarber ? 'barber' : 'consumer',
       reason: reason,
+      alternativeBarbers: alternativeBarbers.length > 0 ? alternativeBarbers : undefined,
     });
 
     logger.info(`Booking ${id} cancelled by ${isBarber ? 'barber' : 'consumer'} ${userId}`);
