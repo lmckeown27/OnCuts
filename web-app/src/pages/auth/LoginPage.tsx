@@ -284,9 +284,9 @@ export default function LoginPage() {
             {/* Terms */}
             <p className="text-gray-400 text-xs">
               By signing in, you agree to our{' '}
-              <Link to="/terms" className="text-primary-500 hover:underline">Terms of Service</Link>
+              <Link to="/terms" className="text-emerald-600 hover:text-emerald-700 hover:underline">Terms of Service</Link>
               {' '}and{' '}
-              <Link to="/privacy" className="text-primary-500 hover:underline">Privacy Policy</Link>
+              <Link to="/privacy" className="text-emerald-600 hover:text-emerald-700 hover:underline">Privacy Policy</Link>
             </p>
           </div>
         </div>
