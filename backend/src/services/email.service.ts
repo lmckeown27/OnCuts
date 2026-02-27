@@ -1548,9 +1548,6 @@ function generateBarberApplicationHtml(
           ${details.applicantPhone ? `
           <p style="color: #445750; margin: 5px 0 0 0; font-size: 14px;">
             <a href="tel:${details.applicantPhone}" style="color: #5a7268;">${details.applicantPhone}</a>
-            <span style="color: #6b7280; margin-left: 10px; font-size: 12px;">
-              <a href="sms:${details.applicantPhone}" style="color: #5a7268; text-decoration: none;">📱 Text</a>
-            </span>
           </p>
           ` : ''}
         </div>
