@@ -261,10 +261,24 @@ export default function SignupPage() {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) return false;
     
-    // Check for common TLD typos
-    const invalidTLDs = ['con', 'cmo', 'ocm', 'coom', 'comm', 'ner', 'ogr', 'eduu', 'orgg'];
+    // Whitelist of valid TLDs
+    const validTLDs = [
+      // Generic TLDs
+      'com', 'org', 'net', 'edu', 'gov', 'mil', 'int', 'info', 'biz', 'name', 'pro',
+      // Popular new TLDs
+      'io', 'co', 'app', 'dev', 'tech', 'ai', 'me', 'tv', 'cc', 'xyz', 'online', 'site', 'web', 'cloud', 'email',
+      // Country code TLDs
+      'us', 'uk', 'ca', 'au', 'de', 'fr', 'es', 'it', 'nl', 'be', 'ch', 'at', 'jp', 'cn', 'kr', 'in', 'br', 'mx', 
+      'ar', 'cl', 'ru', 'pl', 'cz', 'se', 'no', 'dk', 'fi', 'ie', 'nz', 'sg', 'hk', 'tw', 'th', 'ph', 'my', 'id',
+      'za', 'ng', 'ke', 'eg', 'il', 'ae', 'sa', 'pk', 'bd', 'vn', 'ua', 'gr', 'pt', 'hu', 'ro', 'bg', 'hr', 'sk',
+      // Other common TLDs
+      'mobi', 'asia', 'jobs', 'museum', 'travel', 'coop', 'aero', 'cat', 'post',
+      // Company/brand TLDs
+      'google', 'amazon', 'apple', 'microsoft', 'yahoo', 'gmail'
+    ];
+    
     const tld = email.split('.').pop()?.toLowerCase();
-    if (tld && invalidTLDs.includes(tld)) return false;
+    if (!tld || !validTLDs.includes(tld)) return false;
     
     return true;
   };
