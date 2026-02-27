@@ -352,8 +352,8 @@ export default function VerifyEmailPage() {
           </div>
 
           {/* Spam Notice */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800 text-center">
+          <div className="mt-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+            <p className="text-sm text-primary-800 text-center">
               <strong>Check your spam/junk folder</strong> if you don't see the email.
               Sometimes verification emails end up there.
             </p>
