@@ -1030,7 +1030,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit || isSubmitting}
-                className="px-8 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-8 py-2.5 bg-primary-500 text-white font-semibold rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -1038,10 +1038,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     Submitting...
                   </>
                 ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    Submit Application
-                  </>
+                  'Submit Application'
                 )}
               </button>
             )}
