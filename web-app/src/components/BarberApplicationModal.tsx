@@ -599,9 +599,6 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
-            <div className="p-2 bg-white/20 rounded-lg mb-2">
-              <Scissors className="w-6 h-6 text-white" />
-            </div>
             <h2 className="text-xl font-bold text-white">Become a CampusCut Barber</h2>
             <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
           </div>
