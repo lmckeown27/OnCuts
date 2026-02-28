@@ -245,8 +245,18 @@ export default function ConsumerBookingStatusPage() {
 
   // Fetch alternative barbers when booking is cancelled by barber
   useEffect(() => {
+    console.log('[Alternative Barbers] useEffect triggered, cancelledBookingDetails:', cancelledBookingDetails);
+    
     const fetchAlternativeBarbers = async () => {
-      if (!cancelledBookingDetails) return;
+      if (!cancelledBookingDetails) {
+        console.log('[Alternative Barbers] No cancelledBookingDetails, skipping');
+        return;
+      }
+      
+      if (!cancelledBookingDetails.campusId) {
+        console.log('[Alternative Barbers] Missing campusId, skipping. Full details:', cancelledBookingDetails);
+        return;
+      }
       
       setLoadingAlternativeBarbers(true);
       try {
@@ -276,6 +286,7 @@ export default function ConsumerBookingStatusPage() {
           excludeBarberId: cancelledBookingDetails.cancelledBarberId,
         });
         
+        console.log('[Alternative Barbers] API response:', response);
         const availableBarbers = response.data?.barbers || response.barbers || [];
         console.log('[Alternative Barbers] Found:', availableBarbers.length, 'barbers');
         
@@ -288,7 +299,7 @@ export default function ConsumerBookingStatusPage() {
           total_reviews: b.total_reviews,
         })));
       } catch (error) {
-        console.error('Failed to fetch alternative barbers:', error);
+        console.error('[Alternative Barbers] Error fetching:', error);
         setAlternativeBarbers([]);
       } finally {
         setLoadingAlternativeBarbers(false);
@@ -448,18 +459,29 @@ export default function ConsumerBookingStatusPage() {
             const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
             const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
             
-            console.log('[Alternative Barbers] Cancellation notification data:', cancellationData);
+            console.log('[Alternative Barbers] Found unread cancellation notification:', recentCancellation);
+            console.log('[Alternative Barbers] Parsed notification data:', cancellationData);
             
-            setCancelledBookingDetails({
+            const details = {
               scheduledTime: cancellationData.scheduledTime,
               serviceType: cancellationData.serviceType,
               campusId: cancellationData.campusId || '',
               cancelledBarberId: cancellationData.cancelledBarberId || '',
               barberName,
-            });
+            };
+            console.log('[Alternative Barbers] Setting cancelledBookingDetails to:', details);
+            setCancelledBookingDetails(details);
             
             // Mark as read so we don't show it again
             await notificationService.markAsRead(recentCancellation.id);
+          } else {
+            console.log('[Alternative Barbers] No unread cancellation notification found. Checked notifications:', 
+              notifResponse.notifications.filter((n: any) => n.type === 'booking_cancelled').map((n: any) => ({
+                type: n.type,
+                is_read: n.is_read,
+                data: parseNotificationData(n)
+              }))
+            );
           }
         } catch (notifError) {
           console.error('Failed to check for cancellation notifications:', notifError);
