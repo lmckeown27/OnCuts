@@ -15,7 +15,7 @@
 import cron from 'node-cron';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import { sendBarberCheckInEmail, sendBarber24HFollowupEmail } from './email.service';
+import { sendBarberCheckInEmail, sendBarber24HFollowupEmail, sendConsumerCheckInEmail } from './email.service';
 
 /**
  * Helper to format service type: "HAIRCUT" -> "Haircut", "BEARD_TRIM" -> "Beard Trim"
@@ -104,6 +104,8 @@ export class BarberCheckInCronService {
           c.service_name,
           consumer.first_name as consumer_first_name,
           consumer.last_name as consumer_last_name,
+          consumer.email as consumer_email,
+          consumer.notification_preferences as consumer_notification_preferences,
           barber_user.first_name as barber_first_name,
           barber_user.last_name as barber_last_name,
           barber_user.email as barber_email,
@@ -178,14 +180,41 @@ export class BarberCheckInCronService {
             barberEmail: booking.barber_email
           };
 
-          // Send the check-in email
+          // Send the barber check-in email
           await sendBarberCheckInEmail(emailDetails);
+          emailsSent++;
+          logger.info(`✅ Barber check-in email sent for booking ${booking.id} to ${booking.barber_email}`);
+
+          // Send consumer check-in email if they have notifications enabled
+          if (booking.consumer_email) {
+            const consumerPrefs = booking.consumer_notification_preferences || {};
+            const consumerEmailEnabled = consumerPrefs.email_notifications !== false;
+            const consumerBookingNotifications = consumerPrefs.bookings !== false;
+
+            if (consumerEmailEnabled && consumerBookingNotifications) {
+              try {
+                const consumerEmailDetails = {
+                  bookingId: booking.id.toString(),
+                  serviceName,
+                  price: (booking.priceUsdCents || 0) / 100,
+                  scheduledDate,
+                  scheduledTime: scheduledTimeStr,
+                  location: booking.location,
+                  consumerName: `${booking.consumer_first_name || ''} ${booking.consumer_last_name || ''}`.trim() || 'Customer',
+                  consumerEmail: booking.consumer_email,
+                  barberName: `${booking.barber_first_name || ''} ${booking.barber_last_name || ''}`.trim() || 'Barber',
+                };
+                await sendConsumerCheckInEmail(consumerEmailDetails);
+                emailsSent++;
+                logger.info(`✅ Consumer check-in email sent for booking ${booking.id} to ${booking.consumer_email}`);
+              } catch (consumerError: any) {
+                logger.error(`Failed to send consumer check-in for booking ${booking.id}:`, consumerError.message);
+              }
+            }
+          }
 
           // Mark check-in as sent
           await this.markCheckInSent(booking.id);
-
-          emailsSent++;
-          logger.info(`✅ Barber check-in email sent for booking ${booking.id} to ${booking.barber_email}`);
 
         } catch (error: any) {
           emailsFailed++;

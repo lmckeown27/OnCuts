@@ -3116,6 +3116,202 @@ export interface BarberCheckInEmailDetails {
 }
 
 /**
+ * Consumer Check-In Email Details Interface
+ */
+export interface ConsumerCheckInEmailDetails {
+  bookingId: string;
+  serviceName: string;
+  price: number; // in dollars
+  scheduledDate: string;
+  scheduledTime: string;
+  location?: string;
+  consumerName: string;
+  consumerEmail: string;
+  barberName: string;
+}
+
+/**
+ * Send Consumer Check-In Email
+ * 
+ * Sends a check-in email to the consumer when 1 hour has passed since their
+ * scheduled booking time and the booking hasn't been updated.
+ * 
+ * This email prompts the consumer to:
+ * - Message the barber if they need to follow up
+ * - Wait for the barber to mark the booking complete
+ * - Cancel if the appointment didn't happen
+ * 
+ * @param details - Consumer check-in email details
+ */
+export async function sendConsumerCheckInEmail(details: ConsumerCheckInEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping consumer check-in email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const consumerDashboardUrl = `${frontendUrl}/consumer/booking-status`;
+
+  const firstName = details.consumerName.split(' ')[0];
+  const subject = `Booking Update: ${details.serviceName} with ${details.barberName}`;
+
+  const text = `
+Hi ${firstName},
+
+This is a friendly check-in regarding your ${details.serviceName} appointment with ${details.barberName}.
+
+The scheduled time was ${details.scheduledDate} at ${details.scheduledTime}, and we noticed the booking hasn't been updated yet.
+
+BOOKING DETAILS
+---------------
+Service: ${details.serviceName}
+Barber: ${details.barberName}
+Date: ${details.scheduledDate}
+Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+
+WHAT'S NEXT?
+------------
+
+If your haircut was completed:
+→ Your barber will mark the booking as complete and you'll receive a payment request
+
+If you haven't heard from your barber:
+→ Send them a message to follow up on your appointment
+
+If the appointment didn't happen:
+→ You can cancel the booking and book with another barber
+
+Check your booking: ${consumerDashboardUrl}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #4a6258 100%); padding: 30px 20px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 24px;">Booking Update</h1>
+      <p style="color: #d1e0d9; margin: 8px 0 0 0; font-size: 14px;">Checking in on your appointment</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        This is a friendly check-in regarding your <strong>${details.serviceName}</strong> appointment with <strong>${details.barberName}</strong>.
+      </p>
+      
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+        The scheduled time was <strong>${details.scheduledDate}</strong> at <strong>${details.scheduledTime}</strong>, and we noticed the booking hasn't been updated yet.
+      </p>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Barber</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.barberName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- What's Next Section -->
+      <div style="margin: 25px 0;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">What's Next?</h3>
+        
+        <!-- Option 1: Completed -->
+        <div style="background-color: #f0fdf4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #22c55e;">
+          <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">If your haircut was completed:</p>
+          <p style="color: #15803d; margin: 8px 0 0 0; font-size: 13px;">Your barber will mark the booking as complete and you'll receive a payment request</p>
+        </div>
+        
+        <!-- Option 2: Follow up -->
+        <div style="background-color: #fef3c7; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #f59e0b;">
+          <p style="color: #92400e; margin: 0; font-weight: 600; font-size: 14px;">If you haven't heard from your barber:</p>
+          <p style="color: #b45309; margin: 8px 0 0 0; font-size: 13px;">Send them a message to follow up on your appointment</p>
+        </div>
+        
+        <!-- Option 3: Cancel -->
+        <div style="background-color: #fef2f2; border-radius: 10px; padding: 15px; border-left: 4px solid #ef4444;">
+          <p style="color: #991b1b; margin: 0; font-weight: 600; font-size: 14px;">If the appointment didn't happen:</p>
+          <p style="color: #b91c1c; margin: 8px 0 0 0; font-size: 13px;">You can cancel the booking and book with another barber</p>
+        </div>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${consumerDashboardUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+          View My Booking
+        </a>
+      </div>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Consumer check-in email sent to: ${details.consumerEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send consumer check-in email to ${details.consumerEmail}:`, error.message);
+    throw error;
+  }
+}
+
+/**
  * Send Barber Check-In Email
  * 
  * Sends a check-in email to the barber when 1 hour has passed since their
