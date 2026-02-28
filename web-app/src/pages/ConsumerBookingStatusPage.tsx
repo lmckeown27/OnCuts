@@ -748,20 +748,20 @@ export default function ConsumerBookingStatusPage() {
                               )}
                             </div>
                           </div>
+                          <button
+                            onClick={() => {
+                              navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
+                                state: {
+                                  preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
+                                  preselectedService: cancelledBookingDetails.serviceType,
+                                }
+                              });
+                            }}
+                            className="flex-shrink-0 py-2 px-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors text-xs"
+                          >
+                            Schedule
+                          </button>
                         </div>
-                        <button
-                          onClick={() => {
-                            navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
-                              state: {
-                                preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
-                                preselectedService: cancelledBookingDetails.serviceType,
-                              }
-                            });
-                          }}
-                          className="w-full mt-3 py-2 px-4 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors text-sm"
-                        >
-                          Schedule Service
-                        </button>
                       </div>
                     ))}
                   </div>
