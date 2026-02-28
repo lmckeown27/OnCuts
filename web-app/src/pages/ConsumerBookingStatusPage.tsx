@@ -255,10 +255,17 @@ export default function ConsumerBookingStatusPage() {
         return;
       }
       
+      // DEBUG: Alert to verify this code is running
+      console.log('[Alternative Barbers] HAVE cancelledBookingDetails:', JSON.stringify(cancelledBookingDetails, null, 2));
+      
       if (!cancelledBookingDetails.campusId) {
         console.log('[Alternative Barbers] Missing campusId, skipping. Full details:', cancelledBookingDetails);
+        alert('DEBUG: Missing campusId! Details: ' + JSON.stringify(cancelledBookingDetails));
         return;
       }
+      
+      // If we get here, we have campusId - log it
+      console.log('[Alternative Barbers] campusId found:', cancelledBookingDetails.campusId);
       
       setLoadingAlternativeBarbers(true);
       try {
