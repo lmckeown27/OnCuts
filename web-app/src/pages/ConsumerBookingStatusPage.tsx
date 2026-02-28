@@ -110,7 +110,6 @@ export default function ConsumerBookingStatusPage() {
   }, []);
 
   useEffect(() => {
-    console.log('=== ConsumerBookingStatusPage MOUNTED (v2) ===');
     fetchActiveBooking();
     loadUnreadCount(); // Load unread message count on mount
     // Poll for updates every 10 seconds (faster for payment request detection)
@@ -247,25 +246,14 @@ export default function ConsumerBookingStatusPage() {
 
   // Fetch alternative barbers when booking is cancelled by barber
   useEffect(() => {
-    console.log('[Alternative Barbers] useEffect triggered, cancelledBookingDetails:', cancelledBookingDetails);
-    
     const fetchAlternativeBarbers = async () => {
       if (!cancelledBookingDetails) {
-        console.log('[Alternative Barbers] No cancelledBookingDetails, skipping');
         return;
       }
-      
-      // DEBUG: Alert to verify this code is running
-      console.log('[Alternative Barbers] HAVE cancelledBookingDetails:', JSON.stringify(cancelledBookingDetails, null, 2));
       
       if (!cancelledBookingDetails.campusId) {
-        console.log('[Alternative Barbers] Missing campusId, skipping. Full details:', cancelledBookingDetails);
-        alert('DEBUG: Missing campusId! Details: ' + JSON.stringify(cancelledBookingDetails));
         return;
       }
-      
-      // If we get here, we have campusId - log it
-      console.log('[Alternative Barbers] campusId found:', cancelledBookingDetails.campusId);
       
       setLoadingAlternativeBarbers(true);
       try {
@@ -279,13 +267,6 @@ export default function ConsumerBookingStatusPage() {
           hour12: false 
         }); // HH:MM
         
-        console.log('[Alternative Barbers] Fetching barbers available at:', { 
-          date: dateStr, 
-          time: timeStr, 
-          campusId: cancelledBookingDetails.campusId,
-          serviceType: cancelledBookingDetails.serviceType 
-        });
-        
         // Use the dedicated backend endpoint
         const response = await api.get('/barbers/available-at-time', {
           campusId: cancelledBookingDetails.campusId,
@@ -295,9 +276,7 @@ export default function ConsumerBookingStatusPage() {
           excludeBarberId: cancelledBookingDetails.cancelledBarberId,
         });
         
-        console.log('[Alternative Barbers] API response:', response);
         const availableBarbers = response.data?.barbers || response.barbers || [];
-        console.log('[Alternative Barbers] Found:', availableBarbers.length, 'barbers');
         
         // Map to Barber type
         setAlternativeBarbers(availableBarbers.map((b: any) => ({
@@ -369,7 +348,6 @@ export default function ConsumerBookingStatusPage() {
   };
 
   const fetchActiveBooking = async () => {
-    console.log('[fetchActiveBooking] Starting...');
     try {
       // Fetch consumer's active bookings (PENDING, ACCEPTED, or COMPLETED awaiting payment)
       // Add timestamp to bust cache after edits
@@ -475,9 +453,6 @@ export default function ConsumerBookingStatusPage() {
             const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
             const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
             
-            console.log('[Alternative Barbers] Found recent cancellation notification:', recentCancellation);
-            console.log('[Alternative Barbers] Parsed notification data:', cancellationData);
-            
             const details = {
               scheduledTime: cancellationData.scheduledTime,
               serviceType: cancellationData.serviceType,
@@ -486,19 +461,9 @@ export default function ConsumerBookingStatusPage() {
               barberName,
               notificationId: recentCancellation.id, // Store for marking read later
             };
-            console.log('[Alternative Barbers] Setting cancelledBookingDetails to:', details);
             setCancelledBookingDetails(details);
             
             // DON'T mark as read yet - wait until user dismisses the view
-          } else {
-            console.log('[Alternative Barbers] No recent cancellation notification found. Checked notifications:', 
-              notifResponse.notifications.filter((n: any) => n.type === 'booking_cancelled').map((n: any) => ({
-                type: n.type,
-                is_read: n.is_read,
-                created_at: n.created_at,
-                data: parseNotificationData(n)
-              }))
-            );
           }
         } catch (notifError) {
           console.error('Failed to check for cancellation notifications:', notifError);
@@ -712,13 +677,6 @@ export default function ConsumerBookingStatusPage() {
           {/* Cancelled by Barber - Show Alternative Barbers */}
           {cancelledBookingDetails ? (
             <div className="space-y-6">
-              {/* DEBUG: Show what data we have */}
-              <div className="bg-yellow-100 border border-yellow-400 rounded p-2 text-xs text-left overflow-auto max-h-32">
-                <strong>DEBUG campusId:</strong> {cancelledBookingDetails.campusId || 'MISSING'}<br/>
-                <strong>DEBUG serviceType:</strong> {cancelledBookingDetails.serviceType || 'MISSING'}<br/>
-                <strong>DEBUG loading:</strong> {loadingAlternativeBarbers ? 'true' : 'false'}<br/>
-                <strong>DEBUG barbers count:</strong> {alternativeBarbers.length}
-              </div>
               {/* Cancellation Notice */}
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                 <h2 className="text-xl font-bold text-red-800 mb-2">Booking Cancelled</h2>

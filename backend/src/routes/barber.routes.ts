@@ -102,7 +102,6 @@ router.get(
         JOIN users u ON b."userId" = u.id
         WHERE b."campusId" = $1
           AND b."isActive" = true
-          AND b."isOnboarded" = true
           ${excludeBarberId ? `AND b.id != $2` : ''}
       `, excludeBarberId ? [campusId, excludeBarberId] : [campusId]);
       
