@@ -700,6 +700,8 @@ export function AdminDashboard({
   const handleBackToConsumers = () => {
     setSelectedConsumer(null);
     setConsumerBookings([]);
+    setSelectedBookingId(null);
+    setSelectedBookingMessages([]);
   };
   
   // Prepare chart data
@@ -2354,7 +2356,8 @@ export function AdminDashboard({
                 {consumerBookings.map(booking => (
                   <div 
                     key={booking.id} 
-                    className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                    className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleBookingClick(booking.id)}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -2421,6 +2424,42 @@ export function AdminDashboard({
                         </div>
                         {booking.review_text && (
                           <p className="text-xs text-gray-600 italic">"{booking.review_text}"</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Expandable messages section */}
+                    {selectedBookingId === booking.id && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Messages</p>
+                        {isLoadingMessages ? (
+                          <div className="flex items-center justify-center py-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                          </div>
+                        ) : selectedBookingMessages.length > 0 ? (
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {selectedBookingMessages.map(msg => (
+                              <div key={msg.id} className="text-xs p-2 bg-gray-100 rounded">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <span className={`text-[10px] px-1 py-0.5 rounded ${
+                                    msg.sender_id === booking.barber_user_id
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-amber-100 text-amber-700'
+                                  }`}>
+                                    {msg.sender_id === booking.barber_user_id ? 'Barber' : 'Customer'}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 ml-auto">
+                                    {new Date(msg.created_at).toLocaleTimeString('en-US', {
+                                      hour: 'numeric', minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                <p className="text-gray-700">{msg.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">No messages in this booking</p>
                         )}
                       </div>
                     )}
