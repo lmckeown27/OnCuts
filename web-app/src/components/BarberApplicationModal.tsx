@@ -764,12 +764,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                         }`}
                       >
                         <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                          isSelected
-                            ? 'bg-primary-400 border-primary-400'
-                            : 'border-gray-300'
-                        }`}>
+                              isSelected
+                                ? 'bg-primary-400 border-primary-400'
+                                : 'border-gray-300'
+                            }`}>
                           {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                        </div>
+                            </div>
                         <span className="font-medium text-gray-900 text-sm">{service.name}</span>
                       </div>
                     );
@@ -836,37 +836,37 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                             <p className="text-xs mt-1 text-gray-400">{campuses.length} universities available</p>
                           </div>
                         ) : (
-                          <div className="p-1">
-                            {campuses
-                              .filter(campus => 
-                                campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                              )
-                              .map(campus => (
-                                <button
-                                  key={campus.id}
-                                  type="button"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault(); // Prevent blur from firing
-                                    setForm({ ...form, campusId: campus.id });
-                                    setCampusSearchQuery(campus.name);
-                                    setShowCampusDropdown(false);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
-                                    form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
-                                  }`}
-                                >
-                                  {campus.name}
-                                </button>
-                              ))
-                            }
-                            {campuses.filter(campus => 
+                        <div className="p-1">
+                          {campuses
+                            .filter(campus => 
                               campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                            ).length === 0 && (
-                              <div className="px-3 py-2 text-gray-500 text-sm">
-                                No campuses found
-                              </div>
-                            )}
-                          </div>
+                            )
+                            .map(campus => (
+                              <button
+                                key={campus.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault(); // Prevent blur from firing
+                                  setForm({ ...form, campusId: campus.id });
+                                  setCampusSearchQuery(campus.name);
+                                  setShowCampusDropdown(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-md hover:bg-primary-50 transition-colors ${
+                                  form.campusId === campus.id ? 'bg-primary-100 text-primary-700 font-medium' : 'text-gray-700'
+                                }`}
+                              >
+                                {campus.name}
+                              </button>
+                            ))
+                          }
+                          {campuses.filter(campus => 
+                            campus.name.toLowerCase().includes(campusSearchQuery.toLowerCase())
+                          ).length === 0 && (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              No campuses found
+                            </div>
+                          )}
+                        </div>
                         )}
                       </div>
                     )}

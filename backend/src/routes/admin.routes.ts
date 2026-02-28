@@ -27,6 +27,7 @@ router.post('/withdrawals/process-batch', authenticate, adminController.processB
 
 // User Management
 router.get('/users/:userId/balance', authenticate, adminController.getUserBalance);
+router.get('/users/:userId/bookings', authenticate, adminController.getUserBookings);
 router.post('/users/:userId/credit', authenticate, adminController.issueCredit);
 
 // Audit Logs

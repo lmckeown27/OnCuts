@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, Search, ChevronDown, Loader2, AlertCircle,
-  Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft,
+  Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
   Copy, Check
 } from 'lucide-react';
@@ -129,6 +129,27 @@ interface BarberBooking {
   message_count: number;
 }
 
+interface ConsumerBooking {
+  id: string;
+  service_type: string;
+  price_cents: number;
+  tip_cents: number;
+  total_paid_cents: number;
+  status: string;
+  payment_method: string | null;
+  scheduled_time: string;
+  created_at: string;
+  paid_at: string | null;
+  review_rating: number | null;
+  review_text: string | null;
+  barber_record_id: string;
+  barber_user_id: string;
+  barber_first_name: string;
+  barber_last_name: string;
+  barber_email: string;
+  barber_avatar: string | null;
+}
+
 interface BookingMessage {
   id: string;
   content: string;
@@ -234,6 +255,11 @@ export function AdminDashboard({
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  
+  // Consumer detail view state
+  const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
+  const [consumerBookings, setConsumerBookings] = useState<ConsumerBooking[]>([]);
+  const [isLoadingConsumerBookings, setIsLoadingConsumerBookings] = useState(false);
   
   // Barber view state (shared between all-barbers and campus-specific views)
   const [barberViewTab, setBarberViewTab] = useState<'managers' | 'barbers' | 'applications'>('barbers');
@@ -651,6 +677,29 @@ export function AdminDashboard({
     setBarberBookings([]);
     setSelectedBookingId(null);
     setSelectedBookingMessages([]);
+  };
+  
+  // Handle consumer click - fetch their bookings
+  const handleConsumerClick = async (user: PlatformUser) => {
+    setSelectedConsumer(user);
+    setConsumerBookings([]);
+    setIsLoadingConsumerBookings(true);
+    
+    try {
+      const response = await api.get<{ bookings: ConsumerBooking[] }>(`/admin/users/${user.id}/bookings`);
+      setConsumerBookings(response.bookings || []);
+    } catch (error) {
+      console.error('Failed to fetch consumer bookings:', error);
+      toast.error('Failed to load bookings');
+    } finally {
+      setIsLoadingConsumerBookings(false);
+    }
+  };
+  
+  // Go back from consumer detail view
+  const handleBackToConsumers = () => {
+    setSelectedConsumer(null);
+    setConsumerBookings([]);
   };
   
   // Prepare chart data
@@ -2252,78 +2301,220 @@ export function AdminDashboard({
       {/* Consumers View */}
       {adminView === 'users' && (
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-semibold text-gray-900">Consumer Signups</h3>
-          <span className="text-xs text-gray-500">
-            {totalUsersCount} total consumers
-          </span>
-        </div>
-        
-        {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={userSearchQuery}
-            onChange={(e) => setUserSearchQuery(e.target.value)}
-            placeholder="Search consumers..."
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        
-        {isLoadingUsers ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
-          </div>
-        ) : filteredUsers.length > 0 ? (
-          <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden">
-            {filteredUsers.map(user => (
-              <div 
-                key={user.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 w-full"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <span className="text-xs font-bold text-primary-600">
-                      #{user.customer_number}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm truncate">
-                      {user.first_name} {user.last_name}
-                    </p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 min-w-0">
-                      <Mail className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{user.email}</span>
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-gray-500">
-                    {new Date(user.created_at).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric'
-                    })}
-                  </p>
-                  <p className="text-[10px] text-gray-400">
-                    {new Date(user.created_at).toLocaleTimeString('en-US', {
-                      hour: 'numeric', minute: '2-digit'
-                    })}
-                  </p>
-                  {user.campus_name && (
-                    <p className="text-[10px] text-gray-400 truncate max-w-28 mt-0.5">
-                      {user.campus_name}
-                    </p>
-                  )}
-                </div>
+        {selectedConsumer ? (
+          // Consumer Detail View - show booking history
+          <>
+            <button
+              onClick={handleBackToConsumers}
+              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back to Consumers
+            </button>
+            
+            {/* Consumer Header */}
+            <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+              <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {selectedConsumer.avatar_url ? (
+                  <img src={selectedConsumer.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold text-primary-600">
+                    #{selectedConsumer.customer_number}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-gray-900">
+                  {selectedConsumer.first_name} {selectedConsumer.last_name}
+                </h3>
+                <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5" />
+                  {selectedConsumer.email}
+                </p>
+                {selectedConsumer.campus_name && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {selectedConsumer.campus_name}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* Booking History */}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Booking History</h3>
+              <span className="text-xs text-gray-500">{consumerBookings.length} bookings</span>
+            </div>
+            
+            {isLoadingConsumerBookings ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+              </div>
+            ) : consumerBookings.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {consumerBookings.map(booking => (
+                  <div 
+                    key={booking.id} 
+                    className="p-3 rounded-lg border border-gray-200 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          booking.status === 'COMPLETED' || booking.status === 'PAID' 
+                            ? 'bg-green-100 text-green-700' 
+                            : booking.status === 'CANCELLED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {booking.status}
+                        </span>
+                        {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                            {booking.payment_method === 'card' ? 'Card' : 'Cash'}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(booking.scheduled_time).toLocaleDateString('en-US', {
+                          month: 'short', day: 'numeric', year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {booking.barber_avatar ? (
+                          <img src={booking.barber_avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold text-gray-500">
+                            {booking.barber_first_name?.charAt(0) || 'B'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {booking.barber_first_name} {booking.barber_last_name}
+                        </p>
+                        <p className="text-xs text-gray-500">{booking.service_type}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">
+                          ${((booking.total_paid_cents || booking.price_cents || 0) / 100).toFixed(2)}
+                        </p>
+                        {booking.tip_cents > 0 && (
+                          <p className="text-xs text-green-600">
+                            +${(booking.tip_cents / 100).toFixed(2)} tip
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Review if exists */}
+                    {booking.review_rating && (
+                      <div className="mt-2 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-3 h-3 ${i < booking.review_rating! ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} 
+                            />
+                          ))}
+                        </div>
+                        {booking.review_text && (
+                          <p className="text-xs text-gray-600 italic">"{booking.review_text}"</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                <Calendar className="w-10 h-10 text-gray-300 mb-2" />
+                <p className="text-sm">No bookings yet</p>
+              </div>
+            )}
+          </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-            <UserPlus className="w-10 h-10 text-gray-300 mb-2" />
-            <p className="text-sm">No consumers found</p>
-          </div>
+          // Consumer List View
+          <>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Consumer Signups</h3>
+              <span className="text-xs text-gray-500">
+                {totalUsersCount} total consumers
+              </span>
+            </div>
+            
+            {/* Search */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={userSearchQuery}
+                onChange={(e) => setUserSearchQuery(e.target.value)}
+                placeholder="Search consumers..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            
+            {isLoadingUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto overflow-x-hidden">
+                {filteredUsers.map(user => (
+                  <div 
+                    key={user.id}
+                    onClick={() => handleConsumerClick(user)}
+                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 w-full cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <span className="text-xs font-bold text-primary-600">
+                          #{user.customer_number}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 text-sm truncate">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1 min-w-0">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{user.email}</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-gray-500">
+                          {new Date(user.created_at).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', year: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {new Date(user.created_at).toLocaleTimeString('en-US', {
+                            hour: 'numeric', minute: '2-digit'
+                          })}
+                        </p>
+                        {user.campus_name && (
+                          <p className="text-[10px] text-gray-400 truncate max-w-28 mt-0.5">
+                            {user.campus_name}
+                          </p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                <UserPlus className="w-10 h-10 text-gray-300 mb-2" />
+                <p className="text-sm">No consumers found</p>
+              </div>
+            )}
+          </>
         )}
       </div>
       )}

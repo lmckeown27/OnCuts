@@ -1947,6 +1947,102 @@ export const getBarberBookings = async (req: AuthRequest, res: Response, next: N
 };
 
 /**
+ * Get bookings for a specific user (consumer)
+ * GET /api/admin/users/:userId/bookings
+ */
+export const getUserBookings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const offset = (page - 1) * limit;
+
+    // Verify admin role
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+
+    // Validate userId
+    if (!userId || userId === 'undefined' || userId === 'null') {
+      return res.json({
+        bookings: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      console.error(`Invalid userId format: ${userId}`);
+      return res.json({
+        bookings: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          pages: 0,
+        },
+      });
+    }
+
+    // Get bookings for this consumer with barber info and review data
+    const result = await pool.query(`
+      SELECT 
+        bk.id,
+        bk."serviceType" as service_type,
+        bk."priceUsdCents" as price_cents,
+        bk."tipAmountCents" as tip_cents,
+        bk."totalPaidCents" as total_paid_cents,
+        bk.status,
+        bk."paymentMethod" as payment_method,
+        bk."requestedAt" as scheduled_time,
+        bk."createdAt" as created_at,
+        bk."paidAt" as paid_at,
+        r.rating as review_rating,
+        r.comment as review_text,
+        b.id as barber_record_id,
+        u.id as barber_user_id,
+        u.first_name as barber_first_name,
+        u.last_name as barber_last_name,
+        u.email as barber_email,
+        u."avatarUrl" as barber_avatar
+      FROM bookings bk
+      JOIN barbers b ON bk."barberId" = b.id
+      JOIN users u ON b."userId" = u.id
+      LEFT JOIN reviews r ON r."bookingId" = bk.id
+      WHERE bk."consumerId" = $1::uuid
+      ORDER BY bk."createdAt" DESC
+      LIMIT $2 OFFSET $3
+    `, [userId, limit, offset]);
+
+    // Get total count
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM bookings
+      WHERE "consumerId" = $1::uuid
+    `, [userId]);
+
+    res.json({
+      bookings: result.rows,
+      pagination: {
+        page,
+        limit,
+        total: parseInt(countResult.rows[0].total),
+        pages: Math.ceil(countResult.rows[0].total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get messages for a specific booking
  * GET /api/admin/bookings/:bookingId/messages
  * 

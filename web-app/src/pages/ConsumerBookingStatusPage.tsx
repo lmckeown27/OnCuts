@@ -799,15 +799,15 @@ export default function ConsumerBookingStatusPage() {
           ) : (
             /* Standard No Active Booking */
             <div className="text-center py-4">
-              <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Booking</h2>
-              <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
-              <button
-                onClick={handleBackToDiscover}
-                className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
-              >
-                Find a Barber
-              </button>
+          <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">No Active Booking</h2>
+          <p className="text-gray-600 mb-6">You don't have any pending or confirmed bookings.</p>
+          <button
+            onClick={handleBackToDiscover}
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
+          >
+            Find a Barber
+          </button>
             </div>
           )}
         </div>
