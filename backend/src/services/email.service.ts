@@ -3850,3 +3850,535 @@ CampusCut
     throw error;
   }
 }
+
+// ============================================
+// PENDING BOOKING WARNING EMAIL (3 Hours Before)
+// ============================================
+
+/**
+ * Pending Booking Warning Email Details Interface
+ */
+export interface PendingBookingWarningDetails {
+  bookingId: string;
+  serviceName: string;
+  price: number;
+  scheduledDate: string;
+  scheduledTime: string;
+  location?: string;
+  consumerName: string;
+  barberName: string;
+  barberEmail: string;
+}
+
+/**
+ * Send Pending Booking Warning Email to Barber
+ * 
+ * Sent 3 hours before the scheduled time when the booking is still PENDING.
+ * Warns the barber that the booking will be auto-cancelled if not accepted within 1 hour.
+ */
+export async function sendPendingBookingWarningEmail(details: PendingBookingWarningDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping pending booking warning email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const barberDashboardUrl = `${frontendUrl}/web/barber`;
+
+  const firstName = details.barberName.split(' ')[0];
+  const subject = `⚠️ Action Required: Accept Booking from ${details.consumerName} - Auto-Cancel in 1 Hour`;
+
+  const text = `
+Hi ${firstName},
+
+URGENT: You have a pending booking request that requires your attention!
+
+${details.consumerName} has requested a ${details.serviceName} appointment scheduled for ${details.scheduledDate} at ${details.scheduledTime}.
+
+This booking will be AUTOMATICALLY CANCELLED if you don't accept or decline it within the next hour.
+
+BOOKING DETAILS
+---------------
+Service: ${details.serviceName}
+Customer: ${details.consumerName}
+Date: ${details.scheduledDate}
+Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+
+Please visit your dashboard to accept or decline this booking: ${barberDashboardUrl}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">⚠️</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Action Required</h1>
+      <p style="color: #fef3c7; margin: 8px 0 0 0; font-size: 14px;">Pending booking needs your response</p>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
+      
+      <!-- Urgent Warning -->
+      <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 15px; margin: 0 0 25px 0;">
+        <p style="color: #92400e; margin: 0; font-weight: 600; font-size: 15px; text-align: center;">
+          ⏰ This booking will be auto-cancelled in 1 hour if not accepted
+        </p>
+      </div>
+      
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+        <strong>${details.consumerName}</strong> has requested a <strong>${details.serviceName}</strong> appointment and is waiting for your confirmation.
+      </p>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Customer</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.consumerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
+            <td style="padding: 8px 0; color: #f59e0b; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+          </tr>
+          ${details.location ? `
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Location</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.location}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right; font-size: 18px;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+          Accept or Decline Booking
+        </a>
+      </div>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Pending booking warning email sent to barber: ${details.barberEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send pending booking warning email to ${details.barberEmail}:`, error.message);
+    throw error;
+  }
+}
+
+// ============================================
+// AUTO-CANCELLATION EMAILS (2 Hours Before)
+// ============================================
+
+/**
+ * Auto-Cancellation Email Details Interface
+ */
+export interface AutoCancellationEmailDetails {
+  bookingId: string;
+  serviceName: string;
+  serviceType: string;
+  price: number;
+  scheduledDate: string;
+  scheduledTime: string;
+  scheduledDateTime: string; // ISO timestamp for alternative barber lookup
+  location?: string;
+  consumerName: string;
+  consumerEmail: string;
+  barberName: string;
+  barberEmail: string;
+  campusId?: string;
+  campusTimezone?: string;
+  alternativeBarbers?: { id: string; name: string; avatar?: string; avgRating?: number; totalReviews?: number }[];
+}
+
+/**
+ * Send Auto-Cancellation Email to Barber
+ * 
+ * Sent when a pending booking is auto-cancelled 2 hours before scheduled time
+ * because the barber didn't accept it.
+ */
+export async function sendBarberAutoCancellationEmail(details: AutoCancellationEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping barber auto-cancellation email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+  const barberDashboardUrl = `${frontendUrl}/web/barber`;
+
+  const firstName = details.barberName.split(' ')[0];
+  const subject = `Booking Auto-Cancelled: ${details.serviceName} with ${details.consumerName}`;
+
+  const text = `
+Hi ${firstName},
+
+The pending booking request from ${details.consumerName} has been automatically cancelled.
+
+This booking was cancelled because it was not accepted before the 2-hour deadline prior to the scheduled appointment time.
+
+CANCELLED BOOKING DETAILS
+-------------------------
+Service: ${details.serviceName}
+Customer: ${details.consumerName}
+Scheduled Date: ${details.scheduledDate}
+Scheduled Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+
+To avoid auto-cancellations in the future, please respond to booking requests promptly.
+
+Visit your dashboard: ${barberDashboardUrl}
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut
+`.trim();
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background-color: #ef4444; padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">❌</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Booking Auto-Cancelled</h1>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        The pending booking request from <strong>${details.consumerName}</strong> has been <strong>automatically cancelled</strong>.
+      </p>
+      
+      <!-- Reason Box -->
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+        <p style="color: #991b1b; margin: 0; font-size: 14px;">
+          <strong>Reason:</strong> Booking was not accepted before the 2-hour deadline prior to the scheduled appointment time.
+        </p>
+      </div>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Cancelled Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Customer</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.consumerName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
+            <td style="padding: 8px 0; color: #ef4444; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #6b7280; font-weight: 600; text-align: right; text-decoration: line-through;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+      
+      <!-- Tip -->
+      <div style="background-color: #f0fdf4; border-radius: 10px; padding: 15px; margin: 20px 0;">
+        <p style="color: #166534; margin: 0; font-size: 13px;">
+          💡 <strong>Tip:</strong> To avoid auto-cancellations, please respond to booking requests promptly. Customers are waiting for your confirmation!
+        </p>
+      </div>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          View Dashboard
+        </a>
+      </div>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.barberEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Barber auto-cancellation email sent to: ${details.barberEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send barber auto-cancellation email to ${details.barberEmail}:`, error.message);
+    throw error;
+  }
+}
+
+/**
+ * Send Auto-Cancellation Email to Consumer
+ * 
+ * Sent when a pending booking is auto-cancelled 2 hours before scheduled time
+ * because the barber didn't accept it. Includes alternative barbers if available.
+ */
+export async function sendConsumerAutoCancellationEmail(details: AutoCancellationEmailDetails): Promise<void> {
+  if (isAutoVerifyEnabled()) {
+    logger.info(`[AUTO-VERIFY MODE] Skipping consumer auto-cancellation email for booking ${details.bookingId}`);
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
+
+  const firstName = details.consumerName.split(' ')[0];
+  const subject = `Booking Cancelled: ${details.serviceName} with ${details.barberName}`;
+
+  // Build alternative barbers text
+  let alternativeBarbersText = '';
+  if (details.alternativeBarbers && details.alternativeBarbers.length > 0) {
+    alternativeBarbersText = `
+ALTERNATIVE BARBERS AVAILABLE
+-----------------------------
+These barbers offer ${details.serviceName} and are available at ${details.scheduledTime}:
+${details.alternativeBarbers.map(b => `- ${b.name}${b.avgRating ? ` (★ ${b.avgRating.toFixed(1)})` : ''}`).join('\n')}
+
+Book with one of these barbers: ${frontendUrl}/web/auth
+`;
+  }
+
+  const text = `
+Hi ${firstName},
+
+We're sorry to inform you that your ${details.serviceName} booking has been automatically cancelled.
+
+Unfortunately, ${details.barberName} was unable to confirm the booking before the deadline.
+
+CANCELLED BOOKING DETAILS
+-------------------------
+Service: ${details.serviceName}
+Barber: ${details.barberName}
+Scheduled Date: ${details.scheduledDate}
+Scheduled Time: ${details.scheduledTime}
+${details.location ? `Location: ${details.location}` : ''}
+Price: $${details.price.toFixed(2)}
+${alternativeBarbersText}
+We apologize for any inconvenience. You can book a new appointment with another barber anytime.
+
+Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
+
+---
+CampusCut
+`.trim();
+
+  // Build alternative barbers HTML
+  let alternativeBarbersHtml = '';
+  if (details.alternativeBarbers && details.alternativeBarbers.length > 0) {
+    alternativeBarbersHtml = `
+      <div style="background-color: #f0fdf4; border: 2px solid #5a7268; border-radius: 12px; padding: 20px; margin: 25px 0;">
+        <h3 style="color: #445750; margin: 0 0 15px 0; font-size: 16px; text-align: center;">
+          ${details.alternativeBarbers.length} Barber${details.alternativeBarbers.length > 1 ? 's' : ''} Available at This Time
+        </h3>
+        <p style="color: #5a7268; font-size: 13px; text-align: center; margin: 0 0 15px 0;">
+          These barbers offer ${details.serviceName} and are available at ${details.scheduledTime}:
+        </p>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
+          ${details.alternativeBarbers.map(barber => `
+          <tr>
+            <td style="background-color: white; border-radius: 8px; padding: 12px;">
+              <table style="width: 100%;">
+                <tr>
+                  <td style="width: 48px; vertical-align: middle;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; overflow: hidden;">
+                      ${barber.avatar 
+                        ? `<img src="${barber.avatar}" alt="${barber.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">`
+                        : `<div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280;">${barber.name.charAt(0)}</div>`
+                      }
+                    </div>
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 12px;">
+                    <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 14px;">${barber.name}</p>
+                    ${barber.avgRating ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 12px;">⭐ ${barber.avgRating.toFixed(1)}${barber.totalReviews ? ` (${barber.totalReviews} reviews)` : ''}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          `).join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <!-- Header -->
+    <div style="background-color: #ef4444; padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">❌</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Booking Cancelled</h1>
+    </div>
+    
+    <div style="padding: 30px;">
+      <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName},</p>
+      
+      <p style="color: #4b5563; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+        We're sorry to inform you that your <strong>${details.serviceName}</strong> booking has been <strong>automatically cancelled</strong>.
+      </p>
+      
+      <!-- Reason Box -->
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+        <p style="color: #991b1b; margin: 0; font-size: 14px;">
+          <strong>Reason:</strong> ${details.barberName} was unable to confirm the booking before the deadline.
+        </p>
+      </div>
+      
+      <!-- Booking Details Card -->
+      <div style="background-color: #f9fafb; border-radius: 12px; padding: 20px; margin: 20px 0; border: 2px solid #e5e7eb;">
+        <h3 style="color: #1f2937; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Cancelled Booking Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Service</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.serviceName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Barber</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.barberName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Date</td>
+            <td style="padding: 8px 0; color: #1f2937; font-weight: 600; text-align: right;">${details.scheduledDate}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
+            <td style="padding: 8px 0; color: #ef4444; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Price</td>
+            <td style="padding: 8px 0; color: #6b7280; font-weight: 600; text-align: right; text-decoration: line-through;">$${details.price.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+      
+      ${alternativeBarbersHtml}
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${frontendUrl}/web/auth" style="display: inline-block; background-color: #5a7268; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+          Book New Appointment
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 13px; text-align: center; margin: 20px 0 0 0;">
+        We apologize for any inconvenience. You can book a new appointment anytime.
+      </p>
+      
+      <!-- Booking Reference -->
+      <div style="text-align: center; margin: 25px 0;">
+        <p style="color: #9ca3af; margin: 0; font-size: 12px;">Booking Reference</p>
+        <p style="color: #1f2937; margin: 5px 0 0 0; font-size: 16px; font-weight: 700; letter-spacing: 2px;">${details.bookingId.slice(0, 8).toUpperCase()}</p>
+      </div>
+    </div>
+    
+    <div style="background-color: #f9fafb; padding: 20px; text-align: center;">
+      <p style="color: #9ca3af; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} CampusCut</p>
+    </div>
+  </div>
+</body>
+</html>`.trim();
+
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `CampusCut <${process.env.SMTP_USER}>`,
+      to: details.consumerEmail,
+      subject,
+      text,
+      html
+    };
+
+    await transporter.sendMail(mailOptions);
+    logger.info(`Consumer auto-cancellation email sent to: ${details.consumerEmail} for booking ${details.bookingId}`);
+  } catch (error: any) {
+    logger.error(`Failed to send consumer auto-cancellation email to ${details.consumerEmail}:`, error.message);
+    throw error;
+  }
+}
