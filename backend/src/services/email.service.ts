@@ -1818,7 +1818,7 @@ function generateBookingCancellationHtml(
     : `<strong>${otherPartyName}</strong> has cancelled the <strong>${details.serviceName}</strong> appointment.`;
 
   const ctaText = isConsumer ? 'Book New Appointment' : 'View Dashboard';
-  const ctaLink = isConsumer ? `${frontendUrl}/web/discover` : `${frontendUrl}/web/barber`;
+  const ctaLink = isConsumer ? `${frontendUrl}/web/auth` : `${frontendUrl}/web/barber`;
 
   return `
 <!DOCTYPE html>
@@ -1910,9 +1910,6 @@ function generateBookingCancellationHtml(
           </tr>
           `).join('')}
         </table>
-        <div style="text-align: center; margin-top: 15px;">
-          <a href="${frontendUrl}/consumer/booking-status" style="display: inline-block; background-color: #5a7268; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Book with Available Barber</a>
-        </div>
       </div>
       ` : ''}
 
