@@ -110,6 +110,7 @@ export default function ConsumerBookingStatusPage() {
   }, []);
 
   useEffect(() => {
+    console.log('=== ConsumerBookingStatusPage MOUNTED (v2) ===');
     fetchActiveBooking();
     loadUnreadCount(); // Load unread message count on mount
     // Poll for updates every 10 seconds (faster for payment request detection)
@@ -361,6 +362,7 @@ export default function ConsumerBookingStatusPage() {
   };
 
   const fetchActiveBooking = async () => {
+    console.log('[fetchActiveBooking] Starting...');
     try {
       // Fetch consumer's active bookings (PENDING, ACCEPTED, or COMPLETED awaiting payment)
       // Add timestamp to bust cache after edits
