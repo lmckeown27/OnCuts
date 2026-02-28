@@ -2475,8 +2475,11 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         logger.info(`Found ${barbersResult.rows.length} barbers at campus, ${barbersWithService.length} offer service ${serviceType}`);
         
         // Check availability for each barber who offers the service
+        // Parse the date string (YYYY-MM-DD) to get correct day of week in campus timezone
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-        const dayName = dayNames[scheduledDate.getDay()];
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const localDate = new Date(year, month - 1, day, 12, 0, 0); // noon to avoid DST edge cases
+        const dayName = dayNames[localDate.getDay()];
         
         for (const barber of barbersWithService) {
           const weeklySchedule = barber.weekly_schedule || {};
