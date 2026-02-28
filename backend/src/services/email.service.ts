@@ -1886,22 +1886,30 @@ function generateBookingCancellationHtml(
         <p style="color: #5a7268; font-size: 13px; text-align: center; margin: 0 0 15px 0;">
           These barbers offer ${details.serviceName} and are available at ${details.scheduledTime}:
         </p>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0 8px;">
           ${details.alternativeBarbers.map(barber => `
-          <div style="background-color: white; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; overflow: hidden; flex-shrink: 0;">
-              ${barber.avatar 
-                ? `<img src="${barber.avatar}" alt="${barber.name}" style="width: 100%; height: 100%; object-fit: cover;" />`
-                : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #dcfce7; color: #5a7268; font-weight: 600; font-size: 16px;">${barber.name.charAt(0)}</div>`
-              }
-            </div>
-            <div style="flex: 1;">
-              <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 14px;">${barber.name}</p>
-              ${barber.avgRating ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 12px;">⭐ ${barber.avgRating.toFixed(1)}${barber.totalReviews ? ` (${barber.totalReviews} reviews)` : ''}</p>` : ''}
-            </div>
-          </div>
+          <tr>
+            <td style="background-color: white; border-radius: 8px; padding: 12px;">
+              <table style="width: 100%;">
+                <tr>
+                  <td style="width: 48px; vertical-align: middle;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background-color: #e5e7eb; overflow: hidden;">
+                      ${barber.avatar 
+                        ? `<img src="${barber.avatar}" alt="${barber.name}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />`
+                        : `<div style="width: 40px; height: 40px; border-radius: 50%; background-color: #dcfce7; color: #5a7268; font-weight: 600; font-size: 16px; text-align: center; line-height: 40px;">${barber.name.charAt(0)}</div>`
+                      }
+                    </div>
+                  </td>
+                  <td style="vertical-align: middle; padding-left: 12px;">
+                    <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 14px;">${barber.name}</p>
+                    ${barber.avgRating ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 12px;">⭐ ${barber.avgRating.toFixed(1)}${barber.totalReviews ? ` (${barber.totalReviews} reviews)` : ''}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
           `).join('')}
-        </div>
+        </table>
         <div style="text-align: center; margin-top: 15px;">
           <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #5a7268; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Book with Available Barber</a>
         </div>
