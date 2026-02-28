@@ -2422,18 +2422,25 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // Send cancellation emails to both parties (use campus timezone)
     const scheduledDate = new Date(booking.scheduledTime);
-    const campusTimezone = booking.campus_timezone || 'America/New_York';
+    const campusTimezone = booking.campus_timezone || 'America/Los_Angeles';
     
     // If barber cancelled, fetch alternative barbers for the consumer email
     let alternativeBarbers: { id: string; name: string; avatar?: string; avgRating?: number; totalReviews?: number }[] = [];
     
     if (isBarber && booking.campus_id) {
       try {
-        // Get the date and time in local format for availability check
-        const dateStr = scheduledDate.toISOString().split('T')[0];
-        const requestedHour = scheduledDate.getHours();
-        const requestedMinutes = scheduledDate.getMinutes();
+        // Get the date and time in CAMPUS TIMEZONE for availability check
+        const dateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: campusTimezone }); // YYYY-MM-DD
+        const timeStr = scheduledDate.toLocaleTimeString('en-US', { 
+          timeZone: campusTimezone, 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false 
+        }); // HH:MM
+        const [requestedHour, requestedMinutes] = timeStr.split(':').map(Number);
         const requestedTimeInMinutes = requestedHour * 60 + requestedMinutes;
+        
+        logger.info(`[Cancellation Email] Checking availability at ${dateStr} ${timeStr} (${requestedTimeInMinutes} min) in timezone ${campusTimezone}`);
         
         // Fetch all barbers at the same campus who offer the same service
         // Services are stored in barbers.pricing JSONB array as objects with 'type' field
