@@ -91,6 +91,7 @@ export default function ConsumerBookingStatusPage() {
     campusId: string;
     cancelledBarberId: string;
     barberName: string;
+    notificationId?: string; // For marking as read when dismissed
   } | null>(null);
   const [alternativeBarbers, setAlternativeBarbers] = useState<Barber[]>([]);
   const [loadingAlternativeBarbers, setLoadingAlternativeBarbers] = useState(false);
@@ -452,14 +453,20 @@ export default function ConsumerBookingStatusPage() {
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             )[0];
           
-          if (recentCancellation && !recentCancellation.is_read) {
+          // Check for recent cancellation (within last 24 hours) - don't require unread
+          // This allows the page to show alternative barbers even after refresh
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const recentEnough = recentCancellation && 
+            new Date(recentCancellation.created_at) > oneDayAgo;
+          
+          if (recentEnough) {
             const cancellationData = parseNotificationData(recentCancellation);
             
             // Extract barber name from the message (format: "Barber Name has cancelled...")
             const barberNameMatch = recentCancellation.message?.match(/^(.+?) has cancelled/);
             const barberName = barberNameMatch ? barberNameMatch[1] : 'Your barber';
             
-            console.log('[Alternative Barbers] Found unread cancellation notification:', recentCancellation);
+            console.log('[Alternative Barbers] Found recent cancellation notification:', recentCancellation);
             console.log('[Alternative Barbers] Parsed notification data:', cancellationData);
             
             const details = {
@@ -468,17 +475,18 @@ export default function ConsumerBookingStatusPage() {
               campusId: cancellationData.campusId || '',
               cancelledBarberId: cancellationData.cancelledBarberId || '',
               barberName,
+              notificationId: recentCancellation.id, // Store for marking read later
             };
             console.log('[Alternative Barbers] Setting cancelledBookingDetails to:', details);
             setCancelledBookingDetails(details);
             
-            // Mark as read so we don't show it again
-            await notificationService.markAsRead(recentCancellation.id);
+            // DON'T mark as read yet - wait until user dismisses the view
           } else {
-            console.log('[Alternative Barbers] No unread cancellation notification found. Checked notifications:', 
+            console.log('[Alternative Barbers] No recent cancellation notification found. Checked notifications:', 
               notifResponse.notifications.filter((n: any) => n.type === 'booking_cancelled').map((n: any) => ({
                 type: n.type,
                 is_read: n.is_read,
+                created_at: n.created_at,
                 data: parseNotificationData(n)
               }))
             );
@@ -789,7 +797,15 @@ export default function ConsumerBookingStatusPage() {
               {/* Browse All Barbers Button */}
               <div className="text-center pt-4">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    // Mark the cancellation notification as read when user dismisses
+                    if (cancelledBookingDetails?.notificationId) {
+                      try {
+                        await notificationService.markAsRead(cancelledBookingDetails.notificationId);
+                      } catch (e) {
+                        console.error('Failed to mark notification as read:', e);
+                      }
+                    }
                     setCancelledBookingDetails(null);
                     setAlternativeBarbers([]);
                     handleBackToDiscover();
