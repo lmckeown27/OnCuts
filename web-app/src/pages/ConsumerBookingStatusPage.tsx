@@ -712,6 +712,13 @@ export default function ConsumerBookingStatusPage() {
           {/* Cancelled by Barber - Show Alternative Barbers */}
           {cancelledBookingDetails ? (
             <div className="space-y-6">
+              {/* DEBUG: Show what data we have */}
+              <div className="bg-yellow-100 border border-yellow-400 rounded p-2 text-xs text-left overflow-auto max-h-32">
+                <strong>DEBUG campusId:</strong> {cancelledBookingDetails.campusId || 'MISSING'}<br/>
+                <strong>DEBUG serviceType:</strong> {cancelledBookingDetails.serviceType || 'MISSING'}<br/>
+                <strong>DEBUG loading:</strong> {loadingAlternativeBarbers ? 'true' : 'false'}<br/>
+                <strong>DEBUG barbers count:</strong> {alternativeBarbers.length}
+              </div>
               {/* Cancellation Notice */}
               <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
                 <h2 className="text-xl font-bold text-red-800 mb-2">Booking Cancelled</h2>
