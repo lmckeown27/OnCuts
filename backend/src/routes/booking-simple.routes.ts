@@ -2454,12 +2454,15 @@ router.delete('/:id', authenticate, async (req, res, next) => {
         `, [booking.campus_id, booking.barberId]);
         
         // Filter barbers who offer the service
-        const serviceType = booking.serviceType?.toUpperCase();
+        const serviceType = booking.serviceType?.toUpperCase().replace(/_/g, ' ').replace(/AND/g, '&');
         const barbersWithService = barbersResult.rows.filter(barber => {
           const pricing = barber.pricing || [];
-          return pricing.some((service: any) => 
-            service.type?.toUpperCase() === serviceType
-          );
+          return pricing.some((service: any) => {
+            const serviceName = (service.name || service.type || service.service_type || '').toUpperCase().replace(/_/g, ' ').replace(/AND/g, '&');
+            return serviceName === serviceType || 
+                   serviceName.includes(serviceType) || 
+                   serviceType.includes(serviceName);
+          });
         });
         
         logger.info(`Found ${barbersResult.rows.length} barbers at campus, ${barbersWithService.length} offer service ${serviceType}`);
