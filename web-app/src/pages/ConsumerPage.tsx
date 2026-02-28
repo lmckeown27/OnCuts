@@ -1164,7 +1164,7 @@ export default function ConsumerPage() {
                         setAlternativeBarbersData(null);
                         setAlternativeBarbers([]);
                         // Navigate to schedule with this barber
-                        navigate(`${platformPrefix}/consumer/schedule/${barber.id}`, {
+                        navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
                           state: {
                             preselectedDate: alternativeBarbersData.scheduledTime.split('T')[0],
                             preselectedService: alternativeBarbersData.serviceType,

@@ -722,7 +722,7 @@ export default function ConsumerBookingStatusPage() {
                       <button
                         key={barber.id}
                         onClick={() => {
-                          navigate(`${platformPrefix}/consumer/schedule/${barber.id}`, {
+                          navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
                             state: {
                               preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
                               preselectedService: cancelledBookingDetails.serviceType,
