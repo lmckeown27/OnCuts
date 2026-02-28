@@ -2441,17 +2441,16 @@ router.delete('/:id', authenticate, async (req, res, next) => {
           SELECT 
             b.id,
             COALESCE(u."displayName", u.first_name || ' ' || u.last_name) as name,
-            u.avatar_url as avatar,
+            u."avatarUrl" as avatar,
             b."weeklySchedule" as weekly_schedule,
             b.pricing,
-            (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r.barber_id = b.id) as avg_rating,
-            (SELECT COUNT(*) FROM reviews r WHERE r.barber_id = b.id) as total_reviews
+            (SELECT AVG(r.rating)::numeric(3,2) FROM reviews r WHERE r."barberId" = b.id) as avg_rating,
+            (SELECT COUNT(*) FROM reviews r WHERE r."barberId" = b.id) as total_reviews
           FROM barbers b
           JOIN users u ON b."userId" = u.id
           WHERE b."campusId" = $1 
             AND b.id != $2
             AND b."isActive" = true
-            AND b."isOnboarded" = true
         `, [booking.campus_id, booking.barberId]);
         
         // Filter barbers who offer the service
