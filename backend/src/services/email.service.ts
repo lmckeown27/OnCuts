@@ -1911,7 +1911,7 @@ function generateBookingCancellationHtml(
           `).join('')}
         </table>
         <div style="text-align: center; margin-top: 15px;">
-          <a href="${frontendUrl}/web/discover" style="display: inline-block; background-color: #5a7268; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Book with Available Barber</a>
+          <a href="${frontendUrl}/consumer/booking-status" style="display: inline-block; background-color: #5a7268; color: white; padding: 10px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Book with Available Barber</a>
         </div>
       </div>
       ` : ''}
