@@ -719,44 +719,50 @@ export default function ConsumerBookingStatusPage() {
                 ) : alternativeBarbers.length > 0 ? (
                   <div className="space-y-3">
                     {alternativeBarbers.map((barber) => (
-                      <button
+                      <div
                         key={barber.id}
-                        onClick={() => {
-                          navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
-                            state: {
-                              preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
-                              preselectedService: cancelledBookingDetails.serviceType,
-                            }
-                          });
-                        }}
-                        className="w-full p-4 bg-white border border-gray-200 rounded-xl hover:border-primary-300 hover:bg-primary-50 transition-colors text-left flex items-center gap-4 shadow-sm"
+                        className="w-full p-4 bg-white border border-gray-200 rounded-xl shadow-sm"
                       >
-                        <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                          {(barber.profile_picture_url || barber.profile_photo_url) ? (
-                            <img src={barber.profile_picture_url || barber.profile_photo_url} alt={barber.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-primary-100">
-                              <span className="text-primary-600 font-semibold text-lg">
-                                {barber.name?.charAt(0) || 'B'}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 truncate">{barber.name}</p>
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            {barber.average_rating && (
-                              <span className="flex items-center gap-1">
-                                ⭐ {barber.average_rating.toFixed(1)}
-                              </span>
-                            )}
-                            {(barber.total_reviews ?? 0) > 0 && (
-                              <span>({barber.total_reviews} reviews)</span>
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                            {(barber.profile_picture_url || barber.profile_photo_url) ? (
+                              <img src={barber.profile_picture_url || barber.profile_photo_url} alt={barber.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-primary-100">
+                                <span className="text-primary-600 font-semibold text-lg">
+                                  {barber.name?.charAt(0) || 'B'}
+                                </span>
+                              </div>
                             )}
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{barber.name}</p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              {barber.average_rating && (
+                                <span className="flex items-center gap-1">
+                                  ⭐ {barber.average_rating.toFixed(1)}
+                                </span>
+                              )}
+                              {(barber.total_reviews ?? 0) > 0 && (
+                                <span>({barber.total_reviews} reviews)</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <ChevronDown className="w-5 h-5 text-gray-400 -rotate-90" />
-                      </button>
+                        <button
+                          onClick={() => {
+                            navigate(`${platformPrefix}/consumer/book/${barber.id}`, {
+                              state: {
+                                preselectedDate: cancelledBookingDetails.scheduledTime.split('T')[0],
+                                preselectedService: cancelledBookingDetails.serviceType,
+                              }
+                            });
+                          }}
+                          className="w-full mt-3 py-2 px-4 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors text-sm"
+                        >
+                          Schedule Service
+                        </button>
+                      </div>
                     ))}
                   </div>
                 ) : (
