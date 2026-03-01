@@ -55,8 +55,16 @@ interface CampusPerformance {
   totalRevenue: number; // Total money in circulation (what customers paid)
   totalPlatformFees: number; // Platform's gross cut (15%)
   totalBarberEarnings: number; // What barbers earned (85%)
-  estimatedStripeFees: number; // Stripe processing fees (2.9% + $0.30/txn)
-  netPlatformRevenue: number; // Platform's actual take after Stripe fees
+  // Stripe fee breakdown
+  stripeProcessingFees: number; // 2.9% + $0.30 per transaction
+  stripeConnectFees: number; // Active accounts + volume + payouts
+  activeConnectAccounts: number; // Number of barbers who received payouts
+  estimatedPayouts: number; // Number of payouts made
+  activeAccountBilling: number; // $2/account monthly fee
+  volumeBilling: number; // 0.25% volume fee
+  payoutFees: number; // $0.25 + 0.25% per payout
+  estimatedStripeFees: number; // Total Stripe fees (processing + connect)
+  netPlatformRevenue: number; // Platform's actual take after ALL Stripe fees
   completedTransactionCount: number; // Number of completed transactions
   // Card vs Cash breakdown
   cardRevenue: number;
@@ -1151,18 +1159,45 @@ export function AdminDashboard({
             {/* Platform Revenue */}
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs font-medium text-gray-700 mb-2">Platform Revenue</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="grid grid-cols-3 gap-2 text-center mb-3">
                 <div>
-                  <p className="text-[10px] text-gray-500">Gross</p>
+                  <p className="text-[10px] text-gray-500">Gross (15%)</p>
                   <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.totalPlatformFees || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-500">Stripe</p>
-                  <p className="text-sm font-semibold text-gray-900">-{formatCurrency(performance.estimatedStripeFees || 0)}</p>
+                  <p className="text-[10px] text-gray-500">Total Stripe</p>
+                  <p className="text-sm font-semibold text-red-600">-{formatCurrency(performance.estimatedStripeFees || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-500">Net</p>
-                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.netPlatformRevenue || 0)}</p>
+                  <p className="text-[10px] text-gray-500">Net Revenue</p>
+                  <p className="text-sm font-semibold text-green-600">{formatCurrency(performance.netPlatformRevenue || 0)}</p>
+                </div>
+              </div>
+              
+              {/* Stripe Fee Breakdown */}
+              <div className="border-t border-gray-200 pt-2 mt-2">
+                <p className="text-[10px] font-medium text-gray-600 mb-2">Stripe Fee Breakdown</p>
+                <div className="space-y-1 text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Processing (2.9% + $0.30/txn)</span>
+                    <span className="text-gray-700">-{formatCurrency(performance.stripeProcessingFees || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Active Accounts ({performance.activeConnectAccounts || 0} × $2)</span>
+                    <span className="text-gray-700">-{formatCurrency(performance.activeAccountBilling || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Volume Billing (0.25%)</span>
+                    <span className="text-gray-700">-{formatCurrency(performance.volumeBilling || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Payouts ({performance.estimatedPayouts || 0} × $0.25 + 0.25%)</span>
+                    <span className="text-gray-700">-{formatCurrency(performance.payoutFees || 0)}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 border-t border-gray-200 font-medium">
+                    <span className="text-gray-600">Connect Fees Total</span>
+                    <span className="text-red-600">-{formatCurrency(performance.stripeConnectFees || 0)}</span>
+                  </div>
                 </div>
               </div>
             </div>

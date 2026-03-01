@@ -1063,13 +1063,58 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const cashRevenue = parseInt(revenueResult.rows[0]?.cash_revenue || '0');
     const cashCount = parseInt(revenueResult.rows[0]?.cash_count || '0');
     
-    // Calculate estimated Stripe processing fees (2.9% + $0.30 per transaction)
-    // Only applies to card transactions
+    // === STRIPE PROCESSING FEES (per transaction) ===
     const stripePercentageFee = Math.round(cardRevenue * 0.029); // 2.9% of card gross
     const stripeFixedFee = cardCount * 30; // $0.30 per card transaction in cents
-    const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
+    const stripeProcessingFees = stripePercentageFee + stripeFixedFee;
     
-    // Net platform revenue = gross platform fees - Stripe processing fees
+    // === STRIPE CONNECT FEES (monthly platform fees) ===
+    // 1. Active Account Billing: $2.00 per active account per month
+    const activeConnectAccountsResult = await pool.query(`
+      SELECT COUNT(DISTINCT "barberId") as active_accounts
+      FROM bookings
+      WHERE status IN ('COMPLETED', 'PAID')
+        AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
+        AND "createdAt" >= DATE_TRUNC('month', NOW())
+        AND "barberId" IN (
+          SELECT b.id FROM barbers b
+          JOIN users u ON b."userId" = u.id
+          WHERE u."campusId" = $1::uuid
+        )
+    `, [campusId]);
+    const activeConnectAccounts = parseInt(activeConnectAccountsResult.rows[0]?.active_accounts || '0');
+    const activeAccountBilling = activeConnectAccounts * 200; // $2.00 per active account in cents
+    
+    // 2. Account Volume Billing: 0.25% of total volume
+    const volumeBilling = Math.round(cardRevenue * 0.0025);
+    
+    // 3. Payout Fees: $0.25 + 0.25% per payout (estimate weekly payouts per active barber)
+    const payoutCountResult = await pool.query(`
+      SELECT COUNT(*) as estimated_payouts
+      FROM (
+        SELECT DISTINCT "barberId", DATE_TRUNC('week', "createdAt") as payout_week
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+          AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
+          AND "barberId" IN (
+            SELECT b.id FROM barbers b
+            JOIN users u ON b."userId" = u.id
+            WHERE u."campusId" = $1::uuid
+          )
+      ) as barber_weeks
+    `, [campusId]);
+    const estimatedPayouts = parseInt(payoutCountResult.rows[0]?.estimated_payouts || '0');
+    const payoutFixedFee = estimatedPayouts * 25; // $0.25 per payout in cents
+    const payoutPercentageFee = Math.round(cardRevenue * 0.0025); // 0.25% of payout volume
+    const payoutFees = payoutFixedFee + payoutPercentageFee;
+    
+    // Total Connect fees
+    const stripeConnectFees = activeAccountBilling + volumeBilling + payoutFees;
+    
+    // Total Stripe fees (processing + connect)
+    const estimatedStripeFees = stripeProcessingFees + stripeConnectFees;
+    
+    // Net platform revenue = gross platform fees - ALL Stripe fees
     const netPlatformRevenue = Math.max(0, totalPlatformFees - estimatedStripeFees);
 
     res.json({
@@ -1082,8 +1127,16 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       totalPlatformFees, // Platform's gross cut (15%)
       totalBarberEarnings, // What barbers earned (85% + tips)
       totalTips, // Total tips collected
-      estimatedStripeFees, // Stripe processing fees (2.9% + $0.30/txn)
-      netPlatformRevenue, // Platform's actual take after Stripe fees
+      // Stripe fee breakdown
+      stripeProcessingFees, // 2.9% + $0.30 per transaction
+      stripeConnectFees, // Active accounts + volume + payouts
+      activeConnectAccounts, // Number of barbers who received payouts
+      estimatedPayouts, // Number of payouts made
+      activeAccountBilling, // $2/account monthly fee
+      volumeBilling, // 0.25% volume fee
+      payoutFees, // $0.25 + 0.25% per payout
+      estimatedStripeFees, // Total Stripe fees
+      netPlatformRevenue, // Platform's actual take after ALL Stripe fees
       completedTransactionCount, // Number of completed transactions
       // Card vs Cash breakdown
       cardRevenue,
@@ -1455,12 +1508,55 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     const cashRevenue = parseInt(revenueResult.rows[0].cash_revenue || '0');
     const cashCount = parseInt(revenueResult.rows[0].cash_count || '0');
     
+    // === STRIPE PROCESSING FEES (per transaction) ===
     // Stripe fees are calculated on CARD revenue only (cash doesn't have Stripe fees)
     const stripePercentageFee = Math.round(cardRevenue * 0.029); // 2.9% of card gross
     const stripeFixedFee = cardCount * 30; // $0.30 per card transaction in cents
-    const estimatedStripeFees = stripePercentageFee + stripeFixedFee;
+    const stripeProcessingFees = stripePercentageFee + stripeFixedFee;
     
-    // Net platform revenue = gross platform fees - Stripe processing fees
+    // === STRIPE CONNECT FEES (monthly platform fees) ===
+    // These are charged monthly for using Stripe Connect with Express accounts
+    
+    // 1. Active Account Billing: $2.00 per active account per month
+    // An account is "active" if it received a payout that month
+    // Count unique barbers who completed card transactions this month
+    const activeConnectAccountsResult = await pool.query(`
+      SELECT COUNT(DISTINCT "barberId") as active_accounts
+      FROM bookings
+      WHERE status IN ('COMPLETED', 'PAID')
+        AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
+        AND "createdAt" >= DATE_TRUNC('month', NOW())
+    `);
+    const activeConnectAccounts = parseInt(activeConnectAccountsResult.rows[0]?.active_accounts || '0');
+    const activeAccountBilling = activeConnectAccounts * 200; // $2.00 per active account in cents
+    
+    // 2. Account Volume Billing: 0.25% of total volume processed through connected accounts
+    const volumeBilling = Math.round(cardRevenue * 0.0025); // 0.25% of card volume
+    
+    // 3. Payout Fees: $0.25 + 0.25% per payout
+    // Estimate payouts: assume barbers receive payouts weekly if they had activity
+    // Count distinct barber-weeks with completed transactions
+    const payoutCountResult = await pool.query(`
+      SELECT COUNT(*) as estimated_payouts
+      FROM (
+        SELECT DISTINCT "barberId", DATE_TRUNC('week', "createdAt") as payout_week
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+          AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
+      ) as barber_weeks
+    `);
+    const estimatedPayouts = parseInt(payoutCountResult.rows[0]?.estimated_payouts || '0');
+    const payoutFixedFee = estimatedPayouts * 25; // $0.25 per payout in cents
+    const payoutPercentageFee = Math.round(cardRevenue * 0.0025); // 0.25% of payout volume
+    const payoutFees = payoutFixedFee + payoutPercentageFee;
+    
+    // Total Connect fees
+    const stripeConnectFees = activeAccountBilling + volumeBilling + payoutFees;
+    
+    // Total Stripe fees (processing + connect)
+    const estimatedStripeFees = stripeProcessingFees + stripeConnectFees;
+    
+    // Net platform revenue = gross platform fees - ALL Stripe fees
     const netPlatformRevenue = Math.max(0, totalPlatformFees - estimatedStripeFees);
 
     const completedBookings = parseInt(bookingsResult.rows[0].completed || '0');
@@ -1479,7 +1575,15 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       totalPlatformFees,
       totalBarberEarnings, // Now includes tips (totalPaid - platformFee)
       totalTips,
-      estimatedStripeFees,
+      // Stripe fee breakdown
+      stripeProcessingFees, // 2.9% + $0.30 per transaction
+      stripeConnectFees, // Active accounts + volume + payouts
+      activeConnectAccounts, // Number of barbers who received payouts
+      estimatedPayouts, // Number of payouts made
+      activeAccountBilling, // $2/account monthly fee
+      volumeBilling, // 0.25% volume fee
+      payoutFees, // $0.25 + 0.25% per payout
+      estimatedStripeFees, // Total Stripe fees
       netPlatformRevenue,
       completedTransactionCount,
       // Card vs Cash breakdown
