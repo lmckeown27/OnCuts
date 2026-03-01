@@ -3615,19 +3615,19 @@ CampusCut
         
         <!-- Option 1: Complete -->
         <div style="background-color: #f2f5f4; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #5a7268;">
-          <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">✅ Haircut was completed?</p>
+          <p style="color: #166534; margin: 0; font-weight: 600; font-size: 14px;">Haircut was completed?</p>
           <p style="color: #15803d; margin: 8px 0 0 0; font-size: 13px;">Mark as "Complete" to request payment</p>
         </div>
         
         <!-- Option 2: Edit -->
         <div style="background-color: #eff6ff; border-radius: 10px; padding: 15px; margin-bottom: 12px; border-left: 4px solid #3b82f6;">
-          <p style="color: #1e40af; margin: 0; font-weight: 600; font-size: 14px;">📝 Need to reschedule?</p>
+          <p style="color: #1e40af; margin: 0; font-weight: 600; font-size: 14px;">Need to reschedule?</p>
           <p style="color: #1d4ed8; margin: 8px 0 0 0; font-size: 13px;">Edit the booking for a new date/time</p>
         </div>
         
         <!-- Option 3: Cancel -->
         <div style="background-color: #fef2f2; border-radius: 10px; padding: 15px; border-left: 4px solid #ef4444;">
-          <p style="color: #991b1b; margin: 0; font-weight: 600; font-size: 14px;">❌ Cannot complete?</p>
+          <p style="color: #991b1b; margin: 0; font-weight: 600; font-size: 14px;">Cannot complete?</p>
           <p style="color: #b91c1c; margin: 8px 0 0 0; font-size: 13px;">Cancel so ${details.consumerName} can rebook</p>
         </div>
       </div>
