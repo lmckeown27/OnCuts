@@ -3924,18 +3924,18 @@ CampusCut
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">⚠️</span>
+    <div style="background: linear-gradient(135deg, #5a7268 0%, #445750 100%); padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">📋</span>
       <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Action Required</h1>
-      <p style="color: #fef3c7; margin: 8px 0 0 0; font-size: 14px;">Pending booking needs your response</p>
+      <p style="color: #c8d6cf; margin: 8px 0 0 0; font-size: 14px;">Pending booking needs your response</p>
     </div>
     
     <div style="padding: 30px;">
       <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
       
       <!-- Urgent Warning -->
-      <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 15px; margin: 0 0 25px 0;">
-        <p style="color: #92400e; margin: 0; font-weight: 600; font-size: 15px; text-align: center;">
+      <div style="background-color: #f0fdf4; border: 2px solid #5a7268; border-radius: 12px; padding: 15px; margin: 0 0 25px 0;">
+        <p style="color: #445750; margin: 0; font-weight: 600; font-size: 15px; text-align: center;">
           ⏰ This booking will be auto-cancelled in 1 hour if not accepted
         </p>
       </div>
@@ -3962,7 +3962,7 @@ CampusCut
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">Scheduled Time</td>
-            <td style="padding: 8px 0; color: #f59e0b; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
+            <td style="padding: 8px 0; color: #5a7268; font-weight: 700; text-align: right;">${details.scheduledTime}</td>
           </tr>
           ${details.location ? `
           <tr>
@@ -3978,7 +3978,7 @@ CampusCut
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
           Accept or Decline Booking
         </a>
       </div>
