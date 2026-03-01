@@ -400,34 +400,34 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
-        {/* University Selector */}
+          {/* University Selector */}
         <div className="w-full max-w-xl mb-8">
           <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
-            <UniversitySelector
-              value={selectedUniversity}
-              onChange={handleUniversitySelect}
-              placeholder="Search for your university..."
-            />
-          </div>
-          {selectedUniversity && (
+              <UniversitySelector
+                value={selectedUniversity}
+                onChange={handleUniversitySelect}
+                placeholder="Search for your university..."
+              />
+            </div>
+            {selectedUniversity && (
             <p className="mt-4 text-sm text-gray-600 text-center">
-              Searching barbers at {selectedUniversity.shortName || selectedUniversity.name}
-            </p>
-          )}
-        </div>
-        
-        {/* CTA Button */}
-        <button
-          onClick={goToConsumerPage}
-          disabled={!selectedUniversity}
-          className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
-            selectedUniversity 
-              ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          Find Barber
-        </button>
+                Searching barbers at {selectedUniversity.shortName || selectedUniversity.name}
+              </p>
+            )}
+          </div>
+          
+          {/* CTA Button */}
+            <button
+              onClick={goToConsumerPage}
+              disabled={!selectedUniversity}
+              className={`px-16 py-7 sm:py-8 font-bold text-2xl sm:text-3xl md:text-4xl rounded-3xl transition-all shadow-xl hover:shadow-2xl active:scale-95 ${
+                selectedUniversity 
+                  ? 'bg-primary-400 hover:bg-primary-500 text-white cursor-pointer' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Find Barber
+            </button>
       </div>
 
       {/* Portfolio Section - Video Showcase */}

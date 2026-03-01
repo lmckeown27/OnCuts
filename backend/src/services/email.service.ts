@@ -3852,7 +3852,7 @@ CampusCut
 }
 
 // ============================================
-// PENDING BOOKING WARNING EMAIL (3 Hours Before)
+// PENDING BOOKING WARNING EMAIL (3h, 2h, 1h Before)
 // ============================================
 
 /**
@@ -3868,13 +3868,15 @@ export interface PendingBookingWarningDetails {
   consumerName: string;
   barberName: string;
   barberEmail: string;
+  hoursRemaining?: number; // 3, 2, or 1
+  timeDescription?: string; // "in 3 hours", "in 2 hours", "in 1 hour"
 }
 
 /**
  * Send Pending Booking Warning Email to Barber
  * 
- * Sent 3 hours before the scheduled time when the booking is still PENDING.
- * Warns the barber that the booking will be auto-cancelled if not accepted within 1 hour.
+ * Sent at 3h, 2h, and 1h before the scheduled time when the booking is still PENDING.
+ * Reminds the barber to accept or decline the booking.
  */
 export async function sendPendingBookingWarningEmail(details: PendingBookingWarningDetails): Promise<void> {
   if (isAutoVerifyEnabled()) {
@@ -3886,16 +3888,22 @@ export async function sendPendingBookingWarningEmail(details: PendingBookingWarn
   const barberDashboardUrl = `${frontendUrl}/web/barber`;
 
   const firstName = details.barberName.split(' ')[0];
-  const subject = `⚠️ Action Required: Accept Booking from ${details.consumerName} - Auto-Cancel in 1 Hour`;
+  const hoursRemaining = details.hoursRemaining || 3;
+  const timeDescription = details.timeDescription || `in ${hoursRemaining} hour${hoursRemaining > 1 ? 's' : ''}`;
+  
+  // Customize urgency based on hours remaining
+  const isUrgent = hoursRemaining === 1;
+  const urgencyPrefix = isUrgent ? '🚨 URGENT: ' : '⏰ ';
+  const subject = `${urgencyPrefix}Accept Booking from ${details.consumerName} - Appointment ${timeDescription}`;
 
   const text = `
 Hi ${firstName},
 
-URGENT: You have a pending booking request that requires your attention!
+${isUrgent ? 'URGENT: ' : ''}You have a pending booking request that requires your attention!
 
 ${details.consumerName} has requested a ${details.serviceName} appointment scheduled for ${details.scheduledDate} at ${details.scheduledTime}.
 
-This booking will be AUTOMATICALLY CANCELLED if you don't accept or decline it within the next hour.
+The appointment is ${timeDescription}. Please accept or decline this booking as soon as possible.
 
 BOOKING DETAILS
 ---------------
@@ -3914,6 +3922,16 @@ Booking Reference: ${details.bookingId.slice(0, 8).toUpperCase()}
 CampusCut
 `.trim();
 
+  // Dynamic styling based on urgency
+  const headerGradient = isUrgent 
+    ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)' 
+    : 'linear-gradient(135deg, #5a7268 0%, #445750 100%)';
+  const headerIcon = isUrgent ? '🚨' : '📋';
+  const warningBg = isUrgent ? '#fef2f2' : '#f0fdf4';
+  const warningBorder = isUrgent ? '#dc2626' : '#5a7268';
+  const warningText = isUrgent ? '#991b1b' : '#445750';
+  const buttonBg = isUrgent ? '#dc2626' : '#5a7268';
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -3924,19 +3942,19 @@ CampusCut
 <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
   <div style="max-width: 500px; margin: 40px auto; background-color: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #5a7268 0%, #445750 100%); padding: 30px 20px; text-align: center;">
-      <span style="font-size: 48px;">📋</span>
-      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">Action Required</h1>
-      <p style="color: #c8d6cf; margin: 8px 0 0 0; font-size: 14px;">Pending booking needs your response</p>
+    <div style="background: ${headerGradient}; padding: 30px 20px; text-align: center;">
+      <span style="font-size: 48px;">${headerIcon}</span>
+      <h1 style="color: white; margin: 10px 0 0 0; font-size: 24px;">${isUrgent ? 'Urgent: Action Required' : 'Action Required'}</h1>
+      <p style="color: ${isUrgent ? '#fecaca' : '#c8d6cf'}; margin: 8px 0 0 0; font-size: 14px;">Appointment ${timeDescription}</p>
     </div>
     
     <div style="padding: 30px;">
       <p style="color: #1f2937; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName}!</p>
       
-      <!-- Urgent Warning -->
-      <div style="background-color: #f0fdf4; border: 2px solid #5a7268; border-radius: 12px; padding: 15px; margin: 0 0 25px 0;">
-        <p style="color: #445750; margin: 0; font-weight: 600; font-size: 15px; text-align: center;">
-          ⏰ This booking will be auto-cancelled in 1 hour if not accepted
+      <!-- Time Warning -->
+      <div style="background-color: ${warningBg}; border: 2px solid ${warningBorder}; border-radius: 12px; padding: 15px; margin: 0 0 25px 0;">
+        <p style="color: ${warningText}; margin: 0; font-weight: 600; font-size: 15px; text-align: center;">
+          ⏰ Appointment is ${timeDescription} - please respond now
         </p>
       </div>
       
@@ -3978,7 +3996,7 @@ CampusCut
       
       <!-- CTA Button -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: #5a7268; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
+        <a href="${barberDashboardUrl}" style="display: inline-block; background-color: ${buttonBg}; color: white; padding: 16px 40px; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px;">
           Accept or Decline Booking
         </a>
       </div>
