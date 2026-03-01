@@ -1069,21 +1069,10 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     const stripeProcessingFees = stripePercentageFee + stripeFixedFee;
     
     // === STRIPE CONNECT FEES (monthly platform fees) ===
-    // 1. Active Account Billing: $2.00 per active account per month
-    const activeConnectAccountsResult = await pool.query(`
-      SELECT COUNT(DISTINCT "barberId") as active_accounts
-      FROM bookings
-      WHERE status IN ('COMPLETED', 'PAID')
-        AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
-        AND "createdAt" >= DATE_TRUNC('month', NOW())
-        AND "barberId" IN (
-          SELECT b.id FROM barbers b
-          JOIN users u ON b."userId" = u.id
-          WHERE u."campusId" = $1::uuid
-        )
-    `, [campusId]);
-    const activeConnectAccounts = parseInt(activeConnectAccountsResult.rows[0]?.active_accounts || '0');
-    const activeAccountBilling = activeConnectAccounts * 200; // $2.00 per active account in cents
+    // 1. Active Account Billing: $2.00 per active connected account per month
+    // Stripe charges for all barbers with connected accounts (active barbers on platform)
+    const activeBarbers = parseInt(barbersResult.rows[0]?.active || '0');
+    const activeAccountBilling = activeBarbers * 200; // $2.00 per active account in cents
     
     // 2. Account Volume Billing: 0.25% of total volume
     const volumeBilling = Math.round(cardRevenue * 0.0025);
@@ -1119,7 +1108,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
 
     res.json({
       totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
-      activeBarbers: parseInt(barbersResult.rows[0]?.active || '0'),
+      activeBarbers,
       totalBookings: parseInt(bookingsResult.rows[0]?.total || '0'),
       completedBookings,
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
@@ -1130,7 +1119,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       // Stripe fee breakdown
       stripeProcessingFees, // 2.9% + $0.30 per transaction
       stripeConnectFees, // Active accounts + volume + payouts
-      activeConnectAccounts, // Number of barbers who received payouts
+      activeConnectAccounts: activeBarbers, // Number of barbers with Stripe accounts
       estimatedPayouts, // Number of payouts made
       activeAccountBilling, // $2/account monthly fee
       volumeBilling, // 0.25% volume fee
@@ -1517,18 +1506,10 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
     // === STRIPE CONNECT FEES (monthly platform fees) ===
     // These are charged monthly for using Stripe Connect with Express accounts
     
-    // 1. Active Account Billing: $2.00 per active account per month
-    // An account is "active" if it received a payout that month
-    // Count unique barbers who completed card transactions this month
-    const activeConnectAccountsResult = await pool.query(`
-      SELECT COUNT(DISTINCT "barberId") as active_accounts
-      FROM bookings
-      WHERE status IN ('COMPLETED', 'PAID')
-        AND (LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL)
-        AND "createdAt" >= DATE_TRUNC('month', NOW())
-    `);
-    const activeConnectAccounts = parseInt(activeConnectAccountsResult.rows[0]?.active_accounts || '0');
-    const activeAccountBilling = activeConnectAccounts * 200; // $2.00 per active account in cents
+    // 1. Active Account Billing: $2.00 per active connected account per month
+    // Stripe charges for all barbers with connected accounts (active barbers on platform)
+    const activeBarbers = parseInt(barbersResult.rows[0].active || '0');
+    const activeAccountBilling = activeBarbers * 200; // $2.00 per active account in cents
     
     // 2. Account Volume Billing: 0.25% of total volume processed through connected accounts
     const volumeBilling = Math.round(cardRevenue * 0.0025); // 0.25% of card volume
@@ -1578,7 +1559,7 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       // Stripe fee breakdown
       stripeProcessingFees, // 2.9% + $0.30 per transaction
       stripeConnectFees, // Active accounts + volume + payouts
-      activeConnectAccounts, // Number of barbers who received payouts
+      activeConnectAccounts: activeBarbers, // Number of barbers with Stripe accounts
       estimatedPayouts, // Number of payouts made
       activeAccountBilling, // $2/account monthly fee
       volumeBilling, // 0.25% volume fee
