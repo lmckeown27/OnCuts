@@ -1022,12 +1022,6 @@ export function AdminDashboard({
           </p>
         </div>
         <div>
-          <p className="text-gray-500 text-xs">Net Revenue</p>
-          <p className="font-semibold text-gray-900">
-            {isLoadingPerformance ? '...' : formatCurrency(performance?.netPlatformRevenue ?? 0)}
-          </p>
-        </div>
-        <div>
           <p className="text-gray-500 text-xs">Platform Profit</p>
           <p className={`font-semibold ${
             performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
