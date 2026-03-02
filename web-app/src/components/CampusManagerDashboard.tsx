@@ -26,7 +26,6 @@ import {
   Star,
   X,
   EyeOff,
-  Filter,
   CreditCard,
   Banknote,
   RotateCcw,
@@ -3189,7 +3188,6 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <Filter className="w-4 h-4" />
             <span>Filter</span>
             <ChevronDown className={`w-4 h-4 transition-transform ${showFilterDropdown ? 'rotate-180' : ''}`} />
             {/* Show indicator if filters are active */}
