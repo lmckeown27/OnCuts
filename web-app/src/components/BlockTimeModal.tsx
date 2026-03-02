@@ -320,7 +320,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Start Time *
+                        Start Time
                       </label>
                       <select
                         value={startTime}
@@ -336,7 +336,7 @@ const BlockTimeModal: React.FC<BlockTimeModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        End Time *
+                        End Time
                       </label>
                       <select
                         value={endTime}

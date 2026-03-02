@@ -180,7 +180,7 @@ export default function DatePicker({
     <div className="w-full">
       {label && (
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          {label} {required && '*'}
+          {label}
         </label>
       )}
       
