@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { Upload, Image as ImageIcon } from 'lucide-react';
 import Button from './Button';
 import Card from './Card';
 import Loading from './Loading';
@@ -422,15 +422,12 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
           </label>
           
           {isHidden && (
-            <div className="flex items-start gap-3 p-3 bg-primary-50 border border-primary-200 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-primary-800">Warning: Profile Hidden</p>
-                <p className="text-sm text-primary-700 mt-1">
-                  It will be virtually impossible for consumers to book a service with you while your profile is hidden. 
-                  Only enable this if you need a temporary break from taking bookings.
-                </p>
-              </div>
+            <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg">
+              <p className="text-sm font-medium text-primary-800">Warning: Profile Hidden</p>
+              <p className="text-sm text-primary-700 mt-1">
+                It will be virtually impossible for consumers to book a service with you while your profile is hidden. 
+                Only enable this if you need a temporary break from taking bookings.
+              </p>
             </div>
           )}
         </div>
