@@ -1021,9 +1021,19 @@ export function AdminDashboard({
           </p>
         </div>
         <div>
-          <p className="text-gray-500 text-xs">Platform Revenue</p>
+          <p className="text-gray-500 text-xs">Net Revenue</p>
           <p className="font-semibold text-gray-900">
             {isLoadingPerformance ? '...' : formatCurrency(performance?.netPlatformRevenue ?? 0)}
+          </p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Platform Profit</p>
+          <p className={`font-semibold ${
+            performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
+              ? 'text-green-600' 
+              : 'text-red-600'
+          }`}>
+            {isLoadingPerformance ? '...' : formatCurrency((performance?.netPlatformRevenue ?? 0) - (performance?.awsTotalCost ?? 0))}
           </p>
         </div>
         <div>
@@ -1258,6 +1268,47 @@ export function AdminDashboard({
                     <span className="text-gray-500">S3 Requests</span>
                     <span className="text-gray-700">{formatCurrency(performance.awsS3RequestsCost || 0)}</span>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Profit Summary */}
+            <div className={`p-3 rounded-lg border-2 ${
+              (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
+                ? 'bg-green-50 border-green-300' 
+                : 'bg-red-50 border-red-300'
+            }`}>
+              <p className="text-xs font-medium text-gray-700 mb-2">Profit Summary</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Gross Platform Fees (15%)</span>
+                  <span className="text-gray-900 font-medium">{formatCurrency(performance.totalPlatformFees || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">− Stripe Fees</span>
+                  <span className="text-red-600 font-medium">-{formatCurrency(performance.estimatedStripeFees || 0)}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 pt-1">
+                  <span className="text-gray-600">= Net Platform Revenue</span>
+                  <span className="text-gray-900 font-medium">{formatCurrency(performance.netPlatformRevenue || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">− AWS Infrastructure</span>
+                  <span className="text-orange-600 font-medium">-{formatCurrency(performance.awsTotalCost || 0)}</span>
+                </div>
+                <div className={`flex justify-between border-t-2 pt-2 ${
+                  (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
+                    ? 'border-green-400' 
+                    : 'border-red-400'
+                }`}>
+                  <span className="font-bold text-gray-900">= Platform Profit</span>
+                  <span className={`font-bold text-lg ${
+                    (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {formatCurrency((performance.netPlatformRevenue || 0) - (performance.awsTotalCost || 0))}
+                  </span>
                 </div>
               </div>
             </div>
