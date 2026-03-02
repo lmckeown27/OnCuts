@@ -1022,13 +1022,21 @@ export function AdminDashboard({
           </p>
         </div>
         <div>
-          <p className="text-gray-500 text-xs">Platform Profit</p>
+          <p className="text-gray-500 text-xs">
+            {selectedCampus ? 'Campus Net Revenue' : 'Platform Profit'}
+          </p>
           <p className={`font-semibold ${
-            performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-              ? 'text-primary-600' 
-              : 'text-red-600'
+            selectedCampus 
+              ? (performance?.netPlatformRevenue ?? 0) >= 0 ? 'text-primary-600' : 'text-red-600'
+              : (performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
+                ? 'text-primary-600' 
+                : 'text-red-600')
           }`}>
-            {isLoadingPerformance ? '...' : formatCurrency((performance?.netPlatformRevenue ?? 0) - (performance?.awsTotalCost ?? 0))}
+            {isLoadingPerformance ? '...' : (
+              selectedCampus 
+                ? formatCurrency(performance?.netPlatformRevenue ?? 0)
+                : formatCurrency((performance?.netPlatformRevenue ?? 0) - (performance?.awsTotalCost ?? 0))
+            )}
           </p>
         </div>
         <div>
@@ -1217,7 +1225,8 @@ export function AdminDashboard({
               </div>
             </div>
 
-            {/* AWS Costs */}
+            {/* AWS Costs - Only show for platform-wide view */}
+            {!selectedCampus && (
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-xs font-medium text-gray-700 mb-2">AWS Infrastructure (Est. Monthly)</p>
               <div className="grid grid-cols-3 gap-2 text-center mb-3">
@@ -1266,14 +1275,16 @@ export function AdminDashboard({
                 </div>
               </div>
             </div>
+            )}
 
-            {/* Profit Summary */}
+            {/* Platform Profit Summary - Only show for platform-wide view */}
+            {!selectedCampus && (
             <div className={`p-3 rounded-lg border-2 ${
               (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
                 ? 'bg-primary-50 border-primary-300' 
                 : 'bg-red-50 border-red-300'
             }`}>
-              <p className="text-xs font-medium text-gray-700 mb-2">Profit Summary</p>
+              <p className="text-xs font-medium text-gray-700 mb-2">Platform Profit Summary</p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Gross Platform Fees (15%)</span>
@@ -1307,6 +1318,45 @@ export function AdminDashboard({
                 </div>
               </div>
             </div>
+            )}
+
+            {/* Campus Revenue Summary - Only show for campus-specific view */}
+            {selectedCampus && (
+            <div className={`p-3 rounded-lg border-2 ${
+              (performance.netPlatformRevenue || 0) >= 0 
+                ? 'bg-primary-50 border-primary-300' 
+                : 'bg-red-50 border-red-300'
+            }`}>
+              <p className="text-xs font-medium text-gray-700 mb-2">Campus Revenue Summary</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Gross Revenue (15% of {formatCampusName(selectedCampus.name)})</span>
+                  <span className="text-gray-900 font-medium">{formatCurrency(performance.totalPlatformFees || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">− Stripe Fees</span>
+                  <span className="text-red-600 font-medium">-{formatCurrency(performance.estimatedStripeFees || 0)}</span>
+                </div>
+                <div className={`flex justify-between border-t-2 pt-2 ${
+                  (performance.netPlatformRevenue || 0) >= 0 
+                    ? 'border-primary-400' 
+                    : 'border-red-400'
+                }`}>
+                  <span className="font-bold text-gray-900">= Campus Net Revenue</span>
+                  <span className={`font-bold text-lg ${
+                    (performance.netPlatformRevenue || 0) >= 0 
+                      ? 'text-primary-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {formatCurrency(performance.netPlatformRevenue || 0)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-3 italic">
+                Note: AWS infrastructure costs are shared across all campuses and shown in the platform-wide view.
+              </p>
+            </div>
+            )}
 
             {/* Averages */}
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
