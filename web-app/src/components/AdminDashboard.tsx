@@ -81,6 +81,16 @@ interface CampusPerformance {
   averageRevenuePerWeek: number;
   averageRevenuePerMonth: number;
   averageCostPerAppointment: number;
+  // AWS Cost Estimates
+  awsEc2Cost: number; // EC2 instance
+  awsVpcCost: number; // VPC networking
+  awsRoute53Cost: number; // DNS
+  awsFixedCosts: number; // Total fixed AWS costs
+  awsDataTransferCost: number; // Variable data transfer
+  awsS3StorageCost: number; // S3 storage
+  awsS3RequestsCost: number; // S3 requests
+  awsVariableCosts: number; // Total variable AWS costs
+  awsTotalCost: number; // Total AWS costs
 }
 
 interface MetricsDataPoint {
@@ -1197,6 +1207,56 @@ export function AdminDashboard({
                   <div className="flex justify-between pt-1 border-t border-gray-200 font-medium">
                     <span className="text-gray-600">Connect Fees Total</span>
                     <span className="text-red-600">-{formatCurrency(performance.stripeConnectFees || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* AWS Costs */}
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-medium text-gray-700 mb-2">AWS Infrastructure (Est. Monthly)</p>
+              <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                <div>
+                  <p className="text-[10px] text-gray-500">Fixed</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.awsFixedCosts || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">Variable</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatCurrency(performance.awsVariableCosts || 0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">Total</p>
+                  <p className="text-sm font-semibold text-orange-600">{formatCurrency(performance.awsTotalCost || 0)}</p>
+                </div>
+              </div>
+              
+              {/* AWS Cost Breakdown */}
+              <div className="border-t border-gray-200 pt-2 mt-2">
+                <p className="text-[10px] font-medium text-gray-600 mb-2">AWS Breakdown</p>
+                <div className="space-y-1 text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">EC2 (Server)</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsEc2Cost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">VPC (Networking)</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsVpcCost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Route 53 (DNS)</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsRoute53Cost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Data Transfer</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsDataTransferCost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">S3 Storage</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsS3StorageCost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">S3 Requests</span>
+                    <span className="text-gray-700">{formatCurrency(performance.awsS3RequestsCost || 0)}</span>
                   </div>
                 </div>
               </div>

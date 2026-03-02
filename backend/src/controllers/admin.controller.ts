@@ -1142,6 +1142,8 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       averageRevenuePerWeek: parseInt(avgWeeklyRevenueResult.rows[0]?.avg_weekly || '0'),
       averageRevenuePerMonth: parseInt(avgMonthlyRevenueResult.rows[0]?.avg_monthly || '0'),
       averageCostPerAppointment,
+      // AWS Cost Estimates (in cents for consistency)
+      ...calculateAwsCosts(completedBookings, activeBarbers),
     });
   } catch (error) {
     next(error);
@@ -1581,11 +1583,53 @@ export const getAggregatePerformance = async (req: AuthRequest, res: Response, n
       averageRevenuePerWeek: parseFloat(avgWeeklyBookingsResult.rows[0].avg_weekly || '0') * avgCostPerAppointment,
       averageRevenuePerMonth: parseFloat(avgMonthlyBookingsResult.rows[0].avg_monthly || '0') * avgCostPerAppointment,
       averageCostPerAppointment: avgCostPerAppointment,
+      // AWS Cost Estimates (in cents for consistency)
+      ...calculateAwsCosts(completedBookings, activeBarbers),
     });
   } catch (error) {
     next(error);
   }
 };
+
+/**
+ * Calculate estimated AWS costs based on platform activity
+ * Returns costs in cents for consistency with other financial fields
+ */
+function calculateAwsCosts(completedBookings: number, activeBarbers: number) {
+  // Fixed monthly costs (in cents)
+  const awsEc2Cost = 7242; // $72.42 - EC2 instance
+  const awsVpcCost = 672; // $6.72 - VPC networking
+  const awsRoute53Cost = 253; // $2.53 - DNS
+  const awsFixedCosts = awsEc2Cost + awsVpcCost + awsRoute53Cost; // $81.67
+  
+  // Variable costs based on activity (estimated)
+  // Data transfer: ~$0.09/GB, estimate 5MB per booking (images, API calls)
+  const estimatedDataGb = (completedBookings * 5) / 1024; // Convert MB to GB
+  const awsDataTransferCost = Math.round(estimatedDataGb * 9); // $0.09/GB in cents
+  
+  // S3 storage: ~$0.023/GB, estimate 2MB per barber profile
+  const estimatedStorageGb = (activeBarbers * 2) / 1024;
+  const awsS3StorageCost = Math.round(estimatedStorageGb * 2.3); // $0.023/GB in cents
+  
+  // S3 requests: ~$0.0004/1000 requests, estimate 50 requests per booking
+  const estimatedRequests = completedBookings * 50;
+  const awsS3RequestsCost = Math.round((estimatedRequests / 1000) * 0.04); // in cents
+  
+  const awsVariableCosts = awsDataTransferCost + awsS3StorageCost + awsS3RequestsCost;
+  const awsTotalCost = awsFixedCosts + awsVariableCosts;
+  
+  return {
+    awsEc2Cost,
+    awsVpcCost,
+    awsRoute53Cost,
+    awsFixedCosts,
+    awsDataTransferCost,
+    awsS3StorageCost,
+    awsS3RequestsCost,
+    awsVariableCosts,
+    awsTotalCost,
+  };
+}
 
 /**
  * Get aggregate metrics across ALL campuses
