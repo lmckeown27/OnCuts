@@ -1346,14 +1346,9 @@ export function AdminDashboard({
               {/* Second row of averages */}
               <div className="grid grid-cols-3 gap-2 text-center mt-2 pt-2 border-t border-gray-200">
                 <div>
-                  <p className="text-[10px] text-gray-500">Avg Rating</p>
+                  <p className="text-[10px] text-gray-500">Avg Star Rating</p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {performance.averageRating > 0 ? (
-                      <span className="flex items-center justify-center gap-0.5">
-                        {performance.averageRating.toFixed(1)}
-                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      </span>
-                    ) : '—'}
+                    {performance.averageRating > 0 ? performance.averageRating.toFixed(1) : '—'}
                   </p>
                 </div>
                 <div>
