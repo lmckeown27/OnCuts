@@ -73,6 +73,7 @@ interface CampusPerformance {
   cashCount: number;
   averageRating: number;
   totalReviews: number;
+  totalTips: number;
   // Average metrics
   averageBookingsPerDay: number;
   averageBookingsPerWeek: number;
@@ -1345,6 +1346,36 @@ export function AdminDashboard({
                       ? formatCurrency(performance.averageRevenuePerWeek)
                       : formatCurrency(performance.averageRevenuePerMonth)
                     }
+                  </p>
+                </div>
+              </div>
+              {/* Second row of averages */}
+              <div className="grid grid-cols-3 gap-2 text-center mt-2 pt-2 border-t border-gray-200">
+                <div>
+                  <p className="text-[10px] text-gray-500">Avg Rating</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {performance.averageRating > 0 ? (
+                      <span className="flex items-center justify-center gap-0.5">
+                        {performance.averageRating.toFixed(1)}
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                      </span>
+                    ) : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">Completion</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {performance.completedBookings + performance.cancelledBookings > 0
+                      ? `${Math.round((performance.completedBookings / (performance.completedBookings + performance.cancelledBookings)) * 100)}%`
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">Avg Tip</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {performance.completedTransactionCount > 0
+                      ? formatCurrency(Math.round(performance.totalTips / performance.completedTransactionCount))
+                      : '—'}
                   </p>
                 </div>
               </div>
