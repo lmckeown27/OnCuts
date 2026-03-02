@@ -1030,7 +1030,7 @@ export function AdminDashboard({
           <p className="text-gray-500 text-xs">Platform Profit</p>
           <p className={`font-semibold ${
             performance && (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-              ? 'text-green-600' 
+              ? 'text-primary-600' 
               : 'text-red-600'
           }`}>
             {isLoadingPerformance ? '...' : formatCurrency((performance?.netPlatformRevenue ?? 0) - (performance?.awsTotalCost ?? 0))}
@@ -1275,7 +1275,7 @@ export function AdminDashboard({
             {/* Profit Summary */}
             <div className={`p-3 rounded-lg border-2 ${
               (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                ? 'bg-green-50 border-green-300' 
+                ? 'bg-primary-50 border-primary-300' 
                 : 'bg-red-50 border-red-300'
             }`}>
               <p className="text-xs font-medium text-gray-700 mb-2">Profit Summary</p>
@@ -1298,13 +1298,13 @@ export function AdminDashboard({
                 </div>
                 <div className={`flex justify-between border-t-2 pt-2 ${
                   (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                    ? 'border-green-400' 
+                    ? 'border-primary-400' 
                     : 'border-red-400'
                 }`}>
                   <span className="font-bold text-gray-900">= Platform Profit</span>
                   <span className={`font-bold text-lg ${
                     (performance.netPlatformRevenue - performance.awsTotalCost) >= 0 
-                      ? 'text-green-600' 
+                      ? 'text-primary-600' 
                       : 'text-red-600'
                   }`}>
                     {formatCurrency((performance.netPlatformRevenue || 0) - (performance.awsTotalCost || 0))}
