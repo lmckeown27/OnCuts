@@ -625,9 +625,8 @@ export default function BarberPage() {
                       navigate(`${platformPrefix}/consumer`);
                       setShowProfileDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50 flex items-center gap-3"
+                    className="w-full px-4 py-2 text-left text-sm text-primary-600 hover:bg-primary-50"
                   >
-                    <Calendar className="w-4 h-4 text-primary-500" />
                     Switch to Consumer
                   </button>
                   <div className="border-t border-gray-200 my-1"></div>
