@@ -413,7 +413,7 @@ export default function BarberProfileEditor({ barberId, userId, onClose }: Barbe
               type="checkbox"
               checked={isHidden}
               onChange={(e) => setIsHidden(e.target.checked)}
-              className="mt-1 w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              className="mt-1 w-5 h-5 accent-primary-600 border-gray-300 rounded focus:ring-primary-500"
             />
             <div>
               <span className="font-medium text-gray-900">Hide my profile from consumers</span>
