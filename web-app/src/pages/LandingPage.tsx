@@ -400,6 +400,9 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
+          {/* Mobile Logo */}
+          <h1 className="sm:hidden text-3xl font-bold text-primary-600 mb-6">CampusCut</h1>
+          
           {/* University Selector */}
         <div className="w-full max-w-xl mb-8">
           <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-4">
