@@ -268,9 +268,16 @@ export default function BarberPage() {
   const connectGoogleCalendar = async () => {
     try {
       setGoogleCalendarLoading(true);
+      console.log('[Google Calendar] Fetching auth URL...');
       const response = await api.get('/auth/google-calendar/connect');
+      console.log('[Google Calendar] Response:', response.data);
       if (response.data.authUrl) {
+        console.log('[Google Calendar] Redirecting to:', response.data.authUrl);
         window.location.href = response.data.authUrl;
+      } else {
+        console.error('[Google Calendar] No authUrl in response');
+        toast.error('Failed to get Google Calendar URL');
+        setGoogleCalendarLoading(false);
       }
     } catch (error) {
       console.error('Failed to initiate Google Calendar connection:', error);
