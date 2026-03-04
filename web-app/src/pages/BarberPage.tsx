@@ -2630,13 +2630,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     ) : googleCalendarConnected ? (
                       <button
                         onClick={() => onDisconnectGoogleCalendar?.()}
-                        className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 text-sm font-medium rounded-lg transition-colors border border-green-300 flex items-center gap-2"
+                        className="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-medium rounded-lg transition-colors border border-primary-300 flex flex-col items-center"
                       >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                        <span className="sm:hidden">Google Calendar Connected</span>
-                        <span className="hidden sm:inline">Google Calendar Connected (Tap to Disconnect)</span>
+                        <span>Google Calendar Connected</span>
+                        <span className="text-xs text-primary-500 sm:hidden">(Tap to Disconnect)</span>
+                        <span className="text-xs text-primary-500 hidden sm:inline">(Click to Disconnect)</span>
                       </button>
                     ) : (
                       <button
