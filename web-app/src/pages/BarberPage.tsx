@@ -3,7 +3,7 @@
  * Last updated: 2025-12-18 00:15:00
  */
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
@@ -835,6 +835,23 @@ export default function BarberPage() {
                     </>
                   )}
                   
+                  <div className="border-t border-gray-200 my-1"></div>
+                  <Link
+                    to="/privacy"
+                    onClick={() => setShowProfileDropdown(false)}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    to="/terms"
+                    onClick={() => setShowProfileDropdown(false)}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Terms of Service
+                  </Link>
                   <div className="border-t border-gray-200 my-1"></div>
                   <button
                     onClick={() => {

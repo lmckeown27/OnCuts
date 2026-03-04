@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -636,6 +636,23 @@ export default function ConsumerPage() {
                           <Settings className="w-4 h-4 text-gray-500" />
                           Edit Profile
                         </button>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <Link
+                          to="/privacy"
+                          onClick={() => setShowProfileDropdown(false)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          Privacy Policy
+                        </Link>
+                        <Link
+                          to="/terms"
+                          onClick={() => setShowProfileDropdown(false)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <FileText className="w-4 h-4 text-gray-500" />
+                          Terms of Service
+                        </Link>
                         <div className="border-t border-gray-200 my-1"></div>
                         <button
                           onClick={() => {

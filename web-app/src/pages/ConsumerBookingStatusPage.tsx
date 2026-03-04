@@ -3,11 +3,11 @@
  * Displays pending → accepted flow and any changes made by barber
  */
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Clock, Check, X, Calendar, MapPin, DollarSign, User, 
   MessageCircle, AlertTriangle, Bell, CheckCircle, Pencil,
-  ChevronDown, Settings, LogOut, Trash2
+  ChevronDown, Settings, LogOut, Trash2, FileText
 } from 'lucide-react';
 import api from '../services/api.service';
 import notificationService, { Notification } from '../services/notification.service';
@@ -910,6 +910,26 @@ export default function ConsumerBookingStatusPage() {
                   <Settings className="w-4 h-4 text-gray-500" />
                   Edit Profile
                 </button>
+                
+                <div className="border-t border-gray-200 my-1"></div>
+                
+                {/* Legal Links */}
+                <Link
+                  to="/privacy"
+                  onClick={() => setShowProfileDropdown(false)}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                >
+                  <FileText className="w-4 h-4 text-gray-500" />
+                  Privacy Policy
+                </Link>
+                <Link
+                  to="/terms"
+                  onClick={() => setShowProfileDropdown(false)}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                >
+                  <FileText className="w-4 h-4 text-gray-500" />
+                  Terms of Service
+                </Link>
                 
                 <div className="border-t border-gray-200 my-1"></div>
                 
