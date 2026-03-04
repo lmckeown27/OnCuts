@@ -270,20 +270,22 @@ export default function BarberPage() {
   const connectGoogleCalendar = async () => {
     try {
       setGoogleCalendarLoading(true);
-      console.log('[Google Calendar] Fetching auth URL...');
       // Add timestamp to prevent caching
       const response = await api.get(`/auth/google-calendar/connect?_t=${Date.now()}`);
-      console.log('[Google Calendar] Response:', response.data);
+      
+      // Debug with alert since console.log is stripped in production
+      alert('Response received: ' + JSON.stringify(response.data));
+      
       if (response.data.authUrl) {
-        console.log('[Google Calendar] Redirecting to:', response.data.authUrl);
+        alert('Redirecting to: ' + response.data.authUrl.substring(0, 50) + '...');
         window.location.href = response.data.authUrl;
       } else {
-        console.error('[Google Calendar] No authUrl in response');
+        alert('No authUrl in response!');
         toast.error('Failed to get Google Calendar URL');
         setGoogleCalendarLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to initiate Google Calendar connection:', error);
+    } catch (error: any) {
+      alert('Error: ' + (error?.message || 'Unknown error'));
       toast.error('Failed to connect Google Calendar');
       setGoogleCalendarLoading(false);
     }
@@ -2585,15 +2587,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       </button>
                     ) : (
                       <button
-                        onClick={() => {
-                          console.log('[DEBUG] onConnectGoogleCalendar type:', typeof onConnectGoogleCalendar);
-                          if (onConnectGoogleCalendar) {
-                            console.log('[DEBUG] Calling onConnectGoogleCalendar...');
-                            onConnectGoogleCalendar();
-                          } else {
-                            alert('ERROR: onConnectGoogleCalendar is not defined!');
-                          }
-                        }}
+                        onClick={() => onConnectGoogleCalendar?.()}
                         disabled={googleCalendarLoading}
                         className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex items-center gap-2 shadow-sm disabled:opacity-50"
                       >
