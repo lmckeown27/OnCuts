@@ -1110,9 +1110,14 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     const { id } = req.params;
     const { date } = req.query; // Optional: specific date to check (YYYY-MM-DD)
 
-    // Get barber's weekly schedule
+    // Get barber's weekly schedule and campus timezone
     const barberResult = await pool.query(
-      'SELECT "weeklySchedule" as weekly_schedule FROM barbers WHERE id = $1',
+      `SELECT b."weeklySchedule" as weekly_schedule, 
+              COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone
+       FROM barbers b
+       LEFT JOIN users u ON b."userId" = u.id
+       LEFT JOIN campuses c ON u."campusId" = c.id
+       WHERE b.id = $1`,
       [id]
     );
 
@@ -1121,6 +1126,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     }
 
     const weeklySchedule: WeeklySchedule = barberResult.rows[0].weekly_schedule || {};
+    const campusTimezone: string = barberResult.rows[0].campus_timezone;
     
     // If a specific date is provided, return available slots for that date
     if (date && typeof date === 'string') {
@@ -1222,32 +1228,37 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         console.log(`[Availability] Google Calendar connected for barber ${id}:`, isConnected);
         
         if (isConnected) {
-          // Create start and end of day in Pacific timezone
-          // The date parameter is YYYY-MM-DD in Pacific time
-          // We need to convert to UTC for the Google Calendar API query
-          const dayStartPacific = new Date(`${date}T00:00:00-08:00`); // Pacific time
-          const dayEndPacific = new Date(`${date}T23:59:59-08:00`); // Pacific time
+          // Create start and end of day in campus timezone
+          // The date parameter is YYYY-MM-DD in campus local time
+          // We construct ISO strings with the timezone and let Date parse them
+          // For simplicity, we'll query a full day in UTC that covers the campus day
+          const [year, month, day] = date.split('-').map(Number);
           
-          console.log(`[Availability] Querying Google Calendar for ${date}, UTC range: ${dayStartPacific.toISOString()} to ${dayEndPacific.toISOString()}`);
+          // Create dates at start and end of day, accounting for potential timezone offset
+          // Query a wider range to ensure we capture all events for the campus day
+          const dayStartUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+          const dayEndUTC = new Date(Date.UTC(year, month - 1, day + 1, 12, 0, 0)); // Go into next day to catch late events
           
-          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStartPacific, dayEndPacific);
+          console.log(`[Availability] Querying Google Calendar for ${date} (timezone: ${campusTimezone}), UTC range: ${dayStartUTC.toISOString()} to ${dayEndUTC.toISOString()}`);
+          
+          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStartUTC, dayEndUTC);
           
           console.log(`[Availability] Google Calendar returned ${busyTimes.length} busy times:`, busyTimes);
           
-          // Convert busy times to HH:MM format in Pacific timezone
+          // Convert busy times to HH:MM format in campus timezone
           googleCalendarSlots = busyTimes.map((bt: { start: Date; end: Date }) => {
             const startTime = new Date(bt.start);
             const endTime = new Date(bt.end);
             
-            // Convert to Pacific time for display
-            const startPacific = startTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false });
-            const endPacific = endTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false });
+            // Convert to campus timezone for display
+            const startLocal = startTime.toLocaleString('en-US', { timeZone: campusTimezone, hour: '2-digit', minute: '2-digit', hour12: false });
+            const endLocal = endTime.toLocaleString('en-US', { timeZone: campusTimezone, hour: '2-digit', minute: '2-digit', hour12: false });
             
-            console.log(`[Availability] Busy time: ${startPacific} - ${endPacific}`);
+            console.log(`[Availability] Busy time in ${campusTimezone}: ${startLocal} - ${endLocal}`);
             
             return {
-              start: startPacific,
-              end: endPacific
+              start: startLocal,
+              end: endLocal
             };
           });
           
@@ -1274,15 +1285,15 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       console.log(`[Availability] Found ${bookingsResult.rows.length} booked, ${timeBlocksResult.rows.length} time blocks, ${googleCalendarSlots.length} Google Calendar for ${date}:`, bookedSlots);
 
       // Check if the selected date is today (to filter out past times)
-      // Use Pacific timezone since all barbers are at Cal Poly SLO
-      const pacificTime = new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
-      const pacificNow = new Date(pacificTime);
-      const todayStr = `${pacificNow.getFullYear()}-${String(pacificNow.getMonth() + 1).padStart(2, '0')}-${String(pacificNow.getDate()).padStart(2, '0')}`;
+      // Use the campus timezone for accurate local time
+      const campusTime = new Date().toLocaleString('en-US', { timeZone: campusTimezone });
+      const campusNow = new Date(campusTime);
+      const todayStr = `${campusNow.getFullYear()}-${String(campusNow.getMonth() + 1).padStart(2, '0')}-${String(campusNow.getDate()).padStart(2, '0')}`;
       const isToday = date === todayStr;
       
-      // Get current time in Pacific for filtering past slots
-      const currentHour = pacificNow.getHours();
-      const currentMinute = pacificNow.getMinutes();
+      // Get current time in campus timezone for filtering past slots
+      const currentHour = campusNow.getHours();
+      const currentMinute = campusNow.getMinutes();
       const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + 15) : 0; // 15 min buffer
 
       // Generate available time slots (filter past times if booking for today)
