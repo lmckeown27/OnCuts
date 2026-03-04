@@ -4,8 +4,8 @@
  */
 
 import { google } from 'googleapis';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../database/connection';
+import { logger } from '../utils/logger';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CALENDAR_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CALENDAR_CLIENT_SECRET;
@@ -177,7 +177,7 @@ export async function getBusyTimes(
     
     const busyTimes = response.data.calendars?.primary?.busy || [];
     
-    return busyTimes.map((slot) => ({
+    return busyTimes.map((slot: { start?: string | null; end?: string | null }) => ({
       start: new Date(slot.start || ''),
       end: new Date(slot.end || ''),
     }));

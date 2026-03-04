@@ -5,8 +5,8 @@
 
 import express, { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth';
-import pool from '../config/database';
-import logger from '../utils/logger';
+import { pool } from '../database/connection';
+import { logger } from '../utils/logger';
 import * as googleCalendarService from '../services/google-calendar.service';
 
 const router: Router = express.Router();
