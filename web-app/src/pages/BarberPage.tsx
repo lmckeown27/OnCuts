@@ -1611,6 +1611,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
   const [isLoadingWeeklySchedule, setIsLoadingWeeklySchedule] = useState(true); // Loading state for availability
+  const [googleCalendarBusyTimes, setGoogleCalendarBusyTimes] = useState<Array<{ start: Date; end: Date }>>([]); // Google Calendar busy times
   const [availabilityRefreshKey, setAvailabilityRefreshKey] = useState(0); // Trigger refresh when availability changes
   const modalRef = useRef<HTMLDivElement>(null);
   const scheduleContainerRef = useRef<HTMLDivElement>(null);
@@ -1659,6 +1660,41 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     };
     fetchMonthlyTimeBlocks();
   }, [barberProfileId, monthOffset]);
+
+  // Fetch Google Calendar busy times when connected
+  useEffect(() => {
+    const fetchGoogleCalendarBusyTimes = async () => {
+      // Only fetch if Google Calendar is connected
+      if (!googleCalendarConnected) {
+        setGoogleCalendarBusyTimes([]);
+        return;
+      }
+      
+      try {
+        // Get busy times for current week + next 2 weeks
+        const now = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 21); // 3 weeks ahead
+        
+        const data = await api.get<{ busyTimes: Array<{ start: string; end: string }> }>(
+          `/auth/google-calendar/busy-times?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        );
+        
+        if (data?.busyTimes) {
+          setGoogleCalendarBusyTimes(data.busyTimes.map(bt => ({
+            start: new Date(bt.start),
+            end: new Date(bt.end)
+          })));
+        }
+      } catch (error) {
+        // Silently fail - Google Calendar is optional
+        setGoogleCalendarBusyTimes([]);
+      }
+    };
+    
+    fetchGoogleCalendarBusyTimes();
+  }, [googleCalendarConnected, dayOffset, weekOffset, monthOffset]);
 
   // Fetch barber's weekly availability schedule
   useEffect(() => {
@@ -2516,7 +2552,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             return h * 60 + m;
           };
           
-          // Helper to check if slot is blocked
+          // Helper to check if slot is blocked (manual block)
           const getBlockForSlot = (slot: { start: string; end: string }) => {
             const slotStart = timeToMinutes(slot.start);
             const slotEnd = timeToMinutes(slot.end);
@@ -2524,6 +2560,29 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               const blockStart = timeToMinutes(block.startTime);
               const blockEnd = timeToMinutes(block.endTime);
               return slotStart < blockEnd && slotEnd > blockStart;
+            });
+          };
+          
+          // Helper to check if slot is blocked by Google Calendar
+          const getGoogleCalendarBlockForSlot = (slot: { start: string; end: string }) => {
+            const slotStart = timeToMinutes(slot.start);
+            const slotEnd = timeToMinutes(slot.end);
+            
+            // Convert slot times to full Date for the displayed day
+            const slotStartDate = new Date(displayedDate);
+            slotStartDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
+            const slotEndDate = new Date(displayedDate);
+            slotEndDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
+            
+            return googleCalendarBusyTimes.find(busy => {
+              // Check if this busy time overlaps with the slot on this day
+              const busyStart = busy.start;
+              const busyEnd = busy.end;
+              
+              // Check if busy time is on the same day and overlaps
+              return (
+                busyStart < slotEndDate && busyEnd > slotStartDate
+              );
             });
           };
           
@@ -2538,9 +2597,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             });
           };
           
-          const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+          const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getGoogleCalendarBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
           const bookedCount = hourlySlots.filter(slot => getAppointmentForSlot(slot)).length;
-          const blockedCount = hourlySlots.filter(slot => getBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+          const blockedCount = hourlySlots.filter(slot => (getBlockForSlot(slot) || getGoogleCalendarBlockForSlot(slot)) && !getAppointmentForSlot(slot)).length;
 
           return (
             <div className="max-w-2xl mx-auto">
@@ -2644,7 +2703,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                         );
                       }
                       
-                      // Blocked slot - with unblock option
+                      // Blocked slot - with unblock option (manual block)
                       if (block) {
                         return (
                           <div 
@@ -2661,6 +2720,28 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             >
                               Unblock
                             </button>
+                          </div>
+                        );
+                      }
+                      
+                      // Google Calendar blocked slot - not unblockable from CampusCuts
+                      const googleBlock = getGoogleCalendarBlockForSlot(slot);
+                      if (googleBlock) {
+                        return (
+                          <div 
+                            key={idx}
+                            className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm border border-blue-200 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                              </svg>
+                              <span className="font-medium">{formatTime12(slot.start)} - {formatTime12(slot.end)}</span>
+                            </div>
+                            <span className="text-xs text-blue-500">Google Calendar</span>
                           </div>
                         );
                       }
@@ -2751,6 +2832,15 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
                   const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
                   const hasTimeBlocks = dayTimeBlocks.length > 0;
+                  // Count Google Calendar busy times for this day
+                  const dayStart = new Date(day.fullDate);
+                  dayStart.setHours(0, 0, 0, 0);
+                  const dayEnd = new Date(day.fullDate);
+                  dayEnd.setHours(23, 59, 59, 999);
+                  const dayGoogleBlocks = googleCalendarBusyTimes.filter(bt => 
+                    bt.start < dayEnd && bt.end > dayStart
+                  );
+                  const hasGoogleBlocks = dayGoogleBlocks.length > 0;
 
                   return (
                     <div
@@ -2776,7 +2866,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
                             const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
                             
-                            if (dayBookings.length === 0 && !hasTimeBlocks) {
+                            if (dayBookings.length === 0 && !hasTimeBlocks && !hasGoogleBlocks) {
                               return (
                                 <div className={`text-sm ${isToday ? 'text-white/70' : 'text-gray-500'}`}>
                                   No appointments
@@ -2799,6 +2889,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                                 {hasTimeBlocks && (
                                   <div className={`text-sm ${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
                                     {dayTimeBlocks.length} blocked
+                                  </div>
+                                )}
+                                {hasGoogleBlocks && (
+                                  <div className={`text-sm ${isToday ? 'text-white/70' : 'text-blue-600 font-bold'}`}>
+                                    {dayGoogleBlocks.length} calendar
                                   </div>
                                 )}
                               </div>
@@ -2828,6 +2923,15 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   const dateStr = `${day.fullDate.getFullYear()}-${String(day.fullDate.getMonth() + 1).padStart(2, '0')}-${String(day.fullDate.getDate()).padStart(2, '0')}`;
                   const dayTimeBlocks = monthlyTimeBlocks.filter(block => block.blockDate === dateStr);
                   const hasTimeBlocks = dayTimeBlocks.length > 0;
+                  // Count Google Calendar busy times for this day
+                  const dayStartDesktop = new Date(day.fullDate);
+                  dayStartDesktop.setHours(0, 0, 0, 0);
+                  const dayEndDesktop = new Date(day.fullDate);
+                  dayEndDesktop.setHours(23, 59, 59, 999);
+                  const dayGoogleBlocksDesktop = googleCalendarBusyTimes.filter(bt => 
+                    bt.start < dayEndDesktop && bt.end > dayStartDesktop
+                  );
+                  const hasGoogleBlocksDesktop = dayGoogleBlocksDesktop.length > 0;
 
                   return (
                     <div
@@ -2851,7 +2955,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           const completedCount = dayBookings.filter(b => b.status === 'COMPLETED' || b.status === 'PAID' || b.paidAt).length;
                           const pendingCount = dayBookings.filter(b => b.status === 'ACCEPTED').length;
                           
-                          if (dayBookings.length === 0 && !hasTimeBlocks) {
+                          if (dayBookings.length === 0 && !hasTimeBlocks && !hasGoogleBlocksDesktop) {
                             return (
                               <div className={isToday ? 'text-white/60' : 'text-gray-400'}>No apts</div>
                             );
@@ -2872,6 +2976,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                               {hasTimeBlocks && (
                                 <div className={`${isToday ? 'text-white/70' : 'text-red-500 font-bold'}`}>
                                   {dayTimeBlocks.length} blocked
+                                </div>
+                              )}
+                              {hasGoogleBlocksDesktop && (
+                                <div className={`${isToday ? 'text-white/70' : 'text-blue-600 font-bold'}`}>
+                                  {dayGoogleBlocksDesktop.length} calendar
                                 </div>
                               )}
                             </div>

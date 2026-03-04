@@ -1213,7 +1213,36 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         [id, date]
       );
 
-      // Combine booked slots with time blocks
+      // Get Google Calendar busy times if connected
+      let googleCalendarSlots: Array<{ start: string; end: string }> = [];
+      try {
+        const googleCalendarService = require('../services/google-calendar.service');
+        const isConnected = await googleCalendarService.isCalendarConnected(id);
+        
+        if (isConnected) {
+          // Create start and end of day in Pacific timezone
+          const [year, month, day] = date.split('-').map(Number);
+          const dayStart = new Date(year, month - 1, day, 0, 0, 0);
+          const dayEnd = new Date(year, month - 1, day, 23, 59, 59);
+          
+          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStart, dayEnd);
+          
+          // Convert busy times to HH:MM format
+          googleCalendarSlots = busyTimes.map((bt: { start: Date; end: Date }) => {
+            const startTime = new Date(bt.start);
+            const endTime = new Date(bt.end);
+            return {
+              start: `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`,
+              end: `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`
+            };
+          });
+        }
+      } catch (error) {
+        // Google Calendar integration is optional - silently continue
+        console.log('[Availability] Google Calendar check failed, continuing without:', error);
+      }
+
+      // Combine booked slots with time blocks and Google Calendar busy times
       const bookedSlots = [
         ...bookingsResult.rows.map(row => ({
           start: row.start_time,
@@ -1222,7 +1251,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         ...timeBlocksResult.rows.map(row => ({
           start: row.start_time,
           end: row.end_time
-        }))
+        })),
+        ...googleCalendarSlots
       ];
 
       console.log(`[Availability] Found ${bookingsResult.rows.length} booked slots and ${timeBlocksResult.rows.length} time blocks for ${date}:`, bookedSlots);
