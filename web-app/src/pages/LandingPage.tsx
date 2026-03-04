@@ -1384,17 +1384,17 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li>
-                  <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                  <a href="https://campuscut.com/privacy" className="text-gray-400 hover:text-white transition-colors">
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                  <a href="https://campuscut.com/terms" className="text-gray-400 hover:text-white transition-colors">
                     Terms of Service
                   </a>
                 </li>
                 <li>
-                  <a href="/gdpr" className="text-gray-400 hover:text-white transition-colors">
+                  <a href="https://campuscut.com/gdpr" className="text-gray-400 hover:text-white transition-colors">
                     GDPR
                   </a>
                 </li>
@@ -1410,9 +1410,20 @@ export default function LandingPage() {
                 <img src={FooterChairLogo} alt="CampusCut" className="h-8 w-auto" />
                 <div>
                   <p className="text-gray-400 text-sm">
-                    © 2025 CampusCut. All rights reserved.
+                    © 2026 CampusCut. All rights reserved.
                   </p>
                 </div>
+              </div>
+
+              {/* Quick Legal Links - Prominent placement for Google verification */}
+              <div className="flex items-center gap-4 text-sm">
+                <a href="https://campuscut.com/privacy" className="text-gray-400 hover:text-white transition-colors">
+                  Privacy Policy
+                </a>
+                <span className="text-gray-600">|</span>
+                <a href="https://campuscut.com/terms" className="text-gray-400 hover:text-white transition-colors">
+                  Terms of Service
+                </a>
               </div>
 
               {/* Social Links */}
