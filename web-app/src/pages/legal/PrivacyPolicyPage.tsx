@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import MainChairLogo from '../../assets/logos/Main_Chair.webp';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = "January 21, 2026";
+  const lastUpdated = "March 4, 2026";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -185,21 +185,46 @@ export default function PrivacyPolicyPage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">10. Children's Privacy</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">10. Google API Services</h2>
+              <p>
+                CampusCut offers optional integration with Google Calendar to help barbers manage their availability. When you connect your Google Calendar:
+              </p>
+              <ul className="list-disc pl-6 mt-2 space-y-1">
+                <li>We access your Google Calendar to read busy/free times to prevent double-booking</li>
+                <li>We may create calendar events for CampusCut appointments (with your permission)</li>
+                <li>We store a secure OAuth refresh token to maintain the connection</li>
+                <li>You can disconnect your Google Calendar at any time from your barber dashboard</li>
+              </ul>
+              <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
+                <strong>Limited Use Disclosure:</strong> CampusCut's use and transfer of information received from Google APIs to any other app will adhere to the{' '}
+                <a 
+                  href="https://developers.google.com/terms/api-services-user-data-policy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:text-primary-700 underline"
+                >
+                  Google API Services User Data Policy
+                </a>
+                , including the Limited Use requirements.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">11. Children's Privacy</h2>
               <p>
                 The Service is not intended for users under 18 years of age. We do not knowingly collect personal information from children. If we become aware that we have collected data from a child, we will take steps to delete it.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">11. Changes to This Policy</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">12. Changes to This Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last Updated" date. Material changes may be communicated via email or through the Service.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">12. Contact Us</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-3">13. Contact Us</h2>
               <p>If you have any questions about this Privacy Policy, please contact us at:</p>
               <p className="mt-2">Email: campuscuthelp@gmail.com</p>
             </section>

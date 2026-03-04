@@ -1384,19 +1384,19 @@ export default function LandingPage() {
               <h4 className="font-bold text-white mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li>
-                  <button onClick={() => navigate('/privacy')} className="text-gray-400 hover:text-white transition-colors">
+                  <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                     Privacy Policy
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/terms')} className="text-gray-400 hover:text-white transition-colors">
+                  <a href="/terms" className="text-gray-400 hover:text-white transition-colors">
                     Terms of Service
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button onClick={() => navigate('/gdpr')} className="text-gray-400 hover:text-white transition-colors">
+                  <a href="/gdpr" className="text-gray-400 hover:text-white transition-colors">
                     GDPR
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
