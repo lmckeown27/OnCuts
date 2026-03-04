@@ -269,7 +269,8 @@ export default function BarberPage() {
     try {
       setGoogleCalendarLoading(true);
       console.log('[Google Calendar] Fetching auth URL...');
-      const response = await api.get('/auth/google-calendar/connect');
+      // Add timestamp to prevent caching
+      const response = await api.get(`/auth/google-calendar/connect?_t=${Date.now()}`);
       console.log('[Google Calendar] Response:', response.data);
       if (response.data.authUrl) {
         console.log('[Google Calendar] Redirecting to:', response.data.authUrl);

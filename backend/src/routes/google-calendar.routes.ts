@@ -37,6 +37,11 @@ router.get('/connect', authenticate, async (req: Request, res: Response) => {
     
     logger.info('Google Calendar auth URL generated', { userId });
     
+    // Prevent caching - authUrl should be fresh each time
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     res.json({ authUrl });
   } catch (error) {
     logger.error('Failed to generate Google Calendar auth URL:', error);
