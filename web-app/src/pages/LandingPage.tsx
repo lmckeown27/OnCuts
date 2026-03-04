@@ -1113,7 +1113,22 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile by choosing which days and hours you're open for bookings. You can also block specific dates and times for one-time events without affecting your recurring schedule. Customers can only request times you've made available.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile by choosing which days and hours you're open for bookings. You can also block specific dates and times for one-time events. Optionally, connect your Google Calendar to automatically block times when you're busy—your class schedule, study sessions, and personal events are synced so customers can only book when you're truly available.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('b6')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Why connect Google Calendar?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b6' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Connecting your Google Calendar prevents double-bookings. CampusCut reads your calendar's busy times (like classes, exams, or personal events) and automatically blocks those slots so customers can't book during them. We never see the details of your events—just when you're busy. You can disconnect at any time from your barber dashboard.</p>
                     </div>
                   </div>
                 </div>
