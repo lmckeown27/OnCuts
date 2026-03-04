@@ -1,13 +1,25 @@
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import MainChairLogo from '../../assets/logos/Main_Chair.webp';
 
 export default function PrivacyPolicyPage() {
+  const navigate = useNavigate();
   const lastUpdated = "March 4, 2026";
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const handleBack = () => {
+    // Check if there's history to go back to
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // Fallback to homepage if no history
+      navigate('/');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -18,12 +30,13 @@ export default function PrivacyPolicyPage() {
             <img src={MainChairLogo} alt="CampusCut" className="h-10 w-auto" />
             <span className="text-xl font-bold text-gray-900">CampusCut</span>
           </Link>
-          <Link 
-            to="/"
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+          <button 
+            onClick={handleBack}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
+            <ArrowLeft className="w-4 h-4" />
             Back
-          </Link>
+          </button>
         </div>
       </div>
 
