@@ -1219,23 +1219,39 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         const googleCalendarService = require('../services/google-calendar.service');
         const isConnected = await googleCalendarService.isCalendarConnected(id);
         
+        console.log(`[Availability] Google Calendar connected for barber ${id}:`, isConnected);
+        
         if (isConnected) {
           // Create start and end of day in Pacific timezone
-          const [year, month, day] = date.split('-').map(Number);
-          const dayStart = new Date(year, month - 1, day, 0, 0, 0);
-          const dayEnd = new Date(year, month - 1, day, 23, 59, 59);
+          // The date parameter is YYYY-MM-DD in Pacific time
+          // We need to convert to UTC for the Google Calendar API query
+          const dayStartPacific = new Date(`${date}T00:00:00-08:00`); // Pacific time
+          const dayEndPacific = new Date(`${date}T23:59:59-08:00`); // Pacific time
           
-          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStart, dayEnd);
+          console.log(`[Availability] Querying Google Calendar for ${date}, UTC range: ${dayStartPacific.toISOString()} to ${dayEndPacific.toISOString()}`);
           
-          // Convert busy times to HH:MM format
+          const busyTimes = await googleCalendarService.getBusyTimes(id, dayStartPacific, dayEndPacific);
+          
+          console.log(`[Availability] Google Calendar returned ${busyTimes.length} busy times:`, busyTimes);
+          
+          // Convert busy times to HH:MM format in Pacific timezone
           googleCalendarSlots = busyTimes.map((bt: { start: Date; end: Date }) => {
             const startTime = new Date(bt.start);
             const endTime = new Date(bt.end);
+            
+            // Convert to Pacific time for display
+            const startPacific = startTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false });
+            const endPacific = endTime.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            console.log(`[Availability] Busy time: ${startPacific} - ${endPacific}`);
+            
             return {
-              start: `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`,
-              end: `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`
+              start: startPacific,
+              end: endPacific
             };
           });
+          
+          console.log(`[Availability] Converted Google Calendar slots:`, googleCalendarSlots);
         }
       } catch (error) {
         // Google Calendar integration is optional - silently continue
@@ -1255,7 +1271,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         ...googleCalendarSlots
       ];
 
-      console.log(`[Availability] Found ${bookingsResult.rows.length} booked slots and ${timeBlocksResult.rows.length} time blocks for ${date}:`, bookedSlots);
+      console.log(`[Availability] Found ${bookingsResult.rows.length} booked, ${timeBlocksResult.rows.length} time blocks, ${googleCalendarSlots.length} Google Calendar for ${date}:`, bookedSlots);
 
       // Check if the selected date is today (to filter out past times)
       // Use Pacific timezone since all barbers are at Cal Poly SLO
