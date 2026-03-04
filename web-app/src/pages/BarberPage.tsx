@@ -2585,7 +2585,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       </button>
                     ) : (
                       <button
-                        onClick={() => onConnectGoogleCalendar?.()}
+                        onClick={() => {
+                          alert('Button clicked! Check console.');
+                          console.log('[DEBUG] Google Calendar button clicked!');
+                          onConnectGoogleCalendar?.();
+                        }}
                         disabled={googleCalendarLoading}
                         className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex items-center gap-2 shadow-sm disabled:opacity-50"
                       >
