@@ -1049,6 +1049,21 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
+
+                <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
+                  <button 
+                    onClick={() => toggleFaq('c6')}
+                    className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
+                  >
+                    <h4 className="font-medium text-gray-900">Is my payment secure?</h4>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'c6' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                    <div className="overflow-hidden">
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Absolutely. All payments are processed securely through Stripe, a trusted payment platform used by millions of businesses. We never store your card details—Stripe handles everything with bank-level encryption.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
