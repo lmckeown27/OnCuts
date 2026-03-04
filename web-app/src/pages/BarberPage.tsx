@@ -255,13 +255,11 @@ export default function BarberPage() {
   
   // Check Google Calendar connection status
   const checkGoogleCalendarStatus = async () => {
-    console.log('[Google Calendar] Checking status...');
     try {
-      const response = await api.get('/auth/google-calendar/status');
-      console.log('[Google Calendar] Status response:', response.data);
-      setGoogleCalendarConnected(response.data.connected);
+      // api.get() unwraps the response, so result IS the data directly
+      const data = await api.get<{ connected: boolean }>('/auth/google-calendar/status');
+      setGoogleCalendarConnected(data?.connected ?? false);
     } catch (error) {
-      console.log('[Google Calendar] Status check failed, defaulting to false:', error);
       setGoogleCalendarConnected(false);
     }
   };
@@ -271,21 +269,17 @@ export default function BarberPage() {
     try {
       setGoogleCalendarLoading(true);
       // Add timestamp to prevent caching
-      const response = await api.get(`/auth/google-calendar/connect?_t=${Date.now()}`);
+      // api.get() unwraps the response, so result IS the data directly
+      const data = await api.get<{ authUrl: string }>(`/auth/google-calendar/connect?_t=${Date.now()}`);
       
-      // Debug with alert since console.log is stripped in production
-      alert('Response received: ' + JSON.stringify(response.data));
-      
-      if (response.data.authUrl) {
-        alert('Redirecting to: ' + response.data.authUrl.substring(0, 50) + '...');
-        window.location.href = response.data.authUrl;
+      if (data?.authUrl) {
+        // Redirect to Google OAuth
+        window.location.href = data.authUrl;
       } else {
-        alert('No authUrl in response!');
         toast.error('Failed to get Google Calendar URL');
         setGoogleCalendarLoading(false);
       }
     } catch (error: any) {
-      alert('Error: ' + (error?.message || 'Unknown error'));
       toast.error('Failed to connect Google Calendar');
       setGoogleCalendarLoading(false);
     }
