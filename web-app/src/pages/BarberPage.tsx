@@ -2569,9 +2569,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             const slotEnd = timeToMinutes(slot.end);
             
             // Convert slot times to full Date for the displayed day
-            const slotStartDate = new Date(displayedDate);
+            const slotStartDate = new Date(displayDate);
             slotStartDate.setHours(Math.floor(slotStart / 60), slotStart % 60, 0, 0);
-            const slotEndDate = new Date(displayedDate);
+            const slotEndDate = new Date(displayDate);
             slotEndDate.setHours(Math.floor(slotEnd / 60), slotEnd % 60, 0, 0);
             
             return googleCalendarBusyTimes.find(busy => {
