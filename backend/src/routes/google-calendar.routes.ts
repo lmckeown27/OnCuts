@@ -24,7 +24,7 @@ router.get('/connect', authenticate, async (req: Request, res: Response) => {
     
     // Verify user is a barber
     const barberCheck = await pool.query(
-      'SELECT id FROM barbers WHERE user_id = $1',
+      'SELECT id FROM barbers WHERE "userId" = $1',
       [userId]
     );
     
@@ -92,7 +92,7 @@ router.get('/status', authenticate, async (req: Request, res: Response) => {
     const result = await pool.query(
       `SELECT b.google_calendar_connected, b.google_calendar_connected_at, b.google_calendar_sync_enabled
        FROM barbers b
-       WHERE b.user_id = $1`,
+       WHERE b."userId" = $1`,
       [userId]
     );
     
@@ -124,7 +124,7 @@ router.delete('/disconnect', authenticate, async (req: Request, res: Response) =
     
     // Get barber ID
     const barberResult = await pool.query(
-      'SELECT id FROM barbers WHERE user_id = $1',
+      'SELECT id FROM barbers WHERE "userId" = $1',
       [userId]
     );
     
@@ -153,8 +153,8 @@ router.put('/sync-settings', authenticate, async (req: Request, res: Response) =
     
     await pool.query(
       `UPDATE barbers 
-       SET google_calendar_sync_enabled = $1, updated_at = NOW()
-       WHERE user_id = $2`,
+       SET google_calendar_sync_enabled = $1, "updatedAt" = NOW()
+       WHERE "userId" = $2`,
       [syncEnabled, userId]
     );
     
@@ -181,7 +181,7 @@ router.get('/busy-times', authenticate, async (req: Request, res: Response) => {
     
     // Get barber ID
     const barberResult = await pool.query(
-      'SELECT id, google_calendar_connected FROM barbers WHERE user_id = $1',
+      'SELECT id, google_calendar_connected FROM barbers WHERE "userId" = $1',
       [userId]
     );
     

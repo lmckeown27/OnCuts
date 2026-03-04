@@ -69,7 +69,7 @@ export async function handleOAuthCallback(code: string, barberUserId: string): P
     
     // Find barber record by user ID
     const barberResult = await pool.query(
-      'SELECT id FROM barbers WHERE user_id = $1',
+      'SELECT id FROM barbers WHERE "userId" = $1',
       [barberUserId]
     );
     
@@ -85,7 +85,7 @@ export async function handleOAuthCallback(code: string, barberUserId: string): P
        SET google_refresh_token = $1,
            google_calendar_connected = true,
            google_calendar_connected_at = NOW(),
-           updated_at = NOW()
+           "updatedAt" = NOW()
        WHERE id = $2`,
       [tokens.refresh_token || tokens.access_token, barberId]
     );
@@ -143,7 +143,7 @@ export async function disconnectCalendar(barberId: string): Promise<void> {
     `UPDATE barbers 
      SET google_refresh_token = NULL,
          google_calendar_connected = false,
-         updated_at = NOW()
+         "updatedAt" = NOW()
      WHERE id = $1`,
     [barberId]
   );
