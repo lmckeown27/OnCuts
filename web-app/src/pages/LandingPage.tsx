@@ -1434,7 +1434,7 @@ export default function LandingPage() {
 
           {/* Bottom Bar */}
           <div className="border-t border-gray-800 pt-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col items-center justify-center gap-4">
               {/* Logo and Copyright */}
               <div className="flex items-center gap-3">
                 <img src={FooterChairLogo} alt="CampusCut" className="h-8 w-auto" />
