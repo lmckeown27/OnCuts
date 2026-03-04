@@ -20,7 +20,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'https://campuscut.com';
  */
 router.get('/connect', authenticate, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     
     // Verify user is a barber
     const barberCheck = await pool.query(
@@ -87,7 +87,7 @@ router.get('/callback', async (req: Request, res: Response) => {
  */
 router.get('/status', authenticate, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     
     const result = await pool.query(
       `SELECT b.google_calendar_connected, b.google_calendar_connected_at, b.google_calendar_sync_enabled
@@ -120,7 +120,7 @@ router.get('/status', authenticate, async (req: Request, res: Response) => {
  */
 router.delete('/disconnect', authenticate, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     
     // Get barber ID
     const barberResult = await pool.query(
@@ -148,7 +148,7 @@ router.delete('/disconnect', authenticate, async (req: Request, res: Response) =
  */
 router.put('/sync-settings', authenticate, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const { syncEnabled } = req.body;
     
     await pool.query(
@@ -172,7 +172,7 @@ router.put('/sync-settings', authenticate, async (req: Request, res: Response) =
  */
 router.get('/busy-times', authenticate, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const { startDate, endDate } = req.query;
     
     if (!startDate || !endDate) {
