@@ -255,11 +255,13 @@ export default function BarberPage() {
   
   // Check Google Calendar connection status
   const checkGoogleCalendarStatus = async () => {
+    console.log('[Google Calendar] Checking status...');
     try {
       const response = await api.get('/auth/google-calendar/status');
+      console.log('[Google Calendar] Status response:', response.data);
       setGoogleCalendarConnected(response.data.connected);
     } catch (error) {
-      console.log('Google Calendar not configured or error checking status');
+      console.log('[Google Calendar] Status check failed, defaulting to false:', error);
       setGoogleCalendarConnected(false);
     }
   };
