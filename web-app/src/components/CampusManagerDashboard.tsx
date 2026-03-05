@@ -3287,10 +3287,10 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           </p>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[calc(100dvh-200px)] sm:max-h-none overflow-y-auto sm:overflow-visible">
           {/* Show total count above pagination */}
           {(activeTab === 'completed' || activeTab === 'cancelled') && totalPages > 1 && (
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-sm text-gray-500 text-center sticky top-0 bg-gray-50 py-1 z-10">
               Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, sortedBookings.length)} of {sortedBookings.length} {activeTab} bookings
             </p>
           )}
