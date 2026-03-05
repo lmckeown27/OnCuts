@@ -3139,7 +3139,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
       {/* Tab Buttons */}
       <div className="flex gap-2">
         <button
@@ -3287,7 +3287,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
           </p>
         </Card>
       ) : (
-        <div className="space-y-3 max-h-[calc(100dvh-200px)] sm:max-h-none overflow-y-auto sm:overflow-visible">
+        <div className="space-y-3 max-h-[calc(100dvh-200px)] sm:max-h-none overflow-y-auto overflow-x-hidden sm:overflow-visible">
           {/* Show total count above pagination */}
           {(activeTab === 'completed' || activeTab === 'cancelled') && totalPages > 1 && (
             <p className="text-sm text-gray-500 text-center sticky top-0 bg-gray-50 py-1 z-10">
