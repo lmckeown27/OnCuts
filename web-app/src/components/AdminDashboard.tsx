@@ -1540,11 +1540,11 @@ export function AdminDashboard({
                               <div key={msg.id} className="text-xs p-2 bg-gray-100 rounded">
                                 <div className="flex items-center gap-1 mb-1">
                                   <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    msg.sender_role === 'BARBER' 
+                                    ['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(msg.sender_role) 
                                       ? 'bg-green-100 text-green-700' 
                                       : 'bg-amber-100 text-amber-700'
                                   }`}>
-                                    {msg.sender_role === 'BARBER' ? 'Barber' : 'Customer'}
+                                    {['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(msg.sender_role) ? 'Barber' : 'Customer'}
                                   </span>
                                   <span className="text-[10px] text-gray-400 ml-auto">
                                     {new Date(msg.created_at).toLocaleTimeString('en-US', { 
