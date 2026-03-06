@@ -1023,7 +1023,7 @@ export function AdminDashboard({
         </div>
         <div>
           <p className="text-gray-500 text-xs">
-            {selectedCampus ? 'Campus Net Revenue' : 'Platform Profit'}
+            {selectedCampus ? 'Campus Net Revenue' : 'Profit'}
           </p>
           <p className={`font-semibold ${
             selectedCampus 
