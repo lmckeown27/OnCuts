@@ -1739,7 +1739,7 @@ export function AdminDashboard({
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-1">
-                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
                             <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
                           </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
@@ -1789,7 +1789,7 @@ export function AdminDashboard({
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-1">
-                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
                             <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
                           </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
@@ -1833,7 +1833,7 @@ export function AdminDashboard({
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-1">
-                            <p className="text-[10px] text-gray-400">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-400">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
                             <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
                           </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
