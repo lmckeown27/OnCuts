@@ -125,6 +125,8 @@ interface Barber {
   hasStripeSetup?: boolean; // Stripe fully complete (visible to consumers)
   hasStripeAccountOnly?: boolean; // Stripe account created but payouts not enabled (NOT visible to consumers)
   createdAt?: string;
+  completedBookings?: number;
+  totalVolumeCents?: number;
 }
 
 interface BarberBooking {
@@ -1736,7 +1738,10 @@ export function AdminDashboard({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <div className="text-right mr-1">
+                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
+                          </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
                         </div>
                       </button>
@@ -1783,7 +1788,10 @@ export function AdminDashboard({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <div className="text-right mr-1">
+                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
+                          </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
                         </div>
                       </button>
@@ -1824,7 +1832,10 @@ export function AdminDashboard({
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</span>
+                          <div className="text-right mr-1">
+                            <p className="text-[10px] text-gray-400">{barber.completedBookings ?? 0} cuts · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
+                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
+                          </div>
                           <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
                         </div>
                       </button>

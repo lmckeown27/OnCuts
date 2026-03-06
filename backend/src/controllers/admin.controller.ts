@@ -1860,6 +1860,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
     // Get barbers for this campus (include role to check if they're campus manager)
     // Only include users who still have BARBER or CAMPUS_MANAGER role
     // Include stripe fields to check Stripe setup status
+    // Include booking stats (completed bookings count and total volume)
     const result = await pool.query(`
       SELECT 
         u.id,
@@ -1872,9 +1873,20 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u."campusId" as campus_id,
         u.role,
         u.stripe_account_id,
-        u.stripe_payouts_enabled
+        u.stripe_payouts_enabled,
+        COALESCE(stats.completed_bookings, 0) as completed_bookings,
+        COALESCE(stats.total_volume_cents, 0) as total_volume_cents
       FROM users u
       JOIN barbers b ON b."userId" = u.id
+      LEFT JOIN (
+        SELECT 
+          "barberId",
+          COUNT(*) as completed_bookings,
+          SUM("totalPaidCents") as total_volume_cents
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        GROUP BY "barberId"
+      ) stats ON stats."barberId" = b.id
       WHERE u."campusId" = $1
         AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
       ORDER BY u.first_name, u.last_name
@@ -1893,6 +1905,8 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
+        completedBookings: parseInt(row.completed_bookings) || 0,
+        totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
     });
   } catch (error) {
@@ -2403,7 +2417,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(403, 'Admin access required');
     }
 
-    // Get all barbers with campus info and stripe status
+    // Get all barbers with campus info, stripe status, and booking stats
     // Include stripe_payouts_enabled to distinguish between:
     // - Stripe account created but onboarding incomplete
     // - Stripe fully set up and visible to consumers
@@ -2421,10 +2435,21 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
-        u."createdAt" as created_at
+        u."createdAt" as created_at,
+        COALESCE(stats.completed_bookings, 0) as completed_bookings,
+        COALESCE(stats.total_volume_cents, 0) as total_volume_cents
       FROM users u
       JOIN barbers b ON b."userId" = u.id
       LEFT JOIN campuses c ON u."campusId" = c.id
+      LEFT JOIN (
+        SELECT 
+          "barberId",
+          COUNT(*) as completed_bookings,
+          SUM("totalPaidCents") as total_volume_cents
+        FROM bookings
+        WHERE status IN ('COMPLETED', 'PAID')
+        GROUP BY "barberId"
+      ) stats ON stats."barberId" = b.id
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
       ORDER BY c.name, u.first_name, u.last_name
     `);
@@ -2445,6 +2470,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
         createdAt: row.created_at,
+        completedBookings: parseInt(row.completed_bookings) || 0,
+        totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
       total: result.rows.length,
     });
