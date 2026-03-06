@@ -1012,7 +1012,7 @@ export function AdminDashboard({
       {adminView === 'performance' && (
       <>
       {/* Summary Stats - Only visible on Performance tab */}
-      <div className="grid grid-cols-4 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
+      <div className="grid grid-cols-5 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm">
         <div>
           <p className="text-gray-500 text-xs">
             {selectedCampus ? `${formatCampusName(selectedCampus.name)} Volume` : 'Volume'}
@@ -1040,17 +1040,19 @@ export function AdminDashboard({
           </p>
         </div>
         <div>
-          <p className="text-gray-500 text-xs">
-            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Barbers` : 'Total Barbers'}
+          <p className="text-gray-500 text-xs">Users</p>
+          <p className="font-semibold text-gray-900">
+            {isLoadingPerformance || isLoadingUsers ? '...' : (performance?.totalBarbers ?? 0) + totalUsersCount}
           </p>
+        </div>
+        <div>
+          <p className="text-gray-500 text-xs">Barbers</p>
           <p className="font-semibold text-gray-900">
             {isLoadingPerformance ? '...' : performance?.totalBarbers ?? 0}
           </p>
         </div>
         <div>
-          <p className="text-gray-500 text-xs">
-            {selectedCampus ? `${formatCampusName(selectedCampus.name)} Consumers` : 'Total Consumers'}
-          </p>
+          <p className="text-gray-500 text-xs">Consumers</p>
           <p className="font-semibold text-gray-900">
             {isLoadingUsers ? '...' : totalUsersCount}
           </p>
