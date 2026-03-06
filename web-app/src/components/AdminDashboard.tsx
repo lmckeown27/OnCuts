@@ -1074,7 +1074,7 @@ export function AdminDashboard({
             </p>
           </div>
           <div className="text-center">
-            <p className="text-gray-500 text-xs">Revenue</p>
+            <p className="text-gray-500 text-xs">Volume</p>
             <p className="text-base font-semibold text-gray-900">
               ${hoveredDataPoint 
                 ? (hoveredDataPoint.revenue / 100).toFixed(2)
