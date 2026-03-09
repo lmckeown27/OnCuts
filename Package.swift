@@ -18,13 +18,13 @@ let package = Package(
         .target(
             name: "CampusCutsModule",
             dependencies: [],
-            path: "Sources/CampusCutsModule",
+            path: "ios-module/Sources/CampusCutsModule",
             resources: [.process("Resources")]
         ),
         .testTarget(
             name: "CampusCutsModuleTests",
             dependencies: ["CampusCutsModule"],
-            path: "Tests/CampusCutsModuleTests"
+            path: "ios-module/Tests/CampusCutsModuleTests"
         )
     ]
 )
