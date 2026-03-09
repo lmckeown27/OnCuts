@@ -112,16 +112,14 @@ internal class CampusCutsAPIService {
     
     /// Update booking status
     func updateBookingStatus(bookingId: Int, status: String) async throws -> Booking {
-        let body = try JSONEncoder().encode(["status": status])
+        let payload = UpdateBookingStatusRequest(status: status)
+        let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "bookings/\(bookingId)/status", method: "PATCH", body: body)
     }
     
     /// Cancel a booking
     func cancelBooking(bookingId: Int, reason: String?) async throws -> Booking {
-        var payload: [String: String] = ["status": "CANCELLED"]
-        if let reason = reason {
-            payload["cancellation_reason"] = reason
-        }
+        let payload = CancelBookingRequest(status: "CANCELLED", cancellationReason: reason)
         let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "bookings/\(bookingId)/cancel", method: "POST", body: body)
     }
@@ -135,7 +133,8 @@ internal class CampusCutsAPIService {
     
     /// Send a message
     func sendMessage(bookingId: Int, content: String) async throws -> Message {
-        let body = try JSONEncoder().encode(["booking_id": bookingId, "content": content] as [String : Any])
+        let payload = SendMessageRequest(bookingId: bookingId, content: content)
+        let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "messages", method: "POST", body: body)
     }
     
@@ -157,11 +156,8 @@ internal class CampusCutsAPIService {
     
     /// Submit a review
     func submitReview(bookingId: Int, rating: Int, comment: String?) async throws -> Review {
-        var payload: [String: Any] = ["booking_id": bookingId, "rating": rating]
-        if let comment = comment {
-            payload["comment"] = comment
-        }
-        let body = try JSONEncoder().encode(payload as [String : Any])
+        let payload = SubmitReviewRequest(bookingId: bookingId, rating: rating, comment: comment)
+        let body = try JSONEncoder().encode(payload)
         return try await request(endpoint: "reviews", method: "POST", body: body)
     }
     
@@ -196,6 +192,48 @@ internal enum CampusCutsAPIError: Error, LocalizedError {
         case .decodingError(let error):
             return "Failed to decode response: \(error.localizedDescription)"
         }
+    }
+}
+
+// MARK: - API Request Payloads
+
+/// Request payload for updating booking status
+internal struct UpdateBookingStatusRequest: Encodable {
+    let status: String
+}
+
+/// Request payload for cancelling a booking
+internal struct CancelBookingRequest: Encodable {
+    let status: String
+    let cancellationReason: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case status
+        case cancellationReason = "cancellation_reason"
+    }
+}
+
+/// Request payload for sending a message
+internal struct SendMessageRequest: Encodable {
+    let bookingId: Int
+    let content: String
+    
+    enum CodingKeys: String, CodingKey {
+        case bookingId = "booking_id"
+        case content
+    }
+}
+
+/// Request payload for submitting a review
+internal struct SubmitReviewRequest: Encodable {
+    let bookingId: Int
+    let rating: Int
+    let comment: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case bookingId = "booking_id"
+        case rating
+        case comment
     }
 }
 

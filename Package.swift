@@ -3,7 +3,10 @@ import PackageDescription
 
 let package = Package(
     name: "CampusCutsModule",
-    platforms: [.iOS(.v15)],
+    platforms: [
+        .iOS(.v17),
+        .macOS(.v14)
+    ],
     products: [
         .library(
             name: "CampusCutsModule",
