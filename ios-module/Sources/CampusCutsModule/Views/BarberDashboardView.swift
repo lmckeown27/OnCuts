@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 internal struct BarberDashboardView: View {
     @StateObject var viewModel: BarberDashboardViewModel
     
@@ -27,23 +33,33 @@ internal struct BarberDashboardView: View {
             }
             .navigationTitle("Dashboard")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(role: .destructive) {
-                            viewModel.logout()
-                        } label: {
-                            Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.primary)
-                    }
+                #if os(iOS)
+                ToolbarItem(placement: .topBarTrailing) {
+                    profileMenu
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    profileMenu
+                }
+                #endif
             }
         }
         .task {
             await viewModel.loadBookings()
+        }
+    }
+    
+    private var profileMenu: some View {
+        Menu {
+            Button(role: .destructive) {
+                viewModel.logout()
+            } label: {
+                Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
+            Image(systemName: "person.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.primary)
         }
     }
     
@@ -240,7 +256,7 @@ internal struct BookingCardView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.platformBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

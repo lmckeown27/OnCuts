@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 internal struct ConsumerHomeView: View {
     @StateObject var viewModel: ConsumerViewModel
     @State private var selectedTab: Tab = .browse
@@ -34,24 +40,34 @@ internal struct ConsumerHomeView: View {
             }
             .navigationTitle("CampusCuts")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(role: .destructive) {
-                            viewModel.logout()
-                        } label: {
-                            Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.primary)
-                    }
+                #if os(iOS)
+                ToolbarItem(placement: .topBarTrailing) {
+                    profileMenu
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    profileMenu
+                }
+                #endif
             }
         }
         .task {
             await viewModel.loadBarbers()
             await viewModel.loadMyBookings()
+        }
+    }
+    
+    private var profileMenu: some View {
+        Menu {
+            Button(role: .destructive) {
+                viewModel.logout()
+            } label: {
+                Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
+            Image(systemName: "person.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.primary)
         }
     }
     
@@ -107,7 +123,7 @@ internal struct ConsumerHomeView: View {
                 TextField("Search barbers...", text: $viewModel.searchText)
             }
             .padding(12)
-            .background(Color(.systemGray6))
+            .background(Color.platformGray6)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding()
             
@@ -295,7 +311,7 @@ internal struct ConsumerBookingCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.platformBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+
 internal struct CampusCutsHomeView: View {
     @StateObject var viewModel: CampusCutsHomeViewModel
     
@@ -23,23 +29,33 @@ internal struct CampusCutsHomeView: View {
             }
             .navigationTitle("CampusCuts")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(role: .destructive) {
-                            viewModel.logout()
-                        } label: {
-                            Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } label: {
-                        Image(systemName: "person.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.primary)
-                    }
+                #if os(iOS)
+                ToolbarItem(placement: .topBarTrailing) {
+                    profileMenu
                 }
+                #else
+                ToolbarItem(placement: .automatic) {
+                    profileMenu
+                }
+                #endif
             }
         }
         .task {
             await viewModel.loadInitialData()
+        }
+    }
+    
+    private var profileMenu: some View {
+        Menu {
+            Button(role: .destructive) {
+                viewModel.logout()
+            } label: {
+                Label("Logout", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
+            Image(systemName: "person.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.primary)
         }
     }
     
@@ -108,7 +124,7 @@ internal struct CampusCutsHomeView: View {
                             .background(
                                 viewModel.selectedCampus?.id == campus.id
                                     ? Color.accentColor
-                                    : Color(.systemGray5)
+                                    : Color.platformGray5
                             )
                             .foregroundStyle(
                                 viewModel.selectedCampus?.id == campus.id
@@ -121,7 +137,7 @@ internal struct CampusCutsHomeView: View {
             }
             .padding()
         }
-        .background(Color(.systemBackground))
+        .background(Color.platformBackground)
     }
     
     private var searchBar: some View {
@@ -131,7 +147,7 @@ internal struct CampusCutsHomeView: View {
             TextField("Search barbers...", text: $viewModel.searchText)
         }
         .padding(12)
-        .background(Color(.systemGray6))
+        .background(Color.platformGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
         .padding(.bottom, 8)
@@ -229,7 +245,7 @@ internal struct BarberCardView: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.platformBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
