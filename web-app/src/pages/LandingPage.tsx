@@ -368,7 +368,7 @@ export default function LandingPage() {
             {/* Stat 1 - Total Cuts */}
             <div className="text-center">
               <div className="flex items-baseline justify-center gap-0.5 sm:gap-1">
-                <span className="text-2xl sm:text-5xl font-bold text-primary-600">2,000</span>
+                <span className="text-2xl sm:text-5xl font-bold text-primary-600">1,000</span>
                 <span className="text-lg sm:text-3xl font-bold text-primary-500">+</span>
               </div>
               <p className="text-gray-600 text-xs sm:text-base mt-0.5 sm:mt-1">completed cuts nationwide</p>
