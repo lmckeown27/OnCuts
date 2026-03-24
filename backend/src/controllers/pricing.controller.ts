@@ -9,8 +9,7 @@
  * - Recompute triggers (admin only)
  * - Anomaly monitoring (admin only)
  * 
- * Note: Refactored to use blockchain-first dynamic pricing
- * (PostgreSQL removed, now uses Aptos + Redis)
+ * Dynamic pricing: PostgreSQL + Redis; chain signals via `blockchain-query` (Sui Path B / stubs).
  */
 
 import { Request, Response } from 'express';

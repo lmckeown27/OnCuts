@@ -1,7 +1,7 @@
 /**
  * Gas Calculator Service
  * 
- * Provides accurate gas cost estimation for Aptos transactions
+ * Gas cost hints (legacy shape; Path B uses Sui gas / sponsorship — not Aptos RPC)
  * Based on real transaction data from production systems
  * 
  * Extracted and adapted from typescript_cash_bot
@@ -29,7 +29,7 @@ export class GasCalculatorService {
   };
 
   // Conservative gas price (100 octas per unit)
-  // Based on real Aptos devnet/mainnet transactions
+  // Rough USD conversion for dashboards only
   private readonly GAS_PRICE_OCTAS = 100;
 
   // Safety buffer (0.001 APT = 100,000 octas)

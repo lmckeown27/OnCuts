@@ -75,7 +75,7 @@ interface BarberRating {
 
 class BlockchainQueryService {
   constructor() {
-    logger.info('BlockchainQueryService: Sui Path B stub (no Aptos RPC)');
+    logger.info('BlockchainQueryService: Sui Path B (on-chain reads stubbed until indexer is wired)');
   }
 
   async getUserAccount(_address: string): Promise<UserAccount | null> {

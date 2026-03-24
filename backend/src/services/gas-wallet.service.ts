@@ -1,24 +1,8 @@
 /**
- * Gas Wallet Service
- * 
- * Manages the platform's APT wallet used for paying gas fees
- * 
- * Architecture:
- * - Platform holds a separate APT wallet for gas only
- * - All smart contract transactions (create escrow, release payment, etc.) paid by this wallet
- * - USDC and APT are separate: USDC for payments, APT for gas
- * - Admin can monitor and top-up via admin dashboard
- * 
- * Gas Fee Economics:
- * - Aptos gas is extremely cheap (~$0.0001 per transaction)
- * - Platform pays all gas fees (not users)
- * - Example: 1000 bookings ≈ $0.10 in gas fees
- * - Auto-alerts when balance drops below threshold
- * 
- * Security:
- * - Gas wallet private key stored in .env (encrypted in production)
- * - Only backend has access
- * - Cannot be drained by users
+ * Gas wallet admin surface (legacy shape for dashboard).
+ *
+ * Path B: flows use **Sui sponsored transactions** (`GAS_SPONSOR_SECRET`), not a custodial platform
+ * gas hot wallet. This module returns safe stubs unless re-enabled for Sui balance monitoring.
  */
 
 import { logger } from '../utils/logger';
@@ -38,9 +22,9 @@ class GasWalletService {
   private isEnabled: boolean = false;
   
   // Thresholds for alerts
-  private readonly MIN_BALANCE_APT = 10; // Alert when below 10 APT
-  private readonly CRITICAL_BALANCE_APT = 2; // Critical alert when below 2 APT
-  private readonly AVG_GAS_PER_TX_APT = 0.0001; // Approximate gas cost per transaction
+  private readonly MIN_BALANCE_APT = 10; // Legacy field name (was APT); unused while service disabled
+  private readonly CRITICAL_BALANCE_APT = 2;
+  private readonly AVG_GAS_PER_TX_APT = 0.0001; // Placeholder if Sui monitoring is added
 
   constructor() {
     this.gasWalletAddress =
@@ -49,7 +33,7 @@ class GasWalletService {
       '';
     this.isEnabled = false;
     logger.warn(
-      'Gas Wallet Service: legacy Aptos gas wallet removed — use Sui sponsored txs (GAS_SPONSOR_SECRET)'
+      'Gas Wallet Service: disabled — Path B uses Sui sponsored gas (GAS_SPONSOR_SECRET / relayer)'
     );
   }
 
@@ -159,33 +143,30 @@ class GasWalletService {
   }
 
   /**
-   * Get gas wallet address (for admin to send APT)
+   * Optional display address (SUI_GAS_WALLET_ADDRESS / GAS_WALLET_ADDRESS); not used for Path B signing.
    */
   getGasWalletAddress(): string {
     return this.gasWalletAddress;
   }
 
   /**
-   * Get current APT price in USD (approximate)
-   * Uses CoinGecko API or fallback to fixed estimate
+   * Native token USD price for rough admin estimates (Sui). Legacy name kept for callers.
    */
   async getAptPrice(): Promise<number> {
     try {
-      // Try CoinGecko API
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=aptos&vs_currencies=usd'
+        'https://api.coingecko.com/api/v3/simple/price?ids=sui&vs_currencies=usd'
       );
-      const data = await response.json() as { aptos?: { usd?: number } };
-      
-      if (data.aptos && data.aptos.usd) {
-        return data.aptos.usd;
+      const data = (await response.json()) as { sui?: { usd?: number } };
+
+      if (data.sui?.usd) {
+        return data.sui.usd;
       }
 
-      // Fallback: use approximate price
-      return 10.0; // $10 per APT (update manually)
+      return 2.5;
     } catch (error) {
-      logger.warn('⚠️  Failed to fetch APT price, using fallback', { error });
-      return 10.0; // Fallback estimate
+      logger.warn('Failed to fetch SUI price, using fallback', { error });
+      return 2.5;
     }
   }
 
@@ -228,29 +209,10 @@ class GasWalletService {
    * Use for testing on devnet
    */
   async fundFromFaucet(): Promise<void> {
-    if (process.env.APTOS_NETWORK === 'mainnet') {
-      throw new ApiError(400, 'Cannot use faucet on mainnet');
-    }
-
-    try {
-      const faucetUrl = process.env.APTOS_FAUCET_URL || 'https://faucet.devnet.aptoslabs.com';
-      
-      const response = await fetch(
-        `${faucetUrl}/mint?amount=100000000&address=${this.gasWalletAddress}`,
-        { method: 'POST' }
-      );
-
-      if (!response.ok) {
-        throw new Error('Faucet request failed');
-      }
-
-      logger.info('✅ Funded gas wallet from faucet (+1 APT)', {
-        address: this.gasWalletAddress,
-      });
-    } catch (error: any) {
-      logger.error('❌ Failed to fund from faucet', { error: error.message });
-      throw new ApiError(500, 'Failed to fund from faucet');
-    }
+    throw new ApiError(
+      410,
+      'Aptos faucet removed. Use Sui testnet faucet or fund the gas sponsor key; see GAS_SPONSOR_SECRET.'
+    );
   }
 
   /**
@@ -263,41 +225,22 @@ class GasWalletService {
     address: string;
     recommended_amount_apt: number;
   } {
-    const isMainnet = process.env.APTOS_NETWORK === 'mainnet';
-
-    if (isMainnet) {
-      return {
-        method: 'exchange_transfer',
-        instructions: [
-          '1. Log into your Coinbase/Binance account',
-          '2. Navigate to Aptos (APT) wallet',
-          '3. Click "Send" or "Withdraw"',
-          `4. Enter destination address: ${this.gasWalletAddress}`,
-          '5. Enter amount (recommended: 50-100 APT)',
-          '6. Confirm transaction',
-          '7. Wait 1-2 minutes for confirmation',
-        ],
-        address: this.gasWalletAddress,
-        recommended_amount_apt: 100,
-      };
-    } else {
-      return {
-        method: 'faucet',
-        instructions: [
-          '1. Visit https://www.aptosfaucet.com',
-          `2. Enter address: ${this.gasWalletAddress}`,
-          '3. Click "Fund Account"',
-          '4. Wait ~30 seconds for confirmation',
-          '5. Alternatively, call POST /admin/gas-wallet/fund-faucet from API',
-        ],
-        address: this.gasWalletAddress,
-        recommended_amount_apt: 10,
-      };
-    }
+    return {
+      method: 'sui_gas_sponsor',
+      instructions: [
+        'Path B: configure GAS_SPONSOR_SECRET (Sui keypair that pays gas for sponsored PTBs).',
+        'Fund that address with SUI on your target network (testnet faucet or exchange withdraw).',
+        this.gasWalletAddress
+          ? `Optional monitoring address: ${this.gasWalletAddress}`
+          : 'Set SUI_GAS_WALLET_ADDRESS only if you add balance monitoring later.',
+      ],
+      address: this.gasWalletAddress || 'Configure GAS_SPONSOR_SECRET',
+      recommended_amount_apt: 0,
+    };
   }
 
   /**
-   * Legacy hook — Aptos removed; use GAS_SPONSOR_SECRET + Sui PTB.
+   * Legacy hook — use GAS_SPONSOR_SECRET + Sui PTB (relayer).
    */
   getGasWalletAccount(): never {
     this.ensureConfigured();

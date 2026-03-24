@@ -455,21 +455,8 @@ httpServer.listen(PORT, async () => {
     });
   }
 
-  // NOTE: Aptos blockchain monitor disabled - platform uses Stripe for payments
-  // To re-enable blockchain features, uncomment below:
-  // if (process.env.APTOS_PLATFORM_ADDRESS) {
-  //   const aptosMonitorService = (await import('./services/aptos-monitor.service')).default;
-  //   await aptosMonitorService.start();
-  //   logger.info(`Aptos blockchain monitor started`);
-  // } else {
-  //   logger.warn('Aptos monitor not started - APTOS_PLATFORM_ADDRESS not configured');
-  // }
-
-  // NOTE: Gas wallet monitoring disabled - platform uses Stripe for payments
-  // To re-enable blockchain features, uncomment below:
-  // const { gasWalletCron } = await import('./services/gas-wallet-cron.service');
-  // gasWalletCron.start();
-  // logger.info(`Gas wallet monitoring started (checks every 15 min, alerts when low)`);
+  // NOTE: Legacy Aptos chain monitor removed — Path B uses Stripe + Sui (relayer / indexer), not aptos-monitor.
+  // NOTE: Legacy gas-wallet cron disabled — use Sui sponsored txs (GAS_SPONSOR_SECRET) when on-chain is enabled.
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)
   await marketplaceCronService.startAllJobs();

@@ -1,7 +1,7 @@
 /**
  * Fiat Bridge Routes
  * 
- * Connects fiat money (Stripe) to blockchain (Aptos)
+ * Legacy Stripe deposit intents; on-chain settlement is Path B (Sui), not custodial Aptos.
  * Users never know they're using crypto!
  */
 

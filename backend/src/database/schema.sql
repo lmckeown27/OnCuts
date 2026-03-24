@@ -14,7 +14,7 @@ CREATE TABLE users (
     last_name VARCHAR(100) NOT NULL,
     campus_id INTEGER NOT NULL,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'barber')),
-    aptos_address VARCHAR(66) UNIQUE,
+    legacy_wallet_address VARCHAR(66) UNIQUE,
     stripe_account_id VARCHAR(255) UNIQUE, -- Stripe Connect account ID for barbers
     email_verified BOOLEAN DEFAULT FALSE,
     student_id_verified BOOLEAN DEFAULT FALSE,
@@ -29,7 +29,7 @@ CREATE TABLE users (
 );
 
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_aptos_address ON users(aptos_address);
+CREATE INDEX idx_users_legacy_wallet_address ON users(legacy_wallet_address);
 CREATE INDEX idx_users_campus_id ON users(campus_id);
 CREATE INDEX idx_users_role ON users(role);
 

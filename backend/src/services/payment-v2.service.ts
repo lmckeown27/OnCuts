@@ -140,7 +140,7 @@ class PaymentServiceV2 {
     amountCents: number;
   }> {
     const barberResult = await pool.query(
-      `SELECT COALESCE(NULLIF(TRIM(u.sui_address), ''), NULLIF(TRIM(u.aptos_address), '')) AS barber_sui
+      `SELECT COALESCE(NULLIF(TRIM(u.sui_address), ''), NULLIF(TRIM(u.legacy_wallet_address), '')) AS barber_sui
        FROM users u
        WHERE u.id = $1`,
       [input.barberId]

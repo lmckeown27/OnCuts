@@ -13,7 +13,7 @@
  * Process:
  * - Validates campus email domain
  * - Hashes password with bcrypt (10 rounds)
- * - Creates Aptos wallet for user
+ * - On-chain identity via zkLogin / Sui (Path B), optional legacy_wallet_address
  * - Stores user in database
  * - Generates JWT token
  * - Returns user data + token
@@ -283,7 +283,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
  * Verify Email - Complete Registration
  * 
  * Verifies the 6-digit email code and creates the user account.
- * Generates Aptos wallet and issues JWT token.
+ * Creates the user row and issues JWT (no custodial chain wallet mint).
  * 
  * ## Request:
  * ```json
@@ -309,7 +309,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
  *       "campusId": 1
  *     },
  *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *     "aptosAddress": "0x1234..."
+ *     "suiAddress": null
  *   }
  * }
  * ```

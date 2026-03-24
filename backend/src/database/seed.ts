@@ -21,7 +21,7 @@ async function seed() {
 
     // Sample student
     const studentResult = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, aptos_address, email_verified)
+      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, legacy_wallet_address, email_verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       ['student@harvard.edu', password, 'John', 'Student', 1, 'student', '0x1234567890abcdef', true]
@@ -31,14 +31,14 @@ async function seed() {
 
     // Sample barber users
     const barber1Result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, aptos_address, email_verified)
+      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, legacy_wallet_address, email_verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       ['barber1@harvard.edu', password, 'Mike', 'Barber', 1, 'barber', '0xabcdef1234567890', true]
     );
 
     const barber2Result = await pool.query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, aptos_address, email_verified)
+      `INSERT INTO users (email, password_hash, first_name, last_name, campus_id, role, legacy_wallet_address, email_verified)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id`,
       ['barber2@harvard.edu', password, 'Alex', 'Styles', 1, 'barber', '0xfedcba0987654321', true]

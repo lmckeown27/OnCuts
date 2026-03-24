@@ -69,20 +69,11 @@ router.get('/refill-instructions', async (req, res, next) => {
 
 /**
  * POST /admin/gas-wallet/fund-faucet
- * Fund gas wallet from Aptos faucet (devnet/testnet only)
+ * Deprecated: Aptos faucet removed — fund Sui gas sponsor instead.
  */
 router.post('/fund-faucet', async (req, res, next) => {
   try {
-    if (process.env.APTOS_NETWORK === 'mainnet') {
-      throw new ApiError(400, 'Faucet not available on mainnet');
-    }
-
     await gasWalletService.fundFromFaucet();
-    
-    res.json({
-      success: true,
-      message: 'Gas wallet funded from faucet (+1 APT)',
-    });
   } catch (error) {
     next(error);
   }

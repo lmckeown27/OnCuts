@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     campus_id UUID,
     role VARCHAR(20) NOT NULL CHECK (role IN ('student', 'barber')),
     user_type VARCHAR(20) CHECK (user_type IN ('student', 'barber', 'consumer', 'campus_manager', 'admin')),
-    aptos_address VARCHAR(66) UNIQUE,
+    legacy_wallet_address VARCHAR(66) UNIQUE,
     stripe_account_id VARCHAR(255) UNIQUE,
     email_verified BOOLEAN DEFAULT FALSE,
     student_id_verified BOOLEAN DEFAULT FALSE,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_aptos_address ON users(aptos_address);
+CREATE INDEX IF NOT EXISTS idx_users_legacy_wallet_address ON users(legacy_wallet_address);
 CREATE INDEX IF NOT EXISTS idx_users_campus_id ON users(campus_id);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_location ON users(latitude, longitude) WHERE latitude IS NOT NULL AND longitude IS NOT NULL;

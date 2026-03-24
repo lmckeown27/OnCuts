@@ -6,6 +6,7 @@ import suiChainService from '../services/sui-chain.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
+import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -686,7 +687,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 
     // Get user details
     const userResult = await pool.query(
-      'SELECT aptos_address, campus_id FROM users WHERE id = $1',
+      `SELECT ${USER_PRIMARY_WALLET_SQL_U} AS primary_wallet, u.campus_id FROM users u WHERE u.id = $1`,
       [userId]
     );
 
@@ -702,12 +703,11 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
 
     const barber = result.rows[0];
 
-    // Register on Aptos blockchain
     const bioHash = Buffer.from(bio).toString('base64');
     const pricingHash = Buffer.from(JSON.stringify(pricing)).toString('base64');
 
     await suiChainService.registerBarber({
-      barberAddress: user.aptos_address,
+      barberAddress: user.primary_wallet,
       campusId: user.campus_id,
       specialties,
       bioHash,

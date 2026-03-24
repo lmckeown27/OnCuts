@@ -1,7 +1,7 @@
 /**
  * DEPRECATED: Legacy Booking Controller
  * 
- * This controller contains blockchain (Aptos) integration code.
+ * This controller contains legacy custodial-chain booking stubs (pre–Path B).
  * Platform now uses Stripe for off-chain payments only.
  * 
  * Use booking-v2.controller.ts for production booking flows.
@@ -21,14 +21,25 @@ import paymentService from '../services/payment.service';
 import ledgerService from '../services/ledger.service';
 import { logger } from '../utils/logger';
 import { dollarsToCents } from '../types/wallet.types';
+import { USER_PRIMARY_WALLET_SQL, USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
-// Stub for aptosService to prevent errors when blockchain is disabled
-const aptosService = {
-  createBooking: async (_params: any): Promise<string> => { throw new Error('Blockchain disabled - use Stripe payments'); },
-  getBooking: async (_id: number): Promise<any> => { throw new Error('Blockchain disabled'); },
-  confirmBooking: async (_address: string, _id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
-  completeBooking: async (_id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
-  cancelBooking: async (_id: number): Promise<string> => { throw new Error('Blockchain disabled'); },
+/** Legacy custodial-chain booking API (Aptos-era); all methods throw — use v2 bookings + Stripe / Sui Path B. */
+const disabledLegacyChainBookingStub = {
+  createBooking: async (_params: any): Promise<string> => {
+    throw new Error('Legacy on-chain booking disabled — use Stripe / v2 bookings');
+  },
+  getBooking: async (_id: number): Promise<any> => {
+    throw new Error('Legacy on-chain booking disabled');
+  },
+  confirmBooking: async (_address: string, _id: number): Promise<string> => {
+    throw new Error('Legacy on-chain booking disabled');
+  },
+  completeBooking: async (_id: number): Promise<string> => {
+    throw new Error('Legacy on-chain booking disabled');
+  },
+  cancelBooking: async (_id: number): Promise<string> => {
+    throw new Error('Legacy on-chain booking disabled');
+  },
 };
 
 export const createBooking = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -38,7 +49,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 
     // Get barber and client info
     const barberResult = await pool.query(
-      `SELECT b.id, b.user_id, b.pricing, u.aptos_address as barber_address, u.campus_id
+      `SELECT b.id, b.user_id, b.pricing, ${USER_PRIMARY_WALLET_SQL_U} as barber_address, u.campus_id
        FROM barbers b
        JOIN users u ON b.user_id = u.id
        WHERE b.id = $1 AND b.is_active = true`,
@@ -73,15 +84,17 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(400, 'Insufficient balance. Please add funds to your wallet.');
     }
 
-    const clientResult = await pool.query('SELECT aptos_address FROM users WHERE id = $1', [clientId]);
-    const clientAddress = clientResult.rows[0].aptos_address;
+    const clientResult = await pool.query(
+      `SELECT ${USER_PRIMARY_WALLET_SQL} AS primary_wallet FROM users WHERE id = $1`,
+      [clientId]
+    );
+    const clientAddress = clientResult.rows[0]?.primary_wallet;
 
     // Convert scheduled time to Unix timestamp
     const scheduledTimestamp = Math.floor(new Date(scheduledTime).getTime() / 1000);
     const locationHash = Buffer.from(locationDetails || '').toString('base64');
 
-    // Create booking on Aptos blockchain
-    const txHash = await aptosService.createBooking({
+    const txHash = await disabledLegacyChainBookingStub.createBooking({
       clientAddress,
       barberAddress: barber.barber_address,
       serviceType,
@@ -221,7 +234,7 @@ export const getBookingById = async (req: AuthRequest, res: Response, next: Next
     }
 
     // Get blockchain data
-    const blockchainData = await aptosService.getBooking(parseInt(id));
+    const blockchainData = await disabledLegacyChainBookingStub.getBooking(parseInt(id));
 
     res.json({
       success: true,
@@ -242,7 +255,7 @@ export const confirmBooking = async (req: AuthRequest, res: Response, next: Next
 
     // Verify barber owns this booking
     const booking = await pool.query(
-      `SELECT bm.blockchain_booking_id, b.user_id, u.aptos_address
+      `SELECT bm.blockchain_booking_id, b.user_id, ${USER_PRIMARY_WALLET_SQL_U} AS barber_wallet
        FROM booking_metadata bm
        JOIN barbers b ON bm.barber_id = b.id
        JOIN users u ON b.user_id = u.id
@@ -259,7 +272,10 @@ export const confirmBooking = async (req: AuthRequest, res: Response, next: Next
     }
 
     // Confirm on blockchain
-    const txHash = await aptosService.confirmBooking(booking.rows[0].aptos_address, parseInt(id));
+    const txHash = await disabledLegacyChainBookingStub.confirmBooking(
+      booking.rows[0].barber_wallet,
+      parseInt(id)
+    );
 
     logger.info(`Booking confirmed: ${id} (tx: ${txHash})`);
 
@@ -298,7 +314,7 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
     }
 
     // Complete on blockchain
-    const txHash = await aptosService.completeBooking(parseInt(id));
+    const txHash = await disabledLegacyChainBookingStub.completeBooking(parseInt(id));
 
     // Get booking payment details from ledger
     const ledgerHistory = await ledgerService.getLedgerHistory(bookingData.user_id, 100, 0);
@@ -361,7 +377,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response, next: NextF
     }
 
     // Cancel on blockchain
-    const txHash = await aptosService.cancelBooking(parseInt(id));
+    const txHash = await disabledLegacyChainBookingStub.cancelBooking(parseInt(id));
 
     // Get booking payment details from ledger
     const barberLedgerHistory = await ledgerService.getLedgerHistory(bookingData.barber_user_id, 100, 0);

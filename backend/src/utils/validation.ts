@@ -49,7 +49,8 @@ export const barberProfileSchema = Joi.object({
   specialties: Joi.array().items(Joi.string().max(50)).min(1).max(10).required(),
   years_of_experience: Joi.number().integer().min(0).max(50).required(),
   base_price: Joi.number().min(0).max(1000).required(),
-  aptos_address: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).optional(),
+  sui_address: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).optional(),
+  legacy_wallet_address: Joi.string().pattern(/^0x[a-fA-F0-9]{64}$/).optional(),
 });
 
 // Booking schemas
@@ -170,10 +171,13 @@ export const sanitizeObject = (obj: any): any => {
   return sanitized;
 };
 
-// Aptos address validation
-export const isValidAptosAddress = (address: string): boolean => {
+/** 32-byte hex chain id (Sui / legacy custodial) */
+export const isValidMoveHexWallet = (address: string): boolean => {
   return /^0x[a-fA-F0-9]{64}$/.test(address);
 };
+
+/** @deprecated use isValidMoveHexWallet */
+export const isValidAptosAddress = isValidMoveHexWallet;
 
 // UUID validation
 export const isValidUUID = (uuid: string): boolean => {

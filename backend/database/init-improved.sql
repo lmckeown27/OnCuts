@@ -67,7 +67,7 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   
   -- Blockchain identity (PRIMARY KEY in blockchain)
-  aptos_address VARCHAR(66) UNIQUE NOT NULL,
+  legacy_wallet_address VARCHAR(66) UNIQUE NOT NULL,
   
   -- User profile
   email VARCHAR(255),
@@ -115,7 +115,7 @@ CREATE TABLE users (
 );
 
 -- Indexes (comprehensive coverage from CampusKinect)
-CREATE INDEX idx_users_aptos_address ON users(aptos_address);
+CREATE INDEX idx_users_legacy_wallet_address ON users(legacy_wallet_address);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_users_university_id ON users(university_id);
@@ -127,8 +127,8 @@ CREATE INDEX idx_users_university_role ON users(university_id, role);
 CREATE INDEX idx_users_role_rating ON users(role, average_rating DESC) WHERE role = 2;  -- Barber rankings
 
 -- Comments
-COMMENT ON TABLE users IS 'User accounts cached from Aptos blockchain. Synced hourly.';
-COMMENT ON COLUMN users.aptos_address IS 'Unique blockchain address - primary identifier';
+COMMENT ON TABLE users IS 'User accounts; on-chain ids: sui_address (Path B) and optional legacy_wallet_address.';
+COMMENT ON COLUMN users.legacy_wallet_address IS 'Pre-Sui custodial hex id; prefer sui_address when set';
 COMMENT ON COLUMN users.balance IS 'Available balance in cents (synced from blockchain)';
 COMMENT ON COLUMN users.locked_balance IS 'Funds locked in escrow (synced from blockchain)';
 
@@ -304,7 +304,7 @@ COMMENT ON TABLE sync_status IS 'Tracks blockchain→PostgreSQL sync health for 
 -- Barber Statistics (Refreshed hourly with sync)
 CREATE MATERIALIZED VIEW barber_stats AS
 SELECT 
-    u.aptos_address as barber_address,
+    u.legacy_wallet_address as barber_address,
     u.full_name,
     u.university_id,
     COUNT(DISTINCT b.id) as total_bookings,
@@ -321,10 +321,10 @@ SELECT
     MAX(b.completed_at) as last_booking_completed,
     MIN(b.created_at) as first_booking_date
 FROM users u
-LEFT JOIN bookings b ON u.aptos_address = b.barber_address
-LEFT JOIN reviews r ON u.aptos_address = r.barber_address
+LEFT JOIN bookings b ON u.legacy_wallet_address = b.barber_address
+LEFT JOIN reviews r ON u.legacy_wallet_address = r.barber_address
 WHERE u.role = 2
-GROUP BY u.aptos_address, u.full_name, u.university_id;
+GROUP BY u.legacy_wallet_address, u.full_name, u.university_id;
 
 -- Index on materialized view
 CREATE INDEX idx_barber_stats_address ON barber_stats(barber_address);
@@ -394,7 +394,7 @@ BEGIN
       completed_bookings = completed_bookings + 1,
       completion_rate = (completed_bookings::DECIMAL / NULLIF(total_bookings, 0) * 100),
       updated_at = CURRENT_TIMESTAMP
-    WHERE aptos_address = NEW.barber_address AND role = 2;
+    WHERE legacy_wallet_address = NEW.barber_address AND role = 2;
   END IF;
   
   -- Update barber stats when review is added
@@ -405,7 +405,7 @@ BEGIN
         SELECT AVG(rating) FROM reviews WHERE barber_address = NEW.barber_address
       ),
       updated_at = CURRENT_TIMESTAMP
-    WHERE aptos_address = NEW.barber_address AND role = 2;
+    WHERE legacy_wallet_address = NEW.barber_address AND role = 2;
   END IF;
   
   RETURN NEW;

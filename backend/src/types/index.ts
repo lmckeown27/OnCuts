@@ -5,7 +5,11 @@ export interface User {
   lastName: string;
   campusId: number;
   role: 'student' | 'barber' | 'campus_manager' | 'admin';
-  aptosAddress: string;
+  suiAddress?: string;
+  /** Pre-Sui custodial hex id (DB: legacy_wallet_address) */
+  legacyWalletAddress?: string;
+  /** @deprecated use legacyWalletAddress */
+  aptosAddress?: string;
   emailVerified: boolean;
   studentIdVerified: boolean;
   createdAt: Date;
@@ -32,6 +36,9 @@ export interface Barber {
   totalBookings: number;
   averageRating: number;
   yearsExperience?: number;
+  suiAddress?: string;
+  legacyWalletAddress?: string;
+  /** @deprecated use legacyWalletAddress */
   aptosAddress?: string;
   createdAt: Date;
 }

@@ -1,10 +1,8 @@
 /**
  * PostgreSQL Connection Pool (Cache Layer)
  * 
- * IMPORTANT: PostgreSQL is a CACHE, not source of truth!
- * - Source of truth: Aptos blockchain
- * - PostgreSQL: Synced hourly for fast queries
- * - Can be wiped and rebuilt from blockchain
+ * PostgreSQL is the primary application store (bookings, users, payments).
+ * Path B settlement uses Stripe + optional Sui relayer; chain state may be mirrored here.
  * 
  * Adapted from CampusKinect database architecture
  */

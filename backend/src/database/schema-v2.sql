@@ -20,7 +20,7 @@ CREATE TABLE users (
   last_name TEXT NOT NULL,
   role TEXT CHECK (role IN ('student','barber','admin')) NOT NULL,
   campus_id UUID,
-  aptos_address TEXT UNIQUE,
+  legacy_wallet_address TEXT UNIQUE,
   stripe_customer_id TEXT UNIQUE,     -- For deposits
   stripe_account_id TEXT UNIQUE,      -- For barber payouts (Stripe Connect)
   email_verified BOOLEAN DEFAULT false,

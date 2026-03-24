@@ -15,7 +15,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 -- Users table (cached from blockchain)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    aptos_address VARCHAR(66) UNIQUE NOT NULL,
+    legacy_wallet_address VARCHAR(66) UNIQUE NOT NULL,
     email VARCHAR(255),
     full_name VARCHAR(255),
     role INTEGER NOT NULL DEFAULT 1, -- 1=student, 2=barber
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
     synced_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_users_aptos_address ON users(aptos_address);
+CREATE INDEX idx_users_legacy_wallet_address ON users(legacy_wallet_address);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 
@@ -104,8 +104,8 @@ SELECT
     COUNT(DISTINCT r.id) as total_reviews,
     SUM(CASE WHEN bk.status = 2 THEN bk.amount ELSE 0 END) as total_earnings
 FROM users u
-LEFT JOIN bookings bk ON u.aptos_address = bk.barber_address
-LEFT JOIN reviews r ON u.aptos_address = r.barber_address
+LEFT JOIN bookings bk ON u.legacy_wallet_address = bk.barber_address
+LEFT JOIN reviews r ON u.legacy_wallet_address = r.barber_address
 WHERE u.role = 2
 GROUP BY b.barber_address, u.full_name;
 

@@ -23,8 +23,8 @@ datasource db {
 model User {
   id                String   @id @default(uuid())
   
-  // Blockchain anchor (IMMUTABLE once set)
-  aptosAddress      String   @unique // Primary identity
+  suiAddress         String?  @unique @map("sui_address")
+  legacyWalletAddress String? @unique @map("legacy_wallet_address") // was aptos_address
   
   // Profile data (Postgres authoritative)
   email             String?  @unique
@@ -59,7 +59,8 @@ model User {
   consumerBookings  Booking[] @relation("ConsumerBookings")
   barberBookings    Booking[] @relation("BarberBookings")
   
-  @@index([aptosAddress])
+  @@index([legacyWalletAddress])
+  @@index([suiAddress])
   @@index([campusId])
   @@index([email])
   @@map("users")
@@ -503,7 +504,7 @@ model DataDiscrepancy {
 
 // Additional indexes are defined above in models
 // Key indexes for common queries:
-// - User by aptosAddress (identity)
+// - User by suiAddress / legacyWalletAddress
 // - Barber by campus (search)
 // - Booking by payment status (dashboard)
 // - PaymentCache by blockchainPaymentId (verification)

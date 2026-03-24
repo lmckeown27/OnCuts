@@ -19,7 +19,7 @@ TRUNCATE TABLE reviews, bookings, users CASCADE;
 -- ═══════════════════════════════════════════════════════════════
 
 -- Cal Poly Students (10)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, created_at) VALUES
 ('0x1001', 'john.smith@calpoly.edu', 'John Smith', 1, 50000, 2500, NOW() - INTERVAL '30 days'),
 ('0x1002', 'sarah.johnson@calpoly.edu', 'Sarah Johnson', 1, 75000, 0, NOW() - INTERVAL '25 days'),
 ('0x1003', 'mike.williams@calpoly.edu', 'Mike Williams', 1, 30000, 2500, NOW() - INTERVAL '20 days'),
@@ -32,7 +32,7 @@ INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balanc
 ('0x1010', 'amanda.taylor@calpoly.edu', 'Amanda Taylor', 1, 52000, 0, NOW() - INTERVAL '2 days');
 
 -- UCSB Students (10)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, created_at) VALUES
 ('0x2001', 'chris.anderson@ucsb.edu', 'Chris Anderson', 1, 65000, 3000, NOW() - INTERVAL '28 days'),
 ('0x2002', 'michelle.thomas@ucsb.edu', 'Michelle Thomas', 1, 42000, 0, NOW() - INTERVAL '22 days'),
 ('0x2003', 'kevin.jackson@ucsb.edu', 'Kevin Jackson', 1, 58000, 3000, NOW() - INTERVAL '18 days'),
@@ -45,7 +45,7 @@ INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balanc
 ('0x2010', 'lauren.robinson@ucsb.edu', 'Lauren Robinson', 1, 47000, 0, NOW() - INTERVAL '1 day');
 
 -- UCLA Students (10)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, created_at) VALUES
 ('0x3001', 'tyler.clark@ucla.edu', 'Tyler Clark', 1, 68000, 3500, NOW() - INTERVAL '26 days'),
 ('0x3002', 'rachel.rodriguez@ucla.edu', 'Rachel Rodriguez', 1, 41000, 0, NOW() - INTERVAL '21 days'),
 ('0x3003', 'justin.lewis@ucla.edu', 'Justin Lewis', 1, 59000, 3500, NOW() - INTERVAL '17 days'),
@@ -62,7 +62,7 @@ INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balanc
 -- ═══════════════════════════════════════════════════════════════
 
 -- Cal Poly Barbers (7)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
 ('0xB001', 'marcus.cuts@calpoly.edu', 'Marcus "The Fade King" Thompson', 2, 125000, 7500, 'QmBarber1', NOW() - INTERVAL '90 days'),
 ('0xB002', 'jordan.styles@calpoly.edu', 'Jordan Williams', 2, 89000, 5000, 'QmBarber2', NOW() - INTERVAL '75 days'),
 ('0xB003', 'alex.precision@calpoly.edu', 'Alex Chen', 2, 67000, 2500, 'QmBarber3', NOW() - INTERVAL '60 days'),
@@ -72,7 +72,7 @@ INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balanc
 ('0xB007', 'kevin.edge@calpoly.edu', 'Kevin Edge Up', 2, 84000, 3500, 'QmBarber7', NOW() - INTERVAL '65 days');
 
 -- UCSB Barbers (7)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
 ('0xB011', 'tyler.pro@ucsb.edu', 'Tyler Martinez Pro', 2, 145000, 8500, 'QmBarber11', NOW() - INTERVAL '95 days'),
 ('0xB012', 'sarah.stylist@ucsb.edu', 'Sarah Johnson Stylist', 2, 102000, 5500, 'QmBarber12', NOW() - INTERVAL '80 days'),
 ('0xB013', 'dante.master@ucsb.edu', 'Dante Master Barber', 2, 91000, 4000, 'QmBarber13', NOW() - INTERVAL '68 days'),
@@ -82,7 +82,7 @@ INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balanc
 ('0xB017', 'tiffany.glam@ucsb.edu', 'Tiffany Glam Squad', 2, 93000, 4300, 'QmBarber17', NOW() - INTERVAL '66 days');
 
 -- UCLA Barbers (6)
-INSERT INTO users (aptos_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
+INSERT INTO users (legacy_wallet_address, email, full_name, role, balance, locked_balance, profile_picture_cid, created_at) VALUES
 ('0xB021', 'carlos.legend@ucla.edu', 'Carlos "The Legend" Rodriguez', 2, 167000, 9500, 'QmBarber21', NOW() - INTERVAL '100 days'),
 ('0xB022', 'jamal.elite@ucla.edu', 'Jamal Elite Cuts', 2, 128000, 7000, 'QmBarber22', NOW() - INTERVAL '82 days'),
 ('0xB023', 'angela.beauty@ucla.edu', 'Angela Beauty Pro', 2, 113000, 6200, 'QmBarber23', NOW() - INTERVAL '74 days'),

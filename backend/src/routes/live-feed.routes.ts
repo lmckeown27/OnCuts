@@ -20,7 +20,7 @@ const router = express.Router();
 
 /**
  * GET /api/admin/live-feed
- * Get combined transaction feed (Aptos + Stripe)
+ * Get combined transaction feed (Stripe + optional on-chain / Sui metadata)
  * Query params:
  *   - limit: number (default 50)
  *   - platform: 'sui' | 'stripe' | 'all' (default 'all')

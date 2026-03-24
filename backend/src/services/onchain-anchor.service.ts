@@ -1,12 +1,5 @@
 /**
- * On-Chain Anchor Service
- * 
- * Stores hash-based proofs on Aptos blockchain for audit/trust.
- * Uses compact hashing instead of full data to minimize gas costs.
- * 
- * Cost comparison:
- * - Full booking data: ~$0.50+ per write
- * - Hash proof: ~$0.0001 per write (500x cheaper!)
+ * Hash proofs for audit trails; submission goes through `sui-chain.service` (Sui / stub).
  */
 
 import crypto from 'crypto';
@@ -93,7 +86,7 @@ class OnChainAnchorService {
       // 1. Create hash of data
       const hash = this.createHash(input.data);
 
-      // 2. Store hash on Aptos (using proof storage function)
+      // 2. Submit proof (Sui / stub)
       const txHash = await suiChainService.submitHashProof(
         input.record_type,
         input.subject_id,
@@ -111,7 +104,7 @@ class OnChainAnchorService {
         [
           input.record_type,
           input.subject_id,
-          'aptos',
+          'sui',
           txHash,
           JSON.stringify({
             hash,
@@ -170,7 +163,7 @@ class OnChainAnchorService {
         RETURNING *`,
         [
           RecordType.BATCH_ANCHOR,
-          'aptos',
+          'sui',
           txHash,
           JSON.stringify({
             merkle_root: merkleRoot,
@@ -191,7 +184,7 @@ class OnChainAnchorService {
           [
             proofHash.record_type,
             proofHash.subject_id,
-            'aptos',
+            'sui',
             txHash,  // Same tx_hash for all in batch
             JSON.stringify({
               hash: proofHash.hash,

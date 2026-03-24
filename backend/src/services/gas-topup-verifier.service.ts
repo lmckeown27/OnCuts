@@ -1,14 +1,9 @@
 /**
- * Gas Top-Up Transaction Verifier Service
- * 
- * Verifies admin wallet transfers to gas wallet on Aptos blockchain
- * Watches for transaction confirmation and updates request status
+ * Legacy gas top-up verifier (was Aptos). Not wired for Sui — returns a clear failure until reimplemented.
  */
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import axios from 'axios';
-import Decimal from 'decimal.js';
 
 interface VerificationResult {
   verified: boolean;
@@ -33,7 +28,7 @@ class GasTopUpVerifierService {
   private minConfirmations: number = 1;
 
   constructor() {
-    this.nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
+    this.nodeUrl = process.env.SUI_RPC_URL?.trim() || '';
   }
 
   /**
@@ -51,83 +46,19 @@ class GasTopUpVerifierService {
   }
 
   /**
-   * Verify transaction on Aptos blockchain
+   * Aptos verification removed. Implement Sui `sui_getTransactionBlock` + balance checks if needed.
    */
   async verifyTransaction(txHash: string, expectedToAddress: string, expectedAmountOctas: number): Promise<VerificationResult> {
-    try {
-      const url = `${this.nodeUrl}/transactions/by_hash/${txHash}`;
-      const response = await axios.get(url);
-      const tx = response.data;
-
-      // Check transaction success
-      if (!tx.success) {
-        return {
-          verified: false,
-          status: 'tx_not_found',
-          errorMessage: 'Transaction failed on-chain',
-          chainData: tx,
-        };
-      }
-
-      // Extract transfer details from events
-      let transferAmount = 0;
-      let transferTo = '';
-
-      // Look for coin transfer events
-      for (const event of tx.events || []) {
-        if (event.type.includes('DepositEvent')) {
-          // Deposit event indicates funds received
-          if (event.data && event.data.account) {
-            transferTo = event.data.account;
-            transferAmount = parseInt(event.data.amount || '0');
-          }
-        }
-      }
-
-      // Verify recipient address matches
-      if (transferTo.toLowerCase() !== expectedToAddress.toLowerCase()) {
-        return {
-          verified: false,
-          status: 'amount_mismatch',
-          errorMessage: `Transaction sent to wrong address. Expected: ${expectedToAddress}, Got: ${transferTo}`,
-          chainData: tx,
-        };
-      }
-
-      // Verify amount matches (allow exact or more)
-      if (transferAmount < expectedAmountOctas) {
-        return {
-          verified: false,
-          status: 'amount_mismatch',
-          verifiedAmountOctas: transferAmount,
-          errorMessage: `Insufficient amount. Expected: ${expectedAmountOctas} octas, Got: ${transferAmount} octas`,
-          chainData: tx,
-        };
-      }
-
-      // Success!
-      return {
-        verified: true,
-        status: 'verified',
-        verifiedAmountOctas: transferAmount,
-        chainData: tx,
-      };
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return {
-          verified: false,
-          status: 'tx_not_found',
-          errorMessage: 'Transaction not found on blockchain',
-        };
-      }
-
-      logger.error(`Failed to verify transaction ${txHash}:`, error);
-      return {
-        verified: false,
-        status: 'pending',
-        errorMessage: error.message,
-      };
-    }
+    logger.warn('gas-topup-verifier: skipped (Aptos removed; tx not verified on-chain)', {
+      txHash,
+      expectedToAddress,
+    });
+    return {
+      verified: false,
+      status: 'tx_not_found',
+      errorMessage:
+        'Gas top-up chain verification was built for Aptos. Use manual approval or implement Sui RPC verification.',
+    };
   }
 
   /**
@@ -327,7 +258,7 @@ class GasTopUpVerifierService {
       [balanceAPT, gas_wallet_id]
     );
 
-    logger.info(`Updated gas wallet balance: ${balanceAPT.toFixed(6)} APT`);
+    logger.info(`Updated gas wallet balance (Sui stub): ${balanceAPT.toFixed(6)}`);
   }
 
   /**

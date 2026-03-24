@@ -194,8 +194,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     const transactionId = transactionResult.rows[0].id;
     logger.info(`💳 Payment transaction recorded: ${transactionId}`);
 
-    // 3. TODO: Trigger blockchain escrow lock (if using blockchain payments)
-    // Uncomment when escrow service is ready:
+    // 3. TODO: Path B — Sui escrow / relayer hook when on-chain payments are enabled
     /*
     try {
       const { aptosService } = await import('../services/aptos.service');
@@ -418,7 +417,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       'refunded',
     ]);
 
-    // TODO: Release funds from blockchain escrow
+    // TODO: Path B — release Sui-side settlement when on-chain escrow exists
     /*
     const { aptosService } = await import('../services/aptos.service');
     await aptosService.releaseEscrowToStudent(booking.id, amount);

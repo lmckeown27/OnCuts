@@ -5,6 +5,7 @@ import { AuthRequest } from '../middleware/auth';
 import suiChainService from '../services/sui-chain.service';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
+import { USER_PRIMARY_WALLET_SQL, USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
 export const submitReview = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -13,7 +14,7 @@ export const submitReview = async (req: AuthRequest, res: Response, next: NextFu
 
     // Verify booking exists, is completed, and belongs to client
     const booking = await pool.query(
-      `SELECT bm.*, u.aptos_address as barber_address, u.campus_id
+      `SELECT bm.*, ${USER_PRIMARY_WALLET_SQL_U} as barber_address, u.campus_id
        FROM booking_metadata bm
        JOIN barbers b ON bm.barber_id = b.id
        JOIN users u ON b.user_id = u.id
@@ -37,9 +38,11 @@ export const submitReview = async (req: AuthRequest, res: Response, next: NextFu
 
     const { barber_address, campus_id } = booking.rows[0];
 
-    // Get client's Aptos address
-    const clientResult = await pool.query('SELECT aptos_address FROM users WHERE id = $1', [clientId]);
-    const clientAddress = clientResult.rows[0].aptos_address;
+    const clientResult = await pool.query(
+      `SELECT ${USER_PRIMARY_WALLET_SQL} AS primary_wallet FROM users WHERE id = $1`,
+      [clientId]
+    );
+    const clientAddress = clientResult.rows[0]?.primary_wallet;
 
     // Hash review text for blockchain
     const reviewHash = crypto.createHash('sha256').update(reviewText).digest('hex');
