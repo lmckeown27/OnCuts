@@ -35,7 +35,9 @@ import { logger } from '../utils/logger';
 import custodialSignerService from './custodial-signer.service';
 import blockchainQueryService from './blockchain-query.service';
 
-const stripe = getDefaultStripeClient();
+function stripeSdk(): Stripe {
+  return getDefaultStripeClient();
+}
 
 // USDC conversion rate (in production, fetch from real-time oracle)
 const USDC_TO_USD_RATE = 1.0; // 1 USDC = $1 USD (stablecoin)
@@ -155,7 +157,7 @@ class FiatBlockchainBridgeService {
       logger.info(`✅ On-chain withdrawal: ${tx.txHash} - ${email} -$${amountUSD}`);
 
       // Step 6: Send fiat to barber via Stripe (Stripe Connect transfer)
-      const transfer = await stripe.transfers.create({
+      const transfer = await stripeSdk().transfers.create({
         amount: Math.floor(amountUSD * 100), // Stripe amount in cents
         currency: 'usd',
         destination: stripeConnectAccountId,
@@ -331,7 +333,7 @@ class FiatBlockchainBridgeService {
     try {
       const amountCents = Math.floor(amountUSD * 100);
 
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await stripeSdk().paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
         metadata: {

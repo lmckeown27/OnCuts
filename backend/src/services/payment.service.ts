@@ -54,12 +54,13 @@ export interface ReleaseResult {
 // ==========================================
 
 class PaymentService {
-  private stripe: Stripe;
   private paymentMode: 'offchain' | 'onchain';
-  
+
+  private getStripe(): Stripe {
+    return getDefaultStripeClient();
+  }
+
   constructor() {
-    this.stripe = getDefaultStripeClient();
-    
     // Determine payment mode
     this.paymentMode = (process.env.PAYMENT_MODE as 'offchain' | 'onchain') || 'offchain';
     
@@ -204,7 +205,7 @@ class PaymentService {
   ): Promise<PaymentResult> {
     // Create Stripe PaymentIntent with manual capture
     // This holds the funds but doesn't charge until we capture
-    const paymentIntent = await this.stripe.paymentIntents.create({
+    const paymentIntent = await this.getStripe().paymentIntents.create({
       amount: Math.round(amount * 100), // Stripe uses cents
       currency: 'usd',
       capture_method: 'manual', // Hold funds, don't charge yet
@@ -245,7 +246,7 @@ class PaymentService {
     }
     
     // 1. Capture the payment (charge the student)
-    const paymentIntent = await this.stripe.paymentIntents.capture(
+    const paymentIntent = await this.getStripe().paymentIntents.capture(
       escrow.stripePaymentIntentId
     );
     
@@ -276,7 +277,7 @@ class PaymentService {
     }
     
     // 4. Transfer to barber via Stripe Connect
-    const transfer = await this.stripe.transfers.create({
+    const transfer = await this.getStripe().transfers.create({
       amount: barberAmount,
       currency: 'usd',
       destination: stripeAccountId,
@@ -317,7 +318,7 @@ class PaymentService {
     }
     
     // Cancel the payment intent (refund to student)
-    const paymentIntent = await this.stripe.paymentIntents.cancel(
+    const paymentIntent = await this.getStripe().paymentIntents.cancel(
       escrow.stripePaymentIntentId
     );
     
@@ -483,7 +484,7 @@ class PaymentService {
       const amountCents = params.amountCents || (params.amount ? Math.round(params.amount * 100) : 0);
       
       // Create a simple payment intent for wallet deposit
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const paymentIntent = await this.getStripe().paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
         metadata: {
@@ -545,7 +546,7 @@ class PaymentService {
       }
       
       // Create direct charge with transfer to barber
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const paymentIntent = await this.getStripe().paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
         metadata: {

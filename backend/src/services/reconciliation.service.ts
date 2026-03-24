@@ -14,7 +14,9 @@ import { logger } from '../utils/logger';
 import Stripe from 'stripe';
 import { getDefaultStripeClient } from '../config/stripe';
 
-const stripe = getDefaultStripeClient();
+function stripeSdk(): Stripe {
+  return getDefaultStripeClient();
+}
 
 export enum ReconciliationType {
   STRIPE = 'stripe',
@@ -212,7 +214,7 @@ class ReconciliationService {
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const charges = await stripe.charges.list({
+      const charges = await stripeSdk().charges.list({
         created: {
           gte: Math.floor(startOfDay.getTime() / 1000),
           lte: Math.floor(endOfDay.getTime() / 1000),

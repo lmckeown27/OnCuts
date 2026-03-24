@@ -15,7 +15,9 @@ import { getDefaultStripeClient } from '../config/stripe';
 // Load environment variables
 dotenv.config();
 
-const stripe = getDefaultStripeClient();
+function stripeSdk() {
+  return getDefaultStripeClient();
+}
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -49,7 +51,7 @@ async function syncStripeStatus(): Promise<void> {
     for (const barber of barbers) {
       try {
         // Query Stripe API for account status
-        const account = await stripe.accounts.retrieve(barber.stripe_account_id);
+        const account = await stripeSdk().accounts.retrieve(barber.stripe_account_id);
 
         const payoutsEnabled = account.payouts_enabled || false;
         const chargesEnabled = account.charges_enabled || false;

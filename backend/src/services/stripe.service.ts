@@ -7,11 +7,12 @@ import { ApiError } from '../middleware/errorHandler';
 dotenv.config();
 
 class StripeService {
-  private stripe: Stripe;
+  private getStripe(): Stripe {
+    return getDefaultStripeClient();
+  }
 
   constructor() {
-    this.stripe = getDefaultStripeClient();
-    logger.info('💳 Stripe Service initialized');
+    logger.info('💳 Stripe Service initialized (Stripe client loads on first use)');
   }
 
   /**
@@ -27,7 +28,7 @@ class StripeService {
     try {
       const { amount, clientId, barberId, bookingId, description } = params;
 
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const paymentIntent = await this.getStripe().paymentIntents.create({
         amount,
         currency: 'usd',
         payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
@@ -59,7 +60,7 @@ class StripeService {
    */
   async capturePayment(paymentIntentId: string): Promise<void> {
     try {
-      await this.stripe.paymentIntents.capture(paymentIntentId);
+      await this.getStripe().paymentIntents.capture(paymentIntentId);
       logger.info(`Payment captured: ${paymentIntentId}`);
     } catch (error) {
       logger.error(`Failed to capture payment ${paymentIntentId}:`, error);
@@ -75,7 +76,7 @@ class StripeService {
     amount?: number
   ): Promise<string> {
     try {
-      const refund = await this.stripe.refunds.create({
+      const refund = await this.getStripe().refunds.create({
         payment_intent: paymentIntentId,
         amount, // Optional: partial refund
       });
@@ -107,7 +108,7 @@ class StripeService {
         email,
       });
 
-      const customer = await this.stripe.customers.create({
+      const customer = await this.getStripe().customers.create({
         email,
         name,
         metadata: {
@@ -129,7 +130,7 @@ class StripeService {
    */
   async getCustomer(customerId: string): Promise<Stripe.Customer> {
     try {
-      return await this.stripe.customers.retrieve(customerId) as Stripe.Customer;
+      return await this.getStripe().customers.retrieve(customerId) as Stripe.Customer;
     } catch (error) {
       logger.error(`Failed to retrieve customer ${customerId}:`, error);
       throw new ApiError(500, 'Failed to retrieve customer');
@@ -141,7 +142,7 @@ class StripeService {
    */
   async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
     try {
-      return await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      return await this.getStripe().paymentIntents.retrieve(paymentIntentId);
     } catch (error) {
       logger.error(`Failed to retrieve payment intent ${paymentIntentId}:`, error);
       throw new ApiError(500, 'Failed to retrieve payment');
@@ -159,7 +160,7 @@ class StripeService {
     try {
       const { email, firstName, lastName } = params;
 
-      const account = await this.stripe.accounts.create({
+      const account = await this.getStripe().accounts.create({
         type: 'express',
         email,
         capabilities: {
@@ -187,7 +188,7 @@ class StripeService {
    */
   async createAccountLink(accountId: string, refreshUrl: string, returnUrl: string): Promise<string> {
     try {
-      const accountLink = await this.stripe.accountLinks.create({
+      const accountLink = await this.getStripe().accountLinks.create({
         account: accountId,
         refresh_url: refreshUrl,
         return_url: returnUrl,
@@ -222,7 +223,7 @@ class StripeService {
         source_transaction: sourceTransaction,
       });
 
-      const transfer = await this.stripe.transfers.create({
+      const transfer = await this.getStripe().transfers.create({
         amount,
         currency: 'usd',
         destination: barberStripeAccountId,
@@ -252,7 +253,7 @@ class StripeService {
     try {
       const { amount, barberStripeAccountId } = params;
 
-      const payout = await this.stripe.payouts.create(
+      const payout = await this.getStripe().payouts.create(
         {
           amount,
           currency: 'usd',
@@ -286,7 +287,7 @@ class StripeService {
     };
   }> {
     try {
-      const account = await this.stripe.accounts.retrieve(accountId);
+      const account = await this.getStripe().accounts.retrieve(accountId);
 
       // Log requirements for debugging
       if (account.requirements) {
@@ -320,7 +321,7 @@ class StripeService {
    */
   async createExpressLoginLink(accountId: string): Promise<string> {
     try {
-      const loginLink = await this.stripe.accounts.createLoginLink(accountId);
+      const loginLink = await this.getStripe().accounts.createLoginLink(accountId);
       logger.info(`Created Express login link for account: ${accountId}`);
       return loginLink.url;
     } catch (error) {
@@ -348,7 +349,7 @@ class StripeService {
     secret: string
   ): Stripe.Event {
     try {
-      return this.stripe.webhooks.constructEvent(payload, signature, secret);
+      return this.getStripe().webhooks.constructEvent(payload, signature, secret);
     } catch (error) {
       logger.error('Webhook signature verification failed:', error);
       throw new ApiError(400, 'Invalid webhook signature');

@@ -8,7 +8,9 @@ import Stripe from 'stripe';
 import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 
-const stripe = getDefaultStripeClient();
+function stripeClient(): Stripe {
+  return getDefaultStripeClient();
+}
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -32,7 +34,7 @@ class StripeConnectService {
     try {
       const { email, userId, firstName, lastName } = params;
 
-      const account = await stripe.accounts.create({
+      const account = await stripeClient().accounts.create({
         type: 'express',
         country: 'US',
         email,
@@ -66,7 +68,7 @@ class StripeConnectService {
    */
   async createAccountLink(accountId: string, returnPath = '/web/barber'): Promise<AccountLinkResult> {
     try {
-      const accountLink = await stripe.accountLinks.create({
+      const accountLink = await stripeClient().accountLinks.create({
         account: accountId,
         refresh_url: `${FRONTEND_URL}/web/barber/connect/refresh`,
         return_url: `${FRONTEND_URL}${returnPath}`,
@@ -90,7 +92,7 @@ class StripeConnectService {
    */
   async getAccount(accountId: string): Promise<Stripe.Account> {
     try {
-      return await stripe.accounts.retrieve(accountId);
+      return await stripeClient().accounts.retrieve(accountId);
     } catch (error: any) {
       logger.error('Error retrieving account:', error);
       throw new Error(`Failed to retrieve account: ${error.message}`);
@@ -116,7 +118,7 @@ class StripeConnectService {
     try {
       const amountCents = Math.round(amount * 100);
 
-      const transfer = await stripe.transfers.create({
+      const transfer = await stripeClient().transfers.create({
         amount: amountCents,
         currency: 'usd',
         destination: accountId,
@@ -136,7 +138,7 @@ class StripeConnectService {
    */
   async getAccountBalance(accountId: string): Promise<{ available: number; pending: number }> {
     try {
-      const balance = await stripe.balance.retrieve({
+      const balance = await stripeClient().balance.retrieve({
         stripeAccount: accountId,
       });
 
@@ -155,7 +157,7 @@ class StripeConnectService {
    */
   async getPayoutHistory(accountId: string, limit = 10): Promise<Stripe.Transfer[]> {
     try {
-      const transfers = await stripe.transfers.list({
+      const transfers = await stripeClient().transfers.list({
         destination: accountId,
         limit,
       });
@@ -172,7 +174,7 @@ class StripeConnectService {
    */
   async createLoginLink(accountId: string): Promise<string> {
     try {
-      const loginLink = await stripe.accounts.createLoginLink(accountId);
+      const loginLink = await stripeClient().accounts.createLoginLink(accountId);
       logger.info(`Created login link for account: ${accountId}`);
       return loginLink.url;
     } catch (error: any) {
@@ -186,7 +188,7 @@ class StripeConnectService {
    */
   async deleteAccount(accountId: string): Promise<void> {
     try {
-      await stripe.accounts.del(accountId);
+      await stripeClient().accounts.del(accountId);
       logger.info(`Deleted Stripe Connect account: ${accountId}`);
     } catch (error: any) {
       logger.error('Error deleting account:', error);
@@ -199,7 +201,7 @@ class StripeConnectService {
    */
   async updateAccount(accountId: string, updates: Partial<Stripe.AccountUpdateParams>): Promise<Stripe.Account> {
     try {
-      const account = await stripe.accounts.update(accountId, updates);
+      const account = await stripeClient().accounts.update(accountId, updates);
       logger.info(`Updated Stripe Connect account: ${accountId}`);
       return account;
     } catch (error: any) {

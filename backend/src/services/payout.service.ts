@@ -20,7 +20,9 @@ import {
 } from '../types/wallet.types';
 import { ApiError } from '../middleware/errorHandler';
 
-const stripe = getDefaultStripeClient();
+function stripeSdk(): Stripe {
+  return getDefaultStripeClient();
+}
 
 class PayoutService {
   /**
@@ -158,7 +160,7 @@ class PayoutService {
     connectedAccountId: string
   ): Promise<Stripe.Payout> {
     try {
-      const payout = await stripe.payouts.create(
+      const payout = await stripeSdk().payouts.create(
         {
           amount: amountCents,
           currency: 'usd',
@@ -187,7 +189,7 @@ class PayoutService {
    */
   async createConnectedAccount(userId: string, email: string): Promise<string> {
     try {
-      const account = await stripe.accounts.create({
+      const account = await stripeSdk().accounts.create({
         type: 'express', // Express is easiest for barbers
         email,
         capabilities: {
@@ -225,7 +227,7 @@ class PayoutService {
    */
   async createAccountLink(accountId: string, returnUrl: string, refreshUrl: string): Promise<string> {
     try {
-      const accountLink = await stripe.accountLinks.create({
+      const accountLink = await stripeSdk().accountLinks.create({
         account: accountId,
         refresh_url: refreshUrl,
         return_url: returnUrl,

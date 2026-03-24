@@ -197,6 +197,11 @@ export function getDefaultStripeSecretKey(): string {
 
 let defaultClient: Stripe | null = null;
 
+/**
+ * Default Stripe SDK client for API calls (checkout, Connect, etc.).
+ * Do not call at module load time if the process should boot without Stripe keys;
+ * call from route handlers or lazy helpers so missing env fails on first use only.
+ */
 export function getDefaultStripeClient(): Stripe {
   const k = getDefaultStripeSecretKey();
   if (!k) {

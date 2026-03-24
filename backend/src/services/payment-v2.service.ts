@@ -19,7 +19,9 @@ import transactionService, { TransactionType } from './transaction.service';
 // import escrowService from './escrow.service';
 import auditService from './audit.service';
 
-const stripe = getDefaultStripeClient();
+function stripeSdk(): Stripe {
+  return getDefaultStripeClient();
+}
 
 // Platform fee rate (15% - covers Stripe's ~4% processing fee, nets ~11%)
 const PLATFORM_FEE_RATE = 0.15;
@@ -100,7 +102,7 @@ class PaymentServiceV2 {
         paymentIntentParams.application_fee_amount = platformFeeCents;
       }
 
-      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+      const paymentIntent = await stripeSdk().paymentIntents.create(paymentIntentParams);
 
       logger.info('Booking payment intent created', {
         payment_intent_id: paymentIntent.id,
@@ -189,11 +191,11 @@ class PaymentServiceV2 {
     let session: Stripe.Checkout.Session;
     try {
       sessionParams.payment_method_types = ['card', 'crypto'] as Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
-      session = await stripe.checkout.sessions.create(sessionParams);
+      session = await stripeSdk().checkout.sessions.create(sessionParams);
     } catch (firstErr: unknown) {
       logger.warn('Checkout session with crypto failed; retrying card-only', firstErr);
       sessionParams.payment_method_types = ['card'];
-      session = await stripe.checkout.sessions.create(sessionParams);
+      session = await stripeSdk().checkout.sessions.create(sessionParams);
     }
 
     logger.info('Booking Checkout Session created (Path B)', {
@@ -209,7 +211,7 @@ class PaymentServiceV2 {
   }
 
   async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
-    return stripe.checkout.sessions.retrieve(sessionId);
+    return stripeSdk().checkout.sessions.retrieve(sessionId);
   }
 
   /**
@@ -320,7 +322,7 @@ class PaymentServiceV2 {
   }> {
     try {
       // 1. Create and confirm Stripe payment intent
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await stripeSdk().paymentIntents.create({
         amount: input.amountCents,
         currency: 'usd',
         payment_method: input.paymentMethodId,
@@ -390,7 +392,7 @@ class PaymentServiceV2 {
     amountCents: number
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await stripeSdk().paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
         payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay)
@@ -419,7 +421,7 @@ class PaymentServiceV2 {
    */
   async confirmDeposit(paymentIntentId: string): Promise<void> {
     try {
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent = await stripeSdk().paymentIntents.retrieve(paymentIntentId);
 
       if (paymentIntent.status !== 'succeeded') {
         throw new ApiError(400, 'Payment not successful');
@@ -469,7 +471,7 @@ class PaymentServiceV2 {
     try {
       // If we have a Stripe payment intent, refund via Stripe
       if (params.stripePaymentIntentId) {
-        const refund = await stripe.refunds.create({
+        const refund = await stripeSdk().refunds.create({
           payment_intent: params.stripePaymentIntentId,
           reason: 'requested_by_customer',
           metadata: {

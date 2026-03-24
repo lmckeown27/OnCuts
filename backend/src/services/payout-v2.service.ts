@@ -16,7 +16,9 @@ import withdrawalBatchService, { DestinationType } from './withdrawal-batch.serv
 import auditService from './audit.service';
 import { pool } from '../database/connection';
 
-const stripe = getDefaultStripeClient();
+function stripeSdk(): Stripe {
+  return getDefaultStripeClient();
+}
 
 export interface WithdrawToBankInput {
   userId: string;
@@ -154,7 +156,7 @@ class PayoutServiceV2 {
     connectedAccountId: string
   ): Promise<Stripe.Payout> {
     try {
-      const payout = await stripe.payouts.create(
+      const payout = await stripeSdk().payouts.create(
         {
           amount: amountCents,
           currency: 'usd',
@@ -185,7 +187,7 @@ class PayoutServiceV2 {
     email: string
   ): Promise<string> {
     try {
-      const account = await stripe.accounts.create({
+      const account = await stripeSdk().accounts.create({
         type: 'express',
         email,
         capabilities: {
@@ -227,7 +229,7 @@ class PayoutServiceV2 {
     refreshUrl: string
   ): Promise<string> {
     try {
-      const accountLink = await stripe.accountLinks.create({
+      const accountLink = await stripeSdk().accountLinks.create({
         account: accountId,
         refresh_url: refreshUrl,
         return_url: returnUrl,
