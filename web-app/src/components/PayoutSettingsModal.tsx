@@ -1,225 +1,104 @@
 /**
- * Payout Settings Modal
- * 
- * Modal for barbers to set up their Stripe Connect account
- * to receive payouts from completed bookings
+ * Path B — Payout Settings
+ *
+ * Barbers link a Sui address (USDC settlement). No Stripe Connect.
  */
 
 import { useState, useEffect } from 'react';
-import { X, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
-import axios from 'axios';
+import { X, AlertTriangle, CheckCircle, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
-import { API_BASE_URL } from '../config/constants';
+import { fetchPathBPayoutStatus, type PathBPayoutStatus } from '../services/path-b-payout.service';
+import { persistUserSuiAddress } from '../services/zkLogin.service';
 
 interface PayoutSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   preventClose?: boolean;
-  onStatusChange?: (isCompleted: boolean) => void;
+  onStatusChange?: (payoutReady: boolean) => void;
 }
 
-interface ConnectStatus {
-  has_account: boolean;
-  account_id?: string;
-  detailsSubmitted: boolean;
-  chargesEnabled: boolean;
-  payoutsEnabled: boolean;
-  requirements?: {
-    currently_due: string[];
-    eventually_due: string[];
-    past_due: string[];
-    disabled_reason: string | null;
-  };
-}
+const ADDR_PLACEHOLDER = '0x followed by 64 hex characters';
 
-export default function PayoutSettingsModal({ isOpen, onClose, preventClose = false, onStatusChange }: PayoutSettingsModalProps) {
-  const [status, setStatus] = useState<ConnectStatus | null>(null);
+export default function PayoutSettingsModal({
+  isOpen,
+  onClose,
+  preventClose = false,
+  onStatusChange,
+}: PayoutSettingsModalProps) {
+  const [status, setStatus] = useState<PathBPayoutStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [inputAddress, setInputAddress] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // Animation handling - use double requestAnimationFrame for smooth open animation
-  useEffect(() => {
-    if (isOpen) {
-      setIsVisible(true);
-      checkConnectStatus();
-      // Delay animation trigger to allow initial render with hidden state
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsAnimating(true);
-        });
-      });
-    } else {
-      setIsAnimating(false);
-      const timer = setTimeout(() => setIsVisible(false), 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  /**
-   * Check if barber has Stripe Connect account
-   */
-  const checkConnectStatus = async () => {
+  const load = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('accessToken');
-
-      const response = await axios.get(`${API_BASE_URL}/barber/connect/status`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const data = await fetchPathBPayoutStatus();
+      setStatus(data);
+      onStatusChange?.(data.payout_ready);
+      if (data.sui_address) {
+        setInputAddress(data.sui_address);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      toast.error('Could not load payout status');
+      setStatus({
+        payout_ready: false,
+        sui_address: null,
+        invalid_stored_address: false,
+        stored_address_preview: null,
       });
-
-      const newStatus = response.data.data;
-      setStatus(newStatus);
-      
-      // Notify parent of status change
-      if (onStatusChange) {
-        const isCompleted = newStatus?.has_account && newStatus?.payoutsEnabled;
-        onStatusChange(isCompleted);
-      }
-    } catch (error: any) {
-      // If 401, the user might not be a barber - show the setup screen anyway
-      if (error.response?.status === 401) {
-        setStatus({ has_account: false, detailsSubmitted: false, chargesEnabled: false, payoutsEnabled: false });
-      } else {
-        toast.error('Failed to check payout status');
-        console.error('Connect status error:', error);
-      }
-      if (onStatusChange) {
-        onStatusChange(false);
-      }
+      onStatusChange?.(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  /**
-   * Create Stripe Connect account and redirect to onboarding
-   */
-  const handleSetupPayouts = async () => {
-    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
-    const stripeWindow = window.open('about:blank', '_blank');
-    
-    try {
-      setIsCreatingAccount(true);
-      const token = localStorage.getItem('accessToken');
-
-      const response = await axios.post(
-        `${API_BASE_URL}/barber/connect/create`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const { onboarding_url } = response.data.data;
-
-      // Redirect the already-opened window to Stripe onboarding
-      if (stripeWindow) {
-        stripeWindow.location.href = onboarding_url;
-      } else {
-        // Fallback: redirect in same tab if popup was blocked
-        window.location.href = onboarding_url;
-      }
-    } catch (error: any) {
-      // Close the blank window if API failed
-      if (stripeWindow) {
-        stripeWindow.close();
-      }
-      toast.error('Failed to create payout account');
-      console.error('Connect creation error:', error);
-      setIsCreatingAccount(false);
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+      void load();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsAnimating(true));
+      });
+    } else {
+      setIsAnimating(false);
+      const t = setTimeout(() => setIsVisible(false), 150);
+      return () => clearTimeout(t);
     }
-  };
+  }, [isOpen]);
 
-  /**
-   * Refresh onboarding link if user needs to complete setup
-   */
-  const handleContinueOnboarding = async () => {
-    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
-    const stripeWindow = window.open('about:blank', '_blank');
-    
-    try {
-      setIsCreatingAccount(true);
-      const token = localStorage.getItem('accessToken');
-
-      const response = await axios.post(
-        `${API_BASE_URL}/barber/connect/refresh`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const { onboarding_url } = response.data.data;
-      
-      // Redirect the already-opened window to Stripe onboarding
-      if (stripeWindow) {
-        stripeWindow.location.href = onboarding_url;
-      } else {
-        // Fallback: redirect in same tab if popup was blocked
-        window.location.href = onboarding_url;
-      }
-    } catch (error: any) {
-      // Close the blank window if API failed
-      if (stripeWindow) {
-        stripeWindow.close();
-      }
-      toast.error('Failed to refresh onboarding link');
-      console.error('Refresh error:', error);
-      setIsCreatingAccount(false);
+  const handleSaveAddress = async () => {
+    const trimmed = inputAddress.trim();
+    if (!/^0x[0-9a-fA-F]{64}$/.test(trimmed)) {
+      toast.error(`Enter a valid Sui address (${ADDR_PLACEHOLDER})`);
+      return;
     }
-  };
-
-  /**
-   * Open Stripe Express dashboard
-   */
-  const handleOpenDashboard = async () => {
-    // Open window immediately to capture user gesture (prevents popup blocking on mobile/PWA)
-    const stripeWindow = window.open('about:blank', '_blank');
-    
     try {
-      const token = localStorage.getItem('accessToken');
-
-      const response = await axios.get(
-        `${API_BASE_URL}/barber/connect/dashboard`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const { dashboard_url } = response.data.data;
-      
-      // Redirect the already-opened window to Stripe dashboard
-      if (stripeWindow) {
-        stripeWindow.location.href = dashboard_url;
-      } else {
-        // Fallback: redirect in same tab if popup was blocked
-        window.location.href = dashboard_url;
-      }
-    } catch (error: any) {
-      // Close the blank window if API failed
-      if (stripeWindow) {
-        stripeWindow.close();
-      }
-      toast.error('Failed to open Stripe dashboard');
-      console.error('Dashboard error:', error);
+      setIsSaving(true);
+      await persistUserSuiAddress(trimmed);
+      toast.success('Sui payout address saved');
+      await load();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast.error(msg || 'Failed to save address');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   if (!isVisible && !isOpen) return null;
 
+  const payoutReady = status?.payout_ready ?? false;
+
   const handleBackdropClick = () => {
-    if (!preventClose) {
+    if (!preventClose || payoutReady) {
       onClose();
     }
   };
@@ -233,22 +112,20 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
     >
       <div
         className={`bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-hidden transition-all duration-150 ease-out ${
-          isAnimating
-            ? 'opacity-100 scale-100 translate-y-0'
-            : 'opacity-0 scale-95 translate-y-4'
+          isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white">Payout Settings</h2>
             <p className="text-white/80 text-sm">
-              {preventClose ? 'Complete setup to continue' : 'Set up your payout account'}
+              {preventClose && !payoutReady ? 'Link Sui wallet to accept bookings' : 'Path B — USDC on Sui'}
             </p>
           </div>
-          {!preventClose && (
+          {(!preventClose || payoutReady) && (
             <button
+              type="button"
               onClick={onClose}
               className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
             >
@@ -257,18 +134,16 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
           )}
         </div>
 
-        {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90dvh-80px)]">
-          {/* Required Setup Banner */}
-          {preventClose && !isLoading && !(status?.has_account && status?.payoutsEnabled) && (
+          {preventClose && !isLoading && !payoutReady && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
               <div className="flex items-start">
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800">Payout Setup Required</p>
+                  <p className="text-sm font-medium text-amber-800">Payout setup required</p>
                   <p className="text-sm text-amber-700 mt-1">
-                    You must complete your payout setup before you can access your barber dashboard. 
-                    Consumers won't be able to see or book you until this is complete.
+                    Add your Sui address so paid bookings can settle USDC to you. Customers pay in USD via
+                    Stripe; you receive on-chain per CampusCuts Path B.
                   </p>
                 </div>
               </div>
@@ -277,203 +152,94 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
 
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-500">Checking payout status...</p>
+              <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4" />
+              <p className="text-gray-500">Checking payout status…</p>
             </div>
           ) : (
             <>
-              {/* No Account - Setup */}
-              {!status?.has_account && (
-                <div className="text-center py-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Set Up Your Payout Account
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Connect with Stripe to receive payouts when you complete bookings.
-                    You'll need to provide your legal name, SSN, and bank account details.
+              {status?.invalid_stored_address && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800">
+                  Stored address {status.stored_address_preview} is not valid. Enter a correct Sui address
+                  (0x + 64 hex).
+                </div>
+              )}
+
+              {payoutReady ? (
+                <div className="text-center py-4">
+                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-green-100 mb-4">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Sui payout linked</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Bookings can use this address for USDC settlement after customers pay with Stripe Checkout.
                   </p>
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleSetupPayouts}
-                    disabled={isCreatingAccount}
-                  >
-                    {isCreatingAccount ? 'Opening Stripe...' : 'Set Up Payouts'}
-                  </Button>
+                  <div className="bg-gray-50 rounded-lg p-3 text-left">
+                    <p className="text-xs text-gray-500 mb-1">Address on file</p>
+                    <p className="font-mono text-xs break-all text-gray-900">{status?.sui_address}</p>
+                  </div>
                   <p className="text-xs text-gray-500 mt-4">
-                    Powered by Stripe Connect | Secure & PCI Compliant
+                    To change it, update the field below and save.
                   </p>
                 </div>
-              )}
-
-              {/* Incomplete Onboarding */}
-              {status?.has_account && !status.detailsSubmitted && (
-                <div className="text-center py-6">
-                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
-                    <AlertTriangle className="h-8 w-8 text-yellow-600" />
+              ) : (
+                <div className="py-2">
+                  <div className="flex items-center gap-2 text-primary-600 mb-3">
+                    <Wallet className="w-5 h-5" />
+                    <h3 className="text-lg font-medium text-gray-900">Your Sui address</h3>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Complete Your Onboarding
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    You started setting up payouts but didn't finish. Click below to continue.
+                  <p className="text-sm text-gray-600 mb-4">
+                    Use a wallet you control (Sui Wallet, Suiet, etc.). Same format as zkLogin-linked
+                    addresses. Mobile app zkLogin will use the same backend once released.
                   </p>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sui address</label>
+                  <textarea
+                    value={inputAddress}
+                    onChange={(e) => setInputAddress(e.target.value)}
+                    placeholder="0x…"
+                    rows={3}
+                    className="w-full font-mono text-sm px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">{ADDR_PLACEHOLDER}</p>
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={handleContinueOnboarding}
-                    disabled={isCreatingAccount}
+                    className="w-full mt-4"
+                    onClick={() => void handleSaveAddress()}
+                    disabled={isSaving}
                   >
-                    {isCreatingAccount ? 'Opening Stripe...' : 'Continue Setup'}
+                    {isSaving ? 'Saving…' : 'Save payout address'}
                   </Button>
                 </div>
               )}
 
-              {/* Verification In Progress or Action Required */}
-              {status?.has_account && status.detailsSubmitted && !status.payoutsEnabled && (() => {
-                // Determine if there are actionable requirements
-                const hasRequirements = !!(
-                  status.requirements?.currently_due?.length || 
-                  status.requirements?.past_due?.length ||
-                  status.requirements?.disabled_reason
-                );
-                
-                // Only show clock/pure verification when there's truly nothing to do
-                const isPureVerification = !hasRequirements;
-                
-                return (
-                  <div className="text-center py-6">
-                    {/* Only show clock icon for pure verification (no action needed) */}
-                    {isPureVerification && (
-                      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4">
-                        <Clock className="h-8 w-8 text-blue-600" />
-                      </div>
-                    )}
-                    
-                    {/* Show warning icon when action is required */}
-                    {!isPureVerification && (
-                      <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100 mb-4">
-                        <AlertTriangle className="h-8 w-8 text-amber-600" />
-                      </div>
-                    )}
-                    
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {isPureVerification ? 'Verification In Progress' : 'Action Required'}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {isPureVerification
-                        ? 'Stripe is verifying your account details. This usually takes a few minutes to a few hours.'
-                        : 'Stripe needs additional information to enable payouts. Click below to complete your setup.'}
-                    </p>
-                    
-                    {/* Show disabled reason if any */}
-                    {status.requirements?.disabled_reason && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-left">
-                        <p className="text-sm text-amber-800">
-                          <span className="font-medium">Issue: </span>
-                          {status.requirements.disabled_reason.replace(/_/g, ' ')}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Always show button to go back into Stripe Connect */}
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={handleContinueOnboarding}
-                      disabled={isCreatingAccount}
-                    >
-                      {isCreatingAccount ? 'Opening Stripe...' : (isPureVerification ? 'Open Stripe Connect' : 'Complete Requirements')}
-                    </Button>
-                  </div>
-                );
-              })()}
-
-              {/* Fully Enabled */}
-              {status?.has_account && status.detailsSubmitted && status.payoutsEnabled && (
-                <div className="text-center py-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Payouts Enabled!
-                  </h3>
-                  <div className="text-sm text-gray-600 mb-4 space-y-1">
-                    <p>Your payout account is fully set up</p>
-                    <p>You'll receive payouts when customers pay for completed bookings</p>
-                  </div>
+              {payoutReady && (
+                <div className="border-t border-gray-200 mt-6 pt-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Replace address</label>
+                  <textarea
+                    value={inputAddress}
+                    onChange={(e) => setInputAddress(e.target.value)}
+                    rows={2}
+                    className="w-full font-mono text-sm px-3 py-2 border border-gray-300 rounded-lg"
+                  />
                   <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleOpenDashboard}
-                    className="w-full"
+                    variant="secondary"
+                    className="w-full mt-3"
+                    onClick={() => void handleSaveAddress()}
+                    disabled={isSaving}
                   >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Stripe Dashboard
+                    {isSaving ? 'Saving…' : 'Update address'}
                   </Button>
-                  
-                  {/* Or divider */}
-                  <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-sm text-gray-500">Or</span>
-                    <div className="flex-1 h-px bg-gray-200" />
-                  </div>
-                  
-                  <p className="text-sm font-medium text-gray-900 text-center">
-                    Download the Stripe Express App
-                  </p>
                 </div>
               )}
 
-              {/* Stripe Express App Info - Always visible */}
-              <div className="border-t border-gray-200 mt-6 pt-6">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Stripe Express App</h4>
-                <p className="text-sm text-gray-600 mb-4">
-                  The Stripe Express app lets you track your earnings, view payout history, and manage your bank account right from your phone.
-                </p>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-primary-600 mt-0.5">
-                      <svg fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <p className="ml-3">
-                      Search "Stripe Express" in the App Store (iOS) or Google Play (Android)
-                    </p>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-primary-600 mt-0.5">
-                      <svg fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <p className="ml-3">
-                      Sign in with the same email you used for your Stripe Connect account
-                    </p>
-                  </div>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 h-5 w-5 text-primary-600 mt-0.5">
-                      <svg fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <p className="ml-3">
-                      View real-time earnings, payout schedule, and update your bank details anytime
-                    </p>
-                  </div>
-                </div>
+              <div className="border-t border-gray-200 mt-6 pt-6 text-sm text-gray-600 space-y-2">
+                <p className="font-medium text-gray-900">How Path B works</p>
+                <ul className="list-disc pl-5 space-y-1 text-xs">
+                  <li>Customer pays USD through Stripe Checkout (card / enabled methods).</li>
+                  <li>CampusCuts records the booking as paid, then routes settlement to USDC on Sui.</li>
+                  <li>Your share is sent to this Sui address (minus platform terms in effect).</li>
+                </ul>
               </div>
-
             </>
           )}
         </div>
@@ -481,4 +247,3 @@ export default function PayoutSettingsModal({ isOpen, onClose, preventClose = fa
     </div>
   );
 }
-

@@ -1,7 +1,6 @@
 /**
- * Barber Withdrawal Component
- * 
- * Manages barber payouts and Stripe Connect onboarding
+ * @deprecated Path B uses `PayoutSettingsModal` + Sui; this Connect-centric UI is unused.
+ * Kept for reference — prefer `WithdrawalOptions` and `/barber/path-b/payout-status`.
  */
 
 import { useState, useEffect } from 'react';

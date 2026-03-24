@@ -13,8 +13,15 @@ import {
   handleOnboardingReturn,
   getDashboardLink,
 } from '../controllers/barber-connect.controller';
+import { getPathBPayoutStatus } from '../controllers/barber-path-b.controller';
 
 const router = express.Router();
+
+/**
+ * Path B: Sui payout address on file (replaces Connect as gate for bookings)
+ * GET /api/barber/path-b/payout-status
+ */
+router.get('/path-b/payout-status', authenticate, requireRole('barber', 'admin'), getPathBPayoutStatus);
 
 /**
  * Create Stripe Connect account

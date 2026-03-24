@@ -78,7 +78,8 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
-  const [stripeConnectCompleted, setStripeConnectCompleted] = useState<boolean | null>(null); // null = loading
+  /** Path B: barber has valid Sui payout address on file */
+  const [pathBPayoutReady, setPathBPayoutReady] = useState<boolean | null>(null); // null = loading
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   // Google Calendar integration state
@@ -195,30 +196,27 @@ export default function BarberPage() {
     return date.toLocaleDateString();
   };
   
-  // Check Stripe Connect status on mount
-  const checkStripeConnectStatus = async () => {
+  const checkPathBPayoutStatus = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/barber/connect/status`, {
+      const response = await fetch(`${API_BASE_URL}/barber/path-b/payout-status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
-      
+
       if (data.success && data.data) {
-        const isCompleted = data.data.has_account && data.data.payoutsEnabled;
-        setStripeConnectCompleted(isCompleted);
-        
-        // Force open payout settings if not completed
-        if (!isCompleted) {
+        const ready = Boolean(data.data.payout_ready);
+        setPathBPayoutReady(ready);
+        if (!ready) {
           setShowPayoutSettings(true);
         }
       } else {
-        setStripeConnectCompleted(false);
+        setPathBPayoutReady(false);
         setShowPayoutSettings(true);
       }
     } catch (error) {
-      console.error('Failed to check Stripe Connect status:', error);
-      setStripeConnectCompleted(false);
+      console.error('Failed to check Path B payout status:', error);
+      setPathBPayoutReady(false);
       setShowPayoutSettings(true);
     }
   };
@@ -227,10 +225,10 @@ export default function BarberPage() {
   useEffect(() => {
     fetchNotifications();
     loadUnreadCount();
-    checkStripeConnectStatus();
+    checkPathBPayoutStatus();
   }, [loadUnreadCount]);
 
-  // Check for showPayoutSettings query param (redirect from Stripe Connect return)
+  // Optional: open payout modal (e.g. return from /web/barber/connect bookmark)
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get('showPayoutSettings') === 'true') {
@@ -1232,21 +1230,19 @@ export default function BarberPage() {
         />
       )}
 
-      {/* Payout Settings Modal - Cannot be closed until Stripe Connect is complete */}
+      {/* Path B: modal until Sui payout address is saved */}
       <PayoutSettingsModal
         isOpen={showPayoutSettings}
         onClose={() => {
-          // Only allow closing if Stripe Connect is completed
-          if (stripeConnectCompleted) {
+          if (pathBPayoutReady) {
             setShowPayoutSettings(false);
           }
         }}
-        preventClose={!stripeConnectCompleted}
-        onStatusChange={(isCompleted: boolean) => {
-          setStripeConnectCompleted(isCompleted);
-          if (isCompleted) {
-            // Refresh the status check
-            checkStripeConnectStatus();
+        preventClose={!pathBPayoutReady}
+        onStatusChange={(ready: boolean) => {
+          setPathBPayoutReady(ready);
+          if (ready) {
+            void checkPathBPayoutStatus();
           }
         }}
       />

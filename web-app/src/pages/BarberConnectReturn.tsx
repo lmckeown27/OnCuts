@@ -1,8 +1,6 @@
 /**
- * Barber Stripe Connect Return/Refresh Handler
- * 
- * Simple redirect component that sends barbers back to their dashboard
- * with a query parameter to trigger the PayoutSettingsModal
+ * Path B: return URL handler (legacy `/web/barber/connect/return` bookmarks).
+ * Sends barbers to the dashboard payout modal.
  */
 
 import { useEffect } from 'react';

@@ -100,7 +100,7 @@ class WalletV2Service {
   }
 
   /**
-   * Withdraw to bank (instant via Stripe Connect)
+   * Withdraw to bank (legacy; Path B barber revenue settles on Sui — see Payout Settings)
    */
   async withdrawToBank(amountDollars: number): Promise<{
     payout_id: string;

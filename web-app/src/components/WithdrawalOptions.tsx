@@ -1,11 +1,11 @@
 /**
- * Withdrawal Options Component
- * 
- * Allows users to choose between bank and on-chain withdrawals
+ * Withdrawal Options — Path B
+ *
+ * Custodial balance withdrawals to Sui (no Stripe Connect bank rail in-app).
  */
 
 import React, { useState } from 'react';
-import { DollarSign, Clock, Zap, AlertCircle } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle } from 'lucide-react';
 import Button from './Button';
 import walletV2Service from '../services/wallet-v2.service';
 import toast from 'react-hot-toast';
@@ -15,18 +15,14 @@ interface WithdrawalOptionsProps {
   onSuccess?: () => void;
 }
 
-const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
-  availableBalance,
-  onSuccess,
-}) => {
+const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance, onSuccess }) => {
   const [amount, setAmount] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<'bank' | 'onchain' | null>(null);
   const [destinationAddress, setDestinationAddress] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleWithdraw = async () => {
-    if (!selectedMethod || !amount) {
-      toast.error('Please select a withdrawal method and amount');
+    if (!amount) {
+      toast.error('Enter an amount');
       return;
     }
 
@@ -42,28 +38,25 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
       return;
     }
 
-    if (selectedMethod === 'onchain' && !destinationAddress) {
-      toast.error('Please enter a destination address');
+    if (!destinationAddress.trim()) {
+      toast.error('Enter your Sui wallet address');
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      if (selectedMethod === 'bank') {
-        await walletV2Service.withdrawToBank(amountNum);
-        toast.success('Withdrawal processed! Funds will arrive instantly.');
-      } else {
-        await walletV2Service.withdrawOnChain(amountNum, destinationAddress, 'sui');
-        toast.success('Withdrawal queued for batching. Will be processed within 15 minutes.');
-      }
-
+      await walletV2Service.withdrawOnChain(amountNum, destinationAddress.trim(), 'sui');
+      toast.success('Withdrawal queued. USDC will be sent on Sui per batching policy.');
       setAmount('');
       setDestinationAddress('');
-      setSelectedMethod(null);
       onSuccess?.();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Withdrawal failed');
+    } catch (error: unknown) {
+      const msg =
+        error && typeof error === 'object' && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      toast.error(msg || 'Withdrawal failed');
     } finally {
       setIsProcessing(false);
     }
@@ -71,13 +64,13 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Withdraw Funds</h3>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">Withdraw funds</h3>
+      <p className="text-sm text-gray-600 mb-4">
+        Path B: off-ramp is your Sui wallet (USDC). In-app bank transfers via Stripe Connect are not used.
+      </p>
 
-      {/* Amount Input */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Amount
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <DollarSign className="h-5 w-5 text-gray-400" />
@@ -98,120 +91,44 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
         </p>
       </div>
 
-      {/* Withdrawal Methods */}
-      <div className="space-y-3 mb-6">
-        {/* Bank Withdrawal */}
-        <button
-          onClick={() => setSelectedMethod('bank')}
-          className={`
-            w-full p-4 rounded-lg border-2 text-left transition-all
-            ${selectedMethod === 'bank'
-              ? 'border-primary-400 bg-primary-50'
-              : 'border-gray-200 hover:border-gray-300'
-            }
-          `}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start">
-              <Zap className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'bank' ? 'text-primary-400' : 'text-gray-400'}`} />
-              <div>
-                <div className="font-medium text-gray-900">Bank Transfer (Instant)</div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Via Stripe Connect • Arrives instantly
-                </div>
-              </div>
-            </div>
-            {selectedMethod === 'bank' && (
-              <div className="w-5 h-5 rounded-full bg-primary-400 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-white"></div>
-              </div>
-            )}
-          </div>
-        </button>
-
-        {/* On-Chain Withdrawal */}
-        <button
-          onClick={() => setSelectedMethod('onchain')}
-          className={`
-            w-full p-4 rounded-lg border-2 text-left transition-all
-            ${selectedMethod === 'onchain'
-              ? 'border-primary-400 bg-primary-50'
-              : 'border-gray-200 hover:border-gray-300'
-            }
-          `}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex items-start">
-              <Clock className={`h-5 w-5 mr-3 mt-0.5 ${selectedMethod === 'onchain' ? 'text-primary-400' : 'text-gray-400'}`} />
-              <div>
-                <div className="font-medium text-gray-900">On-Chain (Batched)</div>
-                <div className="text-sm text-gray-600 mt-1">
-                  To Sui wallet • Processed within 15 minutes
-                </div>
-                <div className="text-xs text-green-600 mt-1 font-medium">
-                  Lower fees • Batched for efficiency
-                </div>
-              </div>
-            </div>
-            {selectedMethod === 'onchain' && (
-              <div className="w-5 h-5 rounded-full bg-primary-400 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-white"></div>
-              </div>
-            )}
-          </div>
-        </button>
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Sui wallet address</label>
+        <input
+          type="text"
+          value={destinationAddress}
+          onChange={(e) => setDestinationAddress(e.target.value)}
+          placeholder="0x… (64 hex)"
+          className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
+        />
       </div>
 
-      {/* Destination Address (On-Chain Only) */}
-      {selectedMethod === 'onchain' && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Sui wallet address
-          </label>
-          <input
-            type="text"
-            value={destinationAddress}
-            onChange={(e) => setDestinationAddress(e.target.value)}
-            placeholder="0x..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 font-mono text-sm"
-          />
-        </div>
-      )}
-
-      {/* Info Box */}
-      {selectedMethod && (
-        <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              {selectedMethod === 'bank' ? (
-                <span>
-                  Instant payouts are processed immediately via Stripe Connect.
-                  Make sure your bank account is connected.
-                </span>
-              ) : (
-                <span>
-                  On-chain withdrawals are batched every 15 minutes for gas efficiency.
-                  You'll save up to 99.8% on transaction fees!
-                </span>
-              )}
-            </div>
+      <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-start">
+          <Clock className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            On-chain withdrawals may be batched for gas efficiency. Settlement is USDC on Sui.
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Withdraw Button */}
+      <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2">
+        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-900">
+          For booking revenue, ensure your payout Sui address is saved under{' '}
+          <strong>Barber dashboard → Payout Settings</strong> so Checkout can attach it automatically.
+        </p>
+      </div>
+
       <Button
-        onClick={handleWithdraw}
-        disabled={!selectedMethod || !amount || isProcessing || parseFloat(amount) < 10}
+        onClick={() => void handleWithdraw()}
+        disabled={!amount || isProcessing || parseFloat(amount) < 10}
         variant="primary"
         className="w-full"
       >
-        {isProcessing ? 'Processing...' : 'Withdraw Funds'}
+        {isProcessing ? 'Processing…' : 'Withdraw to Sui'}
       </Button>
     </div>
   );
 };
 
 export default WithdrawalOptions;
-

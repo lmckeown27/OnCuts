@@ -1,12 +1,8 @@
 /**
  * Payment Service V2
- * 
- * Direct payment flow (no escrow):
- * 1. Consumer pays via Stripe
- * 2. Barber receives payment directly (minus platform fee)
- * 3. No funds held by platform
- * 
- * Uses Stripe Connect for direct transfers to barber accounts.
+ *
+ * Path B: `createBookingCheckoutSession` — Stripe Checkout (platform) → USDC on Sui (barber `sui_address`).
+ * Legacy: `createBookingPaymentIntent` may still use Stripe Connect when `stripe_account_id` is set.
  */
 
 import Stripe from 'stripe';
