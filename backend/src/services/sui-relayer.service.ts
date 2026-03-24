@@ -63,6 +63,13 @@ function getTreasurySignerKeypair(): Ed25519Keypair {
 
 type SuiCoinItem = { coinObjectId: string; balance: string; coinType?: string };
 
+/** Narrow shape from `getCoins` pagination (explicit type avoids TS circular inference on `page`). */
+type PaginatedCoinsPage = {
+  data?: SuiCoinItem[];
+  hasNextPage: boolean;
+  nextCursor?: string | null;
+};
+
 /**
  * DIY payout relayer: merge all treasury USDC coins into the largest, then atomic 80/20 split + transfers.
  *
@@ -116,7 +123,7 @@ export class SuiRelayerService {
     let cursor: string | null | undefined = null;
 
     do {
-      const page = await client.getCoins({
+      const page: PaginatedCoinsPage = await client.getCoins({
         owner,
         coinType,
         cursor: cursor ?? undefined,
