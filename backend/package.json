@@ -18,7 +18,7 @@
     "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts"
   },
   "keywords": [
-    "aptos",
+    "sui",
     "blockchain",
     "booking",
     "marketplace"
@@ -27,10 +27,10 @@
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
+    "@mysten/sui": "^1.45.2",
     "@prisma/client": "^7.2.0",
     "@simplewebauthn/server": "^10.0.1",
     "apn": "^2.2.0",
-    "aptos": "^1.21.0",
     "aws-sdk": "^2.1505.0",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
@@ -45,6 +45,7 @@
     "express-validator": "^7.0.1",
     "firebase-admin": "^12.0.0",
     "form-data": "^4.0.0",
+    "googleapis": "^144.0.0",
     "helmet": "^7.1.0",
     "ipfs-http-client": "^56.0.3",
     "joi": "^17.11.0",
@@ -58,7 +59,6 @@
     "sharp": "^0.32.5",
     "socket.io": "^4.8.1",
     "stripe": "^14.10.0",
-    "googleapis": "^144.0.0",
     "uuid": "^9.0.1",
     "winston": "^3.19.0"
   },

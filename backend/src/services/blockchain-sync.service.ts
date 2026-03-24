@@ -14,7 +14,6 @@
 
 // TODO: Install Prisma - See POSTGRES_SYNC_SETUP.md
 // import { PrismaClient, PaymentStatus, SyncSource } from '@prisma/client';
-import { AptosClient } from 'aptos';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { pool } from '../database/connection';
@@ -65,7 +64,7 @@ const prisma = {
   barber: {
     findUnique: async () => ({ 
       id: 'mock',
-      user: { aptosAddress: '0xmock' }
+      user: { suiAddress: '0xmock' }
     }),
     update: async () => ({}),
   },
@@ -95,16 +94,13 @@ interface SyncResult {
 }
 
 export class BlockchainSyncService {
-  private aptosClient: AptosClient;
   private moduleAddress: string;
   
   constructor() {
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.mainnet.aptoslabs.com/v1';
-    this.aptosClient = new AptosClient(nodeUrl);
-    this.moduleAddress = process.env.APTOS_MODULE_ADDRESS || '';
+    this.moduleAddress = process.env.SUI_PACKAGE_ID || '';
     
     if (!this.moduleAddress) {
-      logger.warn('⚠️  APTOS_MODULE_ADDRESS not configured - blockchain sync disabled');
+      logger.warn('⚠️  SUI_PACKAGE_ID not configured - blockchain sync stubbed');
     }
   }
   
@@ -402,7 +398,9 @@ export class BlockchainSyncService {
       }
       
       // Get earnings from blockchain
-      const earnings = await this.getBarberEarningsFromBlockchain(barber.user.aptosAddress);
+      const earnings = await this.getBarberEarningsFromBlockchain(
+        (barber.user as { suiAddress?: string }).suiAddress || '0x0'
+      );
       
       // Update cache
       await prisma.barber.update({
@@ -436,75 +434,20 @@ export class BlockchainSyncService {
   /**
    * Get payment state from blockchain
    */
-  private async getBlockchainPaymentState(paymentId: string): Promise<BlockchainPaymentState | null> {
-    try {
-      const result = await this.aptosClient.view({
-        function: `${this.moduleAddress}::usdc_escrow::get_escrow`,
-        type_arguments: [],
-        arguments: [this.moduleAddress, paymentId]
-      });
-      
-      const [amount, barberPayout, platformFee, status, barberAddr, consumerAddr] = result as [
-        string, string, string, number, string, string
-      ];
-      
-      // Map on-chain status to PaymentStatus enum
-      const statusMap: Record<number, PaymentStatus> = {
-        0: PaymentStatus.ESCROWED,
-        1: PaymentStatus.RELEASED,
-        2: PaymentStatus.REFUNDED
-      };
-      
-      return {
-        paymentId,
-        status: statusMap[status] || PaymentStatus.ESCROWED,
-        amountUSDC: parseInt(amount) / 1_000_000, // Convert from 6 decimals
-        barberPayoutUSDC: parseInt(barberPayout) / 1_000_000,
-        platformFeeUSDC: parseInt(platformFee) / 1_000_000,
-        barberAddress: barberAddr,
-        consumerAddress: consumerAddr
-      };
-      
-    } catch (error: any) {
-      logger.error('Failed to get blockchain payment state', {
-        payment_id: paymentId,
-        error: error.message
-      });
-      return null;
-    }
+  private async getBlockchainPaymentState(_paymentId: string): Promise<BlockchainPaymentState | null> {
+    logger.debug('Sui Path B: getBlockchainPaymentState stub');
+    return null;
   }
   
   /**
    * Get barber earnings from blockchain
    */
-  private async getBarberEarningsFromBlockchain(aptosAddress: string): Promise<{
+  private async getBarberEarningsFromBlockchain(_suiAddress: string): Promise<{
     total: number;
     pending: number;
     completedCount: number;
   }> {
-    try {
-      const result = await this.aptosClient.view({
-        function: `${this.moduleAddress}::payment_system::get_barber_earnings`,
-        type_arguments: [],
-        arguments: [this.moduleAddress, aptosAddress]
-      });
-      
-      const [total, pending, count] = result as [string, string, string];
-      
-      return {
-        total: parseInt(total) / 100, // Convert from cents
-        pending: parseInt(pending) / 100,
-        completedCount: parseInt(count)
-      };
-      
-    } catch (error: any) {
-      logger.warn('Failed to get barber earnings from blockchain', {
-        address: aptosAddress,
-        error: error.message
-      });
-      
-      return { total: 0, pending: 0, completedCount: 0 };
-    }
+    return { total: 0, pending: 0, completedCount: 0 };
   }
 }
 

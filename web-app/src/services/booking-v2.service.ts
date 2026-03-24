@@ -1,10 +1,20 @@
 /**
- * Booking Service V2
- * 
- * Escrow-based booking flow
+ * Booking Service V2 — /api/v2/bookings (Stripe Checkout + Path B)
  */
 
-import api from './api.service';
+import axios, { AxiosInstance } from 'axios';
+import { getBackendOrigin, STORAGE_KEYS } from '../config/constants';
+
+function bookingsV2Client(): AxiosInstance {
+  const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  return axios.create({
+    baseURL: `${getBackendOrigin()}/api/v2/bookings`,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'Content-Type': 'application/json',
+    },
+  });
+}
 
 export interface BookingV2 {
   id: string;
@@ -18,7 +28,6 @@ export interface BookingV2 {
   created_at: string;
   completed_at?: string;
   cancelled_at?: string;
-  // Joined data
   consumer_first_name?: string;
   consumer_last_name?: string;
   barber_first_name?: string;
@@ -28,16 +37,15 @@ export interface BookingV2 {
   escrow_expires_at?: string;
 }
 
-export interface EscrowDetails {
-  id: string;
-  status: 'held' | 'released' | 'refunded' | 'expired';
-  amount_cents: number;
-  expires_hours: number;
+export interface CreateBookingPayment {
+  checkoutUrl: string;
+  sessionId: string;
+  amountCents: number;
 }
 
 export interface CreateBookingResponse {
   booking: BookingV2;
-  escrow: EscrowDetails;
+  payment: CreateBookingPayment;
 }
 
 export interface CompleteBookingResponse {
@@ -55,9 +63,6 @@ export interface CancelBookingResponse {
 }
 
 class BookingV2Service {
-  /**
-   * Create booking (creates escrow hold)
-   */
   async createBooking(params: {
     barberId: string;
     serviceId?: string;
@@ -66,54 +71,47 @@ class BookingV2Service {
     locationDetails?: string;
     specialRequests?: string;
   }): Promise<CreateBookingResponse> {
-    const response = await api.post('/v2/bookings', params);
-    return response.data;
+    const res = await bookingsV2Client().post<{ success: boolean; data: CreateBookingResponse }>(
+      '/',
+      params
+    );
+    return res.data.data;
   }
 
-  /**
-   * Get bookings for current user
-   */
+  async getCheckoutSettlement(sessionId: string) {
+    const res = await bookingsV2Client().get<{ success: boolean; data: unknown }>(
+      `/checkout-session/${encodeURIComponent(sessionId)}/settlement`
+    );
+    return res.data.data;
+  }
+
   async getBookings(status?: string): Promise<BookingV2[]> {
-    const response = await api.get('/v2/bookings', {
+    const res = await bookingsV2Client().get<{ success: boolean; data: BookingV2[] }>('/', {
       params: status ? { status } : {},
     });
-    return response.data;
+    return res.data.data;
   }
 
-  /**
-   * Get booking by ID
-   */
   async getBookingById(bookingId: string): Promise<BookingV2> {
-    const response = await api.get(`/v2/bookings/${bookingId}`);
-    return response.data;
+    const res = await bookingsV2Client().get<{ success: boolean; data: BookingV2 }>(`/${bookingId}`);
+    return res.data.data;
   }
 
-  /**
-   * Complete booking (release escrow to barber)
-   */
-  async completeBooking(
-    bookingId: string,
-    tipCents?: number
-  ): Promise<CompleteBookingResponse> {
-    const response = await api.post(`/v2/bookings/${bookingId}/complete`, {
-      tipCents,
-    });
-    return response.data;
+  async completeBooking(bookingId: string, tipCents?: number): Promise<CompleteBookingResponse> {
+    const res = await bookingsV2Client().post<{ success: boolean; data: CompleteBookingResponse }>(
+      `/${bookingId}/complete`,
+      { tipCents }
+    );
+    return res.data.data;
   }
 
-  /**
-   * Cancel booking (refund escrow to consumer)
-   */
-  async cancelBooking(
-    bookingId: string,
-    reason: string
-  ): Promise<CancelBookingResponse> {
-    const response = await api.post(`/v2/bookings/${bookingId}/cancel`, {
-      reason,
-    });
-    return response.data;
+  async cancelBooking(bookingId: string, reason: string): Promise<CancelBookingResponse> {
+    const res = await bookingsV2Client().post<{ success: boolean; data: CancelBookingResponse }>(
+      `/${bookingId}/cancel`,
+      { reason }
+    );
+    return res.data.data;
   }
 }
 
 export default new BookingV2Service();
-

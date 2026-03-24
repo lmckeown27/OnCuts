@@ -187,7 +187,7 @@ export const withdrawOnChain = async (req: AuthRequest, res: Response, next: Nex
       userId,
       amountCents,
       destinationAddress,
-      chain: chain || 'aptos',
+      chain: chain || 'sui',
     });
 
     res.json({

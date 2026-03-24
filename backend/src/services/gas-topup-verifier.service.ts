@@ -317,8 +317,8 @@ class GasTopUpVerifierService {
     const { gas_wallet_id, gas_wallet_address } = result.rows[0];
 
     // Get fresh balance from blockchain
-    const aptosService = (await import('./aptos.service')).default;
-    const balanceAPT = await aptosService.getAccountBalance(gas_wallet_address);
+    const suiChainService = (await import('./sui-chain.service')).default;
+    const balanceAPT = await suiChainService.getAccountBalance(gas_wallet_address);
 
     await pool.query(
       `UPDATE gas_wallets 

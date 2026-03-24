@@ -97,7 +97,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest, JwtPayload } from '../middleware/auth';
-import aptosService from '../services/aptos.service';
 import { logger } from '../utils/logger';
 import {
   generateAccessToken,

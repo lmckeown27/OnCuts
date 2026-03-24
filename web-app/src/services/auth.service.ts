@@ -42,7 +42,7 @@ interface VerifyEmailResponse {
   user: VerifyEmailUserData;
   accessToken: string;
   refreshToken: string;
-  aptosAddress?: string;
+  suiAddress?: string;
 }
 
 class AuthService {

@@ -19,7 +19,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import transactionService, { TransactionType, TransactionStatus } from './transaction.service';
-import aptosService from './aptos.service';
+import suiChainService from './sui-chain.service';
 import auditService from './audit.service';
 import gasCalculatorService from './gas-calculator.service';
 
@@ -153,7 +153,7 @@ class WithdrawalBatchService {
    * Process batched withdrawals (background job)
    * Should be run every 5-15 minutes via cron
    */
-  async processBatch(chain: string = 'aptos', minBatchSize: number = 1): Promise<WithdrawalBatch | null> {
+  async processBatch(chain: string = 'sui', minBatchSize: number = 1): Promise<WithdrawalBatch | null> {
     const client = await pool.connect();
 
     try {
@@ -261,7 +261,7 @@ class WithdrawalBatchService {
    * Submit batch to blockchain
    */
   private async submitBatchToChain(chain: string, withdrawals: WithdrawalQueueItem[]): Promise<string> {
-    if (chain !== 'aptos') {
+    if (chain !== 'sui') {
       throw new ApiError(400, `Unsupported chain: ${chain}`);
     }
 
@@ -272,7 +272,7 @@ class WithdrawalBatchService {
     // Submit batch transaction to Aptos
     // This requires a Move contract function like:
     // public entry fun batch_transfer(sender: &signer, recipients: vector<address>, amounts: vector<u64>)
-    const txHash = await aptosService.submitBatchWithdrawal(recipients, amounts);
+    const txHash = await suiChainService.submitBatchWithdrawal(recipients, amounts);
 
     return txHash;
   }

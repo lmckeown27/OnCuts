@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import aptosService from '../services/aptos.service';
+import suiChainService from '../services/sui-chain.service';
 import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
@@ -706,7 +706,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
     const bioHash = Buffer.from(bio).toString('base64');
     const pricingHash = Buffer.from(JSON.stringify(pricing)).toString('base64');
 
-    await aptosService.registerBarber({
+    await suiChainService.registerBarber({
       barberAddress: user.aptos_address,
       campusId: user.campus_id,
       specialties,

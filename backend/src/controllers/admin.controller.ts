@@ -280,7 +280,7 @@ export const processBatch = async (req: AuthRequest, res: Response, next: NextFu
 
     const { chain } = req.body;
 
-    const batch = await withdrawalBatchService.processBatch(chain || 'aptos', 1);
+    const batch = await withdrawalBatchService.processBatch(chain || 'sui', 1);
 
     if (!batch) {
       res.json({

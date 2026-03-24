@@ -5,6 +5,7 @@ import AppStatus from './components/AppStatus';
 import PlatformGuard from './components/PlatformGuard';
 import Loading from './components/Loading';
 import { useAuthStore } from './store/useAuthStore';
+import WalletProvider from './providers/WalletProvider';
 
 // Error Boundary to catch render errors and display helpful message
 interface ErrorBoundaryState {
@@ -94,6 +95,7 @@ const ConsumerPage = lazy(() => import('./pages/ConsumerPage'));
 const ConsumerBookingStatusPage = lazy(() => import('./pages/ConsumerBookingStatusPage'));
 const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
+const PaymentProcessingPage = lazy(() => import('./pages/student/PaymentProcessingPage'));
 const PostServicePaymentPage = lazy(() => import('./pages/PostServicePaymentPage'));
 
 // Barber Pages - Lazy loaded
@@ -185,6 +187,7 @@ function AppContent() {
         <Route path="/web/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/student/booking/payment" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BookingPaymentPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/student/payment/processing" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PaymentProcessingPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/payment/:bookingId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PostServicePaymentPage /></LazyRoute></PlatformGuard>} />
         
         {/* Web - Barber Routes (includes Campus Manager features when user is campus manager) */}
@@ -263,9 +266,11 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <WalletProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </WalletProvider>
     </ErrorBoundary>
   );
 }

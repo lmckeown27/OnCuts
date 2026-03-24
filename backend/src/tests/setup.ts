@@ -6,7 +6,7 @@
 
 // Mock environment variables
 process.env.NODE_ENV = 'test';
-process.env.APTOS_NODE_URL = 'https://fullnode.devnet.aptoslabs.com/v1';
+process.env.SUI_RPC_URL = process.env.SUI_RPC_URL || 'https://fullnode.testnet.sui.io';
 process.env.APTOS_PLATFORM_ADDRESS = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 process.env.REDIS_URL = 'redis://localhost:6379';
 process.env.ENCRYPTION_KEY = 'test-encryption-key-32-bytes-long!!';

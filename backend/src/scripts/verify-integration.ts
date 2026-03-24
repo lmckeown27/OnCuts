@@ -30,20 +30,13 @@ async function verifyIntegration() {
   
   logger.info('📝 Checking environment variables...');
   
-  // Aptos Configuration (REQUIRED)
-  checkEnvVar('APTOS_PLATFORM_ADDRESS', true, 'Platform Aptos address');
-  // Check for PETRA_PRIVATE_KEY first, then fall back to APTOS_PLATFORM_PRIVATE_KEY
-  if (!process.env.PETRA_PRIVATE_KEY && !process.env.APTOS_PLATFORM_PRIVATE_KEY) {
-    logger.error('❌ PETRA_PRIVATE_KEY or APTOS_PLATFORM_PRIVATE_KEY required');
-    results.push({
-      name: 'Env: PETRA_PRIVATE_KEY',
-      status: 'fail',
-      message: 'Platform private key - not set (need PETRA_PRIVATE_KEY or APTOS_PLATFORM_PRIVATE_KEY)',
-      required: true,
-    });
-  }
-  checkEnvVar('APTOS_MODULE_ADDRESS', true, 'Deployed module address');
-  checkEnvVar('APTOS_NODE_URL', false, 'Aptos node URL (defaults to devnet)');
+  // Sui / Path B (optional until fully wired)
+  checkEnvVar('SUI_RPC_URL', false, 'Sui JSON-RPC URL');
+  checkEnvVar('SUI_TREASURY_ADDRESS', false, 'Platform treasury Sui address (USDC / Bridge)');
+  checkEnvVar('BRIDGE_API_KEY', false, 'Bridge API key for /v1/payouts');
+  checkEnvVar('SALT_SERVICE_SECRET', false, 'zkLogin salt HMAC secret');
+  checkEnvVar('GAS_SPONSOR_SECRET', false, 'Sui gas sponsor key (suiprivkey or hex)');
+  checkEnvVar('SUI_PROVER_URL', false, 'ZK prover endpoint (Shinami / Mysten)');
   
   // Custodial Wallet (REQUIRED)
   checkEnvVar('CUSTODIAL_ENCRYPTION_SECRET', true, 'Private key encryption secret');
@@ -63,153 +56,54 @@ async function verifyIntegration() {
   checkEnvVar('REDIS_URL', false, 'Redis URL (optional caching)');
   
   // ═══════════════════════════════════════════════════════════
-  //  2. Aptos Blockchain Connection Check
+  //  2. Sui RPC (optional)
   // ═══════════════════════════════════════════════════════════
-  
-  logger.info('\n🔗 Checking Aptos blockchain connection...');
-  
-  try {
-    const { AptosClient } = await import('aptos');
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-    const client = new AptosClient(nodeUrl);
-    
-    // Try to get ledger info
-    const ledgerInfo = await client.getLedgerInfo();
-    
+
+  logger.info('\n🔗 Checking Sui RPC...');
+
+  const suiRpc = process.env.SUI_RPC_URL;
+  if (!suiRpc) {
     results.push({
-      name: 'Aptos Blockchain Connection',
-      status: 'pass',
-      message: `Connected to ${nodeUrl} (chain ID: ${ledgerInfo.chain_id})`,
-      required: true,
+      name: 'Sui RPC',
+      status: 'warning',
+      message: 'SUI_RPC_URL not set — skipping chain check',
+      required: false,
     });
-    
-    logger.info(`✅ Aptos blockchain connected (chain ID: ${ledgerInfo.chain_id})`);
-  } catch (error) {
-    results.push({
-      name: 'Aptos Blockchain Connection',
-      status: 'fail',
-      message: `Cannot connect to Aptos: ${(error as Error).message}`,
-      required: true,
-    });
-    
-    logger.error('❌ Aptos blockchain connection failed:', error);
-  }
-  
-  // ═══════════════════════════════════════════════════════════
-  //  3. Platform Account Check
-  // ═══════════════════════════════════════════════════════════
-  
-  logger.info('\n🔑 Checking platform account...');
-  
-  try {
-    const { AptosClient, AptosAccount, HexString } = await import('aptos');
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-    const client = new AptosClient(nodeUrl);
-    
-    const platformPrivateKey = process.env.PETRA_PRIVATE_KEY || process.env.APTOS_PLATFORM_PRIVATE_KEY;
-    if (!platformPrivateKey) {
-      throw new Error('PETRA_PRIVATE_KEY not set. Please set PETRA_PRIVATE_KEY in your .env file');
-    }
-    
-    const platformAccount = new AptosAccount(
-      new HexString(platformPrivateKey).toUint8Array()
-    );
-    
-    // Check account exists and has balance
-    const accountResources = await client.getAccountResources(platformAccount.address());
-    const aptosCoinResource = accountResources.find((r) =>
-      r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
-    );
-    
-    if (aptosCoinResource) {
-      const balance = (aptosCoinResource.data as any).coin.value;
-      const balanceAPT = parseInt(balance) / 100_000_000;
-      
-      results.push({
-        name: 'Platform Account Balance',
-        status: balanceAPT > 0.1 ? 'pass' : 'warning',
-        message: `Platform has ${balanceAPT.toFixed(4)} APT (${balanceAPT > 0.1 ? 'sufficient' : 'low - fund for gas fees'})`,
-        required: true,
+    logger.warn('⚠️  SUI_RPC_URL not set');
+  } else {
+    try {
+      const resp = await fetch(suiRpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'sui_getChainIdentifier',
+          params: [],
+        }),
       });
-      
-      logger.info(`✅ Platform account: ${platformAccount.address().hex()}`);
-      logger.info(`   Balance: ${balanceAPT.toFixed(4)} APT`);
-    } else {
+      const body = (await resp.json()) as { result?: string; error?: { message?: string } };
+      if (!resp.ok || body.error) {
+        throw new Error(body.error?.message || `HTTP ${resp.status}`);
+      }
       results.push({
-        name: 'Platform Account',
-        status: 'warning',
-        message: 'Account exists but has no APT - fund from faucet',
-        required: true,
-      });
-      
-      logger.warn('⚠️  Platform account has no APT balance - run: aptos account fund-with-faucet');
-    }
-  } catch (error) {
-    results.push({
-      name: 'Platform Account',
-      status: 'fail',
-      message: `Platform account check failed: ${(error as Error).message}`,
-      required: true,
-    });
-    
-    logger.error('❌ Platform account check failed:', error);
-  }
-  
-  // ═══════════════════════════════════════════════════════════
-  //  4. Smart Contract Deployment Check
-  // ═══════════════════════════════════════════════════════════
-  
-  logger.info('\n📜 Checking smart contract deployment...');
-  
-  try {
-    const { AptosClient } = await import('aptos');
-    const nodeUrl = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-    const client = new AptosClient(nodeUrl);
-    
-    const moduleAddress = process.env.APTOS_MODULE_ADDRESS;
-    if (!moduleAddress) {
-      throw new Error('APTOS_MODULE_ADDRESS not set - deploy contracts first');
-    }
-    
-    // Try to get module
-    const modules = await client.getAccountModules(moduleAddress);
-    const userAccountsModule = modules.find((m) => m.abi?.name === 'user_accounts');
-    const bookingsModule = modules.find((m) => m.abi?.name === 'bookings');
-    const reviewsModule = modules.find((m) => m.abi?.name === 'reviews');
-    
-    if (userAccountsModule && bookingsModule && reviewsModule) {
-      results.push({
-        name: 'Smart Contracts Deployed',
+        name: 'Sui RPC',
         status: 'pass',
-        message: `All 3 modules deployed at ${moduleAddress}`,
-        required: true,
+        message: `Chain identifier: ${body.result || 'ok'}`,
+        required: false,
       });
-      
-      logger.info(`✅ Smart contracts deployed:`);
-      logger.info(`   - user_accounts ✅`);
-      logger.info(`   - bookings ✅`);
-      logger.info(`   - reviews ✅`);
-    } else {
+      logger.info(`✅ Sui RPC OK (${suiRpc})`);
+    } catch (error) {
       results.push({
-        name: 'Smart Contracts Deployed',
+        name: 'Sui RPC',
         status: 'fail',
-        message: 'Some modules missing - deploy contracts from /contracts folder',
-        required: true,
+        message: `Sui RPC failed: ${(error as Error).message}`,
+        required: false,
       });
-      
-      logger.error('❌ Some smart contract modules not found');
+      logger.error('❌ Sui RPC check failed:', error);
     }
-  } catch (error) {
-    results.push({
-      name: 'Smart Contracts Deployed',
-      status: 'fail',
-      message: `Cannot verify contracts: ${(error as Error).message}`,
-      required: true,
-    });
-    
-    logger.error('❌ Smart contract check failed:', error);
   }
-  
+
   // ═══════════════════════════════════════════════════════════
   //  5. IPFS Service Check
   // ═══════════════════════════════════════════════════════════
@@ -255,35 +149,29 @@ async function verifyIntegration() {
   //  6. Custodial Signer Check
   // ═══════════════════════════════════════════════════════════
   
-  logger.info('\n🔐 Checking custodial signer service...');
-  
+  logger.info('\n🔐 Checking zkLogin salt service...');
+
   try {
-    const custodialSigner = (await import('../services/custodial-signer.service')).default;
-    
-    // Test account creation
-    const testAccount = await custodialSigner.createUserAccount(
-      'test@integration.test',
-      'testpassword123'
-    );
-    
+    if (!process.env.SALT_SERVICE_SECRET) {
+      throw new Error('SALT_SERVICE_SECRET not set');
+    }
+    const { deriveZkLoginSalt } = await import('../services/zklogin-salt.service');
+    const salt = deriveZkLoginSalt('https://accounts.google.com', 'integration-test-sub');
     results.push({
-      name: 'Custodial Wallet',
+      name: 'zkLogin salt',
       status: 'pass',
-      message: `Successfully created test account (${testAccount.address.substring(0, 10)}...)`,
-      required: true,
+      message: `Salt derived (${salt.substring(0, 8)}…)`,
+      required: false,
     });
-    
-    logger.info(`✅ Custodial signer working`);
-    logger.info(`   Test account: ${testAccount.address.substring(0, 20)}...`);
+    logger.info('✅ zkLogin salt derivation OK');
   } catch (error) {
     results.push({
-      name: 'Custodial Wallet',
-      status: 'fail',
-      message: `Custodial signer failed: ${(error as Error).message}`,
-      required: true,
+      name: 'zkLogin salt',
+      status: 'warning',
+      message: `Salt check skipped or failed: ${(error as Error).message}`,
+      required: false,
     });
-    
-    logger.error('❌ Custodial signer check failed:', error);
+    logger.warn('⚠️  zkLogin salt check:', error);
   }
   
   // ═══════════════════════════════════════════════════════════

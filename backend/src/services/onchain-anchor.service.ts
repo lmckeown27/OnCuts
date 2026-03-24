@@ -12,7 +12,7 @@
 import crypto from 'crypto';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
-import aptosService from './aptos.service';
+import suiChainService from './sui-chain.service';
 
 export enum RecordType {
   BOOKING_HASH = 'booking_hash',
@@ -94,7 +94,7 @@ class OnChainAnchorService {
       const hash = this.createHash(input.data);
 
       // 2. Store hash on Aptos (using proof storage function)
-      const txHash = await aptosService.submitHashProof(
+      const txHash = await suiChainService.submitHashProof(
         input.record_type,
         input.subject_id,
         hash
@@ -154,7 +154,7 @@ class OnChainAnchorService {
       const merkleRoot = this.createMerkleRoot(proofHashes.map(p => p.hash));
 
       // 3. Store Merkle root on-chain (single transaction for all proofs)
-      const txHash = await aptosService.submitHashProof(
+      const txHash = await suiChainService.submitHashProof(
         'batch_anchor',
         `batch_${Date.now()}`,
         merkleRoot

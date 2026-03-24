@@ -20,6 +20,49 @@ import auditService from '../services/audit.service';
 import { logger } from '../utils/logger';
 
 /**
+ * Poll Stripe Checkout + DB settlement after redirect (Path B).
+ * GET /api/v2/bookings/checkout-session/:sessionId/settlement
+ */
+export const getCheckoutSettlement = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user!.userId;
+
+    const bookingResult = await pool.query(
+      `SELECT id, status, stripe_checkout_session_id, bridge_payout_id, on_chain_settlement_status
+       FROM bookings
+       WHERE stripe_checkout_session_id = $1 AND consumer_id = $2`,
+      [sessionId, userId]
+    );
+
+    if (bookingResult.rows.length === 0) {
+      throw new ApiError(404, 'Booking not found for this session');
+    }
+
+    const booking = bookingResult.rows[0];
+    const session = await paymentServiceV2.retrieveCheckoutSession(sessionId);
+
+    res.json({
+      success: true,
+      data: {
+        bookingId: booking.id,
+        bookingStatus: booking.status,
+        stripePaymentStatus: session.payment_status,
+        bridgePayoutId: booking.bridge_payout_id,
+        onChainSettlementStatus: booking.on_chain_settlement_status,
+        paid: session.payment_status === 'paid',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Create booking (no escrow - direct payment)
  * POST /api/bookings
  */
@@ -85,19 +128,23 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 
     const booking = bookingResult.rows[0];
 
-    // 4. Create Stripe payment intent for direct payment
-    const paymentIntent = await paymentServiceV2.createBookingPaymentIntent({
+    // 4. Path B: Stripe Checkout (card + crypto) → Bridge USDC on Sui
+    const frontend =
+      process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5173';
+    const checkout = await paymentServiceV2.createBookingCheckoutSession({
       bookingId: booking.id,
       consumerId,
       barberId,
       amountCents: priceCents,
       serviceDescription: `Booking #${booking.id}`,
+      successUrl: `${frontend}/web/student/payment/processing`,
+      cancelUrl: `${frontend}/web/consumer/booking-status`,
     });
 
-    // 5. Update booking with payment intent ID
+    // 5. Track Checkout Session on booking
     await pool.query(
-      `UPDATE bookings SET stripe_payment_intent_id = $1 WHERE id = $2`,
-      [paymentIntent.paymentIntentId, booking.id]
+      `UPDATE bookings SET stripe_checkout_session_id = $1 WHERE id = $2`,
+      [checkout.sessionId, booking.id]
     );
 
     // 6. Audit log
@@ -109,7 +156,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       details: {
         barber_id: barberId,
         price_cents: priceCents,
-        payment_intent_id: paymentIntent.paymentIntentId,
+        stripe_checkout_session_id: checkout.sessionId,
       },
     });
 
@@ -118,8 +165,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       consumer_id: consumerId,
       barber_id: barberId,
       amount_dollars: priceCents / 100,
-      platform_fee_dollars: paymentIntent.platformFeeCents / 100,
-      barber_receives_dollars: paymentIntent.barberReceivesCents / 100,
+      checkout_session_id: checkout.sessionId,
     });
 
     res.status(201).json({
@@ -127,11 +173,9 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       data: {
         booking,
         payment: {
-          clientSecret: paymentIntent.clientSecret,
-          paymentIntentId: paymentIntent.paymentIntentId,
-          amountCents: paymentIntent.amountCents,
-          platformFeeCents: paymentIntent.platformFeeCents,
-          barberReceivesCents: paymentIntent.barberReceivesCents,
+          checkoutUrl: checkout.checkoutUrl,
+          sessionId: checkout.sessionId,
+          amountCents: checkout.amountCents,
         },
       },
       message: 'Booking created. Complete payment to confirm.',

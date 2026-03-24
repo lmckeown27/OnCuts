@@ -13,6 +13,8 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { pool, query } from '../database/connection';
 import { logger } from '../utils/logger';
+import { normalizeSuiAddress, isValidSuiAddress } from '@mysten/sui/utils';
+import { requestBridgePayoutToSui } from '../services/bridge-payout.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -290,6 +292,13 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
   // 3. Handle the event
   try {
     switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(
+          event.data.object as Stripe.Checkout.Session,
+          event.id
+        );
+        break;
+
       case 'payment_intent.succeeded':
         await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, event.id);
         break;
@@ -337,6 +346,182 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
 };
 
 /**
+ * Path B barber chain address + gross cents for on-chain settlement.
+ * Metadata: `barber_sui_address` or `barber_address`; optional `amount_total` (cents) overrides session.amount_total.
+ */
+function resolveCheckoutOnChainPayoutMeta(session: Stripe.Checkout.Session): {
+  barberSui?: string;
+  amountCents: number;
+} {
+  const barberRaw =
+    session.metadata?.barber_sui_address?.trim() ||
+    session.metadata?.barber_address?.trim() ||
+    '';
+  let amountCents = session.amount_total ?? 0;
+  const metaTotal = session.metadata?.amount_total;
+  if (metaTotal != null && String(metaTotal).trim() !== '') {
+    const parsed = parseInt(String(metaTotal), 10);
+    if (!Number.isNaN(parsed)) {
+      amountCents = parsed;
+    }
+  }
+  const barberSui =
+    barberRaw && isValidSuiAddress(normalizeSuiAddress(barberRaw))
+      ? normalizeSuiAddress(barberRaw)
+      : undefined;
+  return { barberSui, amountCents };
+}
+
+/**
+ * Path B: Stripe Checkout completed → Bridge USDC split on Sui (handled after DB commit).
+ */
+async function handleCheckoutSessionCompleted(
+  session: Stripe.Checkout.Session,
+  eventId: string
+) {
+  const booking_id = session.metadata?.booking_id;
+  const { barberSui: barber_sui_address, amountCents: onChainAmountCents } =
+    resolveCheckoutOnChainPayoutMeta(session);
+  const consumer_id = session.metadata?.consumer_id;
+  const barber_id = session.metadata?.barber_id;
+
+  if (!booking_id || session.payment_status !== 'paid') {
+    logger.warn('Checkout session skipped (unpaid or missing booking)', {
+      session: session.id,
+      payment_status: session.payment_status,
+    });
+    await markEventProcessed(eventId, 'checkout.session.completed', session.metadata || {}, 'success');
+    return;
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === 'string'
+      ? session.payment_intent
+      : session.payment_intent?.id || '';
+
+  const amountCents = session.amount_total ?? 0;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const updateBookingResult = await client.query(
+      `UPDATE bookings 
+       SET status = 'COMPLETED',
+           payment_intent_id = COALESCE($1, payment_intent_id),
+           paid_at = NOW(),
+           "paidAt" = NOW(),
+           tip_amount_cents = $2,
+           "tipAmountCents" = $2,
+           "totalPaidCents" = $3,
+           "updatedAt" = NOW()
+       WHERE id = $4
+       RETURNING *`,
+      [paymentIntentId || null, 0, amountCents, booking_id]
+    );
+
+    if (updateBookingResult.rowCount === 0) {
+      throw new Error(`Booking ${booking_id} not found`);
+    }
+
+    const booking = updateBookingResult.rows[0];
+
+    try {
+      await archiveBookingMessages(booking_id, client);
+      await client.query(
+        `DELETE FROM messages 
+         WHERE conversation_id IN (SELECT id FROM conversations WHERE booking_id = $1)`,
+        [booking_id]
+      );
+      await client.query(`DELETE FROM conversations WHERE booking_id = $1`, [booking_id]);
+    } catch {
+      logger.debug(`No conversation to delete for booking ${booking_id}`);
+    }
+
+    if (paymentIntentId) {
+      await client.query(
+        `INSERT INTO payments (
+          booking_id, consumer_id, barber_id, payment_intent_id,
+          amount_cents, tip_amount_cents, currency, status, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        ON CONFLICT (payment_intent_id) DO NOTHING`,
+        [
+          booking_id,
+          consumer_id || booking.consumerId,
+          barber_id || booking.barberId,
+          paymentIntentId,
+          amountCents,
+          0,
+          (session.currency || 'usd').toUpperCase(),
+          'succeeded',
+        ]
+      );
+    }
+
+    await client.query(
+      `INSERT INTO stripe_webhook_events (event_id, event_type, payload, processing_result)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (event_id) DO NOTHING`,
+      [eventId, 'checkout.session.completed', JSON.stringify(session.metadata || {}), 'success']
+    );
+
+    await client.query('COMMIT');
+    logger.info(`✅ Checkout complete for booking ${booking_id}`);
+
+    if (barber_sui_address && onChainAmountCents > 0) {
+      const diyRelayer = process.env.SUI_DIY_RELAYER_ENABLED === 'true';
+      if (diyRelayer) {
+        try {
+          const { enqueueProcessPayout } = await import('../queues/process-payout.queue');
+          const amountBaseUnits = (BigInt(onChainAmountCents) * 10000n).toString();
+          await enqueueProcessPayout({
+            barberSuiAddress: barber_sui_address,
+            amountBaseUnits,
+            bookingId: booking_id,
+            stripeCheckoutSessionId: session.id,
+          });
+          await query(
+            `UPDATE bookings SET on_chain_settlement_status = $1, "updatedAt" = NOW() WHERE id = $2`,
+            ['payout_queued', booking_id]
+          );
+        } catch (queueErr: unknown) {
+          logger.error('DIY payout enqueue failed after checkout', queueErr);
+          await query(
+            `UPDATE bookings SET on_chain_settlement_status = $1, "updatedAt" = NOW() WHERE id = $2`,
+            ['payout_enqueue_failed', booking_id]
+          );
+        }
+      } else {
+        try {
+          const { bridgePayoutId } = await requestBridgePayoutToSui({
+            amountTotalCents: onChainAmountCents,
+            barberSuiAddress: barber_sui_address,
+            bookingId: booking_id,
+            stripeCheckoutSessionId: session.id,
+          });
+          await query(
+            `UPDATE bookings SET bridge_payout_id = $1, on_chain_settlement_status = $2, "updatedAt" = NOW() WHERE id = $3`,
+            [bridgePayoutId, 'requested', booking_id]
+          );
+        } catch (bridgeErr: unknown) {
+          logger.error('Bridge payout failed after checkout', bridgeErr);
+          await query(
+            `UPDATE bookings SET on_chain_settlement_status = $1, "updatedAt" = NOW() WHERE id = $2`,
+            ['bridge_failed', booking_id]
+          );
+        }
+      }
+    }
+  } catch (error: unknown) {
+    await client.query('ROLLBACK');
+    logger.error(`❌ Failed checkout.session.completed for ${booking_id}:`, error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Handle payment_intent.succeeded
  * This is the ONLY place where payment should be marked as complete
  */
@@ -344,6 +529,12 @@ async function handlePaymentIntentSucceeded(
   paymentIntent: Stripe.PaymentIntent,
   eventId: string
 ) {
+  if (paymentIntent.metadata?.path_b === 'true') {
+    logger.info(`Path B: skipping payment_intent.succeeded (checkout handler owns flow): ${paymentIntent.id}`);
+    await markEventProcessed(eventId, 'payment_intent.succeeded', paymentIntent.metadata, 'success');
+    return;
+  }
+
   const { booking_id, consumer_id, barber_id, tip_amount_cents } = paymentIntent.metadata;
   const amountCents = paymentIntent.amount_received;
 

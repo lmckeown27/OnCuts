@@ -7,7 +7,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth';
 import {
   getLiveFeed,
-  getAptosTransactions,
+  getSuiTransactions,
   getStripeEvents,
   getPlatformStats,
   searchTransactions,
@@ -23,15 +23,15 @@ const router = express.Router();
  * Get combined transaction feed (Aptos + Stripe)
  * Query params:
  *   - limit: number (default 50)
- *   - platform: 'aptos' | 'stripe' | 'all' (default 'all')
+ *   - platform: 'sui' | 'stripe' | 'all' (default 'all')
  */
 router.get('/', authenticate, getLiveFeed);
 
 /**
- * GET /api/admin/live-feed/aptos
- * Get recent Aptos blockchain transactions
+ * GET /api/admin/live-feed/sui
+ * Get recent Sui transactions (stub until indexer wired)
  */
-router.get('/aptos', authenticate, getAptosTransactions);
+router.get('/sui', authenticate, getSuiTransactions);
 
 /**
  * GET /api/admin/live-feed/stripe
@@ -50,7 +50,7 @@ router.get('/stats', authenticate, getPlatformStats);
  * Search transactions with filters
  * Query params:
  *   - query: string (search in tx_id, addresses, description)
- *   - platform: 'aptos' | 'stripe' | 'all'
+ *   - platform: 'sui' | 'stripe' | 'all'
  *   - from_date: ISO date
  *   - to_date: ISO date
  *   - min_amount: number

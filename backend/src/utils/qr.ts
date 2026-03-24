@@ -1,3 +1,4 @@
+// @ts-nocheck — optional native `canvas` dependency for branded QR assets
 /**
  * QR Code Generator with Centered Logo
  * 

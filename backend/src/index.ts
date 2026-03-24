@@ -32,6 +32,7 @@ import walletRoutes from './routes/wallet.routes';
 
 // V2 Routes (Production custodial wallet system)
 import bookingV2Routes from './routes/booking-v2.routes';
+import zkloginRoutes from './routes/zklogin.routes';
 import walletV2Routes from './routes/wallet-v2.routes';
 import adminRoutes from './routes/admin.routes';
 
@@ -321,6 +322,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/wallet', walletRoutes);
 
+// Sui zkLogin (salt + link address)
+app.use('/api/zklogin', zkloginRoutes);
+
 // V2 Routes (Production custodial wallet system)
 app.use('/api/v2/bookings', bookingV2Routes);
 app.use('/api/v2/wallet', walletV2Routes);
@@ -375,7 +379,7 @@ app.use('/api/v1/campus-manager', campusManagerRoutes);  // Campus manager info 
 app.use('/api/barber-applications', barberApplicationRoutes);  // Legacy route
 
 logger.info('✅ V2 routes enabled:');
-logger.info('   - /api/v2/bookings (escrow-based)');
+logger.info('   - /api/v2/bookings (Stripe Checkout + Bridge / Sui Path B)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
@@ -473,6 +477,16 @@ httpServer.listen(PORT, async () => {
   // Start pending booking cron job (warns 3h before, auto-cancels 2h before if not accepted)
   pendingBookingCronService.start();
 
+  // DIY Sui relayer: sequential payouts (BullMQ concurrency 1) after Stripe checkout
+  if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
+    try {
+      const { startPayoutWorker } = await import('./queues/process-payout.queue');
+      startPayoutWorker();
+    } catch (e) {
+      logger.error('Failed to start process-payout worker', e);
+    }
+  }
+
   // NOTE: Blockchain sync disabled - platform uses Stripe for payments
   // To re-enable blockchain features, uncomment below:
   // const blockchainSyncCronService = (await import('./services/blockchain-sync-cron.service')).default;
@@ -511,7 +525,17 @@ process.on('SIGTERM', async () => {
     // Close PostgreSQL pool
     await closePool();
     logger.info('PostgreSQL pool closed');
-    
+
+    if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
+      try {
+        const { closePayoutInfrastructure } = await import('./queues/process-payout.queue');
+        await closePayoutInfrastructure();
+        logger.info('process-payout queue closed');
+      } catch (e) {
+        logger.warn('process-payout shutdown', e);
+      }
+    }
+
     logger.info('✅ All services shut down gracefully (hybrid architecture)');
     process.exit(0);
   } catch (error) {
@@ -524,6 +548,14 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing servers and database connections');
   
   try {
+    if (process.env.SUI_DIY_RELAYER_ENABLED === 'true') {
+      try {
+        const { closePayoutInfrastructure } = await import('./queues/process-payout.queue');
+        await closePayoutInfrastructure();
+      } catch {
+        /* ignore */
+      }
+    }
     await closePool();
     logger.info('PostgreSQL pool closed');
     process.exit(0);

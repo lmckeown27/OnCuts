@@ -126,7 +126,7 @@ export interface Barber {
   portfolio_images?: PortfolioImage[]; // Alias for backwards compatibility
   availability?: AvailabilityTemplate[];
   weekly_schedule?: WeeklySchedule; // Recurring weekly availability
-  aptos_address?: string;
+  sui_address?: string;
   campus_id?: string;
   // Location fields
   service_latitude?: number;

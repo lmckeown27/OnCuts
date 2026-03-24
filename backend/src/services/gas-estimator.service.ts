@@ -8,7 +8,7 @@
  */
 
 import { logger } from '../utils/logger';
-import aptosService from './aptos.service';
+import suiChainService from './sui-chain.service';
 import Decimal from 'decimal.js';
 import { redisGet, redisSet } from '../config/redis';
 
@@ -56,10 +56,13 @@ class GasEstimatorService {
    * Get gas wallet from environment
    */
   private getActiveGasWallet(): GasWallet {
-    const address = process.env.APTOS_PLATFORM_ADDRESS;
-    
+    const address =
+      process.env.SUI_GAS_WALLET_ADDRESS ||
+      process.env.GAS_WALLET_ADDRESS ||
+      process.env.SUI_TREASURY_ADDRESS ||
+      '';
     if (!address) {
-      throw new Error('APTOS_PLATFORM_ADDRESS not configured');
+      throw new Error('SUI_GAS_WALLET_ADDRESS or SUI_TREASURY_ADDRESS not configured');
     }
 
     return {
@@ -91,8 +94,7 @@ class GasEstimatorService {
    */
   private async getCurrentBalance(address: string): Promise<number> {
     try {
-      const balanceAPT = await aptosService.getAccountBalance(address);
-      return balanceAPT;
+      return suiChainService.getAccountBalance(address);
     } catch (error) {
       logger.error(`Failed to get balance for ${address}:`, error);
       return 0;

@@ -1,6 +1,6 @@
 // CampusCuts Production Database Schema
 // PostgreSQL as Coordination + Intelligence Layer
-// Blockchain (Aptos) = Source of Truth for Payments & Reputation
+// Sui (Path B) = settlement via Bridge + zkLogin; Postgres = coordination
 
 generator client {
   provider = "prisma-client-js"
@@ -139,7 +139,9 @@ model Campus {
 
 model User {
   id              String   @id @default(uuid()) @db.Uuid
-  walletAddress   String   @unique @db.VarChar(66)  // Aptos address format
+  walletAddress   String   @unique @db.VarChar(66)  // Legacy identifier; prefer suiAddress
+  suiAddress      String?  @unique @map("sui_address") @db.VarChar(66)
+  zkLoginSalt     String?  @map("zk_login_salt") @db.Text
   role            UserRole
   campusId        String   @db.Uuid
   
@@ -347,7 +349,7 @@ model Booking {
   platformFeeUsdCents Int
   barberEarningsUsdCents Int
   
-  // Blockchain anchoring
+  // Blockchain anchoring (legacy column names in DB may still be aptos_*)
   aptosTxHash     String?  @db.VarChar(66)
   aptosEventIndex BigInt?
   

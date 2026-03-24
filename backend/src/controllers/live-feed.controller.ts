@@ -2,17 +2,17 @@
  * Live Transaction Feed Controller
  * 
  * Provides API endpoints for admin dashboard live transaction monitoring
- * Fetches recent transactions from both Aptos blockchain and Stripe
+ * Fetches recent transactions from Sui (stub) and Stripe
  */
 
 import { Request, Response, NextFunction } from 'express';
-import aptosMonitorService from '../services/aptos-monitor.service';
+import suiMonitorService from '../services/sui-monitor.service';
 import stripeMonitorService from '../services/stripe-monitor.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 
 /**
- * Get combined transaction feed (Aptos + Stripe)
+ * Get combined transaction feed (Sui + Stripe)
  * GET /api/admin/live-feed
  */
 export const getLiveFeed = async (
@@ -22,7 +22,7 @@ export const getLiveFeed = async (
 ) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const platform = req.query.platform as string; // 'aptos', 'stripe', or 'all'
+    const platform = req.query.platform as string; // 'sui', 'stripe', or 'all'
 
     let query = `
       SELECT * FROM admin_transaction_feed
@@ -55,26 +55,26 @@ export const getLiveFeed = async (
 };
 
 /**
- * Get recent Aptos transactions
- * GET /api/admin/live-feed/aptos
+ * Get recent Sui transactions (indexer/RPC integration pending)
+ * GET /api/admin/live-feed/sui
  */
-export const getAptosTransactions = async (
+export const getSuiTransactions = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const transactions = await aptosMonitorService.getRecentTransactions(limit);
+    const transactions = await suiMonitorService.getRecentTransactions(limit);
 
     res.json({
       success: true,
       data: transactions,
       count: transactions.length,
-      platform: 'aptos',
+      platform: 'sui',
     });
   } catch (error) {
-    logger.error('Failed to fetch Aptos transactions:', error);
+    logger.error('Failed to fetch Sui transactions:', error);
     next(error);
   }
 };

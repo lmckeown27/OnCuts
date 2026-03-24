@@ -118,7 +118,7 @@ class WalletV2Service {
   async withdrawOnChain(
     amountDollars: number,
     destinationAddress: string,
-    chain: string = 'aptos'
+    chain: string = 'sui'
   ): Promise<{
     queue_id: number;
     status: string;

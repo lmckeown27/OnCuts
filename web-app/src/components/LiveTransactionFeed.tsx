@@ -11,7 +11,7 @@ import Card from './Card';
 import { toast } from 'react-hot-toast';
 
 interface Transaction {
-  platform: 'aptos' | 'stripe';
+  platform: 'sui' | 'stripe';
   transaction_id: string;
   transaction_type: string;
   from_address?: string;
@@ -53,7 +53,7 @@ export default function LiveTransactionFeed() {
   const [stats, setStats] = useState<PlatformStats[]>([]);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'aptos' | 'stripe'>('all');
+  const [filter, setFilter] = useState<'all' | 'sui' | 'stripe'>('all');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -79,11 +79,11 @@ export default function LiveTransactionFeed() {
       setIsConnected(false);
     });
 
-    // Listen for Aptos transactions
-    socketInstance.on('aptos-transaction', (tx: Transaction) => {
-      console.log('⛓️ New Aptos transaction:', tx);
+    // Listen for Sui transactions (admin feed)
+    socketInstance.on('sui-transaction', (tx: Transaction) => {
+      console.log('⛓️ New Sui transaction:', tx);
       setTransactions((prev) => [tx, ...prev].slice(0, 100)); // Keep last 100
-      toast(`New Aptos transaction: ${tx.description}`, {
+      toast(`New Sui transaction: ${tx.description}`, {
         icon: '⛓️',
         duration: 3000,
       });
@@ -146,13 +146,13 @@ export default function LiveTransactionFeed() {
   });
 
   const getPlatformIcon = (platform: string) => {
-    if (platform === 'aptos') return '⛓️';
+    if (platform === 'sui') return '⛓️';
     if (platform === 'stripe') return '💳';
     return '💰';
   };
 
   const getStatusBadge = (tx: Transaction) => {
-    if (tx.platform === 'aptos') {
+    if (tx.platform === 'sui') {
       return tx.status_success ? (
         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
           Success
@@ -249,14 +249,14 @@ export default function LiveTransactionFeed() {
             All ({transactions.length})
           </button>
           <button
-            onClick={() => setFilter('aptos')}
+            onClick={() => setFilter('sui')}
             className={`px-4 py-2 rounded-lg font-semibold ${
-              filter === 'aptos'
+              filter === 'sui'
                 ? 'bg-primary-400 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            Aptos ({transactions.filter((t) => t.platform === 'aptos').length})
+            Sui ({transactions.filter((t) => t.platform === 'sui').length})
           </button>
           <button
             onClick={() => setFilter('stripe')}
@@ -304,7 +304,7 @@ export default function LiveTransactionFeed() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-sm mt-3">
-                      {tx.platform === 'aptos' && (
+                      {tx.platform === 'sui' && (
                         <>
                           <div>
                             <span className="text-gray-600">From:</span>{' '}

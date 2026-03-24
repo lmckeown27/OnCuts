@@ -15,9 +15,11 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 
 /**
- * Stripe Webhook Handler
+ * Stripe Webhook Handler (legacy)
  * POST /api/webhooks/stripe
- * 
+ *
+ * Production Path B uses `stripe-webhook-secure.controller` via `webhook.routes.ts`.
+ *
  * IMPORTANT: This route MUST use raw body, not JSON parsed
  * See index.ts for proper configuration
  */

@@ -1,13 +1,33 @@
 // API Configuration - Uses environment variables from .env
 // Production uses relative URL (proxied through Nginx); for local dev, set VITE_API_URL=http://localhost:3001/api/v1
 export const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+/** Origin for non-versioned routes (e.g. /api/zklogin). */
+export function getBackendOrigin(): string {
+  if (import.meta.env.VITE_API_ORIGIN) {
+    return import.meta.env.VITE_API_ORIGIN.replace(/\/$/, '');
+  }
+  const base = API_BASE_URL;
+  if (base.startsWith('http')) {
+    try {
+      const url = new URL(base);
+      return url.origin;
+    } catch {
+      return '';
+    }
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+}
 export const WS_URL = import.meta.env.VITE_WS_URL || `wss://${window.location.host}`;
 export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
 
-// Aptos Blockchain Configuration
-export const APTOS_NETWORK = import.meta.env.VITE_APTOS_NETWORK || 'devnet';
-export const APTOS_NODE_URL = import.meta.env.VITE_APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-export const APTOS_MODULE_ADDRESS = import.meta.env.VITE_APTOS_MODULE_ADDRESS || '';
+// Sui (Path B)
+export const SUI_RPC_URL =
+  import.meta.env.VITE_SUI_RPC_URL || 'https://fullnode.testnet.sui.io:443';
+export const SUI_PROVER_URL = import.meta.env.VITE_SUI_PROVER_URL || '';
 
 // App Metadata
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCut';

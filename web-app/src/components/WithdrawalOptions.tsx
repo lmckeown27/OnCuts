@@ -54,7 +54,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
         await walletV2Service.withdrawToBank(amountNum);
         toast.success('Withdrawal processed! Funds will arrive instantly.');
       } else {
-        await walletV2Service.withdrawOnChain(amountNum, destinationAddress, 'aptos');
+        await walletV2Service.withdrawOnChain(amountNum, destinationAddress, 'sui');
         toast.success('Withdrawal queued for batching. Will be processed within 15 minutes.');
       }
 
@@ -146,7 +146,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
               <div>
                 <div className="font-medium text-gray-900">On-Chain (Batched)</div>
                 <div className="text-sm text-gray-600 mt-1">
-                  To Aptos wallet • Processed within 15 minutes
+                  To Sui wallet • Processed within 15 minutes
                 </div>
                 <div className="text-xs text-green-600 mt-1 font-medium">
                   Lower fees • Batched for efficiency
@@ -166,7 +166,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({
       {selectedMethod === 'onchain' && (
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Aptos Wallet Address
+            Sui wallet address
           </label>
           <input
             type="text"

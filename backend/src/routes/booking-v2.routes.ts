@@ -11,7 +11,13 @@ import * as bookingController from '../controllers/booking-v2.controller';
 
 const router = express.Router();
 
-// Create booking (generates Stripe payment intent)
+router.get(
+  '/checkout-session/:sessionId/settlement',
+  authenticate,
+  bookingController.getCheckoutSettlement
+);
+
+// Create booking (Stripe Checkout Session, Path B)
 router.post('/', authenticate, bookingController.createBooking);
 
 // Confirm payment (after Stripe payment succeeds)

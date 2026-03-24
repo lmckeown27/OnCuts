@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-import aptosService from '../services/aptos.service';
+import suiChainService from '../services/sui-chain.service';
 import { logger } from '../utils/logger';
 import crypto from 'crypto';
 
@@ -45,7 +45,7 @@ export const submitReview = async (req: AuthRequest, res: Response, next: NextFu
     const reviewHash = crypto.createHash('sha256').update(reviewText).digest('hex');
 
     // Submit review to blockchain
-    const txHash = await aptosService.submitReview({
+    const txHash = await suiChainService.submitReview({
       clientAddress,
       bookingId,
       barberAddress: barber_address,

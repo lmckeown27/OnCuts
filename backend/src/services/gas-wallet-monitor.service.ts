@@ -4,19 +4,20 @@
  * Monitors gas wallet balance and sends alerts when low
  */
 
-import { AptosClient, Types } from 'aptos';
 import { logger } from '../utils/logger';
 import { sendEmail } from './email.service';
 import { sendSlackAlert } from './slack.service';
 import { getRedisClient, redisGet, redisSet } from '../config/redis';
 
-const APTOS_NODE_URL = process.env.APTOS_NODE_URL || 'https://fullnode.devnet.aptoslabs.com/v1';
-const GAS_WALLET_ADDRESS = process.env.GAS_WALLET_ADDRESS || '';
+const GAS_WALLET_ADDRESS =
+  process.env.SUI_GAS_WALLET_ADDRESS ||
+  process.env.GAS_WALLET_ADDRESS ||
+  '';
 
-// Alert thresholds (in APT)
-const CRITICAL_THRESHOLD = parseFloat(process.env.GAS_WALLET_CRITICAL_THRESHOLD || '10'); // 10 APT
-const WARNING_THRESHOLD = parseFloat(process.env.GAS_WALLET_WARNING_THRESHOLD || '50');  // 50 APT
-const HEALTHY_THRESHOLD = parseFloat(process.env.GAS_WALLET_HEALTHY_THRESHOLD || '100'); // 100 APT
+// Alert thresholds (SUI-native units for display; balance stubbed until RPC wired)
+const CRITICAL_THRESHOLD = parseFloat(process.env.GAS_WALLET_CRITICAL_THRESHOLD || '10');
+const WARNING_THRESHOLD = parseFloat(process.env.GAS_WALLET_WARNING_THRESHOLD || '50');
+const HEALTHY_THRESHOLD = parseFloat(process.env.GAS_WALLET_HEALTHY_THRESHOLD || '100');
 
 // Alert cooldown (prevent spam)
 const ALERT_COOLDOWN_HOURS = parseInt(process.env.ALERT_COOLDOWN_HOURS || '6'); // 6 hours
@@ -28,8 +29,8 @@ const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL || '';
 
 interface GasWalletStatus {
   address: string;
-  balance: number; // APT
-  balanceOctas: bigint; // Raw octas
+  balance: number;
+  balanceOctas: bigint;
   status: 'critical' | 'warning' | 'healthy';
   lastChecked: string;
   estimatedDaysRemaining: number;
@@ -43,10 +44,8 @@ interface AlertHistory {
 }
 
 class GasWalletMonitorService {
-  private aptos: AptosClient;
-
   constructor() {
-    this.aptos = new AptosClient(APTOS_NODE_URL);
+    logger.info('Gas wallet monitor: Sui Path B (on-chain balance query not wired)');
   }
 
   /**
@@ -55,19 +54,11 @@ class GasWalletMonitorService {
   async getGasWalletBalance(): Promise<GasWalletStatus> {
     try {
       if (!GAS_WALLET_ADDRESS) {
-        throw new Error('GAS_WALLET_ADDRESS not configured');
+        throw new Error('GAS_WALLET_ADDRESS / SUI_GAS_WALLET_ADDRESS not configured');
       }
 
-      // Fetch account balance
-      const resources = await this.aptos.getAccountResources(GAS_WALLET_ADDRESS);
-
-      // Find AptosCoin resource
-      const coinResource = resources.find(
-        (r: Types.MoveResource) => r.type === '0x1::coin::CoinStore<0x1::aptos_coin::AptosCoin>'
-      );
-
-      const balanceOctas = BigInt((coinResource?.data as any)?.coin?.value || '0');
-      const balance = Number(balanceOctas) / 100000000; // Convert octas to APT
+      const balanceOctas = BigInt(0);
+      const balance = 0;
 
       // Determine status
       let status: 'critical' | 'warning' | 'healthy';
