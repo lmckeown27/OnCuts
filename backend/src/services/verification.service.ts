@@ -66,8 +66,12 @@ async function ensureTableExists(): Promise<void> {
   }
 }
 
-// Initialize table on module load
-ensureTableExists();
+/**
+ * Run after PostgreSQL is connected (see index.ts). Avoids module-load races with the DB pool.
+ */
+export async function initVerificationSchema(): Promise<void> {
+  await ensureTableExists();
+}
 
 /**
  * Create Pending Registration

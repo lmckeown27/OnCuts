@@ -440,6 +440,15 @@ httpServer.listen(PORT, async () => {
   try {
     await connectToPostgres();
     logger.info(`✅ PostgreSQL cache layer ready`);
+    try {
+      const { initVerificationSchema } = await import('./services/verification.service');
+      await initVerificationSchema();
+      logger.info(`✅ Verification schema ready (pending_registrations)`);
+    } catch (verifyErr: unknown) {
+      logger.warn('Verification schema init failed (registration codes may fail until DB is reachable)', {
+        error: verifyErr instanceof Error ? verifyErr.message : String(verifyErr),
+      });
+    }
   } catch (error: any) {
     logger.error(`❌ PostgreSQL cache unavailable (app will use blockchain fallback)`, {
       error: error.message,
