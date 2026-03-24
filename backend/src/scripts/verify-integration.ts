@@ -8,6 +8,12 @@
  */
 
 import dotenv from 'dotenv';
+import {
+  getDefaultStripeSecretKey,
+  getStripeClient,
+  hasStripeWebhookSecretConfigured,
+  isAnyStripeSecretKeyConfigured,
+} from '../config/stripe';
 import { logger } from '../utils/logger';
 
 dotenv.config();
@@ -45,9 +51,25 @@ async function verifyIntegration() {
   checkEnvVar('PINATA_API_KEY', true, 'Pinata API key');
   checkEnvVar('PINATA_SECRET_API_KEY', true, 'Pinata secret key');
   
-  // Stripe Configuration (REQUIRED for fiat)
-  checkEnvVar('STRIPE_SECRET_KEY', true, 'Stripe secret key');
-  checkEnvVar('STRIPE_WEBHOOK_SECRET', false, 'Stripe webhook secret (needed for deposits)');
+  // Stripe Configuration (REQUIRED for fiat — generic or split live/test keys)
+  if (!isAnyStripeSecretKeyConfigured()) {
+    results.push({
+      name: 'Stripe secret key',
+      status: 'fail',
+      message:
+        'Set STRIPE_SECRET_KEY and/or STRIPE_SECRET_KEY_LIVE + STRIPE_SECRET_KEY_TEST (see src/config/stripe.ts)',
+      required: true,
+    });
+  }
+  if (!hasStripeWebhookSecretConfigured()) {
+    results.push({
+      name: 'Stripe webhook secret',
+      status: 'warning',
+      message:
+        'No STRIPE_WEBHOOK_SECRET / _LIVE / _TEST — webhooks will not verify (needed for deposits & checkout)',
+      required: false,
+    });
+  }
   
   // JWT (REQUIRED)
   checkEnvVar('JWT_SECRET', true, 'JWT secret for auth');
@@ -224,14 +246,13 @@ async function verifyIntegration() {
   logger.info('\n💳 Checking Stripe configuration...');
   
   try {
-    const Stripe = (await import('stripe')).default;
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    
+    const stripeKey = getDefaultStripeSecretKey();
     if (!stripeKey) {
-      throw new Error('STRIPE_SECRET_KEY not set');
+      throw new Error(
+        'No default Stripe secret key (STRIPE_MODE + STRIPE_SECRET_KEY* — see src/config/stripe.ts)'
+      );
     }
-    
-    const stripe = new Stripe(stripeKey, { apiVersion: '2023-10-16' });
+    const stripe = getStripeClient(stripeKey);
     
     // Test API connection
     const balance = await stripe.balance.retrieve();

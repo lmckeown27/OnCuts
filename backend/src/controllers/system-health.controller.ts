@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { isAnyStripeSecretKeyConfigured } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { checkHealth as checkPostgresHealth, pool } from '../database/connection';
 
@@ -74,9 +75,9 @@ export async function getSystemHealth(req: Request, res: Response) {
         },
         stripe: {
           name: 'Stripe Payments',
-          status: process.env.STRIPE_SECRET_KEY ? 'operational' : 'not_configured',
-          message: process.env.STRIPE_SECRET_KEY 
-            ? 'Payment processing available' 
+          status: isAnyStripeSecretKeyConfigured() ? 'operational' : 'not_configured',
+          message: isAnyStripeSecretKeyConfigured()
+            ? 'Payment processing available'
             : 'Stripe not configured',
           lastChecked: new Date().toISOString(),
         },

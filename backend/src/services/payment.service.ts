@@ -8,6 +8,7 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 
@@ -57,15 +58,7 @@ class PaymentService {
   private paymentMode: 'offchain' | 'onchain';
   
   constructor() {
-    // Initialize Stripe
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) {
-      throw new Error('STRIPE_SECRET_KEY not configured');
-    }
-    
-    this.stripe = new Stripe(stripeKey, {
-      apiVersion: '2023-10-16',
-    });
+    this.stripe = getDefaultStripeClient();
     
     // Determine payment mode
     this.paymentMode = (process.env.PAYMENT_MODE as 'offchain' | 'onchain') || 'offchain';

@@ -9,15 +9,14 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import withdrawalBatchService, { DestinationType } from './withdrawal-batch.service';
 import auditService from './audit.service';
 import { pool } from '../database/connection';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 export interface WithdrawToBankInput {
   userId: string;

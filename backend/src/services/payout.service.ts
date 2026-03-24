@@ -6,6 +6,7 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import ledgerService from './ledger.service';
@@ -19,9 +20,7 @@ import {
 } from '../types/wallet.types';
 import { ApiError } from '../middleware/errorHandler';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 class PayoutService {
   /**

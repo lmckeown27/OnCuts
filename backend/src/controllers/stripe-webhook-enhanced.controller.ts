@@ -18,14 +18,9 @@
 
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import { constructStripeWebhookEvent, hasStripeWebhookSecretConfigured } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { pool, query } from '../database/connection';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
-  apiVersion: '2023-10-16',
-});
-
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 /**
  * Main webhook handler
@@ -43,8 +38,8 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
 
   try {
     // Verify webhook signature
-    if (WEBHOOK_SECRET) {
-      event = stripe.webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
+    if (hasStripeWebhookSecretConfigured()) {
+      event = constructStripeWebhookEvent(req.body, sig);
       logger.info(`Stripe webhook verified: ${event.type} (ID: ${event.id})`);
     } else {
       // For development without webhook secret

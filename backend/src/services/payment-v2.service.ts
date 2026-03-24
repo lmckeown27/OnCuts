@@ -10,6 +10,7 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -18,9 +19,7 @@ import transactionService, { TransactionType } from './transaction.service';
 // import escrowService from './escrow.service';
 import auditService from './audit.service';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 // Platform fee rate (15% - covers Stripe's ~4% processing fee, nets ~11%)
 const PLATFORM_FEE_RATE = 0.15;

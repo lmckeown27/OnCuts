@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails, sendBookingCancellationEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
+import { getDefaultStripeClient } from '../config/stripe';
 import { getSocketIO } from '../index';
 
 const router = express.Router();
@@ -1436,8 +1437,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const totalAmountCents = booking.priceUsdCents + tipAmountCents;
 
     // Import Stripe
-    const Stripe = require('stripe');
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const stripe = getDefaultStripeClient();
 
     // Get consumer's email and name for Stripe customer creation
     const consumerResult = await pool.query(
@@ -1582,8 +1582,7 @@ router.post('/:id/update-payment-intent', authenticate, async (req, res, next) =
     const totalAmountCents = booking.priceUsdCents + tipAmountCents;
 
     // Import Stripe and update the payment intent
-    const Stripe = require('stripe');
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const stripe = getDefaultStripeClient();
 
     await stripe.paymentIntents.update(paymentIntentId, {
       amount: totalAmountCents,
@@ -1643,8 +1642,7 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
     const totalAmountCents = booking.priceUsdCents + tipAmountCents;
 
     // Verify payment intent with Stripe
-    const Stripe = require('stripe');
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const stripe = getDefaultStripeClient();
     
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     

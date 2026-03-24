@@ -6,12 +6,13 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
-  apiVersion: '2023-10-16',
-});
+function stripeClient(): Stripe {
+  return getDefaultStripeClient();
+}
 
 const PLATFORM_FEE_PERCENTAGE = 0.15; // 15% platform fee (covers Stripe's ~4% processing fee, nets ~11%)
 
@@ -39,7 +40,7 @@ class StripePaymentService {
   async createOrGetCustomer(email: string, userId: string, name?: string): Promise<string> {
     try {
       // Check if customer already exists
-      const existingCustomers = await stripe.customers.list({
+      const existingCustomers = await stripeClient().customers.list({
         email,
         limit: 1,
       });
@@ -49,7 +50,7 @@ class StripePaymentService {
       }
 
       // Create new customer
-      const customer = await stripe.customers.create({
+      const customer = await stripeClient().customers.create({
         email,
         name,
         metadata: {
@@ -117,7 +118,7 @@ class StripePaymentService {
       }
 
       // Create payment intent
-      const paymentIntent = await stripe.paymentIntents.create(paymentIntentConfig);
+      const paymentIntent = await stripeClient().paymentIntents.create(paymentIntentConfig);
 
       logger.info(`Created payment intent: ${paymentIntent.id} for $${amount}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect - manual payout needed)'}`);
 
@@ -139,7 +140,7 @@ class StripePaymentService {
    */
   async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
     try {
-      return await stripe.paymentIntents.retrieve(paymentIntentId);
+      return await stripeClient().paymentIntents.retrieve(paymentIntentId);
     } catch (error: any) {
       logger.error('Error retrieving payment intent:', error);
       throw new Error(`Failed to retrieve payment intent: ${error.message}`);
@@ -151,7 +152,7 @@ class StripePaymentService {
    */
   async cancelPaymentIntent(paymentIntentId: string): Promise<void> {
     try {
-      await stripe.paymentIntents.cancel(paymentIntentId);
+      await stripeClient().paymentIntents.cancel(paymentIntentId);
       logger.info(`Cancelled payment intent: ${paymentIntentId}`);
     } catch (error: any) {
       logger.error('Error cancelling payment intent:', error);
@@ -164,7 +165,7 @@ class StripePaymentService {
    */
   async createRefund(paymentIntentId: string, amount?: number): Promise<Stripe.Refund> {
     try {
-      const refund = await stripe.refunds.create({
+      const refund = await stripeClient().refunds.create({
         payment_intent: paymentIntentId,
         amount: amount ? Math.round(amount * 100) : undefined, // Partial or full refund
       });
@@ -182,7 +183,7 @@ class StripePaymentService {
    */
   async getCustomerPaymentMethods(customerId: string): Promise<Stripe.PaymentMethod[]> {
     try {
-      const paymentMethods = await stripe.paymentMethods.list({
+      const paymentMethods = await stripeClient().paymentMethods.list({
         customer: customerId,
         type: 'card',
       });
@@ -199,12 +200,12 @@ class StripePaymentService {
    */
   async attachPaymentMethod(paymentMethodId: string, customerId: string): Promise<void> {
     try {
-      await stripe.paymentMethods.attach(paymentMethodId, {
+      await stripeClient().paymentMethods.attach(paymentMethodId, {
         customer: customerId,
       });
 
       // Set as default
-      await stripe.customers.update(customerId, {
+      await stripeClient().customers.update(customerId, {
         invoice_settings: {
           default_payment_method: paymentMethodId,
         },
@@ -222,7 +223,7 @@ class StripePaymentService {
    */
   async detachPaymentMethod(paymentMethodId: string): Promise<void> {
     try {
-      await stripe.paymentMethods.detach(paymentMethodId);
+      await stripeClient().paymentMethods.detach(paymentMethodId);
       logger.info(`Detached payment method: ${paymentMethodId}`);
     } catch (error: any) {
       logger.error('Error detaching payment method:', error);

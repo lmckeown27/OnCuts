@@ -8,16 +8,14 @@
  * Or: npm run sync-stripe-status
  */
 
-import Stripe from 'stripe';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import { getDefaultStripeClient } from '../config/stripe';
 
 // Load environment variables
 dotenv.config();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

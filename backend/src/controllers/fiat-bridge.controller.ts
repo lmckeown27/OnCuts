@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { constructStripeWebhookEvent, hasStripeWebhookSecretConfigured } from '../config/stripe';
 import { logger } from '../utils/logger';
 import fiatBlockchainBridge from '../services/fiat-blockchain-bridge.service';
 import custodialSignerService from '../services/custodial-signer.service';
@@ -278,25 +279,20 @@ export async function calculateFee(req: Request, res: Response) {
  */
 export async function handleStripeWebhook(req: Request, res: Response) {
   try {
-    const sig = req.headers['stripe-signature'];
+    const rawSig = req.headers['stripe-signature'];
+    const sig = Array.isArray(rawSig) ? rawSig[0] : rawSig;
 
-    if (!sig) {
+    if (!sig || typeof sig !== 'string') {
       return res.status(400).json({ error: 'Missing signature' });
     }
 
-    // Verify webhook signature
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      logger.error('STRIPE_WEBHOOK_SECRET not configured');
+    // Verify webhook signature (tries test + live webhook secrets)
+    if (!hasStripeWebhookSecretConfigured()) {
+      logger.error('No STRIPE_WEBHOOK_SECRET* configured');
       return res.status(500).json({ error: 'Webhook not configured' });
     }
 
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    const event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      webhookSecret
-    );
+    const event = constructStripeWebhookEvent(req.body, sig);
 
     logger.info(`📨 Stripe webhook received: ${event.type}`);
 

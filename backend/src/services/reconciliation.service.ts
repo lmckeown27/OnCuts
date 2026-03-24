@@ -12,10 +12,9 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 export enum ReconciliationType {
   STRIPE = 'stripe',

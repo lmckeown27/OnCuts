@@ -5,11 +5,10 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 

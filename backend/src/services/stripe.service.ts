@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -9,15 +10,7 @@ class StripeService {
   private stripe: Stripe;
 
   constructor() {
-    const secretKey = process.env.STRIPE_SECRET_KEY;
-    if (!secretKey) {
-      throw new Error('STRIPE_SECRET_KEY not configured');
-    }
-
-    this.stripe = new Stripe(secretKey, {
-      apiVersion: '2023-10-16',
-    });
-
+    this.stripe = getDefaultStripeClient();
     logger.info('💳 Stripe Service initialized');
   }
 

@@ -11,16 +11,15 @@
 
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
+import {
+  constructStripeWebhookEvent,
+  getStripeClientForLivemode,
+  hasStripeWebhookSecretConfigured,
+} from '../config/stripe';
 import { pool, query } from '../database/connection';
 import { logger } from '../utils/logger';
 import { normalizeSuiAddress, isValidSuiAddress } from '@mysten/sui/utils';
 import { requestBridgePayoutToSui } from '../services/bridge-payout.service';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
-
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 // Platform fee percentage (15% to platform, 85% to barber)
 const PLATFORM_FEE_PERCENTAGE = 0.15;
@@ -100,9 +99,11 @@ async function initiateBarberPayout(
   booking: any,
   totalAmountCents: number,
   tipAmountCents: number,
-  paymentIntentId: string
+  paymentIntentId: string,
+  livemode: boolean
 ): Promise<void> {
   try {
+    const stripe = getStripeClientForLivemode(livemode);
     // First, check if this payment used destination charges (automatic split)
     // If so, the transfer already happened automatically and we shouldn't do it again
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -224,13 +225,17 @@ async function initiateBarberPayout(
  * Post-webhook verification: Re-fetch PaymentIntent from Stripe
  * This is an extra safety check to ensure the payment is truly complete
  */
-async function verifyPaymentIntentWithStripe(paymentIntentId: string): Promise<{
+async function verifyPaymentIntentWithStripe(
+  paymentIntentId: string,
+  livemode: boolean
+): Promise<{
   verified: boolean;
   status: string;
   amountReceived: number;
   metadata: Record<string, string>;
 }> {
   try {
+    const stripe = getStripeClientForLivemode(livemode);
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     
     return {
@@ -262,15 +267,15 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
     return res.status(400).json({ error: 'Missing signature' });
   }
 
-  if (!WEBHOOK_SECRET) {
-    logger.error('STRIPE_WEBHOOK_SECRET not configured');
+  if (!hasStripeWebhookSecretConfigured()) {
+    logger.error('No STRIPE_WEBHOOK_SECRET / STRIPE_WEBHOOK_SECRET_LIVE / STRIPE_WEBHOOK_SECRET_TEST configured');
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
+    event = constructStripeWebhookEvent(req.body, sig);
     logger.info(`✅ Stripe webhook verified: ${event.type} (${event.id})`);
   } catch (err: any) {
     logger.error(`❌ Webhook signature verification failed: ${err.message}`);
@@ -552,7 +557,7 @@ async function handlePaymentIntentSucceeded(
   }
 
   // POST-WEBHOOK VERIFICATION: Re-check with Stripe API
-  const verification = await verifyPaymentIntentWithStripe(paymentIntent.id);
+  const verification = await verifyPaymentIntentWithStripe(paymentIntent.id, paymentIntent.livemode);
   
   if (!verification.verified) {
     logger.error(`❌ Post-webhook verification failed for ${paymentIntent.id}`, {
@@ -643,7 +648,14 @@ async function handlePaymentIntentSucceeded(
 
     // 3. Trigger payout to barber via Stripe Connect
     const tipAmountCents = parseInt(tip_amount_cents || '0');
-    await initiateBarberPayout(client, booking, amountCents, tipAmountCents, paymentIntent.id);
+    await initiateBarberPayout(
+      client,
+      booking,
+      amountCents,
+      tipAmountCents,
+      paymentIntent.id,
+      paymentIntent.livemode
+    );
 
     // 4. Mark webhook event as processed
     await client.query(

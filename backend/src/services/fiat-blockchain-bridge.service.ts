@@ -30,14 +30,12 @@
  */
 
 import Stripe from 'stripe';
+import { getDefaultStripeClient } from '../config/stripe';
 import { logger } from '../utils/logger';
 import custodialSignerService from './custodial-signer.service';
 import blockchainQueryService from './blockchain-query.service';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+const stripe = getDefaultStripeClient();
 
 // USDC conversion rate (in production, fetch from real-time oracle)
 const USDC_TO_USD_RATE = 1.0; // 1 USDC = $1 USD (stablecoin)
