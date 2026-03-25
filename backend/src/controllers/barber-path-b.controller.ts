@@ -20,7 +20,7 @@ export async function getPathBPayoutStatus(req: AuthRequest, res: Response, next
     const result = await pool.query(
       `SELECT
          NULLIF(TRIM(sui_address), '') AS sui,
-         NULLIF(TRIM(legacy_wallet_address), '') AS legacy
+         NULLIF(TRIM("walletAddress"), '') AS legacy
        FROM users
        WHERE id = $1`,
       [userId]

@@ -1,19 +1,24 @@
 /**
- * Resolve user on-chain identity: zkLogin Sui address first, then legacy custodial hex (DB column legacy_wallet_address).
+ * Resolve user on-chain identity: `sui_address` (Path B / zkLogin), then Prisma `"walletAddress"` (hex id).
+ *
+ * DBs that only have `legacy_wallet_address` (snake_case) should add/copy into `"walletAddress"` or adjust SQL.
  */
 
 export const USER_PRIMARY_WALLET_SQL_U =
-  "COALESCE(NULLIF(TRIM(u.sui_address), ''), NULLIF(TRIM(u.legacy_wallet_address), ''))";
+  'COALESCE(NULLIF(TRIM(u.sui_address), \'\'), NULLIF(TRIM(u."walletAddress"), \'\'))';
 
 export const USER_PRIMARY_WALLET_SQL =
-  "COALESCE(NULLIF(TRIM(sui_address), ''), NULLIF(TRIM(legacy_wallet_address), ''))";
+  'COALESCE(NULLIF(TRIM(sui_address), \'\'), NULLIF(TRIM("walletAddress"), \'\'))';
 
 export function primaryWalletFromUserRow(row: {
   sui_address?: string | null;
   legacy_wallet_address?: string | null;
+  walletAddress?: string | null;
 }): string | undefined {
   const s = row.sui_address?.trim();
   if (s) return s;
+  const w = row.walletAddress?.trim();
+  if (w) return w;
   const l = row.legacy_wallet_address?.trim();
   if (l) return l;
   return undefined;
