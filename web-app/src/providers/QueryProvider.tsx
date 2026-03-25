@@ -6,8 +6,16 @@
  */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ReactNode } from 'react';
+import { lazy, ReactNode, Suspense } from 'react';
+
+/** Only instantiated when `import.meta.env.DEV` — production builds drop the lazy `import()` entirely. */
+const ReactQueryDevtoolsPanel = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/react-query-devtools').then((d) => ({
+        default: d.ReactQueryDevtools,
+      })),
+    )
+  : () => null;
 
 // Create a client with custom defaults optimized for blockchain
 const queryClient = new QueryClient({
@@ -48,8 +56,11 @@ export function QueryProvider({ children }: QueryProviderProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {/* Show dev tools in development */}
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <ReactQueryDevtoolsPanel initialIsOpen={false} />
+        </Suspense>
+      )}
     </QueryClientProvider>
   );
 }
