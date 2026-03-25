@@ -2,6 +2,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { applyAppNetworkModeDefaults } from './config/app-network';
+applyAppNetworkModeDefaults();
+
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

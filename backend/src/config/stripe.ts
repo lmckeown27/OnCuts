@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { stripeAutoModeFromAppNetwork } from './app-network';
 
 /** Keep in sync across all Stripe entrypoints. */
 export const STRIPE_API_VERSION = '2023-10-16' as const;
@@ -8,12 +9,30 @@ function trimEnv(name: string): string | undefined {
   return v || undefined;
 }
 
+/** Live secret: STRIPE_SECRET_KEY_LIVE or STRIPE_LIVE_SECRET_KEY */
+function liveStripeSecretFromEnv(): string | undefined {
+  return trimEnv('STRIPE_SECRET_KEY_LIVE') || trimEnv('STRIPE_LIVE_SECRET_KEY');
+}
+
+/** Test secret: STRIPE_SECRET_KEY_TEST or STRIPE_TEST_SECRET_KEY */
+function testStripeSecretFromEnv(): string | undefined {
+  return trimEnv('STRIPE_SECRET_KEY_TEST') || trimEnv('STRIPE_TEST_SECRET_KEY');
+}
+
+/** Live webhook signing secret */
+function liveStripeWebhookFromEnv(): string | undefined {
+  return trimEnv('STRIPE_WEBHOOK_SECRET_LIVE') || trimEnv('STRIPE_LIVE_WEBHOOK_SECRET');
+}
+
+/** Test webhook signing secret */
+function testStripeWebhookFromEnv(): string | undefined {
+  return trimEnv('STRIPE_WEBHOOK_SECRET_TEST') || trimEnv('STRIPE_TEST_WEBHOOK_SECRET');
+}
+
 /** True if any secret-key env var is set (generic or split live/test). */
 export function isAnyStripeSecretKeyConfigured(): boolean {
   return Boolean(
-    trimEnv('STRIPE_SECRET_KEY') ||
-      trimEnv('STRIPE_SECRET_KEY_LIVE') ||
-      trimEnv('STRIPE_SECRET_KEY_TEST')
+    trimEnv('STRIPE_SECRET_KEY') || liveStripeSecretFromEnv() || testStripeSecretFromEnv()
   );
 }
 
@@ -89,8 +108,8 @@ export function getStripeClient(secretKey: string): Stripe {
 export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
   const mode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
   const generic = trimEnv('STRIPE_SECRET_KEY');
-  const liveKey = trimEnv('STRIPE_SECRET_KEY_LIVE');
-  const testKey = trimEnv('STRIPE_SECRET_KEY_TEST');
+  const liveKey = liveStripeSecretFromEnv();
+  const testKey = testStripeSecretFromEnv();
 
   if (mode === 'live') {
     const k =
@@ -99,7 +118,7 @@ export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
       generic;
     if (!k) {
       throw new Error(
-        'STRIPE_MODE=live: set STRIPE_SECRET_KEY_LIVE or STRIPE_SECRET_KEY (sk_live_...)'
+        'STRIPE_MODE=live: set STRIPE_SECRET_KEY_LIVE / STRIPE_LIVE_SECRET_KEY or STRIPE_SECRET_KEY (sk_live_...)'
       );
     }
     return k;
@@ -112,7 +131,7 @@ export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
       generic;
     if (!k) {
       throw new Error(
-        'STRIPE_MODE=test: set STRIPE_SECRET_KEY_TEST or STRIPE_SECRET_KEY (sk_test_...)'
+        'STRIPE_MODE=test: set STRIPE_SECRET_KEY_TEST / STRIPE_TEST_SECRET_KEY or STRIPE_SECRET_KEY (sk_test_...)'
       );
     }
     return k;
@@ -123,12 +142,12 @@ export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
     if (k) return k;
     if (generic?.startsWith('sk_test')) {
       throw new Error(
-        'Live Stripe event but only sk_test STRIPE_SECRET_KEY is set; add STRIPE_SECRET_KEY_LIVE or use sk_live in STRIPE_SECRET_KEY'
+        'Live Stripe event but only sk_test STRIPE_SECRET_KEY is set; add STRIPE_SECRET_KEY_LIVE / STRIPE_LIVE_SECRET_KEY or use sk_live in STRIPE_SECRET_KEY'
       );
     }
     if (generic) return generic;
     throw new Error(
-      'Live Stripe event: configure STRIPE_SECRET_KEY_LIVE or STRIPE_SECRET_KEY (sk_live_...)'
+      'Live Stripe event: configure STRIPE_SECRET_KEY_LIVE / STRIPE_LIVE_SECRET_KEY or STRIPE_SECRET_KEY (sk_live_...)'
     );
   }
 
@@ -141,7 +160,7 @@ export function resolveStripeSecretKeyForLivemode(livemode: boolean): string {
   }
   if (generic) return generic;
   throw new Error(
-    'Test Stripe event: configure STRIPE_SECRET_KEY_TEST or STRIPE_SECRET_KEY (sk_test_...)'
+    'Test Stripe event: configure STRIPE_SECRET_KEY_TEST / STRIPE_TEST_SECRET_KEY or STRIPE_SECRET_KEY (sk_test_...)'
   );
 }
 
@@ -154,10 +173,14 @@ export function getStripeClientForLivemode(livemode: boolean): Stripe {
  * STRIPE_MODE live/test locks mode; auto prefers live in production, else test, with sensible fallbacks.
  */
 export function getDefaultStripeSecretKey(): string {
-  const mode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
+  let mode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
+  const stripeFromNet = stripeAutoModeFromAppNetwork();
+  if (mode === 'auto' && stripeFromNet) {
+    mode = stripeFromNet;
+  }
   const generic = trimEnv('STRIPE_SECRET_KEY');
-  const liveKey = trimEnv('STRIPE_SECRET_KEY_LIVE');
-  const testKey = trimEnv('STRIPE_SECRET_KEY_TEST');
+  const liveKey = liveStripeSecretFromEnv();
+  const testKey = testStripeSecretFromEnv();
 
   if (mode === 'live') {
     return (
@@ -206,7 +229,7 @@ export function getDefaultStripeClient(): Stripe {
   const k = getDefaultStripeSecretKey();
   if (!k) {
     throw new Error(
-      'Stripe not configured: set STRIPE_SECRET_KEY and/or STRIPE_SECRET_KEY_LIVE + STRIPE_SECRET_KEY_TEST'
+      'Stripe not configured: set STRIPE_SECRET_KEY and/or split keys, or APP_NETWORK_MODE=testnet|mainnet with STRIPE_TEST_SECRET_KEY / STRIPE_LIVE_SECRET_KEY (see src/config/app-network.ts)'
     );
   }
   if (!defaultClient) {

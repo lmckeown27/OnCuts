@@ -7,6 +7,7 @@
 
 import { Request, Response } from 'express';
 import { isAnyStripeSecretKeyConfigured } from '../config/stripe';
+import { resolveAppNetworkModeFromEnv } from '../config/app-network';
 import { logger } from '../utils/logger';
 import { checkHealth as checkPostgresHealth, pool } from '../database/connection';
 
@@ -80,6 +81,7 @@ export async function getSystemHealth(req: Request, res: Response) {
             ? 'Payment processing available'
             : 'Stripe not configured',
           lastChecked: new Date().toISOString(),
+          app_network_mode: resolveAppNetworkModeFromEnv(),
         },
         email: {
           name: 'Email Service',
@@ -100,6 +102,8 @@ export async function getSystemHealth(req: Request, res: Response) {
         activeConnections: pool.totalCount - pool.idleCount,
         nodeVersion: process.version,
         environment: process.env.NODE_ENV || 'development',
+        app_network_mode: resolveAppNetworkModeFromEnv(),
+        sui_rpc_configured: Boolean(process.env.SUI_RPC_URL?.trim()),
       },
       timestamp: new Date().toISOString(),
     });

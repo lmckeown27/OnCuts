@@ -22,15 +22,63 @@ export function getBackendOrigin(): string {
   return '';
 }
 export const WS_URL = import.meta.env.VITE_WS_URL || `wss://${window.location.host}`;
-export const STRIPE_PUBLIC_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
 
-// Sui (Path B)
+/** Align with backend APP_NETWORK_MODE: testnet = Stripe test + Sui testnet; mainnet = live + Sui mainnet. */
+export type AppNetworkMode = 'testnet' | 'mainnet';
+
+function parseViteAppNetworkMode(): AppNetworkMode | null {
+  const raw = (
+    (import.meta.env.VITE_APP_NETWORK_MODE as string | undefined) ||
+    (import.meta.env.VITE_SUI_NETWORK as string | undefined) ||
+    ''
+  )
+    .trim()
+    .toLowerCase();
+  if (!raw || raw === 'auto') return null;
+  if (raw === 'mainnet' || raw === 'live' || raw === 'production') return 'mainnet';
+  if (raw === 'testnet' || raw === 'test' || raw === 'development') return 'testnet';
+  return null;
+}
+
+export const APP_NETWORK_MODE: AppNetworkMode | null = parseViteAppNetworkMode();
+
+const SUI_MAINNET_DEFAULT_USDC =
+  '0xdba34672e30cb065b1f93e3ad5531876580039906648354972135f29979d9744::usdc::USDC';
+const SUI_TESTNET_DEFAULT_USDC =
+  '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC';
+
+/** Publishable key: set VITE_APP_NETWORK_MODE to pick test vs live pk when using split env names. */
+export const STRIPE_PUBLIC_KEY =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_STRIPE_PUBLIC_KEY ||
+  (APP_NETWORK_MODE === 'mainnet'
+    ? import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY
+    : APP_NETWORK_MODE === 'testnet'
+      ? import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY
+      : import.meta.env.PROD
+        ? import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY
+        : import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY) ||
+  '';
+
+// Sui (Path B) — VITE_SUI_RPC_URL wins; else defaults from APP_NETWORK_MODE; else legacy testnet
 export const SUI_RPC_URL =
-  import.meta.env.VITE_SUI_RPC_URL || 'https://fullnode.testnet.sui.io:443';
+  import.meta.env.VITE_SUI_RPC_URL ||
+  (APP_NETWORK_MODE === 'mainnet'
+    ? 'https://fullnode.mainnet.sui.io:443'
+    : APP_NETWORK_MODE === 'testnet'
+      ? 'https://fullnode.testnet.sui.io:443'
+      : 'https://fullnode.testnet.sui.io:443');
 export const SUI_PROVER_URL = import.meta.env.VITE_SUI_PROVER_URL || '';
 
-/** Native / canonical USDC coin type for the RPC network (must match backend settlement). */
-export const SUI_USDC_COIN_TYPE = (import.meta.env.VITE_SUI_USDC_COIN_TYPE as string | undefined)?.trim() || '';
+/** Native USDC type for the RPC network (must match backend). VITE_SUI_USDC_COIN_TYPE overrides. */
+export const SUI_USDC_COIN_TYPE =
+  (import.meta.env.VITE_SUI_USDC_COIN_TYPE as string | undefined)?.trim() ||
+  (APP_NETWORK_MODE === 'mainnet'
+    ? SUI_MAINNET_DEFAULT_USDC
+    : APP_NETWORK_MODE === 'testnet'
+      ? SUI_TESTNET_DEFAULT_USDC
+      : '') ||
+  '';
 
 /**
  * Mysten public zkLogin proving service (free). Used when building ZK proofs for zkLogin-signed txs.

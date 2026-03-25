@@ -20,6 +20,7 @@ import { CampusCutLogo } from '@assets';
 import toast from 'react-hot-toast';
 import socketService from '../services/socket.service';
 import { findService } from '../config/services';
+import { STRIPE_PUBLIC_KEY } from '../config/constants';
 
 // Helper to get display name for service
 const getServiceDisplayName = (serviceName?: string, serviceType?: string): string => {
@@ -28,8 +29,7 @@ const getServiceDisplayName = (serviceName?: string, serviceType?: string): stri
   return found?.name || serviceKey;
 };
 
-// Load Stripe - use your publishable key
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+const stripePromise = loadStripe(STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
 
 interface BookingDetails {
   id: string;

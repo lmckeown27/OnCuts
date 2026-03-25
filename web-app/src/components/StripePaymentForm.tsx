@@ -20,10 +20,9 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import Button from './Button';
 import Card from './Card';
-import { API_BASE_URL } from '../config/constants';
+import { API_BASE_URL, STRIPE_PUBLIC_KEY } from '../config/constants';
 
-// Load Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+const stripePromise = loadStripe(STRIPE_PUBLIC_KEY || 'pk_test_placeholder');
 
 interface StripePaymentFormProps {
   bookingId: string;

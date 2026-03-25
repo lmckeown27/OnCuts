@@ -8,11 +8,11 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import stripeService from '../services/stripe.service';
 import stripeMonitorService from '../services/stripe-monitor.service';
 import { handlePaymentSuccess, handlePaymentFailed } from './booking-payment.controller';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
+import { constructStripeWebhookEvent } from '../config/stripe';
 
 /**
  * Stripe Webhook Handler (legacy)
@@ -36,18 +36,8 @@ export const handleStripeWebhook = async (
       throw new ApiError(400, 'No signature provided');
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      logger.error('STRIPE_WEBHOOK_SECRET not configured');
-      throw new Error('Webhook secret not configured');
-    }
-
-    // Step 7.1: Verify webhook signature (security)
-    const event = stripeService.verifyWebhookSignature(
-      req.body,
-      signature,
-      webhookSecret
-    );
+    // Tries STRIPE_WEBHOOK_SECRET*, STRIPE_*_WEBHOOK_SECRET (see config/stripe.ts)
+    const event = constructStripeWebhookEvent(req.body, signature);
 
     logger.info('Stripe webhook received', {
       event_type: event.type,

@@ -58,7 +58,7 @@ async function verifyIntegration() {
       name: 'Stripe secret key',
       status: 'fail',
       message:
-        'Set STRIPE_SECRET_KEY and/or STRIPE_SECRET_KEY_LIVE + STRIPE_SECRET_KEY_TEST (see src/config/stripe.ts)',
+        'Set STRIPE_SECRET_KEY and/or STRIPE_SECRET_KEY_LIVE|STRIPE_LIVE_SECRET_KEY + STRIPE_SECRET_KEY_TEST|STRIPE_TEST_SECRET_KEY (see src/config/stripe.ts)',
       required: true,
     });
   }
@@ -67,7 +67,7 @@ async function verifyIntegration() {
       name: 'Stripe webhook secret',
       status: 'warning',
       message:
-        'No STRIPE_WEBHOOK_SECRET / _LIVE / _TEST — webhooks will not verify (needed for deposits & checkout)',
+        'No STRIPE_WEBHOOK_SECRET* or STRIPE_LIVE_WEBHOOK_SECRET / STRIPE_TEST_WEBHOOK_SECRET — webhooks will not verify',
       required: false,
     });
   }
