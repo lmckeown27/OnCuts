@@ -44,6 +44,22 @@ export const SUI_ZKLOGIN_PROVER_URL =
 export const GOOGLE_OAUTH_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined)?.trim() || '';
 
+/**
+ * Scheme + host for Google `redirect_uri` (no path, no trailing slash).
+ * Defaults to `window.location.origin` so barbers on `/web/...` get `https://yoursite.com/web/zklogin/callback`.
+ * Override if the public URL differs from what the browser reports (proxy/CDN).
+ */
+export function getGoogleOAuthRedirectOrigin(): string {
+  const fromEnv = (import.meta.env.VITE_ZKLOGIN_REDIRECT_ORIGIN as string | undefined)?.trim().replace(/\/$/, '');
+  if (fromEnv) {
+    return fromEnv;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+}
+
 export function isZkLoginWalletlessEnabled(): boolean {
   return Boolean(GOOGLE_OAUTH_CLIENT_ID);
 }

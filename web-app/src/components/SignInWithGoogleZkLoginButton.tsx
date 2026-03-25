@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { GOOGLE_OAUTH_CLIENT_ID, isZkLoginWalletlessEnabled } from '../config/constants';
+import {
+  GOOGLE_OAUTH_CLIENT_ID,
+  getGoogleOAuthRedirectOrigin,
+  isZkLoginWalletlessEnabled,
+} from '../config/constants';
 
 type Props = {
   disabled?: boolean;
@@ -29,12 +33,13 @@ export default function SignInWithGoogleZkLoginButton({ disabled, className }: P
     return null;
   }
 
-  const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
+  /** Campus web vs PWA: must match Google Cloud “Authorized redirect URIs” exactly (including `/web/` or `/app/`). */
+  const platformPrefix: '/web' | '/app' = location.pathname.startsWith('/app') ? '/app' : '/web';
 
   const handleClick = () => {
     setBusy(true);
     try {
-      const redirectUri = `${window.location.origin}${platformPrefix}/zklogin/callback`;
+      const redirectUri = `${getGoogleOAuthRedirectOrigin()}${platformPrefix}/zklogin/callback`;
       const nonce = randomNonce();
       sessionStorage.setItem(NONCE_SESSION_KEY, nonce);
       const params = new URLSearchParams({
