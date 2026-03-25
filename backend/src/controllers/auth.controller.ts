@@ -105,6 +105,7 @@ import {
   generatePasswordResetToken,
   verifyToken,
 } from '../utils/jwt.utils';
+import { resolveAccessTokenRole } from '../utils/access-token-role';
 import {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -448,18 +449,20 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       logger.info(`Created barber profile for user ${user.id} from approved guest application ${guestApp.id}`);
     }
 
-    // Generate JWT tokens
+    const accessRole = await resolveAccessTokenRole(user.id, user.role);
+
+    // Generate JWT tokens (role must match requireRole hierarchy, not raw DB enum)
     const token = generateAccessToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: accessRole,
       campusId: user.campusId,
     });
 
     const refreshToken = generateRefreshToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: accessRole,
       campusId: user.campusId,
     });
 
@@ -468,7 +471,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       logger.error('Failed to send welcome email:', err);
     });
 
-    logger.info(`New user registered and verified: ${user.email} (${user.role})`);
+    logger.info(`New user registered and verified: ${user.email} (${user.role}, jwtRole=${accessRole})`);
 
     res.status(201).json({
       success: true,
@@ -632,22 +635,23 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
     );
     const hasBarberProfile = barberCheck.rows.length > 0;
 
-    // Generate JWT tokens
+    const accessRole = await resolveAccessTokenRole(user.id, user.role);
+
     const token = generateAccessToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: accessRole,
       campusId: user.campusId,
     });
 
     const refreshToken = generateRefreshToken({
       userId: user.id,
       email: user.email,
-      role: user.role,
+      role: accessRole,
       campusId: user.campusId,
     });
 
-    logger.info(`User logged in: ${user.email}`);
+    logger.info(`User logged in: ${user.email} (jwtRole=${accessRole}, dbRole=${user.role})`);
 
     res.json({
       success: true,
@@ -790,12 +794,21 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
 
     const decoded = jwt.verify(refreshToken, secret) as JwtPayload;
 
-    // Generate new access token
+    const userResult = await pool.query(
+      `SELECT email, role, "campusId" FROM users WHERE id = $1`,
+      [decoded.userId]
+    );
+    if (userResult.rows.length === 0) {
+      throw new ApiError(401, 'User no longer exists');
+    }
+    const u = userResult.rows[0];
+    const accessRole = await resolveAccessTokenRole(decoded.userId, u.role);
+
     const newToken = generateAccessToken({
       userId: decoded.userId,
-      email: decoded.email,
-      role: decoded.role,
-      campusId: decoded.campusId,
+      email: u.email,
+      role: accessRole,
+      campusId: u.campusId,
     });
 
     res.json({
@@ -858,6 +871,10 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         break;
       default:
         frontendRole = 'student';
+    }
+
+    if (hasBarberProfile && frontendRole === 'student') {
+      frontendRole = 'barber';
     }
 
     // Admins have all privileges including campus manager at all campuses

@@ -252,7 +252,6 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requireRole('barber'),
   [param('id').isUUID(), validate],
   updateBarberProfile
 );

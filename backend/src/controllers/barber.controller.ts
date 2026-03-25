@@ -679,7 +679,7 @@ export const createBarberProfile = async (req: AuthRequest, res: Response, next:
     const userId = req.user!.userId;
 
     // Check if barber profile already exists
-    const existing = await pool.query('SELECT id FROM barbers WHERE user_id = $1', [userId]);
+    const existing = await pool.query('SELECT id FROM barbers WHERE "userId" = $1', [userId]);
     
     if (existing.rows.length > 0) {
       throw new ApiError(400, 'Barber profile already exists');
@@ -1348,7 +1348,7 @@ export const getBarberEarnings = async (req: AuthRequest, res: Response, next: N
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const ownership = await pool.query('SELECT user_id, total_earnings FROM barbers WHERE id = $1', [id]);
+    const ownership = await pool.query('SELECT "userId" as user_id FROM barbers WHERE id = $1', [id]);
     
     if (ownership.rows.length === 0) {
       throw new ApiError(404, 'Barber not found');
@@ -1384,7 +1384,7 @@ export const getBarberAnalytics = async (req: AuthRequest, res: Response, next: 
     const { id } = req.params;
     const userId = req.user!.userId;
 
-    const ownership = await pool.query('SELECT user_id FROM barbers WHERE id = $1', [id]);
+    const ownership = await pool.query('SELECT "userId" as user_id FROM barbers WHERE id = $1', [id]);
     
     if (ownership.rows.length === 0) {
       throw new ApiError(404, 'Barber not found');
