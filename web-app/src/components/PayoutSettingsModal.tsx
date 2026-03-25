@@ -104,6 +104,7 @@ export default function PayoutSettingsModal({
   if (!isVisible && !isOpen) return null;
 
   const payoutReady = status?.payout_ready ?? false;
+  const enokiOn = isEnokiWalletlessEnabled();
 
   const handleBackdropClick = () => {
     if (!preventClose || payoutReady) {
@@ -129,7 +130,9 @@ export default function PayoutSettingsModal({
             <h2 className="text-xl font-bold text-white">Payout Settings</h2>
             <p className="text-white/80 text-sm">
               {preventClose && !payoutReady
-                ? 'Set your Sui payout address to accept bookings'
+                ? enokiOn
+                  ? 'Link a Sui address for USDC—use Google here; no separate wallet app required'
+                  : 'Set your Sui payout address to accept bookings'
                 : 'Path B — USDC on Sui'}
             </p>
           </div>
@@ -154,6 +157,13 @@ export default function PayoutSettingsModal({
                   <p className="text-sm text-amber-700 mt-1">
                     Add your Sui address so paid bookings can settle USDC to you. Customers pay in USD via
                     Stripe; you receive on-chain per CampusCuts Path B.
+                    {enokiOn ? (
+                      <>
+                        {' '}
+                        <strong className="font-semibold">Use Sign in with Google below</strong> to create your
+                        payout address on CampusCuts—you do not need to install a wallet app first.
+                      </>
+                    ) : null}
                   </p>
                 </div>
               </div>
@@ -174,33 +184,9 @@ export default function PayoutSettingsModal({
                 </div>
               )}
 
-              <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
-                <p className="font-semibold text-gray-900 mb-2">How to accept USDC on Sui</p>
-                {isEnokiWalletlessEnabled() ? (
-                  <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
-                    <li>
-                      Tap <strong>Sign in with Google</strong> below. CampusCuts uses Enoki zkLogin to create an{' '}
-                      <strong>invisible Sui wallet</strong>—no browser extension required.
-                    </li>
-                    <li>
-                      After you return from Google, your <strong>Sui address</strong> is saved (or copy it into the field,
-                      then tap <strong>Save payout address</strong>).
-                    </li>
-                    <li>
-                      When payouts settle, USDC appears for that address. Use the dashboard balance (when configured) or a
-                      block explorer to view funds—see{' '}
-                      <a
-                        href={SUI_USDC_OVERVIEW_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary-700 font-medium underline hover:text-primary-800"
-                      >
-                        sui.io/usdc
-                      </a>
-                      .
-                    </li>
-                  </ol>
-                ) : (
+              {!enokiOn && (
+                <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
+                  <p className="font-semibold text-gray-900 mb-2">How to accept USDC on Sui</p>
                   <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
                     <li>
                       You need a <strong>Sui address</strong> (<code className="font-mono">0x</code> + 64 hex). Easiest:{' '}
@@ -217,7 +203,7 @@ export default function PayoutSettingsModal({
                       >
                         Sui Wallet
                       </a>
-                      ). We do not require Slush or any specific vendor.
+                      ). Pasting an address from any Sui wallet you use is fine—no particular app is required.
                     </li>
                     <li>
                       Tap <strong>Save payout address</strong>. After customers pay in USD (Stripe), your share settles as
@@ -236,8 +222,45 @@ export default function PayoutSettingsModal({
                       .
                     </li>
                   </ol>
-                )}
-              </div>
+                </div>
+              )}
+
+              {enokiOn && !payoutReady && (
+                <>
+                  <div className="rounded-xl border-2 border-primary-400/70 bg-white p-5 mb-4 shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-700 mb-2">
+                      Primary — on CampusCuts
+                    </p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Create your Sui payout address with Google
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      You do <strong>not</strong> need to install a separate wallet app. Sign in with Google once;
+                      CampusCuts uses zkLogin to create a Sui address for your account and USDC payouts.
+                    </p>
+                    <SignInWithGoogleEnokiButton disabled={isSaving} />
+                    <p className="text-xs text-gray-500 mt-3">
+                      After you return from Google, we save your address when possible. If the field below is still empty,
+                      paste your address from the sign-in result and tap <strong>Save payout address</strong>.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
+                    <p className="font-semibold text-gray-900 mb-1">Receiving USDC</p>
+                    <p className="text-xs text-gray-700">
+                      Customers pay in USD (Stripe); your share settles as USDC on Sui to the linked address. Overview:{' '}
+                      <a
+                        href={SUI_USDC_OVERVIEW_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-700 font-medium underline hover:text-primary-800"
+                      >
+                        sui.io/usdc
+                      </a>
+                      .
+                    </p>
+                  </div>
+                </>
+              )}
 
               {payoutReady ? (
                 <div className="text-center py-4">
@@ -258,31 +281,45 @@ export default function PayoutSettingsModal({
                 </div>
               ) : (
                 <div className="py-2">
-                  <div className="flex items-center gap-2 text-primary-600 mb-3">
-                    <Wallet className="w-5 h-5" />
-                    <h3 className="text-lg font-medium text-gray-900">Your Sui address</h3>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {isEnokiWalletlessEnabled()
-                      ? 'Use Google (Enoki zkLogin) for an invisible Sui wallet, or paste your address below.'
-                      : 'Connect a browser extension or paste an address. Same format as zkLogin-linked addresses.'}
-                  </p>
-                  {isEnokiWalletlessEnabled() ? (
-                    <div className="rounded-xl border border-primary-200 bg-white p-4 mb-4 space-y-2">
-                      <p className="text-sm font-medium text-gray-900">Invisible wallet (recommended)</p>
-                      <p className="text-xs text-gray-600">
-                        Sign in with Google once; Enoki derives your Sui address. Then tap <strong>Save payout address</strong>{' '}
-                        if the field did not auto-fill.
+                  {enokiOn ? (
+                    <>
+                      <div className="flex items-center gap-2 text-gray-800 mb-2 border-t border-gray-200 pt-6">
+                        <Wallet className="w-5 h-5 text-primary-600 flex-shrink-0" />
+                        <h3 className="text-base font-semibold text-gray-900">Optional: use a different Sui address</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Only if you want USDC sent somewhere other than the address from <strong>Sign in with Google</strong>{' '}
+                        above—for example a hardware wallet or an address you already use elsewhere.
                       </p>
-                      <SignInWithGoogleEnokiButton disabled={isSaving} />
-                    </div>
+                      <div className="rounded-xl border border-gray-200 bg-slate-50/80 p-4 mb-4">
+                        <p className="text-xs text-gray-600 mb-2">
+                          Optional: <strong>Connect wallet</strong> to fill this field from a browser extension.
+                        </p>
+                        <PayoutBrowserWalletConnect
+                          disabled={isSaving}
+                          onAddressChosen={(addr) => setInputAddress(addr)}
+                        />
+                      </div>
+                    </>
                   ) : (
-                    <PayoutBrowserWalletConnect
-                      disabled={isSaving}
-                      onAddressChosen={(addr) => setInputAddress(addr)}
-                    />
+                    <>
+                      <div className="flex items-center gap-2 text-primary-600 mb-3">
+                        <Wallet className="w-5 h-5" />
+                        <h3 className="text-lg font-medium text-gray-900">Your Sui address</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Paste an address from any Sui wallet, or use <strong>Connect wallet</strong> if you use a browser
+                        extension. No single wallet app is required.
+                      </p>
+                      <PayoutBrowserWalletConnect
+                        disabled={isSaving}
+                        onAddressChosen={(addr) => setInputAddress(addr)}
+                      />
+                    </>
                   )}
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Sui address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {enokiOn ? 'Sui address (optional override)' : 'Sui address'}
+                  </label>
                   <textarea
                     value={inputAddress}
                     onChange={(e) => setInputAddress(e.target.value)}
@@ -305,7 +342,7 @@ export default function PayoutSettingsModal({
 
               {payoutReady && (
                 <div className="border-t border-gray-200 mt-6 pt-6">
-                  {isEnokiWalletlessEnabled() ? (
+                  {enokiOn ? (
                     <div className="mb-4 space-y-2">
                       <p className="text-sm font-medium text-gray-900">Replace with another Google zkLogin address</p>
                       <SignInWithGoogleEnokiButton disabled={isSaving} />
@@ -316,7 +353,9 @@ export default function PayoutSettingsModal({
                       onAddressChosen={(addr) => setInputAddress(addr)}
                     />
                   )}
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Replace address</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {enokiOn ? 'Replace address (or paste)' : 'Replace address'}
+                  </label>
                   <textarea
                     value={inputAddress}
                     onChange={(e) => setInputAddress(e.target.value)}
