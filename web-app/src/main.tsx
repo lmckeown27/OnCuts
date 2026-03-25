@@ -6,7 +6,7 @@ import './index.css';
 // Note: Wallet providers removed - platform uses Stripe for payments
 // If blockchain integration is needed later, re-add:
 // import { DirectWalletProvider } from './contexts/DirectWalletContext.tsx';
-// import WalletProvider from './providers/WalletProvider.tsx';
+// import { SuiDappKitProviders } from './providers/SuiDappKitProviders.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

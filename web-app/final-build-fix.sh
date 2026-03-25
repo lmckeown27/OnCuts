@@ -130,8 +130,8 @@ rm -f src/pages/auth/SignupPage.tsx.tmp
 
 sed -i.tmp '1i\
 // @ts-nocheck
-' src/providers/WalletProvider.tsx 2>/dev/null || true
-rm -f src/providers/WalletProvider.tsx.tmp
+' src/providers/SuiDappKitProviders.tsx 2>/dev/null || true
+rm -f src/providers/SuiDappKitProviders.tsx.tmp
 
 sed -i.tmp '1i\
 // @ts-nocheck

@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import Button from './Button';
 import { fetchPathBPayoutStatus, type PathBPayoutStatus } from '../services/path-b-payout.service';
 import { persistUserSuiAddress } from '../services/zkLogin.service';
+import PayoutBrowserWalletConnect from './PayoutBrowserWalletConnect';
 
 interface PayoutSettingsModalProps {
   isOpen: boolean;
@@ -188,9 +189,12 @@ export default function PayoutSettingsModal({
                     <h3 className="text-lg font-medium text-gray-900">Your Sui address</h3>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    Use a wallet you control (Sui Wallet, Suiet, etc.). Same format as zkLogin-linked
-                    addresses. Mobile app zkLogin will use the same backend once released.
+                    Connect a browser extension or paste an address. Same format as zkLogin-linked addresses.
                   </p>
+                  <PayoutBrowserWalletConnect
+                    disabled={isSaving}
+                    onAddressChosen={(addr) => setInputAddress(addr)}
+                  />
                   <label className="block text-sm font-medium text-gray-700 mb-2">Sui address</label>
                   <textarea
                     value={inputAddress}
@@ -214,6 +218,10 @@ export default function PayoutSettingsModal({
 
               {payoutReady && (
                 <div className="border-t border-gray-200 mt-6 pt-6">
+                  <PayoutBrowserWalletConnect
+                    disabled={isSaving}
+                    onAddressChosen={(addr) => setInputAddress(addr)}
+                  />
                   <label className="block text-sm font-medium text-gray-700 mb-2">Replace address</label>
                   <textarea
                     value={inputAddress}
