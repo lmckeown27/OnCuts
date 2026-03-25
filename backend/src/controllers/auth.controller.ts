@@ -600,7 +600,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl"
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address
        FROM users WHERE email = $1`,
       [email]
     );
@@ -662,6 +662,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           emailVerified: user.email_verified,
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
+          suiAddress: user.sui_address ?? null,
         },
         accessToken: token,
         refreshToken,
@@ -822,7 +823,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
       `SELECT 
         id, email, first_name, last_name, role, "campusId", 
         email_verified, "avatarUrl", "displayName", bio,
-        "isBlocked", "isBanned", "createdAt"
+        "isBlocked", "isBanned", "createdAt", sui_address
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -880,6 +881,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         bio: user.bio,
         campus_id: user.campusId,
         created_at: user.createdAt,
+        sui_address: user.sui_address ?? null,
       },
     });
   } catch (error) {

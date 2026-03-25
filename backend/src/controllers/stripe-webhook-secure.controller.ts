@@ -88,6 +88,39 @@ async function markEventProcessed(
 }
 
 /**
+ * Idempotency for Path B on-chain payout: same PaymentIntent / booking must not enqueue twice
+ * (e.g. webhook retries or overlapping events) beyond Stripe `event_id` dedupe.
+ */
+async function pathBShouldSkipPayoutEnqueue(
+  bookingId: string,
+  paymentIntentId: string
+): Promise<boolean> {
+  if (!paymentIntentId) {
+    return false;
+  }
+  const b = await query(
+    `SELECT on_chain_settlement_status, bridge_payout_id FROM bookings WHERE id = $1`,
+    [bookingId]
+  );
+  const row = b.rows[0];
+  if (!row) {
+    return false;
+  }
+  if (row.bridge_payout_id) {
+    return true;
+  }
+  const st = row.on_chain_settlement_status;
+  if (st === 'payout_queued' || st === 'completed' || st === 'requested') {
+    return true;
+  }
+  const p = await query(
+    `SELECT path_b_sui_tx_digest FROM payments WHERE payment_intent_id = $1`,
+    [paymentIntentId]
+  );
+  return Boolean(p.rows[0]?.path_b_sui_tx_digest);
+}
+
+/**
  * Initiate barber payout via Stripe Connect
  * Transfers 85% of payment (plus 100% of tip) to barber's connected account
  * 
@@ -477,6 +510,12 @@ async function handleCheckoutSessionCompleted(
       const diyRelayer = process.env.SUI_DIY_RELAYER_ENABLED === 'true';
       if (diyRelayer) {
         try {
+          if (paymentIntentId && (await pathBShouldSkipPayoutEnqueue(booking_id, paymentIntentId))) {
+            logger.info('Path B DIY payout skipped (already initiated or settled)', {
+              booking_id,
+              paymentIntentId,
+            });
+          } else {
           const { enqueueProcessPayout } = await import('../queues/process-payout.queue');
           const amountBaseUnits = (BigInt(onChainAmountCents) * 10000n).toString();
           await enqueueProcessPayout({
@@ -484,11 +523,13 @@ async function handleCheckoutSessionCompleted(
             amountBaseUnits,
             bookingId: booking_id,
             stripeCheckoutSessionId: session.id,
+            paymentIntentId: paymentIntentId || '',
           });
           await query(
             `UPDATE bookings SET on_chain_settlement_status = $1, "updatedAt" = NOW() WHERE id = $2`,
             ['payout_queued', booking_id]
           );
+          }
         } catch (queueErr: unknown) {
           logger.error('DIY payout enqueue failed after checkout', queueErr);
           await query(
@@ -498,6 +539,12 @@ async function handleCheckoutSessionCompleted(
         }
       } else {
         try {
+          if (paymentIntentId && (await pathBShouldSkipPayoutEnqueue(booking_id, paymentIntentId))) {
+            logger.info('Path B bridge payout skipped (already initiated or settled)', {
+              booking_id,
+              paymentIntentId,
+            });
+          } else {
           const { bridgePayoutId } = await requestBridgePayoutToSui({
             amountTotalCents: onChainAmountCents,
             barberSuiAddress: barber_sui_address,
@@ -508,6 +555,7 @@ async function handleCheckoutSessionCompleted(
             `UPDATE bookings SET bridge_payout_id = $1, on_chain_settlement_status = $2, "updatedAt" = NOW() WHERE id = $3`,
             [bridgePayoutId, 'requested', booking_id]
           );
+          }
         } catch (bridgeErr: unknown) {
           logger.error('Bridge payout failed after checkout', bridgeErr);
           await query(

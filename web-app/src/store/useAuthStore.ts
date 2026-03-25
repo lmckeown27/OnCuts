@@ -96,6 +96,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         created_at: response.user.created_at || new Date().toISOString(),
         campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
+        sui_address: (response.user as any).suiAddress ?? (response.user as any).sui_address ?? null,
       };
       
       set({ 
@@ -170,6 +171,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         created_at: new Date().toISOString(),
         campus_id: response.user.campusId?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
+        sui_address: (response as { suiAddress?: string }).suiAddress ?? null,
       };
       
       // Auth data is already saved by authService.verifyEmail

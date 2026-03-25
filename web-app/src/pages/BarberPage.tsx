@@ -23,6 +23,7 @@ import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PayoutSettingsModal from '../components/PayoutSettingsModal';
+import InvisibleUsdcBalance from '../components/InvisibleUsdcBalance';
 import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -2289,6 +2290,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
+        {user?.sui_address ? (
+          <div className="p-4 pb-0 border-b border-gray-100">
+            <InvisibleUsdcBalance suiAddress={user.sui_address} />
+          </div>
+        ) : null}
         <div 
           ref={scheduleContainerRef}
           onTouchStart={handleTouchStart}

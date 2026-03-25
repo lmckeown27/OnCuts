@@ -15,6 +15,7 @@ import { ApiError } from '../middleware/errorHandler';
 import withdrawalBatchService, { DestinationType } from './withdrawal-batch.service';
 import auditService from './audit.service';
 import { pool } from '../database/connection';
+import suiRelayerService from './sui-relayer.service';
 
 function stripeSdk(): Stripe {
   return getDefaultStripeClient();
@@ -258,6 +259,36 @@ class PayoutServiceV2 {
    */
   async getWithdrawalStats(): Promise<any> {
     return withdrawalBatchService.getStats();
+  }
+
+  /**
+   * Path B: Stripe-settled USDC split on Sui (treasury → barber + platform).
+   * Gas is sponsored via Enoki when `ENOKI_SECRET_KEY` is set (see `sui-relayer.service`).
+   * Persists `payments.path_b_sui_tx_digest` for explorer links / idempotency.
+   */
+  async executePathBOnChainUsdcPayout(input: {
+    barberSuiAddress: string;
+    amountBaseUnits: string;
+    bookingId: string;
+    paymentIntentId: string;
+  }): Promise<{ digest: string }> {
+    const total = BigInt(input.amountBaseUnits);
+    const { digest } = await suiRelayerService.executeSplitPayout(input.barberSuiAddress, total);
+
+    if (input.paymentIntentId?.trim()) {
+      await pool.query(
+        `UPDATE payments SET path_b_sui_tx_digest = $1 WHERE payment_intent_id = $2`,
+        [digest, input.paymentIntentId.trim()]
+      );
+    }
+
+    logger.info('Path B on-chain USDC payout executed', {
+      bookingId: input.bookingId,
+      digest,
+      paymentIntentId: input.paymentIntentId,
+    });
+
+    return { digest };
   }
 }
 

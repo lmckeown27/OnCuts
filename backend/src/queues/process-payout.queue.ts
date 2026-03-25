@@ -11,6 +11,8 @@ export interface ProcessPayoutJobData {
   amountBaseUnits: string;
   bookingId: string;
   stripeCheckoutSessionId: string;
+  /** Stripe PaymentIntent id — idempotency + `payments.path_b_sui_tx_digest` */
+  paymentIntentId: string;
 }
 
 function connectionOptions() {
@@ -49,10 +51,31 @@ export async function enqueueProcessPayout(data: ProcessPayoutJobData): Promise<
 }
 
 async function runPayoutJob(job: Job<ProcessPayoutJobData>): Promise<{ digest: string }> {
-  const { barberSuiAddress, amountBaseUnits, bookingId, stripeCheckoutSessionId } = job.data;
-  const total = BigInt(amountBaseUnits);
-  const suiRelayer = (await import('../services/sui-relayer.service')).default;
-  const { digest } = await suiRelayer.executeSplitPayout(barberSuiAddress, total);
+  const { barberSuiAddress, amountBaseUnits, bookingId, stripeCheckoutSessionId, paymentIntentId } =
+    job.data;
+
+  if (paymentIntentId) {
+    const dup = await query(
+      `SELECT path_b_sui_tx_digest FROM payments WHERE payment_intent_id = $1 AND path_b_sui_tx_digest IS NOT NULL`,
+      [paymentIntentId]
+    );
+    if (dup.rows[0]?.path_b_sui_tx_digest) {
+      logger.info('process-payout: idempotent skip (payment already has Sui digest)', {
+        paymentIntentId,
+        digest: dup.rows[0].path_b_sui_tx_digest,
+      });
+      return { digest: dup.rows[0].path_b_sui_tx_digest };
+    }
+  }
+
+  const payoutV2 = (await import('../services/payout-v2.service')).default;
+  const { digest } = await payoutV2.executePathBOnChainUsdcPayout({
+    barberSuiAddress,
+    amountBaseUnits,
+    bookingId,
+    paymentIntentId: paymentIntentId || '',
+  });
+
   await query(
     `UPDATE bookings SET bridge_payout_id = $1, on_chain_settlement_status = $2, "updatedAt" = NOW() WHERE id = $3`,
     [`diy-${digest}`, 'completed', bookingId]

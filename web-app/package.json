@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@mysten/dapp-kit": "^0.19.11",
+    "@mysten/enoki": "^0.13.0",
     "@mysten/sui": "^1.45.2",
     "@simplewebauthn/browser": "^10.0.0",
     "@stripe/react-stripe-js": "^5.4.1",

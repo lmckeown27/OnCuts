@@ -6,8 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { getEffectiveUsdcCoinType } from '../config/blockchain';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { isEnokiSponsorConfigured } from '../config/enoki';
 import { fetchExternalSponsorSignature, isExternalGasSponsorConfigured } from './sui-external-sponsor.service';
 import { getGasSponsorKeypair } from './sui-gas-sponsor.service';
+import { executeTransactionWithEnokiSponsor } from './sui-enoki-sponsor.service';
 
 const BARBER_SHARE_BP = 8000n; // 80.00%
 const BP_DENOM = 10000n;
@@ -220,12 +222,18 @@ export class SuiRelayerService {
   }
 
   private async signAndExecute(tx: Transaction): Promise<{ digest: string; effects?: unknown }> {
+    const client = this.getClient();
     const treasurySigner = getTreasurySignerKeypair();
+
+    if (isEnokiSponsorConfigured()) {
+      const { digest } = await executeTransactionWithEnokiSponsor(tx, treasurySigner, client);
+      return { digest, effects: undefined };
+    }
+
     const sponsorSigner = getGasSponsorKeypair();
     const treasuryAddr = normalizeSuiAddress(treasurySigner.toSuiAddress());
     const sponsorAddr = normalizeSuiAddress(sponsorSigner.toSuiAddress());
 
-    const client = this.getClient();
     const bytes = await tx.build({ client });
 
     const treasurySig = await treasurySigner.signTransaction(bytes);

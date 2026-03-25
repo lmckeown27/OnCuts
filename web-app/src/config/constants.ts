@@ -29,6 +29,21 @@ export const SUI_RPC_URL =
   import.meta.env.VITE_SUI_RPC_URL || 'https://fullnode.testnet.sui.io:443';
 export const SUI_PROVER_URL = import.meta.env.VITE_SUI_PROVER_URL || '';
 
+/** Enoki public app key (safe in browser). Pair with `VITE_GOOGLE_OAUTH_CLIENT_ID`. */
+export const ENOKI_PUBLIC_API_KEY = (import.meta.env.VITE_ENOKI_API_KEY as string | undefined)?.trim() || '';
+/** Google OAuth Web client ID (authorized redirect must include `.../web/zklogin/callback` and `/app/zklogin/callback`). */
+export const GOOGLE_OAUTH_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined)?.trim() || '';
+export const ENOKI_NETWORK =
+  (import.meta.env.VITE_ENOKI_NETWORK as 'mainnet' | 'testnet' | 'devnet' | undefined) || 'testnet';
+
+/** Native / canonical USDC coin type for the RPC network (must match backend settlement). */
+export const SUI_USDC_COIN_TYPE = (import.meta.env.VITE_SUI_USDC_COIN_TYPE as string | undefined)?.trim() || '';
+
+export function isEnokiWalletlessEnabled(): boolean {
+  return Boolean(ENOKI_PUBLIC_API_KEY && GOOGLE_OAUTH_CLIENT_ID);
+}
+
 // App Metadata
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CampusCut';
 export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.0';

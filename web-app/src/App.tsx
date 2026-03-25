@@ -7,6 +7,7 @@ import Loading from './components/Loading';
 import { useAuthStore } from './store/useAuthStore';
 import QueryProvider from './providers/QueryProvider';
 import { SuiDappKitProviders } from './providers/SuiDappKitProviders';
+import { EnokiFlowProviderGate } from './providers/EnokiFlowProviderGate';
 
 // Error Boundary to catch render errors and display helpful message
 interface ErrorBoundaryState {
@@ -119,6 +120,7 @@ const MobileConsumerPage = lazy(() => import('./pages/mobile/MobileConsumerPage'
 const TermsOfServicePage = lazy(() => import('./pages/legal/TermsOfServicePage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 const GDPRPage = lazy(() => import('./pages/legal/GDPRPage'));
+const ZkLoginEnokiCallbackPage = lazy(() => import('./pages/ZkLoginEnokiCallbackPage'));
 
 // Suspense wrapper for lazy components
 function LazyRoute({ children }: { children: React.ReactNode }) {
@@ -176,6 +178,7 @@ function AppContent() {
         <Route path="/web/auth" element={<PlatformGuard requiredPlatform="web"><AuthPage /></PlatformGuard>} />
         <Route path="/web/verify-email" element={<PlatformGuard requiredPlatform="web"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/reset-password" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ResetPasswordPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/zklogin/callback" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ZkLoginEnokiCallbackPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/install" element={<LazyRoute><AppInstallPage /></LazyRoute>} />
         
         {/* Web - Consumer/Student Routes */}
@@ -221,6 +224,7 @@ function AppContent() {
         ═══════════════════════════════════════════════════════════ */}
         <Route path="/app" element={<PlatformGuard requiredPlatform="app"><AuthPage /></PlatformGuard>} />
         <Route path="/app/verify-email" element={<PlatformGuard requiredPlatform="app"><LazyRoute><VerifyEmailPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/app/zklogin/callback" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ZkLoginEnokiCallbackPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/install" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
         <Route path="/app/download" element={<LazyRoute><MobileAppDownloadPage /></LazyRoute>} />
         
@@ -269,9 +273,11 @@ function App() {
     <ErrorBoundary>
       <QueryProvider>
         <SuiDappKitProviders>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
+          <EnokiFlowProviderGate>
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </EnokiFlowProviderGate>
         </SuiDappKitProviders>
       </QueryProvider>
     </ErrorBoundary>
