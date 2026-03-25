@@ -13,7 +13,14 @@ import Button from './Button';
 const SUI_SIGN_FEATURES = ['sui:signTransaction', 'sui:signTransactionBlock'] as const;
 
 function walletSupportsSuiConnect(wallet: WalletWithRequiredFeatures) {
-  return SUI_SIGN_FEATURES.some((f) => f in wallet.features);
+  if (!SUI_SIGN_FEATURES.some((f) => f in wallet.features)) {
+    return false;
+  }
+  // Slush is optional infra; barbers should use official Sui Wallet / Suiet / Enoki — hide from picker.
+  if (wallet.name?.toLowerCase().includes('slush')) {
+    return false;
+  }
+  return true;
 }
 
 const SUI_WALLET_CHROME =
@@ -72,10 +79,10 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
 
   return (
     <div className="rounded-xl border border-gray-200 bg-slate-50/80 p-4 mb-5">
-      <p className="text-sm font-medium text-gray-900 mb-1">Browser extension wallet</p>
+      <p className="text-sm font-medium text-gray-900 mb-1">Optional: browser extension</p>
       <p className="text-xs text-gray-600 mb-3">
-        Open a wallet picker (grid of extensions), same pattern as sites like Polymarket—here limited
-        to Sui Wallet Standard browsers. CampusCuts never sees your keys.
+        If you use Sui Wallet, Suiet, or similar (Wallet Standard), you can connect to fill the field. You can
+        always paste an address instead—no extension required.
       </p>
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
         <button
@@ -136,7 +143,8 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
               Connect a wallet
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Select a Sui wallet extension. If nothing appears, install one and refresh this page.
+              Optional: connect a browser extension. You can also paste a Sui address in Payout Settings without
+              installing anything.
             </p>
 
             <div className="my-5 flex w-full items-center gap-4">
@@ -168,18 +176,19 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
               </ul>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                <p className="font-medium">No Sui wallet detected</p>
+                <p className="font-medium">No browser wallet detected</p>
                 <p className="mt-1 text-xs text-amber-800">
-                  Install{' '}
+                  Close this window and <strong>paste your Sui address</strong> in the field below, or install the
+                  official{' '}
                   <a
                     href={SUI_WALLET_CHROME}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold underline hover:text-amber-950"
                   >
-                    Sui Wallet
+                    Sui Wallet extension
                   </a>{' '}
-                  (or another Sui Wallet Standard extension), then reload.
+                  if you prefer connecting instead.
                 </p>
               </div>
             )}

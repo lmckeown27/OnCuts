@@ -128,7 +128,9 @@ export default function PayoutSettingsModal({
           <div>
             <h2 className="text-xl font-bold text-white">Payout Settings</h2>
             <p className="text-white/80 text-sm">
-              {preventClose && !payoutReady ? 'Link Sui wallet to accept bookings' : 'Path B — USDC on Sui'}
+              {preventClose && !payoutReady
+                ? 'Set your Sui payout address to accept bookings'
+                : 'Path B — USDC on Sui'}
             </p>
           </div>
           {(!preventClose || payoutReady) && (
@@ -174,46 +176,67 @@ export default function PayoutSettingsModal({
 
               <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
                 <p className="font-semibold text-gray-900 mb-2">How to accept USDC on Sui</p>
-                <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
-                  <li>
-                    Install a Sui wallet that supports tokens on the same network CampusCuts uses for payouts
-                    (e.g.{' '}
-                    <a
-                      href={SUI_WALLET_CHROME_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary-700 font-medium underline hover:text-primary-800"
-                    >
-                      Sui Wallet for Chrome
-                    </a>
-                    ).
-                  </li>
-                  <li>
-                    Open the wallet and copy your <strong>Sui address</strong> (starts with <code className="font-mono">0x</code>, 64 hex
-                    characters). That address is your on-chain “bank account” for USDC.
-                  </li>
-                  <li>
-                    Paste it in the field below or use <strong>Connect wallet</strong>, then tap{' '}
-                    <strong>Save payout address</strong>. CampusCuts will send your share there after customers pay in USD
-                    (Stripe).
-                  </li>
-                  <li>
-                    After a payout settles, open your wallet’s coin/token list and look for <strong>USDC</strong> (native USDC on
-                    Sui). Some wallets hide new assets until you enable or search for the token.
-                  </li>
-                </ol>
-                <p className="text-xs text-gray-600">
-                  Official overview of USDC on Sui:{' '}
-                  <a
-                    href={SUI_USDC_OVERVIEW_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary-700 font-medium underline hover:text-primary-800"
-                  >
-                    sui.io/usdc
-                  </a>
-                  .
-                </p>
+                {isEnokiWalletlessEnabled() ? (
+                  <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
+                    <li>
+                      Tap <strong>Sign in with Google</strong> below. CampusCuts uses Enoki zkLogin to create an{' '}
+                      <strong>invisible Sui wallet</strong>—no browser extension required.
+                    </li>
+                    <li>
+                      After you return from Google, your <strong>Sui address</strong> is saved (or copy it into the field,
+                      then tap <strong>Save payout address</strong>).
+                    </li>
+                    <li>
+                      When payouts settle, USDC appears for that address. Use the dashboard balance (when configured) or a
+                      block explorer to view funds—see{' '}
+                      <a
+                        href={SUI_USDC_OVERVIEW_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-700 font-medium underline hover:text-primary-800"
+                      >
+                        sui.io/usdc
+                      </a>
+                      .
+                    </li>
+                  </ol>
+                ) : (
+                  <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
+                    <li>
+                      You need a <strong>Sui address</strong> (<code className="font-mono">0x</code> + 64 hex). Easiest:{' '}
+                      <strong>paste an address you already have</strong> from any Sui wallet you trust—no download required
+                      to complete setup.
+                    </li>
+                    <li>
+                      Optional: use <strong>Connect wallet</strong> if you use a browser extension (e.g. official{' '}
+                      <a
+                        href={SUI_WALLET_CHROME_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-700 font-medium underline hover:text-primary-800"
+                      >
+                        Sui Wallet
+                      </a>
+                      ). We do not require Slush or any specific vendor.
+                    </li>
+                    <li>
+                      Tap <strong>Save payout address</strong>. After customers pay in USD (Stripe), your share settles as
+                      USDC on Sui to this address.
+                    </li>
+                    <li>
+                      View USDC in your wallet app or explorer; some apps hide tokens until you enable them. Overview:{' '}
+                      <a
+                        href={SUI_USDC_OVERVIEW_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-700 font-medium underline hover:text-primary-800"
+                      >
+                        sui.io/usdc
+                      </a>
+                      .
+                    </li>
+                  </ol>
+                )}
               </div>
 
               {payoutReady ? (
