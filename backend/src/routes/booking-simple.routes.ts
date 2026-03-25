@@ -14,6 +14,7 @@ import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEm
 import { DateTime } from 'luxon';
 import { getDefaultStripeClient } from '../config/stripe';
 import { getSocketIO } from '../index';
+import { sameUuid } from '../utils/uuid-compare';
 
 const router = express.Router();
 
@@ -1293,8 +1294,8 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
 
     const booking = bookingCheck.rows[0];
 
-    // Check if user is the barber
-    if (booking.barber_user_id !== userId) {
+    // Check if user is the barber (normalize UUIDs — pg vs JWT can differ by case)
+    if (!sameUuid(booking.barber_user_id, userId)) {
       return res.status(403).json({ 
         success: false, 
         error: 'Only the barber can request payment' 
@@ -2015,8 +2016,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
-    const isBarber = booking.barber_user_id === userId;
-    const isConsumer = booking.consumerId === userId;
+    const isBarber = sameUuid(booking.barber_user_id, userId);
+    const isConsumer = sameUuid(booking.consumerId, userId);
 
     // Only allow editing PENDING or ACCEPTED bookings
     if (booking.status !== 'ACCEPTED' && booking.status !== 'PENDING') {
@@ -2297,8 +2298,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
-    const isBarber = booking.barber_user_id === userId;
-    const isConsumer = booking.consumerId === userId;
+    const isBarber = sameUuid(booking.barber_user_id, userId);
+    const isConsumer = sameUuid(booking.consumerId, userId);
 
     // Check if user is an admin (only admins can remove completed/paid bookings)
     const adminCheck = await pool.query(
