@@ -2,13 +2,26 @@ import axios from 'axios';
 import { getBackendOrigin, STORAGE_KEYS } from '../config/constants';
 
 /**
- * zkLogin orchestration: fetch salt from backend, then complete flow with @mysten/sui/zklogin in UI code.
- * Wire Google OAuth + ephemeral keys per Mysten docs; this module only handles HTTP to CampusCuts API.
+ * zkLogin: backend salt + optional Google-complete endpoint.
  */
 export async function fetchZkLoginSalt(iss: string, sub: string): Promise<string> {
   const origin = getBackendOrigin();
   const res = await axios.post<{ salt: string }>(`${origin}/api/zklogin/salt`, { iss, sub });
   return res.data.salt;
+}
+
+export async function completeZkLoginWithGoogle(idToken: string): Promise<{ suiAddress: string }> {
+  const origin = getBackendOrigin();
+  const res = await axios.post<{ suiAddress: string }>(
+    `${origin}/api/zklogin/google-complete`,
+    { idToken },
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || ''}`,
+      },
+    }
+  );
+  return { suiAddress: res.data.suiAddress };
 }
 
 export async function persistUserSuiAddress(suiAddress: string, zkLoginSalt?: string): Promise<void> {

@@ -263,7 +263,7 @@ class PayoutServiceV2 {
 
   /**
    * Path B: Stripe-settled USDC split on Sui (treasury → barber + platform).
-   * Gas is sponsored via Enoki when `ENOKI_SECRET_KEY` is set (see `sui-relayer.service`).
+   * Gas is paid by the treasury / `GAS_SPONSOR_SECRET` path (see `sui-relayer.service`); no Enoki.
    * Persists `payments.path_b_sui_tx_digest` for explorer links / idempotency.
    */
   async executePathBOnChainUsdcPayout(input: {

@@ -16,7 +16,7 @@ function walletSupportsSuiConnect(wallet: WalletWithRequiredFeatures) {
   if (!SUI_SIGN_FEATURES.some((f) => f in wallet.features)) {
     return false;
   }
-  // Slush is optional infra; barbers should use official Sui Wallet / Suiet / Enoki — hide from picker.
+  // Slush is optional infra; barbers should use official Sui Wallet / Suiet — hide from picker.
   if (wallet.name?.toLowerCase().includes('slush')) {
     return false;
   }

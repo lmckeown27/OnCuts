@@ -1,6 +1,6 @@
 /**
  * Legacy custodial Aptos signer — removed in Path B.
- * Identity and signing move to Sui zkLogin + optional backend salt (zklogin-salt.service).
+ * Identity and signing move to Sui zkLogin + backend salt (salt.service).
  */
 
 import crypto from 'crypto';

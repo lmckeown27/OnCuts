@@ -40,7 +40,8 @@ async function verifyIntegration() {
   checkEnvVar('SUI_RPC_URL', false, 'Sui JSON-RPC URL');
   checkEnvVar('SUI_TREASURY_ADDRESS', false, 'Platform treasury Sui address (USDC / Bridge)');
   checkEnvVar('BRIDGE_API_KEY', false, 'Bridge API key for /v1/payouts');
-  checkEnvVar('SALT_SERVICE_SECRET', false, 'zkLogin salt HMAC secret');
+  checkEnvVar('MASTER_SEED', false, 'zkLogin salt: SHA256(MASTER_SEED + google_sub)');
+  checkEnvVar('SALT_SERVICE_SECRET', false, 'legacy alias for MASTER_SEED if unset');
   checkEnvVar('GAS_SPONSOR_SECRET', false, 'Sui gas sponsor key (suiprivkey or hex)');
   checkEnvVar('SUI_PROVER_URL', false, 'ZK prover endpoint (Shinami / Mysten)');
   
@@ -174,10 +175,10 @@ async function verifyIntegration() {
   logger.info('\n🔐 Checking zkLogin salt service...');
 
   try {
-    if (!process.env.SALT_SERVICE_SECRET) {
-      throw new Error('SALT_SERVICE_SECRET not set');
+    if (!process.env.MASTER_SEED?.trim() && !process.env.SALT_SERVICE_SECRET?.trim()) {
+      throw new Error('MASTER_SEED or SALT_SERVICE_SECRET not set');
     }
-    const { deriveZkLoginSalt } = await import('../services/zklogin-salt.service');
+    const { deriveZkLoginSalt } = await import('../services/salt.service');
     const salt = deriveZkLoginSalt('https://accounts.google.com', 'integration-test-sub');
     results.push({
       name: 'zkLogin salt',

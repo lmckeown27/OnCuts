@@ -1,43 +1,51 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useEnokiFlow } from '@mysten/enoki/react';
-import {
-  ENOKI_NETWORK,
-  GOOGLE_OAUTH_CLIENT_ID,
-  isEnokiWalletlessEnabled,
-} from '../config/constants';
+import { GOOGLE_OAUTH_CLIENT_ID, isZkLoginWalletlessEnabled } from '../config/constants';
 
 type Props = {
   disabled?: boolean;
   className?: string;
 };
 
+/** OAuth `nonce` sent to Google; must match JWT and survive until backend links the wallet. */
+export const NONCE_SESSION_KEY = 'cc_zklogin_google_nonce';
+/** Reserved for full zkLogin prover flows (`jwtRandomness`); address-only linking does not set this yet. */
+export const JWT_RANDOMNESS_SESSION_KEY = 'cc_zklogin_jwt_randomness';
+
+function randomNonce(): string {
+  const a = new Uint8Array(16);
+  crypto.getRandomValues(a);
+  return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 /**
- * Starts Enoki zkLogin with Google (`useEnokiFlow#createAuthorizationURL`).
- * User returns to `/web/zklogin/callback` or `/app/zklogin/callback` with `id_token` in the hash.
+ * Google implicit OAuth (id_token). Callback verifies token server-side and derives Sui address via @mysten/sui/zklogin.
  */
-export default function SignInWithGoogleEnokiButton({ disabled, className }: Props) {
-  const flow = useEnokiFlow();
+export default function SignInWithGoogleZkLoginButton({ disabled, className }: Props) {
   const location = useLocation();
   const [busy, setBusy] = useState(false);
 
-  if (!isEnokiWalletlessEnabled()) {
+  if (!isZkLoginWalletlessEnabled()) {
     return null;
   }
 
   const platformPrefix = location.pathname.startsWith('/app') ? '/app' : '/web';
 
-  const handleClick = async () => {
+  const handleClick = () => {
     setBusy(true);
     try {
-      const redirectUrl = `${window.location.origin}${platformPrefix}/zklogin/callback`;
-      const url = await flow.createAuthorizationURL({
-        provider: 'google',
-        clientId: GOOGLE_OAUTH_CLIENT_ID,
-        redirectUrl,
-        network: ENOKI_NETWORK,
+      const redirectUri = `${window.location.origin}${platformPrefix}/zklogin/callback`;
+      const nonce = randomNonce();
+      sessionStorage.setItem(NONCE_SESSION_KEY, nonce);
+      const params = new URLSearchParams({
+        client_id: GOOGLE_OAUTH_CLIENT_ID,
+        redirect_uri: redirectUri,
+        response_type: 'id_token',
+        scope: 'openid email',
+        nonce,
+        prompt: 'select_account',
       });
-      window.location.assign(url);
+      window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
     } catch (e) {
       console.error(e);
       setBusy(false);
@@ -48,7 +56,7 @@ export default function SignInWithGoogleEnokiButton({ disabled, className }: Pro
     <button
       type="button"
       disabled={disabled || busy}
-      onClick={() => void handleClick()}
+      onClick={handleClick}
       className={
         className ||
         'inline-flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50 disabled:opacity-50'
@@ -72,7 +80,8 @@ export default function SignInWithGoogleEnokiButton({ disabled, className }: Pro
           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
         />
       </svg>
-      {busy ? 'Redirecting…' : 'Sign in with Google (invisible Sui wallet)'}
+      {busy ? 'Redirecting…' : 'Sign in with Google (Sui zkLogin)'}
     </button>
   );
 }
+
