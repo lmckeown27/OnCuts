@@ -10,13 +10,45 @@
  *   npm run test:payout-relayer
  *
  * Args: [barberSuiAddress] [usdAmount] — or TEST_RELAYER_BARBER_ADDRESS / TEST_RELAYER_USD.
- * Amount is USDC base units internally (6 decimals). Needs backend/.env (treasury, RPC, etc.).
+ * Env: loads repo-root `.env` if present, then `backend/.env` (overrides); else default dotenv (cwd).
+ * You can also `export GAS_SPONSOR_SECRET=...` before running.
  */
 
+import fs from 'fs';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.join(__dirname, '.env') });
+const backendEnvPath = path.join(__dirname, '.env');
+const repoRootEnvPath = path.join(__dirname, '..', '.env');
+
+if (fs.existsSync(repoRootEnvPath)) {
+  dotenv.config({ path: repoRootEnvPath });
+}
+if (fs.existsSync(backendEnvPath)) {
+  dotenv.config({ path: backendEnvPath, override: true });
+}
+if (!fs.existsSync(repoRootEnvPath) && !fs.existsSync(backendEnvPath)) {
+  dotenv.config();
+}
+
+function hasRelayerSignerSecret(): boolean {
+  return Boolean(
+    process.env.GAS_SPONSOR_SECRET?.trim() || process.env.SUI_TREASURY_SIGNER_SECRET?.trim()
+  );
+}
+
+if (!hasRelayerSignerSecret()) {
+  console.error(
+    [
+      'Missing GAS_SPONSOR_SECRET and SUI_TREASURY_SIGNER_SECRET (both empty after loading .env).',
+      `  backend/.env: ${backendEnvPath} — ${fs.existsSync(backendEnvPath) ? 'found' : 'not found'}`,
+      `  repo root .env: ${repoRootEnvPath} — ${fs.existsSync(repoRootEnvPath) ? 'found' : 'not found'}`,
+      'Add at least one of those keys to backend/.env (or root .env), same values as production.',
+      'Or export them in this shell before running.',
+    ].join('\n')
+  );
+  process.exit(1);
+}
 
 import suiRelayerService from './src/services/sui-relayer.service';
 
