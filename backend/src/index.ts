@@ -41,6 +41,7 @@ import adminRoutes from './routes/admin.routes';
 
 // Stripe Integration Routes
 import webhookRoutes from './routes/webhook.routes';
+import { handleMoonPayWebhook } from './controllers/moonpay-webhook.controller';
 import bookingPaymentRoutes from './routes/booking-payment.routes';
 import barberConnectRoutes from './routes/barber-connect.routes';
 
@@ -221,6 +222,18 @@ app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoute
 // Then apply JSON parsing for all other routes
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// MoonPay webhooks need JSON; optional HMAC uses raw body captured here
+app.post(
+  '/api/webhooks/moonpay',
+  express.json({
+    limit: '1mb',
+    verify: (req: Request, _res, buf) => {
+      (req as Request & { rawBody?: Buffer }).rawBody = buf;
+    },
+  }),
+  handleMoonPayWebhook
+);
 
 // Rate limiting - Production-ready settings
 // General API: 1000 requests per 15 minutes (generous for normal usage)

@@ -1,7 +1,7 @@
 /**
  * Webhook Routes
- * 
- * Handles incoming webhooks from external services
+ *
+ * Stripe: POST /stripe (raw body). MoonPay: POST /api/webhooks/moonpay in `index.ts` (JSON + optional signature).
  */
 
 import express from 'express';

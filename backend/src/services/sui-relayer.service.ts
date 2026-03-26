@@ -223,6 +223,73 @@ export class SuiRelayerService {
     return tx;
   }
 
+  /**
+   * PTB: merge treasury USDC, split `amount` to a single recipient (no platform leg).
+   * Used for barber off-ramps (e.g. MoonPay) where ledger already reflects net earnings.
+   */
+  private buildDirectTreasuryUsdcTransferTx(
+    recipientAddress: string,
+    amount: bigint,
+    coins: SuiCoinItem[]
+  ): Transaction {
+    const recipient = normalizeSuiAddress(recipientAddress);
+    if (!isValidSuiAddress(recipient)) {
+      throw new Error(`Invalid recipientAddress: ${recipientAddress}`);
+    }
+    if (amount <= 0n) {
+      throw new Error('amount must be positive');
+    }
+    if (coins.length === 0) {
+      throw new InsufficientTreasuryFundsError(0n, amount);
+    }
+
+    const sorted = [...coins].sort((a, b) => {
+      const db = BigInt(b.balance);
+      const da = BigInt(a.balance);
+      if (db > da) return 1;
+      if (db < da) return -1;
+      return 0;
+    });
+
+    const totalAvailable = sorted.reduce((sum, c) => sum + BigInt(c.balance), 0n);
+    if (totalAvailable < amount) {
+      throw new InsufficientTreasuryFundsError(totalAvailable, amount);
+    }
+
+    const treasurySigner = getTreasurySignerKeypair();
+    const sponsorSigner = getGasSponsorKeypair();
+    const treasuryAddr = treasurySigner.toSuiAddress();
+    const sponsorAddr = sponsorSigner.toSuiAddress();
+
+    const tx = new Transaction();
+    tx.setSender(treasuryAddr);
+
+    if (normalizeSuiAddress(sponsorAddr) !== normalizeSuiAddress(treasuryAddr)) {
+      tx.setGasOwner(sponsorAddr);
+    }
+
+    tx.setGasBudget(DEFAULT_GAS_BUDGET);
+
+    const primaryId = normalizeSuiAddress(sorted[0].coinObjectId);
+    const primary = tx.object(primaryId);
+
+    if (sorted.length > 1) {
+      const sources = sorted.slice(1).map((c) => tx.object(normalizeSuiAddress(c.coinObjectId)));
+      tx.mergeCoins(primary, sources);
+    }
+
+    const [toRecipient] = tx.splitCoins(primary, [amount]);
+    tx.transferObjects([toRecipient], recipient);
+
+    logger.info('SuiRelayer: built direct USDC transfer PTB', {
+      coinCount: sorted.length,
+      totalAvailable: totalAvailable.toString(),
+      transferAmount: amount.toString(),
+    });
+
+    return tx;
+  }
+
   private async signAndExecute(tx: Transaction): Promise<{ digest: string; effects?: unknown }> {
     const client = this.getClient();
     const treasurySigner = getTreasurySignerKeypair();
@@ -393,6 +460,75 @@ export class SuiRelayerService {
 
     throw new Error(
       `SuiRelayer: executeSplitPayout failed after ${MAX_ATTEMPTS} attempts (last digest: ${lastDigest ?? 'none'}): ${lastError}`
+    );
+  }
+
+  /**
+   * Send `amount` USDC base units from treasury to `recipientAddress` (single-output transfer).
+   */
+  async executeDirectTreasuryUsdcTransfer(
+    recipientAddress: string,
+    amount: number | bigint
+  ): Promise<{ digest: string }> {
+    const total = typeof amount === 'bigint' ? amount : BigInt(Math.floor(Number(amount)));
+    this.assertTreasurySignerOwnsTreasuryAddress();
+
+    let lastDigest: string | undefined;
+    let lastError = '';
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const coins = await this.fetchAllTreasuryUsdcCoins();
+      const totalAvailable = coins.reduce((sum, c) => sum + BigInt(c.balance), 0n);
+      if (totalAvailable < total) {
+        const e = new InsufficientTreasuryFundsError(totalAvailable, total);
+        await this.persistTreasuryAlert({ barberAddress: recipientAddress, totalAmount: total, error: e });
+        throw e;
+      }
+
+      try {
+        const tx = this.buildDirectTreasuryUsdcTransferTx(recipientAddress, total, coins);
+        const builtDigest = await tx.getDigest({ client: this.getClient() }).catch(() => undefined);
+        logger.info('SuiRelayer: submitting direct USDC transfer', {
+          attempt,
+          recipientAddress: normalizeSuiAddress(recipientAddress),
+          amount: total.toString(),
+          dryDigest: builtDigest,
+        });
+
+        const { digest } = await this.signAndExecute(tx);
+        logger.info('SuiRelayer: direct USDC transfer success', { digest, attempt });
+        return { digest };
+      } catch (err: unknown) {
+        const e = err as Error & { digest?: string };
+        lastError = e.message || String(err);
+        lastDigest = e.digest ?? lastDigest;
+
+        if (typeof (err as { digest?: string })?.digest === 'string') {
+          lastDigest = (err as { digest: string }).digest;
+        }
+
+        logger.error('SuiRelayer: direct transfer attempt failed', {
+          attempt,
+          digest: lastDigest,
+          message: lastError,
+        });
+
+        if (attempt < MAX_ATTEMPTS) {
+          await sleep(400 * 2 ** (attempt - 1));
+        }
+      }
+    }
+
+    await this.persistFailureAlert({
+      barberAddress: recipientAddress,
+      totalAmount: total,
+      digest: lastDigest,
+      attempts: MAX_ATTEMPTS,
+      errorMessage: lastError,
+    });
+
+    throw new Error(
+      `SuiRelayer: executeDirectTreasuryUsdcTransfer failed after ${MAX_ATTEMPTS} attempts (last digest: ${lastDigest ?? 'none'}): ${lastError}`
     );
   }
 }
