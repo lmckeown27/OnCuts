@@ -15,7 +15,8 @@
     "migrate:deploy": "npx prisma migrate deploy",
     "postinstall": "npx prisma generate",
     "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts",
-    "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts"
+    "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts",
+    "test:payout-relayer": "npx ts-node test-payout.ts"
   },
   "keywords": [
     "sui",
