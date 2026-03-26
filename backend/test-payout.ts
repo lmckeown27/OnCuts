@@ -2,12 +2,15 @@
  * Temporary dev script: trigger the real Sui relayer (same executeSplitPayout as DIY payouts).
  * Isolates on-chain / treasury issues from Stripe webhooks.
  *
- * Usage (from backend/):
+ * Run from repo root (CampusCuts/):
+ *   npx ts-node backend/test-payout.ts
+ *   bash scripts/test-payout-relayer.sh
+ * Or from backend/:
  *   npx ts-node test-payout.ts
- *   npx ts-node test-payout.ts <barberSuiAddress> [usdAmount]
- *   TEST_RELAYER_BARBER_ADDRESS=0x... TEST_RELAYER_USD=20 npx ts-node test-payout.ts
+ *   npm run test:payout-relayer
  *
- * Amount is converted to USDC base units (6 decimals). Requires the same .env as the API (treasury, RPC, etc.).
+ * Args: [barberSuiAddress] [usdAmount] — or TEST_RELAYER_BARBER_ADDRESS / TEST_RELAYER_USD.
+ * Amount is USDC base units internally (6 decimals). Needs backend/.env (treasury, RPC, etc.).
  */
 
 import dotenv from 'dotenv';
