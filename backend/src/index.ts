@@ -382,7 +382,7 @@ app.use('/api/v1/campus-manager', campusManagerRoutes);  // Campus manager info 
 app.use('/api/barber-applications', barberApplicationRoutes);  // Legacy route
 
 logger.info('✅ V2 routes enabled:');
-logger.info('   - /api/v2/bookings (Stripe Checkout + Bridge / Sui Path B)');
+logger.info('   - /api/v2/bookings (Stripe Checkout + Bridge / Sui)');
 logger.info('   - /api/v2/wallet (production wallet)');
 logger.info('   - /api/admin (platform management)');
 logger.info('   - /api/admin/live-feed (real-time monitoring)');
@@ -458,7 +458,7 @@ httpServer.listen(PORT, async () => {
     });
   }
 
-  // NOTE: Legacy Aptos chain monitor removed — Path B uses Stripe + Sui (relayer / indexer), not aptos-monitor.
+  // NOTE: Legacy Aptos chain monitor removed — use Stripe + Sui (relayer / indexer), not aptos-monitor.
   // NOTE: Legacy gas-wallet cron disabled — use Sui sponsored txs (GAS_SPONSOR_SECRET) when on-chain is enabled.
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)

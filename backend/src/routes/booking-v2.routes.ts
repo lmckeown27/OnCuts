@@ -17,7 +17,7 @@ router.get(
   bookingController.getCheckoutSettlement
 );
 
-// Create booking (Stripe Checkout Session, Path B)
+// Create booking (Stripe Checkout Session, Sui settlement)
 router.post('/', authenticate, bookingController.createBooking);
 
 // Confirm payment (after Stripe payment succeeds)

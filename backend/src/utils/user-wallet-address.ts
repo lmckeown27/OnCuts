@@ -1,5 +1,5 @@
 /**
- * Resolve user on-chain identity: `sui_address` (Path B / zkLogin), then Prisma `"walletAddress"` (hex id).
+ * Resolve user on-chain identity: `sui_address` (zkLogin), then Prisma `"walletAddress"` (hex id).
  *
  * DBs that only have `legacy_wallet_address` (snake_case) should add/copy into `"walletAddress"` or adjust SQL.
  */

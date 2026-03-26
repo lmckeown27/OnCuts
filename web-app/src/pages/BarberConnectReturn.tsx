@@ -1,5 +1,5 @@
 /**
- * Path B: return URL handler (legacy `/web/barber/connect/return` bookmarks).
+ * Return URL handler (legacy `/web/barber/connect/return` bookmarks).
  * Sends barbers to the dashboard payout modal.
  */
 

@@ -1,6 +1,6 @@
 // CampusCuts Production Database Schema
 // PostgreSQL as Coordination + Intelligence Layer
-// Sui (Path B) = settlement via Bridge + zkLogin; Postgres = coordination
+// Sui settlement via Bridge + zkLogin; Postgres = coordination
 
 generator client {
   provider = "prisma-client-js"

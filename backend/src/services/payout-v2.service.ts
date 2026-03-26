@@ -262,11 +262,11 @@ class PayoutServiceV2 {
   }
 
   /**
-   * Path B: Stripe-settled USDC split on Sui (treasury → barber + platform).
+   * Stripe-settled USDC split on Sui (treasury → barber + platform).
    * Gas is paid by the treasury / `GAS_SPONSOR_SECRET` path (see `sui-relayer.service`); no Enoki.
    * Persists `payments.path_b_sui_tx_digest` for explorer links / idempotency.
    */
-  async executePathBOnChainUsdcPayout(input: {
+  async executeSuiOnChainUsdcPayout(input: {
     barberSuiAddress: string;
     amountBaseUnits: string;
     bookingId: string;
@@ -282,7 +282,7 @@ class PayoutServiceV2 {
       );
     }
 
-    logger.info('Path B on-chain USDC payout executed', {
+    logger.info('Sui on-chain USDC payout executed', {
       bookingId: input.bookingId,
       digest,
       paymentIntentId: input.paymentIntentId,

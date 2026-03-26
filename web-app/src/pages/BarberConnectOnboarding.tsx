@@ -1,7 +1,7 @@
 /**
- * Path B — Barber payout setup (Sui USDC)
+ * Barber payout setup (Sui USDC)
  *
- * Legacy URL /web/barber/connect — Stripe Connect removed; this page explains Path B
+ * Legacy URL /web/barber/connect — Stripe Connect removed; this page explains Sui settlement
  * and sends barbers to the dashboard payout modal.
  */
 
@@ -18,7 +18,7 @@ export const BarberConnectOnboarding = () => {
       <Card className="max-w-lg w-full p-8 shadow-lg">
         <div className="flex items-center gap-3 text-primary-600 mb-4">
           <Wallet className="w-8 h-8" />
-          <h1 className="text-2xl font-bold text-gray-900">Payout setup (Path B)</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Payout setup (Sui USDC)</h1>
         </div>
         <p className="text-gray-600 mb-4">
           CampusCuts pays barbers in <strong>USDC on Sui</strong> after customers pay in USD through Stripe

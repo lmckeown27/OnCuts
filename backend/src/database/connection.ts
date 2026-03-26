@@ -2,7 +2,7 @@
  * PostgreSQL Connection Pool (Cache Layer)
  * 
  * PostgreSQL is the primary application store (bookings, users, payments).
- * Path B settlement uses Stripe + optional Sui relayer; chain state may be mirrored here.
+ * Settlement uses Stripe + optional Sui relayer; chain state may be mirrored here.
  * 
  * Adapted from CampusKinect database architecture
  */

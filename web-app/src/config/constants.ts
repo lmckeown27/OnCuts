@@ -60,7 +60,7 @@ export const STRIPE_PUBLIC_KEY =
         : import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_LIVE_PUBLISHABLE_KEY) ||
   '';
 
-// Sui (Path B) — VITE_SUI_RPC_URL wins; else defaults from APP_NETWORK_MODE; else legacy testnet
+// Sui — VITE_SUI_RPC_URL wins; else defaults from APP_NETWORK_MODE; else legacy testnet
 export const SUI_RPC_URL =
   import.meta.env.VITE_SUI_RPC_URL ||
   (APP_NETWORK_MODE === 'mainnet'

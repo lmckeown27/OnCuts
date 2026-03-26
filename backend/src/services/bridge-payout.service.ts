@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { logger } from '../utils/logger';
 
-/** Path B: 80% barber USDC, 20% platform treasury on Sui (after Stripe settles). */
+/** 80% barber USDC, 20% platform treasury on Sui (after Stripe settles). */
 const BARBER_SHARE = 0.8;
 
 export interface BridgePayoutParams {

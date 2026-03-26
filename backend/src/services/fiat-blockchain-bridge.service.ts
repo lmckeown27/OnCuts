@@ -1,9 +1,9 @@
 /**
- * Fiat ↔ blockchain bridge (legacy; Path B = Stripe + Sui)
+ * Fiat ↔ blockchain bridge (legacy; production = Stripe + Sui)
  *
  * Legacy fiat + custodial chain bridge (Aptos-era, removed on-chain legs).
  *
- * Path B: Stripe + Sui relayer + zkLogin. `handleDeposit` / `handleWithdrawal` throw;
+ * Stripe + Sui relayer + zkLogin. `handleDeposit` / `handleWithdrawal` throw;
  * `createDepositIntent` may remain for Stripe-only tests.
  */
 
@@ -29,12 +29,12 @@ const OCTAS_PER_APT = 100_000_000;
 
 class FiatBlockchainBridgeService {
   /**
-   * Removed: custodial on-chain credit path. Path B uses Stripe + Sui settlement elsewhere.
+   * Removed: custodial on-chain credit path. Use Stripe + Sui settlement elsewhere.
    */
   async handleDeposit(paymentIntent: Stripe.PaymentIntent): Promise<void> {
     logger.warn(`fiat-blockchain-bridge.handleDeposit ignored for ${paymentIntent.id} (custodial on-chain deposit removed)`);
     throw new Error(
-      'Legacy fiat→custodial-chain deposit removed. Use Path B (Stripe + Sui relayer / zkLogin), not balance_deposit webhooks.'
+      'Legacy fiat→custodial-chain deposit removed. Use Stripe + Sui relayer / zkLogin, not balance_deposit webhooks.'
     );
   }
 
@@ -46,7 +46,7 @@ class FiatBlockchainBridgeService {
     _stripeConnectAccountId: string
   ): Promise<{ success: boolean; txHash?: string; transferId?: string }> {
     throw new Error(
-      'Legacy custodial-chain withdrawal + Stripe transfer removed. Use wallet-v2 / Connect flows on Path B.'
+      'Legacy custodial-chain withdrawal + Stripe transfer removed. Use wallet-v2 / Connect flows where applicable.'
     );
   }
 

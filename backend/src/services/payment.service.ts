@@ -360,7 +360,7 @@ class PaymentService {
     // TODO: Implement when Circle + Blockchain are ready
     // 1. Charge via Stripe
     // 2. Convert USD to USDC via Circle
-    // 3. On-chain escrow via Sui (Path B) when enabled — not legacy Aptos
+    // 3. On-chain escrow via Sui when enabled — not legacy Aptos
     // 4. Store in database
     
     throw new Error('On-chain escrow not yet implemented. Set PAYMENT_MODE=offchain');

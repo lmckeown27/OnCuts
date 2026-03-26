@@ -1,5 +1,5 @@
 /**
- * Withdrawal Options — Path B
+ * Withdrawal Options — Sui USDC settlement
  *
  * Custodial balance withdrawals to Sui (no Stripe Connect bank rail in-app).
  */
@@ -66,7 +66,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance,
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">Withdraw funds</h3>
       <p className="text-sm text-gray-600 mb-4">
-        Path B: off-ramp is your Sui wallet (USDC). In-app bank transfers via Stripe Connect are not used.
+        Off-ramp is your Sui wallet (USDC). In-app bank transfers via Stripe Connect are not used.
       </p>
 
       <div className="mb-6">
@@ -115,7 +115,7 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance,
         <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-900">
           For booking revenue, ensure your payout Sui address is saved under{' '}
-          <strong>Barber dashboard → Payout Settings</strong> so Checkout can attach it automatically.
+          <strong>Barber dashboard → Payment Management</strong> so Checkout can attach it automatically.
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 /**
- * Barber Earnings Page — Path B (USDC on Sui; Stripe for customer USD only)
+ * Barber Earnings Page — USDC on Sui; Stripe for customer USD
  */
 
 import { useState } from 'react';
@@ -41,7 +41,7 @@ export default function BarberEarningsPage() {
           <div className="flex items-start gap-3">
             <Wallet className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="font-semibold text-gray-900">Path B payouts</h2>
+              <h2 className="font-semibold text-gray-900">Sui USDC payouts</h2>
               <p className="text-sm text-gray-600 mt-1">
                 Customer payments run through <strong>Stripe Checkout (USD)</strong>. Your share settles as{' '}
                 <strong>USDC on Sui</strong> to the address in{' '}
@@ -50,7 +50,7 @@ export default function BarberEarningsPage() {
                   className="text-primary-600 font-medium underline"
                   onClick={() => navigate('/web/barber?showPayoutSettings=true')}
                 >
-                  Payout Settings
+                  Payment Management
                 </button>
                 . This page is for any <em>separate</em> custodial balance withdrawals to Sui.
               </p>
@@ -132,7 +132,7 @@ export default function BarberEarningsPage() {
         </Card>
 
         <Card className="mt-8 bg-gradient-to-br from-primary-50 to-primary-50 border-2 border-primary-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-3">How Path B works</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3">How payments work</h3>
           <div className="space-y-3 text-sm text-gray-700">
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-6 h-6 bg-primary-400 text-white rounded-full flex items-center justify-center text-xs font-bold">

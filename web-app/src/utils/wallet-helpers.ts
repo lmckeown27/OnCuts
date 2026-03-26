@@ -1,5 +1,5 @@
 /**
- * Sui helpers (Path B). Balance reads go through SuiClient; zkLogin owns addresses.
+ * Sui helpers. Balance reads go through SuiClient; zkLogin owns addresses.
  */
 
 import type { SuiClient } from '@mysten/sui/client';

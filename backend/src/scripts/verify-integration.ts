@@ -36,7 +36,7 @@ async function verifyIntegration() {
   
   logger.info('📝 Checking environment variables...');
   
-  // Sui / Path B (optional until fully wired)
+  // Sui (optional until fully wired)
   checkEnvVar('SUI_RPC_URL', false, 'Sui JSON-RPC URL');
   checkEnvVar('SUI_TREASURY_ADDRESS', false, 'Platform treasury Sui address (USDC / Bridge)');
   checkEnvVar('BRIDGE_API_KEY', false, 'Bridge API key for /v1/payouts');

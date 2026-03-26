@@ -1,7 +1,7 @@
 /**
  * DEPRECATED: Legacy Booking Controller
  * 
- * This controller contains legacy custodial-chain booking stubs (pre–Path B).
+ * This controller contains legacy custodial-chain booking stubs.
  * Platform now uses Stripe for off-chain payments only.
  * 
  * Use booking-v2.controller.ts for production booking flows.
@@ -23,7 +23,7 @@ import { logger } from '../utils/logger';
 import { dollarsToCents } from '../types/wallet.types';
 import { USER_PRIMARY_WALLET_SQL, USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
-/** Legacy custodial-chain booking API (Aptos-era); all methods throw — use v2 bookings + Stripe / Sui Path B. */
+/** Legacy custodial-chain booking API (Aptos-era); all methods throw — use v2 bookings + Stripe / Sui. */
 const disabledLegacyChainBookingStub = {
   createBooking: async (_params: any): Promise<string> => {
     throw new Error('Legacy on-chain booking disabled — use Stripe / v2 bookings');

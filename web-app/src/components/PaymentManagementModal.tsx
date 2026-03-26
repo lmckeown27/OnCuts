@@ -1,20 +1,23 @@
 /**
- * Path B — Payout Settings
- *
- * Barbers link a Sui address (USDC settlement). No Stripe Connect.
+ * Payment Management — analytics, bank cash-out planning, and Sui payout address.
  */
 
 import { useState, useEffect } from 'react';
-import { X, AlertTriangle, CheckCircle, Wallet } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Wallet, BarChart3, Landmark, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Button from './Button';
-import { fetchPathBPayoutStatus, type PathBPayoutStatus } from '../services/path-b-payout.service';
+import {
+  fetchBarberPayoutStatus,
+  fetchBarberPayoutSummary,
+  type BarberPayoutStatus,
+  type BarberPayoutSummary,
+} from '../services/barber-payout.service';
 import { persistUserSuiAddress } from '../services/zkLogin.service';
 import PayoutBrowserWalletConnect from './PayoutBrowserWalletConnect';
 import SignInWithGoogleZkLoginButton from './SignInWithGoogleZkLoginButton';
 import { isZkLoginWalletlessEnabled } from '../config/constants';
 
-interface PayoutSettingsModalProps {
+interface PaymentManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   preventClose?: boolean;
@@ -23,42 +26,58 @@ interface PayoutSettingsModalProps {
 
 const ADDR_PLACEHOLDER = '0x followed by 64 hex characters';
 
-/** Barber-facing: native USDC on Sui (same asset CampusCuts settles in Path B). */
 const SUI_USDC_OVERVIEW_URL = 'https://sui.io/usdc';
 const SUI_WALLET_CHROME_URL =
   'https://chromewebstore.google.com/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil';
 
-export default function PayoutSettingsModal({
+function formatUsd(dollars: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
+    Number.isFinite(dollars) ? dollars : 0
+  );
+}
+
+function centsToUsd(cents: number): number {
+  return Math.round(cents) / 100;
+}
+
+export default function PaymentManagementModal({
   isOpen,
   onClose,
   preventClose = false,
   onStatusChange,
-}: PayoutSettingsModalProps) {
-  const [status, setStatus] = useState<PathBPayoutStatus | null>(null);
+}: PaymentManagementModalProps) {
+  const [status, setStatus] = useState<BarberPayoutStatus | null>(null);
+  const [summary, setSummary] = useState<BarberPayoutSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [inputAddress, setInputAddress] = useState('');
+  const [plannedBankPayout, setPlannedBankPayout] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const load = async () => {
     try {
       setIsLoading(true);
-      const data = await fetchPathBPayoutStatus();
-      setStatus(data);
-      onStatusChange?.(data.payout_ready);
-      if (data.sui_address) {
-        setInputAddress(data.sui_address);
+      const [payoutData, paymentSummary] = await Promise.all([
+        fetchBarberPayoutStatus(),
+        fetchBarberPayoutSummary().catch(() => null),
+      ]);
+      setStatus(payoutData);
+      setSummary(paymentSummary);
+      onStatusChange?.(payoutData.payout_ready);
+      if (payoutData.sui_address) {
+        setInputAddress(payoutData.sui_address);
       }
     } catch (e: unknown) {
       console.error(e);
-      toast.error('Could not load payout status');
+      toast.error('Could not load payment data');
       setStatus({
         payout_ready: false,
         sui_address: null,
         invalid_stored_address: false,
         stored_address_preview: null,
       });
+      setSummary(null);
       onStatusChange?.(false);
     } finally {
       setIsLoading(false);
@@ -112,6 +131,10 @@ export default function PayoutSettingsModal({
     }
   };
 
+  const displayTotal = summary?.display_total_dollars ?? 0;
+  const recent30Usd = summary ? centsToUsd(summary.recent_30d_barber_cents) : 0;
+  const usesLedger = summary && summary.ledger_total_dollars > 0;
+
   return (
     <div
       className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-4 transition-all duration-150 ease-out ${
@@ -127,13 +150,13 @@ export default function PayoutSettingsModal({
       >
         <div className="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-white">Payout Settings</h2>
+            <h2 className="text-xl font-bold text-white">Payment Management</h2>
             <p className="text-white/80 text-sm">
               {preventClose && !payoutReady
                 ? zkLoginOn
                   ? 'Link a Sui address for USDC—use Google here; no separate wallet app required'
                   : 'Set your Sui payout address to accept bookings'
-                : 'Path B — USDC on Sui'}
+                : 'USDC on Sui · Stripe checkout'}
             </p>
           </div>
           {(!preventClose || payoutReady) && (
@@ -155,8 +178,8 @@ export default function PayoutSettingsModal({
                 <div>
                   <p className="text-sm font-medium text-amber-800">Payout setup required</p>
                   <p className="text-sm text-amber-700 mt-1">
-                    Add your Sui address so paid bookings can settle USDC to you. Customers pay in USD via
-                    Stripe; you receive on-chain per CampusCuts Path B.
+                    Add your Sui address so paid bookings can settle USDC to you. Customers pay in USD via Stripe;
+                    your share is settled on Sui through CampusCuts.
                     {zkLoginOn ? (
                       <>
                         {' '}
@@ -173,14 +196,91 @@ export default function PayoutSettingsModal({
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4" />
-              <p className="text-gray-500">Checking payout status…</p>
+              <p className="text-gray-500">Loading payment data…</p>
             </div>
           ) : (
             <>
+              {summary?.has_barber_profile && (
+                <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50/90 p-4">
+                  <div className="flex items-center gap-2 text-gray-900 mb-3">
+                    <BarChart3 className="w-5 h-5 text-primary-600" />
+                    <h3 className="text-sm font-semibold">Revenue overview</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg bg-white border border-gray-100 p-3 shadow-sm">
+                      <p className="text-xs text-gray-500 mb-1">Estimated received</p>
+                      <p className="text-lg font-bold text-gray-900 tabular-nums">{formatUsd(displayTotal)}</p>
+                      <p className="text-[10px] text-gray-400 mt-1 leading-snug">
+                        {usesLedger
+                          ? 'From payment ledger records.'
+                          : 'From paid bookings (~85% of service after platform fee + tips).'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-white border border-gray-100 p-3 shadow-sm">
+                      <p className="text-xs text-gray-500 mb-1">Paid bookings</p>
+                      <p className="text-lg font-bold text-gray-900 tabular-nums">
+                        {summary.paid_bookings_count}
+                      </p>
+                      <p className="text-[10px] text-gray-400 mt-1">Completed checkout</p>
+                    </div>
+                    <div className="rounded-lg bg-white border border-gray-100 p-3 shadow-sm col-span-2">
+                      <p className="text-xs text-gray-500 mb-1">Last 30 days (estimate)</p>
+                      <p className="text-base font-semibold text-primary-700 tabular-nums">
+                        {formatUsd(recent30Usd)}
+                      </p>
+                    </div>
+                  </div>
+                  {usesLedger && (
+                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-gray-600">
+                      <span className="rounded-full bg-emerald-50 text-emerald-800 px-2 py-0.5">
+                        Settled (ledger): {formatUsd(summary.ledger_paid_out_dollars)}
+                      </span>
+                      {summary.ledger_pending_dollars > 0 && (
+                        <span className="rounded-full bg-amber-50 text-amber-800 px-2 py-0.5">
+                          Pending: {formatUsd(summary.ledger_pending_dollars)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mb-6 rounded-xl border border-primary-200 bg-primary-50/60 p-4">
+                <div className="flex items-center gap-2 text-gray-900 mb-2">
+                  <Landmark className="w-5 h-5 text-primary-600" />
+                  <h3 className="text-sm font-semibold">Bank transfer planning</h3>
+                </div>
+                <p className="text-xs text-gray-600 mb-3">
+                  CampusCuts sends your share as <strong>USDC on Sui</strong> to the address below. Moving dollars to
+                  your bank happens outside the app (exchange, wallet off-ramp, or bridge). Use this field to note how
+                  much you intend to cash out.
+                </p>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Amount to move to bank (USD)</label>
+                <div className="flex gap-2 items-center">
+                  <span className="text-gray-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
+                    value={plannedBankPayout}
+                    onChange={(e) => setPlannedBankPayout(e.target.value)}
+                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm tabular-nums focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
+                <div className="mt-2 flex items-start gap-2 text-[11px] text-gray-500">
+                  <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary-500" />
+                  <span>
+                    This amount is for your own planning only—it does not trigger a transfer. Withdraw USDC from your
+                    Sui wallet using your preferred provider, then deposit to your bank.
+                  </span>
+                </div>
+              </div>
+
               {status?.invalid_stored_address && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800">
-                  Stored address {status.stored_address_preview} is not valid. Enter a correct Sui address
-                  (0x + 64 hex).
+                  Stored address {status.stored_address_preview} is not valid. Enter a correct Sui address (0x + 64
+                  hex).
                 </div>
               )}
 
@@ -190,8 +290,7 @@ export default function PayoutSettingsModal({
                   <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
                     <li>
                       You need a <strong>Sui address</strong> (<code className="font-mono">0x</code> + 64 hex). Easiest:{' '}
-                      <strong>paste an address you already have</strong> from any Sui wallet you trust—no download required
-                      to complete setup.
+                      <strong>paste an address you already have</strong> from any Sui wallet you trust.
                     </li>
                     <li>
                       Optional: use <strong>Connect wallet</strong> if you use a browser extension (e.g. official{' '}
@@ -203,14 +302,14 @@ export default function PayoutSettingsModal({
                       >
                         Sui Wallet
                       </a>
-                      ). Pasting an address from any Sui wallet you use is fine—no particular app is required.
+                      ).
                     </li>
                     <li>
-                      Tap <strong>Save payout address</strong>. After customers pay in USD (Stripe), your share settles as
-                      USDC on Sui to this address.
+                      Tap <strong>Save payout address</strong>. After customers pay in USD (Stripe), your share settles
+                      as USDC on Sui to this address.
                     </li>
                     <li>
-                      View USDC in your wallet app or explorer; some apps hide tokens until you enable them. Overview:{' '}
+                      View USDC in your wallet app or explorer. Overview:{' '}
                       <a
                         href={SUI_USDC_OVERVIEW_URL}
                         target="_blank"
@@ -240,8 +339,8 @@ export default function PayoutSettingsModal({
                     </p>
                     <SignInWithGoogleZkLoginButton disabled={isSaving} />
                     <p className="text-xs text-gray-500 mt-3">
-                      After you return from Google, we save your address when possible. If the field below is still empty,
-                      paste your address from the sign-in result and tap <strong>Save payout address</strong>.
+                      After you return from Google, we save your address when possible. If the field below is still
+                      empty, paste your address from the sign-in result and tap <strong>Save payout address</strong>.
                     </p>
                   </div>
                   <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
@@ -275,9 +374,7 @@ export default function PayoutSettingsModal({
                     <p className="text-xs text-gray-500 mb-1">Address on file</p>
                     <p className="font-mono text-xs break-all text-gray-900">{status?.sui_address}</p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-4">
-                    To change it, update the field below and save.
-                  </p>
+                  <p className="text-xs text-gray-500 mt-4">To change it, update the field below and save.</p>
                 </div>
               ) : (
                 <div className="py-2">
@@ -288,8 +385,9 @@ export default function PayoutSettingsModal({
                         <h3 className="text-base font-semibold text-gray-900">Optional: use a different Sui address</h3>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        Only if you want USDC sent somewhere other than the address from <strong>Sign in with Google</strong>{' '}
-                        above—for example a hardware wallet or an address you already use elsewhere.
+                        Only if you want USDC sent somewhere other than the address from{' '}
+                        <strong>Sign in with Google</strong> above—for example a hardware wallet or an address you
+                        already use elsewhere.
                       </p>
                       <div className="rounded-xl border border-gray-200 bg-slate-50/80 p-4 mb-4">
                         <p className="text-xs text-gray-600 mb-2">
@@ -309,7 +407,7 @@ export default function PayoutSettingsModal({
                       </div>
                       <p className="text-sm text-gray-600 mb-4">
                         Paste an address from any Sui wallet, or use <strong>Connect wallet</strong> if you use a browser
-                        extension. No single wallet app is required.
+                        extension.
                       </p>
                       <PayoutBrowserWalletConnect
                         disabled={isSaving}
@@ -374,7 +472,7 @@ export default function PayoutSettingsModal({
               )}
 
               <div className="border-t border-gray-200 mt-6 pt-6 text-sm text-gray-600 space-y-2">
-                <p className="font-medium text-gray-900">How Path B works</p>
+                <p className="font-medium text-gray-900">How payments work</p>
                 <ul className="list-disc pl-5 space-y-1 text-xs">
                   <li>Customer pays USD through Stripe Checkout (card / enabled methods).</li>
                   <li>CampusCuts records the booking as paid, then routes settlement to USDC on Sui.</li>

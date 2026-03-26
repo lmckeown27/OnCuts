@@ -1,7 +1,7 @@
 /**
  * Gas wallet admin surface (legacy shape for dashboard).
  *
- * Path B: flows use **Sui sponsored transactions** (`GAS_SPONSOR_SECRET`), not a custodial platform
+ * Flows use **Sui sponsored transactions** (`GAS_SPONSOR_SECRET`), not a custodial platform
  * gas hot wallet. This module returns safe stubs unless re-enabled for Sui balance monitoring.
  */
 
@@ -33,7 +33,7 @@ class GasWalletService {
       '';
     this.isEnabled = false;
     logger.warn(
-      'Gas Wallet Service: disabled — Path B uses Sui sponsored gas (GAS_SPONSOR_SECRET / relayer)'
+      'Gas Wallet Service: disabled — use Sui sponsored gas (GAS_SPONSOR_SECRET / relayer)'
     );
   }
 
@@ -143,7 +143,7 @@ class GasWalletService {
   }
 
   /**
-   * Optional display address (SUI_GAS_WALLET_ADDRESS / GAS_WALLET_ADDRESS); not used for Path B signing.
+   * Optional display address (SUI_GAS_WALLET_ADDRESS / GAS_WALLET_ADDRESS); not used for Sui signing.
    */
   getGasWalletAddress(): string {
     return this.gasWalletAddress;
@@ -228,7 +228,7 @@ class GasWalletService {
     return {
       method: 'sui_gas_sponsor',
       instructions: [
-        'Path B: configure GAS_SPONSOR_SECRET (Sui keypair that pays gas for sponsored PTBs).',
+        'Configure GAS_SPONSOR_SECRET (Sui keypair that pays gas for sponsored PTBs).',
         'Fund that address with SUI on your target network (testnet faucet or exchange withdraw).',
         this.gasWalletAddress
           ? `Optional monitoring address: ${this.gasWalletAddress}`

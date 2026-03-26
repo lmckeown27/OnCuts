@@ -9,7 +9,7 @@
  * - Recompute triggers (admin only)
  * - Anomaly monitoring (admin only)
  * 
- * Dynamic pricing: PostgreSQL + Redis; chain signals via `blockchain-query` (Sui Path B / stubs).
+ * Dynamic pricing: PostgreSQL + Redis; chain signals via `blockchain-query` (Sui / stubs).
  */
 
 import { Request, Response } from 'express';

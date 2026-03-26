@@ -435,7 +435,7 @@ export class BlockchainSyncService {
    * Get payment state from blockchain
    */
   private async getBlockchainPaymentState(_paymentId: string): Promise<BlockchainPaymentState | null> {
-    logger.debug('Sui Path B: getBlockchainPaymentState stub');
+    logger.debug('Sui: getBlockchainPaymentState stub');
     return null;
   }
   

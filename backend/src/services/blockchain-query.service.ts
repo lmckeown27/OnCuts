@@ -1,5 +1,5 @@
 /**
- * Blockchain query facade — Path B uses Postgres + Sui via Bridge; on-chain reads are stubbed until indexer wired.
+ * Blockchain query facade — Postgres + Sui via Bridge; on-chain reads are stubbed until indexer wired.
  */
 
 import { logger } from '../utils/logger';
@@ -75,7 +75,7 @@ interface BarberRating {
 
 class BlockchainQueryService {
   constructor() {
-    logger.info('BlockchainQueryService: Sui Path B (on-chain reads stubbed until indexer is wired)');
+    logger.info('BlockchainQueryService: Sui (on-chain reads stubbed until indexer is wired)');
   }
 
   async getUserAccount(_address: string): Promise<UserAccount | null> {

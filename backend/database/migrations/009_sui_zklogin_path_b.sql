@@ -1,4 +1,4 @@
--- Path B: Stablecoin Sandwich — Sui + zkLogin + Stripe Checkout + Bridge
+-- Sui + zkLogin + Stripe Checkout + Bridge
 -- Adds optional Sui identity columns and checkout / settlement tracking.
 
 ALTER TABLE users

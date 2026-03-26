@@ -5,7 +5,7 @@ export interface User {
   last_name: string;
   username?: string;
   user_type: 'student' | 'barber' | 'campus_manager' | 'admin';
-  /** Path B / native zkLogin Sui address when linked */
+  /** Native zkLogin Sui address when linked */
   sui_address?: string | null;
   campus_id?: string;
   is_verified: boolean;

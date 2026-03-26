@@ -22,7 +22,7 @@ import { AdminDashboard } from '../components/AdminDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
-import PayoutSettingsModal from '../components/PayoutSettingsModal';
+import PaymentManagementModal from '../components/PaymentManagementModal';
 import InvisibleUsdcBalance from '../components/InvisibleUsdcBalance';
 import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
@@ -79,8 +79,8 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
-  /** Path B: barber has valid Sui payout address on file */
-  const [pathBPayoutReady, setPathBPayoutReady] = useState<boolean | null>(null); // null = loading
+  /** Barber has valid Sui payout address on file */
+  const [suiPayoutReady, setSuiPayoutReady] = useState<boolean | null>(null); // null = loading
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   // Google Calendar integration state
@@ -197,27 +197,27 @@ export default function BarberPage() {
     return date.toLocaleDateString();
   };
   
-  const checkPathBPayoutStatus = async () => {
+  const checkSuiPayoutStatus = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/barber/path-b/payout-status`, {
+      const response = await fetch(`${API_BASE_URL}/barber/payout/status`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
 
       if (data.success && data.data) {
         const ready = Boolean(data.data.payout_ready);
-        setPathBPayoutReady(ready);
+        setSuiPayoutReady(ready);
         if (!ready) {
           setShowPayoutSettings(true);
         }
       } else {
-        setPathBPayoutReady(false);
+        setSuiPayoutReady(false);
         setShowPayoutSettings(true);
       }
     } catch (error) {
-      console.error('Failed to check Path B payout status:', error);
-      setPathBPayoutReady(false);
+      console.error('Failed to check Sui payout status:', error);
+      setSuiPayoutReady(false);
       setShowPayoutSettings(true);
     }
   };
@@ -226,7 +226,7 @@ export default function BarberPage() {
   useEffect(() => {
     fetchNotifications();
     loadUnreadCount();
-    checkPathBPayoutStatus();
+    checkSuiPayoutStatus();
   }, [loadUnreadCount]);
 
   // Optional: open payout modal (e.g. return from /web/barber/connect bookmark)
@@ -777,7 +777,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <Landmark className="w-4 h-4 text-gray-500" />
-                    Payout Settings
+                    Payment Management
                   </button>
                   {/* Barber Chats (for non-CM barbers) */}
                   {!isCampusManager && (
@@ -1231,19 +1231,19 @@ export default function BarberPage() {
         />
       )}
 
-      {/* Path B: modal until Sui payout address is saved */}
-      <PayoutSettingsModal
+      {/* Modal until Sui payout address is saved */}
+      <PaymentManagementModal
         isOpen={showPayoutSettings}
         onClose={() => {
-          if (pathBPayoutReady) {
+          if (suiPayoutReady) {
             setShowPayoutSettings(false);
           }
         }}
-        preventClose={!pathBPayoutReady}
+        preventClose={!suiPayoutReady}
         onStatusChange={(ready: boolean) => {
-          setPathBPayoutReady(ready);
+          setSuiPayoutReady(ready);
           if (ready) {
-            void checkPathBPayoutStatus();
+            void checkSuiPayoutStatus();
           }
         }}
       />

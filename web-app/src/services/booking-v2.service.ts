@@ -1,5 +1,5 @@
 /**
- * Booking Service V2 — /api/v2/bookings (Stripe Checkout + Path B)
+ * Booking Service V2 — /api/v2/bookings (Stripe Checkout + Sui settlement)
  */
 
 import axios, { AxiosInstance } from 'axios';

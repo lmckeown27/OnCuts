@@ -1,5 +1,5 @@
 /**
- * Sui Wallet Standard + RPC for Path B (extension wallets in Payout Settings, etc.)
+ * Sui Wallet Standard + RPC (extension wallets in Payment Management, etc.)
  */
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import '@mysten/dapp-kit/dist/index.css';

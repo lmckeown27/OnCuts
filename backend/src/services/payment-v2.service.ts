@@ -1,7 +1,7 @@
 /**
  * Payment Service V2
  *
- * Path B: `createBookingCheckoutSession` — Stripe Checkout (platform) → USDC on Sui (barber `sui_address`).
+ * `createBookingCheckoutSession` — Stripe Checkout (platform) → USDC on Sui (barber `sui_address`).
  * Legacy: `createBookingPaymentIntent` may still use Stripe Connect when `stripe_account_id` is set.
  */
 
@@ -126,7 +126,7 @@ class PaymentServiceV2 {
   }
 
   /**
-   * Path B: Stripe Checkout → Bridge → USDC on Sui (80% barber / 20% treasury in Bridge handler).
+   * Stripe Checkout → Bridge → USDC on Sui (80% barber / 20% treasury in Bridge handler).
    */
   async createBookingCheckoutSession(
     input: BookingPaymentInput & { successUrl: string; cancelUrl: string }
@@ -150,7 +150,7 @@ class PaymentServiceV2 {
     }
 
     const meta: Record<string, string> = {
-      path_b: 'true',
+      sui_checkout: 'true',
       booking_id: input.bookingId,
       consumer_id: input.consumerId,
       barber_id: input.barberId,
@@ -194,7 +194,7 @@ class PaymentServiceV2 {
       session = await stripeSdk().checkout.sessions.create(sessionParams);
     }
 
-    logger.info('Booking Checkout Session created (Path B)', {
+    logger.info('Booking Checkout Session created (Sui settlement)', {
       session_id: session.id,
       booking_id: input.bookingId,
     });

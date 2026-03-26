@@ -1,7 +1,7 @@
 /**
  * Gas Calculator Service
  * 
- * Gas cost hints (legacy shape; Path B uses Sui gas / sponsorship — not Aptos RPC)
+ * Gas cost hints (legacy shape; Sui uses gas / sponsorship — not Aptos RPC)
  * Based on real transaction data from production systems
  * 
  * Extracted and adapted from typescript_cash_bot

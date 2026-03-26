@@ -69,7 +69,7 @@ async function runPayoutJob(job: Job<ProcessPayoutJobData>): Promise<{ digest: s
   }
 
   const payoutV2 = (await import('../services/payout-v2.service')).default;
-  const { digest } = await payoutV2.executePathBOnChainUsdcPayout({
+  const { digest } = await payoutV2.executeSuiOnChainUsdcPayout({
     barberSuiAddress,
     amountBaseUnits,
     bookingId,

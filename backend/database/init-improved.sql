@@ -127,7 +127,7 @@ CREATE INDEX idx_users_university_role ON users(university_id, role);
 CREATE INDEX idx_users_role_rating ON users(role, average_rating DESC) WHERE role = 2;  -- Barber rankings
 
 -- Comments
-COMMENT ON TABLE users IS 'User accounts; on-chain ids: sui_address (Path B) and optional legacy_wallet_address.';
+COMMENT ON TABLE users IS 'User accounts; on-chain ids: sui_address and optional legacy_wallet_address.';
 COMMENT ON COLUMN users.legacy_wallet_address IS 'Pre-Sui custodial hex id; prefer sui_address when set';
 COMMENT ON COLUMN users.balance IS 'Available balance in cents (synced from blockchain)';
 COMMENT ON COLUMN users.locked_balance IS 'Funds locked in escrow (synced from blockchain)';

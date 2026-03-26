@@ -1,5 +1,5 @@
 /**
- * Legacy custodial Aptos signer — removed in Path B.
+ * Legacy custodial Aptos signer — removed; use Sui zkLogin.
  * Identity and signing move to Sui zkLogin + backend salt (salt.service).
  */
 

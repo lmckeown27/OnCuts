@@ -1,4 +1,4 @@
--- Path B: rename Aptos-era column; application prefers sui_address, then legacy_wallet_address.
+-- Rename Aptos-era column; application prefers sui_address, then legacy_wallet_address.
 
 DO $$
 BEGIN
@@ -18,4 +18,4 @@ BEGIN
   END IF;
 END $$;
 
-COMMENT ON COLUMN users.legacy_wallet_address IS 'Pre-Sui / custodial-era hex id; prefer sui_address for Path B';
+COMMENT ON COLUMN users.legacy_wallet_address IS 'Pre-Sui / custodial-era hex id; prefer sui_address for settlement';

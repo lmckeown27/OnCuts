@@ -20,7 +20,7 @@ import auditService from '../services/audit.service';
 import { logger } from '../utils/logger';
 
 /**
- * Poll Stripe Checkout + DB settlement after redirect (Path B).
+ * Poll Stripe Checkout + DB settlement after redirect.
  * GET /api/v2/bookings/checkout-session/:sessionId/settlement
  */
 export const getCheckoutSettlement = async (
@@ -128,7 +128,7 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
 
     const booking = bookingResult.rows[0];
 
-    // 4. Path B: Stripe Checkout (card + crypto) → Bridge USDC on Sui
+    // 4. Stripe Checkout (card + crypto) → Bridge USDC on Sui
     const frontend =
       process.env.FRONTEND_URL || process.env.WEB_APP_URL || 'http://localhost:5173';
     const checkout = await paymentServiceV2.createBookingCheckoutSession({

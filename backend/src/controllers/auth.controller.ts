@@ -13,7 +13,7 @@
  * Process:
  * - Validates campus email domain
  * - Hashes password with bcrypt (10 rounds)
- * - On-chain identity via zkLogin / Sui (Path B), optional legacy_wallet_address
+ * - On-chain identity via zkLogin / Sui, optional legacy_wallet_address
  * - Stores user in database
  * - Generates JWT token
  * - Returns user data + token

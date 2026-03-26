@@ -1,5 +1,5 @@
 /**
- * Sui chain orchestration (Path B).
+ * Sui chain orchestration.
  * Replaces legacy Aptos calls: on-chain program integration lands here.
  */
 

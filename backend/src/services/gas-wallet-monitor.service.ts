@@ -45,7 +45,7 @@ interface AlertHistory {
 
 class GasWalletMonitorService {
   constructor() {
-    logger.info('Gas wallet monitor: Sui Path B (on-chain balance query not wired)');
+    logger.info('Gas wallet monitor: Sui (on-chain balance query not wired)');
   }
 
   /**

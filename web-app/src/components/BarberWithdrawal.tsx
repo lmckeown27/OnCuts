@@ -1,6 +1,6 @@
 /**
- * @deprecated Path B uses `PayoutSettingsModal` + Sui; this Connect-centric UI is unused.
- * Kept for reference — prefer `WithdrawalOptions` and `/barber/path-b/payout-status`.
+ * @deprecated Use `PaymentManagementModal` + Sui; this Connect-centric UI is unused.
+ * Kept for reference — prefer `WithdrawalOptions` and `/barber/payout/status`.
  */
 
 import { useState, useEffect } from 'react';

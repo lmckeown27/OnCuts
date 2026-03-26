@@ -88,10 +88,10 @@ async function markEventProcessed(
 }
 
 /**
- * Idempotency for Path B on-chain payout: same PaymentIntent / booking must not enqueue twice
+ * Idempotency for Sui on-chain payout: same PaymentIntent / booking must not enqueue twice
  * (e.g. webhook retries or overlapping events) beyond Stripe `event_id` dedupe.
  */
-async function pathBShouldSkipPayoutEnqueue(
+async function shouldSkipSuiPayoutEnqueue(
   bookingId: string,
   paymentIntentId: string
 ): Promise<boolean> {
@@ -384,7 +384,7 @@ export const handleStripeWebhookSecure = async (req: Request, res: Response) => 
 };
 
 /**
- * Path B barber chain address + gross cents for on-chain settlement.
+ * Barber Sui chain address + gross cents for on-chain settlement.
  * Metadata: `barber_sui_address` or `barber_address`; optional `amount_total` (cents) overrides session.amount_total.
  */
 function resolveCheckoutOnChainPayoutMeta(session: Stripe.Checkout.Session): {
@@ -411,7 +411,7 @@ function resolveCheckoutOnChainPayoutMeta(session: Stripe.Checkout.Session): {
 }
 
 /**
- * Path B: Stripe Checkout completed → Bridge USDC split on Sui (handled after DB commit).
+ * Stripe Checkout completed → Bridge USDC split on Sui (handled after DB commit).
  */
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
@@ -510,8 +510,8 @@ async function handleCheckoutSessionCompleted(
       const diyRelayer = process.env.SUI_DIY_RELAYER_ENABLED === 'true';
       if (diyRelayer) {
         try {
-          if (paymentIntentId && (await pathBShouldSkipPayoutEnqueue(booking_id, paymentIntentId))) {
-            logger.info('Path B DIY payout skipped (already initiated or settled)', {
+          if (paymentIntentId && (await shouldSkipSuiPayoutEnqueue(booking_id, paymentIntentId))) {
+            logger.info('DIY Sui payout skipped (already initiated or settled)', {
               booking_id,
               paymentIntentId,
             });
@@ -539,8 +539,8 @@ async function handleCheckoutSessionCompleted(
         }
       } else {
         try {
-          if (paymentIntentId && (await pathBShouldSkipPayoutEnqueue(booking_id, paymentIntentId))) {
-            logger.info('Path B bridge payout skipped (already initiated or settled)', {
+          if (paymentIntentId && (await shouldSkipSuiPayoutEnqueue(booking_id, paymentIntentId))) {
+            logger.info('Bridge Sui payout skipped (already initiated or settled)', {
               booking_id,
               paymentIntentId,
             });
@@ -582,8 +582,11 @@ async function handlePaymentIntentSucceeded(
   paymentIntent: Stripe.PaymentIntent,
   eventId: string
 ) {
-  if (paymentIntent.metadata?.path_b === 'true') {
-    logger.info(`Path B: skipping payment_intent.succeeded (checkout handler owns flow): ${paymentIntent.id}`);
+  if (
+    paymentIntent.metadata?.sui_checkout === 'true' ||
+    paymentIntent.metadata?.path_b === 'true'
+  ) {
+    logger.info(`Skipping payment_intent.succeeded (checkout handler owns Sui flow): ${paymentIntent.id}`);
     await markEventProcessed(eventId, 'payment_intent.succeeded', paymentIntent.metadata, 'success');
     return;
   }
