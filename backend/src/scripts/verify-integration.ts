@@ -42,7 +42,9 @@ async function verifyIntegration() {
   checkEnvVar('BRIDGE_API_KEY', false, 'Bridge API key for /v1/payouts');
   checkEnvVar('MASTER_SEED', false, 'zkLogin salt: SHA256(MASTER_SEED + google_sub)');
   checkEnvVar('SALT_SERVICE_SECRET', false, 'legacy alias for MASTER_SEED if unset');
-  checkEnvVar('GAS_SPONSOR_SECRET', false, 'Sui gas sponsor key (suiprivkey or hex)');
+  checkEnvVar('GAS_SPONSOR_SECRET', false, 'Sui gas key if separate from treasury');
+  checkEnvVar('SUI_TREASURY_SECRET', false, 'Treasury private key; pays gas when GAS_SPONSOR_SECRET unset');
+  checkEnvVar('SUI_TREASURY_SIGNER_SECRET', false, 'Optional: signs USDC only if different from treasury secret');
   checkEnvVar('SUI_PROVER_URL', false, 'ZK prover endpoint (Shinami / Mysten)');
   
   // Custodial Wallet (REQUIRED)

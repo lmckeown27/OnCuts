@@ -53,11 +53,14 @@ export class InsufficientTreasuryFundsError extends Error {
 }
 
 /**
- * Signs USDC splits from treasury. Defaults to gas sponsor when unset (same key pays gas + owns coin).
+ * Signs USDC splits from treasury. Falls back to `SUI_TREASURY_SECRET`, then gas sponsor chain.
  */
 function getTreasurySignerKeypair(): Ed25519Keypair {
   if (process.env.SUI_TREASURY_SIGNER_SECRET?.trim()) {
     return loadKeypairFromEnv('SUI_TREASURY_SIGNER_SECRET');
+  }
+  if (process.env.SUI_TREASURY_SECRET?.trim()) {
+    return loadKeypairFromEnv('SUI_TREASURY_SECRET');
   }
   return getGasSponsorKeypair();
 }

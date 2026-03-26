@@ -20,8 +20,8 @@ function keypairFromSecret(trimmed: string, envLabel: string): Ed25519Keypair {
  * Gas sponsor keypair for Sui sponsored transactions (GasData pattern).
  * Barbers receive full USDC; platform pays SUI gas.
  *
- * If `GAS_SPONSOR_SECRET` is unset, uses `SUI_TREASURY_SIGNER_SECRET` so a single
- * wallet can sign both treasury USDC and gas without duplicating the secret in .env.
+ * Resolution order: `GAS_SPONSOR_SECRET` (dedicated gas wallet), then `SUI_TREASURY_SECRET`
+ * (treasury pays gas), then `SUI_TREASURY_SIGNER_SECRET`.
  *
  * @see https://docs.sui.io/concepts/transactions/sponsored-transactions
  */
@@ -30,13 +30,17 @@ export function getGasSponsorKeypair(): Ed25519Keypair {
   if (gas) {
     return keypairFromSecret(gas, 'GAS_SPONSOR_SECRET');
   }
-  const treasury = process.env.SUI_TREASURY_SIGNER_SECRET?.trim();
-  if (treasury) {
-    return keypairFromSecret(treasury, 'SUI_TREASURY_SIGNER_SECRET');
+  const treasurySecret = process.env.SUI_TREASURY_SECRET?.trim();
+  if (treasurySecret) {
+    return keypairFromSecret(treasurySecret, 'SUI_TREASURY_SECRET');
+  }
+  const treasurySigner = process.env.SUI_TREASURY_SIGNER_SECRET?.trim();
+  if (treasurySigner) {
+    return keypairFromSecret(treasurySigner, 'SUI_TREASURY_SIGNER_SECRET');
   }
   throw new Error(
-    'Configure GAS_SPONSOR_SECRET (gas payer) and/or SUI_TREASURY_SIGNER_SECRET. ' +
-      'The relayer needs at least one; use both if the treasury signer and gas wallet differ.'
+    'Configure GAS_SPONSOR_SECRET and/or SUI_TREASURY_SECRET and/or SUI_TREASURY_SIGNER_SECRET. ' +
+      'The relayer needs at least one key for gas; use GAS_SPONSOR_SECRET if gas wallet differs from treasury.'
   );
 }
 

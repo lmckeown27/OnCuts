@@ -11,7 +11,7 @@
  *
  * Args: [barberSuiAddress] [usdAmount] — or TEST_RELAYER_BARBER_ADDRESS / TEST_RELAYER_USD.
  * Env: loads repo-root `.env` if present, then `backend/.env` (overrides); else default dotenv (cwd).
- * You can also `export GAS_SPONSOR_SECRET=...` before running.
+ * You can also `export SUI_TREASURY_SECRET=...` or `GAS_SPONSOR_SECRET=...` before running.
  */
 
 import fs from 'fs';
@@ -33,7 +33,9 @@ if (!fs.existsSync(repoRootEnvPath) && !fs.existsSync(backendEnvPath)) {
 
 function hasRelayerSignerSecret(): boolean {
   return Boolean(
-    process.env.GAS_SPONSOR_SECRET?.trim() || process.env.SUI_TREASURY_SIGNER_SECRET?.trim()
+    process.env.GAS_SPONSOR_SECRET?.trim() ||
+      process.env.SUI_TREASURY_SECRET?.trim() ||
+      process.env.SUI_TREASURY_SIGNER_SECRET?.trim()
   );
 }
 
@@ -41,33 +43,30 @@ if (!hasRelayerSignerSecret()) {
   const setOrUnset = (name: string): string =>
     process.env[name]?.trim() ? 'set' : 'unset';
 
-  const wrongNames = [
-    'SUI_TREASURY_SECRET',
-    'GAS_SPONSOR_KEY',
-    'TREASURY_PRIVATE_KEY',
-    'SUI_PRIVATE_KEY',
-  ].filter((k) => process.env[k]?.trim());
+  const wrongNames = ['GAS_SPONSOR_KEY', 'TREASURY_PRIVATE_KEY', 'SUI_PRIVATE_KEY'].filter(
+    (k) => process.env[k]?.trim()
+  );
 
   console.error(
     [
-      'Missing GAS_SPONSOR_SECRET and SUI_TREASURY_SIGNER_SECRET (both empty after loading .env).',
+      'Missing Sui signer secret: set at least one of GAS_SPONSOR_SECRET, SUI_TREASURY_SECRET, SUI_TREASURY_SIGNER_SECRET.',
       `  backend/.env: ${backendEnvPath} — ${fs.existsSync(backendEnvPath) ? 'found' : 'not found'}`,
       `  repo root .env: ${repoRootEnvPath} — ${fs.existsSync(repoRootEnvPath) ? 'found' : 'not found'}`,
       '',
-      'Add at least one line (same key + value as Railway / your live API). Example:',
-      '  GAS_SPONSOR_SECRET=suiprivkey1q2w...',
-      '  # or SUI_TREASURY_SIGNER_SECRET=... if that wallet signs treasury USDC',
+      'Add at least one line (same key + value as Railway / your live API). Examples:',
+      '  SUI_TREASURY_SECRET=suiprivkey1q2w...   # treasury pays gas (common)',
+      '  # or GAS_SPONSOR_SECRET=... / SUI_TREASURY_SIGNER_SECRET=...',
       '',
       `Sanity (names only): SUI_TREASURY_ADDRESS=${setOrUnset('SUI_TREASURY_ADDRESS')}, SUI_RPC_URL=${setOrUnset('SUI_RPC_URL')}`,
       ...(wrongNames.length
         ? [
             '',
-            'These env vars are set but are NOT read by the relayer — copy the value into GAS_SPONSOR_SECRET or SUI_TREASURY_SIGNER_SECRET:',
+            'These env vars are set but are NOT read by the relayer — copy the value into SUI_TREASURY_SECRET / GAS_SPONSOR_SECRET / SUI_TREASURY_SIGNER_SECRET:',
             ...wrongNames.map((k) => `  - ${k}`),
           ]
         : []),
       '',
-      'Or: export GAS_SPONSOR_SECRET=... in this shell, then run again.',
+      'Or: export SUI_TREASURY_SECRET=... in this shell, then run again.',
     ].join('\n')
   );
   process.exit(1);
