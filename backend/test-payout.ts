@@ -38,13 +38,36 @@ function hasRelayerSignerSecret(): boolean {
 }
 
 if (!hasRelayerSignerSecret()) {
+  const setOrUnset = (name: string): string =>
+    process.env[name]?.trim() ? 'set' : 'unset';
+
+  const wrongNames = [
+    'SUI_TREASURY_SECRET',
+    'GAS_SPONSOR_KEY',
+    'TREASURY_PRIVATE_KEY',
+    'SUI_PRIVATE_KEY',
+  ].filter((k) => process.env[k]?.trim());
+
   console.error(
     [
       'Missing GAS_SPONSOR_SECRET and SUI_TREASURY_SIGNER_SECRET (both empty after loading .env).',
       `  backend/.env: ${backendEnvPath} — ${fs.existsSync(backendEnvPath) ? 'found' : 'not found'}`,
       `  repo root .env: ${repoRootEnvPath} — ${fs.existsSync(repoRootEnvPath) ? 'found' : 'not found'}`,
-      'Add at least one of those keys to backend/.env (or root .env), same values as production.',
-      'Or export them in this shell before running.',
+      '',
+      'Add at least one line (same key + value as Railway / your live API). Example:',
+      '  GAS_SPONSOR_SECRET=suiprivkey1q2w...',
+      '  # or SUI_TREASURY_SIGNER_SECRET=... if that wallet signs treasury USDC',
+      '',
+      `Sanity (names only): SUI_TREASURY_ADDRESS=${setOrUnset('SUI_TREASURY_ADDRESS')}, SUI_RPC_URL=${setOrUnset('SUI_RPC_URL')}`,
+      ...(wrongNames.length
+        ? [
+            '',
+            'These env vars are set but are NOT read by the relayer — copy the value into GAS_SPONSOR_SECRET or SUI_TREASURY_SIGNER_SECRET:',
+            ...wrongNames.map((k) => `  - ${k}`),
+          ]
+        : []),
+      '',
+      'Or: export GAS_SPONSOR_SECRET=... in this shell, then run again.',
     ].join('\n')
   );
   process.exit(1);
