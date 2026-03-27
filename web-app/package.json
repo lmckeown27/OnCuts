@@ -13,7 +13,6 @@
     "test-pwa": "npm run build && npm run preview"
   },
   "dependencies": {
-    "@moonpay/moonpay-js": "^0.7.6",
     "@mysten/dapp-kit": "^0.19.11",
     "@mysten/sui": "^1.45.2",
     "@simplewebauthn/browser": "^10.0.0",

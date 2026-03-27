@@ -21,7 +21,6 @@ router.post('/deposit/intent', authenticate, walletController.createDepositInten
 // Withdrawals
 router.post('/withdraw/bank', authenticate, walletController.withdrawToBank);
 router.post('/withdraw/onchain', authenticate, walletController.withdrawOnChain);
-router.post('/moonpay/prepare', authenticate, walletController.prepareMoonPayOfframp);
 router.get('/withdrawals', authenticate, walletController.getWithdrawalHistory);
 
 // Tips

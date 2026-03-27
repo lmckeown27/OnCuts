@@ -113,29 +113,6 @@ class WalletV2Service {
   }
 
   /**
-   * MoonPay bank cash-out: backend debits net balance, sends gross USDC to Sui wallet, returns widget params.
-   */
-  async prepareMoonPayOfframp(netUsd: number): Promise<{
-    sessionId: string;
-    netUsd: number;
-    grossUsd: number;
-    grossUsdcBaseUnits: string;
-    walletAddress: string;
-    externalCustomerId: string;
-    moonpay: {
-      publishableKey: string;
-      environment: 'sandbox' | 'production';
-      baseCurrencyCode: string;
-      baseCurrencyAmount: string;
-      lockAmount: string;
-    };
-    suiFundDigest: string;
-  }> {
-    const response = await api.post('/v2/wallet/moonpay/prepare', { netUsd });
-    return response.data.data;
-  }
-
-  /**
    * Withdraw on-chain (queued for batching)
    */
   async withdrawOnChain(

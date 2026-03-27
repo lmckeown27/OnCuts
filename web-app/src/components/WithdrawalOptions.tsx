@@ -1,9 +1,9 @@
 /**
- * Withdrawal Options — Sui USDC settlement + optional MoonPay in-app bank off-ramp (platform fee buffer).
+ * Withdrawal options — on-chain USDC settlement to a Sui address.
  */
 
 import React, { useState } from 'react';
-import { DollarSign, Clock, AlertCircle, Landmark } from 'lucide-react';
+import { DollarSign, Clock, AlertCircle } from 'lucide-react';
 import Button from './Button';
 import walletV2Service from '../services/wallet-v2.service';
 import toast from 'react-hot-toast';
@@ -17,7 +17,6 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance,
   const [amount, setAmount] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [moonPayLoading, setMoonPayLoading] = useState(false);
 
   const handleWithdraw = async () => {
     if (!amount) {
@@ -61,64 +60,12 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance,
     }
   };
 
-  const handleMoonPayBankOut = async () => {
-    const amountNum = parseFloat(amount);
-    if (!amount || Number.isNaN(amountNum) || amountNum < 10) {
-      toast.error('Enter at least $10 for bank cash-out');
-      return;
-    }
-    if (amountNum > availableBalance) {
-      toast.error(`Insufficient balance. Available: $${availableBalance.toFixed(2)}`);
-      return;
-    }
-
-    setMoonPayLoading(true);
-    try {
-      const prep = await walletV2Service.prepareMoonPayOfframp(amountNum);
-      const { loadMoonPay } = await import('@moonpay/moonpay-js');
-      const initMoonPay = await loadMoonPay();
-      if (!initMoonPay) {
-        toast.error('MoonPay could not load. Check your connection or try again.');
-        return;
-      }
-      const widget = initMoonPay({
-        flow: 'sell',
-        environment: prep.moonpay.environment,
-        platform: 'web',
-        variant: 'overlay',
-        params: {
-          apiKey: prep.moonpay.publishableKey,
-          walletAddress: prep.walletAddress,
-          baseCurrencyCode: prep.moonpay.baseCurrencyCode,
-          baseCurrencyAmount: prep.moonpay.baseCurrencyAmount,
-          lockAmount: prep.moonpay.lockAmount,
-          externalCustomerId: prep.externalCustomerId,
-          quoteCurrencyCode: 'usd',
-        },
-      });
-      widget.show();
-      toast.success(
-        `About $${prep.netUsd.toFixed(2)} to your bank after MoonPay. Extra USDC was added so their fee is covered.`
-      );
-      setAmount('');
-      onSuccess?.();
-    } catch (error: unknown) {
-      const msg =
-        error && typeof error === 'object' && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : undefined;
-      toast.error(msg || 'Could not start MoonPay cash-out');
-    } finally {
-      setMoonPayLoading(false);
-    }
-  };
-
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-2">Withdraw funds</h3>
       <p className="text-sm text-gray-600 mb-4">
-        Send USDC to any Sui address, or cash out to your bank in-app with MoonPay (sandbox/mainnet per backend
-        config). Platform covers MoonPay fees so you keep the amount you enter.
+        Send USDC to any Sui address. For booking revenue, save your payout address under{' '}
+        <strong>Barber dashboard → Payment Management</strong> so checkout can use it when needed.
       </p>
 
       <div className="mb-6">
@@ -166,30 +113,8 @@ const WithdrawalOptions: React.FC<WithdrawalOptionsProps> = ({ availableBalance,
       <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200 flex items-start gap-2">
         <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-amber-900">
-          For booking revenue, ensure your payout Sui address is saved under{' '}
-          <strong>Barber dashboard → Payment Management</strong> so Checkout can attach it automatically.
+          Bank payouts use Stripe Connect when configured; use this form for direct wallet withdrawals.
         </p>
-      </div>
-
-      <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
-        <p className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-          <Landmark className="h-4 w-4" />
-          Bank (MoonPay)
-        </p>
-        <p className="text-xs text-gray-600 mb-3">
-          Uses the same dollar amount above. We send extra USDC to your saved Sui wallet so MoonPay&apos;s fee
-          doesn&apos;t reduce what hits your bank. Requires MoonPay on the server and works on mainnet USDC (use
-          MoonPay sandbox for testing).
-        </p>
-        <Button
-          type="button"
-          onClick={() => void handleMoonPayBankOut()}
-          disabled={!amount || moonPayLoading || parseFloat(amount) < 10 || Number.isNaN(parseFloat(amount))}
-          variant="secondary"
-          className="w-full"
-        >
-          {moonPayLoading ? 'Preparing…' : 'Cash out to bank (MoonPay)'}
-        </Button>
       </div>
 
       <Button

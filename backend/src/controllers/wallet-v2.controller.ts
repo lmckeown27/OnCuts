@@ -10,7 +10,6 @@ import { ApiError } from '../middleware/errorHandler';
 import transactionService from '../services/transaction.service';
 import paymentServiceV2 from '../services/payment-v2.service';
 import payoutServiceV2 from '../services/payout-v2.service';
-import moonPayOfframpService from '../services/moonpay-offramp.service';
 // ESCROW DISABLED - Direct payments only
 // import escrowService from '../services/escrow.service';
 import { logger } from '../utils/logger';
@@ -202,26 +201,6 @@ export const withdrawOnChain = async (req: AuthRequest, res: Response, next: Nex
     });
   } catch (error) {
     logger.error('Error queuing on-chain withdrawal:', error);
-    next(error);
-  }
-};
-
-/**
- * Prepare MoonPay bank cash-out: ledger debits net USD; treasury sends gross USDC to barber Sui wallet.
- * POST /api/v2/wallet/moonpay/prepare
- */
-export const prepareMoonPayOfframp = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const userId = req.user!.userId;
-    const netUsd = Number(req.body?.netUsd ?? req.body?.amount);
-    if (!Number.isFinite(netUsd) || netUsd <= 0) {
-      throw new ApiError(400, 'netUsd (or amount) must be a positive number');
-    }
-
-    const data = await moonPayOfframpService.prepareOfframp(userId, netUsd);
-    res.json({ success: true, data });
-  } catch (error) {
-    logger.error('Error preparing MoonPay off-ramp:', error);
     next(error);
   }
 };

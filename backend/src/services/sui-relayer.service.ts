@@ -225,7 +225,7 @@ export class SuiRelayerService {
 
   /**
    * PTB: merge treasury USDC, split `amount` to a single recipient (no platform leg).
-   * Used for barber off-ramps (e.g. MoonPay) where ledger already reflects net earnings.
+   * Used for direct treasury payouts where the ledger already reflects the debit.
    */
   private buildDirectTreasuryUsdcTransferTx(
     recipientAddress: string,
