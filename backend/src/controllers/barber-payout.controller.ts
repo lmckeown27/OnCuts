@@ -60,7 +60,7 @@ function num(v: unknown): number {
 }
 
 /**
- * Earnings snapshot for Payment Management UI (ledger + booking-based estimate).
+ * Earnings snapshot for Payout Settings UI (ledger + booking-based estimate).
  * GET /api/barber/payout/summary
  */
 export async function getBarberPayoutSummary(req: AuthRequest, res: Response, next: NextFunction) {

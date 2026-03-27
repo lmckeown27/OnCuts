@@ -20,7 +20,7 @@ const router = express.Router();
 /** GET /api/barber/payout/status — Sui payout address on file */
 router.get('/payout/status', authenticate, requireRole('barber', 'admin'), getBarberPayoutStatus);
 
-/** GET /api/barber/payout/summary — ledger + booking earnings for Payment Management */
+/** GET /api/barber/payout/summary — ledger + booking earnings for Payout Settings */
 router.get('/payout/summary', authenticate, requireRole('barber', 'admin'), getBarberPayoutSummary);
 
 /**

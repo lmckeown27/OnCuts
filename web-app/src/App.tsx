@@ -6,7 +6,6 @@ import PlatformGuard from './components/PlatformGuard';
 import Loading from './components/Loading';
 import { useAuthStore } from './store/useAuthStore';
 import QueryProvider from './providers/QueryProvider';
-import { SuiDappKitProviders } from './providers/SuiDappKitProviders';
 // Error Boundary to catch render errors and display helpful message
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -270,11 +269,9 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryProvider>
-        <SuiDappKitProviders>
-          <BrowserRouter>
-            <AppContent />
-          </BrowserRouter>
-        </SuiDappKitProviders>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
       </QueryProvider>
     </ErrorBoundary>
   );

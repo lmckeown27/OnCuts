@@ -1,6 +1,6 @@
 /**
- * @deprecated Use `PaymentManagementModal` + Sui; this Connect-centric UI is unused.
- * Kept for reference — prefer `WithdrawalOptions` and `/barber/payout/status`.
+ * @deprecated Use Payout Settings (`PaymentManagementModal`) and Stripe Connect; this legacy UI is unused.
+ * Kept for reference — prefer Stripe Connect and Payout Settings on the barber dashboard.
  */
 
 import { useState, useEffect } from 'react';

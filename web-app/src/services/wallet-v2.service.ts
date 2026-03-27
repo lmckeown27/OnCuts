@@ -100,7 +100,7 @@ class WalletV2Service {
   }
 
   /**
-   * Withdraw to bank (legacy; barber revenue settles on Sui — see Payment Management)
+   * Withdraw to bank (legacy; prefer Stripe Connect — see Payout Settings)
    */
   async withdrawToBank(amountDollars: number): Promise<{
     payout_id: string;

@@ -11,7 +11,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle2, X } from 'lucide-react';
 import BalanceDisplay from '../components/BalanceDisplay';
-import WithdrawalOptions from '../components/WithdrawalOptions';
 import EscrowStatusBadge from '../components/EscrowStatusBadge';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -24,7 +23,7 @@ const WalletPage: React.FC = () => {
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [escrows, setEscrows] = useState<Escrow[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'escrows' | 'withdraw'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'transactions' | 'escrows'>('overview');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -106,7 +105,6 @@ const WalletPage: React.FC = () => {
               { key: 'overview', label: 'Overview' },
               { key: 'transactions', label: 'Transactions', count: transactions.length },
               { key: 'escrows', label: 'Active Holds', count: escrows.filter(e => e.status === 'held').length },
-              { key: 'withdraw', label: 'Withdraw' },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -173,11 +171,11 @@ const WalletPage: React.FC = () => {
                 <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   <Button
-                    onClick={() => setActiveTab('withdraw')}
+                    onClick={() => setActiveTab('transactions')}
                     variant="primary"
                     className="w-full"
                   >
-                    Withdraw Funds
+                    View all transactions
                   </Button>
                   <Button
                     onClick={() => setActiveTab('escrows')}
@@ -301,15 +299,6 @@ const WalletPage: React.FC = () => {
           </div>
         )}
 
-        {/* Withdraw Tab */}
-        {activeTab === 'withdraw' && (
-          <div className="max-w-2xl mx-auto">
-            <WithdrawalOptions
-              availableBalance={balance.available_dollars}
-              onSuccess={loadWalletData}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

@@ -79,8 +79,6 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
-  /** Barber has valid Sui payout address on file */
-  const [suiPayoutReady, setSuiPayoutReady] = useState<boolean | null>(null); // null = loading
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   // Google Calendar integration state
@@ -115,7 +113,19 @@ export default function BarberPage() {
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'bookings' | 'payments' | 'reviews' | 'cancellations' | 'messages'>('all');
   
   // Lock body scroll when any modal is open
-  const isAnyModalOpen = showProfileEditor || showServiceSpecialties || showCampusManagerDashboard || showAdminDashboard || showBarberChats || showBookings || showLocations || showAvailability || showServiceDetails || showNotifications || showBookingDetailsModal;
+  const isAnyModalOpen =
+    showProfileEditor ||
+    showServiceSpecialties ||
+    showCampusManagerDashboard ||
+    showAdminDashboard ||
+    showBarberChats ||
+    showBookings ||
+    showLocations ||
+    showAvailability ||
+    showServiceDetails ||
+    showNotifications ||
+    showBookingDetailsModal ||
+    showPayoutSettings;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -197,36 +207,10 @@ export default function BarberPage() {
     return date.toLocaleDateString();
   };
   
-  const checkSuiPayoutStatus = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${API_BASE_URL}/barber/payout/status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        const ready = Boolean(data.data.payout_ready);
-        setSuiPayoutReady(ready);
-        if (!ready) {
-          setShowPayoutSettings(true);
-        }
-      } else {
-        setSuiPayoutReady(false);
-        setShowPayoutSettings(true);
-      }
-    } catch (error) {
-      console.error('Failed to check Sui payout status:', error);
-      setSuiPayoutReady(false);
-      setShowPayoutSettings(true);
-    }
-  };
-
   // Fetch notifications and unread messages on mount
   useEffect(() => {
     fetchNotifications();
     loadUnreadCount();
-    checkSuiPayoutStatus();
   }, [loadUnreadCount]);
 
   // Optional: open payout modal (e.g. return from /web/barber/connect bookmark)
@@ -777,7 +761,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <Landmark className="w-4 h-4 text-gray-500" />
-                    Payment Management
+                    Payout Settings
                   </button>
                   {/* Barber Chats (for non-CM barbers) */}
                   {!isCampusManager && (
@@ -1232,21 +1216,9 @@ export default function BarberPage() {
         />
       )}
 
-      {/* Modal until Sui payout address is saved */}
       <PaymentManagementModal
         isOpen={showPayoutSettings}
-        onClose={() => {
-          if (suiPayoutReady) {
-            setShowPayoutSettings(false);
-          }
-        }}
-        preventClose={!suiPayoutReady}
-        onStatusChange={(ready: boolean) => {
-          setSuiPayoutReady(ready);
-          if (ready) {
-            void checkSuiPayoutStatus();
-          }
-        }}
+        onClose={() => setShowPayoutSettings(false)}
       />
 
       {/* Block Time Modal - One-time date-specific availability blocks */}

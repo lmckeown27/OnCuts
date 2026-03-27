@@ -1,5 +1,5 @@
 /**
- * Sui Wallet Standard + RPC (extension wallets in Payment Management, etc.)
+ * Sui Wallet Standard + RPC (unused in main app tree; kept if you re-enable wallet connect).
  */
 import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import '@mysten/dapp-kit/dist/index.css';

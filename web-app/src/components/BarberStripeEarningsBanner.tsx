@@ -3,14 +3,14 @@ import { DollarSign } from 'lucide-react';
 import { fetchBarberPayoutSummary } from '../services/barber-payout.service';
 
 type Props = {
-  /** Opens Payment Management (payout address, etc.) */
+  /** Opens Payout Settings (payout address, etc.) */
   onManagePayments?: () => void;
   className?: string;
 };
 
 /**
- * Barber dashboard header: USD earnings from the same backend as Payment Management (bookings + ledger).
- * No on-chain balance reads — avoids tying the schedule UI to crypto.
+ * Barber dashboard header: booking-based estimate from the same backend as Payout Settings.
+ * Copy stresses Stripe Connect — no platform-held payout balance.
  */
 export default function BarberStripeEarningsBanner({ onManagePayments, className }: Props) {
   const [displayDollars, setDisplayDollars] = useState<number | null>(null);
@@ -58,11 +58,11 @@ export default function BarberStripeEarningsBanner({ onManagePayments, className
       <div className="flex items-center gap-2 text-gray-800 min-w-0">
         <DollarSign className="h-5 w-5 text-primary-600 shrink-0" aria-hidden />
         <div className="min-w-0">
-          <p className="font-semibold text-gray-900">Estimated earnings (USD)</p>
+          <p className="font-semibold text-gray-900">Estimated activity (USD)</p>
           <p className="text-xs text-gray-600">
             {loading
               ? 'Loading…'
-              : 'From paid bookings after the platform fee. Customers pay by card (Stripe).'}
+              : 'From paid bookings (after fees). Payouts go through Stripe Connect—we do not hold your money here.'}
           </p>
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function BarberStripeEarningsBanner({ onManagePayments, className
             onClick={onManagePayments}
             className="text-xs text-primary-700 underline hover:text-primary-900"
           >
-            Payment settings
+            Payout Settings
           </button>
         ) : null}
       </div>

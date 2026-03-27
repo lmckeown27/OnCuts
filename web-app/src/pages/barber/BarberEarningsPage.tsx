@@ -1,13 +1,12 @@
 /**
- * Barber Earnings Page — USDC on Sui; Stripe for customer USD
+ * Barber Earnings Page — Stripe Connect payouts and estimates (no on-chain UI).
  */
 
 import { useState } from 'react';
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, Wallet } from 'lucide-react';
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
-import WithdrawalOptions from '../../components/WithdrawalOptions';
 import BarberHeader from '../../components/BarberHeader';
 
 export default function BarberEarningsPage() {
@@ -39,20 +38,21 @@ export default function BarberEarningsPage() {
 
         <Card className="mb-8 border-primary-200 bg-primary-50/50">
           <div className="flex items-start gap-3">
-            <Wallet className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
+            <Landmark className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
             <div>
-              <h2 className="font-semibold text-gray-900">Sui USDC payouts</h2>
+              <h2 className="font-semibold text-gray-900">Stripe Connect payouts</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Customer payments run through <strong>Stripe Checkout (USD)</strong>. Your share settles as{' '}
-                <strong>USDC on Sui</strong> to the address in{' '}
+                Customer payments are processed with <strong>Stripe</strong>. Your share is paid to your{' '}
+                <strong>Stripe Connect</strong> account—CampusCuts does <strong>not</strong> hold barber payout funds.
+                Manage bank transfers and tax forms in your Stripe Express / Connect dashboard. Open{' '}
                 <button
                   type="button"
                   className="text-primary-600 font-medium underline"
                   onClick={() => navigate('/web/barber?showPayoutSettings=true')}
                 >
-                  Payment Management
-                </button>
-                . This page is for any <em>separate</em> custodial balance withdrawals to Sui.
+                  Payout Settings
+                </button>{' '}
+                for booking estimates on your dashboard.
               </p>
             </div>
           </div>
@@ -108,8 +108,6 @@ export default function BarberEarningsPage() {
           </Card>
         </div>
 
-        <WithdrawalOptions availableBalance={earnings.total} />
-
         <Card className="mt-8">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Recent earnings</h3>
           <div className="space-y-2">
@@ -140,7 +138,7 @@ export default function BarberEarningsPage() {
               </span>
               <div>
                 <p className="font-semibold text-gray-900">Customer pays (USD)</p>
-                <p className="text-gray-600">Stripe Checkout on the platform account.</p>
+                <p className="text-gray-600">Stripe Checkout; charges are processed on Stripe&apos;s rails.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -148,8 +146,11 @@ export default function BarberEarningsPage() {
                 2
               </span>
               <div>
-                <p className="font-semibold text-gray-900">Booking marked paid</p>
-                <p className="text-gray-600">Webhook + ledger; then USDC settlement on Sui to your linked address.</p>
+                <p className="font-semibold text-gray-900">You get paid via Stripe Connect</p>
+                <p className="text-gray-600">
+                  Your share is transferred to your connected account. CampusCuts does not pool or hold that money for
+                  you.
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -157,8 +158,10 @@ export default function BarberEarningsPage() {
                 3
               </span>
               <div>
-                <p className="font-semibold text-gray-900">You hold USDC</p>
-                <p className="text-gray-600">Cash out via CEX, wallet off-ramp, or other tools—outside CampusCuts.</p>
+                <p className="font-semibold text-gray-900">Bank &amp; taxes</p>
+                <p className="text-gray-600">
+                  Move funds to your bank and manage tax docs in the Stripe Connect / Express dashboard.
+                </p>
               </div>
             </div>
           </div>

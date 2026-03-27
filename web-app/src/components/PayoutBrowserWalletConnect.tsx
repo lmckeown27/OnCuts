@@ -143,7 +143,7 @@ export default function PayoutBrowserWalletConnect({ onAddressChosen, disabled }
               Connect a wallet
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Optional: connect a browser extension. You can also paste a Sui address in Payment Management without
+              Optional: connect a browser extension. You can also paste a Sui address in Payout Settings without
               installing anything.
             </p>
 
