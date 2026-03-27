@@ -93,8 +93,12 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
 
     const barberId = barberResult.rows[0].id as string;
 
-    const [ledgerRow, bookingRow, recentRow] = await Promise.all([
-      pool.query(
+    let ledgerTotal = 0;
+    let ledgerPending = 0;
+    let ledgerPaidOut = 0;
+
+    try {
+      const ledgerRow = await pool.query(
         `SELECT 
           COALESCE(SUM(barber_payout), 0) AS total,
           COALESCE(SUM(CASE WHEN status = 'pending' THEN barber_payout ELSE 0 END), 0) AS pending,
@@ -102,7 +106,25 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
          FROM payment_transactions
          WHERE barber_id = $1`,
         [barberId]
-      ),
+      );
+      const lr = ledgerRow.rows[0] || {};
+      ledgerTotal = num(lr.total);
+      ledgerPending = num(lr.pending);
+      ledgerPaidOut = num(lr.paid_out);
+    } catch (ledgerErr: unknown) {
+      const pe = ledgerErr as { code?: string; message?: string };
+      // 42501 = insufficient_privilege; 42P01 = undefined_table
+      if (pe.code === '42501' || pe.code === '42P01') {
+        logger.warn(
+          'getBarberPayoutSummary: skipping payment_transactions ledger (missing table or GRANT); using booking estimate only',
+          { code: pe.code, barberId }
+        );
+      } else {
+        throw ledgerErr;
+      }
+    }
+
+    const [bookingRow, recentRow] = await Promise.all([
       pool.query(
         `SELECT 
           COALESCE(SUM(
@@ -129,11 +151,6 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
         [barberId]
       ),
     ]);
-
-    const lr = ledgerRow.rows[0] || {};
-    const ledgerTotal = num(lr.total);
-    const ledgerPending = num(lr.pending);
-    const ledgerPaidOut = num(lr.paid_out);
 
     const br = bookingRow.rows[0] || {};
     const bookingEstCents = num(br.est_cents);
