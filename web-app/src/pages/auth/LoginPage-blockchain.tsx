@@ -149,7 +149,7 @@ export default function LoginPageBlockchain() {
                 <strong>Dev Mode:</strong> Behind the scenes
               </p>
               <ul className="text-xs text-gray-600 space-y-1">
-                <li>Authenticates with Aptos blockchain</li>
+                <li>Authenticates with your account</li>
                 <li>Loads account from on-chain storage</li>
                 <li>No wallet or crypto needed!</li>
                 <li>User has NO IDEA they're using blockchain!</li>

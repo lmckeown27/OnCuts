@@ -1,7 +1,7 @@
 /**
  * Fiat Bridge Routes
  * 
- * Legacy Stripe deposit intents; on-chain settlement is Sui, not custodial Aptos.
+ * Legacy Stripe deposit intents; on-chain settlement is Sui when enabled.
  * Users never know they're using crypto!
  */
 

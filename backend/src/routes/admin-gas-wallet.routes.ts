@@ -69,7 +69,7 @@ router.get('/refill-instructions', async (req, res, next) => {
 
 /**
  * POST /admin/gas-wallet/fund-faucet
- * Deprecated: Aptos faucet removed — fund Sui gas sponsor instead.
+ * Deprecated: use Sui testnet faucet or fund the gas sponsor key.
  */
 router.post('/fund-faucet', async (req, res, next) => {
   try {

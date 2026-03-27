@@ -1,5 +1,5 @@
 /**
- * Legacy gas top-up verifier (was Aptos). Not wired for Sui — returns a clear failure until reimplemented.
+ * Legacy gas top-up verifier. Not wired for Sui — returns a clear failure until reimplemented.
  */
 
 import { pool } from '../database/connection';
@@ -46,10 +46,10 @@ class GasTopUpVerifierService {
   }
 
   /**
-   * Aptos verification removed. Implement Sui `sui_getTransactionBlock` + balance checks if needed.
+   * Legacy on-chain verification removed. Implement Sui `sui_getTransactionBlock` + balance checks if needed.
    */
   async verifyTransaction(txHash: string, expectedToAddress: string, expectedAmountOctas: number): Promise<VerificationResult> {
-    logger.warn('gas-topup-verifier: skipped (Aptos removed; tx not verified on-chain)', {
+    logger.warn('gas-topup-verifier: skipped (tx not verified on-chain)', {
       txHash,
       expectedToAddress,
     });
@@ -57,7 +57,7 @@ class GasTopUpVerifierService {
       verified: false,
       status: 'tx_not_found',
       errorMessage:
-        'Gas top-up chain verification was built for Aptos. Use manual approval or implement Sui RPC verification.',
+        'Gas top-up chain verification is not implemented. Use manual approval or implement Sui RPC verification.',
     };
   }
 

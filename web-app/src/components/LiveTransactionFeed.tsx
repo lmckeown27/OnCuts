@@ -1,7 +1,7 @@
 /**
  * Live Transaction Feed Component
  * 
- * Displays real-time Aptos blockchain and Stripe payment transactions
+ * Displays real-time chain and Stripe payment transactions
  * Uses WebSocket for live updates
  */
 
@@ -22,7 +22,7 @@ interface Transaction {
   status_success: boolean;
   metadata?: any;
   
-  // Aptos specific
+  // Chain-specific (optional)
   tx_hash?: string;
   sender?: string;
   recipient?: string;

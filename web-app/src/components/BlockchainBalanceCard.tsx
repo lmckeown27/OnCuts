@@ -2,7 +2,7 @@
  * Blockchain Balance Card Component
  * 
  * Displays user's on-chain balance in a user-friendly way.
- * Users see USD, but it's actually USDC on Aptos blockchain.
+ * Users see USD; settlement may be on-chain when enabled.
  * 
  * Features:
  * - Real-time balance from blockchain
@@ -147,7 +147,7 @@ export function BlockchainBalanceCard() {
             <strong>Behind the scenes:</strong>
           </p>
           <ul className="text-xs text-blue-50 space-y-1">
-            <li>Balance stored on Aptos blockchain</li>
+            <li>Balance tracked in your account</li>
             <li>Locked funds in smart contract escrow</li>
             <li>Auto-refreshes every 60 seconds</li>
             <li>User thinks: "Normal balance"</li>

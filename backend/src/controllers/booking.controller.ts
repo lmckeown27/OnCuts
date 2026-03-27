@@ -14,8 +14,6 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
-// BLOCKCHAIN DISABLED - Platform uses Stripe for off-chain payments
-// import aptosService from '../services/aptos.service';
 import stripeService from '../services/stripe.service';
 import paymentService from '../services/payment.service';
 import ledgerService from '../services/ledger.service';
@@ -23,7 +21,7 @@ import { logger } from '../utils/logger';
 import { dollarsToCents } from '../types/wallet.types';
 import { USER_PRIMARY_WALLET_SQL, USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 
-/** Legacy custodial-chain booking API (Aptos-era); all methods throw — use v2 bookings + Stripe / Sui. */
+/** Legacy custodial-chain booking API; all methods throw — use v2 bookings + Stripe. */
 const disabledLegacyChainBookingStub = {
   createBooking: async (_params: any): Promise<string> => {
     throw new Error('Legacy on-chain booking disabled — use Stripe / v2 bookings');
@@ -124,8 +122,6 @@ export const createBooking = async (req: AuthRequest, res: Response, next: NextF
       bookingId,
       customerId: clientId,
       barberId: barber.user_id,
-      barberAptosAddress: barber.barber_address || '0x0',
-      consumerAptosAddress: clientAddress || '0x0',
       totalAmountCents: priceCents,
       stripePaymentIntentId: `booking_${bookingId}`,
     });
@@ -327,7 +323,6 @@ export const completeBooking = async (req: AuthRequest, res: Response, next: Nex
       await paymentService.releaseBookingFunds({
         bookingId: bookingData.id,
         barberId: bookingData.user_id,
-        barberAptosAddress: bookingData.barber_wallet_address || '0x0',
         amountCents: bookingPayment.amount,
       });
 

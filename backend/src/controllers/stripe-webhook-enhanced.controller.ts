@@ -194,17 +194,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     const transactionId = transactionResult.rows[0].id;
     logger.info(`💳 Payment transaction recorded: ${transactionId}`);
 
-    // 3. TODO: Sui escrow / relayer hook when on-chain payments are enabled
-    /*
-    try {
-      const { aptosService } = await import('../services/aptos.service');
-      await aptosService.lockFundsInEscrow(bookingId, amount);
-      logger.info(`🔒 Escrow locked for booking ${bookingId}`);
-    } catch (escrowError: any) {
-      logger.error(`Failed to lock escrow for booking ${bookingId}: ${escrowError.message}`);
-      // Don't fail the transaction - escrow can be manually corrected
-    }
-    */
+    // 3. Optional: Sui escrow / relayer hook when on-chain settlement is enabled (Stripe remains source of truth).
 
     // 4. Send confirmation notifications
     // TODO: Uncomment when notification service is ready
@@ -417,12 +407,7 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
       'refunded',
     ]);
 
-    // TODO: release Sui-side settlement when on-chain escrow exists
-    /*
-    const { aptosService } = await import('../services/aptos.service');
-    await aptosService.releaseEscrowToStudent(booking.id, amount);
-    logger.info(`💰 Escrow released back to student for booking ${booking.id}`);
-    */
+    // Optional: release Sui-side settlement when on-chain escrow exists.
 
     await client.query('COMMIT');
     logger.info(`✅ Refund processed for booking ${booking.id}`);

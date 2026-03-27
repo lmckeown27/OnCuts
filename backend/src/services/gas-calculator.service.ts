@@ -1,7 +1,7 @@
 /**
  * Gas Calculator Service
  * 
- * Gas cost hints (legacy shape; Sui uses gas / sponsorship — not Aptos RPC)
+ * Gas cost hints (legacy shape; Sui uses gas / sponsorship)
  * Based on real transaction data from production systems
  * 
  * Extracted and adapted from typescript_cash_bot
@@ -20,7 +20,7 @@ export interface GasEstimate {
 }
 
 export class GasCalculatorService {
-  // Realistic gas unit estimates based on actual Aptos transactions
+  // Placeholder gas unit estimates (tune for Sui when monitoring is wired)
   private readonly GAS_UNITS = {
     SIMPLE_TRANSFER: 500,       // APT/token transfer
     BATCH_WITHDRAWAL: 1200,     // Batch withdrawal to multiple addresses

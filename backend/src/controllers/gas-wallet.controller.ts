@@ -8,7 +8,7 @@ import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
 
 // Mock data for demonstration
-// In production, this would query the Aptos blockchain and PostgreSQL
+// In production, this would query chain RPC and PostgreSQL
 const mockGasWalletData = {
   address: process.env.GAS_WALLET_ADDRESS || '0x1234...5678',
   balance: 45.7823, // APT
@@ -111,7 +111,7 @@ export async function checkGasWalletNow(req: Request, res: Response) {
     logger.info('Manual gas wallet check triggered');
     
     // In production, this would:
-    // 1. Query Aptos blockchain for current balance
+    // 1. Query chain for current balance
     // 2. Update PostgreSQL cache
     // 3. Check thresholds and send alerts if needed
     

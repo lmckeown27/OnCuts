@@ -88,15 +88,6 @@ import locationAdminRoutes from './routes/admin/location-admin.routes';
 // Campus Manager Routes (Public landing page + management)
 import campusManagerRoutes from './routes/campus-manager.routes';
 
-// =============================================================================
-// BLOCKCHAIN ROUTES - DISABLED (Platform uses Stripe for off-chain payments)
-// =============================================================================
-// To re-enable blockchain features, uncomment the following imports:
-// import authBlockchainRoutes from './routes/auth-blockchain.routes';
-// import bookingBlockchainRoutes from './routes/booking-blockchain.routes';
-// import reviewBlockchainRoutes from './routes/review-blockchain.routes';
-// import fiatBridgeRoutes from './routes/fiat-bridge.routes';
-
 // Circle USDC Integration - DISABLED (Platform uses Stripe)
 // import circleWebhookRoutes from './routes/circle-webhook.routes';
 
@@ -377,15 +368,6 @@ app.use('/api/marketplace', marketplaceRoutes);  // BQS, dynamic pricing, rankin
 app.use('/api/v1/booking-requests', bookingRequestRoutes);  // Accept/reject, messaging, profiles
 app.use('/api/booking-requests', bookingRequestRoutes);  // Legacy route
 
-// =============================================================================
-// BLOCKCHAIN ROUTES - DISABLED (Platform uses Stripe for off-chain payments)
-// =============================================================================
-// To re-enable blockchain features, uncomment the following:
-// app.use('/api/auth-blockchain', authBlockchainRoutes);  // Custodial auth + on-chain user accounts
-// app.use('/api/bookings-blockchain', bookingBlockchainRoutes);  // Smart contract escrow bookings
-// app.use('/api/reviews-blockchain', reviewBlockchainRoutes);  // Immutable on-chain reviews + IPFS text
-// app.use('/api/fiat-bridge', fiatBridgeRoutes);  // Fiat ↔ Blockchain bridge (Stripe integration)
-
 // Circle USDC Integration - DISABLED (Platform uses Stripe)
 // app.use('/api/circle', circleWebhookRoutes);  // Circle webhook handler for USDC transfers
 
@@ -471,7 +453,7 @@ httpServer.listen(PORT, async () => {
     });
   }
 
-  // NOTE: Legacy Aptos chain monitor removed — use Stripe + Sui (relayer / indexer), not aptos-monitor.
+  // NOTE: Legacy chain monitor removed — Stripe + optional Sui relayer when enabled.
   // NOTE: Legacy gas-wallet cron disabled — use Sui sponsored txs (GAS_SPONSOR_SECRET) when on-chain is enabled.
 
   // Start marketplace cron jobs (BQS, pricing, rankings, surge)

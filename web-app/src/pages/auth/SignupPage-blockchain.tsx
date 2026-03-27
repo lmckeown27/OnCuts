@@ -5,7 +5,7 @@
  * Users think they're just signing up normally.
  * 
  * What happens behind the scenes:
- * 1. Derives Aptos address from email
+ * 1. Derives wallet id from email (legacy flow)
  * 2. Encrypts private key with password
  * 3. Submits transaction to create on-chain account
  * 4. Returns JWT token (normal Web2 auth)
@@ -246,10 +246,10 @@ export default function SignupPageBlockchain() {
                 <strong>The Illusion:</strong> What's really happening
               </p>
               <ul className="text-xs text-yellow-700 space-y-1">
-                <li>1. Deriving Aptos address from email</li>
+                <li>1. Deriving wallet id from email</li>
                 <li>2. Encrypting private key with password</li>
-                <li>3. Creating on-chain blockchain account</li>
-                <li>4. Storing metadata on Aptos</li>
+                <li>3. Creating on-chain account (if enabled)</li>
+                <li>4. Storing metadata securely</li>
                 <li>5. User thinks: "Normal signup"</li>
                 <li>6. Reality: They own a blockchain account!</li>
               </ul>

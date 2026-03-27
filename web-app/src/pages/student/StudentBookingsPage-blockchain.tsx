@@ -199,7 +199,7 @@ export default function StudentBookingsPageBlockchain() {
               Blockchain Integration Active
             </p>
             <ul className="text-xs text-blue-800 space-y-1">
-              <li>Bookings loaded from Aptos blockchain</li>
+              <li>Bookings loaded from your account</li>
               <li>Data cached for 30 seconds (React Query)</li>
               <li>Auto-refetches in background</li>
               <li>Optimistic UI on cancel (instant feedback)</li>

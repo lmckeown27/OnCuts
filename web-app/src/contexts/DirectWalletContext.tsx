@@ -7,7 +7,7 @@
  * 
  * This file is kept for future blockchain integration.
  * All wallet detection and connection code is commented out
- * to prevent MetaMask/Petra detection errors.
+ * to prevent browser wallet extension detection issues.
  */
 
 import React, { createContext, useContext, ReactNode } from 'react';

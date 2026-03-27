@@ -97,7 +97,6 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     logger.info(`Booking ${bookingId} payment confirmed - Amount: $${paymentIntent.amount / 100}`);
 
     // TODO: Trigger blockchain escrow lock
-    // await aptosService.lockFundsInEscrow(bookingId, paymentIntent.amount / 100);
 
     // TODO: Send confirmation email/notification
     // await emailService.sendBookingConfirmation(studentId, bookingId);

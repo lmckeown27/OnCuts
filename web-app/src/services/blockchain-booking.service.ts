@@ -1,7 +1,7 @@
 /**
  * Blockchain-First Booking Service
  * 
- * Handles bookings using smart contract escrow on Aptos blockchain.
+ * Legacy smart-contract booking client (unused in Stripe-first flows).
  * Funds are locked on-chain until service completion.
  * 
  * Key Features:

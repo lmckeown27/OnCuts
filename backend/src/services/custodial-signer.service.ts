@@ -1,5 +1,5 @@
 /**
- * Legacy custodial Aptos signer — removed; use Sui zkLogin.
+ * Legacy custodial chain signer — disabled; use Sui zkLogin.
  * Identity and signing move to Sui zkLogin + backend salt (salt.service).
  */
 
@@ -22,11 +22,11 @@ class CustodialSignerService {
     _email: string,
     _password: string
   ): Promise<{ address: string; encryptedPrivateKey: string }> {
-    throw new Error('Custodial Aptos signup removed — use Sign in with Google (Sui zkLogin)');
+    throw new Error('Custodial chain signup removed — use Sign in with Google (Sui zkLogin)');
   }
 
   async loadUserAccount(_email: string, _password: string, _enc: string): Promise<never> {
-    throw new Error('Custodial Aptos login removed — use zkLogin');
+    throw new Error('Custodial chain login removed — use zkLogin');
   }
 
   async signAndSubmitTransaction(

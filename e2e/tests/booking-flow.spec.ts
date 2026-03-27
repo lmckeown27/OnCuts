@@ -96,7 +96,7 @@ test.describe('Complete Booking Flow', () => {
     await expect(page.locator('.stat-card')).toHaveCount.greaterThan(0);
     
     // 4. Connect wallet
-    await page.click('button:has-text("Petra")');
+    await page.click('button:has-text("Connect wallet")');
     // Note: In E2E, you'd need to mock the wallet extension
     
     // 5. View gas wallet status

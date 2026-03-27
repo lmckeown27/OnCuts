@@ -1,7 +1,7 @@
 /**
  * Fiat ↔ blockchain bridge (legacy; production = Stripe + Sui)
  *
- * Legacy fiat + custodial chain bridge (Aptos-era, removed on-chain legs).
+ * Legacy fiat + custodial chain bridge (on-chain legs removed; Stripe-first).
  *
  * Stripe + Sui relayer + zkLogin. `handleDeposit` / `handleWithdrawal` throw;
  * `createDepositIntent` may remain for Stripe-only tests.
@@ -18,7 +18,7 @@ function stripeSdk(): Stripe {
 
 // USDC conversion rate (in production, fetch from real-time oracle)
 const USDC_TO_USD_RATE = 1.0; // 1 USDC = $1 USD (stablecoin)
-const APT_TO_USD_RATE = 10.0; // Legacy scalar for fee helper math only (not Aptos RPC)
+const APT_TO_USD_RATE = 10.0; // Legacy scalar name; fee helper math only (not chain RPC)
 
 // Platform fee settings
 const BOOKING_FEE_PERCENT = 15; // 15% platform fee on bookings

@@ -28,7 +28,7 @@ export interface LoginData {
 }
 
 export interface User {
-  address: string; // Aptos blockchain address
+  address: string; // Legacy hex wallet id
   email: string;
   username?: string;
   role: 'student' | 'barber';

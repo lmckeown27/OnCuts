@@ -269,7 +269,7 @@ class WithdrawalBatchService {
     const recipients = withdrawals.map(w => w.destination_address);
     const amounts = withdrawals.map(w => w.amount);
 
-    // Submit batch transaction to Aptos
+    // Submit batch on-chain transaction (Sui when wired)
     // This requires a Move contract function like:
     // public entry fun batch_transfer(sender: &signer, recipients: vector<address>, amounts: vector<u64>)
     const txHash = await suiChainService.submitBatchWithdrawal(recipients, amounts);

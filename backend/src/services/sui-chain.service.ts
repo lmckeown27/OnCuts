@@ -1,6 +1,6 @@
 /**
  * Sui chain orchestration.
- * Replaces legacy Aptos calls: on-chain program integration lands here.
+ * On-chain program integration lands here (Sui).
  */
 
 import { logger } from '../utils/logger';

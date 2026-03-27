@@ -360,7 +360,7 @@ class PaymentService {
     // TODO: Implement when Circle + Blockchain are ready
     // 1. Charge via Stripe
     // 2. Convert USD to USDC via Circle
-    // 3. On-chain escrow via Sui when enabled — not legacy Aptos
+    // 3. On-chain escrow via Sui when enabled
     // 4. Store in database
     
     throw new Error('On-chain escrow not yet implemented. Set PAYMENT_MODE=offchain');
@@ -395,8 +395,6 @@ class PaymentService {
     studentId?: number;
     barberId: number | string;
     customerId?: number | string;
-    barberAptosAddress?: string;
-    consumerAptosAddress?: string;
     totalAmountCents?: number;
     stripePaymentIntentId?: string;
     metadata?: Record<string, string>;
@@ -426,7 +424,6 @@ class PaymentService {
     bookingId: number;
     barberId?: number | string;
     barberAddress?: string;
-    barberAptosAddress?: string;
     amountCents?: number;
   }): Promise<ReleaseResult> {
     const escrows = await this.getEscrowsForBooking(params.bookingId);

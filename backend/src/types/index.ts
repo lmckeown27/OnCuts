@@ -8,8 +8,6 @@ export interface User {
   suiAddress?: string;
   /** Pre-Sui custodial hex id (DB: legacy_wallet_address) */
   legacyWalletAddress?: string;
-  /** @deprecated use legacyWalletAddress */
-  aptosAddress?: string;
   emailVerified: boolean;
   studentIdVerified: boolean;
   createdAt: Date;
@@ -38,8 +36,6 @@ export interface Barber {
   yearsExperience?: number;
   suiAddress?: string;
   legacyWalletAddress?: string;
-  /** @deprecated use legacyWalletAddress */
-  aptosAddress?: string;
   createdAt: Date;
 }
 

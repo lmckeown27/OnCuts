@@ -211,7 +211,7 @@ class GasWalletService {
   async fundFromFaucet(): Promise<void> {
     throw new ApiError(
       410,
-      'Aptos faucet removed. Use Sui testnet faucet or fund the gas sponsor key; see GAS_SPONSOR_SECRET.'
+      'Use Sui testnet faucet or fund the gas sponsor key; see GAS_SPONSOR_SECRET.'
     );
   }
 
