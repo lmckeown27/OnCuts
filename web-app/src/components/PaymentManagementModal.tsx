@@ -1,5 +1,5 @@
 /**
- * Payment Management — analytics, bank cash-out planning, and Sui payout address.
+ * Payment Management — Stripe card earnings overview, cash-out planning, optional payout wallet on file.
  */
 
 import { useState, useEffect } from 'react';
@@ -101,13 +101,13 @@ export default function PaymentManagementModal({
   const handleSaveAddress = async () => {
     const trimmed = inputAddress.trim();
     if (!/^0x[0-9a-fA-F]{64}$/.test(trimmed)) {
-      toast.error(`Enter a valid Sui address (${ADDR_PLACEHOLDER})`);
+      toast.error(`Enter a valid wallet address (${ADDR_PLACEHOLDER})`);
       return;
     }
     try {
       setIsSaving(true);
       await persistUserSuiAddress(trimmed);
-      toast.success('Sui payout address saved');
+      toast.success('Payout address saved');
       await load();
     } catch (err: unknown) {
       const msg =
@@ -154,9 +154,9 @@ export default function PaymentManagementModal({
             <p className="text-white/80 text-sm">
               {preventClose && !payoutReady
                 ? zkLoginOn
-                  ? 'Link a Sui address for USDC—use Google here; no separate wallet app required'
-                  : 'Set your Sui payout address to accept bookings'
-                : 'USDC on Sui · Stripe checkout'}
+                  ? 'Customers pay by card (Stripe). Link a payout wallet with Google to finish setup.'
+                  : 'Customers pay by card (Stripe). Add a payout wallet address to finish setup.'
+                : 'Card checkout (Stripe) · earnings & payout'}
             </p>
           </div>
           {(!preventClose || payoutReady) && (
@@ -178,13 +178,13 @@ export default function PaymentManagementModal({
                 <div>
                   <p className="text-sm font-medium text-amber-800">Payout setup required</p>
                   <p className="text-sm text-amber-700 mt-1">
-                    Add your Sui address so paid bookings can settle USDC to you. Customers pay in USD via Stripe;
-                    your share is settled on Sui through CampusCuts.
+                    Add a payout wallet address (format below) so automated settlement can run after card payments.
+                    Customers always pay in USD through Stripe.
                     {zkLoginOn ? (
                       <>
                         {' '}
-                        <strong className="font-semibold">Use Sign in with Google below</strong> to create your
-                        payout address on CampusCuts—you do not need to install a wallet app first.
+                        <strong className="font-semibold">Use Sign in with Google below</strong> to link a hosted
+                        wallet—you do not need a separate app first.
                       </>
                     ) : null}
                   </p>
@@ -251,9 +251,8 @@ export default function PaymentManagementModal({
                   <h3 className="text-sm font-semibold">Bank transfer planning</h3>
                 </div>
                 <p className="text-xs text-gray-600 mb-3">
-                  CampusCuts sends your share as <strong>USDC on Sui</strong> to the address below. Moving dollars to
-                  your bank happens outside the app (exchange, wallet off-ramp, or bridge). Use this field to note how
-                  much you intend to cash out.
+                  Use this area to plan how much you want to move to your bank. Transfers depend on your payout method;
+                  CampusCuts tracks card (Stripe) earnings above.
                 </p>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Amount to move to bank (USD)</label>
                 <div className="flex gap-2 items-center">
@@ -271,29 +270,28 @@ export default function PaymentManagementModal({
                 <div className="mt-2 flex items-start gap-2 text-[11px] text-gray-500">
                   <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary-500" />
                   <span>
-                    This amount is for your own planning only—it does not trigger a transfer. Withdraw USDC from your
-                    Sui wallet using your preferred provider, then deposit to your bank.
+                    This amount is for your own planning only—it does not trigger a transfer by itself.
                   </span>
                 </div>
               </div>
 
               {status?.invalid_stored_address && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-sm text-red-800">
-                  Stored address {status.stored_address_preview} is not valid. Enter a correct Sui address (0x + 64
+                  Stored address {status.stored_address_preview} is not valid. Enter a correct wallet address (0x + 64
                   hex).
                 </div>
               )}
 
               {!zkLoginOn && (
                 <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
-                  <p className="font-semibold text-gray-900 mb-2">How to accept USDC on Sui</p>
+                  <p className="font-semibold text-gray-900 mb-2">Payout wallet (when settlement uses a chain address)</p>
                   <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700 mb-3">
                     <li>
-                      You need a <strong>Sui address</strong> (<code className="font-mono">0x</code> + 64 hex). Easiest:{' '}
-                      <strong>paste an address you already have</strong> from any Sui wallet you trust.
+                      Use a <strong>0x + 64 hex</strong> address from a wallet you control. Easiest:{' '}
+                      <strong>paste an address you already have</strong>.
                     </li>
                     <li>
-                      Optional: use <strong>Connect wallet</strong> if you use a browser extension (e.g. official{' '}
+                      Optional: <strong>Connect wallet</strong> with a browser extension (e.g.{' '}
                       <a
                         href={SUI_WALLET_CHROME_URL}
                         target="_blank"
@@ -305,11 +303,11 @@ export default function PaymentManagementModal({
                       ).
                     </li>
                     <li>
-                      Tap <strong>Save payout address</strong>. After customers pay in USD (Stripe), your share settles
-                      as USDC on Sui to this address.
+                      Tap <strong>Save payout address</strong>. After customers pay by card (Stripe), settlement may use
+                      this address when enabled for your account.
                     </li>
                     <li>
-                      View USDC in your wallet app or explorer. Overview:{' '}
+                      Network docs:{' '}
                       <a
                         href={SUI_USDC_OVERVIEW_URL}
                         target="_blank"
@@ -331,11 +329,11 @@ export default function PaymentManagementModal({
                       Primary — on CampusCuts
                     </p>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Create your Sui payout address with Google
+                      Link a payout wallet with Google
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      You do <strong>not</strong> need to install a separate wallet app. Sign in with Google once;
-                      CampusCuts uses zkLogin to create a Sui address for your account and USDC payouts.
+                      You do <strong>not</strong> need to install a separate wallet app. Sign in with Google once so we
+                      can save a payout address for your account when wallet settlement is enabled.
                     </p>
                     <SignInWithGoogleZkLoginButton disabled={isSaving} />
                     <p className="text-xs text-gray-500 mt-3">
@@ -344,9 +342,9 @@ export default function PaymentManagementModal({
                     </p>
                   </div>
                   <div className="rounded-xl border border-primary-200 bg-primary-50/70 p-4 mb-6 text-sm text-gray-800">
-                    <p className="font-semibold text-gray-900 mb-1">Receiving USDC</p>
+                    <p className="font-semibold text-gray-900 mb-1">Receiving payouts</p>
                     <p className="text-xs text-gray-700">
-                      Customers pay in USD (Stripe); your share settles as USDC on Sui to the linked address. Overview:{' '}
+                      Customers pay in USD (Stripe). When enabled, settlement may use the linked address. Overview:{' '}
                       <a
                         href={SUI_USDC_OVERVIEW_URL}
                         target="_blank"
@@ -366,9 +364,9 @@ export default function PaymentManagementModal({
                   <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-green-100 mb-4">
                     <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Sui payout linked</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Payout wallet linked</h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Bookings can use this address for USDC settlement after customers pay with Stripe Checkout.
+                    Bookings can use this address when automated settlement runs after Stripe Checkout.
                   </p>
                   <div className="bg-gray-50 rounded-lg p-3 text-left">
                     <p className="text-xs text-gray-500 mb-1">Address on file</p>
@@ -382,12 +380,11 @@ export default function PaymentManagementModal({
                     <>
                       <div className="flex items-center gap-2 text-gray-800 mb-2 border-t border-gray-200 pt-6">
                         <Wallet className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                        <h3 className="text-base font-semibold text-gray-900">Optional: use a different Sui address</h3>
+                        <h3 className="text-base font-semibold text-gray-900">Optional: use a different wallet address</h3>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">
-                        Only if you want USDC sent somewhere other than the address from{' '}
-                        <strong>Sign in with Google</strong> above—for example a hardware wallet or an address you
-                        already use elsewhere.
+                        Only if you want funds directed somewhere other than the address from{' '}
+                        <strong>Sign in with Google</strong> above—for example another wallet you control.
                       </p>
                       <div className="rounded-xl border border-gray-200 bg-slate-50/80 p-4 mb-4">
                         <p className="text-xs text-gray-600 mb-2">
@@ -403,11 +400,11 @@ export default function PaymentManagementModal({
                     <>
                       <div className="flex items-center gap-2 text-primary-600 mb-3">
                         <Wallet className="w-5 h-5" />
-                        <h3 className="text-lg font-medium text-gray-900">Your Sui address</h3>
+                        <h3 className="text-lg font-medium text-gray-900">Your payout wallet address</h3>
                       </div>
                       <p className="text-sm text-gray-600 mb-4">
-                        Paste an address from any Sui wallet, or use <strong>Connect wallet</strong> if you use a browser
-                        extension.
+                        Paste a <code className="font-mono text-xs">0x</code> address, or use{' '}
+                        <strong>Connect wallet</strong> with a browser extension.
                       </p>
                       <PayoutBrowserWalletConnect
                         disabled={isSaving}
@@ -416,7 +413,7 @@ export default function PaymentManagementModal({
                     </>
                   )}
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {zkLoginOn ? 'Sui address (optional override)' : 'Sui address'}
+                    {zkLoginOn ? 'Wallet address (optional override)' : 'Wallet address'}
                   </label>
                   <textarea
                     value={inputAddress}
@@ -475,8 +472,8 @@ export default function PaymentManagementModal({
                 <p className="font-medium text-gray-900">How payments work</p>
                 <ul className="list-disc pl-5 space-y-1 text-xs">
                   <li>Customer pays USD through Stripe Checkout (card / enabled methods).</li>
-                  <li>CampusCuts records the booking as paid, then routes settlement to USDC on Sui.</li>
-                  <li>Your share is sent to this Sui address (minus platform terms in effect).</li>
+                  <li>CampusCuts records the booking as paid and tracks your share in your earnings.</li>
+                  <li>When wallet settlement is enabled, funds may route to the address on file (per platform terms).</li>
                 </ul>
               </div>
             </>

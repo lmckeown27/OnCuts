@@ -23,7 +23,7 @@ import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
-import InvisibleUsdcBalance from '../components/InvisibleUsdcBalance';
+import BarberStripeEarningsBanner from '../components/BarberStripeEarningsBanner';
 import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -900,6 +900,7 @@ export default function BarberPage() {
           googleCalendarLoading={googleCalendarLoading}
           onConnectGoogleCalendar={connectGoogleCalendar}
           onDisconnectGoogleCalendar={disconnectGoogleCalendar}
+          onManagePayments={() => setShowPayoutSettings(true)}
         />
       </div>
 
@@ -1567,6 +1568,7 @@ interface DashboardViewProps {
   googleCalendarLoading?: boolean;
   onConnectGoogleCalendar?: () => void;
   onDisconnectGoogleCalendar?: () => void;
+  onManagePayments?: () => void;
 }
 
 // Type for confirmed bookings
@@ -1599,7 +1601,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar, onManagePayments }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -2290,11 +2292,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
-        {user?.sui_address ? (
-          <div className="p-4 pb-0 border-b border-gray-100">
-            <InvisibleUsdcBalance suiAddress={user.sui_address} />
-          </div>
-        ) : null}
+        <div className="p-4 pb-0 border-b border-gray-100">
+          <BarberStripeEarningsBanner onManagePayments={onManagePayments} />
+        </div>
         <div 
           ref={scheduleContainerRef}
           onTouchStart={handleTouchStart}
