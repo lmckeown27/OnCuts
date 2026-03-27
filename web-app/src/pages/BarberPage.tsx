@@ -23,7 +23,6 @@ import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
-import BarberStripeEarningsBanner from '../components/BarberStripeEarningsBanner';
 import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -884,7 +883,6 @@ export default function BarberPage() {
           googleCalendarLoading={googleCalendarLoading}
           onConnectGoogleCalendar={connectGoogleCalendar}
           onDisconnectGoogleCalendar={disconnectGoogleCalendar}
-          onManagePayments={() => setShowPayoutSettings(true)}
         />
       </div>
 
@@ -1540,7 +1538,6 @@ interface DashboardViewProps {
   googleCalendarLoading?: boolean;
   onConnectGoogleCalendar?: () => void;
   onDisconnectGoogleCalendar?: () => void;
-  onManagePayments?: () => void;
 }
 
 // Type for confirmed bookings
@@ -1573,7 +1570,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar, onManagePayments }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -2264,14 +2261,11 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     <>
       {/* Schedule Section - Top Priority */}
       <Card>
-        <div className="p-4 pb-0 border-b border-gray-100">
-          <BarberStripeEarningsBanner onManagePayments={onManagePayments} />
-        </div>
-        <div 
+        <div
           ref={scheduleContainerRef}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          className="touch-pan-y"
+          className="touch-pan-y p-4 pb-0"
         >
         <div className="flex flex-col items-center gap-3 mb-4">
           {/* Jump to Today/This Week/This Month button - shown when offset is non-zero */}
