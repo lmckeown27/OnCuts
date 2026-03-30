@@ -22,6 +22,7 @@ import rateLimit from 'express-rate-limit';
 import { pool, checkHealth as checkPostgresHealth, closePool, connectToPostgres } from './database/connection';
 
 // Import routes
+import { googleIdTokenLogin } from './controllers/auth.controller';
 import authRoutes from './routes/auth.routes';
 import barberRoutes from './routes/barber.routes';
 import bookingRoutes from './routes/booking.routes';
@@ -242,6 +243,11 @@ const authLimiter = rateLimit({
 // Apply rate limiters
 app.use('/api/v1/auth', authLimiter);
 app.use('/api', generalLimiter);
+
+// Google ID token → CampusCuts JWT (Intera / iOS). Registered here so the route is always on the
+// app stack after rate limits; a stale auth.routes bundle alone cannot cause POST .../google to 404.
+app.post('/api/v1/auth/google', googleIdTokenLogin);
+app.post('/api/auth/google', googleIdTokenLogin);
 
 // Health check (PostgreSQL + Stripe - Off-chain architecture)
 app.get('/health', async (req: Request, res: Response) => {

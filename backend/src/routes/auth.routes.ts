@@ -3,7 +3,6 @@ import { body } from 'express-validator';
 import {
   register,
   login,
-  googleIdTokenLogin,
   verifyEmail,
   verifyEmailRegistration,
   resendVerificationCode,
@@ -80,11 +79,9 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/google
- * @desc    Exchange Google ID token for CampusCuts JWTs (Intera / mobile)
- * @access  Public
+ * Google ID token login: POST /api/v1/auth/google and POST /api/auth/google are registered in index.ts
+ * (after rate limiters) so deploys cannot miss the route if dist/auth.routes.js is stale.
  */
-router.post('/google', googleIdTokenLogin);
 
 /**
  * @route   POST /api/auth/verify-email-token
