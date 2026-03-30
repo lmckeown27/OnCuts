@@ -91,6 +91,7 @@
  */
 
 import { Response, NextFunction } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -118,6 +119,19 @@ import {
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
+
+/** Google ID token verification for Intera / mobile (JWT exchange). */
+const googleIdTokenClient = new OAuth2Client();
+
+function getGoogleJwtExchangeAudiences(): string[] {
+  const raw = [
+    process.env.GOOGLE_OAUTH_IOS_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
+    process.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
+  ];
+  const trimmed = raw.map((s) => (typeof s === 'string' ? s.trim() : '')).filter(Boolean);
+  return [...new Set(trimmed)];
+}
 // Note: educationalDomainService removed - campus is now determined by user selection, not email domain
 
 /**
@@ -670,6 +684,115 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
         },
         accessToken: token,
         refreshToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Exchange a Google ID token for CampusCuts JWTs (same shape as POST /auth/login).
+ * Used by Intera (iOS) and any client using Google Sign-In.
+ */
+export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const raw =
+      (req.body?.idToken ?? req.body?.id_token) as string | undefined;
+    const idToken = typeof raw === 'string' ? raw.trim() : '';
+    if (!idToken) {
+      throw new ApiError(400, 'idToken is required');
+    }
+
+    const audiences = getGoogleJwtExchangeAudiences();
+    if (audiences.length === 0) {
+      throw new ApiError(
+        500,
+        'Google sign-in is not configured. Set GOOGLE_OAUTH_IOS_CLIENT_ID and/or GOOGLE_OAUTH_WEB_CLIENT_ID (or VITE_GOOGLE_OAUTH_CLIENT_ID) on the server.'
+      );
+    }
+
+    let ticket;
+    try {
+      ticket = await googleIdTokenClient.verifyIdToken({
+        idToken,
+        audience: audiences.length === 1 ? audiences[0]! : audiences,
+      });
+    } catch {
+      throw new ApiError(401, 'Invalid or expired Google token');
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload) {
+      throw new ApiError(401, 'Invalid Google token payload');
+    }
+    const email = payload.email?.trim().toLowerCase();
+    if (!email) {
+      throw new ApiError(401, 'Google token did not include a verified email');
+    }
+    if (payload.email_verified === false) {
+      throw new ApiError(401, 'Google email is not verified');
+    }
+
+    const result = await pool.query(
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address
+       FROM users WHERE LOWER(TRIM(email)) = $1`,
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      throw new ApiError(401, 'Account not found', 'ACCOUNT_NOT_FOUND');
+    }
+
+    const user = result.rows[0];
+
+    if (user.isBlocked || user.isBanned) {
+      throw new ApiError(403, 'Account is deactivated');
+    }
+
+    await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
+
+    const barberCheck = await pool.query(
+      'SELECT id FROM barbers WHERE "userId" = $1 AND "isActive" = true',
+      [user.id]
+    );
+    const hasBarberProfile = barberCheck.rows.length > 0;
+
+    const accessRole = await resolveAccessTokenRole(user.id, user.role);
+
+    const token = generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: accessRole,
+      campusId: user.campusId,
+    });
+
+    const refreshTokenJwt = generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+      role: accessRole,
+      campusId: user.campusId,
+    });
+
+    logger.info(`User logged in via Google ID token: ${user.email} (jwtRole=${accessRole}, dbRole=${user.role})`);
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          role: user.role,
+          campusId: user.campusId,
+          emailVerified: user.email_verified,
+          profile_picture_url: user.avatarUrl,
+          hasBarberProfile,
+          suiAddress: user.sui_address ?? null,
+        },
+        accessToken: token,
+        refreshToken: refreshTokenJwt,
       },
     });
   } catch (error) {

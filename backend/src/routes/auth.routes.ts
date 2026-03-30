@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import {
   register,
   login,
+  googleIdTokenLogin,
   verifyEmail,
   verifyEmailRegistration,
   resendVerificationCode,
@@ -77,6 +78,13 @@ router.post(
   ],
   login
 );
+
+/**
+ * @route   POST /api/auth/google
+ * @desc    Exchange Google ID token for CampusCuts JWTs (Intera / mobile)
+ * @access  Public
+ */
+router.post('/google', googleIdTokenLogin);
 
 /**
  * @route   POST /api/auth/verify-email-token

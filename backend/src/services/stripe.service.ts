@@ -1,14 +1,79 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { getDefaultStripeClient } from '../config/stripe';
+import { getDefaultStripeClient, getStripeClientForLivemode } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 
 dotenv.config();
 
+function stripeErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
+/** Test API key used against a live-mode Connect account (common prod misconfig). */
+function isStripeTestKeyLiveAccountError(error: unknown): boolean {
+  const msg = stripeErrorMessage(error);
+  return /testmode API key/i.test(msg) && /live account/i.test(msg);
+}
+
+/** Live API key used against a test-mode Connect account. */
+function isStripeLiveKeyTestAccountError(error: unknown): boolean {
+  const msg = stripeErrorMessage(error);
+  return /livemode API key/i.test(msg) && /test account/i.test(msg);
+}
+
 class StripeService {
   private getStripe(): Stripe {
     return getDefaultStripeClient();
+  }
+
+  /**
+   * Run a Connect account API call with the default Stripe client; on test/live key mismatch,
+   * retry once with the matching client (fixes production using sk_test while acct_* is live).
+   */
+  private async withConnectAccountStripeRetry<T>(
+    accountId: string,
+    operationLabel: string,
+    fn: (stripe: Stripe) => Promise<T>
+  ): Promise<T> {
+    try {
+      return await fn(this.getStripe());
+    } catch (error) {
+      if (isStripeTestKeyLiveAccountError(error)) {
+        try {
+          const liveStripe = getStripeClientForLivemode(true);
+          logger.warn('Stripe Connect: default client is test; retrying with live secret for live account', {
+            accountId,
+            operation: operationLabel,
+          });
+          return await fn(liveStripe);
+        } catch (retryErr) {
+          logger.error(`Stripe Connect live retry failed for ${accountId} (${operationLabel}):`, retryErr);
+          throw new ApiError(
+            503,
+            'This barber Connect account is live, but the server default Stripe key is test (sk_test). Production: set STRIPE_SECRET_KEY to your live secret (sk_live_…). Optional: STRIPE_SECRET_KEY_LIVE + STRIPE_MODE=live. Webhooks: STRIPE_WEBHOOK_SECRET must be the live endpoint signing secret.'
+          );
+        }
+      }
+      if (isStripeLiveKeyTestAccountError(error)) {
+        try {
+          const testStripe = getStripeClientForLivemode(false);
+          logger.warn('Stripe Connect: default client is live; retrying with test secret for test account', {
+            accountId,
+            operation: operationLabel,
+          });
+          return await fn(testStripe);
+        } catch (retryErr) {
+          logger.error(`Stripe Connect test retry failed for ${accountId} (${operationLabel}):`, retryErr);
+          throw new ApiError(
+            503,
+            'This barber account is a test Stripe Connect account, but the server only has a live API key configured. Add STRIPE_SECRET_KEY_TEST or STRIPE_MODE=test with a sk_test_… key.'
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   constructor() {
@@ -188,15 +253,17 @@ class StripeService {
    */
   async createAccountLink(accountId: string, refreshUrl: string, returnUrl: string): Promise<string> {
     try {
-      const accountLink = await this.getStripe().accountLinks.create({
-        account: accountId,
-        refresh_url: refreshUrl,
-        return_url: returnUrl,
-        type: 'account_onboarding',
+      return await this.withConnectAccountStripeRetry(accountId, 'account link', async (stripe) => {
+        const accountLink = await stripe.accountLinks.create({
+          account: accountId,
+          refresh_url: refreshUrl,
+          return_url: returnUrl,
+          type: 'account_onboarding',
+        });
+        return accountLink.url;
       });
-
-      return accountLink.url;
     } catch (error) {
+      if (error instanceof ApiError) throw error;
       logger.error('Failed to create account link:', error);
       throw new ApiError(500, 'Failed to create onboarding link');
     }
@@ -321,10 +388,14 @@ class StripeService {
    */
   async createExpressLoginLink(accountId: string): Promise<string> {
     try {
-      const loginLink = await this.getStripe().accounts.createLoginLink(accountId);
+      const url = await this.withConnectAccountStripeRetry(accountId, 'Express login link', async (stripe) => {
+        const loginLink = await stripe.accounts.createLoginLink(accountId);
+        return loginLink.url;
+      });
       logger.info(`Created Express login link for account: ${accountId}`);
-      return loginLink.url;
+      return url;
     } catch (error) {
+      if (error instanceof ApiError) throw error;
       logger.error(`Failed to create login link for ${accountId}:`, error);
       throw new ApiError(500, 'Failed to create dashboard login link');
     }
