@@ -124,7 +124,12 @@ import {
 const googleIdTokenClient = new OAuth2Client();
 
 function getGoogleJwtExchangeAudiences(): string[] {
+  const extra = (process.env.GOOGLE_OAUTH_CLIENT_IDS ?? '')
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
   const raw = [
+    ...extra,
     process.env.GOOGLE_OAUTH_IOS_CLIENT_ID,
     process.env.GOOGLE_OAUTH_WEB_CLIENT_ID,
     process.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
@@ -718,7 +723,31 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
         idToken,
         audience: audiences.length === 1 ? audiences[0]! : audiences,
       });
-    } catch {
+    } catch (verifyErr: unknown) {
+      const errMsg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+      let tokenAud = '';
+      let tokenExp = '';
+      try {
+        const decoded = jwt.decode(idToken, { complete: false }) as {
+          aud?: string | string[];
+          exp?: number;
+        } | null;
+        if (decoded) {
+          const aud = decoded.aud;
+          tokenAud = Array.isArray(aud) ? aud.join(',') : String(aud ?? '');
+          tokenExp =
+            decoded.exp != null
+              ? new Date(decoded.exp * 1000).toISOString()
+              : '';
+        }
+      } catch {
+        tokenAud = '(decode failed — not a JWT?)';
+      }
+      logger.warn(
+        `Google verifyIdToken failed: ${errMsg}. configured_audiences=[${audiences.join(
+          ', '
+        )}] token_aud=${tokenAud || 'n/a'} token_exp=${tokenExp || 'n/a'}`
+      );
       throw new ApiError(401, 'Invalid or expired Google token');
     }
 
