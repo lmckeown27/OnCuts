@@ -585,6 +585,13 @@ export default function ConsumerPage() {
                 <>
                   {/* Messages Button - Only for authenticated users */}
                   <button
+                    onClick={() => navigate(`${platformPrefix}/consumer/bookings`)}
+                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    title="My bookings"
+                  >
+                    <Calendar className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <button
                     onClick={() => navigate(`${platformPrefix}/consumer/messages`)}
                     className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
                     title="Messages"
@@ -610,6 +617,16 @@ export default function ConsumerPage() {
                     {showProfileDropdown && (
                       <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-w-[calc(100vw-2rem)]">
                         {/* Notifications */}
+                        <button
+                          onClick={() => {
+                            navigate(`${platformPrefix}/consumer/bookings`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          My bookings
+                        </button>
                         <button
                           onClick={() => {
                             openNotifications();
