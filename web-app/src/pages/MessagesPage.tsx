@@ -214,7 +214,10 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const response = await messageService.getConversations();
-      const raw = response as Record<string, unknown> & { data?: { conversations?: unknown[] } };
+      const raw = response as unknown as {
+        conversations?: unknown[];
+        data?: unknown[] | { conversations?: unknown[] };
+      };
       const conversationsData =
         raw.conversations ??
         (Array.isArray(raw.data) ? raw.data : raw.data?.conversations) ??
