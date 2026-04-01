@@ -214,8 +214,11 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const response = await messageService.getConversations();
-      // Handle both response formats: { conversations: [...] } and { data: [...] }
-      const conversationsData = (response as any).conversations || (response as any).data || [];
+      const raw = response as Record<string, unknown> & { data?: { conversations?: unknown[] } };
+      const conversationsData =
+        raw.conversations ??
+        (Array.isArray(raw.data) ? raw.data : raw.data?.conversations) ??
+        [];
       if (Array.isArray(conversationsData)) {
         setConversations(conversationsData as ConversationWithDetails[]);
       } else {
@@ -251,7 +254,7 @@ export default function MessagesPage() {
       await messageService.markConversationAsRead(convId);
       // Update unread count in conversations list
       setConversations(prev => prev.map(c => 
-        c.id === convId ? { ...c, unreadCount: 0 } : c
+        String(c.id) === String(convId) ? { ...c, unreadCount: 0 } : c
       ));
     } catch (error) {
       console.error('Failed to fetch messages:', error);
@@ -632,7 +635,9 @@ export default function MessagesPage() {
   // Handle conversation selection from URL
   useEffect(() => {
     if (conversationId && conversations.length > 0) {
-      const conv = conversations.find(c => c.id === conversationId);
+      const conv = conversations.find(
+        (c) => String(c.id) === String(conversationId)
+      );
       if (conv) {
         setSelectedConversation(conv);
         fetchMessages(conversationId);

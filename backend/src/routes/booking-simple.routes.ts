@@ -330,18 +330,30 @@ router.post('/', authenticate, async (req, res, next) => {
             location, notes, booking_status,
             is_active, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          ON CONFLICT (booking_id) DO UPDATE SET 
+          ON CONFLICT (user1_id, user2_id, booking_id) DO UPDATE SET 
             service_name = EXCLUDED.service_name,
             service_price = EXCLUDED.service_price,
             scheduled_time = EXCLUDED.scheduled_time,
             location = EXCLUDED.location,
             notes = EXCLUDED.notes`,
-          [consumerId, barberUserId, booking.id, serviceType, price, requestedTime, location || null, notes || null]
+          [
+            consumerId,
+            barberUserId,
+            booking.id,
+            serviceType,
+            price > 0 ? price / 100 : null, // conversations.service_price is dollars; price is cents
+            requestedTime,
+            location || null,
+            notes || null,
+          ]
         );
         logger.info(`Created conversation for booking ${booking.id} with service name: ${serviceType}`);
       } catch (convError) {
-        // Non-fatal - conversation can be created later
-        logger.warn(`Failed to create conversation for booking ${booking.id}:`, convError);
+        // Non-fatal - conversation can be created later (e.g. retry after deploy fixes ON CONFLICT)
+        logger.warn(
+          `Failed to create conversation for booking ${booking.id}:`,
+          convError instanceof Error ? convError.message : convError
+        );
       }
     }
     
