@@ -331,14 +331,24 @@ class MessageService {
       // we must return that thread, not INSERT again (avoids idx_conversations_unique_booking / 23505).
       if (bookingId) {
         const byBooking = await pool.query(
-          `SELECT id FROM conversations
+          `SELECT id, is_active FROM conversations
            WHERE booking_id = $1
              AND ((user1_id = $2 AND user2_id = $3) OR (user1_id = $3 AND user2_id = $2))`,
           [bookingId, userId, otherUserId]
         );
         if (byBooking.rows.length > 0) {
-          const existingId = byBooking.rows[0].id;
-          console.log('✅ Returning existing conversation for booking_id:', bookingId, 'conversation:', existingId);
+          const row = byBooking.rows[0];
+          const existingId = row.id;
+          // deleteConversation() only sets is_active = false; the booking row stays. Re-open must revive the thread.
+          if (row.is_active === false) {
+            await pool.query(
+              `UPDATE conversations SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+              [existingId]
+            );
+            console.log('♻️ Reactivated conversation', existingId, 'for booking_id:', bookingId);
+          } else {
+            console.log('✅ Returning existing conversation for booking_id:', bookingId, 'conversation:', existingId);
+          }
           return await this.getConversationById(existingId, userId);
         }
       }
