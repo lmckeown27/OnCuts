@@ -323,11 +323,28 @@ class MessageService {
         throw new Error('Cannot start conversation with yourself');
       }
 
-      // Each booking creates a UNIQUE conversation based on users + scheduled_time
-      // This ensures new bookings get new conversations, not reusing old rejected ones
       const scheduledTime = bookingContext?.scheduledTime || null;
+      const bookingId = bookingContext?.bookingId ?? null;
 
-      // Only check for duplicate if we have a scheduled time (to prevent duplicate bookings for same slot)
+      // Production enforces uniqueness on (user1_id, user2_id, booking_id). One row per booking per pair.
+      // iOS often calls POST /messages/conversations with an existing booking UUID after the barber accepted —
+      // we must return that thread, not INSERT again (avoids idx_conversations_unique_booking / 23505).
+      if (bookingId) {
+        const byBooking = await pool.query(
+          `SELECT id FROM conversations
+           WHERE booking_id = $1
+             AND ((user1_id = $2 AND user2_id = $3) OR (user1_id = $3 AND user2_id = $2))`,
+          [bookingId, userId, otherUserId]
+        );
+        if (byBooking.rows.length > 0) {
+          const existingId = byBooking.rows[0].id;
+          console.log('✅ Returning existing conversation for booking_id:', bookingId, 'conversation:', existingId);
+          return await this.getConversationById(existingId, userId);
+        }
+      }
+
+      // Same scheduled slot: reuse pending/active pending thread; only INSERT a new row when there is no
+      // conflicting booking_id row (handled above) and the prior slot conversation was rejected/cancelled, etc.
       if (scheduledTime) {
         const existingConv = await pool.query(
           `SELECT id, is_active, booking_status FROM conversations 
@@ -338,13 +355,11 @@ class MessageService {
 
         if (existingConv.rows.length > 0) {
           const conv = existingConv.rows[0];
-          
-          // If same time slot exists and is active/pending, return existing
+
           if (conv.is_active && conv.booking_status === 'pending') {
             console.log('✅ Found existing pending conversation for same time slot:', conv.id);
             return await this.getConversationById(conv.id, userId);
           }
-          // If rejected/cancelled, allow creating a new booking (don't return old one)
           console.log('📌 Previous conversation exists but was ' + conv.booking_status + ', creating new one');
         }
       }
