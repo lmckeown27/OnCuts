@@ -674,12 +674,29 @@ export default function MessagesPage() {
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
       console.log('📩 Socket received new-message:', message);
-      const msgConvId = (message as unknown as { conversation_id?: string | number }).conversation_id;
-      const activeId = selectedConversation?.id;
+      const raw = message as unknown as {
+        conversation_id?: string | number;
+        id?: string | number;
+        sender_id?: string | number;
+      };
+      const msgConvId = raw.conversation_id;
+      const myId = user?.id != null ? String(user.id) : '';
+      const senderId = raw.sender_id != null ? String(raw.sender_id) : '';
 
-      // Add to messages if in current conversation (compare as numbers to handle type differences)
-      if (activeId != null && Number(msgConvId) === Number(activeId)) {
-        const mid = String((message as unknown as { id?: string | number }).id ?? '');
+      // Sender is in both user-* and conversation-* rooms → two identical events; optimistic + POST already updated the thread.
+      if (myId && senderId && senderId === myId) {
+        fetchConversations();
+        return;
+      }
+
+      // Use URL conversation id — selectedConversation is often still null before the inbox fetch finishes, which dropped incoming payloads.
+      const openThreadId = conversationId;
+      if (
+        openThreadId &&
+        msgConvId != null &&
+        Number(msgConvId) === Number(openThreadId)
+      ) {
+        const mid = String(raw.id ?? '');
         if (!mid) {
           fetchConversations();
           return;
@@ -692,7 +709,6 @@ export default function MessagesPage() {
         messageService.markConversationAsRead(String(msgConvId));
       }
 
-      // Update conversation list
       fetchConversations();
     };
 
@@ -701,7 +717,7 @@ export default function MessagesPage() {
     return () => {
       socketService.offNewMessage(handleNewMessage);
     };
-  }, [selectedConversation, fetchConversations, scrollToBottom]);
+  }, [conversationId, user?.id, fetchConversations, scrollToBottom]);
 
   // Socket.io real-time booking updates (cancellations, edits)
   useEffect(() => {

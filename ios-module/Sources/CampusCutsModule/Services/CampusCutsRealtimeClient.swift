@@ -4,7 +4,8 @@
 //
 //  Socket.IO client for live chat: join-personal (user inbox) + join-conversation (open thread).
 //  Intera / host apps: after login call connect(); when opening a thread call joinConversation(id);
-//  onNewMessage append to the UI if payload["conversation_id"] matches the open thread (dedupe by "id").
+//  onNewMessage: append if payload["conversation_id"] matches the open thread; dedupe by "id".
+//  Ignore payloads where String(describing: payload["sender_id"]) equals the logged-in user id (duplicate Socket.IO delivery).
 //  Use the same origin that serves `/socket.io/` (often https://campuscut.com, not only api.*).
 //
 
