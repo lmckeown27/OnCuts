@@ -255,10 +255,17 @@ export default function MessagesPage() {
       
       // Mark as read
       await messageService.markConversationAsRead(convId);
-      // Update unread count in conversations list
-      setConversations(prev => prev.map(c => 
-        String(c.id) === String(convId) ? { ...c, unreadCount: 0 } : c
-      ));
+      // Clear unread in list only when it changes — avoids new `conversations` reference every fetch,
+      // which was retriggering the URL sync effect and causing a GET/PUT storm.
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => String(c.id) === String(convId));
+        if (idx === -1) return prev;
+        const c = prev[idx];
+        if ((c.unreadCount ?? 0) === 0) return prev;
+        const next = [...prev];
+        next[idx] = { ...c, unreadCount: 0 };
+        return next;
+      });
     } catch (error) {
       console.error('Failed to fetch messages:', error);
       setMessages([]);
@@ -635,20 +642,23 @@ export default function MessagesPage() {
     startNewConversation();
   }, [startConversationData, isCreatingConversation, fetchConversations, navigate, platformPrefix, isBarberView]);
 
-  // Handle conversation selection from URL
+  // Load thread when the URL conversation id changes (do not depend on `conversations` — fetching
+  // messages updates that list and would retrigger this effect in a loop).
   useEffect(() => {
-    if (conversationId && conversations.length > 0) {
-      const conv = conversations.find(
-        (c) => String(c.id) === String(conversationId)
-      );
-      if (conv) {
-        setSelectedConversation(conv);
-        fetchMessages(conversationId);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-        setShowMobileChat(true);
-      }
-    }
-  }, [conversationId, conversations, fetchMessages]);
+    if (!conversationId) return;
+    fetchMessages(conversationId);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShowMobileChat(true);
+  }, [conversationId, fetchMessages]);
+
+  // Keep sidebar selection in sync when the conversation list loads or refreshes
+  useEffect(() => {
+    if (!conversationId || conversations.length === 0) return;
+    const conv = conversations.find(
+      (c) => String(c.id) === String(conversationId)
+    );
+    if (conv) setSelectedConversation(conv);
+  }, [conversationId, conversations]);
 
   // Socket.io real-time messages
   useEffect(() => {
@@ -776,11 +786,11 @@ export default function MessagesPage() {
   const handleSelectConversation = (conv: ConversationWithDetails) => {
     setSelectedConversation(conv);
     setIsEditingBooking(false); // Reset edit mode when changing conversations
-    fetchMessages(conv.id);
     window.scrollTo({ top: 0, behavior: 'instant' });
     setShowMobileChat(true);
     const messagesPath = isBarberView ? 'barber/messages' : 'consumer/messages';
     navigate(`${platformPrefix}/${messagesPath}/${conv.id}`, { replace: true });
+    // fetchMessages runs from the conversationId effect after navigation
   };
 
   // Handle sending a message
