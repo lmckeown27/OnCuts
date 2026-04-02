@@ -179,32 +179,34 @@ router.delete('/conversations/:conversationId', authenticate, async (req, res, n
 
     if (convResult.rows.length > 0) {
       const conv = convResult.rows[0];
-      const otherUserId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
-      const deletingUserName = conv.user1_id === userId 
-        ? `${conv.user1_first_name} ${conv.user1_last_name}`
-        : `${conv.user2_first_name} ${conv.user2_last_name}`;
-      const serviceName = conv.service_name || 'a service';
+      // Booking-linked threads: deleteConversation may cancel the booking and sends
+      // booking_cancelled via the shared cancellation path; avoid duplicate generic notify.
+      if (!conv.booking_id) {
+        const otherUserId = conv.user1_id === userId ? conv.user2_id : conv.user1_id;
+        const deletingUserName = conv.user1_id === userId 
+          ? `${conv.user1_first_name} ${conv.user1_last_name}`
+          : `${conv.user2_first_name} ${conv.user2_last_name}`;
+        const serviceName = conv.service_name || 'a service';
 
-      // Create notification for the other user (if table exists)
-      try {
-        await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message, data)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            otherUserId,
-            'booking_cancelled',
-            'Booking Cancelled',
-            `${deletingUserName} has cancelled the conversation about ${serviceName}.`,
-            JSON.stringify({
-              conversation_id: conversationId,
-              service_name: conv.service_name,
-              cancelled_by: userId,
-            }),
-          ]
-        );
-      } catch (notifError) {
-        // Don't fail the delete if notification fails (table might not exist)
-        console.warn('Failed to create cancellation notification:', notifError);
+        try {
+          await pool.query(
+            `INSERT INTO notifications (user_id, type, title, message, data)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [
+              otherUserId,
+              'booking_cancelled',
+              'Booking Cancelled',
+              `${deletingUserName} has cancelled the conversation about ${serviceName}.`,
+              JSON.stringify({
+                conversation_id: conversationId,
+                service_name: conv.service_name,
+                cancelled_by: userId,
+              }),
+            ]
+          );
+        } catch (notifError) {
+          console.warn('Failed to create cancellation notification:', notifError);
+        }
       }
     }
 

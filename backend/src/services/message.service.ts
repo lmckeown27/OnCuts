@@ -20,6 +20,11 @@ import {
   sendBarberNewMessageFromConsumerEmail, 
   sendBarberToBarberMessageEmail 
 } from './email.service';
+import {
+  fetchBookingForParticipantCancellation,
+  executeParticipantBookingCancellation,
+} from './booking-cancellation.service';
+import { sameUuid } from '../utils/uuid-compare';
 
 class MessageService {
   /**
@@ -339,7 +344,7 @@ class MessageService {
         if (byBooking.rows.length > 0) {
           const row = byBooking.rows[0];
           const existingId = row.id;
-          // deleteConversation() only sets is_active = false; the booking row stays. Re-open must revive the thread.
+          // deleteConversation() may cancel the booking and remove the row, or soft-delete; re-open revives when applicable.
           if (row.is_active === false) {
             await pool.query(
               `UPDATE conversations SET is_active = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
@@ -792,12 +797,13 @@ class MessageService {
   }
 
   /**
-   * Delete a conversation
+   * Delete a conversation. If it is tied to a booking, cancels that booking (same as DELETE /bookings-simple)
+   * for non-terminal statuses; completed/paid bookings only hide the thread (soft delete).
    */
   async deleteConversation(conversationId: string | number, userId: string | number): Promise<any> {
     try {
       const convCheck = await pool.query(
-        `SELECT user1_id, user2_id FROM conversations 
+        `SELECT user1_id, user2_id, booking_id FROM conversations 
          WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
         [conversationId, userId]
       );
@@ -806,15 +812,53 @@ class MessageService {
         throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
-      const { user1_id, user2_id } = convCheck.rows[0];
+      const { user1_id, user2_id, booking_id } = convCheck.rows[0];
 
-      // Mark as inactive instead of deleting
-      await pool.query(
-        `UPDATE conversations SET is_active = false WHERE id = $1`,
-        [conversationId]
-      );
+      if (booking_id) {
+        const booking = await fetchBookingForParticipantCancellation(String(booking_id), String(userId));
+        if (booking) {
+          const isBarber = sameUuid(booking.barber_user_id, userId);
+          const isConsumer = sameUuid(booking.consumerId, userId);
+          if (!isBarber && !isConsumer) {
+            throw new ApiError(403, 'Not allowed to modify this booking');
+          }
 
-      // Update badge counts for both users
+          if (booking.status === 'COMPLETED' || booking.status === 'PAID') {
+            await pool.query(`UPDATE conversations SET is_active = false WHERE id = $1`, [conversationId]);
+            await pushNotificationService.updateBadgeCount(user1_id);
+            await pushNotificationService.updateBadgeCount(user2_id);
+            return {
+              success: true,
+              message: 'Conversation hidden. Completed bookings cannot be cancelled from messages.',
+            };
+          }
+
+          if (booking.status === 'CANCELLED') {
+            await pool.query(`UPDATE conversations SET is_active = false WHERE id = $1`, [conversationId]);
+            await pushNotificationService.updateBadgeCount(user1_id);
+            await pushNotificationService.updateBadgeCount(user2_id);
+            return {
+              success: true,
+              message: 'Conversation removed',
+            };
+          }
+
+          await executeParticipantBookingCancellation(
+            booking,
+            String(userId),
+            isBarber,
+            'Cancelled from messages'
+          );
+          await pushNotificationService.updateBadgeCount(user1_id);
+          await pushNotificationService.updateBadgeCount(user2_id);
+          return {
+            success: true,
+            message: 'Booking cancelled and conversation removed',
+          };
+        }
+      }
+
+      await pool.query(`UPDATE conversations SET is_active = false WHERE id = $1`, [conversationId]);
       await pushNotificationService.updateBadgeCount(user1_id);
       await pushNotificationService.updateBadgeCount(user2_id);
 
