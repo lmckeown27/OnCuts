@@ -14,13 +14,14 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Add external dependencies here if needed
-        // .package(url: "https://github.com/stripe/stripe-ios", from: "23.0.0")
+        .package(url: "https://github.com/socketio/socket.io-client-swift", from: "16.1.0"),
     ],
     targets: [
         .target(
             name: "CampusCutsModule",
-            dependencies: [],
+            dependencies: [
+                .product(name: "SocketIO", package: "socket.io-client-swift"),
+            ],
             path: "ios-module/Sources/CampusCutsModule",
             resources: [.process("Resources")]
         ),

@@ -660,27 +660,44 @@ export default function MessagesPage() {
     if (conv) setSelectedConversation(conv);
   }, [conversationId, conversations]);
 
+  // Join Socket.IO thread room while this URL is open (server emits new-message to conversation-${id}).
+  useEffect(() => {
+    if (!conversationId) return;
+    socketService.connect();
+    socketService.joinConversation(conversationId);
+    return () => {
+      socketService.leaveConversation(conversationId);
+    };
+  }, [conversationId]);
+
   // Socket.io real-time messages
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
       console.log('📩 Socket received new-message:', message);
-      console.log('📩 Current conversation:', selectedConversation?.id, 'Message conversation:', message.conversation_id);
-      
+      const msgConvId = (message as unknown as { conversation_id?: string | number }).conversation_id;
+      const activeId = selectedConversation?.id;
+
       // Add to messages if in current conversation (compare as numbers to handle type differences)
-      if (selectedConversation && Number(message.conversation_id) === Number(selectedConversation.id)) {
-        console.log('📩 Adding message to current conversation');
-        setMessages(prev => [...prev, message as unknown as MessageWithSender]);
+      if (activeId != null && Number(msgConvId) === Number(activeId)) {
+        const mid = String((message as unknown as { id?: string | number }).id ?? '');
+        if (!mid) {
+          fetchConversations();
+          return;
+        }
+        setMessages((prev) => {
+          if (prev.some((m) => String(m.id) === mid)) return prev;
+          return [...prev, message as unknown as MessageWithSender];
+        });
         scrollToBottom();
-        // Mark as read since we're viewing
-        messageService.markConversationAsRead(message.conversation_id);
+        messageService.markConversationAsRead(String(msgConvId));
       }
-      
+
       // Update conversation list
       fetchConversations();
     };
 
     socketService.onNewMessage(handleNewMessage);
-    
+
     return () => {
       socketService.offNewMessage(handleNewMessage);
     };

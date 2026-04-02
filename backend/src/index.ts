@@ -171,6 +171,22 @@ io.on('connection', (socket) => {
     socket.emit('joined-personal', { userId, socketId: socket.id });
   });
 
+  // Thread room: join while viewing a conversation so new-message is delivered even if join-personal
+  // was late (native iOS / embedded clients). Paired with emit to conversation-${id} in message.routes.
+  socket.on('join-conversation', (conversationId: string | number) => {
+    if (conversationId === undefined || conversationId === null || conversationId === '') return;
+    const room = `conversation-${conversationId}`;
+    socket.join(room);
+    console.log(`📬 Socket.IO: ${socket.id} joined ${room}`);
+  });
+
+  socket.on('leave-conversation', (conversationId: string | number) => {
+    if (conversationId === undefined || conversationId === null || conversationId === '') return;
+    const room = `conversation-${conversationId}`;
+    socket.leave(room);
+    console.log(`📬 Socket.IO: ${socket.id} left ${room}`);
+  });
+
   // Join user to their campus room for campus-wide updates
   socket.on('join-campus', (campusId: number) => {
     socket.join(`campus-${campusId}`);

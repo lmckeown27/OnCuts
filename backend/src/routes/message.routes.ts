@@ -125,8 +125,13 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
         ? conv.user2_id 
         : conv.user1_id;
       
+      const payload = result.data.message;
       console.log(`📨 Socket.IO: Emitting new-message to user-${recipientId} (sender: ${userId})`);
-      io.to(`user-${recipientId}`).emit('new-message', result.data.message);
+      io.to(`user-${recipientId}`).emit('new-message', payload);
+      // Same payload to thread room — iOS/native clients should join via join-conversation while viewing.
+      const convRoom = `conversation-${conversationId}`;
+      io.to(convRoom).emit('new-message', payload);
+      console.log(`📨 Socket.IO: Emitting new-message to ${convRoom}`);
     }
 
     res.status(201).json(result);
