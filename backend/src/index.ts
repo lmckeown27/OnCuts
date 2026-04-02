@@ -124,13 +124,28 @@ const allowedOrigins = [
   'https://api.campuscuts.app',
 ];
 
+/** Some native WebSocket clients send Origin as wss://host — map to https for allowlist match */
+function isAllowedOrigin(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.startsWith('wss://')) {
+    const asHttps = `https://${origin.slice(6)}`;
+    if (allowedOrigins.includes(asHttps)) return true;
+  }
+  if (origin.startsWith('ws://')) {
+    const asHttp = `http://${origin.slice(5)}`;
+    if (allowedOrigins.includes(asHttp)) return true;
+  }
+  return false;
+}
+
 // Socket.IO setup for real-time messaging
 const io = new Server(httpServer, {
   path: '/socket.io/',
   cors: {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         console.warn('🚫 Socket.IO CORS: Blocked origin:', origin);
@@ -192,7 +207,7 @@ app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    if (isAllowedOrigin(origin) || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -222,6 +237,17 @@ const generalLimiter = rateLimit({
   message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Chat + companion endpoints burst (open thread, mark read, fetch, send). Carrier NAT and
+    // office Wi‑Fi put many users behind one IP; counting messaging toward the global cap causes 429s.
+    // Still require Bearer auth so anonymous callers cannot bypass the limiter on these paths.
+    const auth = req.headers.authorization;
+    if (!auth || !auth.toLowerCase().startsWith('bearer ')) return false;
+    const p = req.path || '';
+    if (!p.includes('/messages')) return false;
+    if (p.includes('/booking-requests/')) return false;
+    return true;
+  },
 });
 
 // Auth endpoints: Stricter limits to prevent brute force
