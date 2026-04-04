@@ -1396,6 +1396,27 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       logger.error(`[REQUEST-PAYMENT] ❌ Failed to send payment request email for ${id}:`, emailError.message);
     }
 
+    // Same real-time signal as PUT /complete so consumers detect payment request immediately
+    const priceFormatted = `$${((booking.priceUsdCents || 0) / 100).toFixed(2)}`;
+    const io = getSocketIO();
+    if (io) {
+      io.to(`user-${booking.consumerId}`).emit('booking-completed', {
+        bookingId: id,
+        status: 'COMPLETED',
+        barberName: booking.barber_name,
+        serviceName,
+        price: booking.priceUsdCents,
+        priceFormatted,
+        paymentUrl,
+        scheduledDate,
+        scheduledTime,
+        location: booking.location,
+      });
+      logger.info(
+        `[REQUEST-PAYMENT] Emitted booking-completed to consumer ${booking.consumerId} for booking ${id}`
+      );
+    }
+
     res.json({
       success: true,
       message: 'Payment request sent to consumer',

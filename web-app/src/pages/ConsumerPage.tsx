@@ -148,6 +148,7 @@ export default function ConsumerPage() {
     serviceName: string;
     amount: number;
   } | null>(null);
+  const paymentModalRef = useRef<{ open: boolean; bookingId: string }>({ open: false, bookingId: '' });
   const [showDeclinedModal, setShowDeclinedModal] = useState(false);
   const [declinedModalData, setDeclinedModalData] = useState<{
     barberName: string;
@@ -481,6 +482,50 @@ export default function ConsumerPage() {
 
     return () => {
       socketService.offBookingCompleted(handleBookingCompleted);
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    paymentModalRef.current = {
+      open: showPaymentModal,
+      bookingId: paymentModalData?.bookingId ?? '',
+    };
+  }, [showPaymentModal, paymentModalData?.bookingId]);
+
+  // Barber undid completion / cancelled payment request (undo-complete)
+  useEffect(() => {
+    if (!user) return;
+
+    socketService.connect();
+
+    const handleBookingStatusChanged = (data: {
+      bookingId: string;
+      status: string;
+      message?: string;
+    }) => {
+      if (data.status !== 'ACCEPTED') return;
+
+      toast.success(
+        data.message || 'The barber has cancelled the payment request. Your booking stays active.',
+        { duration: 5000 }
+      );
+
+      const { open, bookingId: modalBookingId } = paymentModalRef.current;
+      if (open && modalBookingId === data.bookingId) {
+        setShowPaymentModal(false);
+        setPaymentModalData(null);
+      }
+
+      notificationService.getNotifications().then((notifData) => {
+        setNotifications(notifData.notifications);
+        setUnreadNotifications(notifData.unreadCount);
+      }).catch(console.error);
+    };
+
+    socketService.onBookingStatusChanged(handleBookingStatusChanged);
+
+    return () => {
+      socketService.offBookingStatusChanged(handleBookingStatusChanged);
     };
   }, [user?.id]);
 
