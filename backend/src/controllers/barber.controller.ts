@@ -7,6 +7,7 @@ import { uploadToS3 } from '../services/s3.service';
 import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
+import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -65,15 +66,15 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     // Add distance calculation if user location is provided
     if (hasUserLocation) {
       // Haversine formula for distance in km
-      // Uses barber's service location if set, otherwise falls back to user's location
+      // Priority: service pin → user device → barber row campus centroid → user row campus centroid
       query += `,
         (6371 * acos(
           LEAST(1.0, GREATEST(-1.0,
             cos(radians($${paramIndex})) * 
-            cos(radians(COALESCE(b.service_latitude, u.latitude))) * 
-            cos(radians(COALESCE(b.service_longitude, u.longitude)) - radians($${paramIndex + 1})) + 
+            cos(radians(COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude))) * 
+            cos(radians(COALESCE(b.service_longitude, u.longitude, bcampus.longitude, ucampus.longitude)) - radians($${paramIndex + 1})) + 
             sin(radians($${paramIndex})) * 
-            sin(radians(COALESCE(b.service_latitude, u.latitude)))
+            sin(radians(COALESCE(b.service_latitude, u.latitude, bcampus.latitude, ucampus.latitude)))
           ))
         )) as distance_km
       `;
@@ -93,6 +94,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     query += `
       FROM barbers b
       JOIN users u ON b."userId" = u.id
+      LEFT JOIN campuses bcampus ON bcampus.id = b."campusId"
+      LEFT JOIN campuses ucampus ON ucampus.id = u."campusId"
       WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
     `;
 
@@ -122,7 +125,8 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       }
       
       if (resolvedCampusId) {
-        query += ` AND b."campusId" = $${paramIndex}`;
+        // Include barbers assigned on the barber row OR only on the user row (legacy / incomplete profiles)
+        query += ` AND (b."campusId" = $${paramIndex} OR u."campusId" = $${paramIndex})`;
         params.push(resolvedCampusId);
         paramIndex++;
       }
@@ -465,13 +469,15 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       // Use upsert pattern - explicitly generate UUID for id since table lacks default
       // Include ALL required NOT NULL columns from barbers table schema
       const isCampusManager = userRole === 'CAMPUS_MANAGER';
-      
+      const ccAuto = campusCoordsValueExprs(2);
+
       const createResult = await pool.query(
         `INSERT INTO barbers (
            id, "userId", "campusId", specialties, "isActive", "weeklySchedule",
            "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
            "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
            "pricingMultiplier", "isCampusManager", "isOnboarded",
+           service_latitude, service_longitude,
            "createdAt", "updatedAt"
          )
          VALUES (
@@ -479,11 +485,14 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
            0, 0,
            0, 0, 0, 0,
            1.00, $4, false,
+           ${ccAuto.lat}, ${ccAuto.lng},
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 
            "isActive" = true,
            "weeklySchedule" = COALESCE(barbers."weeklySchedule", EXCLUDED."weeklySchedule"),
+           "campusId" = COALESCE(barbers."campusId", EXCLUDED."campusId"),
+           ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
            "updatedAt" = NOW()
          RETURNING id, "userId" as user_id, bio, specialties, 
                    "isActive" as is_active, "createdAt" as created_at, "weeklySchedule" as weekly_schedule`,

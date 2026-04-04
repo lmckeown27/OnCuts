@@ -119,6 +119,7 @@ import {
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
+import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
@@ -421,6 +422,13 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     // If user had an approved guest application, create their barber profile
     if (hasApprovedApplication) {
       const guestApp = approvedGuestApp.rows[0];
+      // Tie account to the university from the application (not only the signup form campus)
+      await pool.query(
+        `UPDATE users SET "campusId" = $1, "updatedAt" = NOW() WHERE id = $2`,
+        [guestApp.campus_id, user.id]
+      );
+      user.campusId = guestApp.campus_id;
+
       const specialties = guestApp.specialties || [];
       
       // Generate pricing from specialties
@@ -434,13 +442,15 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         price: SERVICE_BASE_PRICES[specialty] || 25,
       }));
 
-      // Create barber profile
+      // Create barber profile (default service pin = campus centroid when coords exist)
+      const cc = campusCoordsValueExprs(2);
       await pool.query(
         `INSERT INTO barbers (
            id, "userId", "campusId", specialties, pricing, "isActive", "weeklySchedule",
            "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
            "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
            "pricingMultiplier", "isCampusManager", "isOnboarded",
+           service_latitude, service_longitude,
            "createdAt", "updatedAt"
          )
          VALUES (
@@ -448,6 +458,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            0, 0,
            0, 0, 0, 0,
            1.00, false, false,
+           ${cc.lat}, ${cc.lng},
            NOW(), NOW()
          )
          ON CONFLICT ("userId") DO UPDATE SET 
@@ -455,6 +466,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
            pricing = EXCLUDED.pricing,
            "isActive" = true,
            "campusId" = EXCLUDED."campusId",
+           ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
            "updatedAt" = NOW()`,
         [user.id, guestApp.campus_id, specialties, JSON.stringify(pricing)]
       );

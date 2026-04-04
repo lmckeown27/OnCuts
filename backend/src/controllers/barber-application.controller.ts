@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
+import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -513,8 +514,8 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
           // User exists - promote them to barber now
           const userId = existingUser.rows[0].id;
           await pool.query(
-            `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
-            [userId]
+            `UPDATE users SET role = 'BARBER', "campusId" = $2, "updatedAt" = NOW() WHERE id = $1`,
+            [userId, applicationData.campus_id]
           );
 
           // Link the guest application to the user
@@ -523,9 +524,10 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
             [userId, id]
           );
 
-          // Create barber profile
+          // Create barber profile (default service pin = campus centroid when coords exist)
           const specialties = applicationData.specialties || [];
           const pricing = generatePricingFromSpecialties(specialties);
+          const ccGuest = campusCoordsValueExprs(2);
 
           await pool.query(
             `INSERT INTO barbers (
@@ -533,6 +535,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
                "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
                "pricingMultiplier", "isCampusManager", "isOnboarded",
+               service_latitude, service_longitude,
                "createdAt", "updatedAt"
              )
              VALUES (
@@ -540,6 +543,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                0, 0,
                0, 0, 0, 0,
                1.00, false, false,
+               ${ccGuest.lat}, ${ccGuest.lng},
                NOW(), NOW()
              )
              ON CONFLICT ("userId") DO UPDATE SET 
@@ -547,6 +551,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                pricing = EXCLUDED.pricing,
                "isActive" = true,
                "campusId" = EXCLUDED."campusId",
+               ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
                "updatedAt" = NOW()`,
             [userId, applicationData.campus_id, specialties, JSON.stringify(pricing)]
           );
@@ -590,13 +595,16 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
 
       // If approved, update user role to BARBER
       if (status === 'approved') {
+        const appCampusId =
+          updatedApplication.campus_id ?? applicationData.campus_id ?? updatedApplication.campusId;
         await pool.query(
-          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
-          [updatedApplication.user_id]
+          `UPDATE users SET role = 'BARBER', "campusId" = $2, "updatedAt" = NOW() WHERE id = $1`,
+          [updatedApplication.user_id, appCampusId]
         );
 
         const specialties = applicationData.specialties || [];
         const pricing = generatePricingFromSpecialties(specialties);
+        const ccApp = campusCoordsValueExprs(2);
 
         await pool.query(
           `INSERT INTO barbers (
@@ -604,6 +612,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              "currentMinPriceUsdCents", "currentMaxPriceUsdCents",
              "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
              "pricingMultiplier", "isCampusManager", "isOnboarded",
+             service_latitude, service_longitude,
              "createdAt", "updatedAt"
            )
            VALUES (
@@ -611,6 +620,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              0, 0,
              0, 0, 0, 0,
              1.00, false, false,
+             ${ccApp.lat}, ${ccApp.lng},
              NOW(), NOW()
            )
            ON CONFLICT ("userId") DO UPDATE SET 
@@ -618,8 +628,9 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              pricing = EXCLUDED.pricing,
              "isActive" = true,
              "campusId" = EXCLUDED."campusId",
+             ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
              "updatedAt" = NOW()`,
-          [updatedApplication.user_id, updatedApplication.campus_id, specialties, JSON.stringify(pricing)]
+          [updatedApplication.user_id, appCampusId, specialties, JSON.stringify(pricing)]
         );
 
         logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
