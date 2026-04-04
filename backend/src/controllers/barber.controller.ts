@@ -20,7 +20,12 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     
     // Maximum distance filter in km (default: 8km / ~5 miles - reasonable for university area)
     // This prevents students from accidentally booking barbers too far away
-    const maxDistanceKm = maxDistance ? parseFloat(maxDistance as string) : 8;
+    const rawMax =
+      maxDistance !== undefined && maxDistance !== null && String(maxDistance).trim() !== ''
+        ? parseFloat(String(maxDistance))
+        : NaN;
+    const maxDistanceKm =
+      Number.isFinite(rawMax) && rawMax > 0 ? rawMax : 8;
 
     // Build dynamic query for barbers from PostgreSQL
     // Column names match Prisma schema: avgRating, totalReviews, totalBookings, isActive
