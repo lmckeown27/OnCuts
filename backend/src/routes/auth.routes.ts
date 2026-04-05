@@ -5,6 +5,7 @@ import {
   login,
   verifyEmail,
   verifyEmailRegistration,
+  checkPendingRegistrationCredentials,
   confirmRegistrationVerificationCode,
   resendVerificationCode,
   requestPasswordReset,
@@ -26,8 +27,8 @@ router.post(
   [
     body('email').isEmail().withMessage('Valid email required'),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    body('firstName').notEmpty().withMessage('First name required'),
-    body('lastName').notEmpty().withMessage('Last name required'),
+    body('firstName').optional().trim(),
+    body('lastName').optional().trim(),
     body('role').isIn(['student', 'barber']).withMessage('Role must be student or barber'),
     validate,
   ],
@@ -47,6 +48,21 @@ router.post(
     validate,
   ],
   confirmRegistrationVerificationCode
+);
+
+/**
+ * @route   POST /api/auth/check-pending-credentials
+ * @desc    Verify email/password against pending registration (verification page gate)
+ * @access  Public
+ */
+router.post(
+  '/check-pending-credentials',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    body('password').notEmpty().withMessage('Password required'),
+    validate,
+  ],
+  checkPendingRegistrationCredentials
 );
 
 /**

@@ -8,7 +8,7 @@
  * ### 1. User Registration:
  * ```
  * POST /api/v1/auth/register
- * Body: { email, password, firstName, lastName, campusId, role }
+ * Body: { email, password, role, campusId?, firstName?, lastName? }
  * 
  * Process:
  * - Validates campus email domain
@@ -122,6 +122,7 @@ import {
   getPendingRegistration
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
+import { resolveNamesForUser } from '../utils/registration-names';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
@@ -164,6 +165,7 @@ function getGoogleJwtExchangeAudiences(): string[] {
  *   "campusId": 1,
  *   "role": "student"
  * }
+ * (`firstName` / `lastName` optional; omitted names may be derived from the email at account creation.)
  * ```
  * 
  * ## Response:
@@ -186,12 +188,14 @@ function getGoogleJwtExchangeAudiences(): string[] {
  */
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, role, campusId: rawCampusId } = req.body;
+    const { email, password, firstName: rawFirst, lastName: rawLast, role, campusId: rawCampusId } = req.body;
 
-    // Validate input
-    if (!email || !password || !firstName || !lastName || !role) {
-      throw new ApiError(400, 'All fields are required');
+    if (!email || !password || !role) {
+      throw new ApiError(400, 'Email, password, and role are required');
     }
+
+    const firstName = typeof rawFirst === 'string' ? rawFirst.trim() : '';
+    const lastName = typeof rawLast === 'string' ? rawLast.trim() : '';
 
     // Validate email format
     const emailDomain = email.split('@')[1];
@@ -268,8 +272,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     const verificationCode = await createPendingRegistration({
       email,
       password: passwordHash,
-      firstName,
-      lastName,
+      firstName: firstName || '',
+      lastName: lastName || '',
       campusId,
       role,
     });
@@ -332,6 +336,40 @@ export const confirmRegistrationVerificationCode = async (
       success: true,
       message: 'Verification code confirmed. You can finish creating your account.',
       data: { email: email.toLowerCase() },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify email + password match a pending registration (verification page gate).
+ */
+export const checkPendingRegistrationCredentials = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      throw new ApiError(400, 'Email and password are required');
+    }
+
+    const pending = await getPendingRegistration(email);
+    if (!pending) {
+      throw new ApiError(400, 'Invalid email or password');
+    }
+
+    const match = await bcrypt.compare(password, pending.password);
+    if (!match) {
+      throw new ApiError(400, 'Invalid email or password');
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Credentials verified.',
     });
   } catch (error) {
     next(error);
@@ -455,6 +493,12 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       logger.info(`Consumer ${email} registering without campus affiliation`);
     }
 
+    const { firstName: resolvedFirst, lastName: resolvedLast } = resolveNamesForUser(
+      pendingReg.email,
+      pendingReg.firstName,
+      pendingReg.lastName
+    );
+
     // Create user in database (off-chain for v1 - no blockchain wallets)
     // Note: Column names use camelCase in the database schema
     // id uses gen_random_uuid() since the column has no default
@@ -465,8 +509,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       [
         pendingReg.email,
         pendingReg.password,
-        pendingReg.firstName,
-        pendingReg.lastName,
+        resolvedFirst,
+        resolvedLast,
         campusId,
         dbRole
       ]

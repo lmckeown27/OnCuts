@@ -122,14 +122,6 @@ export default function SignupPage() {
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
 
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
-    }
-
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
-    }
-
     if (!formData.email.trim()) {
       errors.email = 'Email address is required';
     } else if (!isValidEmail(formData.email)) {
@@ -151,8 +143,6 @@ export default function SignupPage() {
   };
 
   const isFormValid = 
-    formData.firstName.trim() !== '' &&
-    formData.lastName.trim() !== '' &&
     formData.email.trim() !== '' &&
     isValidEmail(formData.email) &&
     isUniversityEmail(formData.email) &&
@@ -171,8 +161,8 @@ export default function SignupPage() {
 
     try {
       const result = await signup({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
         email: formData.email,
         password: formData.password,
         user_type: 'student', // All users start as consumers; barber applications are separate
@@ -232,13 +222,13 @@ export default function SignupPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
-              {/* First Name */}
+              {/* First name (optional) */}
               <div className="relative">
                 <label 
                   htmlFor="firstName" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  First Name
+                  First name (optional)
                 </label>
                 <input
                   type="text"
@@ -256,13 +246,13 @@ export default function SignupPage() {
                 )}
               </div>
 
-              {/* Last Name */}
+              {/* Last name (optional) */}
               <div className="relative">
                 <label 
                   htmlFor="lastName" 
                   className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                 >
-                  Last Name
+                  Last name (optional)
                 </label>
                 <input
                   type="text"

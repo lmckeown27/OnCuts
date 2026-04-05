@@ -153,8 +153,6 @@ export default function AuthPage() {
     isValidEmail(loginData.email);
 
   const isSignupFormValid = 
-    signupData.firstName.trim() !== '' &&
-    signupData.lastName.trim() !== '' &&
     signupData.email.trim() !== '' &&
     isValidEmail(signupData.email) &&
     signupData.password.length >= 8 &&
@@ -255,8 +253,6 @@ export default function AuthPage() {
     
     // Validate
     const errors: {[key: string]: string} = {};
-    if (!signupData.firstName.trim()) errors.firstName = 'First name is required';
-    if (!signupData.lastName.trim()) errors.lastName = 'Last name is required';
     if (!signupData.email.trim()) errors.email = 'Email is required';
     else if (!isValidEmail(signupData.email)) errors.email = 'Invalid email address';
     if (!signupData.password) errors.password = 'Password is required';
@@ -272,8 +268,8 @@ export default function AuthPage() {
 
     try {
       const result = await signup({
-        first_name: signupData.firstName,
-        last_name: signupData.lastName,
+        first_name: signupData.firstName.trim(),
+        last_name: signupData.lastName.trim(),
         email: signupData.email,
         password: signupData.password,
         user_type: 'student', // All users start as consumers; barber applications are separate
@@ -516,7 +512,7 @@ export default function AuthPage() {
                     htmlFor="firstName" 
                     className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                   >
-                    First Name
+                    First name (optional)
                   </label>
                   <input
                     type="text"
@@ -535,7 +531,7 @@ export default function AuthPage() {
                     htmlFor="lastName" 
                     className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
                   >
-                    Last Name
+                    Last name (optional)
                   </label>
                   <input
                     type="text"

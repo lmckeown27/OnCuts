@@ -95,6 +95,11 @@ class AuthService {
     await api.post('/auth/confirm-verification-code', { email, code });
   }
 
+  /** Server checks email/password against pending registration (verification page gate). */
+  async checkPendingRegistrationCredentials(email: string, password: string): Promise<void> {
+    await api.post('/auth/check-pending-credentials', { email, password });
+  }
+
   /**
    * Creates the user account after a valid code (requires prior confirmVerificationCode, or send code with verify-email from a client that supports it).
    */

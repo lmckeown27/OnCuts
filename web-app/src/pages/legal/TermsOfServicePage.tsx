@@ -77,7 +77,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">3. Account Registration</h2>
               <p>
-                <strong>Account creation:</strong> A user account is created after you complete email verification with your signup code. Submitting the registration form or receiving a verification email alone does not create an account.
+                <strong>Account creation:</strong> On our verification page you must enter the same email and password you used to sign up, accept these Terms of Service, and then enter the verification code we email you. If you did not provide a first or last name at signup, we may set your display name from your email address. A user account is created after you successfully verify with your code. Submitting the registration form or receiving a verification email alone does not create an account.
               </p>
               <p className="mt-3">To use certain features of the Service, you must create an account. You agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">

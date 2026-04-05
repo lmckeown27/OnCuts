@@ -1,9 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Mail, AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Mail, AlertCircle, RefreshCw, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import authService from '../../services/auth.service';
 import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
+
+const verifyGateStorageKey = (emailLower: string) => `campuscut_verify_gate_ok:${emailLower}`;
+const verifyTermsLegacyKey = (emailLower: string) => `campuscut_verify_terms_ok:${emailLower}`;
+
+function clearVerifyGateLocal(emailLower: string): void {
+  localStorage.removeItem(verifyGateStorageKey(emailLower));
+  localStorage.removeItem(verifyTermsLegacyKey(emailLower));
+}
+
+function hasVerifyGateAccepted(email: string): boolean {
+  const k = email.toLowerCase();
+  return (
+    localStorage.getItem(verifyGateStorageKey(k)) === '1' ||
+    localStorage.getItem(verifyTermsLegacyKey(k)) === '1'
+  );
+}
+
+function setVerifyGateAccepted(email: string): void {
+  const k = email.toLowerCase();
+  localStorage.removeItem(verifyTermsLegacyKey(k));
+  localStorage.setItem(verifyGateStorageKey(k), '1');
+}
+
+function isValidEmailFormat(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
@@ -13,6 +40,12 @@ export default function VerifyEmailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [canShowCodeEntry, setCanShowCodeEntry] = useState(false);
+  const [gateEmail, setGateEmail] = useState('');
+  const [gatePassword, setGatePassword] = useState('');
+  const [showGatePassword, setShowGatePassword] = useState(false);
+  const [termsGateChecked, setTermsGateChecked] = useState(false);
+  const [gateSubmitting, setGateSubmitting] = useState(false);
   const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -22,6 +55,17 @@ export default function VerifyEmailPage() {
     const storedEmail = pendingVerificationEmail || localStorage.getItem('pendingVerificationEmail');
     setEmail(storedEmail);
   }, [pendingVerificationEmail]);
+
+  useEffect(() => {
+    if (email) setGateEmail(email);
+  }, [email]);
+
+  useEffect(() => {
+    if (!email) return;
+    setCanShowCodeEntry(hasVerifyGateAccepted(email));
+    setTermsGateChecked(false);
+    setGatePassword('');
+  }, [email]);
 
   // Handle post-login redirect after authentication
   useEffect(() => {
@@ -64,10 +108,11 @@ export default function VerifyEmailPage() {
     window.scrollTo(0, 0);
   }, []);
 
-  // Focus first input on mount
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+    if (!canShowCodeEntry) return;
+    const t = requestAnimationFrame(() => inputRefs.current[0]?.focus());
+    return () => cancelAnimationFrame(t);
+  }, [canShowCodeEntry]);
 
   const handleInputChange = (index: number, value: string) => {
     // Only allow digits
@@ -128,6 +173,39 @@ export default function VerifyEmailPage() {
   const verificationCode = code.join('');
   const isCodeComplete = verificationCode.length === 6;
 
+  const handleVerifyGateContinue = async () => {
+    if (!email || !termsGateChecked || gateSubmitting) return;
+    const trimmedEmail = gateEmail.trim();
+    if (!isValidEmailFormat(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (trimmedEmail.toLowerCase() !== email.toLowerCase()) {
+      toast.error('Email must match the address you signed up with.');
+      return;
+    }
+    if (gatePassword.length < 8) {
+      toast.error('Password must be at least 8 characters.');
+      return;
+    }
+    setGateSubmitting(true);
+    try {
+      await authService.checkPendingRegistrationCredentials(trimmedEmail, gatePassword);
+      setVerifyGateAccepted(email);
+      setCanShowCodeEntry(true);
+    } catch {
+      toast.error('Invalid email or password.');
+    } finally {
+      setGateSubmitting(false);
+    }
+  };
+
+  const gateFormValid =
+    termsGateChecked &&
+    isValidEmailFormat(gateEmail) &&
+    gatePassword.length >= 8 &&
+    gateEmail.trim().toLowerCase() === email.toLowerCase();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -177,9 +255,9 @@ export default function VerifyEmailPage() {
         toast.error('Rate limit reached. Please wait a moment and reload the page.');
       } else if (errorMessage.toLowerCase().includes('no pending registration') || 
                  errorMessage.toLowerCase().includes('register first')) {
-        // Session expired - show inline message with signup button
         setSessionExpired(true);
         localStorage.removeItem('pendingVerificationEmail');
+        if (email) clearVerifyGateLocal(email.toLowerCase());
       } else {
         toast.error(errorMessage || 'Failed to resend code. Please try again.');
       }
@@ -209,14 +287,16 @@ export default function VerifyEmailPage() {
           </Link>
           
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
-            Check Your Email
+            {canShowCodeEntry ? 'Check Your Email' : 'Verify your account'}
           </h1>
           <p className="text-sm sm:text-base text-gray-300 text-center">
-            We sent a 6-digit code to
+            {canShowCodeEntry ? 'We sent a 6-digit code to' : 'Confirm your email, password, and Terms'}
           </p>
-          <p className="text-sm sm:text-base text-primary-400 font-semibold mt-1 break-all text-center px-4">
-            {email}
-          </p>
+          {canShowCodeEntry && (
+            <p className="text-sm sm:text-base text-primary-400 font-semibold mt-1 break-all text-center px-4">
+              {email}
+            </p>
+          )}
         </div>
 
         {/* Verification Card */}
@@ -224,6 +304,89 @@ export default function VerifyEmailPage() {
           className="bg-white rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-8"
           style={{ maxWidth: '400px', margin: '0 auto' }}
         >
+          {!canShowCodeEntry ? (
+            <div className="space-y-5">
+              <p className="text-sm text-gray-600 text-center leading-relaxed">
+                Enter the email and password you used to sign up, and accept our{' '}
+                <Link
+                  to="/terms"
+                  className="text-primary-600 font-medium underline hover:text-primary-700"
+                >
+                  Terms of Service
+                </Link>
+                , before entering the verification code we emailed you.
+              </p>
+              <div>
+                <label htmlFor="verify-gate-email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="verify-gate-email"
+                  type="email"
+                  autoComplete="email"
+                  value={gateEmail}
+                  onChange={(e) => setGateEmail(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900"
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="verify-gate-password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="verify-gate-password"
+                    type={showGatePassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={gatePassword}
+                    onChange={(e) => setGatePassword(e.target.value)}
+                    className="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGatePassword(!showGatePassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1"
+                    tabIndex={-1}
+                    aria-label={showGatePassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showGatePassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+              <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <input
+                  type="checkbox"
+                  checked={termsGateChecked}
+                  onChange={(e) => setTermsGateChecked(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">
+                  I have read and agree to the Terms of Service.
+                </span>
+              </label>
+              <button
+                type="button"
+                disabled={!gateFormValid || gateSubmitting}
+                onClick={() => void handleVerifyGateContinue()}
+                className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                  gateFormValid && !gateSubmitting
+                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {gateSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    <span>Checking…</span>
+                  </>
+                ) : (
+                  'Continue to verification code'
+                )}
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Code Input */}
             <div>
@@ -258,11 +421,7 @@ export default function VerifyEmailPage() {
             </div>
 
             <p className="text-sm text-gray-600 text-center">
-              Enter your code to verify your email and finish creating your account. You can read our{' '}
-              <Link to="/terms" className="text-primary-600 font-medium underline hover:text-primary-700">
-                Terms of Service
-              </Link>{' '}
-              anytime.
+              Enter your code to verify your email and finish creating your account.
             </p>
 
             {/* Session Expired Message */}
@@ -318,7 +477,10 @@ export default function VerifyEmailPage() {
               )}
             </button>
           </form>
+          )}
 
+          {canShowCodeEntry && (
+          <>
           {/* Divider */}
           <div className="my-6 flex items-center">
             <div className="flex-1 border-t border-gray-200"></div>
@@ -361,6 +523,8 @@ export default function VerifyEmailPage() {
               </a>
             </p>
           </div>
+          </>
+          )}
         </div>
 
         {/* Back to Sign Up */}

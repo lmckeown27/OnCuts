@@ -23,7 +23,7 @@ Important: CampusCut is a platform that connects users. We are not a grooming se
 
 ## 3. Account Registration
 
-**Account creation:** A user account is created after you complete email verification with your signup code. Submitting the registration form or receiving a verification email alone does not create an account.
+**Account creation:** On our verification page you must enter the same email and password you used to sign up, accept these Terms of Service, and then enter the verification code we email you. If you did not provide a first or last name at signup, we may set your display name from your email address. A user account is created after you successfully verify with your code. Submitting the registration form or receiving a verification email alone does not create an account.
 
 To use certain features of the Service, you must create an account. You agree to:
 
