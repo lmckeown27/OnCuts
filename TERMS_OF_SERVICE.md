@@ -23,7 +23,7 @@ Important: CampusCut is a platform that connects users. We are not a grooming se
 
 ## 3. Account Registration
 
-**Account creation:** No user account exists in our systems until you have verified your email address **and** accepted these Terms of Service on the verification step. Submitting the registration form or receiving a verification email alone does not create an account.
+**Account creation:** A user account is created after you complete email verification with your signup code. Submitting the registration form or receiving a verification email alone does not create an account.
 
 To use certain features of the Service, you must create an account. You agree to:
 

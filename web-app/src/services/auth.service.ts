@@ -89,19 +89,18 @@ class AuthService {
   }
 
   /**
-   * Validate 6-digit code only — does not create an account. User continues on Terms of Service.
+   * Validate 6-digit code only — does not create an account.
    */
   async confirmVerificationCode(email: string, code: string): Promise<void> {
     await api.post('/auth/confirm-verification-code', { email, code });
   }
 
   /**
-   * After Terms acceptance — creates the user account (requires prior confirmVerificationCode).
+   * Creates the user account after a valid code (requires prior confirmVerificationCode, or send code with verify-email from a client that supports it).
    */
-  async completeRegistration(email: string, acceptTerms: boolean): Promise<VerifyEmailResponse> {
+  async completeRegistration(email: string): Promise<VerifyEmailResponse> {
     const response = await api.post<VerifyEmailResponse>('/auth/verify-email', {
       email,
-      acceptTerms: acceptTerms === true,
     });
 
     if (response.user && response.accessToken) {

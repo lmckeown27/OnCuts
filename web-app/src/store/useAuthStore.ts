@@ -16,7 +16,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
   confirmVerificationCode: (email: string, code: string) => Promise<void>;
-  completeRegistration: (email: string, acceptTerms: boolean) => Promise<void>;
+  completeRegistration: (email: string) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -168,10 +168,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  completeRegistration: async (email, acceptTerms) => {
+  completeRegistration: async (email) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authService.completeRegistration(email, acceptTerms);
+      const response = await authService.completeRegistration(email);
 
       const rawRole = (response.user.role || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;

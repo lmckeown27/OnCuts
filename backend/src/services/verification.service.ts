@@ -138,7 +138,7 @@ export async function createPendingRegistration(
 
 /**
  * Confirm verification code only (does not create a user).
- * Marks the pending row so the client can complete registration after Terms acceptance.
+ * Marks the pending row so the client can complete registration (verify-email) afterward.
  */
 export async function confirmVerificationCode(email: string, code: string): Promise<boolean> {
   const emailKey = email.toLowerCase();
@@ -169,7 +169,7 @@ export async function confirmVerificationCode(email: string, code: string): Prom
       `UPDATE pending_registrations SET code_verified_at = NOW() WHERE email = $1`,
       [emailKey]
     );
-    logger.info(`Verification code confirmed for ${emailKey} (pending Terms before account creation)`);
+    logger.info(`Verification code confirmed for ${emailKey} (pending verify-email before account creation)`);
     return true;
   } catch (error) {
     logger.error(`Error confirming verification code for ${emailKey}:`, error);
@@ -179,7 +179,7 @@ export async function confirmVerificationCode(email: string, code: string): Prom
 
 /**
  * Single-step: if the code matches the pending row, delete it and return data for user insert.
- * Use when the client sends email + code + acceptTerms together (e.g. mobile) without a prior confirm-verification-code call.
+ * Use when the client sends email + code together (e.g. mobile) without a prior confirm-verification-code call.
  */
 export async function takePendingRegistrationIfCodeValid(
   email: string,
@@ -221,7 +221,7 @@ export async function takePendingRegistrationIfCodeValid(
 }
 
 /**
- * After Terms acceptance: atomically remove pending row and return data for user insert.
+ * Atomically remove pending row and return data for user insert.
  * Requires a prior successful confirmVerificationCode for this email.
  */
 export async function takeCodeVerifiedPendingRegistration(

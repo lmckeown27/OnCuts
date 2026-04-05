@@ -7,7 +7,7 @@ import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
 
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
-  const { confirmVerificationCode, resendVerificationCode, isLoading, error, clearError, isAuthenticated, pendingVerificationEmail } = useAuthStore();
+  const { confirmVerificationCode, completeRegistration, resendVerificationCode, isLoading, error, clearError, isAuthenticated, pendingVerificationEmail } = useAuthStore();
   
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -138,8 +138,8 @@ export default function VerifyEmailPage() {
 
     try {
       await confirmVerificationCode(email, verificationCode);
-      toast.success('Code confirmed. Review the Terms of Service to finish creating your account.');
-      navigate('/terms?completeRegistration=1');
+      await completeRegistration(email);
+      toast.success('Welcome to CampusCut!');
     } catch (err: any) {
       const statusCode = err.response?.status;
       if (statusCode === 429 || err.isRateLimitError) {
@@ -258,11 +258,11 @@ export default function VerifyEmailPage() {
             </div>
 
             <p className="text-sm text-gray-600 text-center">
-              Entering your code only confirms your email. You will review and accept the{' '}
+              Enter your code to verify your email and finish creating your account. You can read our{' '}
               <Link to="/terms" className="text-primary-600 font-medium underline hover:text-primary-700">
                 Terms of Service
               </Link>{' '}
-              on the next step before your account is created.
+              anytime.
             </p>
 
             {/* Session Expired Message */}
@@ -314,7 +314,7 @@ export default function VerifyEmailPage() {
                   <span>Checking code...</span>
                 </>
               ) : (
-                'Continue to Terms of Service'
+                'Complete sign up'
               )}
             </button>
           </form>

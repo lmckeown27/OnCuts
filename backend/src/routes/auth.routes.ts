@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response, Router } from 'express';
+import express, { Router } from 'express';
 import { body } from 'express-validator';
 import {
   register,
@@ -14,18 +14,7 @@ import {
 } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
-import { ApiError } from '../middleware/errorHandler';
-import { isAcceptTermsTrue } from '../utils/accept-terms';
-
 const router: Router = express.Router();
-
-/** Runs after body validators; accepts Terms under several keys (mobile-friendly). */
-const requireAcceptTermsForVerifyEmail = (req: Request, _res: Response, next: NextFunction) => {
-  if (!isAcceptTermsTrue(req.body as Record<string, unknown>)) {
-    return next(new ApiError(400, 'You must accept the Terms of Service'));
-  }
-  next();
-};
 
 /**
  * @route   POST /api/auth/register
@@ -62,7 +51,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/verify-email
- * @desc    After Terms acceptance — completes registration (requires prior confirm-verification-code)
+ * @desc    Completes registration after code confirmation (or email + code in one request)
  * @access  Public
  */
 router.post(
@@ -77,7 +66,6 @@ router.post(
       })
       .withMessage('Verification code must be 6 digits'),
     validate,
-    requireAcceptTermsForVerifyEmail,
   ],
   verifyEmailRegistration
 );

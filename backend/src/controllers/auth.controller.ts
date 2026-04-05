@@ -122,7 +122,6 @@ import {
   getPendingRegistration
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
-import { isAcceptTermsTrue } from '../utils/accept-terms';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
@@ -152,7 +151,7 @@ function getGoogleJwtExchangeAudiences(): string[] {
  * ## Two-Step Registration Flow:
  * 1. POST /auth/register → Creates pending registration, sends verification email
  * 2. POST /auth/confirm-verification-code → Validates code only (no user row)
- * 3. POST /auth/verify-email → After Terms acceptance, creates user account, issues JWT
+ * 3. POST /auth/verify-email → Completes registration (pending row + code), creates user, issues JWT
  * 
  * ## Request:
  * ```json
@@ -331,7 +330,7 @@ export const confirmRegistrationVerificationCode = async (
 
     res.status(200).json({
       success: true,
-      message: 'Verification code accepted. Review and accept the Terms of Service to finish creating your account.',
+      message: 'Verification code confirmed. You can finish creating your account.',
       data: { email: email.toLowerCase() },
     });
   } catch (error) {
@@ -341,23 +340,21 @@ export const confirmRegistrationVerificationCode = async (
 
 /**
  * Verify Email - Complete Registration
- * 
- * After the user accepted the Terms of Service: creates the user account.
- * Either:
- * - **Web (two-step):** prior `POST /auth/confirm-verification-code`, then body `{ email, acceptTerms: true }`.
- * - **Single request:** `{ email, code, acceptTerms: true }` — validates code and completes in one call (e.g. mobile).
- * 
+ *
+ * Creates the user account when the pending registration row matches either:
+ * - prior `POST /auth/confirm-verification-code` for this email, body `{ email }`, or
+ * - same request with valid `{ email, code }` (six-digit code).
+ *
  * ## Request:
  * ```json
  * POST /api/v1/auth/verify-email
  * {
  *   "email": "student@university.edu",
- *   "acceptTerms": true,
  *   "code": "123456"
  * }
  * ```
- * (`code` is optional when the code was already confirmed via `confirm-verification-code`.)
- * 
+ * (`code` optional if already confirmed via confirm-verification-code.)
+ *
  * ## Response:
  * ```json
  * {
@@ -378,7 +375,7 @@ export const confirmRegistrationVerificationCode = async (
  * }
  * ```
  * 
- * @param req - Express request with email and acceptTerms
+ * @param req - Express request with email and optional code
  * @param res - Express response
  * @param next - Express next function
  */
@@ -388,13 +385,6 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
 
     if (!email) {
       throw new ApiError(400, 'Email is required');
-    }
-
-    if (!isAcceptTermsTrue(req.body as Record<string, unknown>)) {
-      throw new ApiError(
-        400,
-        'You must read and accept the Terms of Service to create your account.'
-      );
     }
 
     const code =
@@ -415,7 +405,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
         400,
         code && /^[0-9]{6}$/.test(code)
           ? 'Invalid verification code, or this email has no pending registration. Request a new code and try again.'
-          : 'Confirm your verification code first (enter it on the verification step, or include the same code in this request with acceptTerms), then complete signup.'
+          : 'Confirm your verification code first (use confirm-verification-code, or include the same code in this request), then complete signup.'
       );
     }
 
@@ -470,7 +460,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     // id uses gen_random_uuid() since the column has no default
     const result = await pool.query(
       `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, email_verified, "termsAcceptedAt", "updatedAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NOW(), NOW())
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NULL, NOW())
        RETURNING id, email, first_name, last_name, "campusId", role, "createdAt"`,
       [
         pendingReg.email,
