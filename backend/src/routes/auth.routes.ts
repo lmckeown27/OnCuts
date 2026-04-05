@@ -62,6 +62,13 @@ router.post(
     body('acceptTerms')
       .custom((v) => v === true || v === 'true')
       .withMessage('You must accept the Terms of Service'),
+    body('code')
+      .optional()
+      .custom((value) => {
+        if (value === undefined || value === null || value === '') return true;
+        return /^[0-9]{6}$/.test(String(value).trim());
+      })
+      .withMessage('Verification code must be 6 digits'),
     validate,
   ],
   verifyEmailRegistration

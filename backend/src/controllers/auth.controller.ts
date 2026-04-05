@@ -117,6 +117,7 @@ import {
   createPendingRegistration,
   confirmVerificationCode,
   takeCodeVerifiedPendingRegistration,
+  takePendingRegistrationIfCodeValid,
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
@@ -335,17 +336,21 @@ export const confirmRegistrationVerificationCode = async (
 /**
  * Verify Email - Complete Registration
  * 
- * After the user accepted the Terms of Service: creates the user account (requires prior code confirmation).
- * Creates the user row and issues JWT (no custodial chain wallet mint).
+ * After the user accepted the Terms of Service: creates the user account.
+ * Either:
+ * - **Web (two-step):** prior `POST /auth/confirm-verification-code`, then body `{ email, acceptTerms: true }`.
+ * - **Single request:** `{ email, code, acceptTerms: true }` — validates code and completes in one call (e.g. mobile).
  * 
  * ## Request:
  * ```json
  * POST /api/v1/auth/verify-email
  * {
  *   "email": "student@university.edu",
- *   "acceptTerms": true
+ *   "acceptTerms": true,
+ *   "code": "123456"
  * }
  * ```
+ * (`code` is optional when the code was already confirmed via `confirm-verification-code`.)
  * 
  * ## Response:
  * ```json
@@ -373,7 +378,7 @@ export const confirmRegistrationVerificationCode = async (
  */
 export const verifyEmailRegistration = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, acceptTerms } = req.body;
+    const { email, acceptTerms, code: codeRaw } = req.body;
 
     if (!email) {
       throw new ApiError(400, 'Email is required');
@@ -386,17 +391,30 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       );
     }
 
-    const pendingReg = await takeCodeVerifiedPendingRegistration(email);
+    const code =
+      codeRaw !== undefined && codeRaw !== null && String(codeRaw).trim() !== ''
+        ? String(codeRaw).trim()
+        : null;
+
+    let pendingReg =
+      code && /^[0-9]{6}$/.test(code)
+        ? await takePendingRegistrationIfCodeValid(email, code)
+        : null;
+    if (!pendingReg) {
+      pendingReg = await takeCodeVerifiedPendingRegistration(email);
+    }
 
     if (!pendingReg) {
       throw new ApiError(
         400,
-        'Finish email verification first: enter your code on the verification page, then return here to accept the Terms and create your account.'
+        code && /^[0-9]{6}$/.test(code)
+          ? 'Invalid verification code, or this email has no pending registration. Request a new code and try again.'
+          : 'Confirm your verification code first (enter it on the verification step, or include the same code in this request with acceptTerms), then complete signup.'
       );
     }
 
     // Check again if user was created in the meantime
-    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existingUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
     
     if (existingUser.rows.length > 0) {
       throw new ApiError(400, 'User already exists. Please log in.');

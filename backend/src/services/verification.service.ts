@@ -178,6 +178,49 @@ export async function confirmVerificationCode(email: string, code: string): Prom
 }
 
 /**
+ * Single-step: if the code matches the pending row, delete it and return data for user insert.
+ * Use when the client sends email + code + acceptTerms together (e.g. mobile) without a prior confirm-verification-code call.
+ */
+export async function takePendingRegistrationIfCodeValid(
+  email: string,
+  code: string
+): Promise<PendingRegistration | null> {
+  const emailKey = email.toLowerCase();
+  const codeNorm = String(code).trim();
+
+  try {
+    const result = await pool.query(
+      `
+      DELETE FROM pending_registrations
+      WHERE email = $1 AND verification_code = $2
+      RETURNING email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+    `,
+      [emailKey, codeNorm]
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      email: row.email,
+      password: row.password_hash,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      campusId: row.campus_id,
+      role: row.role,
+      verificationCode: row.verification_code,
+      expiresAt: new Date(row.expires_at),
+      createdAt: new Date(row.created_at),
+    };
+  } catch (error) {
+    logger.error(`Error taking pending registration with code for ${emailKey}:`, error);
+    return null;
+  }
+}
+
+/**
  * After Terms acceptance: atomically remove pending row and return data for user insert.
  * Requires a prior successful confirmVerificationCode for this email.
  */
