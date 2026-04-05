@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
 import TabChairLogo from '../assets/logos/Tab_Chair.webp';
@@ -9,6 +9,7 @@ import { useViewport } from '../hooks/useViewport';
 import { isValidE164Phone } from '../utils/phoneE164';
 
 type AuthMode = 'login' | 'signup';
+type LoginChannel = 'email' | 'phone';
 
 interface LoginForm {
   email: string;
@@ -28,7 +29,7 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect'); // For email links like ?redirect=/web/consumer/messages/123
-  const { login, signup } = useAuthStore();
+  const { login, signup, loginWithPhone } = useAuthStore();
   const [mode, setMode] = useState<AuthMode>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -59,6 +60,12 @@ export default function AuthPage() {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [isSendingReset, setIsSendingReset] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  /** Sign-in with SMS (same API as Intera / iOS). */
+  const [loginChannel, setLoginChannel] = useState<LoginChannel>('email');
+  const [phoneLogin, setPhoneLogin] = useState('');
+  const [phoneOtp, setPhoneOtp] = useState('');
+  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
   
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {
@@ -151,15 +158,74 @@ export default function AuthPage() {
     return isValidEmail(email);
   };
 
-  const isLoginFormValid = loginData.email.trim() !== '' && 
-    loginData.password.trim() !== '' &&
-    isValidEmail(loginData.email);
+  const isLoginFormValid =
+    loginChannel === 'email'
+      ? loginData.email.trim() !== '' &&
+        loginData.password.trim() !== '' &&
+        isValidEmail(loginData.email)
+      : isValidE164Phone(phoneLogin.trim()) && phoneOtp.trim().length === 6 && /^\d{6}$/.test(phoneOtp.trim());
+
+  const canSendPhoneCode = isValidE164Phone(phoneLogin.trim());
 
   const isSignupFormValid = 
     signupData.email.trim() !== '' &&
     isValidEmail(signupData.email) &&
     signupData.password.length >= 8 &&
     signupData.password === signupData.confirmPassword;
+
+  const finishLoginRedirect = async (result: { isAdmin: boolean; isCampusManager: boolean }) => {
+    if (redirectUrl?.startsWith('/')) {
+      navigate(redirectUrl);
+      return;
+    }
+
+    const postLoginRedirect = localStorage.getItem('postLoginRedirect');
+    if (postLoginRedirect) {
+      try {
+        const redirect = JSON.parse(postLoginRedirect);
+        localStorage.removeItem('postLoginRedirect');
+
+        if (redirect.type === 'schedule' && redirect.barber) {
+          navigate(`/web/consumer/book/${redirect.barberId}`, {
+            state: { barber: redirect.barber },
+          });
+          return;
+        }
+      } catch {
+        localStorage.removeItem('postLoginRedirect');
+      }
+    }
+
+    const currentUser = useAuthStore.getState().user;
+
+    if (currentUser?.user_type !== 'barber' && !result.isAdmin && !result.isCampusManager) {
+      try {
+        const api = (await import('../services/api.service')).default;
+        const response = await api.get('/bookings-simple', {
+          role: 'consumer',
+          status: 'COMPLETED',
+        });
+
+        const completedBookings = response.bookings || [];
+        const pendingPayment = completedBookings.find(
+          (b: any) => b.status === 'COMPLETED' && !b.paidAt
+        );
+
+        if (pendingPayment) {
+          navigate(`/web/payment/${pendingPayment.id}`);
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking for pending payments:', err);
+      }
+    }
+
+    if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
+      navigate('/web/barber');
+    } else {
+      navigate('/web/consumer');
+    }
+  };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,71 +235,7 @@ export default function AuthPage() {
     try {
       const result = await login(loginData.email, loginData.password);
       toast.success('Login successful!');
-      
-      // Check for URL redirect parameter (e.g., from email links ?redirect=/web/consumer/messages/123)
-      if (redirectUrl) {
-        // Validate redirect URL is internal (starts with /)
-        if (redirectUrl.startsWith('/')) {
-          navigate(redirectUrl);
-          return;
-        }
-      }
-      
-      // Check for post-login redirect from localStorage (e.g., scheduling a service)
-      const postLoginRedirect = localStorage.getItem('postLoginRedirect');
-      if (postLoginRedirect) {
-        try {
-          const redirect = JSON.parse(postLoginRedirect);
-          localStorage.removeItem('postLoginRedirect');
-          
-          if (redirect.type === 'schedule' && redirect.barber) {
-            // Redirect to schedule service page with barber data
-            navigate(`/web/consumer/book/${redirect.barberId}`, {
-              state: { barber: redirect.barber }
-            });
-            return;
-          }
-        } catch (e) {
-          localStorage.removeItem('postLoginRedirect');
-        }
-      }
-      
-      // Get the user from the store after login
-      const currentUser = useAuthStore.getState().user;
-      
-      // For consumers, check if they have a pending payment
-      if (currentUser?.user_type !== 'barber' && !result.isAdmin && !result.isCampusManager) {
-        try {
-          // Import api service dynamically to check for pending payments
-          const api = (await import('../services/api.service')).default;
-          const response = await api.get('/bookings-simple', { 
-            role: 'consumer',
-            status: 'COMPLETED'
-          });
-          
-          const completedBookings = response.bookings || [];
-          // Find a booking that's COMPLETED but not paid
-          const pendingPayment = completedBookings.find((b: any) => 
-            b.status === 'COMPLETED' && !b.paidAt
-          );
-          
-          if (pendingPayment) {
-            // Redirect consumer to payment page
-            navigate(`/web/payment/${pendingPayment.id}`);
-            return;
-          }
-        } catch (err) {
-          console.error('Error checking for pending payments:', err);
-          // Continue to default redirect if check fails
-        }
-      }
-      
-      // Default redirect based on user role
-      if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
-        navigate('/web/barber');
-      } else {
-        navigate('/web/consumer');
-      }
+      await finishLoginRedirect(result);
     } catch (err: any) {
       const errorCode = err.response?.data?.error?.code;
       let errorMessage: string;
@@ -246,6 +248,71 @@ export default function AuthPage() {
         errorMessage = err.response?.data?.error?.message || err.response?.data?.message || err.message || 'Login failed. Please try again.';
       }
       setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhoneSendCode = async () => {
+    const p = phoneLogin.trim();
+    if (!isValidE164Phone(p)) {
+      toast.error('Use E.164 format with country code (e.g. +14155552671)');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authService.requestPhoneOtp(p);
+      setPhoneCodeSent(true);
+      toast.success('Verification code sent.');
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Could not send code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhoneLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = phoneLogin.trim();
+    if (!isValidE164Phone(p) || !/^\d{6}$/.test(phoneOtp.trim())) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await loginWithPhone(p, phoneOtp.trim());
+      if (result.kind === 'no_account') {
+        sessionStorage.setItem('campuscut_pending_signup_phone', result.phoneNumber);
+        setSignupData((prev) => ({ ...prev, phoneNumber: result.phoneNumber }));
+        setMode('signup');
+        setPhoneCodeSent(false);
+        setPhoneOtp('');
+        toast.success(
+          result.message ||
+            'Phone verified. Enter your email and password below to finish signing up.',
+          { duration: 7000 }
+        );
+        setIsLoading(false);
+        return;
+      }
+      toast.success('Signed in with phone!');
+      await finishLoginRedirect({
+        isAdmin: result.isAdmin,
+        isCampusManager: result.isCampusManager,
+      });
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Verification failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -336,6 +403,10 @@ export default function AuthPage() {
     setValidationErrors({});
     setShowPassword(false);
     setShowConfirmPassword(false);
+    setLoginChannel('email');
+    setPhoneLogin('');
+    setPhoneOtp('');
+    setPhoneCodeSent(false);
   };
 
   // Viewport detection
@@ -401,8 +472,41 @@ export default function AuthPage() {
             </button>
           </div>
 
-          {/* Login Form */}
+          {/* Login: email/password or phone SMS code */}
           {mode === 'login' && (
+            <>
+              <div className="flex mb-4 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginChannel('email');
+                    setError(null);
+                    setPhoneCodeSent(false);
+                    setPhoneOtp('');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                    loginChannel === 'email' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Mail size={16} aria-hidden />
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginChannel('phone');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                    loginChannel === 'phone' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Phone size={16} aria-hidden />
+                  Phone
+                </button>
+              </div>
+
+              {loginChannel === 'email' && (
             <form onSubmit={handleLoginSubmit} className="space-y-5">
               {/* Email Field */}
               <div className="relative">
@@ -508,6 +612,104 @@ export default function AuthPage() {
                 </button>
               </div>
             </form>
+              )}
+
+              {loginChannel === 'phone' && (
+            <form onSubmit={handlePhoneLoginSubmit} className="space-y-5">
+              <div className="relative">
+                <label
+                  htmlFor="login-phone"
+                  className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                >
+                  Phone (E.164)
+                </label>
+                <input
+                  type="tel"
+                  id="login-phone"
+                  value={phoneLogin}
+                  onChange={(e) => {
+                    setPhoneLogin(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 focus:border-primary-500 text-gray-900 placeholder-gray-400"
+                  placeholder="+14155552671"
+                  autoComplete="tel"
+                />
+                <p className="text-gray-500 text-xs mt-1">Include country code. We will text you a 6-digit code.</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePhoneSendCode}
+                disabled={!canSendPhoneCode || isLoading}
+                className={`w-full py-3 rounded-lg font-semibold text-sm transition-all ${
+                  canSendPhoneCode && !isLoading
+                    ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {phoneCodeSent ? 'Resend code' : 'Send verification code'}
+              </button>
+
+              {phoneCodeSent && (
+                <div className="relative">
+                  <label
+                    htmlFor="login-otp"
+                    className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                  >
+                    6-digit code
+                  </label>
+                  <input
+                    type="text"
+                    id="login-otp"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={phoneOtp}
+                    onChange={(e) => {
+                      setPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      if (error) setError(null);
+                    }}
+                    className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 tracking-widest text-center text-lg"
+                    placeholder="000000"
+                  />
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-red-700 text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!isLoginFormValid || isLoading || !phoneCodeSent}
+                className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                  isLoginFormValid && !isLoading && phoneCodeSent
+                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Signing in...</span>
+                  </div>
+                ) : (
+                  'Verify & sign in'
+                )}
+              </button>
+
+              <p className="text-gray-500 text-xs text-center">
+                New account? After the code verifies, use <strong>Sign Up</strong> with the same phone and your email.
+              </p>
+            </form>
+              )}
+            </>
           )}
 
           {/* Signup Form */}

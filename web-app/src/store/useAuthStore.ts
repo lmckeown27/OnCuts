@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '../types';
 import authService from '../services/auth.service';
+import type { VerifyPhoneOtpData } from '../services/auth.service';
 import socketService from '../services/socket.service';
 
 interface AuthState {
@@ -14,6 +15,13 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
+  loginWithPhone: (
+    phoneNumber: string,
+    code: string
+  ) => Promise<
+    | { kind: 'signed_in'; isAdmin: boolean; isCampusManager: boolean }
+    | { kind: 'no_account'; phoneNumber: string; message?: string }
+  >;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
   confirmVerificationCode: (email: string, code: string) => Promise<void>;
   completeRegistration: (email: string) => Promise<void>;
@@ -114,6 +122,72 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ 
         error: errorMessage, 
         isLoading: false 
+      });
+      throw error;
+    }
+  },
+
+  loginWithPhone: async (phoneNumber, code) => {
+    set({ isLoading: true, error: null });
+    try {
+      const data: VerifyPhoneOtpData = await authService.verifyPhoneOtp(phoneNumber, code);
+
+      if (!data.accountExists || !data.user) {
+        set({ isLoading: false });
+        return {
+          kind: 'no_account' as const,
+          phoneNumber: data.phoneNumber ?? phoneNumber,
+          message:
+            'No account for this number yet. Use Sign Up with the same phone and your email, or try another number.',
+        };
+      }
+
+      const u = data.user;
+      const rawRole = (u.role || '').toString().toLowerCase();
+      const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
+      const isAdmin = mappedRole === 'admin';
+      const isCampusManager = mappedRole === 'campus_manager' || isAdmin;
+
+      const user = {
+        id: u.id,
+        email: u.email,
+        first_name: u.firstName ?? '',
+        last_name: u.lastName ?? '',
+        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
+        is_verified: u.emailVerified ?? true,
+        is_admin: isAdmin,
+        is_campus_manager: isCampusManager,
+        has_barber_profile: u.hasBarberProfile ?? false,
+        created_at: new Date().toISOString(),
+        campus_id: u.campusId != null ? String(u.campusId) : undefined,
+        profile_picture_url: u.profile_picture_url ?? undefined,
+        phone_number: u.phoneNumber ?? phoneNumber,
+        sui_address: null,
+      };
+
+      localStorage.setItem('user', JSON.stringify(user));
+
+      set({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+        activeRole: null,
+      });
+      socketService.connect();
+      return {
+        kind: 'signed_in' as const,
+        isAdmin: user.is_admin || false,
+        isCampusManager: user.is_campus_manager || false,
+      };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Could not verify code';
+      set({
+        error: errorMessage,
+        isLoading: false,
       });
       throw error;
     }

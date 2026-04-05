@@ -46,11 +46,52 @@ interface VerifyEmailResponse {
   refreshToken: string;
 }
 
+/** POST /auth/verify-otp — `data` payload (axios unwraps outer success wrapper). */
+export interface VerifyPhoneOtpData {
+  phoneNumber: string;
+  verified?: boolean;
+  accountExists?: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role: string;
+    campusId?: string | null;
+    emailVerified?: boolean;
+    hasBarberProfile?: boolean;
+    phoneNumber?: string | null;
+    profile_picture_url?: string | null;
+  };
+}
+
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
     this.saveAuthData(response);
     return response;
+  }
+
+  /** SMS OTP — step 1 (no auth header). */
+  async requestPhoneOtp(phoneNumber: string): Promise<void> {
+    await api.post('/auth/request-otp', { phoneNumber });
+  }
+
+  /**
+   * SMS OTP — step 2. When `accountExists`, persists JWTs (same keys as email login).
+   * Caller maps `user` into the store and `localStorage` user payload.
+   */
+  async verifyPhoneOtp(phoneNumber: string, code: string): Promise<VerifyPhoneOtpData> {
+    const data = await api.post<VerifyPhoneOtpData>('/auth/verify-otp', { phoneNumber, code });
+    if (data.accountExists && data.accessToken) {
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
+      if (data.refreshToken) {
+        localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      }
+    }
+    return data;
   }
 
   /**

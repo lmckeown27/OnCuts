@@ -148,6 +148,8 @@ case .verifiedPendingAccount(let phoneNumber):
 
 Requires Redis and AWS Pinpoint SMS on the server (`REDIS_URL`, Notify configuration). See `backend/src/services/intera/SmsProvider.ts` and `.env.example` on the server.
 
+**Web / iOS Safari:** The CampusCuts web app auth screen (`/web` → Sign In) includes an **Email | Phone** toggle: phone sign-in uses the same `request-otp` / `verify-otp` endpoints. If SMS returns “temporarily unavailable,” Redis or Pinpoint is not configured on the API host—not that the feature is disabled in the client.
+
 ### Supported Endpoints (authenticated module)
 
 - `/barbers` - List barbers

@@ -33,6 +33,15 @@ export default function SignupPage() {
     confirmPassword: ''
   });
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+
+  /** Prefill phone after phone OTP verified with no account yet (e.g. from AuthPage). */
+  useEffect(() => {
+    const pending = sessionStorage.getItem('campuscut_pending_signup_phone');
+    if (pending?.trim()) {
+      setFormData((prev) => ({ ...prev, phoneNumber: pending.trim() }));
+      sessionStorage.removeItem('campuscut_pending_signup_phone');
+    }
+  }, []);
   
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {
