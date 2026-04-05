@@ -70,7 +70,7 @@ router.post(
 
 /**
  * @route   POST /api/auth/verify-otp
- * @desc    Intera: verify SMS code against Redis
+ * @desc    Intera: verify SMS code; if users.phone_e164 matches, returns JWTs (same shape as login)
  * @access  Public
  */
 router.post(

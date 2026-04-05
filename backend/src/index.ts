@@ -286,8 +286,9 @@ const authLimiter = rateLimit({
 app.use('/api/v1/auth', authLimiter);
 app.use('/api', generalLimiter);
 
-// Google ID token → CampusCuts JWT (Intera / iOS). Registered here so the route is always on the
-// app stack after rate limits; a stale auth.routes bundle alone cannot cause POST .../google to 404.
+// Google ID token → CampusCuts JWT (Intera / iOS). Intera also supports SMS OTP: request-otp /
+// verify-otp in auth.routes (verify-otp issues JWTs when phone_e164 matches an existing user).
+// Registered here so the route is always on the app stack after rate limits.
 app.post('/api/v1/auth/google', googleIdTokenLogin);
 app.post('/api/auth/google', googleIdTokenLogin);
 
