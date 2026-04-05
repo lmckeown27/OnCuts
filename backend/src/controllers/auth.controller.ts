@@ -171,8 +171,7 @@ function getGoogleJwtExchangeAudiences(): string[] {
  *   "success": true,
  *   "message": "Verification email sent. Please check your inbox.",
  *   "data": {
- *     "email": "student@university.edu",
- *     "expiresIn": 600
+ *     "email": "student@university.edu"
  *   }
  * }
  * ```
@@ -250,7 +249,10 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 
     // Check if there's already a pending registration
     if (await hasPendingRegistration(email)) {
-      throw new ApiError(400, 'Verification already in progress. Please complete verification or wait 1 hour to try again.');
+      throw new ApiError(
+        400,
+        'Verification already in progress for this email. Complete the steps on the verification page, or use Resend code there if you need a new code.'
+      );
     }
 
     // Hash password
@@ -279,7 +281,6 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
           message: 'Registration pending email verification (AUTO-VERIFY MODE)',
           data: {
             email,
-            expiresIn: 600, // 10 minutes
             verificationCode: verificationCode // Only in dev mode!
           }
         });
@@ -289,8 +290,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
         success: true,
         message: 'Verification email sent. Please check your inbox.',
         data: {
-          email,
-          expiresIn: 600 // 10 minutes
+          email
         }
       });
     } catch (emailError: any) {
@@ -319,7 +319,7 @@ export const confirmRegistrationVerificationCode = async (
 
     const ok = await confirmVerificationCode(email, code);
     if (!ok) {
-      throw new ApiError(400, 'Invalid or expired verification code');
+      throw new ApiError(400, 'Invalid verification code');
     }
 
     res.status(200).json({
@@ -391,7 +391,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     if (!pendingReg) {
       throw new ApiError(
         400,
-        'No completed email verification for this address, or your session expired. Enter your verification code again on the verification page, then return here to accept the Terms.'
+        'Finish email verification first: enter your code on the verification page, then return here to accept the Terms and create your account.'
       );
     }
 
@@ -588,8 +588,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
  *   "success": true,
  *   "message": "Verification email resent. Please check your inbox.",
  *   "data": {
- *     "email": "student@university.edu",
- *     "expiresIn": 600
+ *     "email": "student@university.edu"
  *   }
  * }
  * ```
@@ -643,7 +642,6 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
           message: 'Verification email resent (AUTO-VERIFY MODE)',
           data: {
             email,
-            expiresIn: 600,
             verificationCode: verificationCode // Only in dev mode!
           }
         });
@@ -653,8 +651,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
         success: true,
         message: 'Verification email resent. Please check your inbox.',
         data: {
-          email,
-          expiresIn: 600
+          email
         }
       });
     } catch (emailError: any) {

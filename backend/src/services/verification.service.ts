@@ -3,7 +3,7 @@
  * 
  * Manages pending user registrations and email verification codes.
  * Uses PostgreSQL for persistence (survives server restarts).
- * Codes expire after 1 hour.
+ * Verification codes do not time-expire (until the row is consumed or replaced).
  * 
  * @module verification.service
  */
@@ -29,10 +29,8 @@ export interface PendingRegistration {
 // Legacy alias for backwards compatibility
 export type { PendingRegistration as PendingRegistrationData };
 
-/**
- * Verification Code Expiration Time (1 hour)
- */
-const VERIFICATION_CODE_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+/** Stored on `expires_at` for NOT NULL column; enforcement is disabled in application logic. */
+const PENDING_REGISTRATION_PLACEHOLDER_EXPIRY = new Date('9999-12-31T23:59:59.999Z');
 
 /**
  * Generate Random 6-Digit Verification Code
@@ -98,7 +96,7 @@ export async function createPendingRegistration(
 ): Promise<string> {
   const verificationCode = generateVerificationCode();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + VERIFICATION_CODE_EXPIRY_MS);
+  const expiresAt = PENDING_REGISTRATION_PLACEHOLDER_EXPIRY;
   
   const emailKey = registrationData.email.toLowerCase();
   
@@ -129,7 +127,7 @@ export async function createPendingRegistration(
       now,
     ]);
     
-    logger.info(`Created pending registration for ${emailKey}, expires at ${expiresAt.toISOString()}`);
+    logger.info(`Created pending registration for ${emailKey} (verification code does not expire)`);
   } catch (error) {
     logger.error(`Failed to create pending registration for ${emailKey}:`, error);
     throw error;
@@ -148,7 +146,7 @@ export async function confirmVerificationCode(email: string, code: string): Prom
   try {
     const result = await pool.query(
       `
-      SELECT verification_code, expires_at
+      SELECT verification_code
       FROM pending_registrations
       WHERE email = $1
     `,
@@ -161,13 +159,6 @@ export async function confirmVerificationCode(email: string, code: string): Prom
     }
 
     const row = result.rows[0];
-    const expiresAt = new Date(row.expires_at);
-
-    if (new Date() > expiresAt) {
-      await pool.query('DELETE FROM pending_registrations WHERE email = $1', [emailKey]);
-      logger.warn(`Verification code expired for ${emailKey}`);
-      return false;
-    }
 
     if (row.verification_code !== code) {
       logger.warn(`Invalid verification code for ${emailKey}`);
@@ -201,7 +192,6 @@ export async function takeCodeVerifiedPendingRegistration(
       DELETE FROM pending_registrations
       WHERE email = $1
         AND code_verified_at IS NOT NULL
-        AND expires_at > NOW()
       RETURNING email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
     `,
       [emailKey]
@@ -233,7 +223,7 @@ export async function takeCodeVerifiedPendingRegistration(
  * Check if Email Has Pending Registration
  * 
  * @param email - User's email address
- * @returns true if pending registration exists and not expired
+ * @returns true if pending registration exists
  */
 export async function hasPendingRegistration(email: string): Promise<boolean> {
   const emailKey = email.toLowerCase();
@@ -241,7 +231,7 @@ export async function hasPendingRegistration(email: string): Promise<boolean> {
   try {
     const result = await pool.query(`
       SELECT 1 FROM pending_registrations
-      WHERE email = $1 AND expires_at > NOW()
+      WHERE email = $1
     `, [emailKey]);
     
     return result.rows.length > 0;
@@ -258,7 +248,7 @@ export async function hasPendingRegistration(email: string): Promise<boolean> {
  * Useful for checking status or resending code.
  * 
  * @param email - User's email address
- * @returns PendingRegistration if exists and not expired, null otherwise
+ * @returns PendingRegistration if exists, null otherwise
  */
 export async function getPendingRegistration(email: string): Promise<PendingRegistration | null> {
   const emailKey = email.toLowerCase();
@@ -267,7 +257,7 @@ export async function getPendingRegistration(email: string): Promise<PendingRegi
     const result = await pool.query(`
       SELECT email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
       FROM pending_registrations
-      WHERE email = $1 AND expires_at > NOW()
+      WHERE email = $1
     `, [emailKey]);
     
     if (result.rows.length === 0) {
@@ -322,14 +312,15 @@ export async function cancelPendingRegistration(email: string): Promise<boolean>
 }
 
 /**
- * Cleanup Expired Registrations
- * 
- * Removes all expired pending registrations from database.
+ * Cleanup legacy expired rows (before codes were made non-expiring).
+ * Current registrations use a far-future `expires_at` and are not removed here.
  */
 export async function cleanupExpiredRegistrations(): Promise<void> {
   try {
     const result = await pool.query(
-      'DELETE FROM pending_registrations WHERE expires_at < NOW()'
+      `DELETE FROM pending_registrations
+       WHERE expires_at < NOW()
+         AND expires_at < TIMESTAMPTZ '2100-01-01'`
     );
     
     const removed = result.rowCount ?? 0;

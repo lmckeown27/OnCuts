@@ -24,7 +24,6 @@ interface AuthResponse {
 
 interface RegistrationPendingResponse {
   email: string;
-  expiresIn: number;
   verificationCode?: string; // Only in dev/auto-verify mode
 }
 

@@ -255,7 +255,7 @@ Welcome to CampusCut!
 
 Your verification code is: ${code}
 
-This code will expire in 10 minutes.
+This code does not expire until you complete registration or request a new code.
 
 To verify your account, enter this code on the verification page:
 ${frontendUrl}/web/verify-email
@@ -302,7 +302,7 @@ function generateVerificationEmailHtml(code: string, frontendUrl: string): strin
         ${code}
       </div>
       <p style="color: #374151; margin: 15px 0 0 0; font-size: 13px;">
-        This code expires in <strong>10 minutes</strong>
+        This code does not expire until you finish signup or request a new code.
       </p>
     </div>
     

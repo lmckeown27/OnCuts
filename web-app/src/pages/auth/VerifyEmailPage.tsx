@@ -253,7 +253,7 @@ export default function VerifyEmailPage() {
               </div>
               
               <p className="text-gray-500 text-xs text-center mt-3">
-                This code expires in 10 minutes
+                This code does not expire until you finish signup or resend a new code
               </p>
             </div>
 
