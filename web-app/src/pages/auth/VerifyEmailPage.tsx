@@ -18,6 +18,8 @@ export default function VerifyEmailPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  /** Required at verification time — account is only created after Terms are accepted */
+  const [acceptTermsToCreateAccount, setAcceptTermsToCreateAccount] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Get email from store or localStorage on mount (not during render)
@@ -138,6 +140,7 @@ export default function VerifyEmailPage() {
 
   const verificationCode = code.join('');
   const isCodeComplete = verificationCode.length === 6;
+  const canVerify = isCodeComplete && acceptTermsToCreateAccount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,7 +151,7 @@ export default function VerifyEmailPage() {
     clearError();
 
     try {
-      await verifyEmail(email, verificationCode);
+      await verifyEmail(email, verificationCode, acceptTermsToCreateAccount);
       toast.success('Email verified successfully! Welcome to CampusCut!');
       // Redirect is handled by the useEffect that watches isAuthenticated
     } catch (err: any) {
@@ -269,6 +272,30 @@ export default function VerifyEmailPage() {
               </p>
             </div>
 
+            {/* Terms — account is not created until accepted here */}
+            <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={acceptTermsToCreateAccount}
+                  onChange={(e) => setAcceptTermsToCreateAccount(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700">
+                  I have read and accept the{' '}
+                  <Link
+                    to="/web/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 font-medium underline hover:text-primary-700"
+                  >
+                    Terms of Service
+                  </Link>
+                  . I understand my account is created only after I accept these terms.
+                </span>
+              </label>
+            </div>
+
             {/* Session Expired Message */}
             {sessionExpired && (
               <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4">
@@ -305,9 +332,9 @@ export default function VerifyEmailPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!isCodeComplete || isSubmitting || isLoading}
+              disabled={!canVerify || isSubmitting || isLoading}
               className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center justify-center gap-2 ${
-                isCodeComplete && !isSubmitting
+                canVerify && !isSubmitting
                   ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}

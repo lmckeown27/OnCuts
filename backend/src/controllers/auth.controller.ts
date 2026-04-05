@@ -261,7 +261,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       firstName,
       lastName,
       campusId,
-      role
+      role,
     });
 
     // Send verification email
@@ -341,13 +341,20 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
  */
 export const verifyEmailRegistration = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, code } = req.body;
+    const { email, code, acceptTerms } = req.body;
 
     if (!email || !code) {
       throw new ApiError(400, 'Email and verification code are required');
     }
 
-    // Verify email code
+    if (acceptTerms !== true) {
+      throw new ApiError(
+        400,
+        'You must read and accept the Terms of Service to create your account. Check the box on the verification page and try again.'
+      );
+    }
+
+    // Valid code removes the pending row; Terms acceptance is required above before any user row is created
     const pendingReg = await verifyCode(email, code);
 
     if (!pendingReg) {
@@ -404,8 +411,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
     // Note: Column names use camelCase in the database schema
     // id uses gen_random_uuid() since the column has no default
     const result = await pool.query(
-      `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, email_verified, "updatedAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NOW())
+      `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, email_verified, "termsAcceptedAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NOW(), NOW())
        RETURNING id, email, first_name, last_name, "campusId", role, "createdAt"`,
       [
         pendingReg.email,
@@ -586,7 +593,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
       firstName: pendingReg.firstName,
       lastName: pendingReg.lastName,
       campusId: pendingReg.campusId,
-      role: pendingReg.role
+      role: pendingReg.role,
     });
 
     // Send verification email

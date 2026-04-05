@@ -71,6 +71,14 @@ async function ensureTableExists(): Promise<void> {
  */
 export async function initVerificationSchema(): Promise<void> {
   await ensureTableExists();
+  try {
+    await pool.query(
+      `ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ`
+    );
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "termsAcceptedAt" TIMESTAMPTZ`);
+  } catch (error) {
+    logger.error('Failed to extend verification / users schema for terms acceptance:', error);
+  }
 }
 
 /**
@@ -92,19 +100,19 @@ export async function createPendingRegistration(
   const emailKey = registrationData.email.toLowerCase();
   
   try {
-    // Upsert - insert or update if exists
+    // Upsert - insert or update if exists (Terms are accepted only on verify-email, not stored here)
     await pool.query(`
       INSERT INTO pending_registrations (email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (email) DO UPDATE SET
-        password_hash = $2,
-        first_name = $3,
-        last_name = $4,
-        campus_id = $5,
-        role = $6,
-        verification_code = $7,
-        expires_at = $8,
-        created_at = $9
+        password_hash = EXCLUDED.password_hash,
+        first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name,
+        campus_id = EXCLUDED.campus_id,
+        role = EXCLUDED.role,
+        verification_code = EXCLUDED.verification_code,
+        expires_at = EXCLUDED.expires_at,
+        created_at = EXCLUDED.created_at
     `, [
       emailKey,
       registrationData.password,
@@ -114,7 +122,7 @@ export async function createPendingRegistration(
       registrationData.role,
       verificationCode,
       expiresAt,
-      now
+      now,
     ]);
     
     logger.info(`Created pending registration for ${emailKey}, expires at ${expiresAt.toISOString()}`);
@@ -180,7 +188,7 @@ export async function verifyCode(email: string, code: string): Promise<PendingRe
       role: row.role,
       verificationCode: row.verification_code,
       expiresAt: expiresAt,
-      createdAt: new Date(row.created_at)
+      createdAt: new Date(row.created_at),
     };
   } catch (error) {
     logger.error(`Error verifying code for ${emailKey}:`, error);
@@ -243,7 +251,7 @@ export async function getPendingRegistration(email: string): Promise<PendingRegi
       role: row.role,
       verificationCode: row.verification_code,
       expiresAt: new Date(row.expires_at),
-      createdAt: new Date(row.created_at)
+      createdAt: new Date(row.created_at),
     };
   } catch (error) {
     logger.error(`Error getting pending registration for ${emailKey}:`, error);

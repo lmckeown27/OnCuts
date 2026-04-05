@@ -77,7 +77,10 @@ export default function TermsOfServicePage() {
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">3. Account Registration</h2>
-              <p>To use certain features of the Service, you must create an account. You agree to:</p>
+              <p>
+                <strong>Account creation:</strong> No user account exists in our systems until you have verified your email address and accepted these Terms of Service on the verification step. Submitting the registration form or receiving a verification email alone does not create an account.
+              </p>
+              <p className="mt-3">To use certain features of the Service, you must create an account. You agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Provide accurate, current, and complete information</li>
                 <li>Maintain and promptly update your account information</li>

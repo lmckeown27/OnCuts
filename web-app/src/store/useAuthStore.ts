@@ -15,7 +15,7 @@ interface AuthState {
   setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
-  verifyEmail: (email: string, code: string) => Promise<void>;
+  verifyEmail: (email: string, code: string, acceptTerms: boolean) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -144,11 +144,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  verifyEmail: async (email, code) => {
+  verifyEmail: async (email, code, acceptTerms) => {
     set({ isLoading: true, error: null });
     try {
-      // Call real backend API for email verification
-      const response = await authService.verifyEmail(email, code);
+      // Call real backend API for email verification (creates user only with ToS acceptance)
+      const response = await authService.verifyEmail(email, code, acceptTerms);
       
       // Map backend response to frontend User type
       // Backend uses uppercase roles (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN), frontend uses lowercase

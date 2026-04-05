@@ -92,9 +92,13 @@ class AuthService {
   /**
    * Verify email with 6-digit code - creates the user account
    */
-  async verifyEmail(email: string, code: string): Promise<VerifyEmailResponse> {
+  async verifyEmail(email: string, code: string, acceptTerms: boolean): Promise<VerifyEmailResponse> {
     // api.post already extracts the data field from the response
-    const response = await api.post<VerifyEmailResponse>('/auth/verify-email', { email, code });
+    const response = await api.post<VerifyEmailResponse>('/auth/verify-email', {
+      email,
+      code,
+      acceptTerms: acceptTerms === true,
+    });
     
     // Save auth data after successful verification
     // Backend returns accessToken and refreshToken (not just "token")
