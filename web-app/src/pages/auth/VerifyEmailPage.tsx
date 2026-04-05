@@ -12,7 +12,6 @@ export default function VerifyEmailPage() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
   const [email, setEmail] = useState<string | null>(null);
   const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -64,14 +63,6 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  // Resend cooldown timer
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
 
   // Focus first input on mount
   useEffect(() => {
@@ -165,15 +156,14 @@ export default function VerifyEmailPage() {
   };
 
   const handleResend = async () => {
-    if (!email || isResending || resendCooldown > 0) return;
-    
+    if (!email || isResending) return;
+
     setIsResending(true);
     clearError();
 
     try {
       await resendVerificationCode(email);
       toast.success('Verification code resent! Check your email.');
-      setResendCooldown(60); // 60 second cooldown
       // Clear the code inputs
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -340,17 +330,13 @@ export default function VerifyEmailPage() {
           <div className="text-center">
             <button
               onClick={handleResend}
-              disabled={isResending || resendCooldown > 0}
+              disabled={isResending}
               className={`inline-flex items-center gap-2 text-primary-500 hover:text-primary-600 font-medium transition-colors ${
-                (isResending || resendCooldown > 0) ? 'opacity-50 cursor-not-allowed' : ''
+                isResending ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               <RefreshCw size={16} className={isResending ? 'animate-spin' : ''} />
-              {resendCooldown > 0 
-                ? `Resend in ${resendCooldown}s` 
-                : isResending 
-                  ? 'Sending...' 
-                  : 'Resend Code'}
+              {isResending ? 'Sending...' : 'Resend Code'}
             </button>
           </div>
 
