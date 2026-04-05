@@ -82,7 +82,7 @@ class AuthService {
       role: data.user_type,
       campusId, // Pass user-selected campus
     });
-    
+
     // Store email for verification page
     localStorage.setItem('pendingVerificationEmail', data.email);
     
@@ -90,30 +90,31 @@ class AuthService {
   }
 
   /**
-   * Verify email with 6-digit code - creates the user account
+   * Validate 6-digit code only — does not create an account. User continues on Terms of Service.
    */
-  async verifyEmail(email: string, code: string, acceptTerms: boolean): Promise<VerifyEmailResponse> {
-    // api.post already extracts the data field from the response
+  async confirmVerificationCode(email: string, code: string): Promise<void> {
+    await api.post('/auth/confirm-verification-code', { email, code });
+  }
+
+  /**
+   * After Terms acceptance — creates the user account (requires prior confirmVerificationCode).
+   */
+  async completeRegistration(email: string, acceptTerms: boolean): Promise<VerifyEmailResponse> {
     const response = await api.post<VerifyEmailResponse>('/auth/verify-email', {
       email,
-      code,
       acceptTerms: acceptTerms === true,
     });
-    
-    // Save auth data after successful verification
-    // Backend returns accessToken and refreshToken (not just "token")
+
     if (response.user && response.accessToken) {
       localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
-      // Also save refresh token if provided
       if (response.refreshToken) {
         localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, response.refreshToken);
       }
     }
-    
-    // Clear pending verification email
+
     localStorage.removeItem('pendingVerificationEmail');
-    
+
     return response;
   }
 

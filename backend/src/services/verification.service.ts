@@ -75,6 +75,9 @@ export async function initVerificationSchema(): Promise<void> {
     await pool.query(
       `ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ`
     );
+    await pool.query(
+      `ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS code_verified_at TIMESTAMPTZ`
+    );
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "termsAcceptedAt" TIMESTAMPTZ`);
   } catch (error) {
     logger.error('Failed to extend verification / users schema for terms acceptance:', error);
@@ -100,7 +103,7 @@ export async function createPendingRegistration(
   const emailKey = registrationData.email.toLowerCase();
   
   try {
-    // Upsert - insert or update if exists (Terms are accepted only on verify-email, not stored here)
+    // Upsert - insert or update if exists; new code invalidates prior "code verified" gate
     await pool.query(`
       INSERT INTO pending_registrations (email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -112,7 +115,8 @@ export async function createPendingRegistration(
         role = EXCLUDED.role,
         verification_code = EXCLUDED.verification_code,
         expires_at = EXCLUDED.expires_at,
-        created_at = EXCLUDED.created_at
+        created_at = EXCLUDED.created_at,
+        code_verified_at = NULL
     `, [
       emailKey,
       registrationData.password,
@@ -135,50 +139,79 @@ export async function createPendingRegistration(
 }
 
 /**
- * Verify Email Code and Complete Registration
- * 
- * Validates email verification code and returns registration data if valid.
- * Removes the pending registration after success.
- * 
- * @param email - User's email address
- * @param code - 6-digit verification code
- * @returns PendingRegistration if valid, null if invalid/expired
+ * Confirm verification code only (does not create a user).
+ * Marks the pending row so the client can complete registration after Terms acceptance.
  */
-export async function verifyCode(email: string, code: string): Promise<PendingRegistration | null> {
+export async function confirmVerificationCode(email: string, code: string): Promise<boolean> {
   const emailKey = email.toLowerCase();
-  
+
   try {
-    const result = await pool.query(`
-      SELECT email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+    const result = await pool.query(
+      `
+      SELECT verification_code, expires_at
       FROM pending_registrations
       WHERE email = $1
-    `, [emailKey]);
-    
+    `,
+      [emailKey]
+    );
+
     if (result.rows.length === 0) {
       logger.warn(`No pending registration found for ${emailKey}`);
-      return null;
+      return false;
     }
-    
+
     const row = result.rows[0];
     const expiresAt = new Date(row.expires_at);
-    
-    // Check if expired
+
     if (new Date() > expiresAt) {
       await pool.query('DELETE FROM pending_registrations WHERE email = $1', [emailKey]);
       logger.warn(`Verification code expired for ${emailKey}`);
-      return null;
+      return false;
     }
-    
-    // Check if code matches
+
     if (row.verification_code !== code) {
       logger.warn(`Invalid verification code for ${emailKey}`);
+      return false;
+    }
+
+    await pool.query(
+      `UPDATE pending_registrations SET code_verified_at = NOW() WHERE email = $1`,
+      [emailKey]
+    );
+    logger.info(`Verification code confirmed for ${emailKey} (pending Terms before account creation)`);
+    return true;
+  } catch (error) {
+    logger.error(`Error confirming verification code for ${emailKey}:`, error);
+    return false;
+  }
+}
+
+/**
+ * After Terms acceptance: atomically remove pending row and return data for user insert.
+ * Requires a prior successful confirmVerificationCode for this email.
+ */
+export async function takeCodeVerifiedPendingRegistration(
+  email: string
+): Promise<PendingRegistration | null> {
+  const emailKey = email.toLowerCase();
+
+  try {
+    const result = await pool.query(
+      `
+      DELETE FROM pending_registrations
+      WHERE email = $1
+        AND code_verified_at IS NOT NULL
+        AND expires_at > NOW()
+      RETURNING email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+    `,
+      [emailKey]
+    );
+
+    if (result.rows.length === 0) {
       return null;
     }
-    
-    // Valid! Remove from pending
-    await pool.query('DELETE FROM pending_registrations WHERE email = $1', [emailKey]);
-    logger.info(`Email verified for ${emailKey}, registration complete`);
-    
+
+    const row = result.rows[0];
     return {
       email: row.email,
       password: row.password_hash,
@@ -187,11 +220,11 @@ export async function verifyCode(email: string, code: string): Promise<PendingRe
       campusId: row.campus_id,
       role: row.role,
       verificationCode: row.verification_code,
-      expiresAt: expiresAt,
+      expiresAt: new Date(row.expires_at),
       createdAt: new Date(row.created_at),
     };
   } catch (error) {
-    logger.error(`Error verifying code for ${emailKey}:`, error);
+    logger.error(`Error taking code-verified pending registration for ${emailKey}:`, error);
     return null;
   }
 }

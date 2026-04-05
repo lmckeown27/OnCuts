@@ -5,6 +5,7 @@ import {
   login,
   verifyEmail,
   verifyEmailRegistration,
+  confirmRegistrationVerificationCode,
   resendVerificationCode,
   requestPasswordReset,
   resetPassword,
@@ -35,15 +36,32 @@ router.post(
 );
 
 /**
+ * @route   POST /api/auth/confirm-verification-code
+ * @desc    Validate 6-digit code only (no account created)
+ * @access  Public
+ */
+router.post(
+  '/confirm-verification-code',
+  [
+    body('email').isEmail().withMessage('Valid email required'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Verification code must be 6 digits'),
+    validate,
+  ],
+  confirmRegistrationVerificationCode
+);
+
+/**
  * @route   POST /api/auth/verify-email
- * @desc    Verify email with 6-digit code (completes registration)
+ * @desc    After Terms acceptance — completes registration (requires prior confirm-verification-code)
  * @access  Public
  */
 router.post(
   '/verify-email',
   [
     body('email').isEmail().withMessage('Valid email required'),
-    body('code').isLength({ min: 6, max: 6 }).withMessage('Verification code must be 6 digits'),
+    body('acceptTerms')
+      .custom((v) => v === true || v === 'true')
+      .withMessage('You must accept the Terms of Service'),
     validate,
   ],
   verifyEmailRegistration

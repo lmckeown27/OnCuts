@@ -1,15 +1,59 @@
-import { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import toast from 'react-hot-toast';
 import MainChairLogo from '../../assets/logos/Main_Chair.webp';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function TermsOfServicePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromRegistration = searchParams.get('completeRegistration') === '1';
+  const pendingEmail =
+    typeof window !== 'undefined' ? localStorage.getItem('pendingVerificationEmail') : null;
+  const showRegistrationCta = Boolean(fromRegistration && pendingEmail);
+
+  const {
+    completeRegistration,
+    isLoading,
+    error,
+    clearError,
+    isAuthenticated,
+  } = useAuthStore();
+  const [acceptTermsToCreateAccount, setAcceptTermsToCreateAccount] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasCheckedRedirect, setHasCheckedRedirect] = useState(false);
+
   const lastUpdated = "January 21, 2026";
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !fromRegistration || hasCheckedRedirect) return;
+
+    setHasCheckedRedirect(true);
+
+    const postLoginRedirect = localStorage.getItem('postLoginRedirect');
+    if (postLoginRedirect) {
+      try {
+        const redirect = JSON.parse(postLoginRedirect);
+        localStorage.removeItem('postLoginRedirect');
+
+        if (redirect.type === 'schedule' && redirect.barber) {
+          navigate(`/web/consumer/book/${redirect.barberId}`, {
+            state: { barber: redirect.barber },
+          });
+          return;
+        }
+      } catch {
+        localStorage.removeItem('postLoginRedirect');
+      }
+    }
+
+    navigate('/web/consumer');
+  }, [isAuthenticated, fromRegistration, hasCheckedRedirect, navigate]);
 
   const handleBack = () => {
     // Check if there's history to go back to
@@ -21,8 +65,25 @@ export default function TermsOfServicePage() {
     }
   };
 
+  const handleCreateAccount = async () => {
+    if (!pendingEmail || !acceptTermsToCreateAccount) return;
+    setIsSubmitting(true);
+    clearError();
+    try {
+      await completeRegistration(pendingEmail, true);
+      toast.success('Welcome to CampusCut!');
+    } catch {
+      const msg =
+        useAuthStore.getState().error ||
+        'Could not create your account. Try entering your code again from the verification page.';
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${showRegistrationCta && !isAuthenticated ? 'pb-40' : ''}`}>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -78,7 +139,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">3. Account Registration</h2>
               <p>
-                <strong>Account creation:</strong> No user account exists in our systems until you have verified your email address and accepted these Terms of Service on the verification step. Submitting the registration form or receiving a verification email alone does not create an account.
+                <strong>Account creation:</strong> No user account exists in our systems until you have entered a valid email verification code and accepted these Terms of Service on this page. Submitting the registration form, receiving a verification email, or confirming your code alone does not create an account.
               </p>
               <p className="mt-3">To use certain features of the Service, you must create an account. You agree to:</p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
@@ -264,6 +325,53 @@ export default function TermsOfServicePage() {
           </Link>
         </div>
       </div>
+
+      {showRegistrationCta && !isAuthenticated && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-gray-200 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <div className="max-w-4xl mx-auto px-4 py-4 space-y-3">
+            <p className="text-sm text-gray-600 text-center">
+              Finish signup for <span className="font-medium text-gray-900">{pendingEmail}</span>
+            </p>
+            <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <input
+                type="checkbox"
+                checked={acceptTermsToCreateAccount}
+                onChange={(e) => setAcceptTermsToCreateAccount(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-sm text-gray-700">
+                I have read and accept these Terms of Service. I understand my account is created only when I tap
+                the button below.
+              </span>
+            </label>
+            {error && (
+              <p className="text-sm text-red-600 text-center" role="alert">
+                {error}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={!acceptTermsToCreateAccount || isSubmitting || isLoading}
+              onClick={handleCreateAccount}
+              className={`w-full py-3.5 rounded-lg font-semibold text-base transition-colors ${
+                acceptTermsToCreateAccount && !isSubmitting
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isSubmitting || isLoading ? 'Creating account…' : 'Create my account'}
+            </button>
+            <div className="text-center">
+              <Link
+                to="/web/verify-email"
+                className="text-sm text-emerald-700 hover:text-emerald-800 underline"
+              >
+                Back to verification code
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

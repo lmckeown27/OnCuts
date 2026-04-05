@@ -15,7 +15,8 @@ interface AuthState {
   setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
   login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
-  verifyEmail: (email: string, code: string, acceptTerms: boolean) => Promise<void>;
+  confirmVerificationCode: (email: string, code: string) => Promise<void>;
+  completeRegistration: (email: string, acceptTerms: boolean) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -144,21 +145,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  verifyEmail: async (email, code, acceptTerms) => {
+  confirmVerificationCode: async (email, code) => {
     set({ isLoading: true, error: null });
     try {
-      // Call real backend API for email verification (creates user only with ToS acceptance)
-      const response = await authService.verifyEmail(email, code, acceptTerms);
-      
-      // Map backend response to frontend User type
-      // Backend uses uppercase roles (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN), frontend uses lowercase
+      await authService.confirmVerificationCode(email, code);
+      set({ isLoading: false });
+    } catch (error: any) {
+      let errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Verification failed';
+      if (
+        error.response?.status === 400 ||
+        errorMessage.toLowerCase().includes('invalid') ||
+        errorMessage.toLowerCase().includes('expired')
+      ) {
+        errorMessage = 'Wrong verification code. Please check and try again.';
+      }
+      set({ error: errorMessage, isLoading: false });
+      throw error;
+    }
+  },
+
+  completeRegistration: async (email, acceptTerms) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await authService.completeRegistration(email, acceptTerms);
+
       const rawRole = (response.user.role || '').toString().toLowerCase();
       const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
-      
-      // Admins have all privileges including campus manager at all campuses
+
       const isAdminRole = mappedRole === 'admin';
       const isCampusManagerRole = mappedRole === 'campus_manager' || isAdminRole;
-      
+
       const user = {
         id: response.user.id,
         email: response.user.email,
@@ -173,33 +193,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
         sui_address: (response as { suiAddress?: string }).suiAddress ?? null,
       };
-      
-      // Auth data is already saved by authService.verifyEmail
-      // Clear pending verification data
+
       localStorage.removeItem('pendingVerificationEmail');
-      
-      set({ 
-        user: user, 
-        isAuthenticated: true, 
+
+      set({
+        user: user,
+        isAuthenticated: true,
         isLoading: false,
-        pendingVerificationEmail: null
+        pendingVerificationEmail: null,
       });
       socketService.connect();
     } catch (error: any) {
-      // Extract error message from various response formats
-      let errorMessage = error.response?.data?.error?.message || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Verification failed';
-      
-      // Make error messages more user-friendly
-      if (error.response?.status === 400 || errorMessage.toLowerCase().includes('invalid') || errorMessage.toLowerCase().includes('expired')) {
-        errorMessage = 'Wrong verification code. Please check and try again.';
-      }
-      
-      set({ 
-        error: errorMessage, 
-        isLoading: false 
+      let errorMessage =
+        error.response?.data?.error?.message ||
+        error.response?.data?.message ||
+        error.message ||
+        'Could not create your account';
+
+      set({
+        error: errorMessage,
+        isLoading: false,
       });
       throw error;
     }

@@ -115,7 +115,8 @@ import {
 } from '../services/email.service';
 import {
   createPendingRegistration,
-  verifyCode,
+  confirmVerificationCode,
+  takeCodeVerifiedPendingRegistration,
   hasPendingRegistration,
   getPendingRegistration
 } from '../services/verification.service';
@@ -148,7 +149,8 @@ function getGoogleJwtExchangeAudiences(): string[] {
  * 
  * ## Two-Step Registration Flow:
  * 1. POST /auth/register → Creates pending registration, sends verification email
- * 2. POST /auth/verify-email → Verifies code, creates user account, issues JWT
+ * 2. POST /auth/confirm-verification-code → Validates code only (no user row)
+ * 3. POST /auth/verify-email → After Terms acceptance, creates user account, issues JWT
  * 
  * ## Request:
  * ```json
@@ -301,9 +303,39 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
 };
 
 /**
+ * Confirm email verification code (step 1 — does not create an account).
+ */
+export const confirmRegistrationVerificationCode = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      throw new ApiError(400, 'Email and verification code are required');
+    }
+
+    const ok = await confirmVerificationCode(email, code);
+    if (!ok) {
+      throw new ApiError(400, 'Invalid or expired verification code');
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification code accepted. Review and accept the Terms of Service to finish creating your account.',
+      data: { email: email.toLowerCase() },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Verify Email - Complete Registration
  * 
- * Verifies the 6-digit email code and creates the user account.
+ * After the user accepted the Terms of Service: creates the user account (requires prior code confirmation).
  * Creates the user row and issues JWT (no custodial chain wallet mint).
  * 
  * ## Request:
@@ -311,7 +343,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
  * POST /api/v1/auth/verify-email
  * {
  *   "email": "student@university.edu",
- *   "code": "123456"
+ *   "acceptTerms": true
  * }
  * ```
  * 
@@ -335,30 +367,32 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
  * }
  * ```
  * 
- * @param req - Express request with email and verification code
+ * @param req - Express request with email and acceptTerms
  * @param res - Express response
  * @param next - Express next function
  */
 export const verifyEmailRegistration = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, code, acceptTerms } = req.body;
+    const { email, acceptTerms } = req.body;
 
-    if (!email || !code) {
-      throw new ApiError(400, 'Email and verification code are required');
+    if (!email) {
+      throw new ApiError(400, 'Email is required');
     }
 
-    if (acceptTerms !== true) {
+    if (acceptTerms !== true && acceptTerms !== 'true') {
       throw new ApiError(
         400,
-        'You must read and accept the Terms of Service to create your account. Check the box on the verification page and try again.'
+        'You must read and accept the Terms of Service to create your account.'
       );
     }
 
-    // Valid code removes the pending row; Terms acceptance is required above before any user row is created
-    const pendingReg = await verifyCode(email, code);
+    const pendingReg = await takeCodeVerifiedPendingRegistration(email);
 
     if (!pendingReg) {
-      throw new ApiError(400, 'Invalid or expired verification code');
+      throw new ApiError(
+        400,
+        'No completed email verification for this address, or your session expired. Enter your verification code again on the verification page, then return here to accept the Terms.'
+      );
     }
 
     // Check again if user was created in the meantime
