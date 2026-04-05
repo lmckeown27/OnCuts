@@ -1,25 +1,27 @@
-import { SNSClient, PublishCommand, type SNSClientConfig } from '@aws-sdk/client-sns';
+import {
+  PinpointSMSVoiceV2Client,
+  SendNotifyTextMessageCommand,
+  type PinpointSMSVoiceV2ClientConfig,
+} from '@aws-sdk/client-pinpoint-sms-voice-v2';
 
 const REGION = 'us-west-1';
 
-/**
- * Origination identity resource ID (AWS End User Messaging SMS / SNS).
- * Passed as the OriginationIdentity message attribute expected for SMS Publish.
- */
-const DEFAULT_ORIGINATION_IDENTITY = 'phone-7750c1b13c8f4a2c85a50fd2ea3c5a4c';
+/** Notify configuration ID (End User Messaging). Override with INTERA_NOTIFY_CONFIGURATION_ID. */
+const DEFAULT_NOTIFY_CONFIGURATION_ID = 'notify-cb19ae925d014cdba7b540cca202f72d';
 
-/** Message attribute key for origination identity ID on SNS SMS Publish. */
-const MSG_ATTR_ORIGINATION_IDENTITY = 'AWS.MM.SMS.OriginationIdentity';
+function notifyConfigurationId(): string {
+  return process.env.INTERA_NOTIFY_CONFIGURATION_ID?.trim() || DEFAULT_NOTIFY_CONFIGURATION_ID;
+}
 
 /**
- * SMS delivery for the Intera app via Amazon SNS.
- * Uses transactional SMS type and a dedicated origination identity.
+ * SMS for the Intera app via AWS End User Messaging (Pinpoint SMS Voice v2) — Notify text API.
+ * Message body comes from the Notify template in AWS (e.g. "Your Intera verification code is: {otp}").
  */
 export class SmsProvider {
-  private readonly client: SNSClient;
+  private readonly client: PinpointSMSVoiceV2Client;
 
-  constructor(config?: SNSClientConfig) {
-    this.client = new SNSClient({
+  constructor(config?: PinpointSMSVoiceV2ClientConfig) {
+    this.client = new PinpointSMSVoiceV2Client({
       region: REGION,
       ...config,
     });
@@ -29,25 +31,13 @@ export class SmsProvider {
    * Send a one-time verification code via SMS.
    *
    * @param to - Destination number (E.164 preferred, e.g. +15551234567)
-   * @param code - Verification code to include in the message body
+   * @param code - Substituted for template variable `otp` (must match your Notify template)
    */
   async sendVerificationSMS(to: string, code: string): Promise<void> {
-    const phoneNumber = normalizeE164(to);
-    const message = `Your Intera code is: ${code}`;
-
-    const command = new PublishCommand({
-      PhoneNumber: phoneNumber,
-      Message: message,
-      MessageAttributes: {
-        'AWS.SNS.SMS.SMSType': {
-          DataType: 'String',
-          StringValue: 'Transactional',
-        },
-        [MSG_ATTR_ORIGINATION_IDENTITY]: {
-          DataType: 'String',
-          StringValue: DEFAULT_ORIGINATION_IDENTITY,
-        },
-      },
+    const command = new SendNotifyTextMessageCommand({
+      NotifyConfigurationId: notifyConfigurationId(),
+      DestinationPhoneNumber: normalizeE164(to),
+      TemplateVariables: { otp: code },
     });
 
     await this.client.send(command);
