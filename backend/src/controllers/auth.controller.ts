@@ -122,6 +122,7 @@ import {
   getPendingRegistration
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
+import { isAcceptTermsTrue } from '../utils/accept-terms';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
@@ -186,7 +187,7 @@ function getGoogleJwtExchangeAudiences(): string[] {
  */
 export const register = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, role, campusId: requestedCampusId } = req.body;
+    const { email, password, firstName, lastName, role, campusId: rawCampusId } = req.body;
 
     // Validate input
     if (!email || !password || !firstName || !lastName || !role) {
@@ -202,7 +203,12 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     // Campus assignment: Use user-provided campusId if valid, otherwise leave as null
     // Consumers don't need to be tied to a university - they can browse barbers at any campus
     let campusId: string | null = null;
-    
+
+    const requestedCampusId =
+      rawCampusId === undefined || rawCampusId === null || rawCampusId === ''
+        ? null
+        : String(rawCampusId).trim();
+
     if (requestedCampusId) {
       // Check if it's a valid UUID format
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -242,7 +248,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
     }
 
     // Check if user already exists in database
-    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const existingUser = await pool.query('SELECT id FROM users WHERE LOWER(email) = LOWER($1)', [email]);
     
     if (existingUser.rows.length > 0) {
       throw new ApiError(400, 'User with this email already exists');
@@ -378,13 +384,13 @@ export const confirmRegistrationVerificationCode = async (
  */
 export const verifyEmailRegistration = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, acceptTerms, code: codeRaw } = req.body;
+    const { email, code: codeRaw } = req.body;
 
     if (!email) {
       throw new ApiError(400, 'Email is required');
     }
 
-    if (acceptTerms !== true && acceptTerms !== 'true') {
+    if (!isAcceptTermsTrue(req.body as Record<string, unknown>)) {
       throw new ApiError(
         400,
         'You must read and accept the Terms of Service to create your account.'
