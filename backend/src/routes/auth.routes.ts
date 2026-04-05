@@ -13,6 +13,7 @@ import {
   refreshToken,
   getCurrentUser,
 } from '../controllers/auth.controller';
+import { requestPhoneOtp, verifyPhoneOtp } from '../controllers/intera-otp.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 const router: Router = express.Router();
@@ -29,6 +30,8 @@ router.post(
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').optional().trim(),
     body('lastName').optional().trim(),
+    body('phoneNumber').optional().isString().trim(),
+    body('phone').optional().isString().trim(),
     body('role').isIn(['student', 'barber']).withMessage('Role must be student or barber'),
     validate,
   ],
@@ -48,6 +51,41 @@ router.post(
     validate,
   ],
   confirmRegistrationVerificationCode
+);
+
+/**
+ * @route   POST /api/auth/request-otp
+ * @desc    Intera: send 6-digit SMS code (Pinpoint Notify); stored in Redis until expiry
+ * @access  Public
+ */
+router.post(
+  '/request-otp',
+  [
+    body('phoneNumber').optional().isString().trim(),
+    body('phone').optional().isString().trim(),
+    validate,
+  ],
+  requestPhoneOtp
+);
+
+/**
+ * @route   POST /api/auth/verify-otp
+ * @desc    Intera: verify SMS code against Redis
+ * @access  Public
+ */
+router.post(
+  '/verify-otp',
+  [
+    body('phoneNumber').optional().isString().trim(),
+    body('phone').optional().isString().trim(),
+    body('code')
+      .notEmpty()
+      .withMessage('Verification code is required')
+      .matches(/^[0-9]{6}$/)
+      .withMessage('Verification code must be 6 digits'),
+    validate,
+  ],
+  verifyPhoneOtp
 );
 
 /**

@@ -97,6 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         created_at: response.user.created_at || new Date().toISOString(),
         campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
+        phone_number: (response.user as any).phoneNumber ?? (response.user as any).phone_number ?? null,
         sui_address: (response.user as any).suiAddress ?? (response.user as any).sui_address ?? null,
       };
       
@@ -191,6 +192,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         created_at: new Date().toISOString(),
         campus_id: response.user.campusId?.toString(),
         profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
+        phone_number: response.user.phoneNumber ?? null,
         sui_address: (response as { suiAddress?: string }).suiAddress ?? null,
       };
 

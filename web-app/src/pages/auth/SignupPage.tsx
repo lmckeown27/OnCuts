@@ -5,11 +5,13 @@ import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-rea
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
 import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
+import { isValidE164Phone } from '../../utils/phoneE164';
 
 interface SignupForm {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
   password: string;
   confirmPassword: string;
 }
@@ -26,6 +28,7 @@ export default function SignupPage() {
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: ''
   });
@@ -138,6 +141,11 @@ export default function SignupPage() {
       errors.confirmPassword = 'Passwords do not match';
     }
 
+    const phone = formData.phoneNumber.trim();
+    if (phone && !isValidE164Phone(phone)) {
+      errors.phoneNumber = 'Use E.164 format with country code (e.g. +14155552671)';
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -166,6 +174,7 @@ export default function SignupPage() {
         email: formData.email,
         password: formData.password,
         user_type: 'student', // All users start as consumers; barber applications are separate
+        phoneNumber: formData.phoneNumber.trim() || undefined,
       });
       
       toast.success('Verification email sent! Please check your inbox.');
@@ -309,6 +318,32 @@ export default function SignupPage() {
                 <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
               )}
               <p className="text-gray-500 text-xs mt-1">We'll send a verification code to this email</p>
+            </div>
+
+            {/* Phone (optional) */}
+            <div className="relative">
+              <label
+                htmlFor="phoneNumber"
+                className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+              >
+                Mobile phone (optional)
+              </label>
+              <input
+                type="tel"
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                  validationErrors.phoneNumber ? 'border-red-400 focus:border-red-500' : 'border-primary-400 focus:border-primary-500'
+                }`}
+                placeholder="+14155552671"
+                autoComplete="tel"
+              />
+              {validationErrors.phoneNumber && (
+                <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
+              )}
+              <p className="text-gray-500 text-xs mt-1">Include country code (E.164). You can add this later instead.</p>
             </div>
 
             {/* Password Field */}

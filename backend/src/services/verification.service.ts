@@ -21,6 +21,8 @@ export interface PendingRegistration {
   lastName: string;
   campusId: string | null;
   role: 'student' | 'barber';
+  /** E.164, optional — must stay unique vs other pendings and users when set */
+  phoneE164: string | null;
   verificationCode: string;
   expiresAt: Date;
   createdAt: Date;
@@ -77,6 +79,18 @@ export async function initVerificationSchema(): Promise<void> {
       `ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS code_verified_at TIMESTAMPTZ`
     );
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "termsAcceptedAt" TIMESTAMPTZ`);
+    await pool.query(
+      `ALTER TABLE pending_registrations ADD COLUMN IF NOT EXISTS phone_e164 VARCHAR(20)`
+    );
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_e164 VARCHAR(20)`);
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone_e164_unique
+      ON users(phone_e164) WHERE phone_e164 IS NOT NULL
+    `);
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_pending_registrations_phone_e164_unique
+      ON pending_registrations(phone_e164) WHERE phone_e164 IS NOT NULL
+    `);
   } catch (error) {
     logger.error('Failed to extend verification / users schema for terms acceptance:', error);
   }
@@ -99,18 +113,20 @@ export async function createPendingRegistration(
   const expiresAt = PENDING_REGISTRATION_PLACEHOLDER_EXPIRY;
   
   const emailKey = registrationData.email.toLowerCase();
+  const phoneE164 = registrationData.phoneE164 ?? null;
   
   try {
     // Upsert - insert or update if exists; new code invalidates prior "code verified" gate
     await pool.query(`
-      INSERT INTO pending_registrations (email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO pending_registrations (email, password_hash, first_name, last_name, campus_id, role, phone_e164, verification_code, expires_at, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       ON CONFLICT (email) DO UPDATE SET
         password_hash = EXCLUDED.password_hash,
         first_name = EXCLUDED.first_name,
         last_name = EXCLUDED.last_name,
         campus_id = EXCLUDED.campus_id,
         role = EXCLUDED.role,
+        phone_e164 = EXCLUDED.phone_e164,
         verification_code = EXCLUDED.verification_code,
         expires_at = EXCLUDED.expires_at,
         created_at = EXCLUDED.created_at,
@@ -122,6 +138,7 @@ export async function createPendingRegistration(
       registrationData.lastName,
       registrationData.campusId,
       registrationData.role,
+      phoneE164,
       verificationCode,
       expiresAt,
       now,
@@ -193,7 +210,7 @@ export async function takePendingRegistrationIfCodeValid(
       `
       DELETE FROM pending_registrations
       WHERE email = $1 AND verification_code = $2
-      RETURNING email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+      RETURNING email, password_hash, first_name, last_name, campus_id, role, phone_e164, verification_code, expires_at, created_at
     `,
       [emailKey, codeNorm]
     );
@@ -210,6 +227,7 @@ export async function takePendingRegistrationIfCodeValid(
       lastName: row.last_name,
       campusId: row.campus_id,
       role: row.role,
+      phoneE164: row.phone_e164 ?? null,
       verificationCode: row.verification_code,
       expiresAt: new Date(row.expires_at),
       createdAt: new Date(row.created_at),
@@ -235,7 +253,7 @@ export async function takeCodeVerifiedPendingRegistration(
       DELETE FROM pending_registrations
       WHERE email = $1
         AND code_verified_at IS NOT NULL
-      RETURNING email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+      RETURNING email, password_hash, first_name, last_name, campus_id, role, phone_e164, verification_code, expires_at, created_at
     `,
       [emailKey]
     );
@@ -252,6 +270,7 @@ export async function takeCodeVerifiedPendingRegistration(
       lastName: row.last_name,
       campusId: row.campus_id,
       role: row.role,
+      phoneE164: row.phone_e164 ?? null,
       verificationCode: row.verification_code,
       expiresAt: new Date(row.expires_at),
       createdAt: new Date(row.created_at),
@@ -298,7 +317,7 @@ export async function getPendingRegistration(email: string): Promise<PendingRegi
   
   try {
     const result = await pool.query(`
-      SELECT email, password_hash, first_name, last_name, campus_id, role, verification_code, expires_at, created_at
+      SELECT email, password_hash, first_name, last_name, campus_id, role, phone_e164, verification_code, expires_at, created_at
       FROM pending_registrations
       WHERE email = $1
     `, [emailKey]);
@@ -315,6 +334,7 @@ export async function getPendingRegistration(email: string): Promise<PendingRegi
       lastName: row.last_name,
       campusId: row.campus_id,
       role: row.role,
+      phoneE164: row.phone_e164 ?? null,
       verificationCode: row.verification_code,
       expiresAt: new Date(row.expires_at),
       createdAt: new Date(row.created_at),

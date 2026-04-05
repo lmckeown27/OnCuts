@@ -5,7 +5,9 @@ export interface User {
   last_name: string;
   username?: string;
   user_type: 'student' | 'barber' | 'campus_manager' | 'admin';
-  /** Native zkLogin Sui address when linked */
+  /** E.164 when provided at signup or saved on profile */
+  phone_number?: string | null;
+  /** Linked payout / on-chain address when applicable */
   sui_address?: string | null;
   campus_id?: string;
   is_verified: boolean;

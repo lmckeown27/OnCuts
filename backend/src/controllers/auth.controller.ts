@@ -13,7 +13,6 @@
  * Process:
  * - Validates campus email domain
  * - Hashes password with bcrypt (10 rounds)
- * - On-chain identity via zkLogin / Sui, optional legacy_wallet_address
  * - Stores user in database
  * - Generates JWT token
  * - Returns user data + token
@@ -123,9 +122,22 @@ import {
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { resolveNamesForUser } from '../utils/registration-names';
+import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
 const googleIdTokenClient = new OAuth2Client();
+
+function parseOptionalSignupPhone(body: Record<string, unknown>): string | null {
+  const raw = body.phoneNumber ?? body.phone;
+  if (raw === undefined || raw === null) return null;
+  const s = String(raw).trim();
+  if (s === '') return null;
+  const normalized = normalizeE164Phone(s);
+  if (!isValidE164(normalized)) {
+    throw new ApiError(400, 'Invalid phone number. Use E.164 format (e.g. +14155552671)');
+  }
+  return normalized;
+}
 
 function getGoogleJwtExchangeAudiences(): string[] {
   const extra = (process.env.GOOGLE_OAUTH_CLIENT_IDS ?? '')
@@ -194,6 +206,8 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, 'Email, password, and role are required');
     }
 
+    const phoneE164 = parseOptionalSignupPhone(req.body as Record<string, unknown>);
+
     const firstName = typeof rawFirst === 'string' ? rawFirst.trim() : '';
     const lastName = typeof rawLast === 'string' ? rawLast.trim() : '';
 
@@ -257,6 +271,20 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       throw new ApiError(400, 'User with this email already exists');
     }
 
+    if (phoneE164) {
+      const phoneTaken = await pool.query('SELECT id FROM users WHERE phone_e164 = $1', [phoneE164]);
+      if (phoneTaken.rows.length > 0) {
+        throw new ApiError(400, 'An account with this phone number already exists');
+      }
+      const pendingPhone = await pool.query(
+        `SELECT email FROM pending_registrations WHERE phone_e164 = $1 AND email <> $2`,
+        [phoneE164, email.toLowerCase()]
+      );
+      if (pendingPhone.rows.length > 0) {
+        throw new ApiError(400, 'This phone number is already used in another pending signup');
+      }
+    }
+
     // Check if there's already a pending registration
     if (await hasPendingRegistration(email)) {
       throw new ApiError(
@@ -276,6 +304,7 @@ export const register = async (req: AuthRequest, res: Response, next: NextFuncti
       lastName: lastName || '',
       campusId,
       role,
+      phoneE164,
     });
 
     // Send verification email
@@ -407,8 +436,7 @@ export const checkPendingRegistrationCredentials = async (
  *       "role": "student",
  *       "campusId": 1
  *     },
- *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *     "suiAddress": null
+ *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *   }
  * }
  * ```
@@ -499,20 +527,19 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
       pendingReg.lastName
     );
 
-    // Create user in database (off-chain for v1 - no blockchain wallets)
-    // Note: Column names use camelCase in the database schema
-    // id uses gen_random_uuid() since the column has no default
+    // Create user in database (email + password; optional phone_e164 from pending registration)
     const result = await pool.query(
-      `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, email_verified, "termsAcceptedAt", "updatedAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", TRUE, NULL, NOW())
-       RETURNING id, email, first_name, last_name, "campusId", role, "createdAt"`,
+      `INSERT INTO users (id, email, password_hash, first_name, last_name, "campusId", role, phone_e164, email_verified, "termsAcceptedAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6::"UserRole", $7, TRUE, NULL, NOW())
+       RETURNING id, email, first_name, last_name, "campusId", role, phone_e164, "createdAt"`,
       [
         pendingReg.email,
         pendingReg.password,
         resolvedFirst,
         resolvedLast,
         campusId,
-        dbRole
+        dbRole,
+        pendingReg.phoneE164,
       ]
     );
 
@@ -616,7 +643,8 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
           lastName: user.last_name,
           role: user.role,
           campusId: user.campusId,
-          emailVerified: true
+          emailVerified: true,
+          phoneNumber: user.phone_e164 ?? null,
         },
         accessToken: token,
         refreshToken
@@ -685,6 +713,7 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
       lastName: pendingReg.lastName,
       campusId: pendingReg.campusId,
       role: pendingReg.role,
+      phoneE164: pendingReg.phoneE164,
     });
 
     // Send verification email
@@ -730,7 +759,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164
        FROM users WHERE email = $1`,
       [email]
     );
@@ -793,7 +822,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           emailVerified: user.email_verified,
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
-          suiAddress: user.sui_address ?? null,
+          phoneNumber: user.phone_e164 ?? null,
         },
         accessToken: token,
         refreshToken,
@@ -872,7 +901,7 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
     }
 
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164
        FROM users WHERE LOWER(TRIM(email)) = $1`,
       [email]
     );
@@ -926,7 +955,7 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
           emailVerified: user.email_verified,
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
-          suiAddress: user.sui_address ?? null,
+          phoneNumber: user.phone_e164 ?? null,
         },
         accessToken: token,
         refreshToken: refreshTokenJwt,
@@ -1096,7 +1125,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
       `SELECT 
         id, email, first_name, last_name, role, "campusId", 
         email_verified, "avatarUrl", "displayName", bio,
-        "isBlocked", "isBanned", "createdAt", sui_address
+        "isBlocked", "isBanned", "createdAt", sui_address, phone_e164
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -1158,6 +1187,8 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         bio: user.bio,
         campus_id: user.campusId,
         created_at: user.createdAt,
+        phone_number: user.phone_e164 ?? null,
+        /** Set when a wallet is linked to the account (not part of email signup). */
         sui_address: user.sui_address ?? null,
       },
     });

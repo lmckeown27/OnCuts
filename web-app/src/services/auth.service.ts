@@ -14,6 +14,8 @@ interface SignupData {
   last_name: string;
   user_type: 'student' | 'barber';
   campusId?: string; // User-selected campus
+  /** Optional E.164, e.g. +14155552671 */
+  phoneNumber?: string;
 }
 
 interface AuthResponse {
@@ -35,13 +37,13 @@ interface VerifyEmailUserData {
   role: string;
   campusId: number;
   emailVerified: boolean;
+  phoneNumber?: string | null;
 }
 
 interface VerifyEmailResponse {
   user: VerifyEmailUserData;
   accessToken: string;
   refreshToken: string;
-  suiAddress?: string;
 }
 
 class AuthService {
@@ -73,14 +75,18 @@ class AuthService {
       }
     }
     
-    const response = await api.post<RegistrationPendingResponse>('/auth/register', {
+    const payload: Record<string, unknown> = {
       email: data.email,
       password: data.password,
       firstName: data.first_name,
       lastName: data.last_name,
       role: data.user_type,
-      campusId, // Pass user-selected campus
-    });
+      campusId,
+    };
+    const phone = data.phoneNumber?.trim();
+    if (phone) payload.phoneNumber = phone;
+
+    const response = await api.post<RegistrationPendingResponse>('/auth/register', payload);
 
     // Store email for verification page
     localStorage.setItem('pendingVerificationEmail', data.email);
