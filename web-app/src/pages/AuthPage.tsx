@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
@@ -10,6 +10,7 @@ import { isValidE164Phone } from '../utils/phoneE164';
 
 type AuthMode = 'login' | 'signup';
 type LoginChannel = 'email' | 'phone';
+type SignupChannel = 'email' | 'phone';
 
 interface LoginForm {
   email: string;
@@ -66,7 +67,13 @@ export default function AuthPage() {
   const [phoneLogin, setPhoneLogin] = useState('');
   const [phoneOtp, setPhoneOtp] = useState('');
   const [phoneCodeSent, setPhoneCodeSent] = useState(false);
-  
+
+  /** Sign up: email-only, or verify phone first then email + password. */
+  const [signupChannel, setSignupChannel] = useState<SignupChannel>('email');
+  const [signupPhoneOtp, setSignupPhoneOtp] = useState('');
+  const [signupPhoneCodeSent, setSignupPhoneCodeSent] = useState(false);
+  const [signupPhoneVerified, setSignupPhoneVerified] = useState(false);
+
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {
     let strength = 0;
@@ -166,12 +173,34 @@ export default function AuthPage() {
       : isValidE164Phone(phoneLogin.trim()) && phoneOtp.trim().length === 6 && /^\d{6}$/.test(phoneOtp.trim());
 
   const canSendPhoneCode = isValidE164Phone(phoneLogin.trim());
+  const canSendSignupPhoneCode = isValidE164Phone(signupData.phoneNumber.trim());
 
-  const isSignupFormValid = 
-    signupData.email.trim() !== '' &&
-    isValidEmail(signupData.email) &&
-    signupData.password.length >= 8 &&
-    signupData.password === signupData.confirmPassword;
+  const isSignupFormValid =
+    signupChannel === 'email'
+      ? signupData.email.trim() !== '' &&
+        isValidEmail(signupData.email) &&
+        signupData.password.length >= 8 &&
+        signupData.password === signupData.confirmPassword
+      : signupPhoneVerified &&
+        isValidE164Phone(signupData.phoneNumber.trim()) &&
+        signupData.email.trim() !== '' &&
+        isValidEmail(signupData.email) &&
+        signupData.password.length >= 8 &&
+        signupData.password === signupData.confirmPassword;
+
+  useEffect(() => {
+    const pending = sessionStorage.getItem('campuscut_pending_signup_phone');
+    if (pending?.trim()) {
+      const p = pending.trim();
+      setSignupData((prev) => ({ ...prev, phoneNumber: p }));
+      setSignupChannel('phone');
+      setSignupPhoneVerified(true);
+      setSignupPhoneCodeSent(false);
+      setSignupPhoneOtp('');
+      sessionStorage.removeItem('campuscut_pending_signup_phone');
+      setMode('signup');
+    }
+  }, []);
 
   const finishLoginRedirect = async (result: { isAdmin: boolean; isCampusManager: boolean }) => {
     if (redirectUrl?.startsWith('/')) {
@@ -289,6 +318,10 @@ export default function AuthPage() {
       if (result.kind === 'no_account') {
         sessionStorage.setItem('campuscut_pending_signup_phone', result.phoneNumber);
         setSignupData((prev) => ({ ...prev, phoneNumber: result.phoneNumber }));
+        setSignupChannel('phone');
+        setSignupPhoneVerified(true);
+        setSignupPhoneCodeSent(false);
+        setSignupPhoneOtp('');
         setMode('signup');
         setPhoneCodeSent(false);
         setPhoneOtp('');
@@ -318,9 +351,64 @@ export default function AuthPage() {
     }
   };
 
+  const handleSignupPhoneSendCode = async () => {
+    const p = signupData.phoneNumber.trim();
+    if (!isValidE164Phone(p)) {
+      toast.error('Use E.164 format with country code (e.g. +14155552671)');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authService.requestPhoneOtp(p);
+      setSignupPhoneCodeSent(true);
+      toast.success('Verification code sent.');
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Could not send code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignupPhoneVerifyOtp = async () => {
+    const p = signupData.phoneNumber.trim();
+    if (!isValidE164Phone(p) || !/^\d{6}$/.test(signupPhoneOtp.trim())) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await authService.verifyPhoneOtp(p, signupPhoneOtp.trim());
+      if (data.accountExists) {
+        toast.error('An account with this phone already exists. Sign in with Phone instead.');
+        return;
+      }
+      setSignupPhoneVerified(true);
+      toast.success('Phone verified. Enter your email and password below.');
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Verification failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (signupChannel === 'phone' && !signupPhoneVerified) {
+      return;
+    }
+
     // Validate
     const errors: {[key: string]: string} = {};
     if (!signupData.email.trim()) errors.email = 'Email is required';
@@ -329,8 +417,10 @@ export default function AuthPage() {
     else if (signupData.password.length < 8) errors.password = 'Password must be at least 8 characters';
     if (signupData.password !== signupData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
     const phone = signupData.phoneNumber.trim();
-    if (phone && !isValidE164Phone(phone)) {
-      errors.phoneNumber = 'Use E.164 format with country code (e.g. +14155552671)';
+    if (signupChannel === 'phone') {
+      if (!phone || !isValidE164Phone(phone)) {
+        errors.phoneNumber = 'Use E.164 format with country code (e.g. +14155552671)';
+      }
     }
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -347,7 +437,7 @@ export default function AuthPage() {
         email: signupData.email,
         password: signupData.password,
         user_type: 'student', // All users start as consumers; barber applications are separate
-        phoneNumber: phone || undefined,
+        phoneNumber: signupChannel === 'phone' ? phone : undefined,
       });
       
       toast.success('Verification email sent! Please check your inbox.');
@@ -407,6 +497,10 @@ export default function AuthPage() {
     setPhoneLogin('');
     setPhoneOtp('');
     setPhoneCodeSent(false);
+    setSignupChannel('email');
+    setSignupPhoneOtp('');
+    setSignupPhoneCodeSent(false);
+    setSignupPhoneVerified(false);
   };
 
   // Viewport detection
@@ -705,252 +799,573 @@ export default function AuthPage() {
               </button>
 
               <p className="text-gray-500 text-xs text-center">
-                New account? After the code verifies, use <strong>Sign Up</strong> with the same phone and your email.
+                New account? After the code verifies, open <strong>Sign Up</strong> → <strong>Phone</strong> and finish with your email and password.
               </p>
             </form>
               )}
             </>
           )}
 
-          {/* Signup Form */}
+          {/* Signup: email or phone (SMS) then email + password */}
           {mode === 'signup' && (
-            <form onSubmit={handleSignupSubmit} className="space-y-4">
-              {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <label 
-                    htmlFor="firstName" 
-                    className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                  >
-                    First name (optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="firstName"
-                    name="firstName"
-                    value={signupData.firstName}
-                    onChange={handleSignupChange}
-                    className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                      validationErrors.firstName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
-                    }`}
-                    placeholder="John"
-                  />
-                </div>
-                <div className="relative">
-                  <label 
-                    htmlFor="lastName" 
-                    className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                  >
-                    Last name (optional)
-                  </label>
-                  <input
-                    type="text"
-                    id="lastName"
-                    name="lastName"
-                    value={signupData.lastName}
-                    onChange={handleSignupChange}
-                    className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                      validationErrors.lastName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
-                    }`}
-                    placeholder="Doe"
-                  />
-                </div>
+            <>
+              <div className="flex mb-4 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignupChannel('email');
+                    setError(null);
+                    setSignupPhoneOtp('');
+                    setSignupPhoneCodeSent(false);
+                    setSignupPhoneVerified(false);
+                    setSignupData((prev) => ({ ...prev, phoneNumber: '' }));
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                    signupChannel === 'email' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Mail size={16} aria-hidden />
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignupChannel('phone');
+                    setError(null);
+                    setSignupPhoneOtp('');
+                    setSignupPhoneCodeSent(false);
+                    setSignupPhoneVerified(false);
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${
+                    signupChannel === 'phone' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Phone size={16} aria-hidden />
+                  Phone
+                </button>
               </div>
 
-              {/* Email Field */}
-              <div className="relative">
-                <label 
-                  htmlFor="signup-email" 
-                  className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    id="signup-email"
-                    name="email"
-                    value={signupData.email}
-                    onChange={handleSignupChange}
-                    className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                      validationErrors.email ? 'border-red-400' : 
-                      (signupData.email && isValidEmail(signupData.email)) ? 'border-green-400 focus:border-green-500' :
-                      'border-primary-400 focus:border-primary-500'
-                    }`}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                  {signupData.email && (
-                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                      {isValidEmail(signupData.email) ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
+              {signupChannel === 'email' && (
+                <form onSubmit={handleSignupSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative">
+                      <label
+                        htmlFor="firstName"
+                        className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                      >
+                        First name (optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="firstName"
+                        name="firstName"
+                        value={signupData.firstName}
+                        onChange={handleSignupChange}
+                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          validationErrors.firstName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                        }`}
+                        placeholder="John"
+                      />
+                    </div>
+                    <div className="relative">
+                      <label
+                        htmlFor="lastName"
+                        className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                      >
+                        Last name (optional)
+                      </label>
+                      <input
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        value={signupData.lastName}
+                        onChange={handleSignupChange}
+                        className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          validationErrors.lastName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                        }`}
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <label
+                      htmlFor="signup-email"
+                      className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                    >
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        id="signup-email"
+                        name="email"
+                        value={signupData.email}
+                        onChange={handleSignupChange}
+                        className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                          validationErrors.email
+                            ? 'border-red-400'
+                            : signupData.email && isValidEmail(signupData.email)
+                              ? 'border-green-400 focus:border-green-500'
+                              : 'border-primary-400 focus:border-primary-500'
+                        }`}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                      {signupData.email && (
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                          {isValidEmail(signupData.email) ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-                {validationErrors.email && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
-                )}
-              </div>
-
-              <div className="relative">
-                <label
-                  htmlFor="signup-phoneNumber"
-                  className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                >
-                  Mobile phone (optional)
-                </label>
-                <input
-                  type="tel"
-                  id="signup-phoneNumber"
-                  name="phoneNumber"
-                  value={signupData.phoneNumber}
-                  onChange={handleSignupChange}
-                  className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    validationErrors.phoneNumber ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
-                  }`}
-                  placeholder="+14155552671"
-                  autoComplete="tel"
-                />
-                {validationErrors.phoneNumber && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
-                )}
-                <p className="text-gray-500 text-xs mt-1">E.164 with country code, or leave blank</p>
-              </div>
-
-              {/* Password Field */}
-              <div className="relative">
-                <label 
-                  htmlFor="signup-password" 
-                  className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                >
-                  Password
-                </label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="signup-password"
-                  name="password"
-                  value={signupData.password}
-                  onChange={handleSignupChange}
-                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    validationErrors.password ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
-                  }`}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                
-                {/* Password Strength Indicator */}
-                {signupData.password && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600">Strength:</span>
-                      <span className={getPasswordStrengthColor(passwordStrength)}>
-                        {getPasswordStrengthText(passwordStrength)}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex space-x-1">
-                      {[1, 2, 3, 4, 5].map((level) => (
-                        <div
-                          key={level}
-                          className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
-                            getPasswordStrengthBarColor(passwordStrength, level)
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="relative">
-                <label 
-                  htmlFor="confirmPassword" 
-                  className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
-                >
-                  Confirm Password
-                </label>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={signupData.confirmPassword}
-                  onChange={handleSignupChange}
-                  className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
-                    validationErrors.confirmPassword || (signupData.confirmPassword && signupData.password !== signupData.confirmPassword)
-                      ? 'border-red-400' 
-                      : 'border-primary-400 focus:border-primary-500'
-                  }`}
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-                
-                {/* Password Match Indicator */}
-                {signupData.confirmPassword && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {signupData.password === signupData.confirmPassword ? (
-                      <>
-                        <CheckCircle size={14} className="text-green-500" />
-                        <span className="text-green-600 text-xs">Passwords match</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle size={14} className="text-red-500" />
-                        <span className="text-red-600 text-xs">Passwords do not match</span>
-                      </>
+                    {validationErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-red-700 text-sm">{error}</p>
+                  <div className="relative">
+                    <label
+                      htmlFor="signup-password"
+                      className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                    >
+                      Password
+                    </label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="signup-password"
+                      name="password"
+                      value={signupData.password}
+                      onChange={handleSignupChange}
+                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                        validationErrors.password ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                      }`}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+
+                    {signupData.password && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Strength:</span>
+                          <span className={getPasswordStrengthColor(passwordStrength)}>
+                            {getPasswordStrengthText(passwordStrength)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex space-x-1">
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <div
+                              key={level}
+                              className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
+                                getPasswordStrengthBarColor(passwordStrength, level)
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+
+                  <div className="relative">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                    >
+                      Confirm Password
+                    </label>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={signupData.confirmPassword}
+                      onChange={handleSignupChange}
+                      className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                        validationErrors.confirmPassword ||
+                        (signupData.confirmPassword && signupData.password !== signupData.confirmPassword)
+                          ? 'border-red-400'
+                          : 'border-primary-400 focus:border-primary-500'
+                      }`}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+
+                    {signupData.confirmPassword && (
+                      <div className="flex items-center gap-1 mt-1">
+                        {signupData.password === signupData.confirmPassword ? (
+                          <>
+                            <CheckCircle size={14} className="text-green-500" />
+                            <span className="text-green-600 text-xs">Passwords match</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle size={14} className="text-red-500" />
+                            <span className="text-red-600 text-xs">Passwords do not match</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-red-700 text-sm">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={!isSignupFormValid || isLoading}
+                    className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                      isSignupFormValid && !isLoading
+                        ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Creating account...</span>
+                      </div>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </button>
+                </form>
               )}
 
-              {/* Signup Button */}
-              <button
-                type="submit"
-                disabled={!isSignupFormValid || isLoading}
-                className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
-                  isSignupFormValid && !isLoading
-                    ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Creating account...</span>
-                  </div>
-                ) : (
-                  'Create Account'
-                )}
-              </button>
-            </form>
+              {signupChannel === 'phone' && (
+                <form onSubmit={handleSignupSubmit} className="space-y-4">
+                  {!signupPhoneVerified && (
+                    <>
+                      <div className="relative">
+                        <label
+                          htmlFor="signup-phone-e164"
+                          className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                        >
+                          Phone (E.164)
+                        </label>
+                        <input
+                          type="tel"
+                          id="signup-phone-e164"
+                          name="phoneNumber"
+                          value={signupData.phoneNumber}
+                          onChange={handleSignupChange}
+                          className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            validationErrors.phoneNumber ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                          }`}
+                          placeholder="+14155552671"
+                          autoComplete="tel"
+                        />
+                        {validationErrors.phoneNumber && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
+                        )}
+                        <p className="text-gray-500 text-xs mt-1">Include country code. We will text you a 6-digit code.</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSignupPhoneSendCode}
+                        disabled={!canSendSignupPhoneCode || isLoading}
+                        className={`w-full py-3 rounded-lg font-semibold text-sm transition-all ${
+                          canSendSignupPhoneCode && !isLoading
+                            ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {signupPhoneCodeSent ? 'Resend code' : 'Send verification code'}
+                      </button>
+
+                      {signupPhoneCodeSent && (
+                        <div className="relative">
+                          <label
+                            htmlFor="signup-phone-otp"
+                            className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                          >
+                            6-digit code
+                          </label>
+                          <input
+                            type="text"
+                            id="signup-phone-otp"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            value={signupPhoneOtp}
+                            onChange={(e) => {
+                              setSignupPhoneOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                              if (error) setError(null);
+                            }}
+                            className="w-full pt-5 pb-3 px-4 border-2 border-primary-400 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 tracking-widest text-center text-lg"
+                            placeholder="000000"
+                          />
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handleSignupPhoneVerifyOtp}
+                        disabled={
+                          isLoading ||
+                          !canSendSignupPhoneCode ||
+                          !signupPhoneCodeSent ||
+                          !/^\d{6}$/.test(signupPhoneOtp.trim())
+                        }
+                        className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                          !isLoading &&
+                          canSendSignupPhoneCode &&
+                          signupPhoneCodeSent &&
+                          /^\d{6}$/.test(signupPhoneOtp.trim())
+                            ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {isLoading ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            <span>Verifying...</span>
+                          </div>
+                        ) : (
+                          'Verify phone'
+                        )}
+                      </button>
+                    </>
+                  )}
+
+                  {signupPhoneVerified && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <label
+                            htmlFor="signup-phone-firstName"
+                            className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                          >
+                            First name (optional)
+                          </label>
+                          <input
+                            type="text"
+                            id="signup-phone-firstName"
+                            name="firstName"
+                            value={signupData.firstName}
+                            onChange={handleSignupChange}
+                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                              validationErrors.firstName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                            }`}
+                            placeholder="John"
+                          />
+                        </div>
+                        <div className="relative">
+                          <label
+                            htmlFor="signup-phone-lastName"
+                            className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                          >
+                            Last name (optional)
+                          </label>
+                          <input
+                            type="text"
+                            id="signup-phone-lastName"
+                            name="lastName"
+                            value={signupData.lastName}
+                            onChange={handleSignupChange}
+                            className={`w-full pt-5 pb-3 px-4 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                              validationErrors.lastName ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                            }`}
+                            placeholder="Doe"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <label
+                          htmlFor="signup-phone-email"
+                          className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                        >
+                          Email Address
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="email"
+                            id="signup-phone-email"
+                            name="email"
+                            value={signupData.email}
+                            onChange={handleSignupChange}
+                            className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                              validationErrors.email
+                                ? 'border-red-400'
+                                : signupData.email && isValidEmail(signupData.email)
+                                  ? 'border-green-400 focus:border-green-500'
+                                  : 'border-primary-400 focus:border-primary-500'
+                            }`}
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                          />
+                          {signupData.email && (
+                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                              {isValidEmail(signupData.email) ? (
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                              ) : (
+                                <XCircle className="w-5 h-5 text-red-500" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {validationErrors.email && (
+                          <p className="text-red-500 text-xs mt-1">{validationErrors.email}</p>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <label
+                          htmlFor="signup-phone-password"
+                          className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                        >
+                          Password
+                        </label>
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          id="signup-phone-password"
+                          name="password"
+                          value={signupData.password}
+                          onChange={handleSignupChange}
+                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            validationErrors.password ? 'border-red-400' : 'border-primary-400 focus:border-primary-500'
+                          }`}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+
+                        {signupData.password && (
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-600">Strength:</span>
+                              <span className={getPasswordStrengthColor(passwordStrength)}>
+                                {getPasswordStrengthText(passwordStrength)}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex space-x-1">
+                              {[1, 2, 3, 4, 5].map((level) => (
+                                <div
+                                  key={level}
+                                  className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
+                                    getPasswordStrengthBarColor(passwordStrength, level)
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <label
+                          htmlFor="signup-phone-confirmPassword"
+                          className="absolute -top-2.5 left-3 text-sm font-medium text-gray-700 bg-white px-1 z-10"
+                        >
+                          Confirm Password
+                        </label>
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          id="signup-phone-confirmPassword"
+                          name="confirmPassword"
+                          value={signupData.confirmPassword}
+                          onChange={handleSignupChange}
+                          className={`w-full pt-5 pb-3 px-4 pr-12 border-2 rounded-lg focus:outline-none focus:ring-4 focus:ring-primary-400/20 transition-all duration-200 text-gray-900 placeholder-gray-400 ${
+                            validationErrors.confirmPassword ||
+                            (signupData.confirmPassword && signupData.password !== signupData.confirmPassword)
+                              ? 'border-red-400'
+                              : 'border-primary-400 focus:border-primary-500'
+                          }`}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+
+                        {signupData.confirmPassword && (
+                          <div className="flex items-center gap-1 mt-1">
+                            {signupData.password === signupData.confirmPassword ? (
+                              <>
+                                <CheckCircle size={14} className="text-green-500" />
+                                <span className="text-green-600 text-xs">Passwords match</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle size={14} className="text-red-500" />
+                                <span className="text-red-600 text-xs">Passwords do not match</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
+                      <div className="flex items-start space-x-3">
+                        <AlertCircle size={20} className="text-red-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-red-700 text-sm">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {signupPhoneVerified && (
+                    <button
+                      type="submit"
+                      disabled={!isSignupFormValid || isLoading}
+                      className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 ${
+                        isSignupFormValid && !isLoading
+                          ? 'bg-primary-400 hover:bg-primary-500 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                          <span>Creating account...</span>
+                        </div>
+                      ) : (
+                        'Create Account'
+                      )}
+                    </button>
+                  )}
+                </form>
+              )}
+            </>
           )}
 
           {/* Footer */}
