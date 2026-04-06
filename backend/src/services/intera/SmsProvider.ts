@@ -14,8 +14,29 @@ function notifyConfigurationId(): string {
 }
 
 /**
+ * SMS template id for SendNotifyTextMessage (required by AWS; variables are validated per template).
+ * AWS docs / CLI use e.g. `notify-code-verification-english-001`. List yours:
+ * `aws pinpoint-sms-voice-v2 describe-notify-templates --region us-west-1`
+ */
+function notifyTemplateId(): string {
+  const id = process.env.INTERA_NOTIFY_TEMPLATE_ID?.trim();
+  if (id && id.length > 0) return id;
+  /** Default for CODE_VERIFICATION SMS per AWS End User Messaging Notify getting-started examples. */
+  return 'notify-code-verification-english-001';
+}
+
+/**
+ * Key in `TemplateVariables` for the 6-digit code — must match that template’s placeholder (often `code`).
+ * AWS examples use `code`, not `otp`.
+ */
+function otpTemplateKey(): string {
+  const k = process.env.INTERA_NOTIFY_TEMPLATE_OTP_KEY?.trim();
+  return k && k.length > 0 ? k : 'code';
+}
+
+/**
  * SMS for the Intera app via AWS End User Messaging (Pinpoint SMS Voice v2) — Notify text API.
- * Message body comes from the Notify template in AWS (e.g. "Your Intera verification code is: {otp}").
+ * Message body comes from the Notify template selected by INTERA_NOTIFY_TEMPLATE_ID.
  */
 export class SmsProvider {
   private readonly client: PinpointSMSVoiceV2Client;
@@ -31,13 +52,15 @@ export class SmsProvider {
    * Send a one-time verification code via SMS.
    *
    * @param to - Destination number (E.164 preferred, e.g. +15551234567)
-   * @param code - Substituted for template variable `otp` (must match your Notify template)
+   * @param code - Substituted under key `INTERA_NOTIFY_TEMPLATE_OTP_KEY` (default `code`); must match template.
    */
   async sendVerificationSMS(to: string, code: string): Promise<void> {
+    const key = otpTemplateKey();
     const command = new SendNotifyTextMessageCommand({
       NotifyConfigurationId: notifyConfigurationId(),
+      TemplateId: notifyTemplateId(),
       DestinationPhoneNumber: normalizeE164(to),
-      TemplateVariables: { otp: code },
+      TemplateVariables: { [key]: code },
     });
 
     await this.client.send(command);
