@@ -33,6 +33,28 @@ function readPhoneFromBody(body: Record<string, unknown>): string | null {
   return s.length ? s : null;
 }
 
+/** AWS SDK v3 errors: keep message + request id in one log line (no second winston arg). */
+function formatSmsAwsError(err: unknown): string {
+  if (err == null) return String(err);
+  if (typeof err === 'string') return err;
+  if (!(err instanceof Error)) {
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return String(err);
+    }
+  }
+  const e = err as Error & {
+    name?: string;
+    Code?: string;
+    $metadata?: { httpStatusCode?: number; requestId?: string };
+  };
+  const rid = e.$metadata?.requestId;
+  const code = e.Code ?? e.name;
+  const base = e.message || '(no message)';
+  return [code, base, rid ? `requestId=${rid}` : null].filter(Boolean).join(' | ');
+}
+
 /**
  * POST /auth/request-otp
  * Body: { phoneNumber: string } (or `phone`)
@@ -66,8 +88,7 @@ export const requestPhoneOtp = async (req: AuthRequest, res: Response, next: Nex
       await getSmsProvider().sendVerificationSMS(phone, code);
     } catch (err: unknown) {
       await deletePhoneOtp(phone);
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error('Intera SMS send failed:', msg);
+      logger.error(`Intera SMS send failed: ${formatSmsAwsError(err)}`);
       throw new ApiError(502, 'Failed to send verification SMS. Please try again.');
     }
 

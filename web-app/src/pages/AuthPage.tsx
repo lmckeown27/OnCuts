@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
 import TabChairLogo from '../assets/logos/Tab_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
-import { isValidE164Phone } from '../utils/phoneE164';
+import { isValidE164Phone, normalizeE164Phone } from '../utils/phoneE164';
 
 type AuthMode = 'login' | 'signup';
 type LoginChannel = 'email' | 'phone';
@@ -283,11 +283,12 @@ export default function AuthPage() {
   };
 
   const handlePhoneSendCode = async () => {
-    const p = phoneLogin.trim();
-    if (!isValidE164Phone(p)) {
-      toast.error('Use E.164 format with country code (e.g. +14155552671)');
+    const raw = phoneLogin.trim();
+    if (!isValidE164Phone(raw)) {
+      toast.error('Enter a valid number with country code (e.g. +1 408 921 9541 or 14089219541)');
       return;
     }
+    const p = normalizeE164Phone(raw);
     setIsLoading(true);
     setError(null);
     try {
@@ -309,8 +310,9 @@ export default function AuthPage() {
 
   const handlePhoneLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const p = phoneLogin.trim();
-    if (!isValidE164Phone(p) || !/^\d{6}$/.test(phoneOtp.trim())) return;
+    const raw = phoneLogin.trim();
+    if (!isValidE164Phone(raw) || !/^\d{6}$/.test(phoneOtp.trim())) return;
+    const p = normalizeE164Phone(raw);
     setIsLoading(true);
     setError(null);
     try {
@@ -352,11 +354,12 @@ export default function AuthPage() {
   };
 
   const handleSignupPhoneSendCode = async () => {
-    const p = signupData.phoneNumber.trim();
-    if (!isValidE164Phone(p)) {
-      toast.error('Use E.164 format with country code (e.g. +14155552671)');
+    const raw = signupData.phoneNumber.trim();
+    if (!isValidE164Phone(raw)) {
+      toast.error('Enter a valid number with country code (e.g. +1 408 921 9541 or 14089219541)');
       return;
     }
+    const p = normalizeE164Phone(raw);
     setIsLoading(true);
     setError(null);
     try {
@@ -377,8 +380,9 @@ export default function AuthPage() {
   };
 
   const handleSignupPhoneVerifyOtp = async () => {
-    const p = signupData.phoneNumber.trim();
-    if (!isValidE164Phone(p) || !/^\d{6}$/.test(signupPhoneOtp.trim())) return;
+    const raw = signupData.phoneNumber.trim();
+    if (!isValidE164Phone(raw) || !/^\d{6}$/.test(signupPhoneOtp.trim())) return;
+    const p = normalizeE164Phone(raw);
     setIsLoading(true);
     setError(null);
     try {
@@ -416,10 +420,10 @@ export default function AuthPage() {
     if (!signupData.password) errors.password = 'Password is required';
     else if (signupData.password.length < 8) errors.password = 'Password must be at least 8 characters';
     if (signupData.password !== signupData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-    const phone = signupData.phoneNumber.trim();
+    const phoneRaw = signupData.phoneNumber.trim();
     if (signupChannel === 'phone') {
-      if (!phone || !isValidE164Phone(phone)) {
-        errors.phoneNumber = 'Use E.164 format with country code (e.g. +14155552671)';
+      if (!phoneRaw || !isValidE164Phone(phoneRaw)) {
+        errors.phoneNumber = 'Enter a valid number with country code (e.g. +14089219541)';
       }
     }
     if (Object.keys(errors).length > 0) {
@@ -437,7 +441,7 @@ export default function AuthPage() {
         email: signupData.email,
         password: signupData.password,
         user_type: 'student', // All users start as consumers; barber applications are separate
-        phoneNumber: signupChannel === 'phone' ? phone : undefined,
+        phoneNumber: signupChannel === 'phone' ? normalizeE164Phone(phoneRaw) : undefined,
       });
       
       toast.success('Verification email sent! Please check your inbox.');
@@ -729,7 +733,9 @@ export default function AuthPage() {
                   placeholder="+14155552671"
                   autoComplete="tel"
                 />
-                <p className="text-gray-500 text-xs mt-1">Include country code. We will text you a 6-digit code.</p>
+                <p className="text-gray-500 text-xs mt-1">
+                  Country code required (e.g. +14089219541 or 14089219541). We will text you a 6-digit code.
+                </p>
               </div>
 
               <button
@@ -1081,7 +1087,9 @@ export default function AuthPage() {
                         {validationErrors.phoneNumber && (
                           <p className="text-red-500 text-xs mt-1">{validationErrors.phoneNumber}</p>
                         )}
-                        <p className="text-gray-500 text-xs mt-1">Include country code. We will text you a 6-digit code.</p>
+                        <p className="text-gray-500 text-xs mt-1">
+                          Country code required (e.g. +14089219541 or 14089219541). We will text you a 6-digit code.
+                        </p>
                       </div>
 
                       <button
