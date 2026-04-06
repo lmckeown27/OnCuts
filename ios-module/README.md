@@ -124,7 +124,7 @@ The module connects to the CampusCuts backend API at `https://api.campuscut.com/
 
 Shell apps can authenticate users **before** building module views, using SMS codes (no JWT required for the first step):
 
-1. **`InteraPhoneAuth`** — public helper that calls `POST /auth/request-otp` and `POST /auth/verify-otp` (no `Authorization` header).
+1. **`InteraPhoneAuth`** — public helper that calls `POST /auth/request-otp` and `POST /auth/verify-otp` (no `Authorization` header). The API also accepts aliases **`POST /auth/signup/send-phone-code`** and **`POST /auth/signup/verify-phone-code`** with the same bodies (for clients that use sign-up–specific paths).
 2. After **`verify-otp`**, if the backend finds a user with that `phone_e164`, the response includes **`accessToken`**, **`refreshToken`**, and **`user`** — wire these into your `UserSessionProtocol` (same as email login or `POST /auth/google`).
 3. If **`accountExists` is false**, the code was valid but there is no account yet: continue with **`POST /auth/register`** (email + password + optional same E.164 phone), then email verification as in the web app.
 

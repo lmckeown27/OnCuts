@@ -89,7 +89,53 @@ sudo -u postgres psql -d campuscuts -x -c "SELECT * FROM users WHERE email = 'li
 
 ### View User with All Details
 ```bash
-sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, last_name, \"displayName\", role, email_verified, \"isVerified\", \"avatarUrl\", \"instagramHandle\", \"createdAt\" FROM users WHERE email = 'user@example.com';"
+sudo -u postgres psql -d campuscuts -c "SELECT id, email, first_name, last_name, \"displayName\", role, email_verified, \"isVerified\", \"avatarUrl\", \"instagramHandle\", phone_e164, \"createdAt\" FROM users WHERE email = 'user@example.com';"
+```
+
+### View user phone numbers (SMS / sign-up)
+
+Phone numbers are stored in **`users.phone_e164`** (E.164, e.g. `+14089219541`) when the user registered with phone verification or supplied a number at sign-up. **Nullable** if they signed up with email only.
+
+```bash
+# All users who have a phone on file (admin review)
+sudo -u postgres psql -d campuscuts -c "
+SELECT id, email, first_name, last_name, role, phone_e164, email_verified, \"createdAt\"
+FROM users
+WHERE phone_e164 IS NOT NULL
+ORDER BY \"createdAt\" DESC;
+"
+
+# Compact list: email + phone + role
+sudo -u postgres psql -d campuscuts -c "
+SELECT email, phone_e164, role
+FROM users
+WHERE phone_e164 IS NOT NULL
+ORDER BY email;
+"
+
+# Look up a user by phone (replace with full E.164 including +)
+sudo -u postgres psql -d campuscuts -x -c "SELECT id, email, first_name, last_name, role, phone_e164, email_verified FROM users WHERE phone_e164 = '+14085551234';"
+
+# Count users with vs without phone
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+  COUNT(*) FILTER (WHERE phone_e164 IS NOT NULL) AS with_phone,
+  COUNT(*) FILTER (WHERE phone_e164 IS NULL) AS without_phone,
+  COUNT(*) AS total
+FROM users;
+"
+```
+
+**Pending email verification** may still carry a phone in **`pending_registrations.phone_e164`** before the account is finalized:
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT email, phone_e164, role, created_at
+FROM pending_registrations
+WHERE phone_e164 IS NOT NULL
+ORDER BY created_at DESC
+LIMIT 50;
+"
 ```
 
 ### Update User Role

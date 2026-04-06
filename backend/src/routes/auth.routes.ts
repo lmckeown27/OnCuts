@@ -69,12 +69,47 @@ router.post(
 );
 
 /**
+ * @route   POST /api/auth/signup/send-phone-code
+ * @desc    Same as request-otp (alias for iOS / Intera clients that use this path during sign-up)
+ * @access  Public
+ */
+router.post(
+  '/signup/send-phone-code',
+  [
+    body('phoneNumber').optional().isString().trim(),
+    body('phone').optional().isString().trim(),
+    validate,
+  ],
+  requestPhoneOtp
+);
+
+/**
  * @route   POST /api/auth/verify-otp
  * @desc    Intera: verify SMS code; if users.phone_e164 matches, returns JWTs (same shape as login)
  * @access  Public
  */
 router.post(
   '/verify-otp',
+  [
+    body('phoneNumber').optional().isString().trim(),
+    body('phone').optional().isString().trim(),
+    body('code')
+      .notEmpty()
+      .withMessage('Verification code is required')
+      .matches(/^[0-9]{6}$/)
+      .withMessage('Verification code must be 6 digits'),
+    validate,
+  ],
+  verifyPhoneOtp
+);
+
+/**
+ * @route   POST /api/auth/signup/verify-phone-code
+ * @desc    Same as verify-otp (alias for iOS / Intera sign-up flows)
+ * @access  Public
+ */
+router.post(
+  '/signup/verify-phone-code',
   [
     body('phoneNumber').optional().isString().trim(),
     body('phone').optional().isString().trim(),
