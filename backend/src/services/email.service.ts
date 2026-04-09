@@ -1,16 +1,15 @@
 /**
- * Email Service - SMTP Email Verification for CampusCuts
- * 
- * Handles sending verification emails and password reset emails using SMTP.
- * 
- * ## Environment Variables Required:
- * - SMTP_HOST: SMTP server hostname
- * - SMTP_PORT: SMTP server port (usually 587 for TLS)
- * - SMTP_USER: SMTP authentication username
- * - SMTP_PASS: SMTP authentication password
- * - FRONTEND_URL: Frontend base URL for email links
- * - AUTO_VERIFY_EMAILS: Set to 'true' to skip email sending in development
- * 
+ * Email Service - SMTP for signup email verification only (CampusCuts)
+ *
+ * SMTP is used only for the 6-digit signup verification email and health `verify`.
+ * Other email-shaped flows (password reset, bookings, messages, etc.) keep their
+ * APIs but do not open SMTP or send mail.
+ *
+ * ## Environment Variables (verification + verify):
+ * - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS
+ * - FRONTEND_URL: Frontend base URL for verification email links
+ * - AUTO_VERIFY_EMAILS: Set to 'true' to skip verification email in development
+ *
  * @module email.service
  */
 
@@ -57,17 +56,13 @@ function getEmailConfig(): EmailConfig {
 }
 
 /**
- * Create Nodemailer Transporter
- * 
- * Creates and configures SMTP transporter for sending emails.
- * 
- * @returns Nodemailer transporter instance
+ * Real SMTP transporter — only for signup verification email and verifyEmailService().
  */
-function createTransporter() {
+function createRealSmtpTransporter() {
   try {
     const config = getEmailConfig();
-    
-    const transporter = nodemailer.createTransport({
+
+    return nodemailer.createTransport({
       host: config.host,
       port: config.port,
       secure: config.secure,
@@ -76,12 +71,22 @@ function createTransporter() {
         rejectUnauthorized: process.env.NODE_ENV === 'production'
       }
     });
-
-    return transporter;
   } catch (error) {
     logger.error('Failed to create email transporter:', error);
     throw error;
   }
+}
+
+/**
+ * No-op transporter for non-verification code paths (no SMTP, no send).
+ */
+function createSkippedSmtpTransporter(context: string): nodemailer.Transporter {
+  return {
+    sendMail: async () => {
+      logger.info(`[SMTP verification-only] Skipped send (${context})`);
+      return { messageId: 'verification-only-skip' } as nodemailer.SentMessageInfo;
+    }
+  } as unknown as nodemailer.Transporter;
 }
 
 /**
@@ -115,7 +120,7 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -155,7 +160,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createRealSmtpTransporter();
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const mailOptions = {
@@ -198,7 +203,7 @@ export async function sendPasswordResetEmail(email: string, resetLink: string): 
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -232,7 +237,7 @@ export async function verifyEmailService(): Promise<boolean> {
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createRealSmtpTransporter();
     await transporter.verify();
     logger.info('Email service verified successfully');
     return true;
@@ -421,7 +426,7 @@ export async function sendWelcomeEmail(email: string, firstName: string): Promis
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const mailOptions = {
@@ -535,7 +540,7 @@ export async function sendBookingConfirmationEmails(details: BookingConfirmation
 
   // Send to consumer
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -553,7 +558,7 @@ export async function sendBookingConfirmationEmails(details: BookingConfirmation
 
   // Send to barber
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const barberMailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -757,7 +762,7 @@ export async function sendPendingBookingEmails(details: PendingBookingEmailDetai
 
   // Send receipt to consumer
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -775,7 +780,7 @@ export async function sendPendingBookingEmails(details: PendingBookingEmailDetai
 
   // Send notification to barber
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const barberMailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -993,7 +998,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
 
   // Send to consumer
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     await transporter.sendMail({
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -1057,7 +1062,7 @@ export async function sendBookingEditEmails(details: BookingEditEmailDetails): P
 
   // Send to barber
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     await transporter.sendMail({
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -1170,7 +1175,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
   // Send to consumer - Payment Request
   try {
     logger.info(`[BOOKING COMPLETE EMAIL] Creating transporter for consumer email...`);
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerMailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -1194,7 +1199,7 @@ export async function sendBookingCompletedEmails(details: BookingCompletedEmailD
       logger.warn(`[BOOKING COMPLETE EMAIL] Missing barber email for booking ${details.bookingId}, skipping barber notification`);
     } else {
       logger.info(`[BOOKING COMPLETE EMAIL] Sending barber confirmation email to ${details.barberEmail}...`);
-      const transporter = createTransporter();
+      const transporter = createSkippedSmtpTransporter('transactional');
       
       const barberMailOptions = {
         from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -1428,7 +1433,7 @@ export async function sendBarberApplicationNotification(
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
 
     const mailOptions = {
@@ -1704,7 +1709,7 @@ export async function sendBookingCancellationEmails(details: BookingCancellation
 
   // Send to consumer
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const consumerSubject = details.cancelledBy === 'consumer'
       ? `Booking Cancelled: Your ${details.serviceName} appointment`
@@ -1726,7 +1731,7 @@ export async function sendBookingCancellationEmails(details: BookingCancellation
 
   // Send to barber
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const barberSubject = details.cancelledBy === 'barber'
       ? `Booking Cancelled: Your ${details.serviceName} with ${details.consumerName}`
@@ -1978,7 +1983,7 @@ export async function sendBookingDeclineEmail(details: BookingDeclineEmailDetail
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -2194,7 +2199,7 @@ export async function sendBookingReminderEmail(details: BookingReminderEmailDeta
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -2377,7 +2382,7 @@ export async function sendBarberReminderEmail(details: BookingReminderEmailDetai
   const frontendUrl = process.env.FRONTEND_URL || 'https://campuscut.com';
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
     
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -2657,7 +2662,7 @@ The CampusCut Team
   }
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -2823,7 +2828,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -2966,7 +2971,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -3078,7 +3083,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -3293,7 +3298,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -3474,7 +3479,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -3655,7 +3660,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -3833,7 +3838,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -4002,7 +4007,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -4174,7 +4179,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
@@ -4369,7 +4374,7 @@ CampusCut
 </html>`.trim();
 
   try {
-    const transporter = createTransporter();
+    const transporter = createSkippedSmtpTransporter('transactional');
 
     const mailOptions = {
       from: `CampusCut <${process.env.SMTP_USER}>`,
