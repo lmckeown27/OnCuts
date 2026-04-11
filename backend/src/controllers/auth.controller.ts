@@ -751,6 +751,36 @@ export const resendVerificationCode = async (req: AuthRequest, res: Response, ne
 };
 
 /**
+ * GET check-email?email=
+ *
+ * Mobile clients use this to branch between sign-in (account exists) and sign-up / pending verification.
+ * Note: reveals whether an address has a CampusCut account (common tradeoff for this UX).
+ */
+export const checkEmail = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const email = String(req.query.email ?? '').trim();
+
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM($1))',
+      [email]
+    );
+    const exists = existingUser.rows.length > 0;
+    const hasPendingRegistrationFlag = exists ? false : await hasPendingRegistration(email);
+
+    res.json({
+      success: true,
+      data: {
+        exists,
+        registered: exists,
+        hasPendingRegistration: hasPendingRegistrationFlag,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Login user
  */
 export const login = async (req: AuthRequest, res: Response, next: NextFunction) => {

@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 import {
   register,
   login,
@@ -12,6 +12,7 @@ import {
   resetPassword,
   refreshToken,
   getCurrentUser,
+  checkEmail,
 } from '../controllers/auth.controller';
 import { requestPhoneOtp, verifyPhoneOtp } from '../controllers/intera-otp.controller';
 import { authenticate } from '../middleware/auth';
@@ -171,6 +172,17 @@ router.post(
     validate,
   ],
   resendVerificationCode
+);
+
+/**
+ * @route   GET /api/auth/check-email?email=
+ * @desc    Whether the email already has an account (and optional pending registration flag)
+ * @access  Public
+ */
+router.get(
+  '/check-email',
+  [query('email').isEmail().withMessage('Valid email required'), validate],
+  checkEmail
 );
 
 /**
