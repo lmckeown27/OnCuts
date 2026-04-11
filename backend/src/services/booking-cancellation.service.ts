@@ -8,6 +8,16 @@ import { logger } from '../utils/logger';
 import notificationService from './notification.service';
 import { sendBookingCancellationEmails } from './email.service';
 
+function mergeConversationLocation(
+  loc: string | null | undefined,
+  details: string | null | undefined
+): string | null {
+  const a = loc != null ? String(loc).trim() : '';
+  const b = details != null ? String(details).trim() : '';
+  if (a && b) return `${a} — ${b}`;
+  return a || b || null;
+}
+
 export interface BookingCancellationRow {
   id: string;
   status: string;
@@ -16,6 +26,7 @@ export interface BookingCancellationRow {
   priceUsdCents: number;
   scheduledTime: Date | string;
   location?: string | null;
+  location_details?: string | null;
   original_service_name?: string | null;
   barberId: string;
   barber_user_id: string;
@@ -35,7 +46,7 @@ export async function fetchBookingForParticipantCancellation(
 ): Promise<BookingCancellationRow | null> {
   const bookingCheck = await pool.query(
     `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt" as "scheduledTime",
-            c.location, c.service_name as original_service_name,
+            c.location, c.location_details, c.service_name as original_service_name,
             bar.id as "barberId", bar."userId" as barber_user_id, bar."campusId" as campus_id,
             u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,
             u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name, u_barber.email as barber_email,
@@ -270,7 +281,7 @@ export async function executeParticipantBookingCancellation(
       typeof booking.scheduledTime === 'string'
         ? booking.scheduledTime
         : (booking.scheduledTime as Date).toISOString(),
-    location: booking.location ?? undefined,
+    location: mergeConversationLocation(booking.location, booking.location_details) ?? undefined,
     consumerName,
     consumerEmail: booking.consumer_email ?? '',
     barberName,

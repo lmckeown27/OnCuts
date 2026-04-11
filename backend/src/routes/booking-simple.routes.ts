@@ -19,6 +19,17 @@ import { executeParticipantBookingCancellation } from '../services/booking-cance
 
 const router = express.Router();
 
+/** Merge short label + details (mobile often sends details in `locationDetails` only). */
+function mergeConversationLocation(
+  loc: string | null | undefined,
+  details: string | null | undefined
+): string | null {
+  const a = loc != null ? String(loc).trim() : '';
+  const b = details != null ? String(details).trim() : '';
+  if (a && b) return `${a} — ${b}`;
+  return a || b || null;
+}
+
 /**
  * Archive messages for a booking before deletion
  * This preserves message history for admin viewing
@@ -328,14 +339,15 @@ router.post('/', authenticate, async (req, res, next) => {
           `INSERT INTO conversations (
             user1_id, user2_id, booking_id, 
             service_name, service_price, scheduled_time,
-            location, notes, booking_status,
+            location, location_details, notes, booking_status,
             is_active, created_at, updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
           ON CONFLICT (user1_id, user2_id, booking_id) DO UPDATE SET 
             service_name = EXCLUDED.service_name,
             service_price = EXCLUDED.service_price,
             scheduled_time = EXCLUDED.scheduled_time,
             location = EXCLUDED.location,
+            location_details = EXCLUDED.location_details,
             notes = EXCLUDED.notes`,
           [
             consumerId,
@@ -345,6 +357,7 @@ router.post('/', authenticate, async (req, res, next) => {
             price > 0 ? price / 100 : null, // conversations.service_price is dollars; price is cents
             requestedTime,
             location || null,
+            locationDetails != null && locationDetails !== '' ? String(locationDetails) : null,
             notes || null,
           ]
         );
@@ -591,6 +604,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         barber.id as barber_record_id,
         c.id as conversation_id,
         c.location as conv_location,
+        c.location_details as conv_location_details,
         c.notes as conv_notes,
         c.service_name as conv_service_name
       FROM bookings b
@@ -641,7 +655,8 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           paidAt: row.paidAt,
           completedAt: row.completedAt || null,
           paymentMethod: row.paymentMethod || null,
-          location: row.conv_location || null,
+          location: mergeConversationLocation(row.conv_location, row.conv_location_details),
+          locationDetails: row.conv_location_details || null,
           notes: row.conv_notes || null,
           review: row.reviewRating ? {
             rating: row.reviewRating,
@@ -703,8 +718,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."reviewedAt",
         conv.id as conversation_id,
         conv.service_name,
-        conv.location,
-        conv.notes,
+        conv.location as conv_location,
+        conv.location_details as conv_location_details,
+        conv.notes as conv_notes,
         barber_record.id as barber_record_id,
         barber_user.id as barber_user_id,
         barber_user.first_name as barber_first_name,
@@ -743,8 +759,9 @@ router.get('/:id', authenticate, async (req, res, next) => {
       paidAt: row.paidAt,
       tipAmountCents: row.tipAmountCents,
       totalPaidCents: row.totalPaidCents,
-      location: row.location,
-      notes: row.notes,
+      location: mergeConversationLocation(row.conv_location, row.conv_location_details),
+      locationDetails: row.conv_location_details || null,
+      notes: row.conv_notes,
       // Review data (from consumer after service completion)
       reviewRating: row.reviewRating || null,
       reviewComment: row.reviewComment || null,
@@ -850,7 +867,8 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
               barber_user.email as barber_email,
               c.service_name as original_service_name,
-              c.location,
+              c.location as conv_location,
+              c.location_details as conv_location_details,
               COALESCE(campus.timezone, 'America/New_York') as campus_timezone
        FROM bookings b
        JOIN barbers barber ON b."barberId" = barber.id
@@ -870,6 +888,10 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
     }
 
     const booking = barberCheck.rows[0];
+    const mergedServiceLocation = mergeConversationLocation(
+      booking.conv_location,
+      booking.conv_location_details
+    );
 
     // Update booking status to COMPLETED
     const result = await pool.query(
@@ -929,7 +951,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
         price: booking.priceUsdCents / 100,
         scheduledDate,
         scheduledTime,
-        location: booking.location,
+        location: mergedServiceLocation ?? undefined,
         consumerName: booking.consumer_name,
         consumerEmail: booking.consumer_email,
         barberName: booking.barber_name,
@@ -958,7 +980,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
         paymentUrl,
         scheduledDate,
         scheduledTime,
-        location: booking.location,
+        location: mergedServiceLocation,
       });
       logger.info(`Emitted 'booking-completed' event to consumer ${booking.consumerId} for booking ${id}`);
     }
@@ -1191,6 +1213,7 @@ router.get('/', authenticate, async (req, res, next) => {
         barber_user."avatarUrl" as barber_avatar,
         -- Pull additional data from linked conversation
         c.location as conv_location,
+        c.location_details as conv_location_details,
         c.notes as conv_notes,
         c.service_name as conv_service_name
       FROM bookings b
@@ -1233,7 +1256,8 @@ router.get('/', authenticate, async (req, res, next) => {
           status: row.status,
           createdAt: row.createdAt,
           // Consumer-provided input data from conversation
-          location: row.conv_location || null,
+          location: mergeConversationLocation(row.conv_location, row.conv_location_details),
+          locationDetails: row.conv_location_details || null,
           notes: row.conv_notes || null,
           serviceName: row.conv_service_name || null,
           // Payment tracking fields
@@ -1282,7 +1306,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
               b."requestedAt" as scheduled_time,
-              c.service_name, c.location,
+              c.service_name, c.location as conv_location, c.location_details as conv_location_details,
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
               consumer.first_name || ' ' || consumer.last_name as consumer_name,
@@ -1306,6 +1330,10 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     }
 
     const booking = bookingCheck.rows[0];
+    const mergedPaymentLocation = mergeConversationLocation(
+      booking.conv_location,
+      booking.conv_location_details
+    );
 
     // Check if user is the barber (normalize UUIDs — pg vs JWT can differ by case)
     if (!sameUuid(booking.barber_user_id, userId)) {
@@ -1384,7 +1412,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
         price: booking.priceUsdCents / 100,
         scheduledDate,
         scheduledTime,
-        location: booking.location,
+        location: mergedPaymentLocation ?? undefined,
         consumerName: booking.consumer_name,
         consumerEmail: booking.consumer_email,
         barberName: booking.barber_name,
@@ -1410,7 +1438,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
         paymentUrl,
         scheduledDate,
         scheduledTime,
-        location: booking.location,
+        location: mergedPaymentLocation,
       });
       logger.info(
         `[REQUEST-PAYMENT] Emitted booking-completed to consumer ${booking.consumerId} for booking ${id}`
@@ -2019,13 +2047,14 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
  * PUT /api/v1/bookings-simple/:id
  * Edit booking details (barber only for ACCEPTED bookings)
  * - scheduledTime updates the bookings table ("requestedAt" column)
- * - location and notes update the linked conversations table
+ * - location, locationDetails, and notes update the linked conversations table
  */
 router.put('/:id', authenticate, async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.userId;
     const { scheduledTime, location, notes } = req.body;
+    const locationDetailsRaw = (req.body as any).locationDetails ?? (req.body as any).location_details;
 
     // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
@@ -2035,7 +2064,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
               u_consumer.email as consumer_email,
               u_barber.first_name as barber_first_name, u_barber.last_name as barber_last_name,
               u_barber.email as barber_email,
-              c.id as conversation_id, c.location as conv_location, c.notes as conv_notes, c.service_name
+              c.id as conversation_id, c.location as conv_location, c.location_details as conv_location_details, c.notes as conv_notes, c.service_name
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        JOIN users u_consumer ON b."consumerId" = u_consumer.id
@@ -2063,6 +2092,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     let updatedScheduledTime = booking.requestedAt;
     let updatedLocation = booking.conv_location;
+    let updatedLocationDetails = booking.conv_location_details;
     let updatedNotes = booking.conv_notes;
 
     // Update scheduledTime on bookings table
@@ -2077,8 +2107,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
       logger.info(`Updated booking ${id} scheduledTime to ${scheduledTime}`);
     }
 
-    // Update scheduled_time, location and/or notes on conversations table (if linked)
-    if (scheduledTime !== undefined || location !== undefined || notes !== undefined) {
+    // Update scheduled_time, location, location_details and/or notes on conversations table (if linked)
+    if (scheduledTime !== undefined || location !== undefined || locationDetailsRaw !== undefined || notes !== undefined) {
       if (booking.conversation_id) {
         const convUpdates: string[] = [];
         const convValues: any[] = [];
@@ -2092,6 +2122,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
           convUpdates.push(`location = $${convParamIndex++}`);
           convValues.push(location);
           updatedLocation = location;
+        }
+        if (locationDetailsRaw !== undefined) {
+          const ld = locationDetailsRaw === '' ? null : String(locationDetailsRaw);
+          convUpdates.push(`location_details = $${convParamIndex++}`);
+          convValues.push(ld);
+          updatedLocationDetails = ld;
         }
         if (notes !== undefined) {
           convUpdates.push(`notes = $${convParamIndex++}`);
@@ -2140,6 +2176,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
             convValues.push(location);
             updatedLocation = location;
           }
+          if (locationDetailsRaw !== undefined) {
+            const ld = locationDetailsRaw === '' ? null : String(locationDetailsRaw);
+            convUpdates.push(`location_details = $${convParamIndex++}`);
+            convValues.push(ld);
+            updatedLocationDetails = ld;
+          }
           if (notes !== undefined) {
             convUpdates.push(`notes = $${convParamIndex++}`);
             convValues.push(notes);
@@ -2160,10 +2202,15 @@ router.put('/:id', authenticate, async (req, res, next) => {
           logger.warn(`No conversation found for booking ${id} - scheduled_time/location/notes not saved to conversation`);
           // Still update the response values so frontend shows what user entered
           if (location !== undefined) updatedLocation = location;
+          if (locationDetailsRaw !== undefined) {
+            updatedLocationDetails = locationDetailsRaw === '' ? null : String(locationDetailsRaw);
+          }
           if (notes !== undefined) updatedNotes = notes;
         }
       }
     }
+
+    const mergedLocationForResponse = mergeConversationLocation(updatedLocation, updatedLocationDetails);
 
     // If scheduledTime was changed, notify the OTHER party and send emails
     if (scheduledTime) {
@@ -2247,8 +2294,9 @@ router.put('/:id', authenticate, async (req, res, next) => {
           originalScheduledTime: originalFormattedTime,
           newScheduledDate: formattedDate,
           newScheduledTime: formattedTime,
-          originalLocation: booking.conv_location || undefined,
-          newLocation: updatedLocation || undefined,
+          originalLocation:
+            mergeConversationLocation(booking.conv_location, booking.conv_location_details) || undefined,
+          newLocation: mergedLocationForResponse || undefined,
           originalNotes: booking.conv_notes || undefined,
           newNotes: updatedNotes || undefined,
           price: priceUsdCents / 100,
@@ -2263,7 +2311,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     const bookingUpdate = {
       id,
       scheduledTime: updatedScheduledTime,
-      location: updatedLocation,
+      location: mergedLocationForResponse,
+      locationDetails: updatedLocationDetails,
       notes: updatedNotes,
       status: booking.status,
       barberId: booking.barberId,
@@ -2287,7 +2336,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
         booking: {
           id,
           scheduledTime: updatedScheduledTime,
-          location: updatedLocation,
+          location: mergedLocationForResponse,
+          locationDetails: updatedLocationDetails,
           notes: updatedNotes,
           status: booking.status,
         }

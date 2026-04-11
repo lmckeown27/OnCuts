@@ -13,6 +13,16 @@ import { logger } from '../utils/logger';
 import notificationService from './notification.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
+function mergeConversationLocation(
+  loc: string | null | undefined,
+  details: string | null | undefined
+): string | null {
+  const a = loc != null ? String(loc).trim() : '';
+  const b = details != null ? String(details).trim() : '';
+  if (a && b) return `${a} — ${b}`;
+  return a || b || null;
+}
+
 interface TimeInterval {
   start: string;
   end: string;
@@ -303,6 +313,7 @@ export class BookingRequestService {
           u.bio,
           u."avatarUrl" as profile_image_url,
           c.location as booking_location,
+          c.location_details as booking_location_details,
           c.notes as booking_notes,
           COALESCE(campus.timezone, 'America/New_York') as campus_timezone
         FROM bookings b
@@ -371,7 +382,7 @@ export class BookingRequestService {
           requestedDate: row.requested_date,
           requestedTime: formatTime(row.requested_time),
           price: parseFloat(row.price) || 0,
-          location: row.booking_location || null,
+          location: mergeConversationLocation(row.booking_location, row.booking_location_details),
           message: row.booking_notes || '',
           status: row.status,
           requestedAt: row.requested_at,
@@ -400,6 +411,7 @@ export class BookingRequestService {
           c.service_price,
           c.scheduled_time,
           c.location,
+          c.location_details,
           c.notes,
           c.booking_status,
           c.consumer_name,
@@ -460,7 +472,7 @@ export class BookingRequestService {
               ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: barberCampusTimezone })
               : '',
             price: parseFloat(row.service_price) || 0,
-            location: row.location || null,
+            location: mergeConversationLocation(row.location, row.location_details),
             message: row.notes || '',
             status: 'pending',
             requestedAt: row.created_at,
@@ -1136,7 +1148,8 @@ export class BookingRequestService {
           b."priceUsdCents",
           b."requestedAt" as "scheduledTime",
           c.service_name as "serviceName",
-          c.location,
+          c.location as conv_location,
+          c.location_details as conv_location_details,
           c.notes,
           u_consumer.id as consumer_id,
           u_consumer.first_name as consumer_first_name,
@@ -1182,7 +1195,7 @@ export class BookingRequestService {
           hour12: true,
           timeZone: campusTimezone
         }),
-        location: booking.location || undefined,
+        location: mergeConversationLocation(booking.conv_location, booking.conv_location_details) ?? undefined,
         notes: booking.notes || undefined,
         consumerName: `${booking.consumer_first_name} ${booking.consumer_last_name}`,
         consumerEmail: booking.consumer_email,
