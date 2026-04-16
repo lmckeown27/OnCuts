@@ -11,6 +11,7 @@
  */
 
 import { pool } from '../database/connection';
+import { logger } from '../utils/logger';
 
 // Optional mobile dependencies - gracefully handle if not installed
 let apn: any, admin: any;
@@ -139,6 +140,10 @@ class PushNotificationService {
       console.log(`📱 Found ${devices.rows.length} registered devices`);
 
       if (devices.rows.length === 0) {
+        logger.warn('📱 Push not delivered: no registered devices', {
+          userId,
+          notificationType: notification.type,
+        });
         return { success: false, reason: 'No registered devices' };
       }
 
@@ -152,6 +157,16 @@ class PushNotificationService {
           } else if (device.platform === 'android' && this.fcmApp) {
             const result = await this.sendAndroidNotification(device.device_token, notification);
             results.push({ platform: 'android', token: device.device_token, result });
+          } else if (device.platform === 'ios' && !this.apnProvider) {
+            logger.warn('📱 Push skipped: iOS device but APN provider not initialized', {
+              userId,
+              notificationType: notification.type,
+            });
+          } else if (device.platform === 'android' && !this.fcmApp) {
+            logger.warn('📱 Push skipped: Android device but FCM not initialized', {
+              userId,
+              notificationType: notification.type,
+            });
           }
         } catch (deviceError: any) {
           console.error(`❌ Error sending to device:`, deviceError);
@@ -163,12 +178,31 @@ class PushNotificationService {
         }
       }
 
+      if (results.length === 0 && devices.rows.length > 0) {
+        logger.warn('📱 Push not delivered: no sends attempted (check APN/FCM env and platform)', {
+          userId,
+          notificationType: notification.type,
+          deviceCount: devices.rows.length,
+          platforms: [...new Set(devices.rows.map((d: { platform: string }) => d.platform))],
+          apnInitialized: !!this.apnProvider,
+          fcmInitialized: !!this.fcmApp,
+        });
+        return {
+          success: false,
+          reason: 'No push provider available for registered device platforms',
+        };
+      }
+
       // Log notification
       await this.logNotification(userId, notification, results);
 
       return { success: true, results };
     } catch (error) {
       console.error('❌ Push notification error:', error);
+      logger.error('📱 Push notification error', {
+        userId,
+        err: error instanceof Error ? error.message : error,
+      });
       return { success: false, error };
     }
   }
@@ -377,7 +411,21 @@ class PushNotificationService {
       },
     };
 
-    return await this.sendNotification(recipientId, notification);
+    const result = await this.sendNotification(recipientId, notification);
+    if (!result?.success) {
+      const reason =
+        typeof result?.reason === 'string'
+          ? result.reason
+          : result?.error
+            ? String(result.error)
+            : 'unknown';
+      logger.warn('📱 Message push not delivered', {
+        recipientId,
+        reason,
+        notificationType: 'message',
+      });
+    }
+    return result;
   }
 
   /**
