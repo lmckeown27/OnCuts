@@ -200,12 +200,17 @@ class AuthService {
       throw new Error('No refresh token available');
     }
     
-    const response = await api.post<{ accessToken: string }>('/auth/refresh-token', {
-      refreshToken,
-    });
-    
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
-    return response.accessToken;
+    const response = await api.post<{ accessToken?: string; token?: string }>(
+      '/auth/refresh-token',
+      { refreshToken }
+    );
+
+    const access = response.accessToken ?? response.token;
+    if (!access) {
+      throw new Error('Refresh response did not include an access token');
+    }
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
+    return access;
   }
 
   async requestPasswordReset(email: string): Promise<void> {

@@ -55,14 +55,19 @@ class ApiService {
           
           if (refreshToken) {
             try {
-              const response = await this.post<{ accessToken: string }>('/auth/refresh-token', {
-                refreshToken,
-              });
-              
-              if (response.accessToken) {
-                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.accessToken);
-                // Retry the original request
+              const response = await this.post<{ accessToken?: string; token?: string }>(
+                '/auth/refresh-token',
+                { refreshToken }
+              );
+
+              const newAccess = response.accessToken ?? response.token;
+              if (newAccess) {
+                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newAccess);
+                // Retry the original request (config still has old Authorization; update header)
                 if (error.config) {
+                  if (error.config.headers) {
+                    error.config.headers.Authorization = `Bearer ${newAccess}`;
+                  }
                   return this.client.request(error.config);
                 }
               }
