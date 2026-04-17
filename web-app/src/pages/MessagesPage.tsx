@@ -120,6 +120,21 @@ interface MessageWithSender {
   isOwn?: boolean;
 }
 
+/** Absolute URL for chat images: pass through https; prefix relative `/api/uploads/...` with API origin. */
+function resolveChatMediaUrl(raw: string | undefined | null): string {
+  if (raw == null || String(raw).trim() === '') return '';
+  const trimmed = String(raw).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const origin =
+    (import.meta.env.VITE_API_ORIGIN as string | undefined) ||
+    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/api\/v1\/?$/, '') ||
+    '';
+  if (trimmed.startsWith('/') && origin) {
+    return `${origin.replace(/\/$/, '')}${trimmed}`;
+  }
+  return trimmed;
+}
+
 export default function MessagesPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -1248,9 +1263,52 @@ export default function MessagesPage() {
                             : 'bg-white border border-gray-200 text-gray-900 rounded-bl-sm'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap break-words">
-                          {message.content || ''}
-                        </p>
+                        {(() => {
+                          const mt = String(
+                            message.messageType || message.message_type || 'text'
+                          ).toLowerCase();
+                          const rawMedia = message.mediaUrl || message.media_url;
+                          const isImage = mt === 'image' && !!rawMedia;
+                          const imgSrc = isImage ? resolveChatMediaUrl(rawMedia) : '';
+                          const cap = (message.content || '').trim();
+                          const showCaption =
+                            cap.length > 0 && cap !== '📷 Photo';
+
+                          if (isImage && imgSrc) {
+                            return (
+                              <div className="space-y-2">
+                                <a
+                                  href={imgSrc}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <img
+                                    src={imgSrc}
+                                    alt={showCaption ? cap : 'Sent image'}
+                                    className="max-w-[min(100%,min(280px,70vw))] max-h-64 rounded-lg object-contain bg-black/10"
+                                    loading="lazy"
+                                  />
+                                </a>
+                                {showCaption && (
+                                  <p
+                                    className={`text-sm whitespace-pre-wrap break-words ${
+                                      isOwn ? 'text-white' : ''
+                                    }`}
+                                  >
+                                    {cap}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <p className="text-sm whitespace-pre-wrap break-words">
+                              {message.content || ''}
+                            </p>
+                          );
+                        })()}
                       </div>
                       {showTimestamp && (message.createdAt || message.created_at) && (
                         <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
