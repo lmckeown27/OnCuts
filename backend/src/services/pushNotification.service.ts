@@ -258,13 +258,41 @@ class PushNotificationService {
 
     const result = await this.apnProvider.send(note, deviceToken);
 
-    // Handle failed devices
+    // Apple can reject the notification (wrong env/token/topic) while still returning 200 from our HTTP client.
+    // node-apn puts rejections in `failed`; `sent` stays empty — we must not treat that as success.
     if (result.failed && result.failed.length > 0) {
       for (const failure of result.failed) {
-        if (failure.status === '410' || failure.status === '400') {
+        const apnsReason =
+          (failure as any).response?.reason ||
+          (failure as any).error?.message ||
+          (failure as any).status ||
+          'unknown';
+        logger.warn('📱 APNs rejected notification', {
+          tokenSuffix: deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)',
+          httpStatus: (failure as any).status,
+          reason: apnsReason,
+          topic: note.topic,
+          hint:
+            apnsReason === 'BadDeviceToken' || apnsReason === 'DeviceTokenNotForTopic'
+              ? 'Token/topic/env mismatch: set APN_BUNDLE_ID to the app bundle id; for Xcode debug builds use APN_USE_SANDBOX=true if NODE_ENV is production'
+              : apnsReason === 'BadCertificateEnvironment'
+                ? 'Wrong APNs environment (sandbox vs production) for this device token'
+                : undefined,
+        });
+        const st = String((failure as any).status || '');
+        if (st === '410' || st === '400') {
           await this.deactivateDevice(deviceToken);
         }
       }
+    }
+
+    const sentCount = result.sent?.length ?? 0;
+    if (sentCount === 0 && (result.failed?.length ?? 0) > 0) {
+      const firstReason =
+        (result.failed![0] as any).response?.reason ||
+        (result.failed![0] as any).error?.message ||
+        'APNs did not accept notification';
+      throw new Error(`APNs failed: ${firstReason}`);
     }
 
     return result;
