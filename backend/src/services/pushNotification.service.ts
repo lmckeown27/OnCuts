@@ -44,8 +44,25 @@ interface DeviceResult {
   error?: string;
 }
 
+/** Load .p8 content: inline PEM (with literal \\n) or path relative to `process.cwd()`. */
+function loadApnP8FromEnv(envValue: string, envLabel: string): string {
+  const fs = require('fs');
+  const path = require('path');
+  if (envValue.includes('BEGIN PRIVATE KEY')) {
+    return envValue.replace(/\\n/g, '\n');
+  }
+  const keyPath = path.resolve(process.cwd(), envValue);
+  if (!fs.existsSync(keyPath)) {
+    throw new Error(`${envLabel}: private key file not found: ${keyPath}`);
+  }
+  return fs.readFileSync(keyPath, 'utf8');
+}
+
 class PushNotificationService {
-  private apnProvider: any = null;
+  /** Production APNs gateway (TestFlight / App Store tokens). */
+  private apnProviderProduction: any = null;
+  /** Sandbox APNs gateway (Xcode / development tokens). */
+  private apnProviderSandbox: any = null;
   private fcmApp: any = null;
 
   constructor() {
@@ -55,55 +72,42 @@ class PushNotificationService {
   private initializeServices() {
     console.log('📱 Initializing push notification services...');
 
-    // Initialize Apple Push Notification service
+    // Initialize Apple Push Notification service — both gateways so each device can use the right one (see mobile_devices.apns_environment).
     if (apn && process.env.APN_KEY_ID && process.env.APN_TEAM_ID && process.env.APN_PRIVATE_KEY) {
       try {
-        const fs = require('fs');
-        const path = require('path');
+        const teamId = process.env.APN_TEAM_ID;
+        const prodPem = loadApnP8FromEnv(process.env.APN_PRIVATE_KEY, 'APN_PRIVATE_KEY');
+        const prodKeyId = process.env.APN_KEY_ID;
 
-        let privateKey: string;
-
-        // Check if APN_PRIVATE_KEY is file path or actual key content
-        if (process.env.APN_PRIVATE_KEY.includes('BEGIN PRIVATE KEY')) {
-          privateKey = process.env.APN_PRIVATE_KEY.replace(/\\n/g, '\n');
-          console.log('📱 Using APN private key from environment variable');
+        let sandboxPem = prodPem;
+        let sandboxKeyId = prodKeyId;
+        if (process.env.APN_SANDBOX_KEY_ID && process.env.APN_SANDBOX_PRIVATE_KEY) {
+          sandboxKeyId = process.env.APN_SANDBOX_KEY_ID;
+          sandboxPem = loadApnP8FromEnv(
+            process.env.APN_SANDBOX_PRIVATE_KEY,
+            'APN_SANDBOX_PRIVATE_KEY'
+          );
+          console.log('📱 APN: sandbox gateway uses APN_SANDBOX_KEY_ID + APN_SANDBOX_PRIVATE_KEY');
         } else {
-          const keyPath = path.resolve(process.cwd(), process.env.APN_PRIVATE_KEY);
-          console.log('📱 Reading APN private key from file:', keyPath);
-
-          if (!fs.existsSync(keyPath)) {
-            throw new Error(`APN private key file not found: ${keyPath}`);
-          }
-
-          privateKey = fs.readFileSync(keyPath, 'utf8');
-          console.log('✅ APN private key file read successfully');
+          console.log('📱 APN: sandbox gateway uses same .p8 as production (recommended)');
         }
 
-        // Xcode/debug builds use sandbox tokens; App Store/TestFlight use production.
-        // Set APN_USE_SANDBOX=true if NODE_ENV is production but you only test with dev builds.
-        const forceSandbox =
-          process.env.APN_USE_SANDBOX === 'true' || process.env.APN_USE_SANDBOX === '1';
-        const apnProduction = !forceSandbox && process.env.NODE_ENV === 'production';
-
-        const apnOptions = {
-          token: {
-            key: privateKey,
-            keyId: process.env.APN_KEY_ID,
-            teamId: process.env.APN_TEAM_ID,
-          },
-          production: apnProduction,
-        };
-
-        console.log(`📱 APN client: ${apnProduction ? 'production' : 'sandbox'} gateway`);
-
-        this.apnProvider = new apn.Provider(apnOptions);
-        console.log('✅ APN Provider initialized successfully');
+        this.apnProviderProduction = new apn.Provider({
+          token: { key: prodPem, keyId: prodKeyId, teamId },
+          production: true,
+        });
+        this.apnProviderSandbox = new apn.Provider({
+          token: { key: sandboxPem, keyId: sandboxKeyId, teamId },
+          production: false,
+        });
+        console.log('✅ APN: production + sandbox providers initialized (per-device apns_environment)');
       } catch (error: any) {
-        console.error('❌ Failed to initialize APN Provider:', error.message);
-        this.apnProvider = null;
+        console.error('❌ Failed to initialize APN Providers:', error.message);
+        this.apnProviderProduction = null;
+        this.apnProviderSandbox = null;
       }
     } else {
-      console.log('❌ APN Provider not initialized - missing environment variables');
+      console.log('❌ APN Providers not initialized - missing APN_KEY_ID / APN_TEAM_ID / APN_PRIVATE_KEY');
     }
 
     // Initialize Firebase Cloud Messaging
@@ -139,9 +143,11 @@ class PushNotificationService {
         type: notification.type,
       });
 
-      // Get user's registered devices
+      // Get user's registered devices (apns_environment: sandbox = Xcode token, production = TestFlight/App Store)
       const devices = await pool.query(
-        'SELECT device_token, platform FROM mobile_devices WHERE user_id = $1 AND is_active = true',
+        `SELECT device_token, platform,
+                COALESCE(apns_environment, 'production') AS apns_environment
+         FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
         [userId]
       );
 
@@ -156,17 +162,24 @@ class PushNotificationService {
       }
 
       const results: DeviceResult[] = [];
+      const apnOk = !!(this.apnProviderProduction || this.apnProviderSandbox);
 
       for (const device of devices.rows) {
         try {
-          if (device.platform === 'ios' && this.apnProvider) {
-            const result = await this.sendIOSNotification(device.device_token, notification);
+          if (device.platform === 'ios' && apnOk) {
+            const apnsEnv =
+              device.apns_environment === 'sandbox' ? 'sandbox' : 'production';
+            const result = await this.sendIOSNotification(
+              device.device_token,
+              notification,
+              apnsEnv
+            );
             results.push({ platform: 'ios', token: device.device_token, result });
           } else if (device.platform === 'android' && this.fcmApp) {
             const result = await this.sendAndroidNotification(device.device_token, notification);
             results.push({ platform: 'android', token: device.device_token, result });
-          } else if (device.platform === 'ios' && !this.apnProvider) {
-            logger.warn('📱 Push skipped: iOS device but APN provider not initialized', {
+          } else if (device.platform === 'ios' && !apnOk) {
+            logger.warn('📱 Push skipped: iOS device but APN providers not initialized', {
               userId,
               notificationType: notification.type,
             });
@@ -192,7 +205,7 @@ class PushNotificationService {
           notificationType: notification.type,
           deviceCount: devices.rows.length,
           platforms: [...new Set(devices.rows.map((d: { platform: string }) => d.platform))],
-          apnInitialized: !!this.apnProvider,
+          apnInitialized: apnOk,
           fcmInitialized: !!this.fcmApp,
         });
         return {
@@ -215,11 +228,22 @@ class PushNotificationService {
     }
   }
 
+  private getApnProvider(apnsEnvironment: 'sandbox' | 'production'): any {
+    return apnsEnvironment === 'sandbox'
+      ? this.apnProviderSandbox
+      : this.apnProviderProduction;
+  }
+
   /**
    * Send iOS notification via APN
    */
-  private async sendIOSNotification(deviceToken: string, notification: NotificationData): Promise<any> {
-    if (!this.apnProvider) {
+  private async sendIOSNotification(
+    deviceToken: string,
+    notification: NotificationData,
+    apnsEnvironment: 'sandbox' | 'production' = 'production'
+  ): Promise<any> {
+    const provider = this.getApnProvider(apnsEnvironment);
+    if (!provider) {
       throw new Error('APN Provider not initialized');
     }
 
@@ -256,7 +280,7 @@ class PushNotificationService {
       category: notification.category,
     };
 
-    const result = await this.apnProvider.send(note, deviceToken);
+    const result = await provider.send(note, deviceToken);
 
     // Apple can reject the notification (wrong env/token/topic) while still returning 200 from our HTTP client.
     // node-apn puts rejections in `failed`; `sent` stays empty — we must not treat that as success.
@@ -272,11 +296,12 @@ class PushNotificationService {
           httpStatus: (failure as any).status,
           reason: apnsReason,
           topic: note.topic,
+          apnsGateway: apnsEnvironment,
           hint:
             apnsReason === 'BadDeviceToken' || apnsReason === 'DeviceTokenNotForTopic'
-              ? 'Token/topic/env mismatch: set APN_BUNDLE_ID to the app bundle id; for Xcode debug builds use APN_USE_SANDBOX=true if NODE_ENV is production'
-              : apnsReason === 'BadCertificateEnvironment'
-                ? 'Wrong APNs environment (sandbox vs production) for this device token'
+              ? 'Check APN_BUNDLE_ID matches the app; re-register device with apnsEnvironment sandbox vs production'
+              : apnsReason === 'BadCertificateEnvironment' || apnsReason === 'BadEnvironmentKeyInToken'
+                ? 'Token/gateway mismatch: POST /notifications/register-device with apnsEnvironment "sandbox" for Xcode builds, "production" for TestFlight/App Store'
                 : undefined,
         });
         const st = String((failure as any).status || '');

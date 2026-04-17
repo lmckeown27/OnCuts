@@ -193,7 +193,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 router.post('/register-device', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const { deviceToken, platform } = req.body;
+    const { deviceToken, platform, apnsEnvironment } = req.body;
 
     if (!deviceToken || !platform) {
       return res.status(400).json({
@@ -209,6 +209,17 @@ router.post('/register-device', authenticate, async (req, res, next) => {
       });
     }
 
+    let apnsEnv: 'sandbox' | 'production' = 'production';
+    if (apnsEnvironment != null && apnsEnvironment !== '') {
+      if (!['sandbox', 'production'].includes(apnsEnvironment)) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'apnsEnvironment must be sandbox or production' },
+        });
+      }
+      apnsEnv = apnsEnvironment;
+    }
+
     // Check if device token already exists
     const existing = await pool.query(
       'SELECT id, user_id FROM mobile_devices WHERE device_token = $1',
@@ -218,14 +229,15 @@ router.post('/register-device', authenticate, async (req, res, next) => {
     if (existing.rows.length > 0) {
       // Update existing device token
       await pool.query(
-        'UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true, updated_at = NOW() WHERE device_token = $3',
-        [userId, platform, deviceToken]
+        `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true,
+         apns_environment = $4, updated_at = NOW() WHERE device_token = $3`,
+        [userId, platform, deviceToken, apnsEnv]
       );
     } else {
       // Insert new device token
       await pool.query(
-        'INSERT INTO mobile_devices (user_id, device_token, platform) VALUES ($1, $2, $3)',
-        [userId, deviceToken, platform]
+        `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment) VALUES ($1, $2, $3, $4)`,
+        [userId, deviceToken, platform, apnsEnv]
       );
     }
 

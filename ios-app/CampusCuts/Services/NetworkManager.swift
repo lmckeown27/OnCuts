@@ -51,6 +51,8 @@ class NetworkManager: ObservableObject {
     struct RegisterDeviceBody: Codable {
         let deviceToken: String
         let platform: String
+        /// Must match APNs token type: sandbox (Xcode debug), production (TestFlight/App Store).
+        let apnsEnvironment: String?
     }
     
     struct UnregisterDeviceBody: Codable {
@@ -58,8 +60,12 @@ class NetworkManager: ObservableObject {
     }
     
     /// Registers the APNs/FCM token so the backend can send banners (`mobile_devices`).
-    func registerDeviceToken(_ token: String, platform: String = "ios") async throws {
-        let body = RegisterDeviceBody(deviceToken: token, platform: platform)
+    func registerDeviceToken(
+        _ token: String,
+        platform: String = "ios",
+        apnsEnvironment: String? = nil
+    ) async throws {
+        let body = RegisterDeviceBody(deviceToken: token, platform: platform, apnsEnvironment: apnsEnvironment)
         let _: SuccessResponse = try await request(
             endpoint: Constants.API.Endpoints.registerDevice,
             method: "POST",

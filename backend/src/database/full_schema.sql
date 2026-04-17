@@ -294,6 +294,7 @@ CREATE TABLE IF NOT EXISTS mobile_devices (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     device_token TEXT NOT NULL UNIQUE,
     platform VARCHAR(20) NOT NULL CHECK (platform IN ('ios', 'android')),
+    apns_environment VARCHAR(20) NOT NULL DEFAULT 'production' CHECK (apns_environment IN ('sandbox', 'production')),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
