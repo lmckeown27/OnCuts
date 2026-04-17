@@ -265,6 +265,9 @@ router.post('/register-device', authenticate, async (req, res, next) => {
     res.json({
       success: true,
       message: 'Device registered successfully',
+      data: {
+        apnsEnvironment: platform === 'ios' ? apnsEnv : null,
+      },
     });
   } catch (error) {
     next(error);

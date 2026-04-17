@@ -18,10 +18,52 @@ class PushNotificationManager: NSObject, ObservableObject {
     
     private let networkManager = NetworkManager.shared
     
+    /// Value sent with `POST …/register-device` as `apnsEnvironment`. Must match the APNs **gateway** for this build’s token:
+    /// - **sandbox** — Xcode debug / development provisioning (development push token).
+    /// - **production** — TestFlight, App Store, or Release installs from the store pipeline.
+    /// Optional **Info.plist** key `CampusCutsApnsEnvironment` (`sandbox` or `production`) overrides when you need a non-default mapping.
+    static func apnsEnvironmentForBackendRegistration() -> String {
+        if let raw = Bundle.main.object(forInfoDictionaryKey: "CampusCutsApnsEnvironment") as? String {
+            let o = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if o == "sandbox" { return "sandbox" }
+            if o == "production" { return "production" }
+        }
+        #if DEBUG
+        return "sandbox"
+        #else
+        return "production"
+        #endif
+    }
+    
     override init() {
         super.init()
         checkAuthorizationStatus()
         setupNotificationCategories()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBecameActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleAppBecameActive() {
+        Task {
+            await refreshPushRegistrationAfterForegroundIfSignedIn()
+        }
+    }
+    
+    /// Re-posts the token after unlock/foreground so `mobile_devices.apns_environment` stays aligned with the server if you fixed env or were reactivated.
+    private func refreshPushRegistrationAfterForegroundIfSignedIn() async {
+        guard deviceToken != nil else { return }
+        guard let auth = UserDefaults.standard.string(forKey: Constants.StorageKeys.authToken), !auth.isEmpty else { return }
+        let env = Self.apnsEnvironmentForBackendRegistration()
+        print("📱 Foreground — refreshing push registration (apnsEnvironment=\(env))")
+        await forceTokenRegistration()
     }
     
     // MARK: - Permission Management
@@ -167,12 +209,8 @@ class PushNotificationManager: NSObject, ObservableObject {
     
     private func registerDeviceToken(_ token: String) async {
         do {
-            print("📱 Attempting to register device token with backend...")
-            #if DEBUG
-            let apnsEnv = "sandbox"
-            #else
-            let apnsEnv = "production"
-            #endif
+            let apnsEnv = Self.apnsEnvironmentForBackendRegistration()
+            print("📱 Registering device token with backend (apnsEnvironment=\(apnsEnv))…")
             try await networkManager.registerDeviceToken(token, platform: "ios", apnsEnvironment: apnsEnv)
             print("✅ Device token registered with backend successfully")
         } catch {

@@ -193,11 +193,12 @@ class PushNotificationService {
             const result = await this.sendIOSNotificationWithEnvFallback(
               device.device_token,
               notification,
-              apnsEnv
+              apnsEnv,
+              userId
             );
             results.push({ platform: 'ios', token: device.device_token, result });
           } else if (device.platform === 'android' && this.fcmApp) {
-            const result = await this.sendAndroidNotification(device.device_token, notification);
+            const result = await this.sendAndroidNotification(device.device_token, notification, userId);
             results.push({ platform: 'android', token: device.device_token, result });
           } else if (device.platform === 'ios' && !apnOk) {
             logger.warn('📱 Push skipped: iOS device but APN providers not initialized', {
@@ -262,10 +263,11 @@ class PushNotificationService {
   private async sendIOSNotificationWithEnvFallback(
     deviceToken: string,
     notification: NotificationData,
-    preferredEnv: 'sandbox' | 'production'
+    preferredEnv: 'sandbox' | 'production',
+    userId: string | number
   ): Promise<any> {
     try {
-      return await this.sendIOSNotification(deviceToken, notification, preferredEnv);
+      return await this.sendIOSNotification(deviceToken, notification, preferredEnv, userId);
     } catch (firstErr: any) {
       const m = String(firstErr?.message || '');
       if (
@@ -281,7 +283,7 @@ class PushNotificationService {
         tried: preferredEnv,
         retry: alt,
       });
-      const result = await this.sendIOSNotification(deviceToken, notification, alt);
+      const result = await this.sendIOSNotification(deviceToken, notification, alt, userId);
       try {
         await pool.query(
           `UPDATE mobile_devices SET apns_environment = $1, updated_at = NOW() WHERE device_token = $2`,
@@ -305,7 +307,8 @@ class PushNotificationService {
   private async sendIOSNotification(
     deviceToken: string,
     notification: NotificationData,
-    apnsEnvironment: 'sandbox' | 'production' = 'production'
+    apnsEnvironment: 'sandbox' | 'production' = 'production',
+    userId: string | number
   ): Promise<any> {
     const provider = this.getApnProvider(apnsEnvironment);
     if (!provider) {
@@ -377,7 +380,10 @@ class PushNotificationService {
           reasonStr === 'BadDeviceToken' ||
           reasonStr === 'Unregistered';
         if (shouldDeactivateToken) {
-          await this.deactivateDevice(deviceToken);
+          await this.deactivateDevice(deviceToken, userId, {
+            reason: reasonStr,
+            httpStatus: st,
+          });
         }
       }
     }
@@ -399,7 +405,8 @@ class PushNotificationService {
    */
   private async sendAndroidNotification(
     deviceToken: string,
-    notification: NotificationData
+    notification: NotificationData,
+    userId: string | number
   ): Promise<any> {
     if (!this.fcmApp) {
       throw new Error('FCM not initialized');
@@ -429,21 +436,37 @@ class PushNotificationService {
         error.code === 'messaging/registration-token-not-registered' ||
         error.code === 'messaging/invalid-registration-token'
       ) {
-        await this.deactivateDevice(deviceToken);
+        await this.deactivateDevice(deviceToken, userId, {
+          reason: String(error?.code || error?.message || 'fcm_error'),
+        });
       }
       throw error;
     }
   }
 
   /**
-   * Deactivate invalid device token
+   * Deactivate invalid device token (APNs 410 / BadDeviceToken / Unregistered, or FCM invalid token).
+   * Scoped to user_id so we never flip another user's row; bumps updated_at for debugging.
    */
-  private async deactivateDevice(deviceToken: string): Promise<void> {
+  private async deactivateDevice(
+    deviceToken: string,
+    userId: string | number,
+    meta?: { reason?: string; httpStatus?: string }
+  ): Promise<void> {
     try {
-      await pool.query('UPDATE mobile_devices SET is_active = false WHERE device_token = $1', [
-        deviceToken,
-      ]);
-      console.log(`Deactivated invalid device token`);
+      const r = await pool.query(
+        `UPDATE mobile_devices
+         SET is_active = false, updated_at = NOW()
+         WHERE device_token = $1 AND user_id = $2`,
+        [deviceToken, userId]
+      );
+      if ((r.rowCount ?? 0) > 0) {
+        logger.warn('📱 Deactivated mobile_devices row after push provider rejected token', {
+          userId,
+          tokenSuffix: deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)',
+          ...meta,
+        });
+      }
     } catch (error) {
       console.error('Error deactivating device:', error);
     }

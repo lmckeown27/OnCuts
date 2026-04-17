@@ -19,6 +19,16 @@ public enum CampusCutsPushRegistration: Sendable {
     /// Default API base including `/api/v1` (matches `CampusCutsAPIService`).
     public static let defaultAPIBaseURL = URL(string: "https://api.campuscut.com/api/v1")!
 
+    /// Same rule as the main CampusCuts app: **sandbox** for DEBUG builds, **production** for TestFlight/App Store.
+    /// Pass this to `registerAPNsDevice(…, apnsEnvironment:)` unless you use a custom `CampusCutsApnsEnvironment` plist override in the host app.
+    public static func recommendedApnsEnvironmentForCurrentBuild() -> String {
+        #if DEBUG
+        return "sandbox"
+        #else
+        return "production"
+        #endif
+    }
+
     /// - Parameters:
     ///   - deviceToken: Raw token from `didRegisterForRemoteNotificationsWithDeviceToken`.
     ///   - accessToken: Bearer JWT for the signed-in user.
