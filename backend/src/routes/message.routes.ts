@@ -5,10 +5,19 @@
 
 import express from 'express';
 import messageService from '../services/message.service';
+import imageService from '../services/image.service';
 import { authenticate } from '../middleware/auth';
 import { pool } from '../database/connection';
+import { uploadToIPFS } from '../services/ipfs.service';
+import { logger } from '../utils/logger';
 
 const router = express.Router();
+
+/** Accept `image` or `file` field (iOS clients vary). */
+const uploadChatImageMiddleware = imageService.upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'file', maxCount: 1 },
+]);
 
 /**
  * GET /api/messages/conversations
@@ -139,6 +148,91 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
     next(error);
   }
 });
+
+/**
+ * POST /api/messages/conversations/:conversationId/upload
+ * Upload a chat image for Intera / native clients (multipart). Same processing as POST /api/upload/chat-image,
+ * but scoped to a conversation the user belongs to. Returns `{ data: { url, filename, ... } }` for the next
+ * POST …/messages with `mediaUrl` / image message type.
+ */
+router.post(
+  '/conversations/:conversationId/upload',
+  authenticate,
+  uploadChatImageMiddleware,
+  async (req, res, next) => {
+    try {
+      const userId = (req as any).user.userId;
+      const conversationId = parseInt(req.params.conversationId, 10);
+      const files = (req as any).files as Record<string, Express.Multer.File[]> | undefined;
+      const file = files?.image?.[0] ?? files?.file?.[0];
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          error: { message: 'No image provided (use form field "image" or "file")' },
+        });
+      }
+
+      const convCheck = await pool.query(
+        `SELECT id FROM conversations
+         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2) AND is_active = true`,
+        [conversationId, userId]
+      );
+
+      if (convCheck.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Conversation not found or access denied' },
+        });
+      }
+
+      const result = await imageService.processAndSaveImage(file.buffer, 'chat', {
+        width: 800,
+        height: 800,
+        quality: 80,
+      });
+
+      const responseData: Record<string, unknown> = {
+        url: imageService.generateImageUrl(result.original),
+        filename: result.original,
+      };
+
+      if (process.env.USE_IPFS === 'true') {
+        try {
+          const ipfsResult = await uploadToIPFS(file.buffer, file.originalname, {
+            name: `Chat Image - ${userId}`,
+            keyvalues: {
+              userId,
+              type: 'chat',
+              conversationId: String(conversationId),
+              timestamp: Date.now(),
+            },
+          });
+
+          if (ipfsResult.success) {
+            responseData.ipfs = {
+              localCID: ipfsResult.localCID,
+              pinataCID: ipfsResult.pinataCID,
+              gatewayUrl: ipfsResult.gatewayUrl,
+              ipfsUrl: ipfsResult.ipfsUrl,
+            };
+            logger.info(`Chat image uploaded to IPFS (conversation ${conversationId}): ${ipfsResult.pinataCID}`);
+          }
+        } catch (ipfsError: unknown) {
+          logger.error(`IPFS upload error:`, ipfsError instanceof Error ? ipfsError.message : ipfsError);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Chat image uploaded successfully',
+        data: responseData,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 /**
  * PUT /api/messages/conversations/:conversationId/read
