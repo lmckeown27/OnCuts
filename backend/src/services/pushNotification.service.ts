@@ -370,7 +370,13 @@ class PushNotificationService {
                 : undefined,
         });
         const st = String((failure as any).status || '');
-        if (st === '410' || st === '400') {
+        const reasonStr = String(apnsReason);
+        // Only drop tokens Apple says are gone/invalid — not 400 in general (env/topic/config errors also use 400).
+        const shouldDeactivateToken =
+          st === '410' ||
+          reasonStr === 'BadDeviceToken' ||
+          reasonStr === 'Unregistered';
+        if (shouldDeactivateToken) {
           await this.deactivateDevice(deviceToken);
         }
       }
