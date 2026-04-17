@@ -10,6 +10,7 @@ import { pool } from '../database/connection';
 import { authenticate } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import notificationService from '../services/notification.service';
+import pushNotificationService from '../services/pushNotification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
 import { getDefaultStripeClient } from '../config/stripe';
@@ -380,6 +381,13 @@ router.post('/', authenticate, async (req, res, next) => {
         message: `${consumerName} wants to book a ${serviceType} with you`,
         data: { bookingId: booking.id, consumerId, serviceType },
       });
+      await pushNotificationService.sendMirrorPush(
+        barberUserId,
+        'New Booking Request!',
+        `${consumerName} wants to book a ${serviceType} with you`,
+        'new_booking_request',
+        { bookingId: booking.id, consumerId, serviceType }
+      );
       logger.info(`Notification sent to barber ${barberUserId} for new booking ${booking.id}`);
       
       // Emit new-booking-request event via WebSocket for live updates
@@ -940,6 +948,18 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
         serviceName,
       },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.consumerId,
+      'Payment Request',
+      `${booking.barber_name} has completed your ${serviceName}. Please complete payment of ${priceFormatted}.`,
+      'payment_request',
+      {
+        bookingId: id,
+        amount: booking.priceUsdCents,
+        barberName: booking.barber_name,
+        serviceName,
+      }
+    );
 
     // Send booking completed emails to both consumer and barber
     logger.info(`[COMPLETE ENDPOINT] About to send booking completed emails for booking ${id}`);
@@ -1384,6 +1404,19 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
           amount: booking.priceUsdCents,
         },
       });
+      await pushNotificationService.sendMirrorPush(
+        booking.consumerId,
+        'Payment Required',
+        `${booking.barber_name} has marked your service as complete. Please complete your payment.`,
+        'payment_request',
+        {
+          bookingId: id,
+          barberId: booking.barberId,
+          barberName: booking.barber_name,
+          serviceName: booking.service_name || 'Haircut',
+          amount: booking.priceUsdCents,
+        }
+      );
     } catch (notifError) {
       logger.error('Failed to send payment request notification:', notifError);
     }
@@ -1756,6 +1789,13 @@ router.post('/:id/confirm-payment', authenticate, async (req, res, next) => {
       message: `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
       data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.barber_user_id,
+      'Payment Received!',
+      `You received $${(totalAmountCents / 100).toFixed(2)}${tipAmountCents > 0 ? ` (includes $${(tipAmountCents / 100).toFixed(2)} tip)` : ''}`,
+      'payment_received',
+      { bookingId: id, amount: totalAmountCents, tip: tipAmountCents }
+    );
 
     logger.info(`Payment confirmed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
 
@@ -1896,6 +1936,13 @@ router.post('/:id/pay', authenticate, async (req, res, next) => {
       message: `You received $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})${tipAmountCents > 0 ? ` - includes $${(tipAmountCents / 100).toFixed(2)} tip` : ''}`,
       data: { bookingId: id, amount: totalAmountCents, tip: tipAmountCents, paymentMethod },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.barber_user_id,
+      'Payment Received!',
+      `You received $${(totalAmountCents / 100).toFixed(2)} (${paymentMethodLabel})${tipAmountCents > 0 ? ` - includes $${(tipAmountCents / 100).toFixed(2)} tip` : ''}`,
+      'payment_received',
+      { bookingId: id, amount: totalAmountCents, tip: tipAmountCents, paymentMethod }
+    );
 
     logger.info(`Payment processed for booking ${id}: $${(totalAmountCents / 100).toFixed(2)} via ${paymentMethod} (tip: $${(tipAmountCents / 100).toFixed(2)})`);
 
@@ -2025,6 +2072,13 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
       message: `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
       data: { bookingId: id, rating, comment },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.barber_user_id,
+      `New ${rating}-Star Review`,
+      `${booking.consumer_name} left you a ${rating}-star review${comment ? `: "${comment.substring(0, 50)}${comment.length > 50 ? '...' : ''}"` : ''}`,
+      'new_review',
+      { bookingId: id, rating, comment }
+    );
 
     logger.info(`Review submitted for booking ${id}: ${rating} stars`);
 
@@ -2259,6 +2313,18 @@ router.put('/:id', authenticate, async (req, res, next) => {
             editedBy: 'barber',
           },
         });
+        await pushNotificationService.sendMirrorPush(
+          booking.consumerId,
+          'Booking Updated',
+          `${barberName} has rescheduled your appointment to ${formattedDate} at ${formattedTime}`,
+          'booking_updated',
+          {
+            bookingId: id,
+            newScheduledTime: scheduledTime,
+            originalScheduledTime: originalScheduledTime,
+            editedBy: 'barber',
+          }
+        );
       } else {
         // Consumer edited, notify barber
         await notificationService.saveNotification({
@@ -2273,6 +2339,18 @@ router.put('/:id', authenticate, async (req, res, next) => {
             editedBy: 'consumer',
           },
         });
+        await pushNotificationService.sendMirrorPush(
+          booking.barber_user_id,
+          'Booking Updated',
+          `${consumerName} has rescheduled their appointment to ${formattedDate} at ${formattedTime}`,
+          'booking_updated',
+          {
+            bookingId: id,
+            newScheduledTime: scheduledTime,
+            originalScheduledTime: originalScheduledTime,
+            editedBy: 'consumer',
+          }
+        );
       }
 
       // Get service details for email

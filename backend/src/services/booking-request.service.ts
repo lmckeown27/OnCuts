@@ -11,6 +11,7 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
+import pushNotificationService from './pushNotification.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
 function mergeConversationLocation(
@@ -651,6 +652,13 @@ export class BookingRequestService {
           message: `${barberName} accepted your booking request`,
           data: { conversationId, bookingId: linkedBookingId },
         });
+        await pushNotificationService.sendMirrorPush(
+          consumerUserId,
+          'Booking Accepted!',
+          `${barberName} accepted your booking request`,
+          'booking_accepted',
+          { conversationId, bookingId: linkedBookingId }
+        );
 
         await client.query('COMMIT');
         logger.info(`Conversation ${conversationId} booking accepted by barber ${barberId}`);
@@ -708,6 +716,13 @@ export class BookingRequestService {
         message: `${barberName} accepted your booking request`,
         data: { bookingId },
       });
+      await pushNotificationService.sendMirrorPush(
+        consumerId,
+        'Booking Accepted!',
+        `${barberName} accepted your booking request`,
+        'booking_accepted',
+        { bookingId }
+      );
 
       await client.query('COMMIT');
       logger.info(`Booking ${bookingId} accepted by barber ${barberId}`);
@@ -805,13 +820,21 @@ export class BookingRequestService {
         const consumerEmail = userDetailsResult.rows[0]?.consumer_email;
         
         // Send notification to consumer about rejection BEFORE deleting conversation
+        const rejectMsg = `${barberName} was unable to accept your booking request${reason ? `: ${reason}` : ''}`;
         await notificationService.saveNotification({
           userId: consumerUserId,
           type: 'booking_rejected',
           title: 'Booking Declined',
-          message: `${barberName} was unable to accept your booking request${reason ? `: ${reason}` : ''}`,
+          message: rejectMsg,
           data: { bookingId: linkedBookingId, reason },
         });
+        await pushNotificationService.sendMirrorPush(
+          consumerUserId,
+          'Booking Declined',
+          rejectMsg,
+          'booking_rejected',
+          { bookingId: linkedBookingId, reason }
+        );
 
         // Send decline email to consumer with alternative barbers
         if (consumerEmail) {
@@ -924,13 +947,21 @@ export class BookingRequestService {
       const consumerEmail = bookingData.consumer_email;
       
       // Send notification to consumer
+      const rejectMsgTraditional = `${barberName} was unable to accept your booking request`;
       await notificationService.saveNotification({
         userId: consumerId,
         type: 'booking_rejected',
         title: 'Booking Declined',
-        message: `${barberName} was unable to accept your booking request`,
+        message: rejectMsgTraditional,
         data: { bookingId, reason },
       });
+      await pushNotificationService.sendMirrorPush(
+        consumerId,
+        'Booking Declined',
+        rejectMsgTraditional,
+        'booking_rejected',
+        { bookingId, reason }
+      );
 
       // Send decline email to consumer with alternative barbers
       if (consumerEmail) {

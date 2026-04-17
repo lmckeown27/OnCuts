@@ -501,6 +501,32 @@ class PushNotificationService {
   }
 
   /**
+   * Mirror an in-app notification row to APNs/FCM so lock-screen banners appear when a device is registered.
+   * Call after notificationService.saveNotification for booking-related events.
+   */
+  async sendMirrorPush(
+    userId: string | number,
+    title: string,
+    body: string,
+    type: string,
+    data: Record<string, unknown> = {}
+  ): Promise<any> {
+    let category = 'BOOKING_CATEGORY';
+    if (type === 'payment_received') category = 'PAYMENT_CATEGORY';
+    else if (type === 'new_review' || type === 'review') category = 'REVIEW_CATEGORY';
+
+    return this.sendNotification(userId, {
+      title,
+      body,
+      type,
+      category,
+      sound: 'default',
+      badge: 1,
+      data: { ...data, type },
+    });
+  }
+
+  /**
    * Update badge count
    */
   async updateBadgeCount(userId: string | number, badgeCount: number | null = null): Promise<any> {

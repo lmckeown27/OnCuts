@@ -6,6 +6,7 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
+import pushNotificationService from './pushNotification.service';
 import { sendBookingCancellationEmails } from './email.service';
 
 function mergeConversationLocation(
@@ -96,11 +97,12 @@ export async function executeParticipantBookingCancellation(
   const serviceName = booking.original_service_name || booking.serviceType;
 
   if (isBarber) {
+    const cancelMsg = `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`;
     await notificationService.saveNotification({
       userId: booking.consumerId,
       type: 'booking_cancelled',
       title: 'Booking Cancelled',
-      message: `${barberName} has cancelled your ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
+      message: cancelMsg,
       data: {
         bookingId: id,
         reason,
@@ -111,14 +113,37 @@ export async function executeParticipantBookingCancellation(
         cancelledBarberId: booking.barberId,
       },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.consumerId,
+      'Booking Cancelled',
+      cancelMsg,
+      'booking_cancelled',
+      {
+        bookingId: id,
+        reason,
+        cancelledBy: 'barber',
+        scheduledTime: booking.scheduledTime,
+        serviceType: booking.serviceType,
+        campusId: booking.campus_id,
+        cancelledBarberId: booking.barberId,
+      }
+    );
   } else {
+    const cancelMsgBarber = `${consumerName} has cancelled their ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`;
     await notificationService.saveNotification({
       userId: booking.barber_user_id,
       type: 'booking_cancelled',
       title: 'Booking Cancelled',
-      message: `${consumerName} has cancelled their ${serviceName} appointment${reason ? `. Reason: ${reason}` : ''}`,
+      message: cancelMsgBarber,
       data: { bookingId: id, reason, cancelledBy: 'consumer' },
     });
+    await pushNotificationService.sendMirrorPush(
+      booking.barber_user_id,
+      'Booking Cancelled',
+      cancelMsgBarber,
+      'booking_cancelled',
+      { bookingId: id, reason, cancelledBy: 'consumer' }
+    );
   }
 
   const scheduledDate = new Date(booking.scheduledTime as string);
