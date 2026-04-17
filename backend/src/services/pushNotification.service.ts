@@ -190,7 +190,7 @@ class PushNotificationService {
           if (device.platform === 'ios' && apnOk) {
             const apnsEnv =
               device.apns_environment === 'sandbox' ? 'sandbox' : 'production';
-            const result = await this.sendIOSNotification(
+            const result = await this.sendIOSNotificationWithEnvFallback(
               device.device_token,
               notification,
               apnsEnv
@@ -253,6 +253,50 @@ class PushNotificationService {
     return apnsEnvironment === 'sandbox'
       ? this.apnProviderSandbox
       : this.apnProviderProduction;
+  }
+
+  /**
+   * Try preferred APNs environment; on sandbox/production token mismatch, retry the other gateway once and persist `apns_environment`.
+   * Helps clients (e.g. Intera) that registered before sending apnsEnvironment.
+   */
+  private async sendIOSNotificationWithEnvFallback(
+    deviceToken: string,
+    notification: NotificationData,
+    preferredEnv: 'sandbox' | 'production'
+  ): Promise<any> {
+    try {
+      return await this.sendIOSNotification(deviceToken, notification, preferredEnv);
+    } catch (firstErr: any) {
+      const m = String(firstErr?.message || '');
+      if (
+        !m.includes('BadEnvironmentKeyInToken') &&
+        !m.includes('BadCertificateEnvironment')
+      ) {
+        throw firstErr;
+      }
+      const alt: 'sandbox' | 'production' =
+        preferredEnv === 'production' ? 'sandbox' : 'production';
+      logger.warn('📱 APNs gateway mismatch — retrying with alternate environment', {
+        tokenSuffix: deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)',
+        tried: preferredEnv,
+        retry: alt,
+      });
+      const result = await this.sendIOSNotification(deviceToken, notification, alt);
+      try {
+        await pool.query(
+          `UPDATE mobile_devices SET apns_environment = $1, updated_at = NOW() WHERE device_token = $2`,
+          [alt, deviceToken]
+        );
+        logger.info('📱 Persisted apns_environment after successful alternate-gateway send', {
+          apns_environment: alt,
+        });
+      } catch (dbErr: any) {
+        logger.warn('📱 Could not persist apns_environment', {
+          err: dbErr?.message,
+        });
+      }
+      return result;
+    }
   }
 
   /**
