@@ -19,6 +19,27 @@ const uploadChatImageMiddleware = imageService.upload.fields([
   { name: 'file', maxCount: 1 },
 ]);
 
+/** Shared Socket.IO emit for POST /messages and POST …/upload (image persisted as a message row). */
+async function emitNewMessageSocket(
+  app: express.Application,
+  conversationId: number,
+  senderUserId: string,
+  messagePayload: Record<string, unknown>
+): Promise<void> {
+  const io = (app as any).get('io');
+  if (!io) return;
+  const conversation = await messageService.getConversationById(conversationId, senderUserId);
+  if (!conversation.success) return;
+  const conv = conversation.data.conversation;
+  const recipientId =
+    String(conv.user1_id) === String(senderUserId) ? conv.user2_id : conv.user1_id;
+  console.log(`📨 Socket.IO: Emitting new-message to user-${recipientId} (sender: ${senderUserId})`);
+  io.to(`user-${recipientId}`).emit('new-message', messagePayload);
+  const convRoom = `conversation-${conversationId}`;
+  io.to(convRoom).emit('new-message', messagePayload);
+  console.log(`📨 Socket.IO: Emitting new-message to ${convRoom}`);
+}
+
 /**
  * GET /api/messages/conversations
  * Get user's conversations with pagination
@@ -114,9 +135,6 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
     const conversationId = parseInt(req.params.conversationId);
     const { content, messageType, mediaUrl } = req.body;
 
-    // Emit via Socket.IO for real-time delivery
-    const io = (req.app as any).get('io');
-    
     const result = await messageService.sendMessage(
       conversationId,
       userId,
@@ -125,23 +143,7 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
       mediaUrl || null
     );
 
-    // Emit to recipient's room
-    const conversation = await messageService.getConversationById(conversationId, userId);
-    if (conversation.success) {
-      const conv = conversation.data.conversation;
-      // Compare as strings to handle UUID comparison correctly
-      const recipientId = String(conv.user1_id) === String(userId) 
-        ? conv.user2_id 
-        : conv.user1_id;
-      
-      const payload = result.data.message;
-      console.log(`📨 Socket.IO: Emitting new-message to user-${recipientId} (sender: ${userId})`);
-      io.to(`user-${recipientId}`).emit('new-message', payload);
-      // Same payload to thread room — iOS/native clients should join via join-conversation while viewing.
-      const convRoom = `conversation-${conversationId}`;
-      io.to(convRoom).emit('new-message', payload);
-      console.log(`📨 Socket.IO: Emitting new-message to ${convRoom}`);
-    }
+    await emitNewMessageSocket(req.app, conversationId, userId, result.data.message);
 
     res.status(201).json(result);
   } catch (error) {
@@ -151,9 +153,11 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
 
 /**
  * POST /api/messages/conversations/:conversationId/upload
- * Upload a chat image for Intera / native clients (multipart). Same processing as POST /api/upload/chat-image,
- * but scoped to a conversation the user belongs to. Returns `{ data: { url, filename, ... } }` for the next
- * POST …/messages with `mediaUrl` / image message type.
+ * Upload a chat image (multipart), persist a `messages` row (`message_type` image, `media_url` set), and emit
+ * Socket.IO `new-message` — same outcome as upload + POST …/messages so history and recipients work when clients
+ * only call this endpoint (e.g. Intera).
+ *
+ * Optional multipart text field `caption` becomes message `content` (default preview: "📷 Photo").
  */
 router.post(
   '/conversations/:conversationId/upload',
@@ -186,15 +190,17 @@ router.post(
         });
       }
 
-      const result = await imageService.processAndSaveImage(file.buffer, 'chat', {
+      const processed = await imageService.processAndSaveImage(file.buffer, 'chat', {
         width: 800,
         height: 800,
         quality: 80,
       });
 
+      const mediaUrl = imageService.generateImageUrl(processed.original);
+
       const responseData: Record<string, unknown> = {
-        url: imageService.generateImageUrl(result.original),
-        filename: result.original,
+        url: mediaUrl,
+        filename: processed.original,
       };
 
       if (process.env.USE_IPFS === 'true') {
@@ -223,10 +229,29 @@ router.post(
         }
       }
 
+      const caption =
+        typeof (req.body as { caption?: string }).caption === 'string'
+          ? (req.body as { caption: string }).caption.trim()
+          : '';
+      const contentForMessage = caption || '📷 Photo';
+
+      const sendResult = await messageService.sendMessage(
+        conversationId,
+        userId,
+        contentForMessage,
+        'image',
+        mediaUrl
+      );
+
+      await emitNewMessageSocket(req.app, conversationId, userId, sendResult.data.message);
+
       res.json({
         success: true,
-        message: 'Chat image uploaded successfully',
-        data: responseData,
+        message: 'Chat image uploaded and sent successfully',
+        data: {
+          ...responseData,
+          message: sendResult.data.message,
+        },
       });
     } catch (error) {
       next(error);
