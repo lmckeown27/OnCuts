@@ -57,6 +57,8 @@ class NetworkManager: ObservableObject {
     
     struct UnregisterDeviceBody: Codable {
         let deviceToken: String
+        /// ISO8601; server only deactivates if `updated_at <= logoutSince` (avoids race with re-login).
+        let logoutSince: String?
     }
     
     /// Registers the APNs/FCM token so the backend can send banners (`mobile_devices`).
@@ -74,8 +76,16 @@ class NetworkManager: ObservableObject {
         )
     }
     
-    func unregisterDeviceToken(_ token: String) async throws {
-        let body = UnregisterDeviceBody(deviceToken: token)
+    func unregisterDeviceToken(_ token: String, logoutSince: Date? = nil) async throws {
+        let iso: String?
+        if let logoutSince {
+            let f = ISO8601DateFormatter()
+            f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            iso = f.string(from: logoutSince)
+        } else {
+            iso = nil
+        }
+        let body = UnregisterDeviceBody(deviceToken: token, logoutSince: iso)
         let _: SuccessResponse = try await request(
             endpoint: Constants.API.Endpoints.unregisterDevice,
             method: "DELETE",

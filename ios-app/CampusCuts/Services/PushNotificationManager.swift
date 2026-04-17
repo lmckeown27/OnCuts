@@ -100,14 +100,16 @@ class PushNotificationManager: NSObject, ObservableObject {
         }
     }
     
-    func unregisterCurrentDevice() async {
+    func unregisterCurrentDevice(logoutSince: Date? = nil) async {
+        guard !Task.isCancelled else { return }
         guard let deviceToken = deviceToken else {
             print("🔔 No device token to unregister")
             return
         }
         
         do {
-            try await networkManager.unregisterDeviceToken(deviceToken)
+            guard !Task.isCancelled else { return }
+            try await networkManager.unregisterDeviceToken(deviceToken, logoutSince: logoutSince)
             print("✅ Device token unregistered from backend")
             
             await MainActor.run {

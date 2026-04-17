@@ -11,6 +11,9 @@ class AuthViewModel: ObservableObject {
     private let networkManager = NetworkManager.shared
     private let keychainManager = KeychainManager.shared
     
+    /// Canceled on login/register so a slow logout unregister does not run after a new session.
+    private var logoutUnregisterTask: Task<Void, Never>?
+    
     init() {
         checkAuthStatus()
     }
@@ -72,6 +75,8 @@ class AuthViewModel: ObservableObject {
             
             currentUser = response.data.user
             isAuthenticated = true
+            logoutUnregisterTask?.cancel()
+            logoutUnregisterTask = nil
             await PushNotificationManager.shared.checkAndRequestPermissionIfNeeded()
             await PushNotificationManager.shared.forceTokenRegistration()
             
@@ -85,6 +90,8 @@ class AuthViewModel: ObservableObject {
     func login(email: String, password: String) async {
         isLoading = true
         errorMessage = nil
+        logoutUnregisterTask?.cancel()
+        logoutUnregisterTask = nil
         
         do {
             struct LoginRequest: Codable {
@@ -123,9 +130,11 @@ class AuthViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.authToken)
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.userId)
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.userRole)
-        Task {
+        let logoutSince = Date()
+        logoutUnregisterTask?.cancel()
+        logoutUnregisterTask = Task {
+            await PushNotificationManager.shared.unregisterCurrentDevice(logoutSince: logoutSince)
             _ = await keychainManager.clearAllTokens()
-            await PushNotificationManager.shared.unregisterCurrentDevice()
         }
         
         currentUser = nil
