@@ -192,7 +192,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
  */
 router.post('/register-device', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const { deviceToken, platform } = req.body;
 
     if (!deviceToken || !platform) {
@@ -246,7 +246,7 @@ router.post('/register-device', authenticate, async (req, res, next) => {
  */
 router.delete('/unregister-device', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const { deviceToken } = req.body;
 
     await pool.query(
@@ -269,7 +269,7 @@ router.delete('/unregister-device', authenticate, async (req, res, next) => {
  */
 router.get('/preferences', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const preferences = await pushNotificationService.getNotificationPreferences(userId);
 
     res.json({
@@ -287,7 +287,7 @@ router.get('/preferences', authenticate, async (req, res, next) => {
  */
 router.put('/preferences', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).user.userId;
     const { preferences } = req.body;
 
     const result = await pushNotificationService.updateNotificationPreferences(userId, preferences);
@@ -304,7 +304,7 @@ router.put('/preferences', authenticate, async (req, res, next) => {
 if (process.env.NODE_ENV === 'development') {
   router.post('/test', authenticate, async (req, res, next) => {
     try {
-      const userId = (req as any).user.id;
+      const userId = (req as any).user.userId;
 
       const result = await pushNotificationService.sendSystemNotification(
         userId,

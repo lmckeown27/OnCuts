@@ -107,7 +107,7 @@ class PushNotificationManager: NSObject, ObservableObject {
         }
         
         do {
-            // TODO: Implement unregisterDeviceToken in NetworkManager
+            try await networkManager.unregisterDeviceToken(deviceToken)
             print("✅ Device token unregistered from backend")
             
             await MainActor.run {
@@ -166,8 +166,7 @@ class PushNotificationManager: NSObject, ObservableObject {
     private func registerDeviceToken(_ token: String) async {
         do {
             print("📱 Attempting to register device token with backend...")
-            // TODO: Implement registerDeviceToken in NetworkManager
-            // try await networkManager.registerDeviceToken(token: token, platform: "ios")
+            try await networkManager.registerDeviceToken(token, platform: "ios")
             print("✅ Device token registered with backend successfully")
         } catch {
             print("❌ Failed to register device token with backend: \(error)")

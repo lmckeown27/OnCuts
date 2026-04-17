@@ -43,12 +43,39 @@ struct AuthResponse: Codable {
 
 struct AuthData: Codable {
     let user: User
-    let token: String
+    /// Server returns `accessToken` on login / verify-email / Google; `token` is legacy.
+    let accessToken: String
     let aptosAddress: String?
     
     enum CodingKeys: String, CodingKey {
-        case user, token
+        case user
+        case accessToken
+        case token
         case aptosAddress = "aptos_address"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        user = try c.decode(User.self, forKey: .user)
+        if let at = try c.decodeIfPresent(String.self, forKey: .accessToken), !at.isEmpty {
+            accessToken = at
+        } else if let t = try c.decodeIfPresent(String.self, forKey: .token), !t.isEmpty {
+            accessToken = t
+        } else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .accessToken,
+                in: c,
+                debugDescription: "Missing accessToken or token in auth response"
+            )
+        }
+        aptosAddress = try c.decodeIfPresent(String.self, forKey: .aptosAddress)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(user, forKey: .user)
+        try c.encode(accessToken, forKey: .accessToken)
+        try c.encodeIfPresent(aptosAddress, forKey: .aptosAddress)
     }
 }
 

@@ -13,6 +13,10 @@ struct Constants {
             static let login = "/auth/login"
             static let verifyEmail = "/auth/verify-email"
             
+            // Push (requires Bearer token; registers APNs device token in `mobile_devices`)
+            static let registerDevice = "/v1/notifications/register-device"
+            static let unregisterDevice = "/v1/notifications/unregister-device"
+            
             // Barbers
             static let barbers = "/barbers"
             static func barberDetail(id: String) -> String { "/barbers/\(id)" }

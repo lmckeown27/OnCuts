@@ -34,6 +34,50 @@ class NetworkManager: ObservableObject {
     @Published var isLoading = false
     private let keychainManager = KeychainManager.shared
     
+    /// Auth token from Keychain first, then UserDefaults (AuthViewModel stores JWT in UserDefaults).
+    private func bearerTokenForAuthenticatedRequests() async -> String? {
+        if let t = await keychainManager.getAccessToken(), !t.isEmpty {
+            return t
+        }
+        let legacy = UserDefaults.standard.string(forKey: Constants.StorageKeys.authToken)
+        if let t = legacy, !t.isEmpty {
+            return t
+        }
+        return nil
+    }
+    
+    // MARK: - Push device registration
+    
+    struct RegisterDeviceBody: Codable {
+        let deviceToken: String
+        let platform: String
+    }
+    
+    struct UnregisterDeviceBody: Codable {
+        let deviceToken: String
+    }
+    
+    /// Registers the APNs/FCM token so the backend can send banners (`mobile_devices`).
+    func registerDeviceToken(_ token: String, platform: String = "ios") async throws {
+        let body = RegisterDeviceBody(deviceToken: token, platform: platform)
+        let _: SuccessResponse = try await request(
+            endpoint: Constants.API.Endpoints.registerDevice,
+            method: "POST",
+            body: body,
+            authenticated: true
+        )
+    }
+    
+    func unregisterDeviceToken(_ token: String) async throws {
+        let body = UnregisterDeviceBody(deviceToken: token)
+        let _: SuccessResponse = try await request(
+            endpoint: Constants.API.Endpoints.unregisterDevice,
+            method: "DELETE",
+            body: body,
+            authenticated: true
+        )
+    }
+    
     // MARK: - Generic Request Methods
     
     func request<T: Decodable>(
@@ -51,7 +95,7 @@ class NetworkManager: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         if authenticated {
-            if let token = await keychainManager.getAccessToken() {
+            if let token = await bearerTokenForAuthenticatedRequests() {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             } else {
                 throw NetworkError.unauthorized
@@ -104,7 +148,7 @@ class NetworkManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        if let token = await keychainManager.getAccessToken() {
+        if let token = await bearerTokenForAuthenticatedRequests() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         

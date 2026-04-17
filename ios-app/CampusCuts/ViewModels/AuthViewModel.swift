@@ -9,6 +9,7 @@ class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private let networkManager = NetworkManager.shared
+    private let keychainManager = KeychainManager.shared
     
     init() {
         checkAuthStatus()
@@ -18,7 +19,11 @@ class AuthViewModel: ObservableObject {
         if let token = UserDefaults.standard.string(forKey: Constants.StorageKeys.authToken),
            !token.isEmpty {
             isAuthenticated = true
-            // Optionally fetch user profile
+            Task {
+                _ = await keychainManager.saveAccessToken(token)
+                await PushNotificationManager.shared.checkAndRequestPermissionIfNeeded()
+                await PushNotificationManager.shared.forceTokenRegistration()
+            }
         }
     }
     
@@ -59,12 +64,16 @@ class AuthViewModel: ObservableObject {
             )
             
             // Save token
-            UserDefaults.standard.set(response.data.token, forKey: Constants.StorageKeys.authToken)
+            UserDefaults.standard.set(response.data.accessToken, forKey: Constants.StorageKeys.authToken)
             UserDefaults.standard.set(response.data.user.id, forKey: Constants.StorageKeys.userId)
             UserDefaults.standard.set(response.data.user.role.rawValue, forKey: Constants.StorageKeys.userRole)
+            _ = await keychainManager.saveAccessToken(response.data.accessToken)
+            _ = await keychainManager.saveUserID(response.data.user.id)
             
             currentUser = response.data.user
             isAuthenticated = true
+            await PushNotificationManager.shared.checkAndRequestPermissionIfNeeded()
+            await PushNotificationManager.shared.forceTokenRegistration()
             
         } catch {
             errorMessage = error.localizedDescription
@@ -92,12 +101,16 @@ class AuthViewModel: ObservableObject {
             )
             
             // Save token
-            UserDefaults.standard.set(response.data.token, forKey: Constants.StorageKeys.authToken)
+            UserDefaults.standard.set(response.data.accessToken, forKey: Constants.StorageKeys.authToken)
             UserDefaults.standard.set(response.data.user.id, forKey: Constants.StorageKeys.userId)
             UserDefaults.standard.set(response.data.user.role.rawValue, forKey: Constants.StorageKeys.userRole)
+            _ = await keychainManager.saveAccessToken(response.data.accessToken)
+            _ = await keychainManager.saveUserID(response.data.user.id)
             
             currentUser = response.data.user
             isAuthenticated = true
+            await PushNotificationManager.shared.checkAndRequestPermissionIfNeeded()
+            await PushNotificationManager.shared.forceTokenRegistration()
             
         } catch {
             errorMessage = error.localizedDescription
@@ -110,6 +123,10 @@ class AuthViewModel: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.authToken)
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.userId)
         UserDefaults.standard.removeObject(forKey: Constants.StorageKeys.userRole)
+        Task {
+            _ = await keychainManager.clearAllTokens()
+            await PushNotificationManager.shared.unregisterCurrentDevice()
+        }
         
         currentUser = nil
         isAuthenticated = false

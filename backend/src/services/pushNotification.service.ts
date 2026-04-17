@@ -79,14 +79,22 @@ class PushNotificationService {
           console.log('✅ APN private key file read successfully');
         }
 
+        // Xcode/debug builds use sandbox tokens; App Store/TestFlight use production.
+        // Set APN_USE_SANDBOX=true if NODE_ENV is production but you only test with dev builds.
+        const forceSandbox =
+          process.env.APN_USE_SANDBOX === 'true' || process.env.APN_USE_SANDBOX === '1';
+        const apnProduction = !forceSandbox && process.env.NODE_ENV === 'production';
+
         const apnOptions = {
           token: {
             key: privateKey,
             keyId: process.env.APN_KEY_ID,
             teamId: process.env.APN_TEAM_ID,
           },
-          production: process.env.NODE_ENV === 'production',
+          production: apnProduction,
         };
+
+        console.log(`📱 APN client: ${apnProduction ? 'production' : 'sandbox'} gateway`);
 
         this.apnProvider = new apn.Provider(apnOptions);
         console.log('✅ APN Provider initialized successfully');
@@ -217,22 +225,36 @@ class PushNotificationService {
 
     const note = new apn.Notification();
     note.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-    note.badge = notification.badge || 1;
-    note.sound = notification.sound || 'default';
-    note.alert = {
-      title: notification.title,
-      body: notification.body,
-    };
+    note.topic = process.env.APN_BUNDLE_ID || 'com.campuscuts.ios';
+
+    const isBadgeOnly =
+      notification.type === 'badge_update' ||
+      (notification.data?.silent === true &&
+        !(notification.title || '').trim() &&
+        !(notification.body || '').trim());
+
+    if (isBadgeOnly) {
+      // Silent badge sync: no alert (empty alert still shows a broken banner on some iOS versions)
+      note.contentAvailable = true;
+      note.priority = 5;
+      note.badge = notification.badge ?? 0;
+    } else {
+      note.badge = notification.badge ?? 1;
+      note.sound = notification.sound || 'default';
+      note.alert = {
+        title: notification.title,
+        body: notification.body,
+      };
+      if (notification.category) {
+        note.category = notification.category;
+      }
+    }
+
     note.payload = {
       ...notification.data,
       type: notification.type,
       category: notification.category,
     };
-    note.topic = process.env.APN_BUNDLE_ID || 'com.campuscuts.ios';
-
-    if (notification.category) {
-      note.category = notification.category;
-    }
 
     const result = await this.apnProvider.send(note, deviceToken);
 
