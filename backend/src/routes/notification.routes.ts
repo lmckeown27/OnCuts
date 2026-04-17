@@ -226,19 +226,38 @@ router.post('/register-device', authenticate, async (req, res, next) => {
       [deviceToken]
     );
 
-    if (existing.rows.length > 0) {
-      // Update existing device token
-      await pool.query(
-        `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true,
-         apns_environment = $4, updated_at = NOW() WHERE device_token = $3`,
-        [userId, platform, deviceToken, apnsEnv]
-      );
-    } else {
-      // Insert new device token
-      await pool.query(
-        `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment) VALUES ($1, $2, $3, $4)`,
-        [userId, deviceToken, platform, apnsEnv]
-      );
+    try {
+      if (existing.rows.length > 0) {
+        await pool.query(
+          `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true,
+           apns_environment = $4, updated_at = NOW() WHERE device_token = $3`,
+          [userId, platform, deviceToken, apnsEnv]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment) VALUES ($1, $2, $3, $4)`,
+          [userId, deviceToken, platform, apnsEnv]
+        );
+      }
+    } catch (err: any) {
+      if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
+        console.warn(
+          '⚠️ mobile_devices.apns_environment missing — run backend/src/database/migrations/025_mobile_devices_apns_environment.sql'
+        );
+        if (existing.rows.length > 0) {
+          await pool.query(
+            `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true, updated_at = NOW() WHERE device_token = $3`,
+            [userId, platform, deviceToken]
+          );
+        } else {
+          await pool.query(
+            `INSERT INTO mobile_devices (user_id, device_token, platform) VALUES ($1, $2, $3)`,
+            [userId, deviceToken, platform]
+          );
+        }
+      } else {
+        throw err;
+      }
     }
 
     console.log(`✅ Registered ${platform} device for user ${userId}`);

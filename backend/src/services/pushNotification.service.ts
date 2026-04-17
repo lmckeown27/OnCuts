@@ -144,12 +144,33 @@ class PushNotificationService {
       });
 
       // Get user's registered devices (apns_environment: sandbox = Xcode token, production = TestFlight/App Store)
-      const devices = await pool.query(
-        `SELECT device_token, platform,
-                COALESCE(apns_environment, 'production') AS apns_environment
-         FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
-        [userId]
-      );
+      let devices: { rows: Array<{ device_token: string; platform: string; apns_environment?: string }> };
+      try {
+        devices = await pool.query(
+          `SELECT device_token, platform,
+                  COALESCE(apns_environment, 'production') AS apns_environment
+           FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
+          [userId]
+        );
+      } catch (err: any) {
+        // 42703 = undefined_column — deploy migration 025 before relying on per-device sandbox
+        if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
+          logger.warn(
+            '📱 mobile_devices.apns_environment missing — run migration 025; using production APNs for all devices',
+            { userId }
+          );
+          devices = await pool.query(
+            `SELECT device_token, platform FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
+            [userId]
+          );
+          devices.rows = devices.rows.map((r: { device_token: string; platform: string }) => ({
+            ...r,
+            apns_environment: 'production',
+          }));
+        } else {
+          throw err;
+        }
+      }
 
       console.log(`📱 Found ${devices.rows.length} registered devices`);
 
