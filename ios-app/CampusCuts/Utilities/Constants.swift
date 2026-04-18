@@ -27,6 +27,8 @@ struct Constants {
             static let bookings = "/bookings"
             static func bookingDetail(id: Int) -> String { "/bookings/\(id)" }
             static func v2BookingDetail(id: String) -> String { "/v2/bookings/\(id)" }
+            static let v2BookingsList = "/v2/bookings"
+            static func v2CancelBooking(id: String) -> String { "/v2/bookings/\(id)/cancel" }
 
             // Messages (booking-centric chat)
             static func conversationMessages(conversationId: Int) -> String {

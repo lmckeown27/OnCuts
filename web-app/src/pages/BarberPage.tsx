@@ -2,9 +2,9 @@
  * Barber Dashboard Page - Version 4.0 (Cache Buster)
  * Last updated: 2025-12-18 00:15:00
  */
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type MouseEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw } from 'lucide-react';
+import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
@@ -3920,6 +3920,26 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   );
 }
 
+const BARBER_HIDDEN_PAID_BOOKINGS_KEY = (barberId: string) =>
+  `campuscuts_barber_hidden_paid_bookings_${barberId}`;
+
+function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBarberHiddenPaidBookingIds(barberId: string, ids: string[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId), JSON.stringify(ids));
+}
+
 // Bookings Modal Component - View and manage all bookings
 function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; onClose: () => void; barberId: string }) {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'today' | 'past'>('today');
@@ -3928,11 +3948,14 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   const [markingComplete, setMarkingComplete] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
+  /** Paid bookings hidden from Past tab only (this browser). */
+  const [hiddenPaidBookingIds, setHiddenPaidBookingIds] = useState<string[]>([]);
 
   // Fetch bookings when modal opens
   useEffect(() => {
     if (isVisible && barberId) {
       fetchBookings();
+      setHiddenPaidBookingIds(loadBarberHiddenPaidBookingIds(barberId));
     }
   }, [isVisible, barberId]);
 
@@ -3995,6 +4018,20 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
     return scheduledTime <= fifteenMinsAgo;
   };
 
+  const isPaidBookingRow = (booking: any) =>
+    booking.status === 'PAID' || Boolean(booking.paidAt);
+
+  const hidePaidBookingFromList = (bookingId: string, e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setHiddenPaidBookingIds(prev => {
+      if (prev.includes(bookingId)) return prev;
+      const next = [...prev, bookingId];
+      saveBarberHiddenPaidBookingIds(barberId, next);
+      return next;
+    });
+    toast.success('Removed from your list');
+  };
+
   // Filter bookings by tab
   const filteredBookings = bookings.filter(booking => {
     const now = new Date();
@@ -4006,7 +4043,16 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
       return bookingDate > now && !isToday(booking.scheduledTime) && booking.status === 'ACCEPTED';
     } else {
       // Past: paid bookings, completed bookings (awaiting payment), OR past accepted bookings
-      return booking.status === 'PAID' || booking.status === 'COMPLETED' || (booking.status === 'ACCEPTED' && isPast(booking.scheduledTime) && !isToday(booking.scheduledTime));
+      const inPastTab =
+        booking.status === 'PAID' ||
+        booking.status === 'COMPLETED' ||
+        (booking.status === 'ACCEPTED' && isPast(booking.scheduledTime) && !isToday(booking.scheduledTime));
+      if (!inPastTab) return false;
+      // Declutter: hide Paid rows the provider chose to remove (local only)
+      if (isPaidBookingRow(booking) && hiddenPaidBookingIds.includes(booking.id)) {
+        return false;
+      }
+      return true;
     }
   }).sort((a, b) => {
     // Sort by date (ascending for upcoming/today, descending for past)
@@ -4112,7 +4158,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
               <p className="text-gray-400 text-sm mt-1">
                 {activeTab === 'today' && 'No appointments scheduled for today'}
                 {activeTab === 'upcoming' && 'No future appointments yet'}
-                {activeTab === 'past' && 'No completed services yet'}
+                {activeTab === 'past' && 'No items here — or remove Paid bookings with “Remove from list” to tidy up.'}
               </p>
             </div>
           ) : (
@@ -4234,6 +4280,17 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
                           <p className="text-sm text-gray-600 italic">"{booking.review.comment}"</p>
               )}
             </div>
+                    )}
+
+                    {activeTab === 'past' && isPaidBookingRow(booking) && (
+                      <button
+                        type="button"
+                        onClick={e => hidePaidBookingFromList(booking.id, e)}
+                        className="mt-2 w-full py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2"
+                      >
+                        <EyeOff className="w-4 h-4 shrink-0" aria-hidden />
+                        Remove from list
+                      </button>
                     )}
                     
                     {/* Tap to view details hint */}
