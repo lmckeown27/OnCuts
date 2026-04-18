@@ -845,6 +845,95 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
       }
     }
 
+    // Push + in-app notification to the other participant (iOS lock screen / notification center)
+    try {
+      const detail = await pool.query(
+        `SELECT b."consumerId", bar."userId" AS barber_user_id,
+                TRIM(CONCAT(uc.first_name, ' ', uc.last_name)) AS consumer_name,
+                TRIM(CONCAT(ub.first_name, ' ', ub.last_name)) AS barber_name,
+                COALESCE(c.service_name, b."serviceType", 'Service') AS service_name
+         FROM bookings b
+         JOIN barbers bar ON b."barberId" = bar.id
+         JOIN users uc ON b."consumerId" = uc.id
+         JOIN users ub ON bar."userId" = ub.id
+         LEFT JOIN conversations c ON c.booking_id = b.id
+         WHERE b.id = $1`,
+        [id]
+      );
+      if (detail.rows.length > 0) {
+        const row = detail.rows[0];
+        const actorIsConsumer = sameUuid(userId, row.consumerId);
+        const recipientId = actorIsConsumer ? row.barber_user_id : row.consumerId;
+        const serviceName = row.service_name || 'booking';
+
+        let title = 'Booking updated';
+        let body = `Booking status is now ${status}.`;
+        switch (status) {
+          case 'ACCEPTED':
+            title = 'Booking accepted';
+            body = actorIsConsumer
+              ? `${row.consumer_name} updated the booking for ${serviceName}.`
+              : `${row.barber_name} accepted your booking for ${serviceName}.`;
+            break;
+          case 'REJECTED':
+            title = 'Booking declined';
+            body = `${row.barber_name} declined your booking request.`;
+            break;
+          case 'CANCELLED':
+            title = 'Booking cancelled';
+            body = actorIsConsumer
+              ? `${row.consumer_name} cancelled the booking for ${serviceName}.`
+              : `${row.barber_name} cancelled your booking for ${serviceName}.`;
+            break;
+          case 'COMPLETED':
+            title = 'Booking completed';
+            body = actorIsConsumer
+              ? `${row.consumer_name} marked the booking complete for ${serviceName}.`
+              : `${row.barber_name} marked your ${serviceName} appointment complete.`;
+            break;
+          case 'PENDING':
+            title = 'Booking pending';
+            body = `Your ${serviceName} booking is pending.`;
+            break;
+          case 'PAID':
+            title = 'Booking paid';
+            body = `Payment recorded for your ${serviceName} booking.`;
+            break;
+          default:
+            break;
+        }
+
+        await notificationService.saveNotification({
+          userId: recipientId,
+          type: 'booking_status',
+          title,
+          message: body,
+          data: {
+            bookingId: id,
+            status,
+            serviceName,
+          },
+        });
+        await pushNotificationService.sendMirrorPush(recipientId, title, body, 'booking_status', {
+          bookingId: id,
+          status,
+          serviceName,
+        });
+
+        const io = getSocketIO();
+        if (io) {
+          io.to(`user-${recipientId}`).emit('booking-status-changed', {
+            bookingId: id,
+            status,
+            title,
+            message: body,
+          });
+        }
+      }
+    } catch (notifErr: any) {
+      logger.warn('booking status notification failed (non-fatal):', notifErr?.message || notifErr);
+    }
+
     res.json({
       success: true,
       data: { booking: result.rows[0] },
@@ -1100,7 +1189,30 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
 
     logger.info(`Booking ${id} reverted from COMPLETED to ACCEPTED by barber ${userId}`);
 
-    // Notify consumer that the completion was undone
+    // Notify consumer that the completion was undone (socket + push)
+    try {
+      await notificationService.saveNotification({
+        userId: booking.consumerId,
+        type: 'booking_status',
+        title: 'Booking updated',
+        message: 'The barber reverted the service completion — your booking is active again.',
+        data: { bookingId: id, status: 'ACCEPTED' },
+      });
+    } catch (_) {
+      /* non-fatal */
+    }
+    try {
+      await pushNotificationService.sendMirrorPush(
+        booking.consumerId,
+        'Booking updated',
+        'The barber reverted the completion — your booking is open again.',
+        'booking_status',
+        { bookingId: id, status: 'ACCEPTED' }
+      );
+    } catch (_) {
+      /* non-fatal */
+    }
+
     const io = getSocketIO();
     if (io) {
       logger.info(`[UNDO-COMPLETE] Emitting booking-status-changed to user-${booking.consumerId} for booking ${id}`);
@@ -2380,6 +2492,50 @@ router.put('/:id', authenticate, async (req, res, next) => {
           price: priceUsdCents / 100,
           bookingId: id,
         }).catch(err => logger.error('Failed to send booking edit emails:', err));
+      }
+    } else if (
+      location !== undefined ||
+      locationDetailsRaw !== undefined ||
+      notes !== undefined
+    ) {
+      // Location/notes-only edit (no reschedule) — still notify the other party on device
+      const barberName = `${booking.barber_first_name} ${booking.barber_last_name}`.trim() || 'Your barber';
+      const consumerName = `${booking.consumer_first_name} ${booking.consumer_last_name}`.trim() || 'Customer';
+      const serviceName = booking.service_name || booking.serviceType || 'Haircut';
+      try {
+        if (isBarber) {
+          await notificationService.saveNotification({
+            userId: booking.consumerId,
+            type: 'booking_updated',
+            title: 'Booking details updated',
+            message: `${barberName} updated details for your ${serviceName} booking.`,
+            data: { bookingId: id, editedBy: 'barber' },
+          });
+          await pushNotificationService.sendMirrorPush(
+            booking.consumerId,
+            'Booking details updated',
+            `${barberName} updated details for your ${serviceName} booking.`,
+            'booking_updated',
+            { bookingId: id, editedBy: 'barber' }
+          );
+        } else {
+          await notificationService.saveNotification({
+            userId: booking.barber_user_id,
+            type: 'booking_updated',
+            title: 'Booking details updated',
+            message: `${consumerName} updated details for the ${serviceName} booking.`,
+            data: { bookingId: id, editedBy: 'consumer' },
+          });
+          await pushNotificationService.sendMirrorPush(
+            booking.barber_user_id,
+            'Booking details updated',
+            `${consumerName} updated details for the ${serviceName} booking.`,
+            'booking_updated',
+            { bookingId: id, editedBy: 'consumer' }
+          );
+        }
+      } catch (e: any) {
+        logger.warn('booking detail edit push failed (non-fatal):', e?.message || e);
       }
     }
 
