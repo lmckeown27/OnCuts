@@ -2,7 +2,8 @@
  * Barber Dashboard Page - Version 4.0 (Cache Buster)
  * Last updated: 2025-12-18 00:15:00
  */
-import { useState, useEffect, useRef, useMemo, useCallback, type MouseEvent } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Calendar, DollarSign, TrendingUp, Settings, LogOut, ChevronDown, ChevronLeft, ChevronRight, Scissors, Inbox, Shield, MapPin, MessageCircle, MessageSquare, Search, Filter, X, Clock, Zap, ArrowLeft, Bell, AlertCircle, Check, Send, AlertTriangle, Trash2, Pencil, Save, User, Mail, FileText, CreditCard, Landmark, Star, RefreshCw, RotateCcw, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '../config/constants';
@@ -4021,7 +4022,7 @@ function BookingsModal({ isVisible, onClose, barberId }: { isVisible: boolean; o
   const isPaidBookingRow = (booking: any) =>
     booking.status === 'PAID' || Boolean(booking.paidAt);
 
-  const hidePaidBookingFromList = (bookingId: string, e: MouseEvent<HTMLButtonElement>) => {
+  const hidePaidBookingFromList = (bookingId: string, e: ReactMouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setHiddenPaidBookingIds(prev => {
       if (prev.includes(bookingId)) return prev;
