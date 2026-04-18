@@ -133,11 +133,54 @@ class PushNotificationService {
   }
 
   /**
+   * Explain why push has nothing to send (no row vs inactive vs UUID mismatch).
+   */
+  private async logPushDeviceDiagnostics(userId: string): Promise<void> {
+    try {
+      const r = await pool.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE is_active) AS active_n,
+           COUNT(*) FILTER (WHERE NOT is_active) AS inactive_n,
+           COUNT(*)::int AS total_n
+         FROM mobile_devices WHERE user_id = $1::uuid`,
+        [userId]
+      );
+      const row = r.rows[0];
+      const total = Number(row.total_n) || 0;
+      const inactive = Number(row.inactive_n) || 0;
+      const active = Number(row.active_n) || 0;
+      logger.warn('📱 mobile_devices diagnostic (push query returned 0 active rows)', {
+        userId,
+        activeRows: active,
+        inactiveRows: inactive,
+        totalRows: total,
+        hint:
+          total === 0
+            ? 'No device row for this user — open the app signed in as this user so POST /notifications/register-device runs.'
+            : inactive > 0
+              ? 'Rows exist but is_active=false (logout/unregister, APNs invalid token, or DB fix). Re-open app to register again or: UPDATE mobile_devices SET is_active=true WHERE user_id=...'
+              : undefined,
+      });
+    } catch (e: any) {
+      logger.warn('📱 mobile_devices diagnostic query failed', {
+        userId,
+        err: e?.message || e,
+      });
+    }
+  }
+
+  /**
    * Send notification to a user
    */
   async sendNotification(userId: string | number, notification: NotificationData): Promise<any> {
     try {
-      console.log(`📱 Sending notification to user ${userId}:`, {
+      const uid = String(userId ?? '').trim();
+      if (!uid) {
+        logger.warn('📱 sendNotification: empty userId');
+        return { success: false, reason: 'Invalid user id' };
+      }
+
+      console.log(`📱 Sending notification to user ${uid}:`, {
         title: notification.title,
         body: notification.body,
         type: notification.type,
@@ -149,19 +192,19 @@ class PushNotificationService {
         devices = await pool.query(
           `SELECT device_token, platform,
                   COALESCE(apns_environment, 'production') AS apns_environment
-           FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
-          [userId]
+           FROM mobile_devices WHERE user_id = $1::uuid AND is_active = true`,
+          [uid]
         );
       } catch (err: any) {
         // 42703 = undefined_column — deploy migration 025 before relying on per-device sandbox
         if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
           logger.warn(
             '📱 mobile_devices.apns_environment missing — run migration 025; using production APNs for all devices',
-            { userId }
+            { userId: uid }
           );
           devices = await pool.query(
-            `SELECT device_token, platform FROM mobile_devices WHERE user_id = $1 AND is_active = true`,
-            [userId]
+            `SELECT device_token, platform FROM mobile_devices WHERE user_id = $1::uuid AND is_active = true`,
+            [uid]
           );
           devices.rows = devices.rows.map((r: { device_token: string; platform: string }) => ({
             ...r,
@@ -175,8 +218,9 @@ class PushNotificationService {
       console.log(`📱 Found ${devices.rows.length} registered devices`);
 
       if (devices.rows.length === 0) {
+        await this.logPushDeviceDiagnostics(uid);
         logger.warn('📱 Push not delivered: no registered devices', {
-          userId,
+          userId: uid,
           notificationType: notification.type,
         });
         return { success: false, reason: 'No registered devices' };
@@ -194,20 +238,20 @@ class PushNotificationService {
               device.device_token,
               notification,
               apnsEnv,
-              userId
+              uid
             );
             results.push({ platform: 'ios', token: device.device_token, result });
           } else if (device.platform === 'android' && this.fcmApp) {
-            const result = await this.sendAndroidNotification(device.device_token, notification, userId);
+            const result = await this.sendAndroidNotification(device.device_token, notification, uid);
             results.push({ platform: 'android', token: device.device_token, result });
           } else if (device.platform === 'ios' && !apnOk) {
             logger.warn('📱 Push skipped: iOS device but APN providers not initialized', {
-              userId,
+              userId: uid,
               notificationType: notification.type,
             });
           } else if (device.platform === 'android' && !this.fcmApp) {
             logger.warn('📱 Push skipped: Android device but FCM not initialized', {
-              userId,
+              userId: uid,
               notificationType: notification.type,
             });
           }
@@ -223,7 +267,7 @@ class PushNotificationService {
 
       if (results.length === 0 && devices.rows.length > 0) {
         logger.warn('📱 Push not delivered: no sends attempted (check APN/FCM env and platform)', {
-          userId,
+          userId: uid,
           notificationType: notification.type,
           deviceCount: devices.rows.length,
           platforms: [...new Set(devices.rows.map((d: { platform: string }) => d.platform))],
@@ -237,13 +281,13 @@ class PushNotificationService {
       }
 
       // Log notification
-      await this.logNotification(userId, notification, results);
+      await this.logNotification(uid, notification, results);
 
       return { success: true, results };
     } catch (error) {
       console.error('❌ Push notification error:', error);
       logger.error('📱 Push notification error', {
-        userId,
+        userId: String(userId ?? ''),
         err: error instanceof Error ? error.message : error,
       });
       return { success: false, error };
@@ -375,10 +419,12 @@ class PushNotificationService {
         const st = String((failure as any).status || '');
         const reasonStr = String(apnsReason);
         // Only drop tokens Apple says are gone/invalid — not 400 in general (env/topic/config errors also use 400).
+        // Never deactivate based on badge_update alone: silent pushes behave differently; visible sends will retry/deactivate if needed.
         const shouldDeactivateToken =
-          st === '410' ||
-          reasonStr === 'BadDeviceToken' ||
-          reasonStr === 'Unregistered';
+          notification.type !== 'badge_update' &&
+          (st === '410' ||
+            reasonStr === 'BadDeviceToken' ||
+            reasonStr === 'Unregistered');
         if (shouldDeactivateToken) {
           await this.deactivateDevice(deviceToken, userId, {
             reason: reasonStr,

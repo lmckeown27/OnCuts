@@ -11,6 +11,34 @@ import { authenticate } from '../middleware/auth';
 const router = express.Router();
 
 /**
+ * GET /api/notifications/devices
+ * Debug: list push registration rows for the JWT user (token suffix only). Use when logs show "Found 0 registered devices".
+ */
+router.get('/devices', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const r = await pool.query(
+      `SELECT id, platform, is_active, apns_environment, updated_at,
+              '…' || RIGHT(device_token, 8) AS token_suffix
+       FROM mobile_devices WHERE user_id = $1::uuid
+       ORDER BY updated_at DESC NULLS LAST`,
+      [userId]
+    );
+    const active = r.rows.filter((row: { is_active: boolean }) => row.is_active).length;
+    res.json({
+      success: true,
+      data: {
+        userId,
+        activeDeviceCount: active,
+        devices: r.rows,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/notifications
  * Get user's in-app notifications
  */
@@ -193,7 +221,9 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 router.post('/register-device', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const { deviceToken, platform, apnsEnvironment } = req.body;
+    const { deviceToken, platform: platformRaw, apnsEnvironment } = req.body;
+    const platform =
+      typeof platformRaw === 'string' ? platformRaw.trim().toLowerCase() : platformRaw;
 
     if (!deviceToken || !platform) {
       return res.status(400).json({
