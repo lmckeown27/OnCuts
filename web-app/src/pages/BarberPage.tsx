@@ -39,6 +39,30 @@ import { useMessageStore } from '../store/useMessageStore';
 import { useViewport, useBodyScrollLock, useGeolocation, useDynamicViewportHeight } from '../hooks';
 import toast from 'react-hot-toast';
 
+/** localStorage key: Paid bookings hidden from Past tab — also excluded from schedule slot lists. */
+const BARBER_HIDDEN_PAID_BOOKINGS_KEY = (barberId: string) =>
+  `campuscuts_barber_hidden_paid_bookings_${barberId}`;
+
+function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveBarberHiddenPaidBookingIds(barberId: string, ids: string[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId), JSON.stringify(ids));
+  window.dispatchEvent(
+    new CustomEvent('campuscuts-barber-hidden-paid-bookings', { detail: { barberId } })
+  );
+}
+
 const COMPONENT_VERSION = 'v4.0-modal-fix';
 
 export default function BarberPage() {
@@ -1619,7 +1643,30 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   // Confirmed bookings state
   const [confirmedBookings, setConfirmedBookings] = useState<ConfirmedBooking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
-  
+  /** Sync with Bookings modal "Remove from list" (Paid) — same localStorage key. */
+  const [hiddenPaidBookingIds, setHiddenPaidBookingIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!barberId) return;
+    const sync = () => setHiddenPaidBookingIds(loadBarberHiddenPaidBookingIds(barberId));
+    sync();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId)) sync();
+    };
+    const onCustom: EventListener = () => sync();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('campuscuts-barber-hidden-paid-bookings', onCustom);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('campuscuts-barber-hidden-paid-bookings', onCustom);
+    };
+  }, [barberId]);
+
+  const visibleConfirmedBookings = useMemo(
+    () => confirmedBookings.filter(b => !hiddenPaidBookingIds.includes(b.id)),
+    [confirmedBookings, hiddenPaidBookingIds]
+  );
+
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
 
@@ -2246,7 +2293,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     const nextDay = new Date(targetDate);
     nextDay.setDate(nextDay.getDate() + 1);
     
-    return confirmedBookings
+    return visibleConfirmedBookings
       .filter(booking => {
         const bookingDate = new Date(booking.scheduledTime);
         return bookingDate >= targetDate && bookingDate < nextDay;
@@ -2295,7 +2342,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 displayDate.setDate(displayDate.getDate() + dayOffset);
                 const nextDay = new Date(displayDate);
                 nextDay.setDate(nextDay.getDate() + 1);
-                const count = confirmedBookings.filter(b => {
+                const count = visibleConfirmedBookings.filter(b => {
                   const bookingDate = new Date(b.scheduledTime);
                   return bookingDate >= displayDate && bookingDate < nextDay;
                 }).length;
@@ -2308,7 +2355,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 startOfWeek.setHours(0, 0, 0, 0);
                 const endOfWeek = new Date(startOfWeek);
                 endOfWeek.setDate(startOfWeek.getDate() + 7);
-                const count = confirmedBookings.filter(b => {
+                const count = visibleConfirmedBookings.filter(b => {
                   const bookingDate = new Date(b.scheduledTime);
                   return bookingDate >= startOfWeek && bookingDate < endOfWeek;
                 }).length;
@@ -2318,7 +2365,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
                 const displayMonth = displayDate.getMonth();
                 const displayYear = displayDate.getFullYear();
-                const count = confirmedBookings.filter(b => {
+                const count = visibleConfirmedBookings.filter(b => {
                   const bookingDate = new Date(b.scheduledTime);
                   return bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear;
                 }).length;
@@ -2474,7 +2521,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           const nextDay = new Date(displayDate);
           nextDay.setDate(nextDay.getDate() + 1);
           
-          const dailyAppointments = confirmedBookings
+          const dailyAppointments = visibleConfirmedBookings
             .filter(booking => {
               const bookingDate = new Date(booking.scheduledTime);
               return bookingDate >= displayDate && bookingDate < nextDay;
@@ -2784,7 +2831,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           
           // Group bookings by date
           const weekAppointmentsByDate: { [dateKey: string]: ConfirmedBooking[] } = {};
-          confirmedBookings.forEach(booking => {
+          visibleConfirmedBookings.forEach(booking => {
             const bookingDate = new Date(booking.scheduledTime);
             if (bookingDate >= startOfWeek && bookingDate < endOfWeek) {
               const dateKey = bookingDate.toDateString();
@@ -2998,7 +3045,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
           
           // Group bookings by day of month
           const monthAppointmentsByDay: { [day: number]: ConfirmedBooking[] } = {};
-          confirmedBookings.forEach(booking => {
+          visibleConfirmedBookings.forEach(booking => {
             const bookingDate = new Date(booking.scheduledTime);
             if (bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear) {
               const day = bookingDate.getDate();
@@ -3919,26 +3966,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
       )}
     </>
   );
-}
-
-const BARBER_HIDDEN_PAID_BOOKINGS_KEY = (barberId: string) =>
-  `campuscuts_barber_hidden_paid_bookings_${barberId}`;
-
-function loadBarberHiddenPaidBookingIds(barberId: string): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveBarberHiddenPaidBookingIds(barberId: string, ids: string[]) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(BARBER_HIDDEN_PAID_BOOKINGS_KEY(barberId), JSON.stringify(ids));
 }
 
 // Bookings Modal Component - View and manage all bookings
