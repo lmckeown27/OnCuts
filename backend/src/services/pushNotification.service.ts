@@ -392,10 +392,54 @@ class PushNotificationService {
       category: notification.category,
     };
 
-    const result = await provider.send(note, deviceToken);
+    let result = await provider.send(note, deviceToken);
 
     // Apple can reject the notification (wrong env/token/topic) while still returning 200 from our HTTP client.
     // node-apn puts rejections in `failed`; `sent` stays empty — we must not treat that as success.
+    //
+    // Xcode / debug builds use sandbox device tokens; DB often has apns_environment=production. Apple returns
+    // BadDeviceToken on the wrong gateway — retry the *alternate* gateway once before logging/deactivating.
+    if (result.failed && result.failed.length > 0) {
+      const firstReasonRaw =
+        (result.failed[0] as any).response?.reason ||
+        (result.failed[0] as any).error?.message ||
+        (result.failed[0] as any).status ||
+        'unknown';
+      const firstReasonStr = String(firstReasonRaw);
+      if (firstReasonStr === 'BadDeviceToken') {
+        const altEnv: 'sandbox' | 'production' =
+          apnsEnvironment === 'production' ? 'sandbox' : 'production';
+        const altProvider = this.getApnProvider(altEnv);
+        if (altProvider) {
+          logger.warn('📱 BadDeviceToken on preferred gateway — retrying alternate APNs (sandbox ↔ production)', {
+            tokenSuffix: deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)',
+            tried: apnsEnvironment,
+            retry: altEnv,
+            topic: note.topic,
+          });
+          const retryResult = await altProvider.send(note, deviceToken);
+          const retrySent = retryResult.sent?.length ?? 0;
+          if (retrySent > 0) {
+            try {
+              await pool.query(
+                `UPDATE mobile_devices SET apns_environment = $1, updated_at = NOW() WHERE device_token = $2`,
+                [altEnv, deviceToken]
+              );
+              logger.info('📱 Persisted apns_environment after BadDeviceToken recovery on alternate gateway', {
+                apns_environment: altEnv,
+              });
+            } catch (dbErr: any) {
+              logger.warn('📱 Could not persist apns_environment after alternate send', {
+                err: dbErr?.message,
+              });
+            }
+            return retryResult;
+          }
+          result = retryResult;
+        }
+      }
+    }
+
     if (result.failed && result.failed.length > 0) {
       for (const failure of result.failed) {
         const apnsReason =
