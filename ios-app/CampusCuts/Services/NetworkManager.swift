@@ -151,7 +151,142 @@ class NetworkManager: ObservableObject {
             throw NetworkError.unknown
         }
     }
-    
+
+    /// JSON from CampusCuts API (`consumer_id`, `requested_slot`, etc.).
+    func requestSnakeCaseJSON<T: Decodable>(
+        endpoint: String,
+        method: String = "GET",
+        body: Encodable? = nil,
+        authenticated: Bool = false
+    ) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw NetworkError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if authenticated {
+            if let token = await bearerTokenForAuthenticatedRequests() {
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } else {
+                throw NetworkError.unauthorized
+            }
+        }
+
+        if let body = body {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            let flexible = ISO8601DateFormatter()
+            flexible.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            decoder.dateDecodingStrategy = .custom { decoder in
+                let container = try decoder.singleValueContainer()
+                let str = try container.decode(String.self)
+                if let d = flexible.date(from: str) { return d }
+                let plain = ISO8601DateFormatter()
+                plain.formatOptions = [.withInternetDateTime]
+                if let d = plain.date(from: str) { return d }
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(str)")
+            }
+            do {
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                print("Decoding error (snake_case): \(error)")
+                throw NetworkError.decodingError
+            }
+        case 401:
+            throw NetworkError.unauthorized
+        case 400...499:
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw NetworkError.serverError(errorResponse.error.message)
+            }
+            throw NetworkError.serverError("Client error")
+        case 500...599:
+            throw NetworkError.serverError("Server error")
+        default:
+            throw NetworkError.unknown
+        }
+    }
+
+    /// JSON from Express `res.json` with camelCase keys (`createdAt`, `senderId`, …).
+    func requestCamelCaseJSON<T: Decodable>(
+        endpoint: String,
+        method: String = "GET",
+        body: Encodable? = nil,
+        authenticated: Bool = false
+    ) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint) else {
+            throw NetworkError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if authenticated {
+            if let token = await bearerTokenForAuthenticatedRequests() {
+                request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            } else {
+                throw NetworkError.unauthorized
+            }
+        }
+
+        if let body = body {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200...299:
+            let decoder = JSONDecoder()
+            let flexible = ISO8601DateFormatter()
+            flexible.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            decoder.dateDecodingStrategy = .custom { decoder in
+                let container = try decoder.singleValueContainer()
+                let str = try container.decode(String.self)
+                if let d = flexible.date(from: str) { return d }
+                let plain = ISO8601DateFormatter()
+                plain.formatOptions = [.withInternetDateTime]
+                if let d = plain.date(from: str) { return d }
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date: \(str)")
+            }
+            do {
+                return try decoder.decode(T.self, from: data)
+            } catch {
+                print("Decoding error (camelCase): \(error)")
+                throw NetworkError.decodingError
+            }
+        case 401:
+            throw NetworkError.unauthorized
+        case 400...499:
+            if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+                throw NetworkError.serverError(errorResponse.error.message)
+            }
+            throw NetworkError.serverError("Client error")
+        case 500...599:
+            throw NetworkError.serverError("Server error")
+        default:
+            throw NetworkError.unknown
+        }
+    }
+
     func uploadImage(
         endpoint: String,
         image: Data,

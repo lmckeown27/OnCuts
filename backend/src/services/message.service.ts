@@ -521,7 +521,8 @@ class MessageService {
         await pushNotificationService.sendMessageNotification(
           recipientId,
           `${sender.first_name} ${sender.last_name}`,
-          content
+          content,
+          conversationId
         );
         
         // Also save in-app notification for the recipient

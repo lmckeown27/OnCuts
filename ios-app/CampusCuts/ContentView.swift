@@ -2,14 +2,29 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    
+    @EnvironmentObject var notificationDeepLink: NotificationDeepLinkRouter
+
     var body: some View {
         Group {
             if authViewModel.isAuthenticated {
-                if authViewModel.currentUser?.role == .barber {
-                    BarberTabView()
-                } else {
-                    StudentTabView()
+                Group {
+                    if authViewModel.currentUser?.role == .barber {
+                        BarberTabView()
+                    } else {
+                        StudentTabView()
+                    }
+                }
+                .fullScreenCover(item: $notificationDeepLink.pending) { link in
+                    switch link {
+                    case .conversation(let conversationId):
+                        NavigationStack {
+                            ConversationChatView(conversationId: conversationId)
+                        }
+                    case .booking(let uuid):
+                        NavigationStack {
+                            BookingDeepLinkView(bookingId: uuid)
+                        }
+                    }
                 }
             } else {
                 LoginView()
@@ -71,5 +86,6 @@ struct BarberTabView: View {
     ContentView()
         .environmentObject(AuthViewModel())
         .environmentObject(NetworkManager())
+        .environmentObject(NotificationDeepLinkRouter.shared)
 }
 

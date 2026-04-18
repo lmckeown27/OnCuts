@@ -23,9 +23,18 @@ struct Constants {
             static func barberPortfolio(id: String) -> String { "/barbers/\(id)/portfolio" }
             static func barberAvailability(id: String) -> String { "/barbers/\(id)/availability" }
             
-            // Bookings
+            // Bookings (legacy + v2 UUID ids)
             static let bookings = "/bookings"
             static func bookingDetail(id: Int) -> String { "/bookings/\(id)" }
+            static func v2BookingDetail(id: String) -> String { "/v2/bookings/\(id)" }
+
+            // Messages (booking-centric chat)
+            static func conversationMessages(conversationId: Int) -> String {
+                "/messages/conversations/\(conversationId)/messages"
+            }
+            static func sendConversationMessage(conversationId: Int) -> String {
+                "/messages/conversations/\(conversationId)/messages"
+            }
             static func confirmBooking(id: Int) -> String { "/bookings/\(id)/confirm" }
             static func completeBooking(id: Int) -> String { "/bookings/\(id)/complete" }
             static func cancelBooking(id: Int) -> String { "/bookings/\(id)/cancel" }

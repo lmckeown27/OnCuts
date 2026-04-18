@@ -639,7 +639,8 @@ class PushNotificationService {
   async sendMessageNotification(
     recipientId: string | number,
     senderName: string,
-    messagePreview: string
+    messagePreview: string,
+    conversationId: string | number
   ): Promise<any> {
     // Get unread message count for badge
     let unreadCount = 1;
@@ -667,6 +668,7 @@ class PushNotificationService {
         type: 'message',
         action: 'open_chat',
         unreadCount,
+        conversationId: String(conversationId),
       },
     };
 
