@@ -12,6 +12,7 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import notificationService from './notification.service';
 
 // Optional mobile dependencies - gracefully handle if not installed
 let apn: any, admin: any;
@@ -609,25 +610,57 @@ class PushNotificationService {
   }
 
   /**
-   * Send appointment reminder notification
+   * Send appointment reminder push + in-app row (consumer: counterparty = barber name; barber: counterparty = client name).
    */
   async sendAppointmentReminderNotification(
     userId: string | number,
-    barberName: string,
-    service: string,
-    hoursUntil: number
+    options: {
+      bookingId: string | number;
+      hoursUntil: number;
+      service: string;
+      counterpartyName: string;
+      role: 'consumer' | 'barber';
+    }
   ): Promise<any> {
+    const { bookingId, hoursUntil, service, counterpartyName, role } = options;
+    const title =
+      hoursUntil === 1 ? 'Appointment in 1 hour' : `Appointment in ${hoursUntil} hours`;
+    const body =
+      role === 'consumer'
+        ? `${service} with ${counterpartyName} is coming up soon.`
+        : `${service} with ${counterpartyName} is coming up soon.`;
+
+    const data: Record<string, string> = {
+      type: 'booking_reminder',
+      action: 'open_bookings',
+      bookingId: String(bookingId),
+      hoursUntil: String(hoursUntil),
+    };
+
+    try {
+      await notificationService.saveNotification({
+        userId: String(userId),
+        type: 'booking_reminder',
+        title,
+        message: body,
+        data,
+      });
+    } catch (e) {
+      logger.warn('Failed to save booking_reminder in-app notification', {
+        userId: String(userId),
+        bookingId: String(bookingId),
+        err: e instanceof Error ? e.message : e,
+      });
+    }
+
     const notification: NotificationData = {
-      title: `Appointment in ${hoursUntil} hours`,
-      body: `${service} with ${barberName} is coming up soon!`,
+      title,
+      body,
       type: 'booking_reminder',
       category: 'REMINDER_CATEGORY',
       sound: 'default',
       badge: 1,
-      data: {
-        type: 'booking_reminder',
-        action: 'open_bookings',
-      },
+      data,
     };
 
     return await this.sendNotification(userId, notification);
