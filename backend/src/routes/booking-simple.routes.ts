@@ -13,7 +13,7 @@ import notificationService from '../services/notification.service';
 import pushNotificationService from '../services/pushNotification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
-import { getDefaultStripeClient } from '../config/stripe';
+import { getDefaultStripeClient, getStripePublishableKeyForDefaultClient } from '../config/stripe';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
 import { executeParticipantBookingCancellation } from '../services/booking-cancellation.service';
@@ -1703,10 +1703,12 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
-      automatic_payment_methods: { 
+      // Do not set allow_redirects: 'never' — it breaks 3D Secure and other flows that
+      // need a redirect during client-side confirmation (PaymentSheet / Payment Element on iOS).
+      // Unwanted redirect-based PMs can be turned off in the Stripe Dashboard.
+      automatic_payment_methods: {
         enabled: true,
-        allow_redirects: 'never' // Prevents redirect-based methods like Klarna
-      }, // Uses Stripe Dashboard settings - disable unwanted methods there
+      },
       customer: stripeCustomerId, // Associate payment with Stripe customer
       metadata: {
         booking_id: id,
@@ -1740,11 +1742,13 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 
     logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect)'}`);
 
+    const publishableKey = getStripePublishableKeyForDefaultClient();
     res.json({
       success: true,
       data: {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
+        ...(publishableKey ? { publishableKey } : {}),
       },
     });
   } catch (error: any) {

@@ -244,3 +244,41 @@ export function getDefaultStripeClient(): Stripe {
 export function resetDefaultStripeClientCache(): void {
   defaultClient = null;
 }
+
+/**
+ * Publishable key aligned with {@link getDefaultStripeSecretKey} so native apps and
+ * tooling can initialize Stripe.js / PaymentSheet with the same live|test mode as the PI.
+ */
+export function getStripePublishableKeyForDefaultClient(): string | undefined {
+  const sk = getDefaultStripeSecretKey();
+  const wantLive = sk.startsWith('sk_live');
+  const wantTest = sk.startsWith('sk_test');
+
+  const ordered = [
+    trimEnv('STRIPE_PUBLISHABLE_KEY'),
+    trimEnv('STRIPE_PUBLISHABLE_KEY_LIVE'),
+    trimEnv('STRIPE_LIVE_PUBLISHABLE_KEY'),
+    trimEnv('STRIPE_PUBLISHABLE_KEY_TEST'),
+    trimEnv('STRIPE_TEST_PUBLISHABLE_KEY'),
+  ];
+
+  for (const pk of ordered) {
+    if (!pk) continue;
+    if (wantLive && pk.startsWith('pk_live')) return pk;
+    if (wantTest && pk.startsWith('pk_test')) return pk;
+  }
+
+  const fallback = ordered.find((pk) => !!pk);
+  if (
+    fallback &&
+    sk &&
+    sk.startsWith('sk_') &&
+    fallback.startsWith('pk_') &&
+    ((wantLive && fallback.startsWith('pk_test')) || (wantTest && fallback.startsWith('pk_live')))
+  ) {
+    console.warn(
+      '[stripe] STRIPE_PUBLISHABLE_KEY* mode does not match STRIPE_SECRET_KEY (live vs test). Card payments will fail until env keys match.'
+    );
+  }
+  return fallback;
+}
