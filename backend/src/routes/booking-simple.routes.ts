@@ -13,12 +13,25 @@ import notificationService from '../services/notification.service';
 import pushNotificationService from '../services/pushNotification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
-import { getDefaultStripeClient, getStripePublishableKeyForDefaultClient } from '../config/stripe';
+import {
+  getDefaultStripeClient,
+  getStripeClientConfigPayload,
+  logIfPublishableKeyCannotRetrievePaymentIntent,
+} from '../config/stripe';
+import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
 import { executeParticipantBookingCancellation } from '../services/booking-cancellation.service';
 
 const router = express.Router();
+
+/**
+ * GET /api/v1/bookings-simple/stripe/client-config
+ * Alias for apps that bootstrap Stripe before a booking id exists.
+ */
+router.get('/stripe/client-config', (_req, res) => {
+  sendStripeClientConfig(res);
+});
 
 /** Merge short label + details (mobile often sends details in `locationDetails` only). */
 function mergeConversationLocation(
@@ -1713,15 +1726,23 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
 
     logger.info(`Payment intent created for booking ${id}: ${paymentIntent.id}${barberStripeAccountId ? ' (with Connect split)' : ' (no Connect)'}`);
 
-    const publishableKey = getStripePublishableKeyForDefaultClient();
+    const { publishableKey, publishableKeyPrefix } = getStripeClientConfigPayload();
     res.json({
       success: true,
       data: {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
-        ...(publishableKey ? { publishableKey } : {}),
+        ...(publishableKey
+          ? { publishableKey, publishableKeyPrefix: publishableKeyPrefix ?? undefined }
+          : {}),
       },
     });
+
+    void logIfPublishableKeyCannotRetrievePaymentIntent(
+      paymentIntent.id,
+      paymentIntent.client_secret,
+      publishableKey
+    );
   } catch (error: any) {
     logger.error('Error creating payment intent:', error.message || error);
     next(error);

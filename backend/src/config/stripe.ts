@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { stripeAutoModeFromAppNetwork } from './app-network';
+import { logger } from '../utils/logger';
 
 /** Keep in sync across all Stripe entrypoints. */
 export const STRIPE_API_VERSION = '2023-10-16' as const;
@@ -281,4 +282,83 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
     );
   }
   return fallback;
+}
+
+/** Safe prefix for clients to compare against their bundled key without exposing full `pk_`. */
+export function stripePublishableKeyPrefix(publishableKey: string | null | undefined): string | null {
+  if (!publishableKey || publishableKey.length < 8) return null;
+  return publishableKey.slice(0, 12);
+}
+
+/**
+ * Payload for `/api/v1/stripe/client-config` and booking payment bootstrap.
+ * `publishableKey` is null when STRIPE_PUBLISHABLE_KEY* is not set or cannot be resolved.
+ */
+export function getStripeClientConfigPayload(): {
+  publishableKey: string | null;
+  publishableKeyPrefix: string | null;
+} {
+  const publishableKey = getStripePublishableKeyForDefaultClient() ?? null;
+  return {
+    publishableKey,
+    publishableKeyPrefix: stripePublishableKeyPrefix(publishableKey),
+  };
+}
+
+const STRIPE_API_BASE = 'https://api.stripe.com';
+
+/**
+ * Same retrieval the mobile SDK performs: `GET /v1/payment_intents/:id?client_secret=…`
+ * with `Authorization: Bearer pk_…`. If this returns 404, the publishable key does not
+ * match the secret key’s Stripe account/mode (common cause of PaymentSheet 404 on iOS).
+ */
+export async function logIfPublishableKeyCannotRetrievePaymentIntent(
+  paymentIntentId: string,
+  clientSecret: string | null | undefined,
+  publishableKey: string | null | undefined
+): Promise<void> {
+  if (!publishableKey?.trim()) {
+    logger.warn(
+      '[stripe] Skipping PaymentIntent retrieval probe: no STRIPE_PUBLISHABLE_KEY* configured (iOS cannot validate pk vs client_secret)'
+    );
+    return;
+  }
+  if (!clientSecret?.trim()) {
+    logger.warn('[stripe] Skipping PaymentIntent retrieval probe: missing client_secret');
+    return;
+  }
+
+  try {
+    const qs = new URLSearchParams({ client_secret: clientSecret.trim() });
+    const url = `${STRIPE_API_BASE}/v1/payment_intents/${encodeURIComponent(paymentIntentId)}?${qs.toString()}`;
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${publishableKey.trim()}`,
+        'Stripe-Version': STRIPE_API_VERSION,
+      },
+    });
+
+    if (res.status === 404) {
+      logger.warn(
+        '[stripe] Publishable key cannot retrieve this PaymentIntent (404). STRIPE_PUBLISHABLE_KEY likely does not match STRIPE_SECRET_KEY (wrong account or live vs test). Restart PM2 after fixing env.',
+        { paymentIntentId }
+      );
+      return;
+    }
+
+    if (!res.ok) {
+      const body = (await res.text().catch(() => '')).slice(0, 300);
+      logger.warn('[stripe] PaymentIntent retrieval probe failed', {
+        paymentIntentId,
+        status: res.status,
+        body,
+      });
+    }
+  } catch (e: unknown) {
+    logger.warn('[stripe] PaymentIntent retrieval probe error', {
+      paymentIntentId,
+      err: e instanceof Error ? e.message : String(e),
+    });
+  }
 }
