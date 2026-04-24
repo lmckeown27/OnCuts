@@ -1,10 +1,7 @@
 import Stripe from 'stripe';
-import dotenv from 'dotenv';
 import { getDefaultStripeClient, getStripeClientForLivemode } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
-
-dotenv.config();
 
 function stripeErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

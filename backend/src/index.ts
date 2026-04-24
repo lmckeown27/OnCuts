@@ -1,6 +1,15 @@
 // Load environment variables FIRST, before any other imports
 import dotenv from 'dotenv';
+
+// PM2/systemd often set NODE_ENV=production; backend/.env may still contain NODE_ENV=development
+// for local laptops. Default dotenv does not override existing vars, but preserve explicitly
+// in case a dependency calls dotenv with override or load order changes.
+const nodeEnvBeforeDotenv = process.env.NODE_ENV;
+const hadExplicitNodeEnv = Object.prototype.hasOwnProperty.call(process.env, 'NODE_ENV');
 dotenv.config();
+if (hadExplicitNodeEnv) {
+  process.env.NODE_ENV = nodeEnvBeforeDotenv;
+}
 
 import { applyAppNetworkModeDefaults } from './config/app-network';
 import {
@@ -472,7 +481,7 @@ app.use(errorHandler);
 // Start server
 httpServer.listen(PORT, async () => {
   logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
-  logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`📊 NODE_ENV=${process.env.NODE_ENV ?? '(unset)'}`);
   logger.info(`💳 Payment Provider: Stripe (off-chain)`);
   logStripeDefaultSecretKeyFingerprintAtBoot();
   warnStripePublishableKeyMisconfiguredOnBoot();
