@@ -207,18 +207,16 @@ export function getDefaultStripeSecretKey(): string {
   const testKey = testStripeSecretFromEnv();
 
   if (mode === 'auto' && stripeFromNet) {
-    // APP_NETWORK_MODE=testnet maps to Stripe "test" in auto — but many prod servers set
-    // testnet for Sui while using a single sk_live for fiat. Preferring STRIPE_SECRET_KEY_TEST
-    // here would create PIs on the wrong Stripe account vs the platform's pk_live.
-    if (
-      stripeFromNet === 'test' &&
-      process.env.NODE_ENV === 'production' &&
-      generic?.startsWith('sk_live') &&
-      !testKey
-    ) {
+    // APP_NETWORK_MODE=testnet maps to Stripe "test" in auto — but many servers set testnet
+    // for Sui while using a single sk_live for fiat. Preferring STRIPE_SECRET_KEY_TEST here
+    // would create PIs on the wrong Stripe account vs the platform's pk_live.
+    // Do not gate this on NODE_ENV=production: PM2 often leaves NODE_ENV=development on EC2
+    // while still using live Stripe keys; that would skip this fix and pick test keys when set.
+    if (stripeFromNet === 'test' && generic?.startsWith('sk_live') && !testKey) {
       mode = 'live';
       logger.info(
-        '[stripe] STRIPE_MODE auto → live for API keys: NODE_ENV=production, STRIPE_SECRET_KEY is sk_live, and STRIPE_SECRET_KEY_TEST is unset. APP_NETWORK_MODE is testnet (Sui); Stripe is not forced to test. Set STRIPE_MODE=test to use test Stripe keys.'
+        '[stripe] STRIPE_MODE auto → live for API keys: STRIPE_SECRET_KEY is sk_live and STRIPE_SECRET_KEY_TEST is unset — ignoring APP_NETWORK_MODE=testnet for Stripe (Sui-only). NODE_ENV=%s. Set STRIPE_MODE=test to force test Stripe keys.',
+        process.env.NODE_ENV || '(unset)'
       );
     } else {
       mode = stripeFromNet;
