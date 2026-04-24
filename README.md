@@ -71,8 +71,8 @@ cd ../web-app
 npm install
 npm run build
 
-# Start services
-pm2 start backend/dist/index.js --name campuscuts-backend
+# Start API (NODE_ENV=production — do not use bare `pm2 start dist/index.js` without --env production)
+cd backend && pm2 start ecosystem.config.cjs --env production
 ```
 
 ---
@@ -283,8 +283,8 @@ cd ../web-app && npm install
 cd ../backend && npm run build
 cd ../web-app && npm run build
 
-# 6. Start with PM2
-pm2 start backend/dist/index.js --name campuscuts-backend
+# 6. Start with PM2 (ecosystem sets NODE_ENV=production when using --env production)
+cd backend && pm2 start ecosystem.config.cjs --env production
 pm2 startup
 pm2 save
 
