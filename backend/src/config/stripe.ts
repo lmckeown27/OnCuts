@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { stripeAutoModeFromAppNetwork } from './app-network';
+import { resolveAppNetworkModeFromEnv, stripeAutoModeFromAppNetwork } from './app-network';
 import { logger } from '../utils/logger';
 
 /** Keep in sync across all Stripe entrypoints. */
@@ -169,19 +169,61 @@ export function getStripeClientForLivemode(livemode: boolean): Stripe {
   return getStripeClient(resolveStripeSecretKeyForLivemode(livemode));
 }
 
+/** Non-secret fingerprint for logs (matches Stripe Dashboard “…xxxx” style). */
+export function formatStripeSecretKeyForSafeLog(sk: string | undefined): string {
+  if (!sk || sk.length < 12) return '(unset)';
+  const kind = sk.startsWith('sk_live') ? 'live' : sk.startsWith('sk_test') ? 'test' : 'other';
+  return `${kind}:${sk.slice(0, 10)}…${sk.slice(-4)}`;
+}
+
+/**
+ * Standard `pk_*` / `sk_*` keys from the same Dashboard row share the same suffix after
+ * `pk_live_` / `sk_live_` (or test). If suffixes differ, keys are from different Stripe accounts
+ * even when both are "live".
+ */
+export function stripeStandardKeyAccountSuffix(k: string | undefined): string | null {
+  if (!k?.trim()) return null;
+  const m = k.trim().match(/^(?:pk|sk)_(live|test)_(.+)$/);
+  return m ? m[2] : null;
+}
+
+export function stripePublishableKeyMatchesSecretKey(pk: string, sk: string): boolean {
+  const a = stripeStandardKeyAccountSuffix(pk);
+  const b = stripeStandardKeyAccountSuffix(sk);
+  return !!a && !!b && a === b;
+}
+
 /**
  * Secret key for normal API traffic (checkout, Connect, etc.), not webhook-parsed livemode.
- * STRIPE_MODE live/test locks mode; auto prefers live in production, else test, with sensible fallbacks.
+ * STRIPE_MODE live/test locks mode; auto uses APP_NETWORK_MODE unless that would send
+ * production traffic to the wrong Stripe account (see testnet + sk_live note below).
  */
 export function getDefaultStripeSecretKey(): string {
-  let mode = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
+  const stripeModeEnv = (trimEnv('STRIPE_MODE') || 'auto').toLowerCase();
+  let mode = stripeModeEnv;
   const stripeFromNet = stripeAutoModeFromAppNetwork();
-  if (mode === 'auto' && stripeFromNet) {
-    mode = stripeFromNet;
-  }
   const generic = trimEnv('STRIPE_SECRET_KEY');
   const liveKey = liveStripeSecretFromEnv();
   const testKey = testStripeSecretFromEnv();
+
+  if (mode === 'auto' && stripeFromNet) {
+    // APP_NETWORK_MODE=testnet maps to Stripe "test" in auto — but many prod servers set
+    // testnet for Sui while using a single sk_live for fiat. Preferring STRIPE_SECRET_KEY_TEST
+    // here would create PIs on the wrong Stripe account vs the platform's pk_live.
+    if (
+      stripeFromNet === 'test' &&
+      process.env.NODE_ENV === 'production' &&
+      generic?.startsWith('sk_live') &&
+      !testKey
+    ) {
+      mode = 'live';
+      logger.info(
+        '[stripe] STRIPE_MODE auto → live for API keys: NODE_ENV=production, STRIPE_SECRET_KEY is sk_live, and STRIPE_SECRET_KEY_TEST is unset. APP_NETWORK_MODE is testnet (Sui); Stripe is not forced to test. Set STRIPE_MODE=test to use test Stripe keys.'
+      );
+    } else {
+      mode = stripeFromNet;
+    }
+  }
 
   if (mode === 'live') {
     return (
@@ -271,17 +313,20 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
   }
 
   const fallback = ordered.find((pk) => !!pk && pk.startsWith('pk_'));
-  if (
-    fallback &&
-    sk &&
+  const liveTestMismatch =
+    !!fallback &&
+    !!sk &&
     sk.startsWith('sk_') &&
     fallback.startsWith('pk_') &&
-    ((wantLive && fallback.startsWith('pk_test')) || (wantTest && fallback.startsWith('pk_live')))
-  ) {
-    console.warn(
-      '[stripe] STRIPE_PUBLISHABLE_KEY* mode does not match STRIPE_SECRET_KEY (live vs test). Card payments will fail until env keys match.'
+    ((wantLive && fallback.startsWith('pk_test')) || (wantTest && fallback.startsWith('pk_live')));
+
+  if (liveTestMismatch) {
+    logger.warn(
+      '[stripe] STRIPE_PUBLISHABLE_KEY* mode does not match STRIPE_SECRET_KEY (live vs test). Replace with pk_live_… when using sk_live_… (or both test). Not returning a publishable key to clients until fixed.'
     );
+    return undefined;
   }
+
   return fallback;
 }
 
@@ -329,21 +374,37 @@ export async function logIfPublishableKeyCannotRetrievePaymentIntent(
     return;
   }
 
+  const sk = getDefaultStripeSecretKey();
+  const pkTrim = publishableKey.trim();
+  const suffixMatch =
+    sk.startsWith('sk_') && pkTrim.startsWith('pk_')
+      ? stripePublishableKeyMatchesSecretKey(pkTrim, sk)
+      : null;
+
   try {
     const qs = new URLSearchParams({ client_secret: clientSecret.trim() });
     const url = `${STRIPE_API_BASE}/v1/payment_intents/${encodeURIComponent(paymentIntentId)}?${qs.toString()}`;
+    // Stripe CLI uses `curl -u pk_live_xxx:` (Basic). Some stacks behave more reliably than Bearer for pk-only retrieve.
+    const basic = Buffer.from(`${pkTrim}:`, 'utf8').toString('base64');
     const res = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${publishableKey.trim()}`,
+        Authorization: `Basic ${basic}`,
         'Stripe-Version': STRIPE_API_VERSION,
       },
     });
 
     if (res.status === 404) {
+      const sb = stripeStandardKeyAccountSuffix(sk);
+      const pb = stripeStandardKeyAccountSuffix(pkTrim);
       logger.warn(
-        '[stripe] Publishable key cannot retrieve this PaymentIntent (404). STRIPE_PUBLISHABLE_KEY likely does not match STRIPE_SECRET_KEY (wrong account or live vs test). Restart PM2 after fixing env.',
-        { paymentIntentId }
+        '[stripe] Publishable key cannot retrieve this PaymentIntent (404). Common causes: (1) pk_ and sk_ are from different Stripe Dashboard accounts — both can be "live" but still not see the same PI; (2) iOS still uses a bundled pk_ that is not this server\'s key; (3) rotated keys — restart PM2. Heuristic: standard pk/sk from the same key row usually share the same substring after pk_live_/sk_live_.',
+        {
+          paymentIntentId,
+          standardKeySuffixesMatch: suffixMatch,
+          secretKeyAccountMarker: sb ? `${sb.slice(0, 14)}…` : '(n/a)',
+          publishableKeyAccountMarker: pb ? `${pb.slice(0, 14)}…` : '(n/a)',
+        }
       );
       return;
     }
@@ -373,4 +434,16 @@ export function warnStripePublishableKeyMisconfiguredOnBoot(): void {
   logger.error(
     '[stripe] STRIPE_PUBLISHABLE_KEY is missing for this Node process while Stripe secret key(s) are set. Add STRIPE_PUBLISHABLE_KEY (pk_live_… or pk_test_… from the same Dashboard account as STRIPE_SECRET_KEY) to the PM2/env file, restart PM2, then call GET https://<host>/api/v1/stripe/client-config to verify.'
   );
+}
+
+/** One-line proof of which secret key the process uses for PaymentIntents (safe to log). */
+export function logStripeDefaultSecretKeyFingerprintAtBoot(): void {
+  if (!isAnyStripeSecretKeyConfigured()) return;
+  const sk = getDefaultStripeSecretKey();
+  if (!sk) return;
+  logger.info('[stripe] Default API secret for this process', {
+    keyFingerprint: formatStripeSecretKeyForSafeLog(sk),
+    STRIPE_MODE: trimEnv('STRIPE_MODE') || 'auto',
+    APP_NETWORK_MODE: resolveAppNetworkModeFromEnv() ?? '(unset)',
+  });
 }

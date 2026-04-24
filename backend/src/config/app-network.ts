@@ -57,6 +57,8 @@ export function applyAppNetworkModeDefaults(): void {
 /**
  * When STRIPE_MODE=auto, prefer test vs live API keys from APP_NETWORK_MODE.
  * null = leave Stripe auto behavior to NODE_ENV (see getDefaultStripeSecretKey).
+ * Note: production + APP_NETWORK_MODE=testnet + sk_live STRIPE_SECRET_KEY without
+ * STRIPE_SECRET_KEY_TEST still resolves Stripe to live keys (see stripe.ts).
  */
 export function stripeAutoModeFromAppNetwork(): 'test' | 'live' | null {
   const net = resolveAppNetworkModeFromEnv();

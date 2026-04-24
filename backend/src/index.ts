@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { applyAppNetworkModeDefaults } from './config/app-network';
-import { warnStripePublishableKeyMisconfiguredOnBoot } from './config/stripe';
+import {
+  logStripeDefaultSecretKeyFingerprintAtBoot,
+  warnStripePublishableKeyMisconfiguredOnBoot,
+} from './config/stripe';
 applyAppNetworkModeDefaults();
 
 import express, { Application, Request, Response, NextFunction } from 'express';
@@ -471,6 +474,7 @@ httpServer.listen(PORT, async () => {
   logger.info(`🚀 CampusCuts API server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`💳 Payment Provider: Stripe (off-chain)`);
+  logStripeDefaultSecretKeyFingerprintAtBoot();
   warnStripePublishableKeyMisconfiguredOnBoot();
   logger.info(`💬 Socket.IO ready for real-time messaging`);
 
