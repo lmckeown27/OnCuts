@@ -106,10 +106,8 @@ export type AuthRequest = Request & {
  * - 401 "Invalid token" - Token signature verification failed
  * - 401 "Token expired" - Token exp claim is in the past
  * 
- * ## Development Mode:
- * In development (NODE_ENV=development), requests without tokens
- * are allowed through with a mock admin user. This allows testing
- * without authentication. **MUST BE REMOVED IN PRODUCTION!**
+ * ## No anonymous bypass
+ * Missing or non-Bearer `Authorization` always returns 401. Clients must send a valid JWT.
  * 
  * @param req - Express request object
  * @param res - Express response object
