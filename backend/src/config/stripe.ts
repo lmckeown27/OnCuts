@@ -257,6 +257,7 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
 
   const ordered = [
     trimEnv('STRIPE_PUBLISHABLE_KEY'),
+    trimEnv('STRIPE_PUBLIC_KEY'), // some deployments mis-name; must still be pk_* from Stripe Dashboard
     trimEnv('STRIPE_PUBLISHABLE_KEY_LIVE'),
     trimEnv('STRIPE_LIVE_PUBLISHABLE_KEY'),
     trimEnv('STRIPE_PUBLISHABLE_KEY_TEST'),
@@ -269,7 +270,7 @@ export function getStripePublishableKeyForDefaultClient(): string | undefined {
     if (wantTest && pk.startsWith('pk_test')) return pk;
   }
 
-  const fallback = ordered.find((pk) => !!pk);
+  const fallback = ordered.find((pk) => !!pk && pk.startsWith('pk_'));
   if (
     fallback &&
     sk &&
@@ -319,7 +320,7 @@ export async function logIfPublishableKeyCannotRetrievePaymentIntent(
 ): Promise<void> {
   if (!publishableKey?.trim()) {
     logger.warn(
-      '[stripe] Skipping PaymentIntent retrieval probe: no STRIPE_PUBLISHABLE_KEY* configured (iOS cannot validate pk vs client_secret)'
+      '[stripe] Skipping PaymentIntent retrieval probe: no publishable key in process env. Set STRIPE_PUBLISHABLE_KEY (same Stripe account as STRIPE_SECRET_KEY) for the PM2 Node process, restart PM2, and have the app use publishableKey from create-payment-intent or GET /api/v1/stripe/client-config — bundled pk_live in the app will 404 if it is a different account.'
     );
     return;
   }
@@ -361,4 +362,15 @@ export async function logIfPublishableKeyCannotRetrievePaymentIntent(
       err: e instanceof Error ? e.message : String(e),
     });
   }
+}
+
+/**
+ * One-shot boot check: secret configured but no matching publishable key → native Stripe will 404.
+ */
+export function warnStripePublishableKeyMisconfiguredOnBoot(): void {
+  if (!isAnyStripeSecretKeyConfigured()) return;
+  if (getStripePublishableKeyForDefaultClient()) return;
+  logger.error(
+    '[stripe] STRIPE_PUBLISHABLE_KEY is missing for this Node process while Stripe secret key(s) are set. Add STRIPE_PUBLISHABLE_KEY (pk_live_… or pk_test_… from the same Dashboard account as STRIPE_SECRET_KEY) to the PM2/env file, restart PM2, then call GET https://<host>/api/v1/stripe/client-config to verify.'
+  );
 }
