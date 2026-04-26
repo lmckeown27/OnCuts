@@ -192,6 +192,45 @@ router.delete('/all', authenticate, async (req, res, next) => {
 });
 
 /**
+ * DELETE /api/notifications/unregister-device
+ * Must be registered **before** `DELETE /:id` so Express does not treat `unregister-device` as a UUID id.
+ */
+router.delete('/unregister-device', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { deviceToken, logoutSince } = req.body as { deviceToken?: string; logoutSince?: string };
+
+    if (!deviceToken) {
+      return res.status(400).json({
+        success: false,
+        error: { message: 'deviceToken is required' },
+      });
+    }
+
+    if (logoutSince) {
+      await pool.query(
+        `UPDATE mobile_devices
+         SET is_active = false, updated_at = NOW()
+         WHERE device_token = $1 AND user_id = $2 AND updated_at <= $3::timestamptz`,
+        [deviceToken, userId, logoutSince]
+      );
+    } else {
+      await pool.query(
+        'UPDATE mobile_devices SET is_active = false, updated_at = NOW() WHERE device_token = $1 AND user_id = $2',
+        [deviceToken, userId]
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Device unregistered successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/notifications/:id
  * Delete a notification
  */
@@ -298,47 +337,6 @@ router.post('/register-device', authenticate, async (req, res, next) => {
       data: {
         apnsEnvironment: platform === 'ios' ? apnsEnv : null,
       },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-/**
- * DELETE /api/notifications/unregister-device
- * Unregister a device token.
- * If `logoutSince` (ISO8601) is sent, only deactivate rows not updated after that time — avoids a slow
- * unregister clearing `is_active` after a fast re-login + register-device (race).
- */
-router.delete('/unregister-device', authenticate, async (req, res, next) => {
-  try {
-    const userId = (req as any).user.userId;
-    const { deviceToken, logoutSince } = req.body as { deviceToken?: string; logoutSince?: string };
-
-    if (!deviceToken) {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'deviceToken is required' },
-      });
-    }
-
-    if (logoutSince) {
-      await pool.query(
-        `UPDATE mobile_devices
-         SET is_active = false, updated_at = NOW()
-         WHERE device_token = $1 AND user_id = $2 AND updated_at <= $3::timestamptz`,
-        [deviceToken, userId, logoutSince]
-      );
-    } else {
-      await pool.query(
-        'UPDATE mobile_devices SET is_active = false, updated_at = NOW() WHERE device_token = $1 AND user_id = $2',
-        [deviceToken, userId]
-      );
-    }
-
-    res.json({
-      success: true,
-      message: 'Device unregistered successfully',
     });
   } catch (error) {
     next(error);
