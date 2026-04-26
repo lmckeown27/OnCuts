@@ -15,6 +15,7 @@ import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEm
 import { DateTime } from 'luxon';
 import {
   getDefaultStripeClient,
+  getOptionalStatementDescriptor,
   getStripeClientConfigPayload,
   logIfPublishableKeyCannotRetrievePaymentIntent,
 } from '../config/stripe';
@@ -1684,6 +1685,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
     const platformFeeCents = Math.round(serviceAmountCents * PLATFORM_FEE_PERCENTAGE);
 
     // Build payment intent config
+    const statementDescriptor = getOptionalStatementDescriptor();
     const paymentIntentConfig: any = {
       amount: totalAmountCents,
       currency: 'usd',
@@ -1693,6 +1695,7 @@ router.post('/:id/create-payment-intent', authenticate, async (req, res, next) =
       automatic_payment_methods: {
         enabled: true,
       },
+      ...(statementDescriptor ? { statement_descriptor: statementDescriptor } : {}),
       ...(consumer?.email ? { receipt_email: consumer.email } : {}),
       metadata: {
         booking_id: id,

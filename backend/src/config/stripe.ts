@@ -10,6 +10,32 @@ function trimEnv(name: string): string | undefined {
   return v || undefined;
 }
 
+/**
+ * Text shown on the customer's **card/bank statement** for charges (5–22 characters, Stripe rules).
+ * Also influences some Stripe-generated copy when set on the PaymentIntent. For **receipt email**
+ * "You paid" / business name, set your legal or DBA name in the Stripe Dashboard (see env.example).
+ */
+export function getOptionalStatementDescriptor(): string | undefined {
+  const raw = trimEnv('STRIPE_STATEMENT_DESCRIPTOR');
+  if (!raw) return undefined;
+  // Stripe: 5–22 chars, Latin letters/numbers and spaces, at least one letter; avoid * etc.
+  const cleaned = raw.replace(/[^a-zA-Z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (cleaned.length < 5) {
+    logger.warn(
+      '[stripe] STRIPE_STATEMENT_DESCRIPTOR must be at least 5 characters (Stripe requirement); ignored'
+    );
+    return undefined;
+  }
+  if (cleaned.length > 22) {
+    return cleaned.slice(0, 22);
+  }
+  if (!/[a-zA-Z]/.test(cleaned)) {
+    logger.warn('[stripe] STRIPE_STATEMENT_DESCRIPTOR must contain a letter; ignored');
+    return undefined;
+  }
+  return cleaned;
+}
+
 /** Live secret: STRIPE_SECRET_KEY_LIVE or STRIPE_LIVE_SECRET_KEY */
 function liveStripeSecretFromEnv(): string | undefined {
   return trimEnv('STRIPE_SECRET_KEY_LIVE') || trimEnv('STRIPE_LIVE_SECRET_KEY');

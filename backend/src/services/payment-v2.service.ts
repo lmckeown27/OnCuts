@@ -6,7 +6,7 @@
  */
 
 import Stripe from 'stripe';
-import { getDefaultStripeClient } from '../config/stripe';
+import { getDefaultStripeClient, getOptionalStatementDescriptor } from '../config/stripe';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
@@ -74,6 +74,7 @@ class PaymentServiceV2 {
       // Create payment intent
       // If barber has connected Stripe account, use Stripe Connect for direct transfer
       // Otherwise, payment goes to platform and is tracked for manual payout
+      const st = getOptionalStatementDescriptor();
       const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
         amount: input.amountCents,
         currency: 'usd',
@@ -87,6 +88,7 @@ class PaymentServiceV2 {
           barber_receives_cents: barberReceivesCents.toString(),
         },
         description: input.serviceDescription || 'CampusCuts booking payment',
+        ...(st ? { statement_descriptor: st } : {}),
       };
 
       // If barber has Stripe Connect account, set up direct transfer
@@ -157,6 +159,7 @@ class PaymentServiceV2 {
       barber_sui_address: barberSui,
     };
 
+    const st = getOptionalStatementDescriptor();
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       client_reference_id: input.bookingId,
@@ -181,6 +184,7 @@ class PaymentServiceV2 {
       metadata: meta,
       payment_intent_data: {
         metadata: { ...meta },
+        ...(st ? { statement_descriptor: st } : {}),
       },
     };
 
@@ -317,6 +321,7 @@ class PaymentServiceV2 {
     stripePaymentIntentId: string;
   }> {
     try {
+      const st = getOptionalStatementDescriptor();
       // 1. Create and confirm Stripe payment intent
       const paymentIntent = await stripeSdk().paymentIntents.create({
         amount: input.amountCents,
@@ -329,6 +334,7 @@ class PaymentServiceV2 {
           user_id: input.userId,
           type: 'deposit',
         },
+        ...(st ? { statement_descriptor: st } : {}),
       });
 
       if (paymentIntent.status !== 'succeeded') {
@@ -388,6 +394,7 @@ class PaymentServiceV2 {
     amountCents: number
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
     try {
+      const st = getOptionalStatementDescriptor();
       const paymentIntent = await stripeSdk().paymentIntents.create({
         amount: amountCents,
         currency: 'usd',
@@ -397,6 +404,7 @@ class PaymentServiceV2 {
           type: 'deposit',
         },
         description: 'CampusCuts wallet deposit',
+        ...(st ? { statement_descriptor: st } : {}),
       });
 
       return {

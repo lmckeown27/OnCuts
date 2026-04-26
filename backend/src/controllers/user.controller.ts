@@ -426,6 +426,16 @@ export const deleteAccount = async (req: Request, res: Response) => {
       }
     };
 
+    // IDs of bookings where this user is the consumer OR the barber (via barbers."userId").
+    // Reused so we delete children (payments, archives, …) before bookings.
+    const userBookingIdsSubquery = `
+      SELECT id FROM bookings WHERE "consumerId" = $1
+      UNION
+      SELECT b.id FROM bookings b
+      INNER JOIN barbers br ON b."barberId" = br.id
+      WHERE br."userId" = $1
+    `;
+
     // Delete in correct order to respect foreign key constraints
     // 1. Delete messages (references conversations)
     await safeDelete(
@@ -445,42 +455,84 @@ export const deleteAccount = async (req: Request, res: Response) => {
     // 3. Delete notifications
     await safeDelete('DELETE FROM notifications WHERE user_id = $1', [id]);
 
-    // 4. Delete bookings (as consumer) - try both column naming conventions
-    await safeDelete('DELETE FROM bookings WHERE consumer_id = $1', [id]);
-    await safeDelete('DELETE FROM bookings WHERE "consumerId" = $1', [id]);
-    
-    // 5. Delete bookings (as barber via barber record)
+    // 4. Payments reference bookings — must run before deleting bookings (payments_booking_id_fkey)
     await safeDelete(
-      `DELETE FROM bookings 
-       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      `DELETE FROM payments WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete(
+      'DELETE FROM payments WHERE consumer_id = $1 OR barber_id = $1',
       [id]
     );
 
-    // 6. Delete barber services
+    // 5. Archived booking messages (no FK, but keep DB clean)
     await safeDelete(
-      `DELETE FROM barber_services 
-       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      `DELETE FROM archived_booking_messages WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
     );
 
-    // 7. Delete barber availability
+    // 6. Optional booking-adjacent tables (legacy / migrations vary)
     await safeDelete(
-      `DELETE FROM barber_availability 
-       WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      `DELETE FROM booking_messages WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM booking_request_notifications WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete('DELETE FROM pending_payouts WHERE booking_id IN (' + userBookingIdsSubquery + ')', [id]);
+
+    // 7. Reviews / disputes tied to bookings (Prisma-style names if present)
+    await safeDelete(
+      `DELETE FROM reviews WHERE "bookingId" IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM disputes WHERE "bookingId" IN (${userBookingIdsSubquery})`,
       [id]
     );
 
-    // 8. Delete barber applications
+    // 8. Delete bookings (camelCase columns match production / Prisma schema)
+    await safeDelete(`DELETE FROM bookings WHERE "consumerId" = $1`, [id]);
+    await safeDelete(
+      `DELETE FROM bookings WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 9. Availability slots for this barber (table is "availability", not barber_availability)
+    await safeDelete(
+      `DELETE FROM availability WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 10. Barber-owned rows (camelCase barberId)
+    await safeDelete(
+      `DELETE FROM portfolio_images WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM barber_services WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM barber_service_locations WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+
+    // 11. Customer profile / reviews about customer (optional tables)
+    await safeDelete('DELETE FROM customer_profiles WHERE user_id = $1', [id]);
+    await safeDelete('DELETE FROM customer_reviews WHERE customer_id = $1', [id]);
+
+    // 12. Delete barber applications
     await safeDelete('DELETE FROM barber_applications WHERE user_id = $1', [id]);
 
-    // 9. Delete guest barber applications linked to this user
-    // If the user is deleted, their linked guest application should also be removed
+    // 13. Delete guest barber applications linked to this user
     await safeDelete('DELETE FROM guest_barber_applications WHERE linked_user_id = $1', [id]);
 
-    // 10. Delete barber record
+    // 14. Delete barber record
     await safeDelete('DELETE FROM barbers WHERE "userId" = $1', [id]);
 
-    // 11. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
+    // 15. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
     await client.query('DELETE FROM users WHERE id = $1', [id]);
 
     await client.query('COMMIT');

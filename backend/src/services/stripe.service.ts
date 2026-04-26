@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { getDefaultStripeClient, getStripeClientForLivemode } from '../config/stripe';
+import { getDefaultStripeClient, getOptionalStatementDescriptor, getStripeClientForLivemode } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { ApiError } from '../middleware/errorHandler';
 
@@ -90,6 +90,7 @@ class StripeService {
     try {
       const { amount, clientId, barberId, bookingId, description } = params;
 
+      const st = getOptionalStatementDescriptor();
       const paymentIntent = await this.getStripe().paymentIntents.create({
         amount,
         currency: 'usd',
@@ -103,6 +104,7 @@ class StripeService {
         description,
         // Capture manually after service completion
         capture_method: 'manual',
+        ...(st ? { statement_descriptor: st } : {}),
       });
 
       logger.info(`Payment intent created: ${paymentIntent.id} for $${amount / 100}`);

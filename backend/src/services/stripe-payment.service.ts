@@ -6,7 +6,7 @@
  */
 
 import Stripe from 'stripe';
-import { getDefaultStripeClient } from '../config/stripe';
+import { getDefaultStripeClient, getOptionalStatementDescriptor } from '../config/stripe';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
 
@@ -93,6 +93,7 @@ class StripePaymentService {
       }
 
       // Build payment intent config
+      const st = getOptionalStatementDescriptor();
       const paymentIntentConfig: Stripe.PaymentIntentCreateParams = {
         amount: amountCents,
         currency,
@@ -103,6 +104,7 @@ class StripePaymentService {
           barberAmount: barberAmountCents.toString(),
         },
         payment_method_types: ['card'], // Only card (includes Apple Pay, Google Pay) - excludes Klarna, Amazon Pay, Cash App
+        ...(st ? { statement_descriptor: st } : {}),
       };
 
       // If barber has a Stripe Connect account, use destination charges
