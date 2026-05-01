@@ -1013,14 +1013,49 @@ function trimAppleProfileField(value: unknown): string {
   return String(value).trim();
 }
 
+/** Email from client (Apple only sends this on first authorization; JWT may also include it). */
+function pickAppleCredentialEmail(body: Record<string, unknown>): string {
+  const keys = ['email', 'userEmail', 'appleEmail', 'contactEmail'] as const;
+  for (const k of keys) {
+    const v = body[k];
+    if (typeof v !== 'string') continue;
+    const t = v.trim().toLowerCase();
+    if (t.includes('@')) return t;
+  }
+  return '';
+}
+
+/**
+ * Given/family from JSON: accept firstName/lastName, Apple-native givenName/familyName,
+ * or nested fullName: { givenName, familyName } (PersonNameComponents-style).
+ */
+function readApplePersonNameFromBody(body: Record<string, unknown>): { given: string; family: string } {
+  let given =
+    trimAppleProfileField(body.firstName) ||
+    trimAppleProfileField(body.givenName);
+  let family =
+    trimAppleProfileField(body.lastName) ||
+    trimAppleProfileField(body.familyName);
+
+  const full = body.fullName;
+  if (full && typeof full === 'object' && full !== null) {
+    const o = full as Record<string, unknown>;
+    if (!given) given = trimAppleProfileField(o.givenName);
+    if (!family) family = trimAppleProfileField(o.familyName);
+  }
+
+  return { given, family };
+}
+
 /**
  * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
  * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
  */
 export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const body = req.body as Record<string, unknown>;
     const raw =
-      (req.body?.identityToken ?? req.body?.identity_token) as string | undefined;
+      (body?.identityToken ?? body?.identity_token) as string | undefined;
     const identityToken = typeof raw === 'string' ? raw.trim() : '';
     if (!identityToken) {
       throw new ApiError(400, 'identityToken is required');
@@ -1046,28 +1081,24 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
     const { sub } = claims;
     const fromTokenEmail = claims.email;
 
-    const bodyEmailRaw =
-      typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    const bodyEmail =
-      bodyEmailRaw && bodyEmailRaw.includes('@') ? bodyEmailRaw : '';
+    const bodyEmail = pickAppleCredentialEmail(body);
 
     const normalizedEmail = (fromTokenEmail || bodyEmail).trim().toLowerCase();
     if (!normalizedEmail) {
       throw new ApiError(
         400,
-        'No email is available for this Apple sign-in. On the Apple sheet choose "Share My Email", or add a reachable address under Settings → Apple Account → Sign-In & Security. If you use Hide My Email, send the relay address from the credential as `email` in the request body on first sign-in.'
+        'No email is available for this Apple sign-in. The native client must send `ASAuthorizationAppleIDCredential.email` in the JSON body on the first sign-in (Apple does not repeat it on later logins). Also accept: Share My Email on the Apple sheet, or pass `email` / `userEmail`. JWT `email` is used when present.'
       );
     }
 
-    const appleGiven = trimAppleProfileField(req.body?.firstName);
-    const appleFamily = trimAppleProfileField(req.body?.lastName);
+    const { given: appleGiven, family: appleFamily } = readApplePersonNameFromBody(body);
     const { firstName, lastName } = resolveNamesForUser(
       normalizedEmail,
       appleGiven,
       appleFamily
     );
 
-    const rawCampusId = req.body?.campusId;
+    const rawCampusId = body?.campusId;
     let campusId: string | null = null;
     if (rawCampusId !== undefined && rawCampusId !== null && rawCampusId !== '') {
       const requestedCampusId = String(rawCampusId).trim();

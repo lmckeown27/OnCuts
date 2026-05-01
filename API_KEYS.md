@@ -35,6 +35,8 @@ Copy variables from `backend/env.example` and `web-app/.env.example` when bootst
 
 **Web (`web-app`)**: `VITE_GOOGLE_OAUTH_CLIENT_ID`, optional `VITE_ZKLOGIN_REDIRECT_ORIGIN` — see `web-app/.env.example`.
 
+**Native — Sign in with Apple (`POST /api/v1/auth/apple`)**: Apple only provides `ASAuthorizationAppleIDCredential.email` and `fullName` on the **first** authorization for your app. The client must POST them with `identityToken` every time that data is non-nil (typically the first sign-in). The API accepts `email` / `userEmail`, and names as `firstName`/`lastName`, **`givenName`/`familyName`**, or nested **`fullName`**: `{ givenName, familyName }` (see `auth.controller` helpers `pickAppleCredentialEmail`, `readApplePersonNameFromBody`).
+
 ---
 
 ## 2. Stripe (card payments, Connect, webhooks)
