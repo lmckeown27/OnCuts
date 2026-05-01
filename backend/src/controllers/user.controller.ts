@@ -43,6 +43,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
       is_verified: user.email_verified,
       created_at: user.createdAt,
       needs_platform_password: userNeedsPlatformPassword(user),
+      needsPlatformPassword: userNeedsPlatformPassword(user),
     };
 
     res.json({

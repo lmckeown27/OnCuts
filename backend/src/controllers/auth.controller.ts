@@ -1525,6 +1525,8 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         /** Set when a wallet is linked to the account (not part of email signup). */
         sui_address: user.sui_address ?? null,
         needs_platform_password: userNeedsPlatformPassword(user),
+        // Match auth/login + Apple JSON so native clients using camelCase CodingKeys stay consistent after /me refresh
+        needsPlatformPassword: userNeedsPlatformPassword(user),
       },
     });
   } catch (error) {
