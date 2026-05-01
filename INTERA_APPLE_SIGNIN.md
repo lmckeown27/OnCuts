@@ -32,6 +32,12 @@ Request scopes: **`.fullName`** and **`.email`**.
 
 The server verifies the JWT (**RS256**, `iss` = `https://appleid.apple.com`, `aud` = **`APPLE_CLIENT_ID`** env = iOS bundle ID). It uses JWT claim **`sub`** as **`users.apple_sub`** (source of truth).
 
+### Email precedence (Hide My Email vs Create Account prefill)
+
+- If the JWT `email` is an Apple **private relay** (`@privaterelay.appleid.com`) and the JSON body includes a **non-relay** address (via `email` / `userEmail` / etc.), the API uses the **body** address for **lookup and new inserts** (so Create Account `@icloud.com` is not overridden by the relay).
+- If the JWT `email` is **non-relay**, it wins for lookup/insert when both sides are non-relay.
+- After sign-in, if the stored row still has a **relay** and the body sends a **free non-relay** email, the API **`UPDATE`s `users.email`** to upgrade legacy relay-only rows (only when that email is not used by another user).
+
 ### Success response (`200`)
 
 Same envelope as email password login:

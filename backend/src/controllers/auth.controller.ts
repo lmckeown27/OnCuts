@@ -122,7 +122,7 @@ import {
   getPendingRegistration
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
-import { resolveNamesForUser } from '../utils/registration-names';
+import { resolveNamesForUser, isApplePrivateRelayEmail } from '../utils/registration-names';
 import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
 import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
@@ -1056,6 +1056,64 @@ function readApplePersonNameFromBody(body: Record<string, unknown>): { given: st
 }
 
 /**
+ * Canonical email for Apple login: if JWT carries Hide My Email relay but the client sends a
+ * non-relay address (e.g. Create Account prefill @icloud.com), prefer the client for lookup/insert.
+ * When both are non-relay and differ, prefer the verified JWT email.
+ */
+function resolveAppleAccountEmail(
+  fromToken: string | null | undefined,
+  bodyEmailRaw: string
+): string {
+  const b = bodyEmailRaw.trim().toLowerCase();
+  const t = fromToken ? String(fromToken).trim().toLowerCase() : '';
+
+  const bodyNonRelay = b.length > 0 && b.includes('@') && !isApplePrivateRelayEmail(b);
+  const tokenIsRelay = t.length > 0 && isApplePrivateRelayEmail(t);
+  const tokenNonRelay = t.length > 0 && !isApplePrivateRelayEmail(t);
+
+  if (bodyNonRelay && (tokenIsRelay || !t)) {
+    return b;
+  }
+  if (bodyNonRelay && tokenNonRelay) {
+    return t;
+  }
+  if (t) return t;
+  if (b) return b;
+  return '';
+}
+
+/**
+ * If the account still stores a relay but the client sent a free non-relay email, upgrade the row.
+ */
+async function maybeUpgradeRelayEmailForAppleUser(
+  userRow: { id: string; email: string },
+  bodyEmailRaw: string
+): Promise<boolean> {
+  const client = bodyEmailRaw.trim().toLowerCase();
+  if (
+    !client ||
+    !client.includes('@') ||
+    isApplePrivateRelayEmail(client) ||
+    !isApplePrivateRelayEmail(userRow.email)
+  ) {
+    return false;
+  }
+  const taken = await pool.query(
+    'SELECT id FROM users WHERE LOWER(TRIM(email)) = $1 AND id <> $2',
+    [client, userRow.id]
+  );
+  if (taken.rows.length > 0) {
+    return false;
+  }
+  await pool.query(
+    'UPDATE users SET email = $1, "updatedAt" = NOW() WHERE id = $2',
+    [client, userRow.id]
+  );
+  logger.info(`Apple sign-in: upgraded relay → client email for user ${userRow.id}`);
+  return true;
+}
+
+/**
  * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
  * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
  */
@@ -1091,7 +1149,7 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
 
     const bodyEmail = pickAppleCredentialEmail(body);
 
-    const normalizedEmail = (fromTokenEmail || bodyEmail).trim().toLowerCase();
+    const normalizedEmail = resolveAppleAccountEmail(fromTokenEmail, bodyEmail);
     if (!normalizedEmail) {
       throw new ApiError(
         400,
@@ -1216,6 +1274,17 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
           throw e;
         }
       }
+    }
+
+    if (
+      await maybeUpgradeRelayEmailForAppleUser(
+        { id: userRow.id, email: userRow.email },
+        bodyEmail
+      )
+    ) {
+      userRow = (
+        await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [userRow.id])
+      ).rows[0];
     }
 
     if (appleGiven || appleFamily) {
