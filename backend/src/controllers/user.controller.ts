@@ -5,6 +5,72 @@ import { logger } from '../utils/logger';
 import { AuthRequest } from '../middleware/auth';
 import { userNeedsPlatformPassword } from '../utils/platform-password';
 
+/** DB column names for profile PATCH/PUT (snake_case keys only after coerce). */
+const PROFILE_FIELD_MAPPING: { [key: string]: string } = {
+  first_name: 'first_name',
+  last_name: 'last_name',
+  displayName: 'displayName',
+  bio: 'bio',
+  avatarUrl: 'avatarUrl',
+  profile_picture_url: 'avatarUrl',
+  phoneNumber: 'phoneNumber',
+  instagramHandle: 'instagramHandle',
+};
+
+/** Map iOS / Intera camelCase name fields to DB keys. */
+function coerceProfileBody(raw: Record<string, unknown>): Record<string, unknown> {
+  const u: Record<string, unknown> = { ...raw };
+  if (u.first_name === undefined && u.firstName !== undefined) u.first_name = u.firstName;
+  if (u.last_name === undefined && u.lastName !== undefined) u.last_name = u.lastName;
+  delete u.firstName;
+  delete u.lastName;
+  return u;
+}
+
+async function performUserProfileUpdate(
+  userId: string,
+  rawUpdates: Record<string, unknown>
+): Promise<
+  | { ok: true; row: Record<string, unknown> }
+  | { ok: false; status: number; message: string }
+> {
+  const updates = coerceProfileBody(rawUpdates);
+
+  const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+  if (userCheck.rows.length === 0) {
+    return { ok: false, status: 404, message: 'User not found' };
+  }
+
+  const updateFields: string[] = [];
+  const values: unknown[] = [];
+  let paramIndex = 1;
+
+  for (const [inputField, dbField] of Object.entries(PROFILE_FIELD_MAPPING)) {
+    if (updates[inputField] !== undefined) {
+      updateFields.push(`"${dbField}" = $${paramIndex}`);
+      values.push(updates[inputField]);
+      paramIndex++;
+    }
+  }
+
+  if (updateFields.length === 0) {
+    return { ok: false, status: 400, message: 'No valid fields to update' };
+  }
+
+  updateFields.push(`"updatedAt" = NOW()`);
+  values.push(userId);
+
+  const query = `
+      UPDATE users 
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING id, email, first_name, last_name, role, "campusId", "avatarUrl" as profile_picture_url, bio, "createdAt", has_platform_password
+    `;
+
+  const result = await pool.query(query, values);
+  return { ok: true, row: result.rows[0] as Record<string, unknown> };
+}
+
 /**
  * Get user profile from PostgreSQL database
  */
@@ -65,70 +131,60 @@ export const getUserProfile = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
-
-    // Check if user exists
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
-    
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+    const out = await performUserProfileUpdate(id, req.body as Record<string, unknown>);
+    if (!out.ok) {
+      return res.status(out.status).json({ success: false, message: out.message });
     }
-
-    // Build update query dynamically
-    // Map frontend field names to database column names
-    const fieldMapping: { [key: string]: string } = {
-      first_name: 'first_name',
-      last_name: 'last_name',
-      displayName: 'displayName',
-      bio: 'bio',
-      avatarUrl: 'avatarUrl',
-      profile_picture_url: 'avatarUrl', // Frontend sends profile_picture_url, maps to avatarUrl
-      phoneNumber: 'phoneNumber',
-      instagramHandle: 'instagramHandle',
-    };
-    
-    const updateFields: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    for (const [inputField, dbField] of Object.entries(fieldMapping)) {
-      if (updates[inputField] !== undefined) {
-        updateFields.push(`"${dbField}" = $${paramIndex}`);
-        values.push(updates[inputField]);
-        paramIndex++;
-      }
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No valid fields to update',
-      });
-    }
-
-    // Add updatedAt
-    updateFields.push(`"updatedAt" = NOW()`);
-    values.push(id);
-
-    const query = `
-      UPDATE users 
-      SET ${updateFields.join(', ')}
-      WHERE id = $${paramIndex}
-      RETURNING id, email, first_name, last_name, role, "campusId", "avatarUrl" as profile_picture_url, bio, "createdAt"
-    `;
-
-    const result = await pool.query(query, values);
-
+    const row = out.row;
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: result.rows[0],
+      data: {
+        ...row,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        needsPlatformPassword: userNeedsPlatformPassword(
+          row as { has_platform_password?: boolean }
+        ),
+      },
     });
   } catch (error) {
     logger.error('Error updating user profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+    });
+  }
+};
+
+/**
+ * Authenticated user updates own profile (Intera / native — no user id in URL).
+ */
+export const updateMyProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+    const out = await performUserProfileUpdate(userId, req.body as Record<string, unknown>);
+    if (!out.ok) {
+      return res.status(out.status).json({ success: false, message: out.message });
+    }
+    const row = out.row;
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        ...row,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        needsPlatformPassword: userNeedsPlatformPassword(
+          row as { has_platform_password?: boolean }
+        ),
+      },
+    });
+  } catch (error) {
+    logger.error('Error updating my profile:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update profile',
@@ -404,9 +460,30 @@ export const setInitialPassword = async (req: AuthRequest, res: Response) => {
 
     logger.info(`Initial platform password set for user ${userId}`);
 
+    const u = await pool.query(
+      `SELECT id, email, first_name, last_name, role, "campusId", email_verified, "avatarUrl", has_platform_password
+       FROM users WHERE id = $1`,
+      [userId]
+    );
+    const row = u.rows[0];
+
     res.json({
       success: true,
       message: 'Password set successfully',
+      data: {
+        needsPlatformPassword: false,
+        user: {
+          id: row.id,
+          email: row.email,
+          firstName: row.first_name,
+          lastName: row.last_name,
+          role: row.role,
+          campusId: row.campusId,
+          emailVerified: row.email_verified,
+          profile_picture_url: row.avatarUrl,
+          needsPlatformPassword: false,
+        },
+      },
     });
   } catch (error) {
     logger.error('Error setting initial password:', error);

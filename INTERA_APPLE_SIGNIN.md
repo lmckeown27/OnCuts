@@ -77,6 +77,16 @@ Legacy path: **`PUT /api/users/me/set-initial-password`** (same handler if mount
 
 ---
 
+## 3b. Update name / profile after sign-in (authenticated)
+
+**`PUT /api/v1/users/me`** (legacy: **`PUT /api/users/me`**)
+
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Body (any subset):** `first_name` / `last_name` **or** `firstName` / `lastName` (camelCase), plus optional `displayName`, `bio`, `avatarUrl` / `profile_picture_url`, `phoneNumber`, `instagramHandle`.
+- **Response `data`:** includes `firstName`, `lastName`, `needsPlatformPassword`, and other returned columns so Intera can refresh UI after “Confirm your name” **before** the set-password step.
+
+---
+
 ## 4. Refreshing session / profile (do not drop the flag)
 
 After saving tokens, if you call **`GET /api/v1/auth/me`**, the payload includes:
@@ -94,7 +104,7 @@ Decode **either** consistently so a refresh does not look like “password no lo
 
 If the client sends **no** real names on first sign-in, the backend may store placeholder **`Apple` / `User`** for `@privaterelay.appleid.com` (so the DB is not filled with garbage from the random local part). **Avoid that** by always POSTing **`firstName` / `lastName`** (or `givenName` / `familyName`) from `credential.fullName` on the **first** authorization.
 
-Optional product step: if profile still shows placeholders, show a **“Confirm your name”** sheet **before** the set-password sheet; update profile via your existing **user profile** `PUT` if you expose it for the authenticated user.
+If profile still shows placeholders, show **“Confirm your name”** before set-password; call **`PUT /api/v1/users/me`** (Bearer) with **`firstName` / `lastName`**.
 
 ---
 
@@ -111,8 +121,9 @@ From `backend/`: `npm run migrate:sql:apple` (runs **026** then **027**). Deploy
 
 1. **Sign in with Apple** → receive credential → build JSON with **`identityToken` + `email` + names** whenever Apple provides them; merge Keychain fallbacks on repeat login.
 2. **`POST /api/v1/auth/apple`** → store **`accessToken` / `refreshToken`**.
-3. If **`data.user.needsPlatformPassword === true`**: show **set password** (and optionally **edit name** first if placeholders). **`PUT /api/v1/users/me/set-initial-password`** with Bearer token.
-4. Do **not** dismiss that flow until **`needsPlatformPassword`** is **false** on Apple response **and** after **`/auth/me`** if you refetch there.
+3. If names need correction (e.g. placeholders **`Apple` / `User`**): **`PUT /api/v1/users/me`** with Bearer token and body `{ "firstName": "…", "lastName": "…" }`.
+4. If **`data.user.needsPlatformPassword === true`**: show **set password**. **`PUT /api/v1/users/me/set-initial-password`** with Bearer token.
+5. Do **not** dismiss that flow until **`needsPlatformPassword`** is **false** on Apple response **and** after **`/auth/me`** if you refetch there.
 
 ---
 

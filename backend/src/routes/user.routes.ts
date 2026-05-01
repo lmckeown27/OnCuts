@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/auth';
 import {
   getUserProfile,
   updateUserProfile,
+  updateMyProfile,
   uploadProfilePhoto,
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -23,6 +24,7 @@ router.put('/location', authenticate, updateUserLocation);
 
 // Must be before `/:id` so "me" is not captured as an id
 router.put('/me/set-initial-password', authenticate, setInitialPassword);
+router.put('/me', authenticate, updateMyProfile);
 
 // Profile management (auth temporarily disabled for demo)
 router.get('/:id', getUserProfile);
