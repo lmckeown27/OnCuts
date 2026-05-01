@@ -3,6 +3,7 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { logger } from '../utils/logger';
 import { pool } from '../database/connection';
+import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { SmsProvider } from '../services/intera/SmsProvider';
 import {
   normalizeE164Phone,
@@ -146,7 +147,7 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response, next: Next
 
     // Intera / phone-first: if this number is on an account, sign in (same tokens as email login).
     const userResult = await pool.query(
-      `SELECT id, email, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", phone_e164
+      `SELECT id, email, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", phone_e164, has_platform_password
        FROM users WHERE phone_e164 = $1`,
       [phone]
     );
@@ -214,6 +215,7 @@ export const verifyPhoneOtp = async (req: AuthRequest, res: Response, next: Next
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
           phoneNumber: user.phone_e164 ?? phone,
+          needsPlatformPassword: userNeedsPlatformPassword(user),
         },
         accessToken,
         refreshToken,

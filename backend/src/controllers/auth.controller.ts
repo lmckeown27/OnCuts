@@ -123,6 +123,7 @@ import {
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { resolveNamesForUser } from '../utils/registration-names';
+import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
 import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
 
@@ -647,6 +648,7 @@ export const verifyEmailRegistration = async (req: AuthRequest, res: Response, n
           campusId: user.campusId,
           emailVerified: true,
           phoneNumber: user.phone_e164 ?? null,
+          needsPlatformPassword: false,
         },
         accessToken: token,
         refreshToken
@@ -791,7 +793,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
 
     // Find user
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, has_platform_password
        FROM users WHERE email = $1`,
       [email]
     );
@@ -855,6 +857,7 @@ export const login = async (req: AuthRequest, res: Response, next: NextFunction)
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
           phoneNumber: user.phone_e164 ?? null,
+          needsPlatformPassword: userNeedsPlatformPassword(user),
         },
         accessToken: token,
         refreshToken,
@@ -933,7 +936,7 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
     }
 
     const result = await pool.query(
-      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164
+      `SELECT id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, has_platform_password
        FROM users WHERE LOWER(TRIM(email)) = $1`,
       [email]
     );
@@ -988,6 +991,7 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
           phoneNumber: user.phone_e164 ?? null,
+          needsPlatformPassword: userNeedsPlatformPassword(user),
         },
         accessToken: token,
         refreshToken: refreshTokenJwt,
@@ -998,13 +1002,17 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
   }
 };
 
-const APPLE_USER_ROW_SELECT = `id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, apple_sub, auth_provider`;
+const APPLE_USER_ROW_SELECT = `id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, apple_sub, auth_provider, has_platform_password`;
 
 function isMissingAppleOAuthColumns(err: unknown): boolean {
   const e = err as { code?: string; message?: string };
   if (e.code !== '42703') return false;
   const m = String(e.message || '');
-  return m.includes('apple_sub') || m.includes('auth_provider');
+  return (
+    m.includes('apple_sub') ||
+    m.includes('auth_provider') ||
+    m.includes('has_platform_password')
+  );
 }
 
 /** Trim optional Apple / ASAuthorizationAppleIDCredential name fields from JSON body. */
@@ -1160,11 +1168,11 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
         const ins = await pool.query(
           `INSERT INTO users (
             id, email, password_hash, first_name, last_name, "campusId", role,
-            email_verified, apple_sub, auth_provider, "termsAcceptedAt", "updatedAt"
+            email_verified, apple_sub, auth_provider, has_platform_password, "termsAcceptedAt", "updatedAt"
           )
           VALUES (
             gen_random_uuid(), $1, $2, $3, $4, $5, 'CONSUMER'::"UserRole",
-            TRUE, $6, 'apple', NULL, NOW()
+            TRUE, $6, 'apple', FALSE, NULL, NOW()
           )
           RETURNING ${APPLE_USER_ROW_SELECT}`,
           [normalizedEmail, passwordHash, firstName, lastName, campusId, sub]
@@ -1268,6 +1276,7 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
           profile_picture_url: userRow.avatarUrl,
           hasBarberProfile,
           phoneNumber: userRow.phone_e164 ?? null,
+          needsPlatformPassword: userNeedsPlatformPassword(userRow),
         },
         accessToken: token,
         refreshToken: refreshTokenJwt,
@@ -1276,12 +1285,12 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
   } catch (error) {
     if (isMissingAppleOAuthColumns(error)) {
       logger.error(
-        'Apple auth: columns apple_sub/auth_provider missing — run backend migration 026_apple_oauth_users.sql (npm run migrate:sql -- 026 from backend/)'
+        'Apple auth: required user columns missing — apply migrations 026_apple_oauth_users.sql and 027_has_platform_password.sql (npm run migrate:sql from backend/)'
       );
       next(
         new ApiError(
           503,
-          'Sign in with Apple is not available until the database migration is applied. Run: cd backend && npm run migrate:sql -- 026',
+          'Sign in with Apple is not available until database migrations are applied (026, 027).',
           'APPLE_SCHEMA_MISSING'
         )
       );
@@ -1450,7 +1459,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
       `SELECT 
         id, email, first_name, last_name, role, "campusId", 
         email_verified, "avatarUrl", "displayName", bio,
-        "isBlocked", "isBanned", "createdAt", sui_address, phone_e164
+        "isBlocked", "isBanned", "createdAt", sui_address, phone_e164, has_platform_password
        FROM users WHERE id = $1`,
       [userId]
     );
@@ -1515,6 +1524,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         phone_number: user.phone_e164 ?? null,
         /** Set when a wallet is linked to the account (not part of email signup). */
         sui_address: user.sui_address ?? null,
+        needs_platform_password: userNeedsPlatformPassword(user),
       },
     });
   } catch (error) {

@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { AuthRequest } from '../middleware/auth';
+import { userNeedsPlatformPassword } from '../utils/platform-password';
 
 /**
  * Get user profile from PostgreSQL database
@@ -13,7 +15,8 @@ export const getUserProfile = async (req: Request, res: Response) => {
     // Query real PostgreSQL database
     const result = await pool.query(
       `SELECT id, email, first_name, last_name, role, "campusId", 
-              "avatarUrl" as profile_picture_url, bio, email_verified, "createdAt"
+              "avatarUrl" as profile_picture_url, bio, email_verified, "createdAt",
+              has_platform_password
        FROM users WHERE id = $1`,
       [id]
     );
@@ -39,6 +42,7 @@ export const getUserProfile = async (req: Request, res: Response) => {
       bio: user.bio,
       is_verified: user.email_verified,
       created_at: user.createdAt,
+      needs_platform_password: userNeedsPlatformPassword(user),
     };
 
     res.json({
@@ -338,7 +342,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
     // Update password
     await pool.query(
-      'UPDATE users SET password_hash = $1, "updatedAt" = NOW() WHERE id = $2',
+      'UPDATE users SET password_hash = $1, has_platform_password = TRUE, "updatedAt" = NOW() WHERE id = $2',
       [hashedPassword, id]
     );
 
@@ -351,6 +355,63 @@ export const changePassword = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Failed to change password',
+    });
+  }
+};
+
+/**
+ * First-time set password for Apple-only accounts (Bearer JWT required).
+ * Allowed only while has_platform_password is false.
+ */
+export const setInitialPassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+
+    const { newPassword } = req.body as { newPassword?: string };
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'newPassword is required and must be at least 8 characters',
+      });
+    }
+
+    const result = await pool.query(
+      'SELECT has_platform_password FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (result.rows[0].has_platform_password === true) {
+      return res.status(400).json({
+        success: false,
+        message: 'A password is already set. Use change password instead.',
+        code: 'PASSWORD_ALREADY_SET',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, has_platform_password = TRUE, "updatedAt" = NOW() WHERE id = $2',
+      [hashedPassword, userId]
+    );
+
+    logger.info(`Initial platform password set for user ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Password set successfully',
+    });
+  } catch (error) {
+    logger.error('Error setting initial password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to set password',
     });
   }
 };
@@ -377,7 +438,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
 
     // Check if user exists and get password hash
     const userCheck = await client.query(
-      'SELECT id, password_hash, email FROM users WHERE id = $1',
+      'SELECT id, password_hash, email, has_platform_password FROM users WHERE id = $1',
       [id]
     );
     
@@ -389,6 +450,15 @@ export const deleteAccount = async (req: Request, res: Response) => {
     }
 
     const user = userCheck.rows[0];
+
+    if (user.has_platform_password === false) {
+      return res.status(403).json({
+        success: false,
+        message:
+          'Set a CampusCuts password in account settings before deleting your account (Sign in with Apple only).',
+        code: 'PLATFORM_PASSWORD_REQUIRED',
+      });
+    }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);

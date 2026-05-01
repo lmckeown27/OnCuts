@@ -7,6 +7,7 @@ import {
   getNotificationPreferences,
   updateNotificationPreferences,
   changePassword,
+  setInitialPassword,
   deleteAccount
 } from '../controllers/user.controller';
 import {
@@ -19,6 +20,9 @@ const router = express.Router();
 // Location tracking (requires authentication)
 router.get('/location', authenticate, getUserLocation);
 router.put('/location', authenticate, updateUserLocation);
+
+// Must be before `/:id` so "me" is not captured as an id
+router.put('/me/set-initial-password', authenticate, setInitialPassword);
 
 // Profile management (auth temporarily disabled for demo)
 router.get('/:id', getUserProfile);
