@@ -1,12 +1,15 @@
 /**
- * Apply one SQL file from src/database/migrations/ against DATABASE_URL.
+ * Apply SQL file(s) from src/database/migrations/ against DATABASE_URL.
  *
  * Loads `.env` before opening the pool (static imports would run `connection.ts`
  * before dotenv and produce SCRAM "client password must be a string" when URL is missing).
  *
+ * Strips `schema=` from DATABASE_URL (Prisma) so node-pg accepts the same string as libpq/psql.
+ *
  * Usage (from backend/):
- *   npx ts-node src/scripts/apply-sql-migration.ts 026
- *   npx ts-node src/scripts/apply-sql-migration.ts 026_apple_oauth_users.sql
+ *   npm run migrate:sql -- 026
+ *   npm run migrate:sql -- 026 027
+ *   npm run migrate:sql -- 026_apple_oauth_users.sql
  */
 
 import dotenv from 'dotenv';
@@ -25,6 +28,22 @@ function loadEnv(): void {
     }
   }
   dotenv.config();
+}
+
+/** libpq does not accept Prisma's `schema=` query parameter. */
+function stripUnsupportedDatabaseUrlParams(urlStr: string): string {
+  const t = urlStr.trim();
+  if (!t) return t;
+  try {
+    const u = new URL(t);
+    u.searchParams.delete('schema');
+    return u.toString();
+  } catch {
+    return t
+      .replace(/[?&]schema=[^&]*/gi, '')
+      .replace(/\?&/g, '?')
+      .replace(/\?$/g, '');
+  }
 }
 
 loadEnv();
@@ -48,27 +67,40 @@ function resolveMigrationFile(arg: string, migrationsDir: string): string {
 }
 
 async function main() {
-  const arg = process.argv[2]?.trim();
-  if (!arg) {
-    console.error('Usage: npx ts-node src/scripts/apply-sql-migration.ts <prefix or filename.sql>');
+  const args = process.argv.slice(2).map((a) => a.trim()).filter(Boolean);
+  if (args.length === 0) {
+    console.error(
+      'Usage: npx ts-node src/scripts/apply-sql-migration.ts <prefix|file.sql> [more...]\n' +
+        'Example: npm run migrate:sql -- 026 027'
+    );
     process.exit(1);
   }
 
-  if (!process.env.DATABASE_URL?.trim()) {
+  const rawUrl = process.env.DATABASE_URL?.trim();
+  if (!rawUrl) {
     console.error(
       'DATABASE_URL is not set. Export it or add it to backend/.env (or repo-root .env), then retry.'
     );
     process.exit(1);
   }
 
+  const cleaned = stripUnsupportedDatabaseUrlParams(rawUrl);
+  if (cleaned !== rawUrl) {
+    process.env.DATABASE_URL = cleaned;
+    console.log('Note: stripped unsupported URL params (e.g. schema=) from DATABASE_URL for this run.');
+  }
+
   const { pool, closePool } = await import('../database/connection');
 
   const migrationsDir = path.join(__dirname, '../database/migrations');
-  const filename = resolveMigrationFile(arg, migrationsDir);
-  const sql = fs.readFileSync(path.join(migrationsDir, filename), 'utf-8');
 
-  await pool.query(sql);
-  console.log(`Applied migration: ${filename}`);
+  for (const arg of args) {
+    const filename = resolveMigrationFile(arg, migrationsDir);
+    const sql = fs.readFileSync(path.join(migrationsDir, filename), 'utf-8');
+    await pool.query(sql);
+    console.log(`Applied migration: ${filename}`);
+  }
+
   await closePool();
 }
 
