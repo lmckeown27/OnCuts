@@ -1,6 +1,9 @@
 /**
  * Apply one SQL file from src/database/migrations/ against DATABASE_URL.
  *
+ * Loads `.env` before opening the pool (static imports would run `connection.ts`
+ * before dotenv and produce SCRAM "client password must be a string" when URL is missing).
+ *
  * Usage (from backend/):
  *   npx ts-node src/scripts/apply-sql-migration.ts 026
  *   npx ts-node src/scripts/apply-sql-migration.ts 026_apple_oauth_users.sql
@@ -9,9 +12,22 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import { closePool, pool } from '../database/connection';
 
-dotenv.config();
+function loadEnv(): void {
+  const candidates = [
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), '..', '.env'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      dotenv.config({ path: p });
+      return;
+    }
+  }
+  dotenv.config();
+}
+
+loadEnv();
 
 function resolveMigrationFile(arg: string, migrationsDir: string): string {
   const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql'));
@@ -37,6 +53,15 @@ async function main() {
     console.error('Usage: npx ts-node src/scripts/apply-sql-migration.ts <prefix or filename.sql>');
     process.exit(1);
   }
+
+  if (!process.env.DATABASE_URL?.trim()) {
+    console.error(
+      'DATABASE_URL is not set. Export it or add it to backend/.env (or repo-root .env), then retry.'
+    );
+    process.exit(1);
+  }
+
+  const { pool, closePool } = await import('../database/connection');
 
   const migrationsDir = path.join(__dirname, '../database/migrations');
   const filename = resolveMigrationFile(arg, migrationsDir);
