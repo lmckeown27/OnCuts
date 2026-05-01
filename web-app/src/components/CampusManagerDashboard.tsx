@@ -3084,19 +3084,23 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
             Payment Details
           </h4>
           {(() => {
-            // Use totalPaidCents if available, otherwise calculate from price + tip
-            const totalPaid = selectedBooking.totalPaidCents ?? (selectedBooking.priceUsdCents + (selectedBooking.tipAmountCents || 0));
-            // Derive tip from totalPaidCents if tipAmountCents is missing but total is higher than service price
-            const tipAmount = selectedBooking.tipAmountCents || 
-              (selectedBooking.totalPaidCents && selectedBooking.totalPaidCents > selectedBooking.priceUsdCents 
-                ? selectedBooking.totalPaidCents - selectedBooking.priceUsdCents 
+            const serviceCents = selectedBooking.priceUsdCents || 0;
+            const tipAmount =
+              selectedBooking.tipAmountCents ??
+              (selectedBooking.totalPaidCents != null &&
+              selectedBooking.totalPaidCents > serviceCents
+                ? selectedBooking.totalPaidCents - serviceCents
                 : 0);
-            
+            const displayTotalCents =
+              selectedBooking.totalPaidCents != null && selectedBooking.totalPaidCents > 0
+                ? selectedBooking.totalPaidCents
+                : serviceCents + tipAmount;
+
             return (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Service Price</span>
-                  <span className="font-medium text-gray-900">{formatPrice(selectedBooking.priceUsdCents)}</span>
+                  <span className="font-medium text-gray-900">{formatPrice(serviceCents)}</span>
                 </div>
                 {tipAmount > 0 && (
                   <div className="flex justify-between text-sm">
@@ -3107,7 +3111,7 @@ const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) =>
                 <div className="flex justify-between pt-2 border-t">
                   <span className="font-semibold text-gray-900">Total</span>
                   <span className="font-bold text-lg text-green-600">
-                    {formatPrice(totalPaid)}
+                    {formatPrice(displayTotalCents)}
                   </span>
                 </div>
               </div>
