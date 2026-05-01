@@ -1007,6 +1007,12 @@ function isMissingAppleOAuthColumns(err: unknown): boolean {
   return m.includes('apple_sub') || m.includes('auth_provider');
 }
 
+/** Trim optional Apple / ASAuthorizationAppleIDCredential name fields from JSON body. */
+function trimAppleProfileField(value: unknown): string {
+  if (value === undefined || value === null) return '';
+  return String(value).trim();
+}
+
 /**
  * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
  * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
@@ -1049,16 +1055,16 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
     if (!normalizedEmail) {
       throw new ApiError(
         400,
-        'Email is required for Apple sign-in. Pass the email from the Apple credential on first sign-in, or sign in again when Apple includes it in the token.'
+        'No email is available for this Apple sign-in. On the Apple sheet choose "Share My Email", or add a reachable address under Settings → Apple Account → Sign-In & Security. If you use Hide My Email, send the relay address from the credential as `email` in the request body on first sign-in.'
       );
     }
 
-    const firstNameIn = typeof req.body?.firstName === 'string' ? req.body.firstName : '';
-    const lastNameIn = typeof req.body?.lastName === 'string' ? req.body.lastName : '';
+    const appleGiven = trimAppleProfileField(req.body?.firstName);
+    const appleFamily = trimAppleProfileField(req.body?.lastName);
     const { firstName, lastName } = resolveNamesForUser(
       normalizedEmail,
-      firstNameIn,
-      lastNameIn
+      appleGiven,
+      appleFamily
     );
 
     const rawCampusId = req.body?.campusId;
@@ -1134,13 +1140,57 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
         );
         userRow = ins.rows[0];
         logger.info(`New user created via Sign in with Apple: ${normalizedEmail}`);
+        sendWelcomeEmail(userRow.email, userRow.first_name || firstName).catch((err) => {
+          logger.error('Failed to send welcome email (Apple signup):', err);
+        });
       } catch (e: unknown) {
         const pg = e as { code?: string };
         if (pg.code === '23505') {
-          throw new ApiError(409, 'An account with this email or Apple ID already exists');
+          const bySub = await pool.query(
+            `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE apple_sub = $1`,
+            [sub]
+          );
+          if (bySub.rows[0]) {
+            userRow = bySub.rows[0];
+          } else {
+            const again = await pool.query(
+              `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE LOWER(TRIM(email)) = $1`,
+              [normalizedEmail]
+            );
+            if (again.rows[0]) {
+              const u = again.rows[0];
+              if (!u.apple_sub) {
+                await pool.query(
+                  `UPDATE users SET apple_sub = $1, auth_provider = COALESCE(auth_provider, 'apple'), "updatedAt" = NOW() WHERE id = $2 AND apple_sub IS NULL`,
+                  [sub, u.id]
+                );
+              }
+              userRow = (
+                await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [u.id])
+              ).rows[0];
+            }
+          }
+          if (!userRow) {
+            throw new ApiError(409, 'An account with this email or Apple ID already exists');
+          }
+        } else {
+          throw e;
         }
-        throw e;
       }
+    }
+
+    if (appleGiven || appleFamily) {
+      await pool.query(
+        `UPDATE users SET
+          first_name = COALESCE(NULLIF($1, ''), first_name),
+          last_name = COALESCE(NULLIF($2, ''), last_name),
+          "updatedAt" = NOW()
+         WHERE id = $3`,
+        [appleGiven, appleFamily, userRow.id]
+      );
+      userRow = (
+        await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [userRow.id])
+      ).rows[0];
     }
 
     if (userRow.isBlocked || userRow.isBanned) {
