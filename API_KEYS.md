@@ -31,7 +31,7 @@ Copy variables from `backend/env.example` and `web-app/.env.example` when bootst
 | `GOOGLE_OAUTH_IOS_CLIENT_ID` | Public ID | Allowed Google `aud` values for native iOS tokens (`auth.controller`). |
 | `GOOGLE_OAUTH_CLIENT_IDS` | Public IDs (comma-separated) | Extra allowed client IDs for Google-issued ID tokens. |
 | `VITE_GOOGLE_OAUTH_CLIENT_ID` | Public (web bundle) | Frontend OAuth client; backend also accepts this name when building the allowlist (`auth.controller`). **Set the same web client ID as `GOOGLE_OAUTH_WEB_CLIENT_ID` where both are used.** |
-| `APPLE_CLIENT_ID` | Public ID (still server-trusted config) | iOS bundle ID or Sign in with Apple **Services ID**; must match the `aud` claim when verifying Apple `identityToken` on `POST /api/v1/auth/apple` (`apple-auth.service`, `auth.controller`). |
+| `APPLE_CLIENT_ID` | Public ID (still server-trusted config) | iOS bundle ID or Sign in with Apple **Services ID**; must match the `aud` claim when verifying Apple `identityToken` on `POST /api/v1/auth/apple` (`apple-auth.service`, `auth.controller`). **Postgres:** add `users.apple_sub` / `users.auth_provider` by applying `backend/src/database/migrations/026_apple_oauth_users.sql` on the API database (from `backend/`: `npm run migrate:sql -- 026`). |
 
 **Web (`web-app`)**: `VITE_GOOGLE_OAUTH_CLIENT_ID`, optional `VITE_ZKLOGIN_REDIRECT_ORIGIN` — see `web-app/.env.example`.
 

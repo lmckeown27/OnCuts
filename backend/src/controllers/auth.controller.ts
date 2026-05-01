@@ -1000,6 +1000,13 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
 
 const APPLE_USER_ROW_SELECT = `id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, apple_sub, auth_provider`;
 
+function isMissingAppleOAuthColumns(err: unknown): boolean {
+  const e = err as { code?: string; message?: string };
+  if (e.code !== '42703') return false;
+  const m = String(e.message || '');
+  return m.includes('apple_sub') || m.includes('auth_provider');
+}
+
 /**
  * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
  * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
@@ -1186,6 +1193,19 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
       },
     });
   } catch (error) {
+    if (isMissingAppleOAuthColumns(error)) {
+      logger.error(
+        'Apple auth: columns apple_sub/auth_provider missing — run backend migration 026_apple_oauth_users.sql (npm run migrate:sql -- 026 from backend/)'
+      );
+      next(
+        new ApiError(
+          503,
+          'Sign in with Apple is not available until the database migration is applied. Run: cd backend && npm run migrate:sql -- 026',
+          'APPLE_SCHEMA_MISSING'
+        )
+      );
+      return;
+    }
     next(error);
   }
 };

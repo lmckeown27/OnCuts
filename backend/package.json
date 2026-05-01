@@ -13,6 +13,7 @@
     "verify": "ts-node src/scripts/verify-integration.ts",
     "check": "npm run verify",
     "migrate:deploy": "npx prisma migrate deploy",
+    "migrate:sql": "npx ts-node src/scripts/apply-sql-migration.ts",
     "postinstall": "npx prisma generate",
     "create-wallet-set": "npx ts-node scripts/create-wallet-set.ts",
     "sync-stripe-status": "npx ts-node src/scripts/sync-stripe-status.ts",
