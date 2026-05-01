@@ -35,7 +35,7 @@ import rateLimit from 'express-rate-limit';
 import { pool, checkHealth as checkPostgresHealth, closePool, connectToPostgres } from './database/connection';
 
 // Import routes
-import { googleIdTokenLogin } from './controllers/auth.controller';
+import { appleIdTokenLogin, googleIdTokenLogin } from './controllers/auth.controller';
 import authRoutes from './routes/auth.routes';
 import barberRoutes from './routes/barber.routes';
 import bookingRoutes from './routes/booking.routes';
@@ -300,11 +300,14 @@ const authLimiter = rateLimit({
 app.use('/api/v1/auth', authLimiter);
 app.use('/api', generalLimiter);
 
-// Google ID token → CampusCuts JWT (Intera / iOS). Intera also supports SMS OTP: request-otp /
+// Google / Apple ID token → CampusCuts JWT (Intera / iOS). Intera also supports SMS OTP: request-otp /
 // verify-otp in auth.routes (verify-otp issues JWTs when phone_e164 matches an existing user).
 // Registered here so the route is always on the app stack after rate limits.
 app.post('/api/v1/auth/google', googleIdTokenLogin);
 app.post('/api/auth/google', googleIdTokenLogin);
+
+app.post('/api/v1/auth/apple', appleIdTokenLogin);
+app.post('/api/auth/apple', appleIdTokenLogin);
 
 // Health check (PostgreSQL + Stripe - Off-chain architecture)
 app.get('/health', async (req: Request, res: Response) => {

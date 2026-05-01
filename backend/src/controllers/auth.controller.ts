@@ -90,6 +90,7 @@
  */
 
 import { Response, NextFunction } from 'express';
+import { randomBytes } from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -122,6 +123,7 @@ import {
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { resolveNamesForUser } from '../utils/registration-names';
+import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
 import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
 
 /** Google ID token verification for Intera / mobile (JWT exchange). */
@@ -986,6 +988,198 @@ export const googleIdTokenLogin = async (req: AuthRequest, res: Response, next: 
           profile_picture_url: user.avatarUrl,
           hasBarberProfile,
           phoneNumber: user.phone_e164 ?? null,
+        },
+        accessToken: token,
+        refreshToken: refreshTokenJwt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const APPLE_USER_ROW_SELECT = `id, email, password_hash, first_name, last_name, "campusId", role, "isBlocked", "isBanned", email_verified, "avatarUrl", sui_address, phone_e164, apple_sub, auth_provider`;
+
+/**
+ * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
+ * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
+ */
+export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const raw =
+      (req.body?.identityToken ?? req.body?.identity_token) as string | undefined;
+    const identityToken = typeof raw === 'string' ? raw.trim() : '';
+    if (!identityToken) {
+      throw new ApiError(400, 'identityToken is required');
+    }
+
+    const appleClientId = process.env.APPLE_CLIENT_ID?.trim();
+    if (!appleClientId) {
+      throw new ApiError(
+        500,
+        'Sign in with Apple is not configured. Set APPLE_CLIENT_ID (iOS bundle ID or web Services ID).'
+      );
+    }
+
+    let claims: AppleIdTokenPayload;
+    try {
+      claims = await verifyAppleIdentityToken(identityToken, appleClientId);
+    } catch (verifyErr: unknown) {
+      const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+      logger.warn(`Apple identity token verify failed: ${msg}`);
+      throw new ApiError(401, 'Invalid or expired Apple token');
+    }
+
+    const { sub } = claims;
+    const fromTokenEmail = claims.email;
+
+    const bodyEmailRaw =
+      typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const bodyEmail =
+      bodyEmailRaw && bodyEmailRaw.includes('@') ? bodyEmailRaw : '';
+
+    const normalizedEmail = (fromTokenEmail || bodyEmail).trim().toLowerCase();
+    if (!normalizedEmail) {
+      throw new ApiError(
+        400,
+        'Email is required for Apple sign-in. Pass the email from the Apple credential on first sign-in, or sign in again when Apple includes it in the token.'
+      );
+    }
+
+    const firstNameIn = typeof req.body?.firstName === 'string' ? req.body.firstName : '';
+    const lastNameIn = typeof req.body?.lastName === 'string' ? req.body.lastName : '';
+    const { firstName, lastName } = resolveNamesForUser(
+      normalizedEmail,
+      firstNameIn,
+      lastNameIn
+    );
+
+    const rawCampusId = req.body?.campusId;
+    let campusId: string | null = null;
+    if (rawCampusId !== undefined && rawCampusId !== null && rawCampusId !== '') {
+      const requestedCampusId = String(rawCampusId).trim();
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUuid = uuidRegex.test(requestedCampusId);
+      let validCampus;
+      if (isUuid) {
+        validCampus = await pool.query(
+          'SELECT id, name FROM campuses WHERE id = $1 AND is_active = TRUE',
+          [requestedCampusId]
+        );
+      } else {
+        const slugPattern = requestedCampusId.replace(/-/g, '%');
+        validCampus = await pool.query(
+          `SELECT id, name FROM campuses 
+           WHERE is_active = TRUE 
+           AND (LOWER(name) LIKE $1 OR LOWER(REPLACE(name, ' ', '-')) = $2)
+           ORDER BY name LIMIT 1`,
+          [`%${slugPattern}%`, requestedCampusId.toLowerCase()]
+        );
+      }
+      if (validCampus.rows.length > 0) {
+        campusId = validCampus.rows[0].id;
+      }
+    }
+
+    let userRow = (
+      await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE apple_sub = $1`, [sub])
+    ).rows[0];
+
+    if (!userRow) {
+      const byEmail = await pool.query(
+        `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE LOWER(TRIM(email)) = $1`,
+        [normalizedEmail]
+      );
+      if (byEmail.rows.length > 0) {
+        const u = byEmail.rows[0];
+        if (u.apple_sub && u.apple_sub !== sub) {
+          throw new ApiError(
+            409,
+            'This email is already linked to a different Apple ID. Use that Apple account or a different email.'
+          );
+        }
+        if (!u.apple_sub) {
+          await pool.query(
+            `UPDATE users SET apple_sub = $1, auth_provider = COALESCE(auth_provider, 'apple'), "updatedAt" = NOW() WHERE id = $2 AND apple_sub IS NULL`,
+            [sub, u.id]
+          );
+        }
+        userRow = (await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [u.id]))
+          .rows[0];
+      }
+    }
+
+    if (!userRow) {
+      const randomPw = randomBytes(32).toString('hex');
+      const passwordHash = await bcrypt.hash(randomPw, 10);
+      try {
+        const ins = await pool.query(
+          `INSERT INTO users (
+            id, email, password_hash, first_name, last_name, "campusId", role,
+            email_verified, apple_sub, auth_provider, "termsAcceptedAt", "updatedAt"
+          )
+          VALUES (
+            gen_random_uuid(), $1, $2, $3, $4, $5, 'CONSUMER'::"UserRole",
+            TRUE, $6, 'apple', NULL, NOW()
+          )
+          RETURNING ${APPLE_USER_ROW_SELECT}`,
+          [normalizedEmail, passwordHash, firstName, lastName, campusId, sub]
+        );
+        userRow = ins.rows[0];
+        logger.info(`New user created via Sign in with Apple: ${normalizedEmail}`);
+      } catch (e: unknown) {
+        const pg = e as { code?: string };
+        if (pg.code === '23505') {
+          throw new ApiError(409, 'An account with this email or Apple ID already exists');
+        }
+        throw e;
+      }
+    }
+
+    if (userRow.isBlocked || userRow.isBanned) {
+      throw new ApiError(403, 'Account is deactivated');
+    }
+
+    await pool.query('UPDATE users SET "lastActiveAt" = CURRENT_TIMESTAMP WHERE id = $1', [userRow.id]);
+
+    const barberCheck = await pool.query(
+      'SELECT id FROM barbers WHERE "userId" = $1 AND "isActive" = true',
+      [userRow.id]
+    );
+    const hasBarberProfile = barberCheck.rows.length > 0;
+
+    const accessRole = await resolveAccessTokenRole(userRow.id, userRow.role);
+
+    const token = generateAccessToken({
+      userId: userRow.id,
+      email: userRow.email,
+      role: accessRole,
+      campusId: userRow.campusId,
+    });
+
+    const refreshTokenJwt = generateRefreshToken({
+      userId: userRow.id,
+      email: userRow.email,
+      role: accessRole,
+      campusId: userRow.campusId,
+    });
+
+    logger.info(`User logged in via Apple: ${userRow.email}`);
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: userRow.id,
+          email: userRow.email,
+          firstName: userRow.first_name,
+          lastName: userRow.last_name,
+          role: userRow.role,
+          campusId: userRow.campusId,
+          emailVerified: userRow.email_verified,
+          profile_picture_url: userRow.avatarUrl,
+          hasBarberProfile,
+          phoneNumber: userRow.phone_e164 ?? null,
         },
         accessToken: token,
         refreshToken: refreshTokenJwt,

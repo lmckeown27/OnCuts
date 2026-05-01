@@ -201,8 +201,8 @@ router.post(
 );
 
 /**
- * Google ID token login: POST /api/v1/auth/google and POST /api/auth/google are registered in index.ts
- * (after rate limiters) so deploys cannot miss the route if dist/auth.routes.js is stale.
+ * Google / Apple ID token login: POST /api/v1/auth/google|apple and POST /api/auth/google|apple are
+ * registered in index.ts (after rate limiters) so deploys cannot miss the route if dist/auth.routes.js is stale.
  */
 
 /**
