@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { AuthRequest } from '../middleware/auth';
-import { userNeedsPlatformPassword } from '../utils/platform-password';
+import { mayDeleteAccountWithoutPasswordBody, userNeedsPlatformPassword } from '../utils/platform-password';
 
 /** DB column names for profile PATCH/PUT (snake_case keys only after coerce). */
 const PROFILE_FIELD_MAPPING: { [key: string]: string } = {
@@ -495,31 +495,41 @@ export const setInitialPassword = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Delete account
- * Requires password verification for security
- * Performs hard delete of user and all associated data
+ * Delete account (hard delete). Authenticated user only (`:id` must match JWT).
+ * Apple-linked accounts without a chosen CampusCuts password may omit body password
+ * (client uses Face ID / passcode first); others must send `password` for verification.
  */
 export const deleteAccount = async (req: Request, res: Response) => {
   const client = await pool.connect();
-  
-  try {
-    const { id } = req.params;
-    const { password } = req.body;
 
-    // Require password for verification
-    if (!password) {
-      return res.status(400).json({
+  try {
+    const authReq = req as AuthRequest;
+    const tokenUserId = authReq.user?.userId;
+    if (!tokenUserId) {
+      return res.status(401).json({
         success: false,
-        message: 'Password is required to delete account',
+        message: 'Authentication required',
       });
     }
 
-    // Check if user exists and get password hash
+    const { id } = req.params;
+    if (String(tokenUserId) !== String(id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own account',
+      });
+    }
+
+    const { password } = req.body as { password?: string };
+    const passwordStr =
+      typeof password === 'string' && password.length > 0 ? password : '';
+
     const userCheck = await client.query(
-      'SELECT id, password_hash, email, has_platform_password FROM users WHERE id = $1',
+      `SELECT id, password_hash, email, has_platform_password, apple_sub, auth_provider
+       FROM users WHERE id = $1`,
       [id]
     );
-    
+
     if (userCheck.rows.length === 0) {
       return res.status(404).json({
         success: false,
@@ -528,23 +538,30 @@ export const deleteAccount = async (req: Request, res: Response) => {
     }
 
     const user = userCheck.rows[0];
+    const omitPassword = mayDeleteAccountWithoutPasswordBody(user);
 
-    if (user.has_platform_password === false) {
-      return res.status(403).json({
-        success: false,
-        message:
-          'Set a CampusCuts password in account settings before deleting your account (Sign in with Apple only).',
-        code: 'PLATFORM_PASSWORD_REQUIRED',
-      });
-    }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Incorrect password',
-      });
+    if (!omitPassword) {
+      if (!passwordStr) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required to delete account',
+        });
+      }
+      const isPasswordValid = await bcrypt.compare(passwordStr, user.password_hash);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Incorrect password',
+        });
+      }
+    } else if (passwordStr) {
+      const isPasswordValid = await bcrypt.compare(passwordStr, user.password_hash);
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Incorrect password',
+        });
+      }
     }
 
     // Start transaction for hard delete

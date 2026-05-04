@@ -11,6 +11,48 @@ import { sendEmail } from './email.service';
 const MODERATION_ALERT_EMAIL = process.env.MODERATION_ALERT_EMAIL?.trim();
 const MAX_MESSAGE_CHARS = 8000;
 
+/** null = never successfully seen; true = tables exist; false = last probe failed. */
+let ugcModerationSchemaCache: boolean | null = null;
+let ugcSchemaLastProbeMs = 0;
+const UGC_SCHEMA_REPROBE_MS = 60_000;
+
+/**
+ * True when migration 028 tables exist. When false, messaging still works but
+ * block/report SQL is skipped so production does not 500 before migrate runs.
+ * Re-checks every minute when missing so a migrate + no PM2 restart still enables UGC.
+ */
+export async function isUgcModerationSchemaReady(): Promise<boolean> {
+  if (ugcModerationSchemaCache === true) {
+    return true;
+  }
+  const now = Date.now();
+  if (
+    ugcModerationSchemaCache === false &&
+    now - ugcSchemaLastProbeMs < UGC_SCHEMA_REPROBE_MS
+  ) {
+    return false;
+  }
+  try {
+    const r = await pool.query(
+      `SELECT to_regclass('public.user_blocks') AS ub, to_regclass('public.ugc_content_reports') AS rep`
+    );
+    ugcSchemaLastProbeMs = now;
+    const ok = r.rows[0].ub != null && r.rows[0].rep != null;
+    ugcModerationSchemaCache = ok;
+    if (!ok) {
+      logger.warn(
+        'UGC moderation tables missing — conversations still work; apply backend/src/database/migrations/028_ugc_safety_blocks_reports.sql (e.g. npm run migrate:sql -- 028_ugc_safety_blocks_reports.sql from backend/)'
+      );
+    }
+    return ok;
+  } catch (e) {
+    logger.error('Failed to probe UGC moderation schema:', e);
+    ugcSchemaLastProbeMs = now;
+    ugcModerationSchemaCache = false;
+    return false;
+  }
+}
+
 /** Conservative substring filter; extend list as needed. */
 const DISALLOWED_SUBSTRINGS = [
   'child porn',
@@ -57,6 +99,9 @@ export async function assertNoMessagingBlockBetween(
   userIdA: string,
   userIdB: string
 ): Promise<void> {
+  if (!(await isUgcModerationSchemaReady())) {
+    return;
+  }
   const r = await pool.query(
     `SELECT 1 FROM user_blocks
      WHERE (blocker_user_id = $1 AND blocked_user_id = $2)
@@ -70,6 +115,13 @@ export async function assertNoMessagingBlockBetween(
 }
 
 export async function createUserBlock(blockerUserId: string, blockedUserId: string): Promise<void> {
+  if (!(await isUgcModerationSchemaReady())) {
+    throw new ApiError(
+      503,
+      'User blocking is not available until database migration 028_ugc_safety_blocks_reports.sql is applied.',
+      'UGC_SCHEMA_MISSING'
+    );
+  }
   if (blockerUserId === blockedUserId) {
     throw new ApiError(400, 'Cannot block yourself');
   }
@@ -86,6 +138,9 @@ export async function createUserBlock(blockerUserId: string, blockedUserId: stri
 }
 
 export async function removeUserBlock(blockerUserId: string, blockedUserId: string): Promise<void> {
+  if (!(await isUgcModerationSchemaReady())) {
+    return;
+  }
   await pool.query(
     `DELETE FROM user_blocks WHERE blocker_user_id = $1 AND blocked_user_id = $2`,
     [blockerUserId, blockedUserId]
@@ -93,6 +148,9 @@ export async function removeUserBlock(blockerUserId: string, blockedUserId: stri
 }
 
 export async function listBlockedUserIds(blockerUserId: string): Promise<string[]> {
+  if (!(await isUgcModerationSchemaReady())) {
+    return [];
+  }
   const r = await pool.query(
     `SELECT blocked_user_id::text FROM user_blocks WHERE blocker_user_id = $1 ORDER BY created_at DESC`,
     [blockerUserId]
@@ -109,6 +167,13 @@ export async function createContentReport(params: {
   detail?: string | null;
 }): Promise<string> {
   const { reporterUserId, reportedUserId, conversationId, messageId, reason, detail } = params;
+  if (!(await isUgcModerationSchemaReady())) {
+    throw new ApiError(
+      503,
+      'Reporting is not available until database migration 028_ugc_safety_blocks_reports.sql is applied.',
+      'UGC_SCHEMA_MISSING'
+    );
+  }
   if (reporterUserId === reportedUserId) {
     throw new ApiError(400, 'Cannot report yourself');
   }

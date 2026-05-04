@@ -1572,7 +1572,11 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
     // Admins have all privileges including campus manager at all campuses
     const isAdmin = frontendRole === 'admin';
     const isCampusManager = frontendRole === 'campus_manager' || isAdmin;
-    
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     res.json({
       success: true,
       data: {

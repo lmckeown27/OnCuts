@@ -17,6 +17,7 @@ import notificationService from './notification.service';
 import { ApiError } from '../middleware/errorHandler';
 import {
   assertNoMessagingBlockBetween,
+  isUgcModerationSchemaReady,
   validateOutgoingMessageText,
 } from './ugc-moderation.service';
 import { 
@@ -38,6 +39,20 @@ class MessageService {
   async getUserConversations(userId: string | number, page: number = 1, limit: number = 20): Promise<any> {
     try {
       const offset = (page - 1) * limit;
+      const useUgcBlocks = await isUgcModerationSchemaReady();
+      const convBlockSql = useUgcBlocks
+        ? `
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $1
+            AND ub.blocked_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocked_user_id = $1
+            AND ub.blocker_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+        )`
+        : '';
 
       // Get conversations with booking details
       const result = await pool.query(
@@ -119,16 +134,7 @@ class MessageService {
         LEFT JOIN barbers br ON u.id = br."userId"
         LEFT JOIN bookings b ON c.booking_id = b.id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocker_user_id = $1
-            AND ub.blocked_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocked_user_id = $1
-            AND ub.blocker_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
-        )
+        ${convBlockSql}
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
         [userId, limit, offset]
@@ -138,16 +144,7 @@ class MessageService {
       const countResult = await pool.query(
         `SELECT COUNT(*) as total FROM conversations c
          WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
-         AND NOT EXISTS (
-           SELECT 1 FROM user_blocks ub
-           WHERE ub.blocker_user_id = $1
-             AND ub.blocked_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM user_blocks ub
-           WHERE ub.blocked_user_id = $1
-             AND ub.blocker_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
-         )`,
+         ${convBlockSql}`,
         [userId]
       );
 

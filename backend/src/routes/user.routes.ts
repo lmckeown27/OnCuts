@@ -37,7 +37,7 @@ router.put('/:id/notification-preferences', updateNotificationPreferences);
 
 // Security
 router.put('/:id/change-password', changePassword);
-router.delete('/:id', deleteAccount);
+router.delete('/:id', authenticate, deleteAccount);
 
 export default router;
 

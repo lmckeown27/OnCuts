@@ -9,6 +9,7 @@ import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import {
   assertNoMessagingBlockBetween,
+  isUgcModerationSchemaReady,
   validateOutgoingMessageText,
 } from './ugc-moderation.service';
 
@@ -121,7 +122,21 @@ export class BookingMessagingService {
    */
   async getBookingMessages(bookingId: string, userId: string): Promise<Message[]> {
     try {
-      const result = await pool.query(`
+      const useUgcBlocks = await isUgcModerationSchemaReady();
+      const blockSql = useUgcBlocks
+        ? `
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $2 AND ub.blocked_user_id = bm.sender_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = bm.sender_id AND ub.blocked_user_id = $2
+        )`
+        : '';
+
+      const result = await pool.query(
+        `
         SELECT 
           bm.message_id,
           bm.booking_id,
@@ -136,16 +151,11 @@ export class BookingMessagingService {
         FROM booking_messages bm
         JOIN users u ON bm.sender_id = u.id
         WHERE bm.booking_id = $1
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocker_user_id = $2 AND ub.blocked_user_id = bm.sender_id
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocker_user_id = bm.sender_id AND ub.blocked_user_id = $2
-        )
+        ${blockSql}
         ORDER BY bm.created_at ASC
-      `, [bookingId, userId]);
+      `,
+        [bookingId, userId]
+      );
 
       // Mark messages as read (where user is recipient)
       await pool.query(`
@@ -203,7 +213,23 @@ export class BookingMessagingService {
    */
   async getUserConversations(userId: string, userType: 'barber' | 'customer') {
     try {
-      const result = await pool.query(`
+      const useUgcBlocks = await isUgcModerationSchemaReady();
+      const convBlockSql = useUgcBlocks
+        ? `
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $1
+            AND ub.blocked_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocked_user_id = $1
+            AND ub.blocker_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
+        )`
+        : '';
+
+      const result = await pool.query(
+        `
         SELECT DISTINCT ON (b.id)
           b.id as booking_id,
           b.status,
@@ -234,18 +260,11 @@ export class BookingMessagingService {
         LEFT JOIN users customer_u ON b.customer_id = customer_u.id
         WHERE ($2 = 'barber' AND ba.user_id = $1)
            OR ($2 = 'customer' AND b.customer_id = $1)
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocker_user_id = $1
-            AND ub.blocked_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks ub
-          WHERE ub.blocked_user_id = $1
-            AND ub.blocker_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
-        )
+        ${convBlockSql}
         ORDER BY b.id, last_message_at DESC NULLS LAST
-      `, [userId, userType]);
+      `,
+        [userId, userType]
+      );
 
       return result.rows.map(row => ({
         bookingId: row.booking_id,
