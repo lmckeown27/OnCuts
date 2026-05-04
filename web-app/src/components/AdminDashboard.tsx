@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check
+  Copy, Check, Shield
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -109,7 +109,32 @@ interface MetricsResponse {
 
 type MetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
 type MetricsView = 'revenue' | 'bookings';
-type AdminView = 'performance' | 'barbers' | 'users';
+type AdminView = 'performance' | 'barbers' | 'users' | 'moderation';
+
+type UgcReportStatusFilter = 'open' | 'all' | 'dismissed' | 'resolved';
+
+interface UgcContentReport {
+  id: string;
+  reporter_user_id: string;
+  reported_user_id: string;
+  conversation_id: number | null;
+  message_id: number | null;
+  reason: string;
+  detail: string | null;
+  status: string;
+  resolved_at: string | null;
+  resolver_admin_id: string | null;
+  resolution_notes: string | null;
+  created_at: string;
+  reporter_email: string;
+  reporter_first_name: string;
+  reporter_last_name: string;
+  reported_email: string;
+  reported_first_name: string;
+  reported_last_name: string;
+  message_preview?: string | null;
+  message_is_deleted?: boolean;
+}
 
 interface Barber {
   id: string;
@@ -276,6 +301,11 @@ export function AdminDashboard({
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [ugcReports, setUgcReports] = useState<UgcContentReport[]>([]);
+  const [ugcReportStatusFilter, setUgcReportStatusFilter] = useState<UgcReportStatusFilter>('open');
+  const [isLoadingUgcReports, setIsLoadingUgcReports] = useState(false);
+  const [ugcReportsError, setUgcReportsError] = useState<string | null>(null);
+  const [ugcResolveLoadingId, setUgcResolveLoadingId] = useState<string | null>(null);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -557,6 +587,39 @@ export function AdminDashboard({
     
     fetchUsers();
   }, [adminView, selectedCampusId]);
+
+  useEffect(() => {
+    if (adminView !== 'moderation') return;
+    let cancelled = false;
+    const loadReports = async () => {
+      setIsLoadingUgcReports(true);
+      setUgcReportsError(null);
+      try {
+        const data = await api.get<{ reports: UgcContentReport[] }>('/admin/moderation/reports', {
+          status: ugcReportStatusFilter,
+          limit: 200,
+        });
+        if (!cancelled) {
+          setUgcReports(data.reports || []);
+        }
+      } catch (err: unknown) {
+        const msg =
+          err && typeof err === 'object' && 'message' in err
+            ? String((err as { message?: string }).message)
+            : 'Failed to load reports';
+        if (!cancelled) {
+          setUgcReports([]);
+          setUgcReportsError(msg);
+        }
+      } finally {
+        if (!cancelled) setIsLoadingUgcReports(false);
+      }
+    };
+    loadReports();
+    return () => {
+      cancelled = true;
+    };
+  }, [adminView, ugcReportStatusFilter]);
   
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);
@@ -603,6 +666,39 @@ export function AdminDashboard({
       u.email.toLowerCase().includes(query)
     );
   }, [users, userSearchQuery]);
+
+  const handleUgcResolve = async (
+    report: UgcContentReport,
+    action: 'dismiss' | 'remove_message' | 'ban_reported_user' | 'remove_message_and_ban'
+  ) => {
+    if (action === 'remove_message') {
+      if (!window.confirm('Remove this message from chat for all users?')) return;
+    }
+    if (action === 'ban_reported_user') {
+      if (!window.confirm('Ban the reported user from the platform?')) return;
+    }
+    if (action === 'remove_message_and_ban') {
+      if (!window.confirm('Remove the message and ban the reported user? This matches a typical trust-and-safety response.')) return;
+    }
+    setUgcResolveLoadingId(report.id);
+    try {
+      await api.post(`/admin/moderation/reports/${report.id}/resolve`, { action });
+      toast.success('Report updated');
+      const data = await api.get<{ reports: UgcContentReport[] }>('/admin/moderation/reports', {
+        status: ugcReportStatusFilter,
+        limit: 200,
+      });
+      setUgcReports(data.reports || []);
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to update report';
+      toast.error(msg);
+    } finally {
+      setUgcResolveLoadingId(null);
+    }
+  };
   
   const handleAssignManager = async (barberUserId: string, assign: boolean) => {
     setIsAssigning(barberUserId);
@@ -880,11 +976,11 @@ export function AdminDashboard({
         </button>
       )}
       
-      {/* View Tabs - Performance / Barbers / Users */}
-      <div className="flex rounded-lg bg-gray-100 p-1">
+      {/* View Tabs - Performance / Barbers / Consumers / Trust & Safety */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
         <button
           onClick={() => setAdminView('performance')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
             adminView === 'performance'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -894,7 +990,7 @@ export function AdminDashboard({
         </button>
         <button
           onClick={() => setAdminView('barbers')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
             adminView === 'barbers'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
@@ -904,13 +1000,24 @@ export function AdminDashboard({
         </button>
         <button
           onClick={() => setAdminView('users')}
-          className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
             adminView === 'users'
               ? 'bg-white text-gray-900 shadow-sm'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
           Consumers
+        </button>
+        <button
+          onClick={() => setAdminView('moderation')}
+          className={`flex items-center justify-center gap-1 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+            adminView === 'moderation'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+          <span className="truncate">Safety</span>
         </button>
       </div>
       
@@ -2785,6 +2892,168 @@ export function AdminDashboard({
           </>
         )}
       </div>
+      )}
+
+      {adminView === 'moderation' && (
+        <div className="space-y-4">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
+            <p className="font-medium text-amber-900">User-generated content (Guideline 1.2)</p>
+            <p className="mt-1 text-xs text-amber-900/90 leading-relaxed">
+              Review flags from users. Aim to remove violating messages and ban repeat offenders within 24 hours of a
+              report. Use <strong>Remove + ban</strong> when both apply. Email alerts for new reports can be enabled
+              with <code className="text-[11px] bg-amber-100/80 px-1 rounded">MODERATION_ALERT_EMAIL</code> on the
+              server.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-gray-500">Status</span>
+            {(['open', 'all', 'dismissed', 'resolved'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setUgcReportStatusFilter(s)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  ugcReportStatusFilter === s
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+          {isLoadingUgcReports ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+            </div>
+          ) : ugcReportsError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <p className="font-medium">Could not load reports</p>
+              <p className="mt-1 text-xs">{ugcReportsError}</p>
+              <p className="mt-2 text-xs text-red-700">
+                If this environment has not applied migration 028 yet, run the UGC safety migration on the database.
+              </p>
+            </div>
+          ) : ugcReports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-10 text-gray-500">
+              <Shield className="mb-2 h-10 w-10 text-gray-300" />
+              <p className="text-sm">No reports for this filter</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[min(70vh,640px)] overflow-y-auto pr-1">
+              {ugcReports.map((r) => {
+                const isOpen = r.status === 'open';
+                const busy = ugcResolveLoadingId === r.id;
+                const reporterName = `${r.reporter_first_name || ''} ${r.reporter_last_name || ''}`.trim();
+                const reportedName = `${r.reported_first_name || ''} ${r.reported_last_name || ''}`.trim();
+                return (
+                  <div
+                    key={r.id}
+                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <span
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                            r.status === 'open'
+                              ? 'bg-amber-100 text-amber-800'
+                              : r.status === 'dismissed'
+                                ? 'bg-gray-100 text-gray-600'
+                                : 'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {r.status}
+                        </span>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {new Date(r.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">Reporter</p>
+                        <p className="text-gray-900">{reporterName || r.reporter_email}</p>
+                        <p className="truncate text-xs text-gray-500">{r.reporter_email}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">Reported user</p>
+                        <p className="text-gray-900">{reportedName || r.reported_email}</p>
+                        <p className="truncate text-xs text-gray-500">{r.reported_email}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-sm">
+                      <p className="text-xs font-medium text-gray-500">Reason</p>
+                      <p className="text-gray-800">{r.reason}</p>
+                      {r.detail ? (
+                        <p className="mt-1 text-xs text-gray-600 whitespace-pre-wrap">{r.detail}</p>
+                      ) : null}
+                    </div>
+                    {(r.conversation_id != null || r.message_id != null) && (
+                      <p className="mt-2 font-mono text-[11px] text-gray-400">
+                        conversation #{r.conversation_id ?? '—'} · message #{r.message_id ?? '—'}
+                      </p>
+                    )}
+                    {r.message_preview ? (
+                      <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+                        <p className="mb-1 font-medium text-gray-500">Message preview</p>
+                        <p className="whitespace-pre-wrap break-words">{r.message_preview}</p>
+                        {r.message_is_deleted ? (
+                          <p className="mt-2 text-[11px] text-amber-700">Message is already marked deleted.</p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {r.status !== 'open' && r.resolution_notes ? (
+                      <p className="mt-2 text-xs text-gray-500">
+                        <span className="font-medium">Notes:</span> {r.resolution_notes}
+                      </p>
+                    ) : null}
+                    {isOpen ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => handleUgcResolve(r, 'dismiss')}
+                        >
+                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Dismiss'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={busy || !r.message_id}
+                          onClick={() => handleUgcResolve(r, 'remove_message')}
+                          title={!r.message_id ? 'No message linked to this report' : undefined}
+                        >
+                          Remove message
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => handleUgcResolve(r, 'ban_reported_user')}
+                        >
+                          Ban user
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => handleUgcResolve(r, 'remove_message_and_ban')}
+                        >
+                          Remove + ban
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Application Action Confirmation Modal */}

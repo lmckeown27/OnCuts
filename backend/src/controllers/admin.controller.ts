@@ -2489,20 +2489,34 @@ export const listUgcReports = async (req: AuthRequest, res: Response, next: Next
     if (req.user!.role !== 'admin') {
       throw new ApiError(403, 'Admin access required');
     }
-    const status = typeof req.query.status === 'string' ? req.query.status : 'open';
+    const raw = typeof req.query.status === 'string' ? req.query.status.trim().toLowerCase() : 'open';
+    const allowed = ['open', 'dismissed', 'resolved', 'all'];
+    const statusFilter = allowed.includes(raw) ? raw : 'open';
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '100'), 10) || 100, 1), 500);
-    const result = await pool.query(
-      `SELECT r.*,
+
+    let sql = `SELECT r.*,
               ru.email AS reporter_email,
-              du.email AS reported_email
+              ru.first_name AS reporter_first_name,
+              ru.last_name AS reporter_last_name,
+              du.email AS reported_email,
+              du.first_name AS reported_first_name,
+              du.last_name AS reported_last_name,
+              LEFT(COALESCE(m.content, ''), 500) AS message_preview,
+              COALESCE(m.is_deleted, false) AS message_is_deleted
        FROM ugc_content_reports r
        JOIN users ru ON ru.id = r.reporter_user_id
        JOIN users du ON du.id = r.reported_user_id
-       WHERE r.status = $1
-       ORDER BY r.created_at ASC
-       LIMIT $2`,
-      [status, limit]
-    );
+       LEFT JOIN messages m ON m.id = r.message_id`;
+    const params: unknown[] = [];
+    if (statusFilter !== 'all') {
+      sql += ` WHERE r.status = $1`;
+      params.push(statusFilter);
+    }
+    const order = statusFilter === 'open' ? 'ASC' : 'DESC';
+    sql += ` ORDER BY r.created_at ${order} LIMIT $${params.length + 1}`;
+    params.push(limit);
+
+    const result = await pool.query(sql, params);
     res.json({ success: true, data: { reports: result.rows } });
   } catch (error) {
     next(error);
@@ -2511,7 +2525,7 @@ export const listUgcReports = async (req: AuthRequest, res: Response, next: Next
 
 /**
  * POST /api/admin/moderation/reports/:reportId/resolve
- * body: { action: 'dismiss' | 'remove_message' | 'ban_reported_user', notes?: string }
+ * body: { action: 'dismiss' | 'remove_message' | 'ban_reported_user' | 'remove_message_and_ban', notes?: string }
  */
 export const resolveUgcReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -2520,7 +2534,7 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
     }
     const { reportId } = req.params;
     const { action, notes } = req.body as { action?: string; notes?: string };
-    const allowed = ['dismiss', 'remove_message', 'ban_reported_user'];
+    const allowed = ['dismiss', 'remove_message', 'ban_reported_user', 'remove_message_and_ban'];
     if (!action || !allowed.includes(action)) {
       throw new ApiError(400, `action must be one of: ${allowed.join(', ')}`);
     }
@@ -2533,10 +2547,15 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
       throw new ApiError(400, 'Report is already closed');
     }
 
-    if (action === 'remove_message' && row.message_id) {
+    const removeMsg =
+      action === 'remove_message' || action === 'remove_message_and_ban';
+    const banUser =
+      action === 'ban_reported_user' || action === 'remove_message_and_ban';
+
+    if (removeMsg && row.message_id) {
       await pool.query(`UPDATE messages SET is_deleted = true WHERE id = $1`, [row.message_id]);
     }
-    if (action === 'ban_reported_user') {
+    if (banUser) {
       await pool.query(`UPDATE users SET "isBanned" = true, "updatedAt" = NOW() WHERE id = $1`, [
         row.reported_user_id,
       ]);
@@ -2553,7 +2572,7 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
       [newStatus, req.user!.userId, notes?.trim() || null, reportId]
     );
 
-    res.json({ success: true, message: 'Report updated' });
+    res.json({ success: true, data: { ok: true }, message: 'Report updated' });
   } catch (error) {
     next(error);
   }
