@@ -122,7 +122,11 @@ import {
   getPendingRegistration
 } from '../services/verification.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
-import { resolveNamesForUser, isApplePrivateRelayEmail } from '../utils/registration-names';
+import {
+  resolveNamesForUser,
+  isApplePrivateRelayEmail,
+  isLegacyAppleRelayPlaceholderName,
+} from '../utils/registration-names';
 import { userNeedsPlatformPassword } from '../utils/platform-password';
 import { verifyAppleIdentityToken, type AppleIdTokenPayload } from '../services/apple-auth.service';
 import { isValidE164, normalizeE164Phone } from '../services/intera/phone-otp.service';
@@ -1040,7 +1044,8 @@ function pickAppleCredentialEmail(body: Record<string, unknown>): string {
 function readApplePersonNameFromBody(body: Record<string, unknown>): { given: string; family: string } {
   let given =
     trimAppleProfileField(body.firstName) ||
-    trimAppleProfileField(body.givenName);
+    trimAppleProfileField(body.givenName) ||
+    trimAppleProfileField(body.nickname);
   let family =
     trimAppleProfileField(body.lastName) ||
     trimAppleProfileField(body.familyName);
@@ -1048,7 +1053,10 @@ function readApplePersonNameFromBody(body: Record<string, unknown>): { given: st
   const full = body.fullName;
   if (full && typeof full === 'object' && full !== null) {
     const o = full as Record<string, unknown>;
-    if (!given) given = trimAppleProfileField(o.givenName);
+    if (!given) {
+      given =
+        trimAppleProfileField(o.givenName) || trimAppleProfileField(o.nickname);
+    }
     if (!family) family = trimAppleProfileField(o.familyName);
   }
 
@@ -1288,13 +1296,29 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
     }
 
     if (appleGiven || appleFamily) {
+      let pGiven = appleGiven;
+      let pFamily = appleFamily;
+      const fn0 = String(userRow.first_name ?? '').trim();
+      const ln0 = String(userRow.last_name ?? '').trim();
+      // Legacy rows stored as Apple/User: if Apple only sent a single "full name" in familyName, split it.
+      if (isLegacyAppleRelayPlaceholderName(fn0, ln0) && !pGiven && pFamily) {
+        const parts = pFamily.trim().split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          pGiven = parts[0];
+          pFamily = parts.slice(1).join(' ');
+        } else if (parts.length === 1) {
+          pGiven = parts[0];
+          pFamily = parts[0];
+        }
+      }
+
       await pool.query(
         `UPDATE users SET
           first_name = COALESCE(NULLIF($1, ''), first_name),
           last_name = COALESCE(NULLIF($2, ''), last_name),
           "updatedAt" = NOW()
          WHERE id = $3`,
-        [appleGiven, appleFamily, userRow.id]
+        [pGiven, pFamily, userRow.id]
       );
       userRow = (
         await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [userRow.id])
