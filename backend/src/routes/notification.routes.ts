@@ -289,41 +289,34 @@ router.post('/register-device', authenticate, async (req, res, next) => {
       apnsEnv = apnsEnvironment;
     }
 
-    // Check if device token already exists
-    const existing = await pool.query(
-      'SELECT id, user_id FROM mobile_devices WHERE device_token = $1',
-      [deviceToken]
-    );
-
+    // Atomic upsert: avoids duplicate key when two register-device calls race (same physical token).
     try {
-      if (existing.rows.length > 0) {
-        await pool.query(
-          `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true,
-           apns_environment = $4, updated_at = NOW() WHERE device_token = $3`,
-          [userId, platform, deviceToken, apnsEnv]
-        );
-      } else {
-        await pool.query(
-          `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment) VALUES ($1, $2, $3, $4)`,
-          [userId, deviceToken, platform, apnsEnv]
-        );
-      }
+      await pool.query(
+        `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (device_token) DO UPDATE SET
+           user_id = EXCLUDED.user_id,
+           platform = EXCLUDED.platform,
+           apns_environment = EXCLUDED.apns_environment,
+           is_active = true,
+           updated_at = NOW()`,
+        [userId, deviceToken, platform, apnsEnv]
+      );
     } catch (err: any) {
       if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
         console.warn(
           '⚠️ mobile_devices.apns_environment missing — run backend/src/database/migrations/025_mobile_devices_apns_environment.sql'
         );
-        if (existing.rows.length > 0) {
-          await pool.query(
-            `UPDATE mobile_devices SET user_id = $1, platform = $2, is_active = true, updated_at = NOW() WHERE device_token = $3`,
-            [userId, platform, deviceToken]
-          );
-        } else {
-          await pool.query(
-            `INSERT INTO mobile_devices (user_id, device_token, platform) VALUES ($1, $2, $3)`,
-            [userId, deviceToken, platform]
-          );
-        }
+        await pool.query(
+          `INSERT INTO mobile_devices (user_id, device_token, platform)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (device_token) DO UPDATE SET
+             user_id = EXCLUDED.user_id,
+             platform = EXCLUDED.platform,
+             is_active = true,
+             updated_at = NOW()`,
+          [userId, deviceToken, platform]
+        );
       } else {
         throw err;
       }
