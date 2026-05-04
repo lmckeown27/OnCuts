@@ -62,5 +62,9 @@ router.get('/bookings/:bookingId/messages', authenticate, adminController.getBoo
 // User Management (admin only)
 router.get('/users', authenticate, adminController.getAllUsers);
 
+// UGC moderation (App Store Guideline 1.2)
+router.get('/moderation/reports', authenticate, adminController.listUgcReports);
+router.post('/moderation/reports/:reportId/resolve', authenticate, adminController.resolveUgcReport);
+
 export default router;
 

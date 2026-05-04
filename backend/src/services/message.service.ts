@@ -15,6 +15,10 @@ import { redisGet, redisSet, redisDel, generateCacheKey, CACHE_TTL } from '../co
 import pushNotificationService from './pushNotification.service';
 import notificationService from './notification.service';
 import { ApiError } from '../middleware/errorHandler';
+import {
+  assertNoMessagingBlockBetween,
+  validateOutgoingMessageText,
+} from './ugc-moderation.service';
 import { 
   sendConsumerNewMessageEmail, 
   sendBarberNewMessageFromConsumerEmail, 
@@ -115,6 +119,16 @@ class MessageService {
         LEFT JOIN barbers br ON u.id = br."userId"
         LEFT JOIN bookings b ON c.booking_id = b.id
         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $1
+            AND ub.blocked_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocked_user_id = $1
+            AND ub.blocker_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+        )
         ORDER BY c.last_message_at DESC NULLS LAST
         LIMIT $2 OFFSET $3`,
         [userId, limit, offset]
@@ -122,7 +136,18 @@ class MessageService {
 
       // Get total count (only active conversations)
       const countResult = await pool.query(
-        `SELECT COUNT(*) as total FROM conversations WHERE (user1_id = $1 OR user2_id = $1) AND is_active = true`,
+        `SELECT COUNT(*) as total FROM conversations c
+         WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true
+         AND NOT EXISTS (
+           SELECT 1 FROM user_blocks ub
+           WHERE ub.blocker_user_id = $1
+             AND ub.blocked_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM user_blocks ub
+           WHERE ub.blocked_user_id = $1
+             AND ub.blocker_user_id = CASE WHEN c.user1_id = $1 THEN c.user2_id ELSE c.user1_id END
+         )`,
         [userId]
       );
 
@@ -208,7 +233,7 @@ class MessageService {
     try {
       // Check if user is part of this conversation
       const convCheck = await pool.query(
-        `SELECT id FROM conversations 
+        `SELECT id, user1_id, user2_id FROM conversations 
          WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
         [conversationId, userId]
       );
@@ -216,6 +241,11 @@ class MessageService {
       if (convCheck.rows.length === 0) {
         throw new ApiError(404, 'Conversation not found or has been deleted');
       }
+
+      const convRow = convCheck.rows[0];
+      const otherUserId =
+        String(convRow.user1_id) === String(userId) ? String(convRow.user2_id) : String(convRow.user1_id);
+      await assertNoMessagingBlockBetween(String(userId), otherUserId);
 
       const offset = (page - 1) * limit;
 
@@ -327,6 +357,8 @@ class MessageService {
       if (String(otherUserId) === String(userId)) {
         throw new Error('Cannot start conversation with yourself');
       }
+
+      await assertNoMessagingBlockBetween(String(userId), String(otherUserId));
 
       const scheduledTime = bookingContext?.scheduledTime || null;
       const bookingId = bookingContext?.bookingId ?? null;
@@ -490,6 +522,14 @@ class MessageService {
 
       const conversation = convCheck.rows[0];
 
+      const recipientId =
+        String(conversation.user1_id) === String(senderId)
+          ? String(conversation.user2_id)
+          : String(conversation.user1_id);
+      await assertNoMessagingBlockBetween(String(senderId), recipientId);
+
+      validateOutgoingMessageText(String(content ?? ''));
+
       // Create message
       const result = await pool.query(
         `INSERT INTO messages (conversation_id, sender_id, content, message_type, media_url)
@@ -515,8 +555,6 @@ class MessageService {
       const sender = senderResult.rows[0];
 
       // Send push notification to recipient
-      const recipientId = conversation.user1_id === senderId ? conversation.user2_id : conversation.user1_id;
-
       try {
         await pushNotificationService.sendMessageNotification(
           recipientId,

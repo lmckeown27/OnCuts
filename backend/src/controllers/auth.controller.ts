@@ -1115,7 +1115,8 @@ async function maybeUpgradeRelayEmailForAppleUser(
 
 /**
  * Exchange an Apple `identityToken` for CampusCuts JWTs (same shape as POST /auth/login).
- * Creates a user row on first sign-in when the token (or body) supplies an email and `apple_sub` is new.
+ * Returning users are matched by `apple_sub` only (no email/name in the request body required).
+ * New accounts still need an email once (JWT and/or body on first authorization), per Apple’s one-time credential rules.
  */
 export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -1146,23 +1147,8 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
 
     const { sub } = claims;
     const fromTokenEmail = claims.email;
-
     const bodyEmail = pickAppleCredentialEmail(body);
-
-    const normalizedEmail = resolveAppleAccountEmail(fromTokenEmail, bodyEmail);
-    if (!normalizedEmail) {
-      throw new ApiError(
-        400,
-        'No email is available for this Apple sign-in. The native client must send `ASAuthorizationAppleIDCredential.email` in the JSON body on the first sign-in (Apple does not repeat it on later logins). Also accept: Share My Email on the Apple sheet, or pass `email` / `userEmail`. JWT `email` is used when present.'
-      );
-    }
-
     const { given: appleGiven, family: appleFamily } = readApplePersonNameFromBody(body);
-    const { firstName, lastName } = resolveNamesForUser(
-      normalizedEmail,
-      appleGiven,
-      appleFamily
-    );
 
     const rawCampusId = body?.campusId;
     let campusId: string | null = null;
@@ -1196,6 +1182,20 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
     ).rows[0];
 
     if (!userRow) {
+      const normalizedEmail = resolveAppleAccountEmail(fromTokenEmail, bodyEmail);
+      if (!normalizedEmail) {
+        throw new ApiError(
+          400,
+          'No email is available to create a new account for this Apple sign-in. On the first authorization only, forward the email and name Apple provides together with identityToken (persist email locally for later logins). Returning users are signed in using the Apple account identifier only—no email field is required.'
+        );
+      }
+
+      const { firstName, lastName } = resolveNamesForUser(
+        normalizedEmail,
+        appleGiven,
+        appleFamily
+      );
+
       const byEmail = await pool.query(
         `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE LOWER(TRIM(email)) = $1`,
         [normalizedEmail]
@@ -1217,14 +1217,13 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
         userRow = (await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [u.id]))
           .rows[0];
       }
-    }
 
-    if (!userRow) {
-      const randomPw = randomBytes(32).toString('hex');
-      const passwordHash = await bcrypt.hash(randomPw, 10);
-      try {
-        const ins = await pool.query(
-          `INSERT INTO users (
+      if (!userRow) {
+        const randomPw = randomBytes(32).toString('hex');
+        const passwordHash = await bcrypt.hash(randomPw, 10);
+        try {
+          const ins = await pool.query(
+            `INSERT INTO users (
             id, email, password_hash, first_name, last_name, "campusId", role,
             email_verified, apple_sub, auth_provider, has_platform_password, "termsAcceptedAt", "updatedAt"
           )
@@ -1233,45 +1232,46 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
             TRUE, $6, 'apple', FALSE, NULL, NOW()
           )
           RETURNING ${APPLE_USER_ROW_SELECT}`,
-          [normalizedEmail, passwordHash, firstName, lastName, campusId, sub]
-        );
-        userRow = ins.rows[0];
-        logger.info(`New user created via Sign in with Apple: ${normalizedEmail}`);
-        sendWelcomeEmail(userRow.email, userRow.first_name || firstName).catch((err) => {
-          logger.error('Failed to send welcome email (Apple signup):', err);
-        });
-      } catch (e: unknown) {
-        const pg = e as { code?: string };
-        if (pg.code === '23505') {
-          const bySub = await pool.query(
-            `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE apple_sub = $1`,
-            [sub]
+            [normalizedEmail, passwordHash, firstName, lastName, campusId, sub]
           );
-          if (bySub.rows[0]) {
-            userRow = bySub.rows[0];
-          } else {
-            const again = await pool.query(
-              `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE LOWER(TRIM(email)) = $1`,
-              [normalizedEmail]
+          userRow = ins.rows[0];
+          logger.info(`New user created via Sign in with Apple: ${normalizedEmail}`);
+          sendWelcomeEmail(userRow.email, userRow.first_name || firstName).catch((err) => {
+            logger.error('Failed to send welcome email (Apple signup):', err);
+          });
+        } catch (e: unknown) {
+          const pg = e as { code?: string };
+          if (pg.code === '23505') {
+            const bySub = await pool.query(
+              `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE apple_sub = $1`,
+              [sub]
             );
-            if (again.rows[0]) {
-              const u = again.rows[0];
-              if (!u.apple_sub) {
-                await pool.query(
-                  `UPDATE users SET apple_sub = $1, auth_provider = COALESCE(auth_provider, 'apple'), "updatedAt" = NOW() WHERE id = $2 AND apple_sub IS NULL`,
-                  [sub, u.id]
-                );
+            if (bySub.rows[0]) {
+              userRow = bySub.rows[0];
+            } else {
+              const again = await pool.query(
+                `SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE LOWER(TRIM(email)) = $1`,
+                [normalizedEmail]
+              );
+              if (again.rows[0]) {
+                const u = again.rows[0];
+                if (!u.apple_sub) {
+                  await pool.query(
+                    `UPDATE users SET apple_sub = $1, auth_provider = COALESCE(auth_provider, 'apple'), "updatedAt" = NOW() WHERE id = $2 AND apple_sub IS NULL`,
+                    [sub, u.id]
+                  );
+                }
+                userRow = (
+                  await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [u.id])
+                ).rows[0];
               }
-              userRow = (
-                await pool.query(`SELECT ${APPLE_USER_ROW_SELECT} FROM users WHERE id = $1`, [u.id])
-              ).rows[0];
             }
+            if (!userRow) {
+              throw new ApiError(409, 'An account with this email or Apple ID already exists');
+            }
+          } else {
+            throw e;
           }
-          if (!userRow) {
-            throw new ApiError(409, 'An account with this email or Apple ID already exists');
-          }
-        } else {
-          throw e;
         }
       }
     }

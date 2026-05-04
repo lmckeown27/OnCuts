@@ -6,6 +6,7 @@
 
 import { Request, Response } from 'express';
 import { logger } from '../utils/logger';
+import { ApiError } from '../middleware/errorHandler';
 import { bookingRequestService } from '../services/booking-request.service';
 import { bookingMessagingService } from '../services/booking-messaging.service';
 import { pool } from '../database/connection';
@@ -336,11 +337,18 @@ export async function sendMessage(req: Request, res: Response) {
       success: true,
       messageId: result.messageId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error sending message:', error);
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: error.message,
+        code: error.code,
+      });
+    }
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to send message',
+      error: error instanceof Error ? error.message : 'Failed to send message',
     });
   }
 }

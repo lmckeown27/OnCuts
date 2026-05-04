@@ -7,6 +7,10 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import {
+  assertNoMessagingBlockBetween,
+  validateOutgoingMessageText,
+} from './ugc-moderation.service';
 
 interface Message {
   messageId: string;
@@ -37,28 +41,9 @@ export class BookingMessagingService {
     try {
       await client.query('BEGIN');
 
-      // Insert message
-      const result = await client.query(`
-        INSERT INTO booking_messages (
-          booking_id,
-          sender_id,
-          sender_type,
-          message,
-          message_type
-        ) VALUES ($1, $2, $3, $4, $5)
-        RETURNING message_id
-      `, [
-        data.bookingId,
-        data.senderId,
-        data.senderType,
-        data.message,
-        data.messageType || 'text',
-      ]);
-
-      const messageId = result.rows[0].message_id;
-
-      // Get recipient
-      const recipientResult = await client.query(`
+      // Get recipient before insert (UGC / block rules)
+      const recipientResult = await client.query(
+        `
         SELECT 
           CASE 
             WHEN $2 = 'barber' THEN b.customer_id
@@ -67,13 +52,44 @@ export class BookingMessagingService {
         FROM bookings b
         LEFT JOIN barbers ba ON b.barber_id = ba.barber_id
         WHERE b.id = $1
-      `, [data.bookingId, data.senderType]);
+      `,
+        [data.bookingId, data.senderType]
+      );
 
-      if (recipientResult.rows.length > 0) {
-        const recipientId = recipientResult.rows[0].recipient_id;
+      const recipientId = recipientResult.rows[0]?.recipient_id;
+      if (recipientId) {
+        await assertNoMessagingBlockBetween(String(data.senderId), String(recipientId));
+      }
 
+      validateOutgoingMessageText(String(data.message ?? ''));
+
+      // Insert message
+      const result = await client.query(
+        `
+        INSERT INTO booking_messages (
+          booking_id,
+          sender_id,
+          sender_type,
+          message,
+          message_type
+        ) VALUES ($1, $2, $3, $4, $5)
+        RETURNING message_id
+      `,
+        [
+          data.bookingId,
+          data.senderId,
+          data.senderType,
+          data.message,
+          data.messageType || 'text',
+        ]
+      );
+
+      const messageId = result.rows[0].message_id;
+
+      if (recipientId) {
         // Create notification for recipient
-        await client.query(`
+        await client.query(
+          `
           INSERT INTO booking_request_notifications (
             user_id,
             booking_id,
@@ -81,7 +97,9 @@ export class BookingMessagingService {
             title,
             message
           ) VALUES ($1, $2, 'new_message', 'New Message', 'You have a new message about your booking')
-        `, [recipientId, data.bookingId]);
+        `,
+          [recipientId, data.bookingId]
+        );
       }
 
       await client.query('COMMIT');
@@ -118,8 +136,16 @@ export class BookingMessagingService {
         FROM booking_messages bm
         JOIN users u ON bm.sender_id = u.id
         WHERE bm.booking_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $2 AND ub.blocked_user_id = bm.sender_id
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = bm.sender_id AND ub.blocked_user_id = $2
+        )
         ORDER BY bm.created_at ASC
-      `, [bookingId]);
+      `, [bookingId, userId]);
 
       // Mark messages as read (where user is recipient)
       await pool.query(`
@@ -208,6 +234,16 @@ export class BookingMessagingService {
         LEFT JOIN users customer_u ON b.customer_id = customer_u.id
         WHERE ($2 = 'barber' AND ba.user_id = $1)
            OR ($2 = 'customer' AND b.customer_id = $1)
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocker_user_id = $1
+            AND ub.blocked_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE ub.blocked_user_id = $1
+            AND ub.blocker_user_id = (CASE WHEN $2 = 'barber' THEN b.customer_id ELSE ba.user_id END)
+        )
         ORDER BY b.id, last_message_at DESC NULLS LAST
       `, [userId, userType]);
 

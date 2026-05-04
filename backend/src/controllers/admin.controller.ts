@@ -2480,3 +2480,82 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
   }
 };
 
+/**
+ * GET /api/admin/moderation/reports
+ * List UGC reports (App Store safety workflow).
+ */
+export const listUgcReports = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'admin') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const status = typeof req.query.status === 'string' ? req.query.status : 'open';
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '100'), 10) || 100, 1), 500);
+    const result = await pool.query(
+      `SELECT r.*,
+              ru.email AS reporter_email,
+              du.email AS reported_email
+       FROM ugc_content_reports r
+       JOIN users ru ON ru.id = r.reporter_user_id
+       JOIN users du ON du.id = r.reported_user_id
+       WHERE r.status = $1
+       ORDER BY r.created_at ASC
+       LIMIT $2`,
+      [status, limit]
+    );
+    res.json({ success: true, data: { reports: result.rows } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/admin/moderation/reports/:reportId/resolve
+ * body: { action: 'dismiss' | 'remove_message' | 'ban_reported_user', notes?: string }
+ */
+export const resolveUgcReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (req.user!.role !== 'admin') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const { reportId } = req.params;
+    const { action, notes } = req.body as { action?: string; notes?: string };
+    const allowed = ['dismiss', 'remove_message', 'ban_reported_user'];
+    if (!action || !allowed.includes(action)) {
+      throw new ApiError(400, `action must be one of: ${allowed.join(', ')}`);
+    }
+    const rep = await pool.query(`SELECT * FROM ugc_content_reports WHERE id = $1::uuid`, [reportId]);
+    if (rep.rows.length === 0) {
+      throw new ApiError(404, 'Report not found');
+    }
+    const row = rep.rows[0];
+    if (row.status !== 'open') {
+      throw new ApiError(400, 'Report is already closed');
+    }
+
+    if (action === 'remove_message' && row.message_id) {
+      await pool.query(`UPDATE messages SET is_deleted = true WHERE id = $1`, [row.message_id]);
+    }
+    if (action === 'ban_reported_user') {
+      await pool.query(`UPDATE users SET "isBanned" = true, "updatedAt" = NOW() WHERE id = $1`, [
+        row.reported_user_id,
+      ]);
+    }
+
+    const newStatus = action === 'dismiss' ? 'dismissed' : 'resolved';
+    await pool.query(
+      `UPDATE ugc_content_reports
+       SET status = $1,
+           resolved_at = NOW(),
+           resolver_admin_id = $2::uuid,
+           resolution_notes = $3
+       WHERE id = $4::uuid`,
+      [newStatus, req.user!.userId, notes?.trim() || null, reportId]
+    );
+
+    res.json({ success: true, message: 'Report updated' });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -10,6 +10,13 @@ import { authenticate } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { uploadToIPFS } from '../services/ipfs.service';
 import { logger } from '../utils/logger';
+import {
+  createContentReport,
+  createUserBlock,
+  listBlockedUserIds,
+  notifyDeveloperOfBlock,
+  removeUserBlock,
+} from '../services/ugc-moderation.service';
 
 const router = express.Router();
 
@@ -349,6 +356,102 @@ router.get('/unread-count', authenticate, async (req, res, next) => {
       success: true,
       data: { count },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** User blocks another user (UGC safety); notifies developer and signals clients to refresh. */
+router.post('/blocks', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const blockedUserId = (req.body.blockedUserId ?? req.body.blocked_user_id) as string | undefined;
+    if (!blockedUserId?.trim()) {
+      return res.status(400).json({ success: false, error: 'blockedUserId is required' });
+    }
+    await createUserBlock(userId, blockedUserId.trim());
+    await notifyDeveloperOfBlock({ blockerUserId: userId, blockedUserId: blockedUserId.trim() });
+    const io = (req as any).app.get('io') as { to: (room: string) => { emit: (ev: string, data: unknown) => void } } | undefined;
+    if (io) {
+      io.to(`user-${blockedUserId.trim()}`).emit('ugc-block-updated', {
+        type: 'blocked_by_peer',
+        blockerUserId: userId,
+      });
+      io.to(`user-${userId}`).emit('ugc-block-updated', {
+        type: 'i_blocked_user',
+        blockedUserId: blockedUserId.trim(),
+      });
+    }
+    res.status(201).json({ success: true, message: 'User blocked' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/blocks/:blockedUserId', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const { blockedUserId } = req.params;
+    if (!blockedUserId) {
+      return res.status(400).json({ success: false, error: 'blockedUserId is required' });
+    }
+    await removeUserBlock(userId, blockedUserId);
+    res.json({ success: true, message: 'Block removed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/blocks', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const blockedUserIds = await listBlockedUserIds(userId);
+    res.json({ success: true, data: { blockedUserIds } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/** Report objectionable message / user in a conversation (developer alert email when configured). */
+router.post('/reports', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const {
+      reportedUserId,
+      reported_user_id,
+      conversationId,
+      conversation_id,
+      messageId,
+      message_id,
+      reason,
+      detail,
+    } = req.body as Record<string, unknown>;
+    const targetUser = (reportedUserId ?? reported_user_id) as string | undefined;
+    const convIdRaw = conversationId ?? conversation_id;
+    const msgIdRaw = messageId ?? message_id;
+    if (!targetUser?.trim() || !reason || typeof reason !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'reportedUserId and reason are required',
+      });
+    }
+    const convParsed =
+      convIdRaw === undefined || convIdRaw === null || convIdRaw === ''
+        ? null
+        : parseInt(String(convIdRaw), 10);
+    const msgParsed =
+      msgIdRaw === undefined || msgIdRaw === null || msgIdRaw === ''
+        ? null
+        : parseInt(String(msgIdRaw), 10);
+    const reportId = await createContentReport({
+      reporterUserId: userId,
+      reportedUserId: targetUser.trim(),
+      conversationId: convParsed != null && !Number.isNaN(convParsed) ? convParsed : null,
+      messageId: msgParsed != null && !Number.isNaN(msgParsed) ? msgParsed : null,
+      reason: String(reason),
+      detail: typeof detail === 'string' ? detail : null,
+    });
+    res.status(201).json({ success: true, data: { reportId } });
   } catch (error) {
     next(error);
   }
