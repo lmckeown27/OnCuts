@@ -283,6 +283,70 @@ router.put('/conversations/:conversationId/read', authenticate, async (req, res,
 });
 
 /**
+ * POST /api/messages/conversations/:conversationId/report
+ * Same as POST /messages/reports but conversation id comes from the URL (Intera / mobile clients).
+ * Body: { reason, detail?, messageId? | message_id?, reportedUserId? | reported_user_id? }
+ * If reported user id is omitted, the other participant in the thread is inferred.
+ */
+router.post('/conversations/:conversationId/report', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const conversationId = parseInt(req.params.conversationId, 10);
+    if (Number.isNaN(conversationId)) {
+      return res.status(400).json({ success: false, error: 'Invalid conversation id' });
+    }
+    const {
+      reportedUserId,
+      reported_user_id,
+      messageId,
+      message_id,
+      reason,
+      detail,
+    } = req.body as Record<string, unknown>;
+    let targetUser = (reportedUserId ?? reported_user_id) as string | undefined;
+
+    if (!targetUser?.trim()) {
+      const conv = await pool.query(
+        `SELECT user1_id, user2_id FROM conversations
+         WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
+        [conversationId, userId]
+      );
+      if (conv.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { message: 'Conversation not found or access denied' },
+        });
+      }
+      const row = conv.rows[0];
+      targetUser =
+        String(row.user1_id) === String(userId) ? String(row.user2_id) : String(row.user1_id);
+    }
+
+    if (!reason || typeof reason !== 'string') {
+      return res.status(400).json({ success: false, error: 'reason is required' });
+    }
+
+    const msgIdRaw = messageId ?? message_id;
+    const msgParsed =
+      msgIdRaw === undefined || msgIdRaw === null || msgIdRaw === ''
+        ? null
+        : parseInt(String(msgIdRaw), 10);
+
+    const reportId = await createContentReport({
+      reporterUserId: userId,
+      reportedUserId: targetUser!.trim(),
+      conversationId,
+      messageId: msgParsed != null && !Number.isNaN(msgParsed) ? msgParsed : null,
+      reason: String(reason),
+      detail: typeof detail === 'string' ? detail : null,
+    });
+    res.status(201).json({ success: true, data: { reportId } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * DELETE /api/messages/conversations/:conversationId
  * Delete a conversation
  */
