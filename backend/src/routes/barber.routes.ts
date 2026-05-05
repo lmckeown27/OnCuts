@@ -17,11 +17,12 @@ import {
   getBarberEarnings,
   getBarberAnalytics,
 } from '../controllers/barber.controller';
-import { authenticate, requireRole } from '../middleware/auth';
+import { authenticate, optionalAuthenticate, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validator';
 import { upload } from '../middleware/upload';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 const router: Router = express.Router();
 
@@ -32,6 +33,7 @@ const router: Router = express.Router();
  */
 router.get(
   '/',
+  optionalAuthenticate,
   [
     query('campusId').optional().isString(), // Accept UUID or slug
     query('minRating').optional().isFloat({ min: 0, max: 5 }),
@@ -63,6 +65,7 @@ router.get('/user/:userId', getBarberByUserId);
  */
 router.get(
   '/available-at-time',
+  optionalAuthenticate,
   async (req, res, next) => {
     try {
       const { campusId, date, time, serviceType, excludeBarberId } = req.query;
@@ -88,6 +91,26 @@ router.get(
       
       logger.info(`[available-at-time] Day: ${dayName}, Time: ${requestedTimeInMinutes} minutes`);
       
+      const listParams: unknown[] = [campusId];
+      let nextIdx = 2;
+      let excludeSql = '';
+      if (excludeBarberId) {
+        excludeSql = ` AND b.id != $${nextIdx}`;
+        listParams.push(excludeBarberId);
+        nextIdx++;
+      }
+      let peerBarberSql = '';
+      const viewerAvailList = (req as any).user?.userId as string | undefined;
+      if (viewerAvailList && (await isUgcModerationSchemaReady())) {
+        peerBarberSql = ` AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE (ub.blocker_user_id = $${nextIdx}::uuid AND ub.blocked_user_id = u.id)
+             OR (ub.blocker_user_id = u.id AND ub.blocked_user_id = $${nextIdx}::uuid)
+        )`;
+        listParams.push(viewerAvailList);
+        nextIdx++;
+      }
+
       // Get all active barbers at this campus
       const barbersResult = await pool.query(`
         SELECT 
@@ -103,8 +126,9 @@ router.get(
         WHERE b."campusId" = $1
           AND b."isActive" = true
           AND (u."isBanned" IS NOT TRUE)
-          ${excludeBarberId ? `AND b.id != $2` : ''}
-      `, excludeBarberId ? [campusId, excludeBarberId] : [campusId]);
+          ${excludeSql}
+          ${peerBarberSql}
+      `, listParams);
       
       logger.info(`[available-at-time] Found ${barbersResult.rows.length} barbers at campus`);
       
@@ -222,9 +246,9 @@ router.get(
 /**
  * @route   GET /api/barbers/:id
  * @desc    Get barber by ID
- * @access  Public
+ * @access  Public (optional auth hides peer-blocked profiles for signed-in users)
  */
-router.get('/:id', getBarberById); // Removed UUID validation for demo
+router.get('/:id', optionalAuthenticate, getBarberById); // Removed UUID validation for demo
 
 /**
  * @route   POST /api/barbers
@@ -336,6 +360,7 @@ router.put(
  */
 router.get(
   '/:id/availability',
+  optionalAuthenticate,
   [param('id').isUUID(), query('date').optional().isISO8601(), validate],
   getBarberAvailability
 );

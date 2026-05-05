@@ -23,7 +23,7 @@ import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
 import { executeParticipantBookingCancellation } from '../services/booking-cancellation.service';
-import { assertNoBookingBlockBetween } from '../services/ugc-moderation.service';
+import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 const router = express.Router();
 
@@ -747,6 +747,18 @@ router.get('/:id', authenticate, async (req, res, next) => {
     const { id } = req.params;
     const userId = (req as any).user.userId;
 
+    let peerBlockBookingClause = '';
+    if (await isUgcModerationSchemaReady()) {
+      peerBlockBookingClause = ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $2::uuid AND ub.blocked_user_id =
+            CASE WHEN b."consumerId" = $2::uuid THEN barber_user.id ELSE b."consumerId" END)
+           OR (ub.blocker_user_id =
+            CASE WHEN b."consumerId" = $2::uuid THEN barber_user.id ELSE b."consumerId" END
+             AND ub.blocked_user_id = $2::uuid)
+      )`;
+    }
+
     const result = await pool.query(
       `SELECT 
         b.id,
@@ -782,7 +794,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       LEFT JOIN barbers barber_record ON b."barberId" = barber_record.id
       LEFT JOIN users barber_user ON barber_record."userId" = barber_user.id
       LEFT JOIN users consumer ON b."consumerId" = consumer.id
-      WHERE b.id = $1 AND (b."consumerId" = $2 OR barber_user.id = $2)`,
+      WHERE b.id = $1 AND (b."consumerId" = $2 OR barber_user.id = $2)${peerBlockBookingClause}`,
       [id, userId]
     );
 
@@ -1343,6 +1355,19 @@ router.get('/', authenticate, async (req, res, next) => {
     if (endDate) {
       whereClause += ` AND b."requestedAt" <= $${paramIndex}`;
       params.push(new Date(endDate as string));
+      paramIndex++;
+    }
+
+    if (await isUgcModerationSchemaReady()) {
+      whereClause += ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $${paramIndex}::uuid AND ub.blocked_user_id =
+            CASE WHEN b."consumerId" = $${paramIndex}::uuid THEN barber_user.id ELSE b."consumerId" END)
+           OR (ub.blocker_user_id =
+            CASE WHEN b."consumerId" = $${paramIndex}::uuid THEN barber_user.id ELSE b."consumerId" END
+             AND ub.blocked_user_id = $${paramIndex}::uuid)
+      )`;
+      params.push(userId);
       paramIndex++;
     }
 

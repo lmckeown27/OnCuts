@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
+import { assertNoMessagingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -141,6 +142,17 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     if (specialty) {
       query += ` AND $${paramIndex} = ANY(b.specialties)`;
       params.push(String(specialty));
+      paramIndex++;
+    }
+
+    const viewerUserId = req.user?.userId;
+    if (viewerUserId && !shouldIncludeHidden && (await isUgcModerationSchemaReady())) {
+      query += ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $${paramIndex}::uuid AND ub.blocked_user_id = u.id)
+           OR (ub.blocker_user_id = u.id AND ub.blocked_user_id = $${paramIndex}::uuid)
+      )`;
+      params.push(viewerUserId);
       paramIndex++;
     }
 
@@ -597,6 +609,11 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(404, 'Barber not found');
     }
     delete barber.user_is_banned;
+
+    const viewerId = req.user?.userId;
+    if (viewerId) {
+      await assertNoMessagingBlockBetween(String(viewerId), String(barber.user_id));
+    }
 
     // Get services/pricing
     const servicesResult = await pool.query(
@@ -1147,7 +1164,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     const barberResult = await pool.query(
       `SELECT b."weeklySchedule" as weekly_schedule, 
               COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone,
-              u."isBanned" as user_is_banned
+              u."isBanned" as user_is_banned,
+              u.id as barber_user_id
        FROM barbers b
        LEFT JOIN users u ON b."userId" = u.id
        LEFT JOIN campuses c ON u."campusId" = c.id
@@ -1161,6 +1179,11 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
 
     if (barberResult.rows[0].user_is_banned === true) {
       throw new ApiError(404, 'Barber not found');
+    }
+
+    const viewerAvail = req.user?.userId;
+    if (viewerAvail && barberResult.rows[0].barber_user_id) {
+      await assertNoMessagingBlockBetween(String(viewerAvail), String(barberResult.rows[0].barber_user_id));
     }
 
     const weeklySchedule: WeeklySchedule = barberResult.rows[0].weekly_schedule || {};

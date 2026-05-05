@@ -483,6 +483,11 @@ class MessageService {
         throw new ApiError(404, 'Conversation not found or has been deleted');
       }
 
+      const row0 = result.rows[0];
+      const otherUserId =
+        String(row0.user1_id) === String(userId) ? String(row0.user2_id) : String(row0.user1_id);
+      await assertNoMessagingBlockBetween(String(userId), otherUserId);
+
       return {
         success: true,
         data: {
@@ -796,13 +801,17 @@ class MessageService {
   async markConversationAsRead(conversationId: string | number, userId: string | number): Promise<any> {
     try {
       const convCheck = await pool.query(
-        `SELECT id FROM conversations WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
+        `SELECT id, user1_id, user2_id FROM conversations WHERE id = $1 AND (user1_id = $2 OR user2_id = $2)`,
         [conversationId, userId]
       );
 
       if (convCheck.rows.length === 0) {
         throw new ApiError(404, 'Conversation not found or has been deleted');
       }
+
+      const cr = convCheck.rows[0];
+      const otherRead = String(cr.user1_id) === String(userId) ? String(cr.user2_id) : String(cr.user1_id);
+      await assertNoMessagingBlockBetween(String(userId), otherRead);
 
       const result = await pool.query(
         `UPDATE messages 
@@ -913,13 +922,22 @@ class MessageService {
    */
   async getUnreadMessageCount(userId: string | number): Promise<number> {
     try {
+      const useBlocks = await isUgcModerationSchemaReady();
+      const peerBlockUnread = useBlocks
+        ? ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $1::uuid AND ub.blocked_user_id = CASE WHEN c.user1_id = $1::uuid THEN c.user2_id ELSE c.user1_id END)
+           OR (ub.blocked_user_id = $1::uuid AND ub.blocker_user_id = CASE WHEN c.user1_id = $1::uuid THEN c.user2_id ELSE c.user1_id END)
+      )`
+        : '';
       const result = await pool.query(
         `SELECT COUNT(*) as unread_count
          FROM messages m
          JOIN conversations c ON m.conversation_id = c.id
          WHERE (c.user1_id = $1 OR c.user2_id = $1)
          AND m.sender_id != $1
-         AND m.is_read = false`,
+         AND m.is_read = false
+         ${peerBlockUnread}`,
         [userId]
       );
 
@@ -935,13 +953,21 @@ class MessageService {
    */
   async getMessageStats(userId: string | number): Promise<any> {
     try {
+      const useBlocks = await isUgcModerationSchemaReady();
+      const peerBlockConv = useBlocks
+        ? ` AND NOT EXISTS (
+          SELECT 1 FROM user_blocks ub
+          WHERE (ub.blocker_user_id = $1::uuid AND ub.blocked_user_id = CASE WHEN c.user1_id = $1::uuid THEN c.user2_id ELSE c.user1_id END)
+             OR (ub.blocked_user_id = $1::uuid AND ub.blocker_user_id = CASE WHEN c.user1_id = $1::uuid THEN c.user2_id ELSE c.user1_id END)
+        )`
+        : '';
       const stats = await pool.query(
-        `SELECT 
-          (SELECT COUNT(*) FROM conversations WHERE user1_id = $1 OR user2_id = $1) as total_conversations,
+        `SELECT
+          (SELECT COUNT(*) FROM conversations c WHERE (c.user1_id = $1 OR c.user2_id = $1) AND c.is_active = true${peerBlockConv}) as total_conversations,
           (SELECT COUNT(*) FROM messages WHERE sender_id = $1 AND is_deleted = false) as total_messages_sent,
           (SELECT COUNT(*) FROM messages m 
            JOIN conversations c ON m.conversation_id = c.id 
-           WHERE (c.user1_id = $1 OR c.user2_id = $1) AND m.sender_id != $1 AND m.is_read = false) as total_unread`,
+           WHERE (c.user1_id = $1 OR c.user2_id = $1) AND m.sender_id != $1 AND m.is_read = false${peerBlockConv}) as total_unread`,
         [userId]
       );
 

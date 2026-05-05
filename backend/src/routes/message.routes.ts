@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import {
   createContentReport,
   createUserBlock,
+  isUgcModerationSchemaReady,
   listBlockedUserIds,
   notifyDeveloperOfBlock,
   removeUserBlock,
@@ -702,6 +703,14 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
     }
 
+    const peerBarberHideCm = (await isUgcModerationSchemaReady())
+      ? ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $1::uuid AND ub.blocked_user_id = u.id)
+           OR (ub.blocker_user_id = u.id AND ub.blocked_user_id = $1::uuid)
+      )`
+      : '';
+
     // Get all active barbers in this campus (excluding self and demoted users)
     // Only show users who are still BARBER role AND have isActive = true
     const barbersResult = await pool.query(
@@ -728,6 +737,7 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          AND b."userId" != $1
          AND u.role = 'BARBER'
          AND (u."isBanned" IS NOT TRUE)
+         ${peerBarberHideCm}
        ORDER BY COALESCE(c.last_message_at, b."createdAt") DESC`,
       [userId, campusId]
     );
@@ -801,6 +811,14 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
     }
 
+    const peerBarberHideB2b = (await isUgcModerationSchemaReady())
+      ? ` AND NOT EXISTS (
+        SELECT 1 FROM user_blocks ub
+        WHERE (ub.blocker_user_id = $1::uuid AND ub.blocked_user_id = u.id)
+           OR (ub.blocker_user_id = u.id AND ub.blocked_user_id = $1::uuid)
+      )`
+      : '';
+
     // Get all active barbers on the same campus (excluding self)
     const barbersResult = await pool.query(
       `SELECT 
@@ -827,6 +845,7 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          AND u.stripe_account_id IS NOT NULL
          AND u.stripe_payouts_enabled = true
          AND (u."isBanned" IS NOT TRUE)
+         ${peerBarberHideB2b}
        ORDER BY 
          b."isCampusManager" DESC,
          COALESCE(c.last_message_at, b."createdAt") DESC`,
