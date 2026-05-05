@@ -67,6 +67,7 @@ async function fetchAlternativeBarbers(
         AND b.id != $2
         AND b."isActive" = true
         AND b."isOnboarded" = true
+        AND (u."isBanned" IS NOT TRUE)
         AND EXISTS (
           SELECT 1
           FROM jsonb_array_elements(b.pricing) AS service_item

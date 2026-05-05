@@ -22,6 +22,7 @@ import withdrawalBatchService from '../services/withdrawal-batch.service';
 import auditService from '../services/audit.service';
 import transactionService from '../services/transaction.service';
 import { logger } from '../utils/logger';
+import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
 
 /**
  * Withdraw platform fees
@@ -2734,6 +2735,14 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
       await pool.query(`UPDATE users SET "isBanned" = true, "updatedAt" = NOW() WHERE id = $1`, [
         row.reported_user_id,
       ]);
+      try {
+        await applyAffiliationCleanupForBannedUser(row.reported_user_id);
+      } catch (cleanupErr: unknown) {
+        logger.error('ban_affiliation_cleanup_failed', {
+          bannedUserId: row.reported_user_id,
+          err: cleanupErr instanceof Error ? cleanupErr.message : cleanupErr,
+        });
+      }
     }
 
     const newStatus = action === 'dismiss' ? 'dismissed' : 'resolved';

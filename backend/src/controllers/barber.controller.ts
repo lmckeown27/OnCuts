@@ -96,7 +96,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       JOIN users u ON b."userId" = u.id
       LEFT JOIN campuses bcampus ON bcampus.id = b."campusId"
       LEFT JOIN campuses ucampus ON ucampus.id = u."campusId"
-      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true'}
+      WHERE u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN') ${shouldIncludeHidden ? '' : 'AND b."isActive" = true AND u.stripe_account_id IS NOT NULL AND u.stripe_payouts_enabled = true AND (u."isBanned" IS NOT TRUE)'}
     `;
 
     // Handle campusId - can be UUID or slug
@@ -411,6 +411,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         u."instagramHandle" as instagram_handle,
         u."campusId" as campus_id,
         u.role as user_type,
+        u."isBanned" as user_is_banned,
         c.timezone as campus_timezone
       FROM barbers b
       JOIN users u ON b."userId" = u.id
@@ -425,7 +426,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       const userResult = await pool.query(
         `SELECT id, first_name, last_name, email, "displayName" as display_name, 
                 "avatarUrl" as profile_picture_url, "instagramHandle" as instagram_handle, 
-                "campusId" as campus_id, role as user_type
+                "campusId" as campus_id, role as user_type, "isBanned" as user_is_banned
          FROM users WHERE id = $1`,
         [userId]
       );
@@ -438,6 +439,12 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       }
 
       const user = userResult.rows[0];
+      if (user.user_is_banned === true) {
+        return res.status(404).json({
+          success: false,
+          message: 'User is not a barber',
+        });
+      }
 
       // Only auto-create if user is a barber or campus_manager
       // Role values are uppercase in the database
@@ -527,6 +534,13 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
     }
 
     const barber = barberResult.rows[0];
+    if (barber.user_is_banned === true) {
+      return res.status(404).json({
+        success: false,
+        message: 'User is not a barber',
+      });
+    }
+    delete barber.user_is_banned;
 
     res.json({
       success: true,
@@ -566,7 +580,8 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         u.last_name,
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
-        u."campusId" as campus_id
+        u."campusId" as campus_id,
+        u."isBanned" as user_is_banned
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b.id = $1`,
@@ -578,6 +593,10 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
     }
 
     const barber = barberResult.rows[0];
+    if (barber.user_is_banned === true) {
+      throw new ApiError(404, 'Barber not found');
+    }
+    delete barber.user_is_banned;
 
     // Get services/pricing
     const servicesResult = await pool.query(
@@ -1127,7 +1146,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     // Get barber's weekly schedule and campus timezone
     const barberResult = await pool.query(
       `SELECT b."weeklySchedule" as weekly_schedule, 
-              COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone
+              COALESCE(c.timezone, 'America/Los_Angeles') as campus_timezone,
+              u."isBanned" as user_is_banned
        FROM barbers b
        LEFT JOIN users u ON b."userId" = u.id
        LEFT JOIN campuses c ON u."campusId" = c.id
@@ -1136,6 +1156,10 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     );
 
     if (barberResult.rows.length === 0) {
+      throw new ApiError(404, 'Barber not found');
+    }
+
+    if (barberResult.rows[0].user_is_banned === true) {
       throw new ApiError(404, 'Barber not found');
     }
 

@@ -721,6 +721,7 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          AND b."isCampusManager" = false
          AND b."userId" != $1
          AND u.role = 'BARBER'
+         AND (u."isBanned" IS NOT TRUE)
        ORDER BY COALESCE(c.last_message_at, b."createdAt") DESC`,
       [userId, campusId]
     );
@@ -819,6 +820,7 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
          AND u.stripe_account_id IS NOT NULL
          AND u.stripe_payouts_enabled = true
+         AND (u."isBanned" IS NOT TRUE)
        ORDER BY 
          b."isCampusManager" DESC,
          COALESCE(c.last_message_at, b."createdAt") DESC`,

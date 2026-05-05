@@ -119,6 +119,24 @@ router.post('/', authenticate, async (req, res, next) => {
     
     const barberRecordId = barberResult.rows[0].id;
 
+    const banCheck = await pool.query(
+      `SELECT
+         COALESCE(uc."isBanned", false) AS consumer_banned,
+         COALESCE(ub."isBanned", false) AS barber_banned
+       FROM users uc
+       CROSS JOIN barbers b
+       JOIN users ub ON b."userId" = ub.id
+       WHERE uc.id = $1::uuid AND b.id = $2::uuid`,
+      [consumerId, barberRecordId]
+    );
+    const bc = banCheck.rows[0];
+    if (bc?.consumer_banned || bc?.barber_banned) {
+      return res.status(403).json({
+        success: false,
+        error: 'This booking cannot be created.',
+      });
+    }
+
     // Check for time slot conflicts - barber can only have one booking at a time
     if (scheduledTime) {
       // Parse the scheduled time to check for conflicts
@@ -645,7 +663,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       `SELECT b.id, u.first_name, u.last_name
        FROM barbers b
        JOIN users u ON b."userId" = u.id
-       WHERE u."campusId" = $1 AND b."isActive" = true
+       WHERE u."campusId" = $1 AND b."isActive" = true AND (u."isBanned" IS NOT TRUE)
        ORDER BY u.first_name, u.last_name`,
       [campusId]
     );
