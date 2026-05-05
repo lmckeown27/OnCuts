@@ -134,6 +134,10 @@ interface UgcContentReport {
   reported_last_name: string;
   message_preview?: string | null;
   message_is_deleted?: boolean;
+  /** Stored report.message_id or latest non-deleted message from reported user in thread */
+  moderation_target_message_id?: number | null;
+  /** Preview/target message was inferred (client did not send messageId) */
+  message_context_is_inferred?: boolean;
 }
 
 interface Barber {
@@ -2988,14 +2992,22 @@ export function AdminDashboard({
                         <p className="mt-1 text-xs text-gray-600 whitespace-pre-wrap">{r.detail}</p>
                       ) : null}
                     </div>
-                    {(r.conversation_id != null || r.message_id != null) && (
+                    {(r.conversation_id != null ||
+                      r.message_id != null ||
+                      r.moderation_target_message_id != null) && (
                       <p className="mt-2 font-mono text-[11px] text-gray-400">
-                        conversation #{r.conversation_id ?? '—'} · message #{r.message_id ?? '—'}
+                        conversation #{r.conversation_id ?? '—'} · message #
+                        {r.moderation_target_message_id ?? r.message_id ?? '—'}
+                        {r.message_context_is_inferred ? (
+                          <span className="ml-1 font-sans text-amber-700">
+                            (latest from reported user — app did not attach a specific message id)
+                          </span>
+                        ) : null}
                       </p>
                     )}
-                    {r.message_preview ? (
+                    {r.message_preview?.trim() ? (
                       <div className="mt-3 rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
-                        <p className="mb-1 font-medium text-gray-500">Message preview</p>
+                        <p className="mb-1 font-medium text-gray-500">Reported message</p>
                         <p className="whitespace-pre-wrap break-words">{r.message_preview}</p>
                         {r.message_is_deleted ? (
                           <p className="mt-2 text-[11px] text-amber-700">Message is already marked deleted.</p>
@@ -3022,9 +3034,13 @@ export function AdminDashboard({
                           type="button"
                           variant="secondary"
                           size="sm"
-                          disabled={busy || !r.message_id}
+                          disabled={busy || !(r.moderation_target_message_id ?? r.message_id)}
                           onClick={() => handleUgcResolve(r, 'remove_message')}
-                          title={!r.message_id ? 'No message linked to this report' : undefined}
+                          title={
+                            !(r.moderation_target_message_id ?? r.message_id)
+                              ? 'No message from the reported user found in this conversation'
+                              : undefined
+                          }
                         >
                           Remove message
                         </Button>

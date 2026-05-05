@@ -187,6 +187,7 @@ export async function createContentReport(params: {
   }
 
   let conversationIdForInsert: number | null = conversationId;
+  let messageIdForInsert: number | null = messageId;
 
   if (messageId != null) {
     const msg = await pool.query(
@@ -225,6 +226,17 @@ export async function createContentReport(params: {
     if (String(reportedUserId) !== otherUserId) {
       throw new ApiError(400, 'Reported user must be the other participant in this conversation');
     }
+    // Client often omits messageId; link the reported party's latest message so admins can review/removal-target it.
+    const latestFromReported = await pool.query(
+      `SELECT id FROM messages
+       WHERE conversation_id = $1 AND sender_id = $2::uuid AND is_deleted = false
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [conversationId, reportedUserId]
+    );
+    if (latestFromReported.rows.length > 0) {
+      messageIdForInsert = latestFromReported.rows[0].id as number;
+    }
   }
 
   const ins = await pool.query(
@@ -236,7 +248,7 @@ export async function createContentReport(params: {
       reporterUserId,
       reportedUserId,
       conversationIdForInsert,
-      messageId,
+      messageIdForInsert,
       reasonTrim,
       detail?.trim() || null,
     ]
@@ -249,7 +261,7 @@ export async function createContentReport(params: {
     `Reporter: ${reporterUserId}`,
     `Reported user: ${reportedUserId}`,
     `Conversation: ${conversationIdForInsert ?? 'n/a'}`,
-    `Message: ${messageId ?? 'n/a'}`,
+    `Message: ${messageIdForInsert ?? 'n/a'}`,
     `Reason: ${reasonTrim}`,
     detail?.trim() ? `Detail: ${detail.trim()}` : '',
     '',
@@ -263,7 +275,7 @@ export async function createContentReport(params: {
     reporterUserId,
     reportedUserId,
     conversationId: conversationIdForInsert,
-    messageId,
+    messageId: messageIdForInsert,
     reason: reasonTrim,
   });
 

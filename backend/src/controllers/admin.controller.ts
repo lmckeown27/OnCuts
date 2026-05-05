@@ -2501,12 +2501,29 @@ export const listUgcReports = async (req: AuthRequest, res: Response, next: Next
               du.email AS reported_email,
               du.first_name AS reported_first_name,
               du.last_name AS reported_last_name,
-              LEFT(COALESCE(m.content, ''), 500) AS message_preview,
-              COALESCE(m.is_deleted, false) AS message_is_deleted
+              LEFT(COALESCE(m.content, lm.content, ''), 500) AS message_preview,
+              CASE
+                WHEN m.id IS NOT NULL THEN COALESCE(m.is_deleted, false)
+                WHEN lm.id IS NOT NULL THEN COALESCE(lm.is_deleted, false)
+                ELSE false
+              END AS message_is_deleted,
+              (r.message_id IS NULL AND lm.id IS NOT NULL) AS message_context_is_inferred,
+              COALESCE(r.message_id, lm.id) AS moderation_target_message_id
        FROM ugc_content_reports r
        JOIN users ru ON ru.id = r.reporter_user_id
        JOIN users du ON du.id = r.reported_user_id
-       LEFT JOIN messages m ON m.id = r.message_id`;
+       LEFT JOIN messages m ON m.id = r.message_id
+       LEFT JOIN LATERAL (
+         SELECT msg.id, msg.content, msg.is_deleted
+         FROM messages msg
+         WHERE r.message_id IS NULL
+           AND r.conversation_id IS NOT NULL
+           AND msg.conversation_id = r.conversation_id
+           AND msg.sender_id = r.reported_user_id
+           AND msg.is_deleted = false
+         ORDER BY msg.created_at DESC
+         LIMIT 1
+       ) lm ON TRUE`;
     const params: unknown[] = [];
     if (statusFilter !== 'all') {
       sql += ` WHERE r.status = $1`;
@@ -2552,8 +2569,33 @@ export const resolveUgcReport = async (req: AuthRequest, res: Response, next: Ne
     const banUser =
       action === 'ban_reported_user' || action === 'remove_message_and_ban';
 
-    if (removeMsg && row.message_id) {
-      await pool.query(`UPDATE messages SET is_deleted = true WHERE id = $1`, [row.message_id]);
+    if (removeMsg) {
+      let targetMessageId: number | null = row.message_id != null ? parseInt(String(row.message_id), 10) : null;
+      if (
+        targetMessageId == null &&
+        row.conversation_id != null &&
+        row.reported_user_id != null
+      ) {
+        const pick = await pool.query(
+          `SELECT id FROM messages
+           WHERE conversation_id = $1 AND sender_id = $2::uuid AND is_deleted = false
+           ORDER BY created_at DESC
+           LIMIT 1`,
+          [row.conversation_id, row.reported_user_id]
+        );
+        if (pick.rows.length > 0) {
+          targetMessageId = parseInt(String(pick.rows[0].id), 10);
+        }
+      }
+      if (targetMessageId != null) {
+        await pool.query(`UPDATE messages SET is_deleted = true WHERE id = $1`, [targetMessageId]);
+        if (row.message_id == null) {
+          await pool.query(`UPDATE ugc_content_reports SET message_id = $1 WHERE id = $2::uuid`, [
+            targetMessageId,
+            reportId,
+          ]);
+        }
+      }
     }
     if (banUser) {
       await pool.query(`UPDATE users SET "isBanned" = true, "updatedAt" = NOW() WHERE id = $1`, [
