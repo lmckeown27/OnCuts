@@ -26,6 +26,7 @@ router.get('/withdrawals/batches', authenticate, adminController.getWithdrawalBa
 router.post('/withdrawals/process-batch', authenticate, adminController.processBatch);
 
 // User Management
+router.post('/users/:userId/unban', authenticate, adminController.unbanUser);
 router.get('/users/:userId/balance', authenticate, adminController.getUserBalance);
 router.get('/users/:userId/bookings', authenticate, adminController.getUserBookings);
 router.post('/users/:userId/credit', authenticate, adminController.issueCredit);

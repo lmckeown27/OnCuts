@@ -1874,6 +1874,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
+        u."isBanned" as is_banned,
         COALESCE(stats.completed_bookings, 0) as completed_bookings,
         COALESCE(stats.total_volume_cents, 0) as total_volume_cents
       FROM users u
@@ -1905,6 +1906,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
+        isBanned: row.is_banned === true,
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
@@ -2435,6 +2437,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.role,
         u.stripe_account_id,
         u.stripe_payouts_enabled,
+        u."isBanned" as is_banned,
         u."createdAt" as created_at,
         COALESCE(stats.completed_bookings, 0) as completed_bookings,
         COALESCE(stats.total_volume_cents, 0) as total_volume_cents
@@ -2469,12 +2472,43 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         campusName: row.campus_name,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         hasStripeAccountOnly: !!row.stripe_account_id && row.stripe_payouts_enabled !== true,
+        isBanned: row.is_banned === true,
         createdAt: row.created_at,
         completedBookings: parseInt(row.completed_bookings) || 0,
         totalVolumeCents: parseInt(row.total_volume_cents) || 0,
       })),
       total: result.rows.length,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/admin/users/:userId/unban
+ * Clears platform ban (login / app access) set via moderation or otherwise.
+ */
+export const unbanUser = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const { userId } = req.params;
+    const check = await pool.query(
+      `SELECT id, "isBanned" FROM users WHERE id = $1::uuid`,
+      [userId]
+    );
+    if (check.rows.length === 0) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (check.rows[0].isBanned !== true) {
+      res.json({ success: true, data: { ok: true, wasBanned: false }, message: 'User was not banned' });
+      return;
+    }
+    await pool.query(`UPDATE users SET "isBanned" = false, "updatedAt" = NOW() WHERE id = $1::uuid`, [userId]);
+    logger.info('admin_unban_user', { userId, adminId: req.user!.userId });
+    res.json({ success: true, data: { ok: true, wasBanned: true }, message: 'User unbanned' });
   } catch (error) {
     next(error);
   }

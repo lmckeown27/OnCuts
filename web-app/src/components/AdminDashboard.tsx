@@ -156,6 +156,8 @@ interface Barber {
   createdAt?: string;
   completedBookings?: number;
   totalVolumeCents?: number;
+  /** Platform ban (e.g. UGC moderation); blocks sign-in */
+  isBanned?: boolean;
 }
 
 interface BarberBooking {
@@ -310,6 +312,7 @@ export function AdminDashboard({
   const [isLoadingUgcReports, setIsLoadingUgcReports] = useState(false);
   const [ugcReportsError, setUgcReportsError] = useState<string | null>(null);
   const [ugcResolveLoadingId, setUgcResolveLoadingId] = useState<string | null>(null);
+  const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -701,6 +704,39 @@ export function AdminDashboard({
       toast.error(msg);
     } finally {
       setUgcResolveLoadingId(null);
+    }
+  };
+
+  const handleUnbanBarber = async (barber: Barber) => {
+    if (
+      !window.confirm(
+        `Remove platform ban for ${barber.firstName} ${barber.lastName}? They will be able to sign in again.`
+      )
+    ) {
+      return;
+    }
+    setUnbanningUserId(barber.id);
+    try {
+      await api.post(`/admin/users/${barber.id}/unban`, {});
+      toast.success('User unbanned');
+      const url = selectedCampusId
+        ? `/admin/campuses/${selectedCampusId}/barbers`
+        : '/admin/barbers';
+      const response = await api.get<{ barbers: Barber[] } | Barber[]>(url);
+      const barberList = Array.isArray(response) ? response : response.barbers || [];
+      setBarbers(barberList);
+      setSelectedBarber((prev) => {
+        if (!prev || prev.id !== barber.id) return prev;
+        return barberList.find((b) => b.id === prev.id) ?? { ...prev, isBanned: false };
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to unban user';
+      toast.error(msg);
+    } finally {
+      setUnbanningUserId(null);
     }
   };
   
@@ -1554,7 +1590,7 @@ export function AdminDashboard({
               Back to barbers
             </button>
             
-            <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {selectedBarber.profileImageUrl ? (
                   <img src={selectedBarber.profileImageUrl} alt="" className="w-full h-full object-cover" />
@@ -1562,12 +1598,32 @@ export function AdminDashboard({
                   <span className="text-sm font-bold text-gray-500">{selectedBarber.firstName.charAt(0)}{selectedBarber.lastName.charAt(0)}</span>
                 )}
               </div>
-              <div>
-                <p className="font-semibold text-gray-900">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-gray-900 flex flex-wrap items-center gap-2">
                   {selectedBarber.firstName} {selectedBarber.lastName}
+                  {selectedBarber.isBanned ? (
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-red-800 bg-red-100 px-2 py-0.5 rounded-full">
+                      Banned
+                    </span>
+                  ) : null}
                 </p>
                 <p className="text-xs text-gray-500">{selectedBarber.email}</p>
               </div>
+              {selectedBarber.isBanned ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={unbanningUserId === selectedBarber.id}
+                  onClick={() => handleUnbanBarber(selectedBarber)}
+                >
+                  {unbanningUserId === selectedBarber.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Unban'
+                  )}
+                </Button>
+              ) : null}
             </div>
             
             {/* Bookings list */}
@@ -1839,6 +1895,9 @@ export function AdminDashboard({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
+                              {barber.isBanned ? (
+                                <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                              ) : null}
                               <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
                               {barber.hasStripeSetup && (
                                 <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
@@ -1890,6 +1949,9 @@ export function AdminDashboard({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
+                              {barber.isBanned ? (
+                                <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                              ) : null}
                               {barber.hasStripeSetup && (
                                 <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                               )}
@@ -1934,6 +1996,9 @@ export function AdminDashboard({
                           <div className="min-w-0">
                             <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
                               {barber.firstName} {barber.lastName}
+                              {barber.isBanned ? (
+                                <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                              ) : null}
                               {barber.hasStripeSetup && (
                                 <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                               )}
@@ -2321,6 +2386,9 @@ export function AdminDashboard({
                             <div className="min-w-0">
                               <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                                 {barber.firstName} {barber.lastName}
+                                {barber.isBanned ? (
+                                  <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                                ) : null}
                                 {barber.hasStripeSetup && (
                                   <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
                                 )}
@@ -2365,6 +2433,9 @@ export function AdminDashboard({
                             <div className="min-w-0">
                               <p className="font-medium text-gray-600 text-sm flex items-center gap-1.5 truncate">
                                 {barber.firstName} {barber.lastName}
+                                {barber.isBanned ? (
+                                  <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                                ) : null}
                               </p>
                               <p className="text-xs text-gray-400 truncate">{barber.email}</p>
                             </div>
@@ -2406,6 +2477,9 @@ export function AdminDashboard({
                             <div className="min-w-0">
                               <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
                                 {barber.firstName} {barber.lastName}
+                                {barber.isBanned ? (
+                                  <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
+                                ) : null}
                                 <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
                               </p>
                               <p className="text-xs text-gray-500 truncate">{barber.email}</p>
