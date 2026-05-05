@@ -323,6 +323,9 @@ export function AdminDashboard({
   const [ugcReportsError, setUgcReportsError] = useState<string | null>(null);
   const [ugcResolveLoadingId, setUgcResolveLoadingId] = useState<string | null>(null);
   const [unbanningUserId, setUnbanningUserId] = useState<string | null>(null);
+  const [bannedUsers, setBannedUsers] = useState<BannedPlatformUser[]>([]);
+  const [isLoadingBannedUsers, setIsLoadingBannedUsers] = useState(false);
+  const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
