@@ -425,8 +425,8 @@ router.get('/unread-count', authenticate, async (req, res, next) => {
   }
 });
 
-/** User blocks another user (UGC safety); notifies developer and signals clients to refresh. */
-router.post('/blocks', authenticate, async (req, res, next) => {
+/** Peer block: only these two users stop interacting (symmetric). Not a global platform ban. */
+async function postUserBlockHandler(req: express.Request, res: express.Response, next: express.NextFunction) {
   try {
     const userId = (req as any).user.userId as string;
     const blockedUserId = (req.body.blockedUserId ?? req.body.blocked_user_id) as string | undefined;
@@ -450,7 +450,13 @@ router.post('/blocks', authenticate, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+}
+
+/** User blocks another user (UGC safety); notifies developer and signals clients to refresh. */
+router.post('/blocks', authenticate, postUserBlockHandler);
+
+/** Alias for older clients that POST `/block` (singular). Same peer-block semantics as `/blocks`. */
+router.post('/block', authenticate, postUserBlockHandler);
 
 router.delete('/blocks/:blockedUserId', authenticate, async (req, res, next) => {
   try {

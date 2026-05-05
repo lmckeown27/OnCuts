@@ -1,6 +1,13 @@
 /**
  * UGC moderation: basic content filter, user blocks, reports, developer alerts.
  * Supports App Store Guideline 1.2 (user-generated content).
+ *
+ * **Peer block (`user_blocks`)** — Initiated by one account toward another (e.g. consumer blocks a
+ * service provider). A single row means those two user IDs must not interact with each other
+ * (either direction). Only that pair is affected. See `assertNoMessagingBlockBetween`.
+ *
+ * **Platform ban (`users.isBanned`)** — Trust-and-safety / admin action on a user. That account is
+ * frozen for the whole product (sign-in, discovery, etc.), not scoped to one counterparty.
  */
 
 import { pool } from '../database/connection';
@@ -95,9 +102,10 @@ export function validateOutgoingMessageText(content: string): void {
   }
 }
 
-export async function assertNoMessagingBlockBetween(
+async function assertNoPeerBlockBetween(
   userIdA: string,
-  userIdB: string
+  userIdB: string,
+  denialMessage: string
 ): Promise<void> {
   if (!(await isUgcModerationSchemaReady())) {
     return;
@@ -110,8 +118,25 @@ export async function assertNoMessagingBlockBetween(
     [userIdA, userIdB]
   );
   if (r.rows.length > 0) {
-    throw new ApiError(403, 'Messaging is not available with this user.');
+    throw new ApiError(403, denialMessage);
   }
+}
+
+/** True if either user has blocked the other (symmetric peer block, not a global platform ban). */
+export async function assertNoMessagingBlockBetween(userIdA: string, userIdB: string): Promise<void> {
+  await assertNoPeerBlockBetween(userIdA, userIdB, 'Messaging is not available with this user.');
+}
+
+/** Same peer-block rule for bookings (consumer ↔ barber user IDs). */
+export async function assertNoBookingBlockBetween(
+  consumerUserId: string,
+  barberUserId: string
+): Promise<void> {
+  await assertNoPeerBlockBetween(
+    consumerUserId,
+    barberUserId,
+    'This booking is not available because of a block between these accounts.'
+  );
 }
 
 export async function createUserBlock(blockerUserId: string, blockedUserId: string): Promise<void> {

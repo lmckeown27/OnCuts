@@ -303,6 +303,87 @@ psql "$URL" -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHE
 
 **Quoting trap:** Do not paste a multi-line `UPDATE ... WHERE id = ...` inside **single-quoted** `-c '...'` with `''uuid''` for the UUID — bash will strip SQL quotes and Postgres will error. Prefer `-c "UPDATE ... WHERE id = 'uuid';"` as above.
 
+### Peer blocks (`user_blocks`) — who blocked whom
+
+**Different from `isBlocked` / `isBanned` above:** `user_blocks` stores **pairwise** blocks (consumer ↔ service provider, etc.). Each row is one direction: **`blocker_user_id`** chose to block **`blocked_user_id`**. Messaging checks **both** directions (if A blocked B or B blocked A, they cannot interact). Created by migration `backend/src/database/migrations/028_ugc_safety_blocks_reports.sql` (table may be absent until that migrate has been applied).
+
+#### Confirm table exists
+
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT to_regclass('public.user_blocks');"
+```
+
+#### List all peer blocks (raw IDs)
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT blocker_user_id, blocked_user_id, created_at
+FROM user_blocks
+ORDER BY created_at DESC
+LIMIT 200;
+"
+```
+
+#### Who blocked whom (with names and emails)
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT
+  ub.blocker_user_id,
+  blocker.first_name || ' ' || blocker.last_name AS blocker_name,
+  blocker.email AS blocker_email,
+  ub.blocked_user_id,
+  blocked.first_name || ' ' || blocked.last_name AS blocked_name,
+  blocked.email AS blocked_email,
+  ub.created_at
+FROM user_blocks ub
+JOIN users blocker ON blocker.id = ub.blocker_user_id
+JOIN users blocked ON blocked.id = ub.blocked_user_id
+ORDER BY ub.created_at DESC
+LIMIT 200;
+"
+```
+
+#### Everyone a given user has blocked (outgoing blocks)
+
+Replace the UUID with the blocker’s `users.id`.
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT ub.blocked_user_id, u.first_name, u.last_name, u.email, ub.created_at
+FROM user_blocks ub
+JOIN users u ON u.id = ub.blocked_user_id
+WHERE ub.blocker_user_id = '00000000-0000-0000-0000-000000000000'
+ORDER BY ub.created_at DESC;
+"
+```
+
+#### Everyone who has blocked a given user (incoming blocks)
+
+Replace the UUID with the target `users.id` (who might be a service provider).
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT ub.blocker_user_id, u.first_name, u.last_name, u.email, ub.created_at
+FROM user_blocks ub
+JOIN users u ON u.id = ub.blocker_user_id
+WHERE ub.blocked_user_id = '00000000-0000-0000-0000-000000000000'
+ORDER BY ub.created_at DESC;
+"
+```
+
+#### Remove one directed block (admin / support)
+
+Deletes the row **blocker** → **blocked** only (not the reverse, unless that row exists too).
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+DELETE FROM user_blocks
+WHERE blocker_user_id = '00000000-0000-0000-0000-000000000001'
+  AND blocked_user_id = '00000000-0000-0000-0000-000000000002';
+"
+```
+
 ### Delete User (Simple)
 ```bash
 sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE email = 'user@example.com';"

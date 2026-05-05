@@ -23,6 +23,7 @@ import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
 import { executeParticipantBookingCancellation } from '../services/booking-cancellation.service';
+import { assertNoBookingBlockBetween } from '../services/ugc-moderation.service';
 
 const router = express.Router();
 
@@ -135,6 +136,12 @@ router.post('/', authenticate, async (req, res, next) => {
         success: false,
         error: 'This booking cannot be created.',
       });
+    }
+
+    const barberUidRow = await pool.query(`SELECT "userId" FROM barbers WHERE id = $1`, [barberRecordId]);
+    const barberUserIdForBlock = barberUidRow.rows[0]?.userId;
+    if (barberUserIdForBlock) {
+      await assertNoBookingBlockBetween(String(consumerId), String(barberUserIdForBlock));
     }
 
     // Check for time slot conflicts - barber can only have one booking at a time

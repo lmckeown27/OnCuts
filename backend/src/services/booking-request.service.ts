@@ -11,6 +11,7 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
+import { assertNoBookingBlockBetween } from './ugc-moderation.service';
 import pushNotificationService from './pushNotification.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
@@ -604,7 +605,18 @@ export class BookingRequestService {
       // Check if this is a conversation-based request
       if (bookingId.startsWith('conv-')) {
         const conversationId = bookingId.replace('conv-', '');
-        
+
+        const convPeek = await client.query(
+          `SELECT user1_id, user2_id FROM conversations WHERE id = $1 AND booking_status = 'pending'`,
+          [conversationId]
+        );
+        if (convPeek.rows.length === 0) {
+          throw new Error('Conversation not found or already responded to');
+        }
+        const { user1_id: u1, user2_id: u2 } = convPeek.rows[0];
+        const peerUserId = String(u1) === String(barberId) ? u2 : u1;
+        await assertNoBookingBlockBetween(String(peerUserId), String(barberId));
+
         // Update conversation booking_status and get the linked booking_id
         const updateResult = await client.query(`
           UPDATE conversations
@@ -675,7 +687,24 @@ export class BookingRequestService {
       }
 
       // Traditional booking flow
-      const updateResult = await client.query(`
+      const preAccept = await client.query(
+        `SELECT b."consumerId", u.id AS barber_user_id
+         FROM bookings b
+         JOIN barbers br ON b."barberId" = br.id
+         JOIN users u ON br."userId" = u.id
+         WHERE b.id = $1 AND b.status = 'PENDING'`,
+        [bookingId]
+      );
+      if (preAccept.rows.length === 0) {
+        throw new Error('Booking not found or already responded to');
+      }
+      await assertNoBookingBlockBetween(
+        String(preAccept.rows[0].consumerId),
+        String(preAccept.rows[0].barber_user_id)
+      );
+
+      const updateResult = await client.query(
+        `
         UPDATE bookings
         SET 
           status = 'ACCEPTED',
@@ -683,7 +712,9 @@ export class BookingRequestService {
           "updatedAt" = NOW()
         WHERE id = $1 AND status = 'PENDING'
         RETURNING "consumerId"
-      `, [bookingId]);
+      `,
+        [bookingId]
+      );
 
       if (updateResult.rows.length === 0) {
         throw new Error('Booking not found or already responded to');
