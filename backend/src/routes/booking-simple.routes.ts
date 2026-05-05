@@ -1014,13 +1014,7 @@ router.put('/:id/complete', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Mark conversation as inactive (don't delete yet - allows undo if barber made a mistake)
-    // Conversations will be cleaned up after payment is confirmed
-    await pool.query(
-      `UPDATE conversations SET is_active = false WHERE booking_id = $1`,
-      [id]
-    );
-    logger.info(`Marked conversation as inactive for completed booking ${id}`);
+    // Keep booking thread active until the consumer pays (archive + hard delete only on payment success).
 
     const serviceName = booking.original_service_name || booking.serviceType;
     const priceFormatted = `$${(booking.priceUsdCents / 100).toFixed(2)}`;
@@ -1194,12 +1188,12 @@ router.put('/:id/undo-complete', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Reactivate the conversation (it was marked inactive on completion)
+    // Ensure conversation remains active (no-op if it was never deactivated)
     await pool.query(
       `UPDATE conversations SET is_active = true WHERE booking_id = $1`,
       [id]
     );
-    logger.info(`Reactivated conversation for booking ${id}, cleared paymentRequestedAt`);
+    logger.info(`Ensured conversation active for booking ${id}, cleared paymentRequestedAt`);
 
     logger.info(`Booking ${id} reverted from COMPLETED to ACCEPTED by barber ${userId}`);
 
@@ -1506,11 +1500,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
       [id]
     );
 
-    // Mark conversation as inactive (allows undo if barber made a mistake)
-    await pool.query(
-      `UPDATE conversations SET is_active = false WHERE booking_id = $1`,
-      [id]
-    );
+    // Keep conversation active until consumer pays (same as PUT .../complete).
 
     logger.info(`Payment requested for booking ${id} by barber ${userId}, status set to COMPLETED`);
 

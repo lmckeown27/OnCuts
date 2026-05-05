@@ -228,6 +228,81 @@ sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = true WH
 sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBlocked\" = false WHERE email = 'user@example.com';"
 ```
 
+### Platform ban (`isBanned`) — view, ban, unban
+
+**Different from `isBlocked` above:** `"isBanned"` is the **platform ban** used for trust-and-safety (e.g. admin moderation). When `true`, the user **cannot sign in**. The admin API and Safety tab read/write this column.
+
+In `psql` output, booleans show as **`t`** / **`f`**.
+
+#### View all banned users
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT id, first_name, last_name, email, role, \"campusId\", \"isBanned\", \"updatedAt\"
+FROM users
+WHERE \"isBanned\" = true
+ORDER BY \"updatedAt\" DESC NULLS LAST;
+"
+```
+
+#### Count banned users
+
+```bash
+sudo -u postgres psql -d campuscuts -c "SELECT COUNT(*) AS banned_count FROM users WHERE \"isBanned\" = true;"
+```
+
+#### View banned users with campus name
+
+```bash
+sudo -u postgres psql -d campuscuts -c "
+SELECT u.id, u.first_name, u.last_name, u.email, u.role,
+       c.name AS campus_name, u.\"isBanned\", u.\"updatedAt\"
+FROM users u
+LEFT JOIN campuses c ON c.id = u.\"campusId\"
+WHERE u.\"isBanned\" = true
+ORDER BY u.\"updatedAt\" DESC NULLS LAST;
+"
+```
+
+#### Ban a user (by email)
+
+```bash
+# Replace user@example.com
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
+```
+
+#### Ban a user (by UUID)
+
+Use **double-quoted** `-c "..."` in bash so the UUID stays inside **single quotes** in SQL. Replace the UUID.
+
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = true, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
+```
+
+#### Unban a user (by email)
+
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE email = 'user@example.com';"
+```
+
+#### Unban a user (by UUID)
+
+```bash
+sudo -u postgres psql -d campuscuts -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE id = '00000000-0000-0000-0000-000000000000';"
+```
+
+#### Using `DATABASE_URL` (app user / remote host)
+
+If you connect as `campuscuts_user` via URI (e.g. on EC2 from `backend/.env`):
+
+```bash
+URL=$(grep '^DATABASE_URL=' ~/CampusCuts/backend/.env | cut -d= -f2- | tr -d '"' | sed 's/?schema=public//')
+psql "$URL" -c "SELECT id, email, role, \"isBanned\" FROM users WHERE \"isBanned\" = true;"
+psql "$URL" -c "UPDATE users SET \"isBanned\" = false, \"updatedAt\" = NOW() WHERE id = 'YOUR-USER-UUID-HERE';"
+```
+
+**Quoting trap:** Do not paste a multi-line `UPDATE ... WHERE id = ...` inside **single-quoted** `-c '...'` with `''uuid''` for the UUID — bash will strip SQL quotes and Postgres will error. Prefer `-c "UPDATE ... WHERE id = 'uuid';"` as above.
+
 ### Delete User (Simple)
 ```bash
 sudo -u postgres psql -d campuscuts -c "DELETE FROM users WHERE email = 'user@example.com';"
