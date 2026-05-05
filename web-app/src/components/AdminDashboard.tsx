@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
@@ -138,6 +138,16 @@ interface UgcContentReport {
   moderation_target_message_id?: number | null;
   /** Preview/target message was inferred (client did not send messageId) */
   message_context_is_inferred?: boolean;
+}
+
+interface BannedPlatformUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  campus_name: string | null;
+  updated_at: string;
 }
 
 interface Barber {
@@ -627,6 +637,48 @@ export function AdminDashboard({
       cancelled = true;
     };
   }, [adminView, ugcReportStatusFilter]);
+
+  const loadBannedUsers = useCallback(async () => {
+    setIsLoadingBannedUsers(true);
+    setBannedUsersError(null);
+    try {
+      const data = await api.get<{ users: BannedPlatformUser[] }>('/admin/moderation/banned-users', {
+        limit: 200,
+      });
+      setBannedUsers(data.users || []);
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to load banned users';
+      setBannedUsers([]);
+      setBannedUsersError(msg);
+    } finally {
+      setIsLoadingBannedUsers(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (adminView !== 'moderation') return;
+    void loadBannedUsers();
+  }, [adminView, loadBannedUsers]);
+
+  const reloadBarberList = useCallback(async () => {
+    try {
+      const url = selectedCampusId
+        ? `/admin/campuses/${selectedCampusId}/barbers`
+        : '/admin/barbers';
+      const response = await api.get<{ barbers: Barber[] } | Barber[]>(url);
+      const barberList = Array.isArray(response) ? response : response.barbers || [];
+      setBarbers(barberList);
+      setSelectedBarber((prev) => {
+        if (!prev) return null;
+        return barberList.find((b) => b.id === prev.id) ?? prev;
+      });
+    } catch {
+      /* keep existing barber list */
+    }
+  }, [selectedCampusId]);
   
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);
@@ -696,6 +748,9 @@ export function AdminDashboard({
         limit: 200,
       });
       setUgcReports(data.reports || []);
+      if (action === 'ban_reported_user' || action === 'remove_message_and_ban') {
+        void loadBannedUsers();
+      }
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -704,6 +759,28 @@ export function AdminDashboard({
       toast.error(msg);
     } finally {
       setUgcResolveLoadingId(null);
+    }
+  };
+
+  const handleUnbanBannedUser = async (u: BannedPlatformUser) => {
+    const name = `${u.first_name || ''} ${u.last_name || ''}`.trim();
+    if (!window.confirm(`Remove platform ban for ${name || u.email}? They will be able to sign in again.`)) {
+      return;
+    }
+    setUnbanningUserId(u.id);
+    try {
+      await api.post(`/admin/users/${u.id}/unban`, {});
+      toast.success('User unbanned');
+      await loadBannedUsers();
+      await reloadBarberList();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message?: string }).message)
+          : 'Failed to unban user';
+      toast.error(msg);
+    } finally {
+      setUnbanningUserId(null);
     }
   };
 
@@ -719,16 +796,8 @@ export function AdminDashboard({
     try {
       await api.post(`/admin/users/${barber.id}/unban`, {});
       toast.success('User unbanned');
-      const url = selectedCampusId
-        ? `/admin/campuses/${selectedCampusId}/barbers`
-        : '/admin/barbers';
-      const response = await api.get<{ barbers: Barber[] } | Barber[]>(url);
-      const barberList = Array.isArray(response) ? response : response.barbers || [];
-      setBarbers(barberList);
-      setSelectedBarber((prev) => {
-        if (!prev || prev.id !== barber.id) return prev;
-        return barberList.find((b) => b.id === prev.id) ?? { ...prev, isBanned: false };
-      });
+      await reloadBarberList();
+      void loadBannedUsers();
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'message' in err
@@ -2972,25 +3041,27 @@ export function AdminDashboard({
       )}
 
       {adminView === 'moderation' && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-gray-500">Status</span>
-            {(['open', 'all', 'dismissed', 'resolved'] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setUgcReportStatusFilter(s)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  ugcReportStatusFilter === s
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-          {isLoadingUgcReports ? (
+        <div className="space-y-8">
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">Reports</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Status</span>
+              {(['open', 'all', 'dismissed', 'resolved'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setUgcReportStatusFilter(s)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    ugcReportStatusFilter === s
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+            {isLoadingUgcReports ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
             </div>
@@ -3107,6 +3178,66 @@ export function AdminDashboard({
               })}
             </div>
           )}
+          </section>
+
+          <section className="space-y-3 border-t border-gray-200 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900">Banned users</h3>
+            <p className="text-xs text-gray-500">
+              Accounts with an active platform ban cannot sign in. Unban restores access.
+            </p>
+            {isLoadingBannedUsers ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
+              </div>
+            ) : bannedUsersError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {bannedUsersError}
+              </div>
+            ) : bannedUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 py-8 text-gray-500">
+                <Users className="mb-2 h-9 w-9 text-gray-300" />
+                <p className="text-sm">No banned users</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {bannedUsers.map((u) => (
+                  <div
+                    key={u.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white p-3 text-sm"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 truncate">
+                        {`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email}
+                      </p>
+                      <p className="truncate text-xs text-gray-500">{u.email}</p>
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        <span className="font-mono">{u.role}</span>
+                        {u.campus_name ? <span> · {u.campus_name}</span> : null}
+                        {u.updated_at ? (
+                          <span className="block sm:inline sm:ml-1">
+                            · Updated {new Date(u.updated_at).toLocaleString()}
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={unbanningUserId === u.id}
+                      onClick={() => handleUnbanBannedUser(u)}
+                    >
+                      {unbanningUserId === u.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        'Unban'
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       )}
 

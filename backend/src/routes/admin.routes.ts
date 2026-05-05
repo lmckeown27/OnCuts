@@ -64,6 +64,7 @@ router.get('/bookings/:bookingId/messages', authenticate, adminController.getBoo
 router.get('/users', authenticate, adminController.getAllUsers);
 
 // UGC moderation (App Store Guideline 1.2)
+router.get('/moderation/banned-users', authenticate, adminController.listBannedUsers);
 router.get('/moderation/reports', authenticate, adminController.listUgcReports);
 router.post('/moderation/reports/:reportId/resolve', authenticate, adminController.resolveUgcReport);
 

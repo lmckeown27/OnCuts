@@ -2515,6 +2515,51 @@ export const unbanUser = async (req: AuthRequest, res: Response, next: NextFunct
 };
 
 /**
+ * GET /api/admin/moderation/banned-users
+ * Users with platform ban (isBanned).
+ */
+export const listBannedUsers = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userRole = req.user!.role?.toUpperCase();
+    if (userRole !== 'ADMIN') {
+      throw new ApiError(403, 'Admin access required');
+    }
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200'), 10) || 200, 1), 500);
+    const result = await pool.query(
+      `SELECT u.id,
+              u.first_name,
+              u.last_name,
+              u.email,
+              u.role,
+              c.name AS campus_name,
+              u."updatedAt" AS updated_at
+       FROM users u
+       LEFT JOIN campuses c ON c.id = u."campusId"
+       WHERE u."isBanned" = true
+       ORDER BY u."updatedAt" DESC NULLS LAST
+       LIMIT $1`,
+      [limit]
+    );
+    res.json({
+      success: true,
+      data: {
+        users: result.rows.map((row) => ({
+          id: String(row.id),
+          first_name: row.first_name,
+          last_name: row.last_name,
+          email: row.email,
+          role: row.role,
+          campus_name: row.campus_name ?? null,
+          updated_at: row.updated_at,
+        })),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/admin/moderation/reports
  * List UGC reports (App Store safety workflow).
  */
