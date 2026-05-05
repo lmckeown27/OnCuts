@@ -2525,6 +2525,27 @@ export const listBannedUsers = async (req: AuthRequest, res: Response, next: Nex
       throw new ApiError(403, 'Admin access required');
     }
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200'), 10) || 200, 1), 500);
+    const rawCat =
+      typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : 'all';
+    const categoryFilter = ['all', 'service_provider', 'consumer', 'admin', 'other'].includes(rawCat)
+      ? rawCat
+      : 'all';
+
+    let categoryWhere = '';
+    if (categoryFilter === 'service_provider') {
+      categoryWhere = ` AND (
+          EXISTS (SELECT 1 FROM barbers b2 WHERE b2."userId" = u.id)
+          OR u.role IN ('BARBER', 'CAMPUS_MANAGER')
+        )`;
+    } else if (categoryFilter === 'consumer') {
+      categoryWhere = ` AND u.role = 'CONSUMER'
+          AND NOT EXISTS (SELECT 1 FROM barbers b2 WHERE b2."userId" = u.id)`;
+    } else if (categoryFilter === 'admin') {
+      categoryWhere = ` AND u.role = 'ADMIN'`;
+    } else if (categoryFilter === 'other') {
+      categoryWhere = ` AND u.role NOT IN ('CONSUMER', 'BARBER', 'CAMPUS_MANAGER', 'ADMIN')`;
+    }
+
     const result = await pool.query(
       `SELECT u.id,
               u.first_name,
@@ -2532,11 +2553,37 @@ export const listBannedUsers = async (req: AuthRequest, res: Response, next: Nex
               u.email,
               u.role,
               c.name AS campus_name,
-              u."updatedAt" AS updated_at
+              u."updatedAt" AS updated_at,
+              CASE
+                WHEN u.role = 'ADMIN' THEN 'admin'
+                WHEN EXISTS (SELECT 1 FROM barbers b2 WHERE b2."userId" = u.id)
+                     OR u.role IN ('BARBER', 'CAMPUS_MANAGER') THEN 'service_provider'
+                WHEN u.role = 'CONSUMER' THEN 'consumer'
+                ELSE 'other'
+              END AS account_category,
+              EXISTS (SELECT 1 FROM barbers b2 WHERE b2."userId" = u.id) AS has_barber_profile,
+              (
+                SELECT b3."isActive"
+                FROM barbers b3
+                WHERE b3."userId" = u.id
+                ORDER BY CASE WHEN b3."isActive" THEN 0 ELSE 1 END, b3."createdAt" DESC NULLS LAST
+                LIMIT 1
+              ) AS barber_is_active,
+              (
+                SELECT COUNT(*)::int
+                FROM ugc_content_reports r
+                WHERE r.reported_user_id = u.id AND r.status = 'open'
+              ) AS open_report_count
        FROM users u
        LEFT JOIN campuses c ON c.id = u."campusId"
        WHERE u."isBanned" = true
-       ORDER BY u."updatedAt" DESC NULLS LAST
+       ${categoryWhere}
+       ORDER BY
+         CASE
+           WHEN EXISTS (SELECT 1 FROM ugc_content_reports r2 WHERE r2.reported_user_id = u.id AND r2.status = 'open')
+             THEN 0 ELSE 1
+         END,
+         u."updatedAt" DESC NULLS LAST
        LIMIT $1`,
       [limit]
     );
@@ -2551,6 +2598,13 @@ export const listBannedUsers = async (req: AuthRequest, res: Response, next: Nex
           role: row.role,
           campus_name: row.campus_name ?? null,
           updated_at: row.updated_at,
+          account_category: row.account_category,
+          has_barber_profile: row.has_barber_profile === true,
+          barber_is_active:
+            row.barber_is_active === null || row.barber_is_active === undefined
+              ? null
+              : row.barber_is_active === true,
+          open_report_count: parseInt(String(row.open_report_count ?? 0), 10) || 0,
         })),
       },
     });

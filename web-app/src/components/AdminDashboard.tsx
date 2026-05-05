@@ -140,6 +140,8 @@ interface UgcContentReport {
   message_context_is_inferred?: boolean;
 }
 
+type BannedAccountCategory = 'service_provider' | 'consumer' | 'admin' | 'other';
+
 interface BannedPlatformUser {
   id: string;
   first_name: string;
@@ -148,6 +150,10 @@ interface BannedPlatformUser {
   role: string;
   campus_name: string | null;
   updated_at: string;
+  account_category: BannedAccountCategory;
+  has_barber_profile: boolean;
+  barber_is_active: boolean | null;
+  open_report_count: number;
 }
 
 interface Barber {
@@ -326,6 +332,7 @@ export function AdminDashboard({
   const [bannedUsers, setBannedUsers] = useState<BannedPlatformUser[]>([]);
   const [isLoadingBannedUsers, setIsLoadingBannedUsers] = useState(false);
   const [bannedUsersError, setBannedUsersError] = useState<string | null>(null);
+  const [bannedCategoryFilter, setBannedCategoryFilter] = useState<'all' | BannedAccountCategory>('all');
   
   // Consumer detail view state
   const [selectedConsumer, setSelectedConsumer] = useState<PlatformUser | null>(null);
@@ -645,9 +652,11 @@ export function AdminDashboard({
     setIsLoadingBannedUsers(true);
     setBannedUsersError(null);
     try {
-      const data = await api.get<{ users: BannedPlatformUser[] }>('/admin/moderation/banned-users', {
-        limit: 200,
-      });
+      const params: Record<string, string | number> = { limit: 200 };
+      if (bannedCategoryFilter !== 'all') {
+        params.category = bannedCategoryFilter;
+      }
+      const data = await api.get<{ users: BannedPlatformUser[] }>('/admin/moderation/banned-users', params);
       setBannedUsers(data.users || []);
     } catch (err: unknown) {
       const msg =
@@ -659,7 +668,7 @@ export function AdminDashboard({
     } finally {
       setIsLoadingBannedUsers(false);
     }
-  }, []);
+  }, [bannedCategoryFilter]);
 
   useEffect(() => {
     if (adminView !== 'moderation') return;
@@ -3186,8 +3195,34 @@ export function AdminDashboard({
           <section className="space-y-3 border-t border-gray-200 pt-6">
             <h3 className="text-sm font-semibold text-gray-900">Banned users</h3>
             <p className="text-xs text-gray-500">
-              Accounts with an active platform ban cannot sign in. Unban restores access.
+              Accounts with an active platform ban cannot sign in. Unban restores access. Categories are derived from
+              role and barber profile (not a separate ban type field).
             </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-gray-500">Show</span>
+              {(
+                [
+                  ['all', 'All'],
+                  ['service_provider', 'Providers'],
+                  ['consumer', 'Consumers'],
+                  ['admin', 'Admins'],
+                  ['other', 'Other'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setBannedCategoryFilter(key)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    bannedCategoryFilter === key
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             {isLoadingBannedUsers ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-5 h-5 animate-spin text-primary-500" />
@@ -3214,11 +3249,26 @@ export function AdminDashboard({
                       </p>
                       <p className="truncate text-xs text-gray-500">{u.email}</p>
                       <p className="mt-1 text-[11px] text-gray-400">
-                        <span className="font-mono">{u.role}</span>
+                        <span className="font-medium text-gray-600">
+                          {u.account_category === 'service_provider'
+                            ? 'Service provider'
+                            : u.account_category === 'consumer'
+                              ? 'Consumer'
+                              : u.account_category === 'admin'
+                                ? 'Admin'
+                                : 'Other'}
+                        </span>
+                        <span className="font-mono"> · {u.role}</span>
+                        {u.has_barber_profile && u.barber_is_active !== null ? (
+                          <span> · Barber listing {u.barber_is_active ? 'active' : 'inactive'}</span>
+                        ) : null}
+                        {typeof u.open_report_count === 'number' && u.open_report_count > 0 ? (
+                          <span className="text-amber-700"> · {u.open_report_count} open report(s)</span>
+                        ) : null}
                         {u.campus_name ? <span> · {u.campus_name}</span> : null}
                         {u.updated_at ? (
                           <span className="block sm:inline sm:ml-1">
-                            · Updated {new Date(u.updated_at).toLocaleString()}
+                            · Row updated {new Date(u.updated_at).toLocaleString()}
                           </span>
                         ) : null}
                       </p>
