@@ -23,6 +23,7 @@ import { useViewport, useBodyScrollLock, calculateDistance, kmToMiles, useDynami
 import LoginPrompt from '../components/LoginPrompt';
 import PaymentRequestModal from '../components/PaymentRequestModal';
 import PullToRefresh from '../components/PullToRefresh';
+import BlockedProvidersModal from '../components/BlockedProvidersModal';
 import type { WeeklySchedule } from '../types';
 import socketService from '../services/socket.service';
 
@@ -156,6 +157,7 @@ export default function ConsumerPage() {
     message: string;
   } | null>(null);
   const [showAlternativeBarbersModal, setShowAlternativeBarbersModal] = useState(false);
+  const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
   const [alternativeBarbersData, setAlternativeBarbersData] = useState<{
     scheduledTime: string;
     serviceType: string;
@@ -175,10 +177,11 @@ export default function ConsumerPage() {
   const { isMobile, isTablet, viewport } = useViewport();
   
   // Track if any modal is open for disabling pull-to-refresh
-  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal;
+  const isAnyModalOpen = showProfileEditor || showBarberApplication || showNotifications || showPendingPopup || showRejectedPopup || showLoginPrompt || showPaymentModal || showDeclinedModal || showAlternativeBarbersModal || showBlockedProvidersModal;
   
   // Lock body scroll when profile editor is open
   useBodyScrollLock(showProfileEditor);
+  useBodyScrollLock(showBlockedProvidersModal);
   
   // Helper to scroll to top before opening modals (prevents white space on mobile)
   const scrollToTopAndOpen = (setShow: (v: boolean) => void, setVisible?: (v: boolean) => void) => {
@@ -700,7 +703,7 @@ export default function ConsumerPage() {
                         </button>
                         <button
                           onClick={() => {
-                            navigate(`${platformPrefix}/consumer/blocked-users`);
+                            setShowBlockedProvidersModal(true);
                             setShowProfileDropdown(false);
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -892,6 +895,8 @@ export default function ConsumerPage() {
         onClose={() => setShowLoginPrompt(false)}
         action="become_barber"
       />
+
+      <BlockedProvidersModal open={showBlockedProvidersModal} onClose={() => setShowBlockedProvidersModal(false)} />
 
       {/* Notifications Modal */}
       {showNotifications && (

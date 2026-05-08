@@ -17,6 +17,7 @@ import { useMessageStore } from '../../store/useMessageStore';
 import toast from 'react-hot-toast';
 import MobilePhotoUpload from '../../components/MobilePhotoUpload';
 import ConsumerProfileEditor from '../../components/ConsumerProfileEditor';
+import BlockedProvidersModal from '../../components/BlockedProvidersModal';
 import userService from '../../services/user.service';
 import {
   Heart,
@@ -65,6 +66,7 @@ export default function MobileConsumerPage() {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [showFullEditor, setShowFullEditor] = useState(false);
+  const [showBlockedProvidersModal, setShowBlockedProvidersModal] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const currentBarber = barbers[currentBarberIndex];
@@ -388,7 +390,7 @@ export default function MobileConsumerPage() {
                 </button>
 
                 <button
-                  onClick={() => navigate(`${platformPrefix}/consumer/blocked-users`)}
+                  onClick={() => setShowBlockedProvidersModal(true)}
                   className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
                 >
                   <span className="font-medium text-gray-900">Blocked providers</span>
@@ -720,6 +722,8 @@ export default function MobileConsumerPage() {
           </div>
         </div>
       )}
+
+      <BlockedProvidersModal open={showBlockedProvidersModal} onClose={() => setShowBlockedProvidersModal(false)} />
     </div>
   );
 }
