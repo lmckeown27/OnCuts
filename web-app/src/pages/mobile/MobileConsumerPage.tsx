@@ -35,7 +35,8 @@ import {
   Loader2,
   GraduationCap,
   ArrowLeft,
-  LogOut
+  LogOut,
+  UserX
 } from 'lucide-react';
 import { calculateDistance, kmToMiles } from '../../hooks';
 import barberService from '../../services/barber.service';
@@ -384,6 +385,14 @@ export default function MobileConsumerPage() {
                 >
                   <span className="font-medium text-gray-900">My Bookings</span>
                   <Calendar className="w-5 h-5 text-gray-400" />
+                </button>
+
+                <button
+                  onClick={() => navigate(`${platformPrefix}/consumer/blocked-users`)}
+                  className="w-full bg-white p-4 rounded-xl border border-gray-200 text-left flex items-center justify-between active:scale-98 transition-transform"
+                >
+                  <span className="font-medium text-gray-900">Blocked providers</span>
+                  <UserX className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
 

@@ -93,6 +93,7 @@ const BarberProfilePage = lazy(() => import('./pages/BarberProfilePage'));
 const ConsumerPage = lazy(() => import('./pages/ConsumerPage'));
 const ConsumerBookingStatusPage = lazy(() => import('./pages/ConsumerBookingStatusPage'));
 const ConsumerBookingsPage = lazy(() => import('./pages/consumer/ConsumerBookingsPage'));
+const ConsumerBlockedUsersPage = lazy(() => import('./pages/consumer/ConsumerBlockedUsersPage'));
 const ScheduleServicePage = lazy(() => import('./pages/ScheduleServicePage'));
 const BookingPaymentPage = lazy(() => import('./pages/student/BookingPaymentPage'));
 const PaymentProcessingPage = lazy(() => import('./pages/student/PaymentProcessingPage'));
@@ -185,6 +186,7 @@ function AppContent() {
         <Route path="/web/consumer" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/booking-status" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerBookingStatusPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/bookings" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerBookingsPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/web/consumer/blocked-users" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ConsumerBlockedUsersPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><ScheduleServicePage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/discover" element={<PlatformGuard requiredPlatform="web"><LazyRoute><DiscoverBarbers customerId="user-temp" customerName="User" /></LazyRoute></PlatformGuard>} />
         <Route path="/web/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />
@@ -231,6 +233,7 @@ function AppContent() {
         <Route path="/app/consumer" element={<PlatformGuard requiredPlatform="app"><LazyRoute><MobileConsumerPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/consumer/booking-status" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ConsumerBookingStatusPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/consumer/bookings" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ConsumerBookingsPage /></LazyRoute></PlatformGuard>} />
+        <Route path="/app/consumer/blocked-users" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ConsumerBlockedUsersPage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/consumer/book/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><ScheduleServicePage /></LazyRoute></PlatformGuard>} />
         <Route path="/app/discover" element={<PlatformGuard requiredPlatform="app"><LazyRoute><DiscoverBarbers customerId="user-temp" customerName="User" /></LazyRoute></PlatformGuard>} />
         <Route path="/app/student/barbers/:barberId" element={<PlatformGuard requiredPlatform="app"><LazyRoute><BarberProfilePage /></LazyRoute></PlatformGuard>} />

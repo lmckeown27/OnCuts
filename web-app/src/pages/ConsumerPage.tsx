@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText } from 'lucide-react';
+import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -697,6 +697,16 @@ export default function ConsumerPage() {
                         >
                           <Settings className="w-4 h-4 text-gray-500" />
                           Edit Profile
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate(`${platformPrefix}/consumer/blocked-users`);
+                            setShowProfileDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        >
+                          <UserX className="w-4 h-4 text-gray-500" />
+                          Blocked providers
                         </button>
                         <div className="border-t border-gray-200 my-1"></div>
                         <Link

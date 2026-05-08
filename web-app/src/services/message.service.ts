@@ -16,6 +16,20 @@ interface BookingContext {
   consumerProfilePicture?: string;
 }
 
+export type BlockedServiceProviderItem = {
+  blockedUserId: string;
+  barberId: string;
+  blockedAt: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+  campusId: string | null;
+  barberIsActive: boolean;
+  name: string;
+};
+
 interface CreateConversationData {
   other_user_id: string;
   booking_id?: string;
@@ -196,6 +210,19 @@ class MessageService {
       otherUserId: response.conversation.otherUserId,
       isNew: response.conversation.isNew
     };
+  }
+
+  /** Outgoing peer blocks where the blocked user has a barber profile (consumer “blocked providers”). */
+  async getBlockedServiceProviders(): Promise<BlockedServiceProviderItem[]> {
+    const data = await api.get<{ blockedServiceProviders: BlockedServiceProviderItem[] }>(
+      '/messages/blocks/service-providers'
+    );
+    return data.blockedServiceProviders ?? [];
+  }
+
+  /** Remove an outgoing block (unblock). */
+  async unblockUser(blockedUserId: string): Promise<void> {
+    await api.delete(`/messages/blocks/${encodeURIComponent(blockedUserId)}`);
   }
 }
 
