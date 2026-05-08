@@ -186,33 +186,191 @@ export type BlockedServiceProviderRow = {
   barberIsActive: boolean;
 };
 
+/** Cache pg_attribute column names per table (schema drift: Prisma camelCase vs legacy snake_case). */
+const pgTableColumnsCache = new Map<string, { cols: Set<string>; at: number }>();
+const PG_TABLE_COL_CACHE_MS = 120_000;
+
+function quotePgIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+async function getPgTableColumns(tableName: string): Promise<Set<string>> {
+  const hit = pgTableColumnsCache.get(tableName);
+  if (hit && Date.now() - hit.at < PG_TABLE_COL_CACHE_MS) {
+    return hit.cols;
+  }
+  const r = await pool.query<{ col: string }>(
+    `SELECT a.attname::text AS col
+     FROM pg_attribute a
+     JOIN pg_class c ON a.attrelid = c.oid
+     JOIN pg_namespace n ON c.relnamespace = n.oid
+     WHERE n.nspname = 'public' AND c.relname = $1
+       AND a.attnum > 0 AND NOT a.attisdropped`,
+    [tableName]
+  );
+  const cols = new Set(r.rows.map((x) => x.col));
+  pgTableColumnsCache.set(tableName, { cols, at: Date.now() });
+  return cols;
+}
+
+function pickFirstExistingColumn(cols: Set<string>, candidates: readonly string[]): string | null {
+  for (const c of candidates) {
+    if (cols.has(c)) return c;
+  }
+  return null;
+}
+
+function filterExistingColumns(cols: Set<string>, candidates: readonly string[]): string[] {
+  return candidates.filter((c) => cols.has(c));
+}
+
+/** COALESCE(NULLIF(TRIM(col), ''), …) across columns — first non-empty wins. */
+function coalesceFirstNonEmptyTrim(alias: string, columnNames: string[]): string {
+  if (columnNames.length === 0) return 'NULL::text';
+  if (columnNames.length === 1) {
+    const c = columnNames[0];
+    return `NULLIF(TRIM(${alias}.${quotePgIdent(c)}::text), '')`;
+  }
+  const parts = columnNames.map(
+    (c) => `NULLIF(TRIM(${alias}.${quotePgIdent(c)}::text), '')`
+  );
+  return `COALESCE(${parts.join(', ')})`;
+}
+
+function coalesceColumnValues(alias: string, columnNames: string[]): string {
+  if (columnNames.length === 0) return 'NULL::text';
+  if (columnNames.length === 1) {
+    const c = columnNames[0];
+    return `${alias}.${quotePgIdent(c)}`;
+  }
+  return `COALESCE(${columnNames.map((c) => `${alias}.${quotePgIdent(c)}`).join(', ')})`;
+}
+
+async function pgRegclassExists(regclass: string): Promise<boolean> {
+  try {
+    const r = await pool.query(`SELECT to_regclass($1::text) IS NOT NULL AS ok`, [regclass]);
+    return r.rows[0]?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Users the blocker has peer-blocked who have a barber profile (service providers for booking/messaging).
  * One row per blocked user (prefers an active barber row when duplicates exist).
+ *
+ * Resolves display name and avatar across Prisma-style (`displayName`, `avatarUrl`) and legacy
+ * (`display_name`, `avatar_url`, etc.) columns so mobile/web lists are not blank. Falls back to
+ * cached `conversations.barber_name` / `consumer_name` when user profile fields are still empty.
  */
 export async function listBlockedServiceProviders(blockerUserId: string): Promise<BlockedServiceProviderRow[]> {
   if (!(await isUgcModerationSchemaReady())) {
     return [];
   }
-  const r = await pool.query(
-    `SELECT DISTINCT ON (ub.blocked_user_id)
+
+  const uCols = await getPgTableColumns('users');
+  const bCols = await getPgTableColumns('barbers');
+
+  const barberUserCol = pickFirstExistingColumn(bCols, ['userId', 'user_id']);
+  const campusCol = pickFirstExistingColumn(bCols, ['campusId', 'campus_id']);
+  const activeCol = pickFirstExistingColumn(bCols, ['isActive', 'is_active']);
+  const createdCol = pickFirstExistingColumn(bCols, ['createdAt', 'created_at', 'updatedAt', 'updated_at']);
+
+  if (!barberUserCol || !campusCol || !activeCol) {
+    logger.warn(
+      'listBlockedServiceProviders: barbers table missing expected columns (user link / campus / active)'
+    );
+    return [];
+  }
+
+  const displayNameCols = filterExistingColumns(uCols, ['displayName', 'display_name']);
+  const firstNameCols = filterExistingColumns(uCols, ['first_name', 'firstName']);
+  const lastNameCols = filterExistingColumns(uCols, ['last_name', 'lastName']);
+  const instagramCols = filterExistingColumns(uCols, ['instagram_handle', 'instagramHandle']);
+  const avatarCols = filterExistingColumns(uCols, ['avatarUrl', 'avatar_url']);
+
+  const displayFromUserCols =
+    displayNameCols.length > 0 ? coalesceFirstNonEmptyTrim('u', displayNameCols) : 'NULL::text';
+
+  let displayFromFullName = 'NULL::text';
+  if (firstNameCols.length > 0 || lastNameCols.length > 0) {
+    const firstSql = firstNameCols.length > 0 ? coalesceColumnValues('u', firstNameCols) : `''::text`;
+    const lastSql = lastNameCols.length > 0 ? coalesceColumnValues('u', lastNameCols) : `''::text`;
+    displayFromFullName = `NULLIF(TRIM(CONCAT_WS(' ', ${firstSql}::text, ${lastSql}::text)), '')`;
+  }
+
+  const displayFromInstagram =
+    instagramCols.length > 0 ? coalesceFirstNonEmptyTrim('u', instagramCols) : 'NULL::text';
+
+  const hasConversations = await pgRegclassExists('public.conversations');
+  const convWhere = hasConversations
+    ? `(c.user1_id = $1::uuid AND c.user2_id = ub.blocked_user_id)
+           OR (c.user2_id = $1::uuid AND c.user1_id = ub.blocked_user_id)`
+    : '';
+
+  const displayFromConversation = hasConversations
+    ? `(SELECT COALESCE(
+          NULLIF(TRIM(c.barber_name::text), ''),
+          NULLIF(TRIM(c.consumer_name::text), '')
+        )
+        FROM conversations c
+        WHERE ${convWhere}
+        ORDER BY COALESCE(c.last_message_at, c.updated_at) DESC NULLS LAST
+        LIMIT 1)`
+    : 'NULL::text';
+
+  const mergedDisplaySql = `COALESCE(
+    ${displayFromUserCols},
+    ${displayFromFullName},
+    ${displayFromInstagram},
+    ${displayFromConversation}
+  )`;
+
+  const avatarFromUser =
+    avatarCols.length > 0 ? coalesceFirstNonEmptyTrim('u', avatarCols) : 'NULL::text';
+
+  const avatarFromConversation = hasConversations
+    ? `(SELECT COALESCE(
+          NULLIF(TRIM(c.barber_profile_picture::text), ''),
+          NULLIF(TRIM(c.consumer_profile_picture::text), '')
+        )
+        FROM conversations c
+        WHERE ${convWhere}
+        ORDER BY COALESCE(c.last_message_at, c.updated_at) DESC NULLS LAST
+        LIMIT 1)`
+    : 'NULL::text';
+
+  const mergedAvatarSql = hasConversations
+    ? `COALESCE(${avatarFromUser}, ${avatarFromConversation})`
+    : avatarFromUser;
+
+  const mergedFirstSql =
+    firstNameCols.length > 0 ? coalesceColumnValues('u', firstNameCols) : 'NULL::text';
+  const mergedLastSql = lastNameCols.length > 0 ? coalesceColumnValues('u', lastNameCols) : 'NULL::text';
+
+  const emailSql = uCols.has('email') ? `u.${quotePgIdent('email')}` : 'NULL::text';
+
+  const orderCreated = createdCol ? `b.${quotePgIdent(createdCol)}` : 'b.id';
+
+  const sql = `
+    SELECT DISTINCT ON (ub.blocked_user_id)
        ub.blocked_user_id::text AS blocked_user_id,
        ub.created_at AS blocked_at,
        b.id::text AS barber_record_id,
-       u.first_name,
-       u.last_name,
-       u."displayName" AS display_name,
-       u."avatarUrl" AS avatar_url,
-       u.email,
-       b."campusId"::text AS campus_id,
-       b."isActive" AS barber_is_active
+       ${mergedFirstSql} AS first_name,
+       ${mergedLastSql} AS last_name,
+       ${mergedDisplaySql} AS display_name,
+       ${mergedAvatarSql} AS avatar_url,
+       ${emailSql} AS email,
+       b.${quotePgIdent(campusCol)}::text AS campus_id,
+       b.${quotePgIdent(activeCol)} AS barber_is_active
      FROM user_blocks ub
      JOIN users u ON u.id = ub.blocked_user_id
-     JOIN barbers b ON b."userId" = u.id
+     JOIN barbers b ON b.${quotePgIdent(barberUserCol)} = u.id
      WHERE ub.blocker_user_id = $1::uuid
-     ORDER BY ub.blocked_user_id, b."isActive" DESC NULLS LAST, b."createdAt" DESC NULLS LAST`,
-    [blockerUserId]
-  );
+     ORDER BY ub.blocked_user_id, b.${quotePgIdent(activeCol)} DESC NULLS LAST, ${orderCreated} DESC NULLS LAST`;
+
+  const r = await pool.query(sql, [blockerUserId]);
   return r.rows.map((row) => ({
     blockedUserId: row.blocked_user_id,
     blockedAt: row.blocked_at instanceof Date ? row.blocked_at.toISOString() : String(row.blocked_at),
