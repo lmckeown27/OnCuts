@@ -162,14 +162,69 @@ export async function createUserBlock(blockerUserId: string, blockedUserId: stri
   );
 }
 
-export async function removeUserBlock(blockerUserId: string, blockedUserId: string): Promise<void> {
+export async function removeUserBlock(blockerUserId: string, blockedUserId: string): Promise<boolean> {
   if (!(await isUgcModerationSchemaReady())) {
-    return;
+    return false;
   }
-  await pool.query(
-    `DELETE FROM user_blocks WHERE blocker_user_id = $1 AND blocked_user_id = $2`,
+  const r = await pool.query(
+    `DELETE FROM user_blocks WHERE blocker_user_id = $1 AND blocked_user_id = $2 RETURNING blocked_user_id`,
     [blockerUserId, blockedUserId]
   );
+  return (r.rowCount ?? 0) > 0;
+}
+
+export type BlockedServiceProviderRow = {
+  blockedUserId: string;
+  blockedAt: string;
+  barberRecordId: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+  campusId: string | null;
+  barberIsActive: boolean;
+};
+
+/**
+ * Users the blocker has peer-blocked who have a barber profile (service providers for booking/messaging).
+ * One row per blocked user (prefers an active barber row when duplicates exist).
+ */
+export async function listBlockedServiceProviders(blockerUserId: string): Promise<BlockedServiceProviderRow[]> {
+  if (!(await isUgcModerationSchemaReady())) {
+    return [];
+  }
+  const r = await pool.query(
+    `SELECT DISTINCT ON (ub.blocked_user_id)
+       ub.blocked_user_id::text AS blocked_user_id,
+       ub.created_at AS blocked_at,
+       b.id::text AS barber_record_id,
+       u.first_name,
+       u.last_name,
+       u."displayName" AS display_name,
+       u."avatarUrl" AS avatar_url,
+       u.email,
+       b."campusId"::text AS campus_id,
+       b."isActive" AS barber_is_active
+     FROM user_blocks ub
+     JOIN users u ON u.id = ub.blocked_user_id
+     JOIN barbers b ON b."userId" = u.id
+     WHERE ub.blocker_user_id = $1::uuid
+     ORDER BY ub.blocked_user_id, b."isActive" DESC NULLS LAST, b."createdAt" DESC NULLS LAST`,
+    [blockerUserId]
+  );
+  return r.rows.map((row) => ({
+    blockedUserId: row.blocked_user_id,
+    blockedAt: row.blocked_at instanceof Date ? row.blocked_at.toISOString() : String(row.blocked_at),
+    barberRecordId: row.barber_record_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    displayName: row.display_name,
+    avatarUrl: row.avatar_url,
+    email: row.email,
+    campusId: row.campus_id,
+    barberIsActive: row.barber_is_active === true,
+  }));
 }
 
 export async function listBlockedUserIds(blockerUserId: string): Promise<string[]> {

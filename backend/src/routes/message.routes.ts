@@ -14,6 +14,7 @@ import {
   createContentReport,
   createUserBlock,
   isUgcModerationSchemaReady,
+  listBlockedServiceProviders,
   listBlockedUserIds,
   notifyDeveloperOfBlock,
   removeUserBlock,
@@ -466,7 +467,28 @@ router.delete('/blocks/:blockedUserId', authenticate, async (req, res, next) => 
     if (!blockedUserId) {
       return res.status(400).json({ success: false, error: 'blockedUserId is required' });
     }
-    await removeUserBlock(userId, blockedUserId);
+    if (!(await isUgcModerationSchemaReady())) {
+      return res.status(503).json({
+        success: false,
+        error: 'User blocking is not available until database migration 028 is applied.',
+        code: 'UGC_SCHEMA_MISSING',
+      });
+    }
+    const removed = await removeUserBlock(userId, blockedUserId);
+    if (!removed) {
+      return res.status(404).json({ success: false, error: 'No block found for this user' });
+    }
+    const io = (req as any).app.get('io') as { to: (room: string) => { emit: (ev: string, data: unknown) => void } } | undefined;
+    if (io) {
+      io.to(`user-${blockedUserId}`).emit('ugc-block-updated', {
+        type: 'unblocked_by_peer',
+        blockerUserId: userId,
+      });
+      io.to(`user-${userId}`).emit('ugc-block-updated', {
+        type: 'i_unblocked_user',
+        blockedUserId,
+      });
+    }
     res.json({ success: true, message: 'Block removed' });
   } catch (error) {
     next(error);
@@ -478,6 +500,47 @@ router.get('/blocks', authenticate, async (req, res, next) => {
     const userId = (req as any).user.userId as string;
     const blockedUserIds = await listBlockedUserIds(userId);
     res.json({ success: true, data: { blockedUserIds } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/v1/messages/blocks/service-providers
+ * Outgoing peer blocks where the blocked account has a barber profile (for consumer “blocked providers” UI).
+ */
+router.get('/blocks/service-providers', authenticate, async (req, res, next) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    if (!(await isUgcModerationSchemaReady())) {
+      return res.status(503).json({
+        success: false,
+        error: 'User blocking is not available until database migration 028 is applied.',
+        code: 'UGC_SCHEMA_MISSING',
+      });
+    }
+    const blocked = await listBlockedServiceProviders(userId);
+    res.json({
+      success: true,
+      data: {
+        blockedServiceProviders: blocked.map((row) => ({
+          blockedUserId: row.blockedUserId,
+          barberId: row.barberRecordId,
+          blockedAt: row.blockedAt,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          displayName: row.displayName,
+          avatarUrl: row.avatarUrl,
+          email: row.email,
+          campusId: row.campusId,
+          barberIsActive: row.barberIsActive,
+          name:
+            row.displayName?.trim() ||
+            `${row.firstName || ''} ${row.lastName || ''}`.trim() ||
+            'Service provider',
+        })),
+      },
+    });
   } catch (error) {
     next(error);
   }
