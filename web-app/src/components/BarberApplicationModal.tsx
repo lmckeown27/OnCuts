@@ -1134,7 +1134,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 )}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Footer */}
