@@ -30,7 +30,17 @@ Request scopes: **`.fullName`** and **`.email`**.
 | `userEmail`, `appleEmail`, `contactEmail` | Optional | Extra aliases for `email` only. |
 | `campusId` | Optional | UUID or campus slug string. |
 
-The server verifies the JWT (**RS256**, `iss` = `https://appleid.apple.com`, `aud` = **`APPLE_CLIENT_ID`** env = iOS bundle ID). It uses JWT claim **`sub`** as **`users.apple_sub`** (source of truth).
+The server verifies the JWT (**RS256**, `iss` = `https://appleid.apple.com`, `aud` = one of the configured Apple client IDs). It uses JWT claim **`sub`** as **`users.apple_sub`** (source of truth).
+
+**Server env (PM2 / `backend/.env`):**
+
+| Variable | App |
+|----------|-----|
+| `APPLE_CLIENT_ID` | Consumer / student app bundle ID (e.g. `Liam.Intera`) |
+| `APPLE_PROVIDER_CLIENT_ID` | **Intera Provider** (barber) bundle ID — required when Provider is a separate target with its own bundle ID |
+| `APPLE_CLIENT_IDS` | Optional comma-separated extras (web Services ID, staging bundle, etc.) |
+
+If Provider sign-in returns **401** with `jwt audience invalid`, add the Provider target’s **Bundle Identifier** from Xcode as `APPLE_PROVIDER_CLIENT_ID` and restart the API. Failed verifies log `token_aud=` vs `configured_audiences=` in PM2.
 
 ### Email precedence (Hide My Email vs Create Account prefill)
 

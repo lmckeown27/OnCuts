@@ -160,6 +160,22 @@ function getGoogleJwtExchangeAudiences(): string[] {
   const trimmed = raw.map((s) => (typeof s === 'string' ? s.trim() : '')).filter(Boolean);
   return [...new Set(trimmed)];
 }
+
+/** Allowed JWT `aud` values for POST /auth/apple (consumer app, Provider app, web Services ID, etc.). */
+function getAppleJwtAudiences(): string[] {
+  const extra = (process.env.APPLE_CLIENT_IDS ?? '')
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const raw = [
+    ...extra,
+    process.env.APPLE_CLIENT_ID,
+    process.env.APPLE_PROVIDER_CLIENT_ID,
+    process.env.APPLE_CONSUMER_CLIENT_ID,
+  ];
+  const trimmed = raw.map((s) => (typeof s === 'string' ? s.trim() : '')).filter(Boolean);
+  return [...new Set(trimmed)];
+}
 // Note: educationalDomainService removed - campus is now determined by user selection, not email domain
 
 /**
@@ -1136,20 +1152,38 @@ export const appleIdTokenLogin = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(400, 'identityToken is required');
     }
 
-    const appleClientId = process.env.APPLE_CLIENT_ID?.trim();
-    if (!appleClientId) {
+    const audiences = getAppleJwtAudiences();
+    if (audiences.length === 0) {
       throw new ApiError(
         500,
-        'Sign in with Apple is not configured. Set APPLE_CLIENT_ID (iOS bundle ID or web Services ID).'
+        'Sign in with Apple is not configured. Set APPLE_CLIENT_ID (consumer bundle ID) and/or APPLE_PROVIDER_CLIENT_ID (Provider app bundle ID).'
       );
     }
 
     let claims: AppleIdTokenPayload;
     try {
-      claims = await verifyAppleIdentityToken(identityToken, appleClientId);
+      claims = await verifyAppleIdentityToken(
+        identityToken,
+        audiences.length === 1 ? audiences[0]! : audiences
+      );
     } catch (verifyErr: unknown) {
-      const msg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
-      logger.warn(`Apple identity token verify failed: ${msg}`);
+      const errMsg = verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+      let tokenAud = '';
+      try {
+        const decoded = jwt.decode(identityToken, { complete: false }) as {
+          aud?: string | string[];
+        } | null;
+        if (decoded?.aud != null) {
+          tokenAud = Array.isArray(decoded.aud) ? decoded.aud.join(',') : String(decoded.aud);
+        }
+      } catch {
+        /* ignore decode errors */
+      }
+      logger.warn(
+        `Apple identity token verify failed: ${errMsg}. configured_audiences=[${audiences.join(
+          ', '
+        )}]${tokenAud ? ` token_aud=${tokenAud}` : ''}`
+      );
       throw new ApiError(401, 'Invalid or expired Apple token');
     }
 

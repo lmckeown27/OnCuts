@@ -11,11 +11,12 @@ export type AppleIdTokenPayload = {
 
 /**
  * Verify an Apple `identityToken` (JWT) using Apple's JWKS.
- * `audience` must be the App ID / Services ID configured for Sign in with Apple (APPLE_CLIENT_ID).
+ * `audience` must be the App ID / Services ID(s) configured for Sign in with Apple
+ * (`APPLE_CLIENT_ID`, `APPLE_PROVIDER_CLIENT_ID`, etc.).
  */
 export async function verifyAppleIdentityToken(
   identityToken: string,
-  audience: string
+  audience: string | string[]
 ): Promise<AppleIdTokenPayload> {
   const client = jwksClient({
     jwksUri: JWKS_URI,
@@ -33,10 +34,17 @@ export async function verifyAppleIdentityToken(
   const signingKey = await client.getSigningKey(kid);
   const publicKey = signingKey.getPublicKey();
 
+  const audienceOpt: jwt.VerifyOptions['audience'] =
+    typeof audience === 'string'
+      ? audience
+      : audience.length === 1
+        ? audience[0]!
+        : (audience as [string, ...string[]]);
+
   const payload = jwt.verify(identityToken, publicKey, {
     algorithms: ['RS256'],
     issuer: APPLE_ISSUER,
-    audience,
+    audience: audienceOpt,
   }) as jwt.JwtPayload;
 
   const sub = payload.sub;
