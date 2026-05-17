@@ -2172,6 +2172,16 @@ export function AdminDashboard({
                             <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">Barber license</p>
+                            <p className="font-semibold text-gray-900">
+                              {selectedApplication.has_license
+                                ? selectedApplication.license_number
+                                  ? `Yes — #${selectedApplication.license_number}`
+                                  : 'Yes (number not provided)'
+                                : 'Not declared'}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1">Phone Number</p>
                             <p className="font-semibold text-gray-900">{selectedApplication.phone_number || 'Not provided'}</p>
                             {selectedApplication.phone_number && (
@@ -2649,6 +2659,16 @@ export function AdminDashboard({
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Experience</p>
                         <p className="font-semibold text-gray-900">{selectedApplication.years_experience || 'Not specified'} years</p>
+                      </div>
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Barber license</p>
+                        <p className="font-semibold text-gray-900">
+                          {selectedApplication.has_license
+                            ? selectedApplication.license_number
+                              ? `Yes — #${selectedApplication.license_number}`
+                              : 'Yes (number not provided)'
+                            : 'Not declared'}
+                        </p>
                       </div>
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-500 mb-1">Phone Number</p>

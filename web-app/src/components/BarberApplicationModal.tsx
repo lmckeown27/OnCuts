@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Scissors, Camera, Clock, Award, CheckCircle, Check, MapPin, ChevronDown, Search, Mail, ClockIcon, UserX, User as UserIcon } from 'lucide-react';
+import { X, Scissors, Clock, Award, Check, MapPin, ChevronDown, Search, Mail, UserX, User as UserIcon, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { barberApplicationService, BarberApplication, GuestBarberApplicationForm } from '../services/barber-application.service';
 import { SERVICE_TYPES } from '../config/services';
@@ -23,8 +23,10 @@ interface ApplicationForm {
   phoneNumber: string; // Required for contact
   campusId: string;
   yearsExperience: string;
-  hasLicense: boolean;
+  /** '' until user completes license verification step */
+  licenseDeclared: 'yes' | 'no' | '';
   licenseNumber: string;
+  licenseAttestation: boolean;
   specialties: string[];
   portfolioDescription: string;
   whyBeBarber: string;
@@ -32,6 +34,31 @@ interface ApplicationForm {
   needsTools: boolean;
   toolsNeeded: string;
   socialMedia: string;
+}
+
+const TOTAL_STEPS = 4;
+
+const emptyApplicationForm = (): ApplicationForm => ({
+  firstName: '',
+  lastName: '',
+  email: '',
+  phoneNumber: '',
+  campusId: '',
+  yearsExperience: '',
+  licenseDeclared: '',
+  licenseNumber: '',
+  licenseAttestation: false,
+  specialties: [],
+  portfolioDescription: '',
+  whyBeBarber: '',
+  availableHours: '',
+  needsTools: false,
+  toolsNeeded: '',
+  socialMedia: '',
+});
+
+function phoneDigits(formatted: string): string {
+  return formatted.replace(/\D/g, '');
 }
 
 export default function BarberApplicationModal({ isOpen, onClose, onSubmitSuccess, guestMode = false }: BarberApplicationModalProps) {
@@ -130,6 +157,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     };
     
     if (isOpen) {
+      setStep(1);
+      setForm(emptyApplicationForm());
+      setCampusSearchQuery('');
       // Skip existing application check for guest mode (no user to check)
       if (!guestMode) {
         checkExistingApplicationAndDemotedStatus();
@@ -141,23 +171,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     }
   }, [isOpen, user?.id, guestMode]);
 
-  const [form, setForm] = useState<ApplicationForm>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    campusId: '',
-    yearsExperience: '',
-    hasLicense: false,
-    licenseNumber: '',
-    specialties: [],
-    portfolioDescription: '',
-    whyBeBarber: '',
-    availableHours: '',
-    needsTools: false,
-    toolsNeeded: '',
-    socialMedia: ''
-  });
+  const [form, setForm] = useState<ApplicationForm>(emptyApplicationForm);
 
   const handleSpecialtyToggle = (specialty: string) => {
     setForm(prev => ({
@@ -172,6 +186,9 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     setIsSubmitting(true);
     
     try {
+      const hasLicense = form.licenseDeclared === 'yes';
+      const licenseNumber = hasLicense ? form.licenseNumber.trim() : undefined;
+
       let result: { applicationId?: string; id?: string; status?: string; submittedAt?: string; createdAt?: string };
       
       if (guestMode) {
@@ -183,8 +200,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           phoneNumber: form.phoneNumber,
           campusId: form.campusId,
           yearsExperience: form.yearsExperience,
-          hasLicense: form.hasLicense,
-          licenseNumber: form.licenseNumber || undefined,
+          hasLicense,
+          licenseNumber,
           specialties: form.specialties,
           hasOwnTools: !form.needsTools,
           toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
@@ -200,8 +217,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           campusId: form.campusId,
           phoneNumber: form.phoneNumber,
           yearsExperience: form.yearsExperience,
-          hasLicense: form.hasLicense,
-          licenseNumber: form.licenseNumber || undefined,
+          hasLicense,
+          licenseNumber,
           specialties: form.specialties,
           hasOwnTools: !form.needsTools,
           toolsNeeded: form.needsTools ? form.toolsNeeded : undefined,
@@ -243,7 +260,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           status: 'pending',
           created_at: new Date().toISOString(),
           years_experience: 0,
-          has_license: false,
+          has_license: form.licenseDeclared === 'yes',
+          license_number: form.licenseDeclared === 'yes' ? form.licenseNumber : undefined,
           specialties: form.specialties,
           has_own_tools: !form.needsTools,
           available_hours: form.availableHours,
@@ -286,13 +304,23 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
   };
   
   // Step 1: Experience & Skills (+ name/email in guest mode)
-  const canProceedStep1 = form.yearsExperience && form.specialties.length > 0 && 
-    (!guestMode || (form.firstName.trim() && form.lastName.trim() && form.email && isValidEmail(form.email)));
-  
-  // Step 2: Campus selection + About You
-  const canProceedStep2 = form.campusId && form.whyBeBarber.trim().length > 0 && form.availableHours;
-  
-  const canSubmit = canProceedStep1 && canProceedStep2;
+  const canProceedStep1 =
+    form.yearsExperience &&
+    form.specialties.length > 0 &&
+    phoneDigits(form.phoneNumber).length === 10 &&
+    (!guestMode ||
+      (form.firstName.trim() && form.lastName.trim() && form.email && isValidEmail(form.email)));
+
+  // Step 2: Barber license verification
+  const canProceedStep2 =
+    form.licenseDeclared !== '' &&
+    form.licenseAttestation &&
+    (form.licenseDeclared === 'no' || form.licenseNumber.trim().length >= 2);
+
+  // Step 3: Campus selection + About You
+  const canProceedStep3 = form.campusId && form.whyBeBarber.trim().length > 0 && form.availableHours;
+
+  const canSubmit = canProceedStep1 && canProceedStep2 && canProceedStep3;
 
   const handleCloseSuccessPopup = () => {
     setSuccessPopupVisible(false);
@@ -590,6 +618,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
           <div className="flex flex-col items-center text-center">
             <h2 className="text-xl font-bold text-white">Become a CampusCut Barber</h2>
             <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
+            <p className="text-primary-100/90 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
           </div>
           <button
             onClick={handleClose}
@@ -778,7 +807,103 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </div>
             </div>
           ) : step === 2 ? (
-            /* Step 2: Campus & About You */
+            /* Step 2: Barber license verification */
+            <div className="space-y-6">
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-8 h-8 text-amber-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Barber license verification</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Campus managers may verify your license before approving your application. Provide accurate
+                      information; misrepresentation can result in rejection.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Do you hold a current barber or cosmetology license? *
+                </label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <label
+                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      form.licenseDeclared === 'yes'
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="licenseDeclared"
+                      checked={form.licenseDeclared === 'yes'}
+                      onChange={() => setForm({ ...form, licenseDeclared: 'yes' })}
+                      className="w-4 h-4 text-primary-600"
+                    />
+                    <span className="text-sm font-medium text-gray-900">Yes, I have a valid license</span>
+                  </label>
+                  <label
+                    className={`flex-1 flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-colors ${
+                      form.licenseDeclared === 'no'
+                        ? 'border-primary-500 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="licenseDeclared"
+                      checked={form.licenseDeclared === 'no'}
+                      onChange={() => setForm({ ...form, licenseDeclared: 'no', licenseNumber: '' })}
+                      className="w-4 h-4 text-primary-600"
+                    />
+                    <span className="text-sm font-medium text-gray-900">No, not yet</span>
+                  </label>
+                </div>
+                {form.licenseDeclared === 'no' && (
+                  <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
+                    You may still apply, but your campus manager may require a license before you can accept bookings.
+                  </p>
+                )}
+              </div>
+
+              {form.licenseDeclared === 'yes' && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Award className="w-4 h-4 inline mr-1 text-primary-600" />
+                    License number *
+                  </label>
+                  <input
+                    type="text"
+                    value={form.licenseNumber}
+                    onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })}
+                    placeholder="State license or certification number"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter the number exactly as it appears on your license. Your campus manager may request a photo
+                    for verification.
+                  </p>
+                </div>
+              )}
+
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 bg-gray-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.licenseAttestation}
+                  onChange={(e) => setForm({ ...form, licenseAttestation: e.target.checked })}
+                  className="w-4 h-4 mt-0.5 text-primary-600 rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-700">
+                  I certify that the license information I provided is accurate to the best of my knowledge, and I
+                  understand that CampusCut or my campus manager may verify it before I am approved to provide
+                  services.
+                </span>
+              </label>
+            </div>
+          ) : step === 3 ? (
+            /* Step 3: Campus & About You */
             <div className="space-y-6">
               {/* Campus Selection */}
               <div className="bg-primary-50 border-2 border-primary-200 rounded-xl p-4">
@@ -919,8 +1044,8 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
               </div>
             </div>
-          ) : (
-            /* Step 3: Review */
+          ) : step === 4 ? (
+            /* Step 4: Review */
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Review Your Application</h3>
               
@@ -952,6 +1077,17 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Campus</p>
                   <p className="font-medium">
                     {(campuses || []).find(c => c.id === form.campusId)?.name || 'Not selected'}
+                  </p>
+                </div>
+
+                <div className="border-t pt-4">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Barber license</p>
+                  <p className="font-medium">
+                    {form.licenseDeclared === 'yes'
+                      ? `Licensed — #${form.licenseNumber.trim() || 'provided'}`
+                      : form.licenseDeclared === 'no'
+                        ? 'No license declared (manager may follow up)'
+                        : 'Not provided'}
                   </p>
                 </div>
 
@@ -1019,10 +1155,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
               </button>
             )}
 
-            {step < 3 ? (
+            {step < TOTAL_STEPS ? (
               <button
                 onClick={() => setStep(step + 1)}
-                disabled={step === 1 ? !canProceedStep1 : !canProceedStep2}
+                disabled={
+                  step === 1 ? !canProceedStep1 : step === 2 ? !canProceedStep2 : !canProceedStep3
+                }
                 className="px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Continue

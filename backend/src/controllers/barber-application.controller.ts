@@ -85,6 +85,13 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(400, 'Missing required fields: campusId, phoneNumber, yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
+    if (typeof hasLicense !== 'boolean') {
+      throw new ApiError(400, 'Barber license verification is required (hasLicense)');
+    }
+    if (hasLicense && (!licenseNumber || !String(licenseNumber).trim())) {
+      throw new ApiError(400, 'License number is required when you have a barber or cosmetology license');
+    }
+
     // Verify the campus exists
     const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId]);
     if (campusCheck.rows.length === 0) {
@@ -710,6 +717,13 @@ export const submitGuestApplication = async (req: Request, res: Response, next: 
 
     if (!campusId || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
       throw new ApiError(400, 'Missing required fields: campusId, yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    }
+
+    if (typeof hasLicense !== 'boolean') {
+      throw new ApiError(400, 'Barber license verification is required (hasLicense)');
+    }
+    if (hasLicense && (!licenseNumber || !String(licenseNumber).trim())) {
+      throw new ApiError(400, 'License number is required when you have a barber or cosmetology license');
     }
 
     // Verify the campus exists
