@@ -13,6 +13,14 @@
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import notificationService from './notification.service';
+import {
+  classifyRecipientApnApp,
+  formatApnTopicMismatchHint,
+  logApnTopicMatrixAtStartup,
+  resolveApnTopicForRecipient,
+  type RecipientApnApp,
+  type ApnTopicResolution,
+} from './apn-topic-routing';
 
 // Optional mobile dependencies - gracefully handle if not installed
 let apn: any, admin: any;
@@ -109,6 +117,7 @@ class PushNotificationService {
           production: false,
         });
         console.log('✅ APN: production + sandbox providers initialized (per-device apns_environment)');
+        logApnTopicMatrixAtStartup();
       } catch (error: any) {
         console.error('❌ Failed to initialize APN Providers:', error.message);
         this.apnProviderProduction = null;
@@ -260,6 +269,7 @@ class PushNotificationService {
 
       const results: DeviceResult[] = [];
       const apnOk = !!(this.apnProviderProduction || this.apnProviderSandbox);
+      const recipientApp: RecipientApnApp = await classifyRecipientApnApp(uid);
 
       for (const device of devices.rows) {
         try {
@@ -342,7 +352,8 @@ class PushNotificationService {
     notification: NotificationData,
     preferredEnv: 'sandbox' | 'production',
     userId: string | number,
-    bundleId?: string | null
+    bundleId?: string | null,
+    recipientApp?: RecipientApnApp
   ): Promise<any> {
     try {
       return await this.sendIOSNotification(
@@ -350,7 +361,8 @@ class PushNotificationService {
         notification,
         preferredEnv,
         userId,
-        bundleId
+        bundleId,
+        recipientApp
       );
     } catch (firstErr: any) {
       const m = String(firstErr?.message || '');
@@ -399,16 +411,23 @@ class PushNotificationService {
     notification: NotificationData,
     apnsEnvironment: 'sandbox' | 'production' = 'production',
     userId: string | number,
-    bundleId?: string | null
+    bundleId?: string | null,
+    recipientApp?: RecipientApnApp
   ): Promise<any> {
     const provider = this.getApnProvider(apnsEnvironment);
     if (!provider) {
       throw new Error('APN Provider not initialized');
     }
 
+    const topicResolution: ApnTopicResolution = await resolveApnTopicForRecipient(
+      String(userId),
+      bundleId,
+      recipientApp
+    );
+
     const note = new apn.Notification();
     note.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-    note.topic = resolveApnTopic(bundleId);
+    note.topic = topicResolution.topic;
 
     const isBadgeOnly =
       notification.type === 'badge_update' ||
@@ -442,7 +461,8 @@ class PushNotificationService {
     const tokenSuffix =
       deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)';
     console.log(
-      `📱 APN send → topic=${note.topic} token=${tokenSuffix} type=${notification.type} gateway=${apnsEnvironment}`
+      `📱 APN send → topic=${note.topic} token=${tokenSuffix} type=${notification.type} ` +
+        `gateway=${apnsEnvironment} recipientApp=${topicResolution.recipientApp} source=${topicResolution.source}`
     );
 
     let result = await provider.send(note, deviceToken);
@@ -503,19 +523,25 @@ class PushNotificationService {
           (failure as any).error?.message ||
           (failure as any).status ||
           'unknown';
+        const topicMismatch =
+          apnsReason === 'BadDeviceToken' || apnsReason === 'DeviceTokenNotForTopic';
         logger.warn('📱 APNs rejected notification', {
           tokenSuffix: deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)',
           httpStatus: (failure as any).status,
           reason: apnsReason,
           topic: note.topic,
+          topicSource: topicResolution.source,
+          recipientApp: topicResolution.recipientApp,
           apnsGateway: apnsEnvironment,
-          hint:
-            apnsReason === 'BadDeviceToken' || apnsReason === 'DeviceTokenNotForTopic'
-              ? 'Check bundle_id on mobile_devices (or APN_BUNDLE_ID env) matches the app; re-register with bundleId + apnsEnvironment'
-              : apnsReason === 'BadCertificateEnvironment' || apnsReason === 'BadEnvironmentKeyInToken'
-                ? 'Token/gateway mismatch: POST /notifications/register-device with apnsEnvironment "sandbox" for Xcode builds, "production" for TestFlight/App Store'
-                : undefined,
+          hint: topicMismatch
+            ? formatApnTopicMismatchHint(topicResolution, apnsEnvironment)
+            : apnsReason === 'BadCertificateEnvironment' || apnsReason === 'BadEnvironmentKeyInToken'
+              ? 'Token/gateway mismatch: POST /notifications/register-device with apnsEnvironment "sandbox" for Xcode builds, "production" for TestFlight/App Store'
+              : undefined,
         });
+        if (topicMismatch) {
+          console.error('📱 APN topic/token mismatch:', formatApnTopicMismatchHint(topicResolution, apnsEnvironment));
+        }
         const st = String((failure as any).status || '');
         const reasonStr = String(apnsReason);
         // Only drop tokens Apple says are gone/invalid — not 400 in general (env/topic/config errors also use 400).
