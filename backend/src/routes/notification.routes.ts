@@ -18,7 +18,7 @@ router.get('/devices', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
     const r = await pool.query(
-      `SELECT id, platform, is_active, apns_environment, updated_at,
+      `SELECT id, platform, is_active, apns_environment, bundle_id, updated_at,
               '…' || RIGHT(device_token, 8) AS token_suffix
        FROM mobile_devices WHERE user_id = $1::uuid
        ORDER BY updated_at DESC NULLS LAST`,
@@ -260,9 +260,16 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 router.post('/register-device', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
-    const { deviceToken, platform: platformRaw, apnsEnvironment } = req.body;
+    const { deviceToken, platform: platformRaw, apnsEnvironment, bundleId, bundle_id } = req.body;
     const platform =
       typeof platformRaw === 'string' ? platformRaw.trim().toLowerCase() : platformRaw;
+    const bundleIdRaw =
+      typeof bundleId === 'string'
+        ? bundleId
+        : typeof bundle_id === 'string'
+          ? bundle_id
+          : '';
+    const bundleIdValue = bundleIdRaw.trim() || null;
 
     if (!deviceToken || !platform) {
       return res.status(400).json({
@@ -292,43 +299,65 @@ router.post('/register-device', authenticate, async (req, res, next) => {
     // Atomic upsert: avoids duplicate key when two register-device calls race (same physical token).
     try {
       await pool.query(
-        `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment, bundle_id)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (device_token) DO UPDATE SET
            user_id = EXCLUDED.user_id,
            platform = EXCLUDED.platform,
            apns_environment = EXCLUDED.apns_environment,
+           bundle_id = COALESCE(EXCLUDED.bundle_id, mobile_devices.bundle_id),
            is_active = true,
            updated_at = NOW()`,
-        [userId, deviceToken, platform, apnsEnv]
+        [userId, deviceToken, platform, apnsEnv, bundleIdValue]
       );
     } catch (err: any) {
-      if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
+      const msg = String(err?.message || '');
+      if (err?.code === '42703' && msg.includes('bundle_id')) {
+        console.warn(
+          '⚠️ mobile_devices.bundle_id missing — run backend/src/database/migrations/029_mobile_devices_bundle_id.sql'
+        );
+        await pool.query(
+          `INSERT INTO mobile_devices (user_id, device_token, platform, apns_environment)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (device_token) DO UPDATE SET
+             user_id = EXCLUDED.user_id,
+             platform = EXCLUDED.platform,
+             apns_environment = EXCLUDED.apns_environment,
+             is_active = true,
+             updated_at = NOW()`,
+          [userId, deviceToken, platform, apnsEnv]
+        );
+      } else if (err?.code === '42703' && msg.includes('apns_environment')) {
         console.warn(
           '⚠️ mobile_devices.apns_environment missing — run backend/src/database/migrations/025_mobile_devices_apns_environment.sql'
         );
         await pool.query(
-          `INSERT INTO mobile_devices (user_id, device_token, platform)
-           VALUES ($1, $2, $3)
+          `INSERT INTO mobile_devices (user_id, device_token, platform, bundle_id)
+           VALUES ($1, $2, $3, $4)
            ON CONFLICT (device_token) DO UPDATE SET
              user_id = EXCLUDED.user_id,
              platform = EXCLUDED.platform,
+             bundle_id = COALESCE(EXCLUDED.bundle_id, mobile_devices.bundle_id),
              is_active = true,
              updated_at = NOW()`,
-          [userId, deviceToken, platform]
+          [userId, deviceToken, platform, bundleIdValue]
         );
       } else {
         throw err;
       }
     }
 
-    console.log(`✅ Registered ${platform} device for user ${userId}`);
+    console.log(
+      `✅ Registered ${platform} device for user ${userId}` +
+        (bundleIdValue ? ` (bundle_id=${bundleIdValue})` : '')
+    );
 
     res.json({
       success: true,
       message: 'Device registered successfully',
       data: {
         apnsEnvironment: platform === 'ios' ? apnsEnv : null,
+        bundleId: platform === 'ios' ? bundleIdValue : null,
       },
     });
   } catch (error) {

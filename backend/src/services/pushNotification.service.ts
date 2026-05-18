@@ -59,6 +59,13 @@ function loadApnP8FromEnv(envValue: string, envLabel: string): string {
   return fs.readFileSync(keyPath, 'utf8');
 }
 
+/** APNs topic = iOS bundle ID. Per-device row wins; else env default (consumer app). */
+function resolveApnTopic(bundleId?: string | null): string {
+  const perDevice = typeof bundleId === 'string' ? bundleId.trim() : '';
+  if (perDevice) return perDevice;
+  return process.env.APN_BUNDLE_ID || 'com.campuscuts.ios';
+}
+
 class PushNotificationService {
   /** Production APNs gateway (TestFlight / App Store tokens). */
   private apnProviderProduction: any = null;
@@ -187,18 +194,26 @@ class PushNotificationService {
         type: notification.type,
       });
 
-      // Get user's registered devices (apns_environment: sandbox = Xcode token, production = TestFlight/App Store)
-      let devices: { rows: Array<{ device_token: string; platform: string; apns_environment?: string }> };
+      // Get user's registered devices (apns_environment + bundle_id per row)
+      type DeviceRow = {
+        device_token: string;
+        platform: string;
+        apns_environment?: string;
+        bundle_id?: string | null;
+      };
+      let devices: { rows: DeviceRow[] };
       try {
         devices = await pool.query(
           `SELECT device_token, platform,
-                  COALESCE(apns_environment, 'production') AS apns_environment
+                  COALESCE(apns_environment, 'production') AS apns_environment,
+                  bundle_id
            FROM mobile_devices WHERE user_id = $1::uuid AND is_active = true`,
           [uid]
         );
       } catch (err: any) {
-        // 42703 = undefined_column — deploy migration 025 before relying on per-device sandbox
-        if (err?.code === '42703' && String(err?.message || '').includes('apns_environment')) {
+        const errMsg = String(err?.message || '');
+        // 42703 = undefined_column — older DBs before migrations 025 / 029
+        if (err?.code === '42703' && errMsg.includes('apns_environment')) {
           logger.warn(
             '📱 mobile_devices.apns_environment missing — run migration 025; using production APNs for all devices',
             { userId: uid }
@@ -207,9 +222,25 @@ class PushNotificationService {
             `SELECT device_token, platform FROM mobile_devices WHERE user_id = $1::uuid AND is_active = true`,
             [uid]
           );
-          devices.rows = devices.rows.map((r: { device_token: string; platform: string }) => ({
+          devices.rows = devices.rows.map((r: DeviceRow) => ({
             ...r,
             apns_environment: 'production',
+            bundle_id: null,
+          }));
+        } else if (err?.code === '42703' && errMsg.includes('bundle_id')) {
+          logger.warn(
+            '📱 mobile_devices.bundle_id missing — run migration 029; using APN_BUNDLE_ID env for all iOS devices',
+            { userId: uid }
+          );
+          devices = await pool.query(
+            `SELECT device_token, platform,
+                    COALESCE(apns_environment, 'production') AS apns_environment
+             FROM mobile_devices WHERE user_id = $1::uuid AND is_active = true`,
+            [uid]
+          );
+          devices.rows = devices.rows.map((r: DeviceRow) => ({
+            ...r,
+            bundle_id: null,
           }));
         } else {
           throw err;
@@ -239,7 +270,8 @@ class PushNotificationService {
               device.device_token,
               notification,
               apnsEnv,
-              uid
+              uid,
+              device.bundle_id
             );
             results.push({ platform: 'ios', token: device.device_token, result });
           } else if (device.platform === 'android' && this.fcmApp) {
@@ -309,10 +341,17 @@ class PushNotificationService {
     deviceToken: string,
     notification: NotificationData,
     preferredEnv: 'sandbox' | 'production',
-    userId: string | number
+    userId: string | number,
+    bundleId?: string | null
   ): Promise<any> {
     try {
-      return await this.sendIOSNotification(deviceToken, notification, preferredEnv, userId);
+      return await this.sendIOSNotification(
+        deviceToken,
+        notification,
+        preferredEnv,
+        userId,
+        bundleId
+      );
     } catch (firstErr: any) {
       const m = String(firstErr?.message || '');
       if (
@@ -328,7 +367,13 @@ class PushNotificationService {
         tried: preferredEnv,
         retry: alt,
       });
-      const result = await this.sendIOSNotification(deviceToken, notification, alt, userId);
+      const result = await this.sendIOSNotification(
+        deviceToken,
+        notification,
+        alt,
+        userId,
+        bundleId
+      );
       try {
         await pool.query(
           `UPDATE mobile_devices SET apns_environment = $1, updated_at = NOW() WHERE device_token = $2`,
@@ -353,7 +398,8 @@ class PushNotificationService {
     deviceToken: string,
     notification: NotificationData,
     apnsEnvironment: 'sandbox' | 'production' = 'production',
-    userId: string | number
+    userId: string | number,
+    bundleId?: string | null
   ): Promise<any> {
     const provider = this.getApnProvider(apnsEnvironment);
     if (!provider) {
@@ -362,7 +408,7 @@ class PushNotificationService {
 
     const note = new apn.Notification();
     note.expiry = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-    note.topic = process.env.APN_BUNDLE_ID || 'com.campuscuts.ios';
+    note.topic = resolveApnTopic(bundleId);
 
     const isBadgeOnly =
       notification.type === 'badge_update' ||
@@ -393,6 +439,12 @@ class PushNotificationService {
       category: notification.category,
     };
 
+    const tokenSuffix =
+      deviceToken.length > 8 ? `…${deviceToken.slice(-8)}` : '(short)';
+    console.log(
+      `📱 APN send → topic=${note.topic} token=${tokenSuffix} type=${notification.type} gateway=${apnsEnvironment}`
+    );
+
     let result = await provider.send(note, deviceToken);
 
     // Apple can reject the notification (wrong env/token/topic) while still returning 200 from our HTTP client.
@@ -418,6 +470,9 @@ class PushNotificationService {
             retry: altEnv,
             topic: note.topic,
           });
+          console.log(
+            `📱 APN send (retry ${altEnv}) → topic=${note.topic} token=${tokenSuffix} type=${notification.type}`
+          );
           const retryResult = await altProvider.send(note, deviceToken);
           const retrySent = retryResult.sent?.length ?? 0;
           if (retrySent > 0) {
@@ -456,7 +511,7 @@ class PushNotificationService {
           apnsGateway: apnsEnvironment,
           hint:
             apnsReason === 'BadDeviceToken' || apnsReason === 'DeviceTokenNotForTopic'
-              ? 'Check APN_BUNDLE_ID matches the app; re-register device with apnsEnvironment sandbox vs production'
+              ? 'Check bundle_id on mobile_devices (or APN_BUNDLE_ID env) matches the app; re-register with bundleId + apnsEnvironment'
               : apnsReason === 'BadCertificateEnvironment' || apnsReason === 'BadEnvironmentKeyInToken'
                 ? 'Token/gateway mismatch: POST /notifications/register-device with apnsEnvironment "sandbox" for Xcode builds, "production" for TestFlight/App Store'
                 : undefined,
