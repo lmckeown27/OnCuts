@@ -601,26 +601,48 @@ export const deleteAccount = async (req: Request, res: Response) => {
       WHERE br."userId" = $1
     `;
 
-    // Delete in correct order to respect foreign key constraints
-    // 1. Delete messages (references conversations)
+    // Delete in correct order to respect foreign key constraints.
+    // Production messaging is booking-centric (`conversations.booking_id`); older rows may
+    // still use user1_id/user2_id — clear both paths before dropping bookings.
+
+    // 1a. Messages on booking-tied conversations (Provider / bookings-simple path)
     await safeDelete(
-      `DELETE FROM messages 
+      `DELETE FROM messages
+       WHERE conversation_id IN (
+         SELECT id FROM conversations WHERE booking_id IN (${userBookingIdsSubquery})
+       )`,
+      [id]
+    );
+
+    // 1b. Messages on participant-tied conversations (legacy path)
+    await safeDelete(
+      `DELETE FROM messages
        WHERE conversation_id IN (
          SELECT id FROM conversations WHERE user1_id = $1 OR user2_id = $1
        )`,
       [id]
     );
 
-    // 2. Delete conversations
+    // 2a. Booking-tied conversations
+    await safeDelete(
+      `DELETE FROM conversations WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+
+    // 2b. Participant-tied conversations
     await safeDelete(
       'DELETE FROM conversations WHERE user1_id = $1 OR user2_id = $1',
       [id]
     );
 
-    // 3. Delete notifications
+    // 3. Notifications
     await safeDelete('DELETE FROM notifications WHERE user_id = $1', [id]);
+    await safeDelete(
+      'DELETE FROM booking_request_notifications WHERE user_id = $1',
+      [id]
+    );
 
-    // 4. Payments reference bookings — must run before deleting bookings (payments_booking_id_fkey)
+    // 4. Payments / Stripe ledger rows — must run before deleting bookings
     await safeDelete(
       `DELETE FROM payments WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
@@ -629,14 +651,25 @@ export const deleteAccount = async (req: Request, res: Response) => {
       'DELETE FROM payments WHERE consumer_id = $1 OR barber_id = $1',
       [id]
     );
+    await safeDelete(
+      `DELETE FROM payment_transactions WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete(
+      'DELETE FROM payment_transactions WHERE student_id = $1 OR barber_id = $1',
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM barber_payouts WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete('DELETE FROM barber_payouts WHERE barber_id = $1', [id]);
 
-    // 5. Archived booking messages (no FK, but keep DB clean)
+    // 5. Archived / legacy booking message tables
     await safeDelete(
       `DELETE FROM archived_booking_messages WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
     );
-
-    // 6. Optional booking-adjacent tables (legacy / migrations vary)
     await safeDelete(
       `DELETE FROM booking_messages WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
@@ -645,32 +678,63 @@ export const deleteAccount = async (req: Request, res: Response) => {
       `DELETE FROM booking_request_notifications WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
     );
-    await safeDelete('DELETE FROM pending_payouts WHERE booking_id IN (' + userBookingIdsSubquery + ')', [id]);
+    await safeDelete(
+      'DELETE FROM pending_payouts WHERE booking_id IN (' + userBookingIdsSubquery + ')',
+      [id]
+    );
 
-    // 7. Reviews / disputes tied to bookings (Prisma-style names if present)
+    // 6. Reviews / disputes — try snake_case and camelCase column names (schema drift)
+    await safeDelete(
+      `DELETE FROM reviews WHERE booking_id IN (${userBookingIdsSubquery})`,
+      [id]
+    );
     await safeDelete(
       `DELETE FROM reviews WHERE "bookingId" IN (${userBookingIdsSubquery})`,
+      [id]
+    );
+    await safeDelete('DELETE FROM reviews WHERE consumer_id = $1', [id]);
+    await safeDelete('DELETE FROM reviews WHERE "consumerId" = $1', [id]);
+    await safeDelete(
+      `DELETE FROM reviews WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM reviews WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
+    await safeDelete(
+      `DELETE FROM disputes WHERE booking_id IN (${userBookingIdsSubquery})`,
       [id]
     );
     await safeDelete(
       `DELETE FROM disputes WHERE "bookingId" IN (${userBookingIdsSubquery})`,
       [id]
     );
+    await safeDelete('DELETE FROM disputes WHERE opened_by = $1', [id]);
 
-    // 8. Delete bookings (camelCase columns match production / Prisma schema)
+    // 7. Delete bookings (production camelCase + legacy snake_case)
     await safeDelete(`DELETE FROM bookings WHERE "consumerId" = $1`, [id]);
     await safeDelete(
       `DELETE FROM bookings WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
+    await safeDelete('DELETE FROM bookings WHERE consumer_id = $1', [id]);
+    await safeDelete(
+      `DELETE FROM bookings WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
 
-    // 9. Availability slots for this barber (table is "availability", not barber_availability)
+    // 8. Availability + one-off blocks (after bookings — booking holds availability FK)
     await safeDelete(
       `DELETE FROM availability WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
     );
+    await safeDelete(
+      `DELETE FROM barber_time_blocks WHERE barber_id IN (SELECT id FROM barbers WHERE "userId" = $1)`,
+      [id]
+    );
 
-    // 10. Barber-owned rows (camelCase barberId)
+    // 9. Barber-owned rows (camelCase barberId)
     await safeDelete(
       `DELETE FROM portfolio_images WHERE "barberId" IN (SELECT id FROM barbers WHERE "userId" = $1)`,
       [id]
@@ -684,20 +748,42 @@ export const deleteAccount = async (req: Request, res: Response) => {
       [id]
     );
 
-    // 11. Customer profile / reviews about customer (optional tables)
+    // 9b. Campus service locations this user created (Provider CM/barber proposals).
+    // FK service_locations_created_by_fkey blocks DELETE FROM users if skipped.
+    await safeDelete(
+      `DELETE FROM barber_service_locations WHERE location_id IN (
+         SELECT id FROM service_locations WHERE created_by = $1::uuid
+       )`,
+      [id]
+    );
+    await safeDelete(
+      'UPDATE service_locations SET reviewed_by = NULL WHERE reviewed_by = $1::uuid',
+      [id]
+    );
+    await safeDelete('DELETE FROM service_locations WHERE created_by = $1::uuid', [id]);
+
+    // 10. Customer profile / reviews about customer (optional tables)
     await safeDelete('DELETE FROM customer_profiles WHERE user_id = $1', [id]);
     await safeDelete('DELETE FROM customer_reviews WHERE customer_id = $1', [id]);
 
-    // 12. Delete barber applications
+    // 11. Delete barber applications
     await safeDelete('DELETE FROM barber_applications WHERE user_id = $1', [id]);
 
-    // 13. Delete guest barber applications linked to this user
+    // 12. Delete guest barber applications linked to this user
     await safeDelete('DELETE FROM guest_barber_applications WHERE linked_user_id = $1', [id]);
 
-    // 14. Delete barber record
+    // 13. Delete barber record
     await safeDelete('DELETE FROM barbers WHERE "userId" = $1', [id]);
 
-    // 15. Finally delete the user (this will cascade to any tables with ON DELETE CASCADE)
+    // 14. UGC / devices (CASCADE on users.id where migration 028 applied)
+    await safeDelete(
+      'DELETE FROM ugc_content_reports WHERE reporter_user_id = $1 OR reported_user_id = $1',
+      [id]
+    );
+    await safeDelete('DELETE FROM user_blocks WHERE blocker_user_id = $1 OR blocked_user_id = $1', [id]);
+    await safeDelete('DELETE FROM mobile_devices WHERE user_id = $1', [id]);
+
+    // 15. Finally delete the user
     await client.query('DELETE FROM users WHERE id = $1', [id]);
 
     await client.query('COMMIT');
@@ -708,12 +794,20 @@ export const deleteAccount = async (req: Request, res: Response) => {
       success: true,
       message: 'Account deleted successfully',
     });
-  } catch (error) {
+  } catch (error: any) {
     await client.query('ROLLBACK');
-    logger.error('Error deleting account:', error);
+    const pgDetail = typeof error?.detail === 'string' ? error.detail : undefined;
+    logger.error('Error deleting account:', {
+      message: error?.message,
+      code: error?.code,
+      detail: pgDetail,
+      table: error?.table,
+      constraint: error?.constraint,
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to delete account',
+      ...(pgDetail ? { detail: pgDetail } : {}),
     });
   } finally {
     client.release();
