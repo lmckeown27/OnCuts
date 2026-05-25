@@ -5,68 +5,67 @@
  */
 
 import express from 'express';
-import { authenticate } from '../middleware/auth';
+import { authenticate, refreshAccessRoleFromDb } from '../middleware/auth';
 import * as adminController from '../controllers/admin.controller';
 
 const router = express.Router();
 
-// All routes require authentication and admin role
-// Role check is done in controllers
+// JWT role claim can lag DB (promoted admin, long-lived mobile token). Refresh before handlers.
+router.use(authenticate, refreshAccessRoleFromDb);
 
 // Platform Fees
-router.get('/fees', authenticate, adminController.getPlatformFees);
-router.post('/fees/withdraw', authenticate, adminController.withdrawPlatformFees);
+router.get('/fees', adminController.getPlatformFees);
+router.post('/fees/withdraw', adminController.withdrawPlatformFees);
 
 // Reconciliation
-router.post('/reconciliation/run', authenticate, adminController.runReconciliation);
-router.get('/reconciliation/reports', authenticate, adminController.getReconciliationReports);
+router.post('/reconciliation/run', adminController.runReconciliation);
+router.get('/reconciliation/reports', adminController.getReconciliationReports);
 
 // Withdrawal Batches
-router.get('/withdrawals/batches', authenticate, adminController.getWithdrawalBatches);
-router.post('/withdrawals/process-batch', authenticate, adminController.processBatch);
+router.get('/withdrawals/batches', adminController.getWithdrawalBatches);
+router.post('/withdrawals/process-batch', adminController.processBatch);
 
 // User Management
-router.post('/users/:userId/unban', authenticate, adminController.unbanUser);
-router.get('/users/:userId/balance', authenticate, adminController.getUserBalance);
-router.get('/users/:userId/bookings', authenticate, adminController.getUserBookings);
-router.post('/users/:userId/credit', authenticate, adminController.issueCredit);
+router.post('/users/:userId/unban', adminController.unbanUser);
+router.get('/users/:userId/balance', adminController.getUserBalance);
+router.get('/users/:userId/bookings', adminController.getUserBookings);
+router.post('/users/:userId/credit', adminController.issueCredit);
 
 // Audit Logs
-router.get('/audit-logs', authenticate, adminController.getAuditLogs);
+router.get('/audit-logs', adminController.getAuditLogs);
 
 // Treasury Stats
-router.get('/treasury', authenticate, adminController.getTreasuryStats);
+router.get('/treasury', adminController.getTreasuryStats);
 
 // Platform Stats (total users, bookings, etc.)
-router.get('/stats', authenticate, adminController.getPlatformStats);
+router.get('/stats', adminController.getPlatformStats);
 
 // Services Management (for campus managers and admins)
-router.get('/services', authenticate, adminController.getServices);
-router.post('/services', authenticate, adminController.createService);
-router.put('/services/:id', authenticate, adminController.updateService);
-router.delete('/services/:id', authenticate, adminController.deleteService);
+router.get('/services', adminController.getServices);
+router.post('/services', adminController.createService);
+router.put('/services/:id', adminController.updateService);
+router.delete('/services/:id', adminController.deleteService);
 
 // Campus Management (admin only)
-router.get('/campuses', authenticate, adminController.getAllCampuses);
-router.get('/campuses/aggregate/performance', authenticate, adminController.getAggregatePerformance);
-router.get('/campuses/aggregate/metrics', authenticate, adminController.getAggregateMetrics);
-router.get('/campuses/:campusId/performance', authenticate, adminController.getCampusPerformance);
-router.get('/campuses/:campusId/metrics', authenticate, adminController.getCampusMetrics);
-router.get('/campuses/:campusId/barbers', authenticate, adminController.getCampusBarbers);
-router.post('/campuses/:campusId/manager', authenticate, adminController.assignCampusManager);
+router.get('/campuses', adminController.getAllCampuses);
+router.get('/campuses/aggregate/performance', adminController.getAggregatePerformance);
+router.get('/campuses/aggregate/metrics', adminController.getAggregateMetrics);
+router.get('/campuses/:campusId/performance', adminController.getCampusPerformance);
+router.get('/campuses/:campusId/metrics', adminController.getCampusMetrics);
+router.get('/campuses/:campusId/barbers', adminController.getCampusBarbers);
+router.post('/campuses/:campusId/manager', adminController.assignCampusManager);
 
 // Barber Management (admin only)
-router.get('/barbers', authenticate, adminController.getAllBarbers);
-router.get('/barbers/:barberRecordId/bookings', authenticate, adminController.getBarberBookings);
-router.get('/bookings/:bookingId/messages', authenticate, adminController.getBookingMessages);
+router.get('/barbers', adminController.getAllBarbers);
+router.get('/barbers/:barberRecordId/bookings', adminController.getBarberBookings);
+router.get('/bookings/:bookingId/messages', adminController.getBookingMessages);
 
 // User Management (admin only)
-router.get('/users', authenticate, adminController.getAllUsers);
+router.get('/users', adminController.getAllUsers);
 
 // UGC moderation (App Store Guideline 1.2)
-router.get('/moderation/banned-users', authenticate, adminController.listBannedUsers);
-router.get('/moderation/reports', authenticate, adminController.listUgcReports);
-router.post('/moderation/reports/:reportId/resolve', authenticate, adminController.resolveUgcReport);
+router.get('/moderation/banned-users', adminController.listBannedUsers);
+router.get('/moderation/reports', adminController.listUgcReports);
+router.post('/moderation/reports/:reportId/resolve', adminController.resolveUgcReport);
 
 export default router;
-

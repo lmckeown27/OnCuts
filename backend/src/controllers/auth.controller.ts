@@ -1563,7 +1563,11 @@ export const refreshToken = async (req: AuthRequest, res: Response, next: NextFu
 
     res.json({
       success: true,
-      data: { accessToken: newToken },
+      data: {
+        accessToken: newToken,
+        /** Alias for older/native clients that read `token` instead of `accessToken`. */
+        token: newToken,
+      },
     });
   } catch (error) {
     next(new ApiError(401, 'Invalid refresh token'));

@@ -39,7 +39,7 @@ function generatePricingFromSpecialties(specialties: string[]): { name: string; 
 }
 
 interface BarberApplicationBody {
-  campusId: string;
+  campusId?: string;
   phoneNumber: string;
   yearsExperience: string;
   hasLicense: boolean;
@@ -80,9 +80,9 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       additionalNotes
     }: BarberApplicationBody = req.body;
 
-    // Validate required fields
-    if (!campusId || !phoneNumber || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
-      throw new ApiError(400, 'Missing required fields: campusId, phoneNumber, yearsExperience, specialties, availableHours, and whyBeBarber are required');
+    // Validate required fields (campus is optional for provider applications)
+    if (!phoneNumber || !yearsExperience || !specialties || specialties.length === 0 || !availableHours || !whyBeBarber) {
+      throw new ApiError(400, 'Missing required fields: phoneNumber, yearsExperience, specialties, availableHours, and whyBeBarber are required');
     }
 
     if (typeof hasLicense !== 'boolean') {
@@ -92,10 +92,16 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
       throw new ApiError(400, 'License number is required when you have a barber or cosmetology license');
     }
 
-    // Verify the campus exists
-    const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [campusId]);
-    if (campusCheck.rows.length === 0) {
-      throw new ApiError(400, 'Invalid campus selected');
+    const resolvedCampusId =
+      typeof campusId === 'string' && campusId.trim() ? campusId.trim() : null;
+
+    let campusName: string | null = null;
+    if (resolvedCampusId) {
+      const campusCheck = await pool.query('SELECT id, name FROM campuses WHERE id = $1', [resolvedCampusId]);
+      if (campusCheck.rows.length === 0) {
+        throw new ApiError(400, 'Invalid campus selected');
+      }
+      campusName = campusCheck.rows[0].name;
     }
 
     // Get user's role
@@ -109,8 +115,7 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
     }
 
     const user = userResult.rows[0];
-    // Use the campus selected in the application form
-    user.campusId = campusId;
+    user.campusId = resolvedCampusId;
 
     // Check if user is already a barber
     if (user.role === 'BARBER') {
@@ -170,27 +175,26 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
 
       const applicant = applicantInfo.rows[0];
 
-      // Find campus manager(s) for this campus
-      // Check both: barbers with isCampusManager=true, OR users with role='CAMPUS_MANAGER' at this campus
-      const campusManagers = await pool.query(
-        `SELECT DISTINCT u.id, u.first_name, u.last_name, u.email
-         FROM users u
-         LEFT JOIN barbers b ON u.id = b."userId"
-         WHERE 
-           (b."campusId" = $1 AND b."isCampusManager" = true)
-           OR (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')`,
-        [user.campusId]
-      );
+      const campusManagers = resolvedCampusId
+        ? await pool.query(
+            `SELECT DISTINCT u.id, u.first_name, u.last_name, u.email
+             FROM users u
+             LEFT JOIN barbers b ON u.id = b."userId"
+             WHERE 
+               (b."campusId" = $1 AND b."isCampusManager" = true)
+               OR (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')`,
+            [resolvedCampusId]
+          )
+        : { rows: [] as { id: string; first_name: string; last_name: string; email: string }[] };
 
-      // Get campus name for the application
-      const campusInfo = await pool.query('SELECT name FROM campuses WHERE id = $1', [user.campusId]);
-      const campusName = campusInfo.rows[0]?.name || applicant.campus_name || 'Unknown Campus';
+      const resolvedCampusName =
+        campusName || applicant.campus_name || 'Not specified';
 
       const applicationDetails = {
         applicantName: `${applicant.first_name} ${applicant.last_name}`.trim(),
         applicantEmail: applicant.email,
         applicantPhone: phoneNumber || undefined,
-        campusName,
+        campusName: resolvedCampusName,
         yearsExperience,
         hasLicense: hasLicense || false,
         licenseNumber: licenseNumber || undefined,
@@ -239,7 +243,7 @@ export const submitApplication = async (req: AuthRequest, res: Response, next: N
               adminName,
               applicationDetails
             );
-            logger.info(`Barber application notification sent to admin: ${admin.email} (no campus manager for campus ${user.campusId})`);
+            logger.info(`Barber application notification sent to admin: ${admin.email} (no campus manager for campus ${resolvedCampusId ?? 'none'})`);
           }
         } else {
           logger.warn(`No campus manager or admin found to notify for application ${application.id}`);

@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { ApiError } from './errorHandler';
 import { verifyToken, extractTokenFromHeader } from '../utils/jwt.utils';
+import { pool } from '../database/connection';
+import { resolveAccessTokenRole } from '../utils/access-token-role';
 
 /**
  * JWT Authentication Middleware
@@ -367,10 +369,50 @@ export const requireEmailVerification = (
 };
 
 /**
+ * Re-read `users.role` from Postgres and patch `req.user.role` on the JWT payload.
+ * Fixes stale access tokens (e.g. user promoted to ADMIN in DB after last sign-in).
+ * Use after `authenticate` on `/admin/*` routes and inside `requireAdmin`.
+ */
+export async function syncRequestUserRoleFromDb(authReq: AuthRequest): Promise<void> {
+  if (!authReq.user?.userId) {
+    throw new ApiError(401, 'Not authenticated');
+  }
+
+  const result = await pool.query(
+    `SELECT email, role, "campusId" FROM users WHERE id = $1`,
+    [authReq.user.userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new ApiError(401, 'User not found');
+  }
+
+  const row = result.rows[0];
+  authReq.user.role = await resolveAccessTokenRole(String(authReq.user.userId), row.role);
+  authReq.user.email = row.email;
+  if (row.campusId != null && row.campusId !== undefined) {
+    authReq.user.campusId = row.campusId;
+  }
+}
+
+export const refreshAccessRoleFromDb = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    await syncRequestUserRoleFromDb(req as AuthRequest);
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Admin-Only Middleware
  * 
  * Convenience middleware to require admin role.
- * Equivalent to requireRole('admin').
+ * Equivalent to requireRole('admin'). Refreshes role from DB before check.
  * 
  * @param req - Express request object
  * @param res - Express response object
@@ -380,7 +422,7 @@ export const requireEmailVerification = (
  * router.post('/admin/campus', authenticate, requireAdmin, createCampus);
  * router.get('/admin/users', authenticate, requireAdmin, getAllUsers);
  */
-export const requireAdmin = (
+export const requireAdmin = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -391,11 +433,15 @@ export const requireAdmin = (
     return next(new ApiError(401, 'Not authenticated'));
   }
 
-  if (authReq.user.role?.toLowerCase() !== 'admin') {
-    return next(new ApiError(403, 'Admin access required'));
+  try {
+    await syncRequestUserRoleFromDb(authReq);
+    if (authReq.user.role?.toLowerCase() !== 'admin') {
+      return next(new ApiError(403, 'Admin access required'));
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-
-  next();
 };
 
 /**

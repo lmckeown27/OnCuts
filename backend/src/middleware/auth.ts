@@ -17,6 +17,8 @@ export {
   // Middleware functions
   authenticate,
   optionalAuthenticate,
+  refreshAccessRoleFromDb,
+  syncRequestUserRoleFromDb,
   requireRole,
   requireEmailVerification,
   requireAdmin,
