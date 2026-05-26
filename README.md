@@ -145,7 +145,7 @@ DATABASE_URL="postgresql://campuscuts_user:password@localhost:5432/campuscuts?sc
 JWT_SECRET=your_64_character_secret_here
 JWT_REFRESH_SECRET=your_64_character_refresh_secret_here
 JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
+JWT_REFRESH_EXPIRES_IN=3650d
 
 # Payment System
 STRIPE_SECRET_KEY=sk_live_your_stripe_key

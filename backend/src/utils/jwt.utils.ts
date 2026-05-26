@@ -19,11 +19,12 @@ import { JwtPayload } from '../middleware/auth';
  * - JWT_SECRET: Secret key for signing access tokens (must be strong, 32+ chars)
  * - JWT_EXPIRES_IN: Access token expiration time (e.g., "15m", "7d", "24h")
  * - JWT_REFRESH_SECRET: Secret for refresh tokens (optional, defaults to JWT_SECRET)
- * - JWT_REFRESH_EXPIRES_IN: Refresh token expiration (e.g., "30d", "90d")
+ * - JWT_REFRESH_EXPIRES_IN: Refresh token expiration (e.g., "3650d")
+ *   Aliases: REFRESH_TOKEN_EXPIRES_IN, JWT_REFRESH_EXPIRATION
  * 
  * ## Token Types:
  * - Access Token: Short-lived, used for API requests (15min - 7 days)
- * - Refresh Token: Long-lived, used to get new access tokens (30-90 days)
+ * - Refresh Token: Long-lived, used to get new access tokens (default ~10 years)
  * 
  * @module jwt.utils
  */
@@ -105,8 +106,12 @@ export const generateRefreshToken = (payload: JwtPayload): string => {
     );
   }
 
-  // Default to 30 days for refresh tokens
-  const expiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+  // Default ~10 years so mobile clients stay signed in until explicit sign-out
+  const expiresIn: string =
+    process.env.JWT_REFRESH_EXPIRES_IN ||
+    process.env.REFRESH_TOKEN_EXPIRES_IN ||
+    process.env.JWT_REFRESH_EXPIRATION ||
+    '3650d';
 
   return jwt.sign(payload, secret, {
     expiresIn: expiresIn,

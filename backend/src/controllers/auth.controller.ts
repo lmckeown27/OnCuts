@@ -76,7 +76,7 @@
  * - JWT_SECRET: Secret key for signing tokens (required, 32+ chars)
  * - JWT_EXPIRES_IN: Token expiration time (default: "7d")
  * - JWT_REFRESH_SECRET: Separate secret for refresh tokens (optional)
- * - JWT_REFRESH_EXPIRES_IN: Refresh token expiration (default: "30d")
+ * - JWT_REFRESH_EXPIRES_IN: Refresh token expiration (default: "3650d")
  * 
  * ## Security Features:
  * 1. **Password Hashing**: bcrypt with 10 salt rounds
