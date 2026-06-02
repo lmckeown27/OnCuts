@@ -6,6 +6,7 @@
 import type { PoolClient } from 'pg';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { cancelPendingRescheduleRequestsForBookings } from './booking-cancellation.service';
 
 async function safeSavepoint(client: PoolClient, label: string, fn: () => Promise<void>): Promise<void> {
   const sp = `sp_${label}_${Date.now()}`;
@@ -48,6 +49,8 @@ export async function runBanAffiliationCleanupQueries(client: PoolClient, banned
   );
 
   if (bookingIds.length > 0) {
+    await cancelPendingRescheduleRequestsForBookings(bookingIds, bannedUserId, client);
+
     await safeSavepoint(client, 'pending_payouts', async () => {
       await client.query(`DELETE FROM pending_payouts WHERE booking_id = ANY($1::uuid[])`, [bookingIds]);
     });

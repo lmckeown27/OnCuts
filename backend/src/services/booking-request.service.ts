@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import notificationService from './notification.service';
 import { assertNoBookingBlockBetween } from './ugc-moderation.service';
 import pushNotificationService from './pushNotification.service';
+import { cancelPendingRescheduleRequestsForBooking } from './booking-cancellation.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
 
 function mergeConversationLocation(
@@ -813,6 +814,12 @@ export class BookingRequestService {
 
         const linkedBookingId = convResult.rows[0].booking_id;
 
+        const barberResult = await client.query(
+          'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
+          [barberId]
+        );
+        const barberUserId = barberResult.rows[0]?.userId || barberId;
+
         // Update the linked booking record to REJECTED if it exists
         if (linkedBookingId) {
           await client.query(`
@@ -822,15 +829,9 @@ export class BookingRequestService {
               "updatedAt" = CURRENT_TIMESTAMP
             WHERE id = $1
           `, [linkedBookingId]);
+          await cancelPendingRescheduleRequestsForBooking(linkedBookingId, barberUserId, client);
           logger.info(`Linked booking ${linkedBookingId} marked as REJECTED`);
         }
-
-        // Get barber's user ID for notification
-        const barberResult = await client.query(
-          'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
-          [barberId]
-        );
-        const barberUserId = barberResult.rows[0]?.userId || barberId;
 
         // Determine consumer user ID
         const consumerUserId = convResult.rows[0].user1_id === barberUserId 
@@ -961,6 +962,13 @@ export class BookingRequestService {
           "updatedAt" = NOW()
         WHERE id = $1
       `, [bookingId, reason]);
+
+      const barberUserResult = await client.query(
+        'SELECT "userId" FROM barbers WHERE id = $1 OR "userId" = $1',
+        [barberId]
+      );
+      const barberUserIdForCancel = barberUserResult.rows[0]?.userId || barberId;
+      await cancelPendingRescheduleRequestsForBooking(bookingId, barberUserIdForCancel, client);
       
       // Delete any linked conversation and its messages when booking is cancelled
       // First delete messages, then conversation

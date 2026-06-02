@@ -22,7 +22,10 @@ import {
 import { sendStripeClientConfig } from './public-stripe.routes';
 import { getSocketIO } from '../index';
 import { sameUuid } from '../utils/uuid-compare';
-import { executeParticipantBookingCancellation } from '../services/booking-cancellation.service';
+import {
+  cancelPendingRescheduleRequestsForBooking,
+  executeParticipantBookingCancellation,
+} from '../services/booking-cancellation.service';
 import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 const router = express.Router();
@@ -970,8 +973,10 @@ router.put('/:id/status', authenticate, async (req, res, next) => {
       return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
     }
 
-    // If status is CANCELLED or REJECTED, delete the conversation and messages
+    // If status is CANCELLED or REJECTED, drop pending schedule-change requests and delete the thread
     if (status === 'CANCELLED' || status === 'REJECTED') {
+      await cancelPendingRescheduleRequestsForBooking(id, userId);
+
       const convResult = await pool.query(
         `SELECT id FROM conversations WHERE booking_id = $1`,
         [id]

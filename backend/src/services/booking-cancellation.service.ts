@@ -41,6 +41,53 @@ export interface BookingCancellationRow {
   campus_timezone?: string | null;
 }
 
+type DbQueryable = Pick<typeof pool, 'query'>;
+
+/** Mark pending schedule-change requests as cancelled when the booking is cancelled/rejected. */
+export async function cancelPendingRescheduleRequestsForBooking(
+  bookingId: string,
+  respondedBy: string | null = null,
+  client: DbQueryable = pool
+): Promise<number> {
+  const result = await client.query(
+    `UPDATE booking_reschedule_requests
+     SET status = 'cancelled',
+         responded_at = CURRENT_TIMESTAMP,
+         responded_by = $2
+     WHERE booking_id = $1 AND status = 'pending'
+     RETURNING id`,
+    [bookingId, respondedBy]
+  );
+  const count = result.rowCount ?? 0;
+  if (count > 0) {
+    logger.info(`Auto-cancelled ${count} pending reschedule request(s) for booking ${bookingId}`);
+  }
+  return count;
+}
+
+export async function cancelPendingRescheduleRequestsForBookings(
+  bookingIds: string[],
+  respondedBy: string | null = null,
+  client: DbQueryable = pool
+): Promise<number> {
+  if (bookingIds.length === 0) return 0;
+
+  const result = await client.query(
+    `UPDATE booking_reschedule_requests
+     SET status = 'cancelled',
+         responded_at = CURRENT_TIMESTAMP,
+         responded_by = $2
+     WHERE booking_id = ANY($1::uuid[]) AND status = 'pending'
+     RETURNING id`,
+    [bookingIds, respondedBy]
+  );
+  const count = result.rowCount ?? 0;
+  if (count > 0) {
+    logger.info(`Auto-cancelled ${count} pending reschedule request(s) for ${bookingIds.length} booking(s)`);
+  }
+  return count;
+}
+
 export async function fetchBookingForParticipantCancellation(
   bookingId: string,
   userId: string
@@ -82,6 +129,8 @@ export async function executeParticipantBookingCancellation(
      WHERE id = $1`,
     [id]
   );
+
+  await cancelPendingRescheduleRequestsForBooking(id, userId);
 
   const convResult = await pool.query(`SELECT id FROM conversations WHERE booking_id = $1`, [id]);
 
