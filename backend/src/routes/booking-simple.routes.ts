@@ -68,16 +68,44 @@ const BOOKING_SLOT_CONFLICT_MESSAGE =
 const RESCHEDULE_REQUIRES_APPROVAL_MESSAGE =
   'Date and time changes require provider approval. Submit a schedule change request instead.';
 
+/** Bookings list/detail: prefer booking row, fall back to conversation cache. */
+const BOOKING_EFFECTIVE_SCHEDULED_TIME = `COALESCE(b."requestedAt", c.scheduled_time)`;
+const BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV = `COALESCE(b."requestedAt", conv.scheduled_time)`;
+
+function normalizeApiTimestamp(value: unknown): string | null {
+  if (value == null) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 function formatPendingRescheduleRequest(row: Record<string, unknown> | null | undefined) {
   if (!row?.rr_id) return null;
+  const proposedScheduledTime = normalizeApiTimestamp(row.rr_requested_time);
   return {
     id: row.rr_id,
-    requestedTime: row.rr_requested_time,
+    requestedTime: proposedScheduledTime ?? row.rr_requested_time,
+    proposedScheduledTime,
+    scheduledTime: proposedScheduledTime,
     location: row.rr_location ?? null,
     locationDetails: row.rr_location_details ?? null,
     notes: row.rr_notes ?? null,
     status: row.rr_status,
     createdAt: row.rr_created_at,
+  };
+}
+
+function formatPendingRescheduleRequestFromRow(requestRow: Record<string, unknown>) {
+  const proposedScheduledTime = normalizeApiTimestamp(requestRow.requested_time);
+  return {
+    id: requestRow.id,
+    requestedTime: proposedScheduledTime ?? requestRow.requested_time,
+    proposedScheduledTime,
+    scheduledTime: proposedScheduledTime,
+    location: requestRow.location ?? null,
+    locationDetails: requestRow.location_details ?? null,
+    notes: requestRow.notes ?? null,
+    status: requestRow.status,
+    createdAt: requestRow.created_at,
   };
 }
 
@@ -646,15 +674,15 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     if (statusFilter === 'upcoming') {
       // Upcoming: PENDING or ACCEPTED, scheduled for today or future
       statusClause = `b.status IN ('PENDING', 'ACCEPTED')`;
-      dateFilter = `b."requestedAt" >= NOW() - INTERVAL '1 day'`; // Include yesterday to catch late bookings
+      dateFilter = `COALESCE(b."requestedAt", c.scheduled_time) >= NOW() - INTERVAL '1 day'`; // Include yesterday to catch late bookings
     } else if (statusFilter === 'cancelled') {
       // Cancelled: CANCELLED only from last 30 days
       statusClause = `b.status = 'CANCELLED'`;
-      dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
+      dateFilter = `COALESCE(b."requestedAt", c.scheduled_time) >= NOW() - INTERVAL '30 days'`;
     } else {
       // Completed: COMPLETED or PAID, from last 30 days
       statusClause = `b.status IN ('COMPLETED', 'PAID')`;
-      dateFilter = `b."requestedAt" >= NOW() - INTERVAL '30 days'`;
+      dateFilter = `COALESCE(b."requestedAt", c.scheduled_time) >= NOW() - INTERVAL '30 days'`;
     }
     
     let whereClause = `barber_user."campusId" = $1 AND ${statusClause} AND ${dateFilter}`;
@@ -684,7 +712,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
         b."priceUsdCents",
         b."tipAmountCents",
         b."totalPaidCents",
-        b."requestedAt" as "scheduledTime",
+        ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
         b.status,
         b."createdAt",
         b."paidAt",
@@ -711,7 +739,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
       LEFT JOIN users barber_user ON barber."userId" = barber_user.id
       LEFT JOIN conversations c ON c.booking_id = b.id
       WHERE ${whereClause}
-      ORDER BY b."requestedAt" DESC
+      ORDER BY ${BOOKING_EFFECTIVE_SCHEDULED_TIME} DESC
       LIMIT $${paramIndex}`,
       [...params, parseInt(limit as string)]
     );
@@ -747,7 +775,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           priceUsdCents: row.priceUsdCents,
           tipAmountCents: row.tipAmountCents || null,
           totalPaidCents: row.totalPaidCents || null,
-          scheduledTime: row.scheduledTime,
+          scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
           createdAt: row.createdAt,
           paidAt: row.paidAt,
@@ -817,7 +845,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."barberId",
         b."serviceType",
         b."priceUsdCents",
-        b."requestedAt" as "scheduledTime",
+        ${BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV} as "scheduledTime",
         b.status,
         b."createdAt",
         b."paidAt",
@@ -872,7 +900,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       serviceType: row.serviceType,
       serviceName: row.service_name || row.serviceType,
       priceUsdCents: row.priceUsdCents,
-      scheduledTime: row.scheduledTime,
+      scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
       status: row.status,
       createdAt: row.createdAt,
       paidAt: row.paidAt,
@@ -1409,12 +1437,12 @@ router.get('/', authenticate, async (req, res, next) => {
 
     // Filter by date range
     if (startDate) {
-      whereClause += ` AND b."requestedAt" >= $${paramIndex}`;
+      whereClause += ` AND ${BOOKING_EFFECTIVE_SCHEDULED_TIME} >= $${paramIndex}`;
       params.push(new Date(startDate as string));
       paramIndex++;
     }
     if (endDate) {
-      whereClause += ` AND b."requestedAt" <= $${paramIndex}`;
+      whereClause += ` AND ${BOOKING_EFFECTIVE_SCHEDULED_TIME} <= $${paramIndex}`;
       params.push(new Date(endDate as string));
       paramIndex++;
     }
@@ -1448,7 +1476,7 @@ router.get('/', authenticate, async (req, res, next) => {
         b."barberId",
         b."serviceType",
         b."priceUsdCents",
-        b."requestedAt" as "scheduledTime",
+        ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
         b.status,
         b."createdAt",
         b."paymentRequestedAt",
@@ -1482,7 +1510,7 @@ router.get('/', authenticate, async (req, res, next) => {
       LEFT JOIN booking_reschedule_requests rr
         ON rr.booking_id = b.id AND rr.status = 'pending'
       WHERE ${whereClause}
-      ORDER BY b."requestedAt" ASC`,
+      ORDER BY ${BOOKING_EFFECTIVE_SCHEDULED_TIME} ASC`,
       params
     );
 
@@ -1512,7 +1540,7 @@ router.get('/', authenticate, async (req, res, next) => {
           // Prefer original service name from conversation, fallback to formatted enum
           serviceType: row.conv_service_name || formatServiceType(row.serviceType),
           priceUsdCents: row.priceUsdCents,
-          scheduledTime: row.scheduledTime,
+          scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
           createdAt: row.createdAt,
           // Consumer-provided input data from conversation
@@ -1566,7 +1594,7 @@ router.post('/:id/request-payment', authenticate, async (req, res, next) => {
     // Verify user is the barber for this booking
     const bookingCheck = await pool.query(
       `SELECT b.id, b."consumerId", b."barberId", b."priceUsdCents", b.status,
-              b."requestedAt" as scheduled_time,
+              ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as scheduled_time,
               c.service_name, c.location as conv_location, c.location_details as conv_location_details,
               barber."userId" as barber_user_id,
               barber_user.first_name || ' ' || barber_user.last_name as barber_name,
@@ -2432,15 +2460,7 @@ router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
     res.status(201).json({
       success: true,
       data: {
-        pendingRescheduleRequest: {
-          id: requestRow.id,
-          requestedTime: requestRow.requested_time,
-          location: requestRow.location,
-          locationDetails: requestRow.location_details,
-          notes: requestRow.notes,
-          status: requestRow.status,
-          createdAt: requestRow.created_at,
-        },
+        pendingRescheduleRequest: formatPendingRescheduleRequestFromRow(requestRow),
       },
       message: 'Schedule change request submitted for provider approval',
     });
@@ -3014,7 +3034,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 
     // Check if user is barber or consumer for this booking (include campus timezone)
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents", b."requestedAt" as "scheduledTime",
+      `SELECT b.id, b.status, b."consumerId", b."serviceType", b."priceUsdCents",
+              ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
               c.location, c.service_name as original_service_name,
               bar.id as "barberId", bar."userId" as barber_user_id, bar."campusId" as campus_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name, u_consumer.email as consumer_email,

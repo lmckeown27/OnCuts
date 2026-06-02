@@ -145,7 +145,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
             b."barberId",
             b."serviceType",
             b."priceUsdCents",
-            b."requestedAt" as "scheduledTime",
+            COALESCE(b."requestedAt", c.scheduled_time) as "scheduledTime",
             b.status,
             b."createdAt",
             c.location,
