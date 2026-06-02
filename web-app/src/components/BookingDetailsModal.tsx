@@ -37,6 +37,7 @@ export default function BookingDetailsModal({
   const [isRemoving, setIsRemoving] = useState(false);
   const [isUndoingComplete, setIsUndoingComplete] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRespondingReschedule, setIsRespondingReschedule] = useState<'approve' | 'reject' | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   
   // Animation states for smooth open/close
@@ -211,6 +212,36 @@ export default function BookingDetailsModal({
       setIsSaving(false);
     }
   }, [editDate, editTime, editLocation, booking, onBookingUpdated]);
+
+  const handleApproveReschedule = useCallback(async () => {
+    if (!booking?.id) return;
+    setIsRespondingReschedule('approve');
+    try {
+      await api.post(`/bookings-simple/${booking.id}/reschedule-request/approve`, {});
+      toast.success('Schedule change approved');
+      onBookingUpdated?.();
+      handleClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to approve schedule change');
+    } finally {
+      setIsRespondingReschedule(null);
+    }
+  }, [booking, onBookingUpdated, handleClose]);
+
+  const handleRejectReschedule = useCallback(async () => {
+    if (!booking?.id) return;
+    setIsRespondingReschedule('reject');
+    try {
+      await api.post(`/bookings-simple/${booking.id}/reschedule-request/reject`, {});
+      toast.success('Schedule change declined');
+      onBookingUpdated?.();
+      handleClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to decline schedule change');
+    } finally {
+      setIsRespondingReschedule(null);
+    }
+  }, [booking, onBookingUpdated, handleClose]);
 
   // Handle Enter key to save changes
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -576,6 +607,65 @@ export default function BookingDetailsModal({
                   </div>
                 </div>
               </div>
+
+              {booking.pendingRescheduleRequest && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Schedule Change Request</h4>
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                    <div className="flex items-start gap-3">
+                      <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-amber-900">Customer requested a new time</p>
+                        <p className="text-sm text-amber-800 mt-1">
+                          {new Date(booking.pendingRescheduleRequest.requestedTime).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}{' '}
+                          at{' '}
+                          {new Date(booking.pendingRescheduleRequest.requestedTime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
+                        </p>
+                        {booking.pendingRescheduleRequest.location && (
+                          <p className="text-sm text-amber-800 mt-1">
+                            Location: {booking.pendingRescheduleRequest.location}
+                          </p>
+                        )}
+                        <div className="flex gap-2 mt-4">
+                          <button
+                            onClick={handleApproveReschedule}
+                            disabled={!!isRespondingReschedule}
+                            className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isRespondingReschedule === 'approve' ? (
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                            Approve
+                          </button>
+                          <button
+                            onClick={handleRejectReschedule}
+                            disabled={!!isRespondingReschedule}
+                            className="flex-1 py-2.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isRespondingReschedule === 'reject' ? (
+                              <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Location */}
               {booking.location && (

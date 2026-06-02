@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
+import api from '../services/api.service';
 import notificationService, { Notification } from '../services/notification.service';
 import socketService from '../services/socket.service';
 import { usePlatform } from '../utils/platform';
@@ -70,6 +71,13 @@ interface ConversationWithDetails extends Conversation {
     notes?: string;
     barberName?: string;
     consumerName?: string;
+    pendingRescheduleRequest?: {
+      id: string;
+      requestedTime: string;
+      location?: string | null;
+      notes?: string | null;
+      status: string;
+    } | null;
   };
   otherUser: {
     id: string;
@@ -167,6 +175,7 @@ export default function MessagesPage() {
   const [editTime, setEditTime] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isRespondingReschedule, setIsRespondingReschedule] = useState<'approve' | 'reject' | null>(null);
   const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [editBarberId, setEditBarberId] = useState<string>('');
@@ -341,10 +350,11 @@ export default function MessagesPage() {
   const startEditingBooking = async () => {
     if (!selectedConversation?.booking) return;
     const booking = selectedConversation.booking;
-    const scheduledDate = new Date(booking.scheduledTime);
+    const sourceTime = booking.pendingRescheduleRequest?.requestedTime ?? booking.scheduledTime;
+    const scheduledDate = new Date(sourceTime);
     setEditDate(scheduledDate.toISOString().split('T')[0]);
     setEditTime(scheduledDate.toTimeString().slice(0, 5));
-    setEditLocation(booking.location || '');
+    setEditLocation(booking.pendingRescheduleRequest?.location ?? booking.location ?? '');
     
     console.log('[MessagesPage] startEditingBooking called');
     console.log('[MessagesPage] Current user type:', user?.user_type, 'user ID:', user?.id);
@@ -467,73 +477,86 @@ export default function MessagesPage() {
     
     setIsSavingEdit(true);
     try {
-      const scheduledTime = new Date(`${editDate}T${editTime}`).toISOString();
+      const scheduledTimePayload = `${editDate}T${editTime}:00`;
       
-      // Track what changed for the success message
       const originalDate = selectedConversation.booking.scheduledTime 
         ? new Date(selectedConversation.booking.scheduledTime) 
         : null;
-      const newDate = new Date(scheduledTime);
+      const newDate = new Date(`${editDate}T${editTime}`);
       const originalLocation = selectedConversation.booking.location || '';
       
       const changes: string[] = [];
       
-      // Check if date changed
       if (originalDate && originalDate.toDateString() !== newDate.toDateString()) {
         changes.push('date');
       }
       
-      // Check if time changed
       if (originalDate && (originalDate.getHours() !== newDate.getHours() || originalDate.getMinutes() !== newDate.getMinutes())) {
         changes.push('time');
       }
       
-      // Check if location changed
       if (editLocation !== originalLocation) {
         changes.push('location');
       }
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/bookings/${selectedConversation.booking.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-        },
-        body: JSON.stringify({
-          scheduledTime,
+
+      if (isBarberView) {
+        await api.put(`/bookings-simple/${selectedConversation.booking.id}`, {
+          scheduledTime: scheduledTimePayload,
           location: editLocation,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update booking');
-
-      // Update local state
-      setSelectedConversation(prev => prev ? {
-        ...prev,
-        booking: prev.booking ? {
-          ...prev.booking,
-          scheduledTime,
-          location: editLocation,
-        } : undefined,
-      } : null);
-
-      // Update in conversations list
-      setConversations(prev => prev.map(conv => 
-        conv.id === selectedConversation.id && conv.booking
-          ? { ...conv, booking: { ...conv.booking, scheduledTime, location: editLocation } }
-          : conv
-      ));
-
-      // Build success message
-      let successMessage = 'Booking ';
-      if (changes.length === 0) {
-        successMessage = 'No changes were made';
-      } else if (changes.length === 1) {
-        successMessage += `${changes[0]} has been successfully changed`;
-      } else if (changes.length === 2) {
-        successMessage += `${changes[0]} and ${changes[1]} have been successfully changed`;
+        });
       } else {
-        successMessage += `${changes.slice(0, -1).join(', ')}, and ${changes[changes.length - 1]} have been successfully changed`;
+        await api.post(`/bookings-simple/${selectedConversation.booking.id}/reschedule-request`, {
+          scheduledTime: scheduledTimePayload,
+          location: editLocation,
+        });
+      }
+
+      // Update local state (consumer: appointment time unchanged until approved)
+      if (isBarberView) {
+        setSelectedConversation(prev => prev ? {
+          ...prev,
+          booking: prev.booking ? {
+            ...prev.booking,
+            scheduledTime: new Date(`${editDate}T${editTime}`).toISOString(),
+            location: editLocation,
+          } : undefined,
+        } : null);
+
+        setConversations(prev => prev.map(conv => 
+          conv.id === selectedConversation.id && conv.booking
+            ? { ...conv, booking: { ...conv.booking, scheduledTime: new Date(`${editDate}T${editTime}`).toISOString(), location: editLocation } }
+            : conv
+        ));
+      } else {
+        const requestedTime = new Date(`${editDate}T${editTime}`).toISOString();
+        setSelectedConversation(prev => prev ? {
+          ...prev,
+          booking: prev.booking ? {
+            ...prev.booking,
+            pendingRescheduleRequest: {
+              id: prev.booking.pendingRescheduleRequest?.id ?? 'pending',
+              requestedTime,
+              location: editLocation,
+              status: 'pending',
+            },
+          } : undefined,
+        } : null);
+      }
+
+      let successMessage: string;
+      if (isBarberView) {
+        successMessage = 'Booking ';
+        if (changes.length === 0) {
+          successMessage = 'No changes were made';
+        } else if (changes.length === 1) {
+          successMessage += `${changes[0]} has been successfully changed`;
+        } else if (changes.length === 2) {
+          successMessage += `${changes[0]} and ${changes[1]} have been successfully changed`;
+        } else {
+          successMessage += `${changes.slice(0, -1).join(', ')}, and ${changes[changes.length - 1]} have been successfully changed`;
+        }
+      } else {
+        successMessage = 'Schedule change request sent. Waiting for provider approval.';
       }
       
       toast.success(successMessage);
@@ -544,6 +567,49 @@ export default function MessagesPage() {
       toast.error('Failed to update booking');
     } finally {
       setIsSavingEdit(false);
+    }
+  };
+
+  const handleApproveReschedule = async () => {
+    if (!selectedConversation?.booking?.id) return;
+    setIsRespondingReschedule('approve');
+    try {
+      const response = await api.post(`/bookings-simple/${selectedConversation.booking.id}/reschedule-request/approve`, {});
+      const updatedTime = response?.booking?.scheduledTime ?? selectedConversation.booking.pendingRescheduleRequest?.requestedTime;
+      setSelectedConversation(prev => prev ? {
+        ...prev,
+        booking: prev.booking ? {
+          ...prev.booking,
+          scheduledTime: updatedTime || prev.booking.scheduledTime,
+          location: prev.booking.pendingRescheduleRequest?.location ?? prev.booking.location,
+          pendingRescheduleRequest: null,
+        } : undefined,
+      } : null);
+      toast.success('Schedule change approved');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to approve schedule change');
+    } finally {
+      setIsRespondingReschedule(null);
+    }
+  };
+
+  const handleRejectReschedule = async () => {
+    if (!selectedConversation?.booking?.id) return;
+    setIsRespondingReschedule('reject');
+    try {
+      await api.post(`/bookings-simple/${selectedConversation.booking.id}/reschedule-request/reject`, {});
+      setSelectedConversation(prev => prev ? {
+        ...prev,
+        booking: prev.booking ? {
+          ...prev.booking,
+          pendingRescheduleRequest: null,
+        } : undefined,
+      } : null);
+      toast.success('Schedule change declined');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to decline schedule change');
+    } finally {
+      setIsRespondingReschedule(null);
     }
   };
 
@@ -674,6 +740,38 @@ export default function MessagesPage() {
     );
     if (conv) setSelectedConversation(conv);
   }, [conversationId, conversations]);
+
+  // Load pending reschedule request for the selected booking
+  useEffect(() => {
+    const bookingId = selectedConversation?.booking?.id;
+    if (!bookingId) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await api.get(`/bookings-simple/${bookingId}`);
+        const booking = response?.booking ?? response?.data?.booking;
+        if (cancelled || !booking) return;
+
+        setSelectedConversation(prev => {
+          if (!prev?.booking || prev.booking.id !== bookingId) return prev;
+          return {
+            ...prev,
+            booking: {
+              ...prev.booking,
+              pendingRescheduleRequest: booking.pendingRescheduleRequest ?? null,
+            },
+          };
+        });
+      } catch {
+        // Booking details are optional enrichment for the sidebar
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedConversation?.booking?.id]);
 
   // Join Socket.IO thread room while this URL is open (server emits new-message to conversation-${id}).
   useEffect(() => {
@@ -1788,6 +1886,60 @@ export default function MessagesPage() {
                     </div>
                   )}
 
+                  {selectedConversation.booking.pendingRescheduleRequest && (
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                      <div className="flex items-start gap-2">
+                        <Clock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-xs font-semibold text-amber-900">
+                            {isBarberView ? 'Customer requested a new time' : 'Schedule change pending approval'}
+                          </p>
+                          <p className="text-xs text-amber-800 mt-1">
+                            {new Date(selectedConversation.booking.pendingRescheduleRequest.requestedTime).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })}{' '}
+                            at{' '}
+                            {new Date(selectedConversation.booking.pendingRescheduleRequest.requestedTime).toLocaleTimeString('en-US', {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                              hour12: true,
+                            })}
+                          </p>
+                          {isBarberView && (
+                            <div className="flex gap-2 mt-3">
+                              <button
+                                onClick={handleApproveReschedule}
+                                disabled={!!isRespondingReschedule}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-green-500 text-white rounded-lg text-xs font-medium hover:bg-green-600 disabled:opacity-50"
+                              >
+                                {isRespondingReschedule === 'approve' ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5" />
+                                )}
+                                Approve
+                              </button>
+                              <button
+                                onClick={handleRejectReschedule}
+                                disabled={!!isRespondingReschedule}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 bg-white text-red-600 border border-red-200 rounded-lg text-xs font-medium hover:bg-red-50 disabled:opacity-50"
+                              >
+                                {isRespondingReschedule === 'reject' ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <X className="w-3.5 h-3.5" />
+                                )}
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Barber/Consumer Info */}
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -1831,7 +1983,9 @@ export default function MessagesPage() {
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors text-sm font-medium disabled:opacity-50"
                           >
                             <Check className="w-4 h-4" />
-                            {isSavingEdit ? 'Saving...' : 'Save'}
+                            {isSavingEdit
+                              ? (isBarberView ? 'Saving...' : 'Submitting...')
+                              : (isBarberView ? 'Save' : 'Submit Request')}
                           </button>
                         </>
                       ) : (
@@ -1841,7 +1995,9 @@ export default function MessagesPage() {
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
                           >
                             <Pencil className="w-4 h-4" />
-                            Edit
+                            {isBarberView
+                              ? 'Edit'
+                              : (selectedConversation.booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
                           </button>
                           <button
                             onClick={() => openDeleteConfirm(selectedConversation, new MouseEvent('click') as any)}
@@ -2060,6 +2216,60 @@ export default function MessagesPage() {
                 </div>
               )}
 
+              {selectedConversation.booking.pendingRescheduleRequest && (
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <div className="flex items-start gap-2">
+                    <Clock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-amber-900">
+                        {isBarberView ? 'Customer requested a new time' : 'Schedule change pending approval'}
+                      </p>
+                      <p className="text-sm text-amber-800 mt-1">
+                        {new Date(selectedConversation.booking.pendingRescheduleRequest.requestedTime).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        })}{' '}
+                        at{' '}
+                        {new Date(selectedConversation.booking.pendingRescheduleRequest.requestedTime).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </p>
+                      {isBarberView && (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={handleApproveReschedule}
+                            disabled={!!isRespondingReschedule}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50"
+                          >
+                            {isRespondingReschedule === 'approve' ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                            Approve
+                          </button>
+                          <button
+                            onClick={handleRejectReschedule}
+                            disabled={!!isRespondingReschedule}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white text-red-600 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {isRespondingReschedule === 'reject' ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <X className="w-4 h-4" />
+                            )}
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Barber/Consumer Info */}
               <div className="p-4 bg-gray-50 rounded-xl">
                 <div className="flex items-center gap-3">
@@ -2105,7 +2315,9 @@ export default function MessagesPage() {
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium disabled:opacity-50"
                       >
                         <Check className="w-4 h-4" />
-                        {isSavingEdit ? 'Saving...' : 'Save'}
+                        {isSavingEdit
+                          ? (isBarberView ? 'Saving...' : 'Submitting...')
+                          : (isBarberView ? 'Save' : 'Submit Request')}
                       </button>
                     </>
                   ) : (
@@ -2115,7 +2327,9 @@ export default function MessagesPage() {
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
                       >
                         <Pencil className="w-4 h-4" />
-                        Edit
+                        {isBarberView
+                          ? 'Edit'
+                          : (selectedConversation.booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
                       </button>
                       <button
                         onClick={() => {

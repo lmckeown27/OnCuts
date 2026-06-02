@@ -1030,7 +1030,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can edit the time, date, or location, or cancel entirely. Just do it before the barber marks the service as complete. Find these options in your booking details.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can request a change to the time, date, or location, or cancel entirely. Schedule changes must be approved by your provider. You can also cancel before the barber marks the service as complete. Find these options in your booking details.</p>
                     </div>
                   </div>
                 </div>

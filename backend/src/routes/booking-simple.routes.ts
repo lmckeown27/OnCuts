@@ -65,6 +65,48 @@ function parseScheduledTimePacificToUtc(scheduledTime: string | undefined): Date
 const BOOKING_SLOT_CONFLICT_MESSAGE =
   'This time slot is no longer available. The barber already has an appointment at this time. Please choose a different time.';
 
+const RESCHEDULE_REQUIRES_APPROVAL_MESSAGE =
+  'Date and time changes require provider approval. Submit a schedule change request instead.';
+
+function formatPendingRescheduleRequest(row: Record<string, unknown> | null | undefined) {
+  if (!row?.rr_id) return null;
+  return {
+    id: row.rr_id,
+    requestedTime: row.rr_requested_time,
+    location: row.rr_location ?? null,
+    locationDetails: row.rr_location_details ?? null,
+    notes: row.rr_notes ?? null,
+    status: row.rr_status,
+    createdAt: row.rr_created_at,
+  };
+}
+
+async function assertNoBarberSlotConflict(
+  client: { query: typeof pool.query },
+  barberRecordId: string,
+  requestedTime: Date,
+  excludeBookingId?: string
+): Promise<Date | null> {
+  const params: unknown[] = [barberRecordId, requestedTime.toISOString()];
+  let excludeClause = '';
+  if (excludeBookingId) {
+    excludeClause = ' AND id != $3';
+    params.push(excludeBookingId);
+  }
+
+  const conflictCheck = await client.query(
+    `SELECT id, "requestedAt", status
+     FROM bookings
+     WHERE "barberId" = $1
+       AND status IN ('PENDING', 'ACCEPTED')
+       AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamptz))) < 3600${excludeClause}`,
+    params
+  );
+
+  if (conflictCheck.rows.length === 0) return null;
+  return new Date(conflictCheck.rows[0].requestedAt);
+}
+
 /**
  * Archive messages for a booking before deletion
  * This preserves message history for admin viewing
@@ -797,12 +839,21 @@ router.get('/:id', authenticate, async (req, res, next) => {
         consumer.id as consumer_user_id,
         consumer.first_name as consumer_first_name,
         consumer.last_name as consumer_last_name,
-        consumer."avatarUrl" as consumer_profile_url
+        consumer."avatarUrl" as consumer_profile_url,
+        rr.id as rr_id,
+        rr.requested_time as rr_requested_time,
+        rr.location as rr_location,
+        rr.location_details as rr_location_details,
+        rr.notes as rr_notes,
+        rr.status as rr_status,
+        rr.created_at as rr_created_at
       FROM bookings b
       LEFT JOIN conversations conv ON conv.booking_id = b.id
       LEFT JOIN barbers barber_record ON b."barberId" = barber_record.id
       LEFT JOIN users barber_user ON barber_record."userId" = barber_user.id
       LEFT JOIN users consumer ON b."consumerId" = consumer.id
+      LEFT JOIN booking_reschedule_requests rr
+        ON rr.booking_id = b.id AND rr.status = 'pending'
       WHERE b.id = $1 AND (b."consumerId" = $2 OR barber_user.id = $2)${peerBlockBookingClause}`,
       [id, userId]
     );
@@ -848,6 +899,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         profileImageUrl: row.consumer_profile_url,
       },
       conversationId: row.conversation_id || null,
+      pendingRescheduleRequest: formatPendingRescheduleRequest(row),
     };
 
     res.json({
@@ -1414,12 +1466,21 @@ router.get('/', authenticate, async (req, res, next) => {
         c.location as conv_location,
         c.location_details as conv_location_details,
         c.notes as conv_notes,
-        c.service_name as conv_service_name
+        c.service_name as conv_service_name,
+        rr.id as rr_id,
+        rr.requested_time as rr_requested_time,
+        rr.location as rr_location,
+        rr.location_details as rr_location_details,
+        rr.notes as rr_notes,
+        rr.status as rr_status,
+        rr.created_at as rr_created_at
       FROM bookings b
       LEFT JOIN users consumer ON b."consumerId" = consumer.id
       LEFT JOIN barbers barber ON b."barberId" = barber.id
       LEFT JOIN users barber_user ON barber."userId" = barber_user.id
       LEFT JOIN conversations c ON c.booking_id = b.id
+      LEFT JOIN booking_reschedule_requests rr
+        ON rr.booking_id = b.id AND rr.status = 'pending'
       WHERE ${whereClause}
       ORDER BY b."requestedAt" ASC`,
       params
@@ -1481,6 +1542,7 @@ router.get('/', authenticate, async (req, res, next) => {
             lastName: row.barber_last_name,
             avatar: row.barber_avatar,
           },
+          pendingRescheduleRequest: formatPendingRescheduleRequest(row),
         })),
       },
       count: result.rows.length,
@@ -2258,8 +2320,309 @@ router.post('/:id/review', authenticate, async (req, res, next) => {
 });
 
 /**
+ * POST /api/v1/bookings-simple/:id/reschedule-request
+ * Consumer submits a proposed date/time change for provider approval.
+ */
+router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+    const { scheduledTime, location, notes } = req.body;
+    const locationDetailsRaw = (req.body as any).locationDetails ?? (req.body as any).location_details;
+
+    if (!scheduledTime) {
+      return res.status(400).json({ success: false, error: 'scheduledTime is required' });
+    }
+
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b.status, b."consumerId", b."barberId", bar."userId" as barber_user_id
+       FROM bookings b
+       JOIN barbers bar ON b."barberId" = bar.id
+       WHERE b.id = $1 AND b."consumerId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Booking not found or access denied' });
+    }
+
+    const booking = bookingCheck.rows[0];
+    if (booking.status !== 'PENDING' && booking.status !== 'ACCEPTED') {
+      return res.status(400).json({
+        success: false,
+        error: `Cannot request a schedule change for a ${String(booking.status).toLowerCase()} booking`,
+      });
+    }
+
+    const requestedTime = parseScheduledTimePacificToUtc(scheduledTime);
+    const conflictAt = await assertNoBarberSlotConflict(pool, booking.barberId, requestedTime, id);
+    if (conflictAt) {
+      return res.status(409).json({
+        success: false,
+        error: BOOKING_SLOT_CONFLICT_MESSAGE,
+        conflictAt: conflictAt.toISOString(),
+      });
+    }
+
+    const locationValue = location !== undefined ? location : null;
+    const locationDetailsValue =
+      locationDetailsRaw !== undefined
+        ? locationDetailsRaw === '' ? null : String(locationDetailsRaw)
+        : null;
+    const notesValue = notes !== undefined ? notes : null;
+
+    const existing = await pool.query(
+      `SELECT id FROM booking_reschedule_requests WHERE booking_id = $1 AND status = 'pending'`,
+      [id]
+    );
+
+    let requestRow;
+    if (existing.rows.length > 0) {
+      const updated = await pool.query(
+        `UPDATE booking_reschedule_requests
+         SET requested_time = $1,
+             location = $2,
+             location_details = $3,
+             notes = $4,
+             created_at = CURRENT_TIMESTAMP
+         WHERE id = $5
+         RETURNING *`,
+        [requestedTime, locationValue, locationDetailsValue, notesValue, existing.rows[0].id]
+      );
+      requestRow = updated.rows[0];
+    } else {
+      const inserted = await pool.query(
+        `INSERT INTO booking_reschedule_requests (
+           booking_id, consumer_id, requested_time, location, location_details, notes, status
+         ) VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+         RETURNING *`,
+        [id, userId, requestedTime, locationValue, locationDetailsValue, notesValue]
+      );
+      requestRow = inserted.rows[0];
+    }
+
+    const consumerResult = await pool.query(
+      `SELECT first_name || ' ' || last_name as name FROM users WHERE id = $1`,
+      [userId]
+    );
+    const consumerName = consumerResult.rows[0]?.name || 'A customer';
+    const timeZone = 'America/Los_Angeles';
+    const formattedDate = requestedTime.toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric', timeZone,
+    });
+    const formattedTime = requestedTime.toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', timeZone,
+    });
+
+    await notificationService.saveNotification({
+      userId: booking.barber_user_id,
+      type: 'reschedule_request',
+      title: 'Schedule change requested',
+      message: `${consumerName} requested to move the appointment to ${formattedDate} at ${formattedTime}`,
+      data: { bookingId: id, requestedTime: requestedTime.toISOString() },
+    });
+    await pushNotificationService.sendMirrorPush(
+      booking.barber_user_id,
+      'Schedule change requested',
+      `${consumerName} requested to move the appointment to ${formattedDate} at ${formattedTime}`,
+      'reschedule_request',
+      { bookingId: id, requestedTime: requestedTime.toISOString() }
+    );
+
+    res.status(201).json({
+      success: true,
+      data: {
+        pendingRescheduleRequest: {
+          id: requestRow.id,
+          requestedTime: requestRow.requested_time,
+          location: requestRow.location,
+          locationDetails: requestRow.location_details,
+          notes: requestRow.notes,
+          status: requestRow.status,
+          createdAt: requestRow.created_at,
+        },
+      },
+      message: 'Schedule change request submitted for provider approval',
+    });
+  } catch (error: any) {
+    logger.error('Error creating reschedule request:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/reschedule-request/approve
+ * Provider approves a pending schedule change request.
+ */
+router.post('/:id/reschedule-request/approve', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType",
+              bar."userId" as barber_user_id,
+              c.id as conversation_id, c.location as conv_location, c.location_details as conv_location_details,
+              c.notes as conv_notes, c.service_name,
+              rr.id as request_id, rr.requested_time, rr.location as req_location,
+              rr.location_details as req_location_details, rr.notes as req_notes
+       FROM bookings b
+       JOIN barbers bar ON b."barberId" = bar.id
+       LEFT JOIN conversations c ON c.booking_id = b.id
+       JOIN booking_reschedule_requests rr ON rr.booking_id = b.id AND rr.status = 'pending'
+       WHERE b.id = $1 AND bar."userId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pending schedule change request not found' });
+    }
+
+    const booking = bookingCheck.rows[0];
+    const requestedTime = new Date(booking.requested_time);
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [booking.barberId]);
+
+      const conflictAt = await assertNoBarberSlotConflict(client, booking.barberId, requestedTime, id);
+      if (conflictAt) {
+        await client.query('ROLLBACK');
+        return res.status(409).json({
+          success: false,
+          error: BOOKING_SLOT_CONFLICT_MESSAGE,
+          conflictAt: conflictAt.toISOString(),
+        });
+      }
+
+      await client.query(
+        `UPDATE bookings SET "requestedAt" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE id = $2`,
+        [requestedTime, id]
+      );
+
+      const newLocation = booking.req_location ?? booking.conv_location;
+      const newLocationDetails = booking.req_location_details ?? booking.conv_location_details;
+      const newNotes = booking.req_notes ?? booking.conv_notes;
+
+      if (booking.conversation_id) {
+        await client.query(
+          `UPDATE conversations
+           SET scheduled_time = $1,
+               location = $2,
+               location_details = $3,
+               notes = $4,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $5`,
+          [requestedTime, newLocation, newLocationDetails, newNotes, booking.conversation_id]
+        );
+      }
+
+      await client.query(
+        `UPDATE booking_reschedule_requests
+         SET status = 'approved', responded_at = CURRENT_TIMESTAMP, responded_by = $1
+         WHERE id = $2`,
+        [userId, booking.request_id]
+      );
+
+      await client.query('COMMIT');
+    } catch (txError) {
+      await client.query('ROLLBACK');
+      throw txError;
+    } finally {
+      client.release();
+    }
+
+    const timeZone = 'America/Los_Angeles';
+    const formattedDate = requestedTime.toLocaleDateString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric', timeZone,
+    });
+    const formattedTime = requestedTime.toLocaleTimeString('en-US', {
+      hour: 'numeric', minute: '2-digit', timeZone,
+    });
+
+    await notificationService.saveNotification({
+      userId: booking.consumerId,
+      type: 'reschedule_approved',
+      title: 'Schedule change approved',
+      message: `Your appointment was moved to ${formattedDate} at ${formattedTime}`,
+      data: { bookingId: id, scheduledTime: requestedTime.toISOString() },
+    });
+    await pushNotificationService.sendMirrorPush(
+      booking.consumerId,
+      'Schedule change approved',
+      `Your appointment was moved to ${formattedDate} at ${formattedTime}`,
+      'reschedule_approved',
+      { bookingId: id, scheduledTime: requestedTime.toISOString() }
+    );
+
+    res.json({
+      success: true,
+      data: { scheduledTime: requestedTime.toISOString() },
+      message: 'Schedule change approved',
+    });
+  } catch (error: any) {
+    logger.error('Error approving reschedule request:', error.message || error);
+    next(error);
+  }
+});
+
+/**
+ * POST /api/v1/bookings-simple/:id/reschedule-request/reject
+ * Provider rejects a pending schedule change request.
+ */
+router.post('/:id/reschedule-request/reject', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = (req as any).user.userId;
+
+    const bookingCheck = await pool.query(
+      `SELECT b.id, b."consumerId", bar."userId" as barber_user_id, rr.id as request_id
+       FROM bookings b
+       JOIN barbers bar ON b."barberId" = bar.id
+       JOIN booking_reschedule_requests rr ON rr.booking_id = b.id AND rr.status = 'pending'
+       WHERE b.id = $1 AND bar."userId" = $2`,
+      [id, userId]
+    );
+
+    if (bookingCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Pending schedule change request not found' });
+    }
+
+    const booking = bookingCheck.rows[0];
+
+    await pool.query(
+      `UPDATE booking_reschedule_requests
+       SET status = 'rejected', responded_at = CURRENT_TIMESTAMP, responded_by = $1
+       WHERE id = $2`,
+      [userId, booking.request_id]
+    );
+
+    await notificationService.saveNotification({
+      userId: booking.consumerId,
+      type: 'reschedule_rejected',
+      title: 'Schedule change declined',
+      message: 'Your provider declined the requested schedule change. Your original appointment time still stands.',
+      data: { bookingId: id },
+    });
+    await pushNotificationService.sendMirrorPush(
+      booking.consumerId,
+      'Schedule change declined',
+      'Your provider declined the requested schedule change. Your original appointment time still stands.',
+      'reschedule_rejected',
+      { bookingId: id }
+    );
+
+    res.json({ success: true, message: 'Schedule change request declined' });
+  } catch (error: any) {
+    logger.error('Error rejecting reschedule request:', error.message || error);
+    next(error);
+  }
+});
+
+/**
  * PUT /api/v1/bookings-simple/:id
- * Edit booking details (barber only for ACCEPTED bookings)
+ * Edit booking details (barber may change schedule directly; consumers use reschedule-request)
  * - scheduledTime updates the bookings table ("requestedAt" column)
  * - location, locationDetails, and notes update the linked conversations table
  */
@@ -2301,6 +2664,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
       return res.status(400).json({ 
         success: false, 
         error: `Cannot edit a ${booking.status.toLowerCase()} booking` 
+      });
+    }
+
+    if (isConsumer && scheduledTime !== undefined) {
+      return res.status(403).json({
+        success: false,
+        error: RESCHEDULE_REQUIRES_APPROVAL_MESSAGE,
+        code: 'RESCHEDULE_REQUIRES_APPROVAL',
       });
     }
 

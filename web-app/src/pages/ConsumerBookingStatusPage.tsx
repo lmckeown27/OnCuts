@@ -49,6 +49,15 @@ interface ActiveBooking {
   // Payment tracking
   paymentRequestedAt?: string;
   paidAt?: string;
+  pendingRescheduleRequest?: {
+    id: string;
+    requestedTime: string;
+    location?: string | null;
+    locationDetails?: string | null;
+    notes?: string | null;
+    status: string;
+    createdAt: string;
+  } | null;
 }
 
 export default function ConsumerBookingStatusPage() {
@@ -505,8 +514,8 @@ export default function ConsumerBookingStatusPage() {
   const handleOpenEditModal = async () => {
     if (!booking) return;
     
-    // Initialize edit fields with current booking values
-    const scheduledDate = new Date(booking.scheduledTime);
+    const sourceTime = booking.pendingRescheduleRequest?.requestedTime ?? booking.scheduledTime;
+    const scheduledDate = new Date(sourceTime);
     const year = scheduledDate.getFullYear();
     const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
     const day = String(scheduledDate.getDate()).padStart(2, '0');
@@ -519,8 +528,8 @@ export default function ConsumerBookingStatusPage() {
     const minutes = String(scheduledDate.getMinutes()).padStart(2, '0');
     setEditTime(`${hours}:${minutes}`);
     
-    setEditLocation(booking.location || '');
-    setEditNotes(booking.notes || '');
+    setEditLocation(booking.pendingRescheduleRequest?.location ?? booking.location ?? '');
+    setEditNotes(booking.pendingRescheduleRequest?.notes ?? booking.notes ?? '');
     
     setShowEditModal(true);
     
@@ -577,19 +586,19 @@ export default function ConsumerBookingStatusPage() {
         return;
       }
       
-      const newScheduledTime = new Date(year, month - 1, day, hours, minutes);
+      const scheduledTimePayload = `${editDate}T${editTime}:00`;
       
-      await api.put(`/bookings-simple/${booking.id}`, {
-        scheduledTime: newScheduledTime.toISOString(),
+      await api.post(`/bookings-simple/${booking.id}/reschedule-request`, {
+        scheduledTime: scheduledTimePayload,
         location: editLocation,
         notes: editNotes,
       });
       
-      toast.success('Booking updated!');
+      toast.success('Schedule change request sent! Waiting for provider approval.');
       setShowEditModal(false);
-      fetchActiveBooking(); // Refresh booking data
+      fetchActiveBooking();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update booking');
+      toast.error(error.message || 'Failed to submit schedule change request');
     } finally {
       setIsSaving(false);
     }
@@ -1149,6 +1158,24 @@ export default function ConsumerBookingStatusPage() {
               <p className="font-semibold text-gray-900">{formatTime(booking.scheduledTime)}</p>
             </div>
           </div>
+
+          {booking.pendingRescheduleRequest && (
+            <div className="mb-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+              <div className="flex items-start gap-3">
+                <Clock className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-amber-900">Schedule change pending approval</p>
+                  <p className="text-sm text-amber-800 mt-1">
+                    Requested: {formatDate(booking.pendingRescheduleRequest.requestedTime)} at{' '}
+                    {formatTime(booking.pendingRescheduleRequest.requestedTime)}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Your current appointment time stays active until your provider approves this change.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Location */}
           {booking.location && (
@@ -1191,7 +1218,7 @@ export default function ConsumerBookingStatusPage() {
                 className="py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-amber-200"
               >
                 <Pencil className="w-4 h-4" />
-                Edit Booking
+                {booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change'}
               </button>
               <button
                 onClick={() => setShowCancelConfirm(true)}
@@ -1224,8 +1251,11 @@ export default function ConsumerBookingStatusPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-primary-500" />
-              Edit Booking
+              Request Schedule Change
             </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Your provider must approve date and time changes. Your current appointment stays as-is until then.
+            </p>
             
             <div className="space-y-4">
               {/* Date Picker - shows calendar with barber's availability */}
@@ -1315,7 +1345,7 @@ export default function ConsumerBookingStatusPage() {
                     Saving...
                   </>
                 ) : (
-                  'Save Changes'
+                  'Submit Request'
                 )}
               </button>
             </div>
