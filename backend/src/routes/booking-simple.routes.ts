@@ -46,6 +46,25 @@ function mergeConversationLocation(
   return a || b || null;
 }
 
+/** Parse client scheduled time once: Pacific local → UTC for storage and conflict checks. */
+function parseScheduledTimePacificToUtc(scheduledTime: string | undefined): Date {
+  if (!scheduledTime) {
+    return new Date();
+  }
+  if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
+    return new Date(scheduledTime);
+  }
+  const pacificTime = DateTime.fromISO(scheduledTime, { zone: 'America/Los_Angeles' });
+  if (!pacificTime.isValid) {
+    logger.error(`Invalid scheduled time format: ${scheduledTime}`);
+    return new Date();
+  }
+  return pacificTime.toUTC().toJSDate();
+}
+
+const BOOKING_SLOT_CONFLICT_MESSAGE =
+  'This time slot is no longer available. The barber already has an appointment at this time. Please choose a different time.';
+
 /**
  * Archive messages for a booking before deletion
  * This preserves message history for admin viewing
@@ -144,42 +163,6 @@ router.post('/', authenticate, async (req, res, next) => {
       await assertNoBookingBlockBetween(String(consumerId), String(barberUserIdForBlock));
     }
 
-    // Check for time slot conflicts - barber can only have one booking at a time
-    if (scheduledTime) {
-      // Parse the scheduled time to check for conflicts
-      let checkTime: Date;
-      if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
-        checkTime = new Date(scheduledTime);
-      } else {
-        const pacificTime = DateTime.fromISO(scheduledTime, { zone: 'America/Los_Angeles' });
-        checkTime = pacificTime.toJSDate();
-      }
-      
-      // Check for existing bookings within 60 minutes of the requested time
-      // Only check PENDING and ACCEPTED bookings (not COMPLETED, PAID, CANCELLED, REJECTED)
-      // Each appointment blocks 1 hour (3600 seconds)
-      const conflictCheck = await pool.query(
-        `SELECT id, "requestedAt", status 
-         FROM bookings 
-         WHERE "barberId" = $1 
-           AND status IN ('PENDING', 'ACCEPTED')
-           AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamp))) < 3600`,
-        [barberRecordId, checkTime.toISOString()]
-      );
-      
-      if (conflictCheck.rows.length > 0) {
-        const conflictingBooking = conflictCheck.rows[0];
-        const conflictTime = new Date(conflictingBooking.requestedAt);
-        logger.warn(`Time slot conflict for barber ${barberRecordId}: requested ${checkTime.toISOString()}, existing booking at ${conflictTime.toISOString()}`);
-        
-        return res.status(409).json({ 
-          success: false, 
-          error: 'This time slot is no longer available. The barber already has an appointment at this time. Please choose a different time.',
-          conflictAt: conflictTime.toISOString(),
-        });
-      }
-    }
-
     // Map frontend service names to database enum values
     // NOTE: The original service name is preserved in conversations.service_name for display
     // This mapping is for database storage - the display will show the original name
@@ -231,33 +214,11 @@ router.post('/', authenticate, async (req, res, next) => {
     const price = priceUsdCents || 0;
     const platformFee = Math.round(price * 0.15);
     const barberEarnings = price - platformFee;
-    
-    // Parse scheduled time - all times are in Pacific timezone (Cal Poly SLO)
-    // The frontend sends time like "2026-01-07T16:45:00" without timezone
-    // We need to interpret this as Pacific time and convert to UTC for storage
-    let requestedTime: Date;
+
+    // Parse scheduled time once (Pacific → UTC) for conflict check and storage
+    const requestedTime = parseScheduledTimePacificToUtc(scheduledTime);
     if (scheduledTime) {
-      // Check if already has timezone (ISO format with Z or offset)
-      if (scheduledTime.includes('Z') || scheduledTime.match(/[+-]\d{2}:\d{2}$/)) {
-        // Already in UTC/ISO format - parse directly
-        requestedTime = new Date(scheduledTime);
-        logger.info(`Parsed UTC time directly: ${scheduledTime} -> ${requestedTime.toISOString()}`);
-      } else {
-        // No timezone specified - interpret as Pacific time using luxon
-        // This correctly handles DST automatically
-        const pacificTime = DateTime.fromISO(scheduledTime, { zone: 'America/Los_Angeles' });
-        
-        if (!pacificTime.isValid) {
-          logger.error(`Invalid scheduled time format: ${scheduledTime}`);
-          requestedTime = new Date();
-        } else {
-          // Convert to UTC for database storage
-          requestedTime = pacificTime.toUTC().toJSDate();
-          logger.info(`Parsed Pacific time: ${scheduledTime} (${pacificTime.offsetNameShort}) -> UTC: ${requestedTime.toISOString()}`);
-        }
-      }
-    } else {
-      requestedTime = new Date();
+      logger.info(`Parsed scheduled time: ${scheduledTime} -> UTC: ${requestedTime.toISOString()}`);
     }
     
     // Get or create location (requires campus -> location chain)
@@ -294,10 +255,52 @@ router.post('/', authenticate, async (req, res, next) => {
       );
       locationId = newLocationResult.rows[0].id;
     }
-    
-    // Create availability slot for this booking (availabilityId is a required FK)
-    const availabilityResult = await pool.query(
-      `INSERT INTO availability (
+
+    const client = await pool.connect();
+    let booking: {
+      id: string;
+      consumerId: string;
+      barberId: string;
+      serviceType: string;
+      priceUsdCents: number;
+      requestedAt: Date;
+      status: string;
+      createdAt: Date;
+    };
+
+    try {
+      await client.query('BEGIN');
+
+      // Serialize concurrent bookings for the same barber
+      await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [barberRecordId]);
+
+      if (scheduledTime) {
+        const conflictCheck = await client.query(
+          `SELECT id, "requestedAt", status
+           FROM bookings
+           WHERE "barberId" = $1
+             AND status IN ('PENDING', 'ACCEPTED')
+             AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamptz))) < 3600`,
+          [barberRecordId, requestedTime.toISOString()]
+        );
+
+        if (conflictCheck.rows.length > 0) {
+          const conflictingBooking = conflictCheck.rows[0];
+          const conflictTime = new Date(conflictingBooking.requestedAt);
+          logger.warn(
+            `Time slot conflict for barber ${barberRecordId}: requested ${requestedTime.toISOString()}, existing booking at ${conflictTime.toISOString()}`
+          );
+          await client.query('ROLLBACK');
+          return res.status(409).json({
+            success: false,
+            error: BOOKING_SLOT_CONFLICT_MESSAGE,
+            conflictAt: conflictTime.toISOString(),
+          });
+        }
+      }
+
+      const availabilityResult = await client.query(
+        `INSERT INTO availability (
         id,
         "barberId",
         "locationId",
@@ -309,21 +312,20 @@ router.post('/', authenticate, async (req, res, next) => {
         "updatedAt"
       ) VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, ARRAY[$6::"ServiceType"], 'BOOKED', CURRENT_TIMESTAMP)
       RETURNING id`,
-      [
-        barberRecordId,
-        locationId,
-        requestedTime,
-        new Date(requestedTime.getTime() + 30 * 60 * 1000), // 30 min later
-        price,
-        dbServiceType,
-      ]
-    );
-    
-    const availabilityId = availabilityResult.rows[0].id;
-    
-    // Now create the booking with the availability ID
-    const result = await pool.query(
-      `INSERT INTO bookings (
+        [
+          barberRecordId,
+          locationId,
+          requestedTime,
+          new Date(requestedTime.getTime() + 30 * 60 * 1000),
+          price,
+          dbServiceType,
+        ]
+      );
+
+      const availabilityId = availabilityResult.rows[0].id;
+
+      const result = await client.query(
+        `INSERT INTO bookings (
         id,
         "consumerId", 
         "barberId", 
@@ -337,19 +339,26 @@ router.post('/', authenticate, async (req, res, next) => {
         status
       ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, 'PENDING')
       RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
-      [
-        consumerId,
-        barberRecordId,
-        dbServiceType,
-        price,
-        platformFee,
-        barberEarnings,
-        requestedTime,
-        availabilityId,
-      ]
-    );
+        [
+          consumerId,
+          barberRecordId,
+          dbServiceType,
+          price,
+          platformFee,
+          barberEarnings,
+          requestedTime,
+          availabilityId,
+        ]
+      );
 
-    const booking = result.rows[0];
+      await client.query('COMMIT');
+      booking = result.rows[0];
+    } catch (txError) {
+      await client.query('ROLLBACK');
+      throw txError;
+    } finally {
+      client.release();
+    }
 
     logger.info('Simple booking created', {
       booking_id: booking.id,

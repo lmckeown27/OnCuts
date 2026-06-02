@@ -1135,7 +1135,7 @@ const generateTimeSlotsWithCurrentTime = (
       
       const time = minutesToTime(mins);
       
-      // Check if this slot overlaps with any booked slots
+      // Check if this slot overlaps with any booked/blocked slots
       let isBooked = false;
       for (const booked of bookedSlots) {
         const bookedStart = timeToMinutes(booked.start);
@@ -1148,7 +1148,10 @@ const generateTimeSlotsWithCurrentTime = (
         }
       }
       
-      slots.push({ time, available: !isBooked });
+      // Only return open slots — booked/unavailable times are omitted entirely
+      if (!isBooked) {
+        slots.push({ time, available: true });
+      }
     }
   }
   
@@ -1263,7 +1266,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         FROM bookings 
         WHERE "barberId" = $1 
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-          AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+          AND status IN ('ACCEPTED', 'PENDING')
         ORDER BY "requestedAt"`,
         [id, date]
       );
