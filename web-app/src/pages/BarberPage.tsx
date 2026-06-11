@@ -2654,8 +2654,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
-                  {/* Google Calendar Integration Button - Hidden for now, functionality preserved */}
-                  <div className="hidden flex justify-center mb-3">
+                  {/* Google Calendar Integration Button */}
+                  <div className="flex justify-center mb-3">
                     {googleCalendarConnected === null ? (
                       <div className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">
                         Checking Google Calendar...
@@ -3813,8 +3813,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
-                        {/* Google Calendar Integration Button - Hidden for now, functionality preserved */}
-                        <div className="hidden flex justify-center mb-3">
+                        {/* Google Calendar Integration Button */}
+                        <div className="flex justify-center mb-3">
                           {googleCalendarConnected === null ? (
                             <div className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">
                               Checking Google Calendar...
