@@ -3335,6 +3335,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           value={editedTime}
                           onChange={(value) => setEditedTime(value)}
                           disabled={!editedDate}
+                          excludeBookingId={selectedBookingInline.id}
                         />
                       </div>
                       

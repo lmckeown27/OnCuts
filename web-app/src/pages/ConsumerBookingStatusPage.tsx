@@ -1285,6 +1285,7 @@ export default function ConsumerBookingStatusPage() {
                   date={editDate}
                   value={editTime}
                   onChange={setEditTime}
+                  excludeBookingId={booking.id}
                 />
               </div>
               

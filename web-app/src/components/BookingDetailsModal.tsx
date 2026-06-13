@@ -473,6 +473,7 @@ export default function BookingDetailsModal({
                   date={editDate}
                   value={editTime}
                   onChange={setEditTime}
+                  excludeBookingId={booking.id}
                 />
               </div>
 

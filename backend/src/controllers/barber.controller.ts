@@ -1113,12 +1113,15 @@ const minutesToTime = (minutes: number): string => {
   return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };
 
-// Generate available time slots in 15-minute increments
+// Generate available time slots in 1-minute increments
 // currentTimeMinutes: if > 0, exclude slots before this time (for same-day bookings)
+const BOOKING_SLOT_INCREMENT_MINUTES = 1;
+const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
+
 const generateTimeSlotsWithCurrentTime = (
   intervals: TimeInterval[],
   bookedSlots: { start: string; end: string }[],
-  slotDuration: number = 15, // minutes
+  slotDuration: number = BOOKING_SLOT_INCREMENT_MINUTES,
   currentTimeMinutes: number = 0 // Current time in minutes (0 = don't filter past times)
 ): { time: string; available: boolean }[] => {
   const slots: { time: string; available: boolean }[] = [];
@@ -1161,7 +1164,7 @@ const generateTimeSlotsWithCurrentTime = (
 export const getBarberAvailability = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { date } = req.query; // Optional: specific date to check (YYYY-MM-DD)
+    const { date, excludeBookingId } = req.query; // date: YYYY-MM-DD; excludeBookingId: omit when editing/rescheduling
 
     // Get barber's weekly schedule and campus timezone
     const barberResult = await pool.query(
@@ -1259,6 +1262,13 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       // Get booked slots for this date
       // Convert UTC stored times to Pacific time for proper comparison
       // Each appointment blocks 1 hour (60 minutes) from start time
+      const bookingsParams: string[] = [id, date as string];
+      let excludeBookingClause = '';
+      if (excludeBookingId && typeof excludeBookingId === 'string') {
+        excludeBookingClause = ' AND id != $3';
+        bookingsParams.push(excludeBookingId);
+      }
+
       const bookingsResult = await pool.query(
         `SELECT 
           TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH24:MI') as start_time,
@@ -1266,9 +1276,9 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         FROM bookings 
         WHERE "barberId" = $1 
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-          AND status IN ('ACCEPTED', 'PENDING')
+          AND status IN ('ACCEPTED', 'PENDING')${excludeBookingClause}
         ORDER BY "requestedAt"`,
-        [id, date]
+        bookingsParams
       );
 
       // Get time blocks for this specific date (one-time blocks that don't affect weekly schedule)
@@ -1358,10 +1368,15 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       // Get current time in campus timezone for filtering past slots
       const currentHour = campusNow.getHours();
       const currentMinute = campusNow.getMinutes();
-      const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + 15) : 0; // 15 min buffer
+      const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + SAME_DAY_BOOKING_BUFFER_MINUTES) : 0;
 
       // Generate available time slots (filter past times if booking for today)
-      const slots = generateTimeSlotsWithCurrentTime(intervals, bookedSlots, 15, currentTimeMinutes);
+      const slots = generateTimeSlotsWithCurrentTime(
+        intervals,
+        bookedSlots,
+        BOOKING_SLOT_INCREMENT_MINUTES,
+        currentTimeMinutes
+      );
       
       console.log(`[Availability] Generated ${slots.length} slots, ${slots.filter(s => s.available).length} available`);
 

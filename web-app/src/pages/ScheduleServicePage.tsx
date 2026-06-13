@@ -387,7 +387,7 @@ export default function ScheduleServicePage() {
                       <p className="text-red-500 text-sm mt-1">{errors.time}</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Times shown are based on the barber's availability and existing bookings
+                      Choose any available minute within the barber&apos;s open hours
                     </p>
                   </div>
 

@@ -114,23 +114,6 @@ const parseTimeInput = (input: string): string | null => {
   return null;
 };
 
-// Round time to nearest 15 minutes
-const roundToNearest15 = (time24: string): string => {
-  const [hourStr, minuteStr] = time24.split(':');
-  const hour = parseInt(hourStr, 10);
-  let minute = parseInt(minuteStr, 10);
-  
-  // Round to nearest 15
-  minute = Math.round(minute / 15) * 15;
-  
-  // Handle overflow
-  if (minute === 60) {
-    return `${((hour + 1) % 24).toString().padStart(2, '0')}:00`;
-  }
-  
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-};
-
 export default function TimeInput({
   value,
   onChange,
@@ -174,9 +157,8 @@ export default function TimeInput({
     const parsed = parseTimeInput(inputValue);
     
     if (parsed) {
-      const rounded = roundToNearest15(parsed);
-      onChange(rounded);
-      setInputValue(formatTimeDisplay(rounded));
+      onChange(parsed);
+      setInputValue(formatTimeDisplay(parsed));
       setHasParseError(false);
     } else {
       // Invalid input - show error and revert

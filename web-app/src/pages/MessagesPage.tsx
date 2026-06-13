@@ -1786,6 +1786,7 @@ export default function MessagesPage() {
                           value={editTime}
                           onChange={(value) => setEditTime(value)}
                           disabled={!editDate}
+                          excludeBookingId={selectedConversation.booking?.id}
                         />
                       </div>
                     </div>
@@ -2106,6 +2107,7 @@ export default function MessagesPage() {
                       value={editTime}
                       onChange={(value) => setEditTime(value)}
                       disabled={!editDate}
+                      excludeBookingId={selectedConversation.booking?.id}
                     />
                   </div>
                 </div>
