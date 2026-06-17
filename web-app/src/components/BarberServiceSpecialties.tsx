@@ -4,7 +4,7 @@
  * Allows barbers to select which services they provide and set price + duration.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Check, Clock, DollarSign } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
@@ -50,16 +50,25 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [barberServices, setBarberServices] = useState<BarberService[]>([]);
+  const barberServicesRef = useRef(barberServices);
+
+  useEffect(() => {
+    barberServicesRef.current = barberServices;
+  }, [barberServices]);
 
   useEffect(() => {
     fetchBarberServices();
   }, [barberId]);
 
-  const fetchBarberServices = async () => {
-    setLoading(true);
+  const fetchBarberServices = async (options?: { cacheBust?: boolean; silent?: boolean }) => {
+    if (!options?.silent) {
+      setLoading(true);
+    }
 
     try {
-      const barberData = await barberService.getBarberByUserId(barberId);
+      const barberData = await barberService.getBarberByUserId(barberId, {
+        cacheBust: options?.cacheBust,
+      });
       const currentSpecialties: string[] = barberData?.specialties || [];
       const currentPricing: { name: string; price: number; duration_minutes?: number }[] =
         barberData?.pricing || [];
@@ -120,6 +129,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       });
 
       setBarberServices(services);
+      barberServicesRef.current = services;
     } catch (error) {
       console.error('Failed to fetch barber services:', error);
       toast.error('Failed to load services');
@@ -138,53 +148,53 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       }));
       setBarberServices(defaultServices);
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   };
 
   const toggleService = async (serviceId: string) => {
     if (saving) return;
 
-    const serviceToToggle = barberServices.find((s) => s.serviceId === serviceId);
+    const serviceToToggle = barberServicesRef.current.find((s) => s.serviceId === serviceId);
     if (!serviceToToggle) return;
 
     const newIsOffered = !serviceToToggle.isOffered;
-
-    setBarberServices((prev) =>
-      prev.map((service) =>
-        service.serviceId === serviceId ? { ...service, isOffered: newIsOffered } : service
-      )
+    const updatedServices = barberServicesRef.current.map((s) =>
+      s.serviceId === serviceId ? { ...s, isOffered: newIsOffered } : s
     );
 
-    await saveServices(
-      barberServices.map((s) =>
-        s.serviceId === serviceId ? { ...s, isOffered: newIsOffered } : s
-      )
-    );
+    setBarberServices(updatedServices);
+    await saveServices(updatedServices);
   };
 
   const updatePrice = (serviceId: string, newPrice: number) => {
-    setBarberServices((prev) =>
-      prev.map((service) =>
+    setBarberServices((prev) => {
+      const next = prev.map((service) =>
         service.serviceId === serviceId
           ? { ...service, price: newPrice, isEditing: true }
           : service
-      )
-    );
+      );
+      barberServicesRef.current = next;
+      return next;
+    });
   };
 
   const updateDuration = (serviceId: string, newDuration: number) => {
-    setBarberServices((prev) =>
-      prev.map((service) =>
+    setBarberServices((prev) => {
+      const next = prev.map((service) =>
         service.serviceId === serviceId
           ? { ...service, durationMinutes: newDuration, isEditing: true }
           : service
-      )
-    );
+      );
+      barberServicesRef.current = next;
+      return next;
+    });
   };
 
   const confirmServiceChanges = async (serviceId: string) => {
-    const service = barberServices.find((s) => s.serviceId === serviceId);
+    const service = barberServicesRef.current.find((s) => s.serviceId === serviceId);
     if (!service || !service.isOffered) return;
 
     let validatedPrice = service.price;
@@ -205,7 +215,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       validatedDuration = MAX_SERVICE_DURATION_MINUTES;
     }
 
-    const updatedServices = barberServices.map((s) =>
+    const updatedServices = barberServicesRef.current.map((s) =>
       s.serviceId === serviceId
         ? {
             ...s,
@@ -219,6 +229,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     );
 
     setBarberServices(updatedServices);
+    barberServicesRef.current = updatedServices;
     await saveServices(updatedServices);
   };
 
@@ -260,6 +271,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         pricing,
       });
 
+      await fetchBarberServices({ cacheBust: true, silent: true });
       toast.success('Services saved');
     } catch (error) {
       console.error('Failed to save services:', error);

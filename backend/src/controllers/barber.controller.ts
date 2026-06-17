@@ -555,10 +555,15 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
     }
     delete barber.user_is_banned;
 
+    const pricing = Array.isArray(barber.pricing) ? barber.pricing : [];
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     res.json({
       success: true,
       data: {
         ...barber,
+        pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
       },
     });
@@ -909,6 +914,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
         b."userId" as user_id,
         b.bio,
         b.specialties,
+        b.pricing,
         b."avgRating" as average_rating,
         b."totalReviews" as total_reviews,
         b."totalBookings" as total_bookings,
@@ -925,11 +931,15 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     );
 
     const barber = result.rows[0];
+    const pricing = Array.isArray(barber.pricing) ? barber.pricing : [];
 
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
     res.json({
       success: true,
       data: {
         ...barber,
+        pricing: enrichPricingWithDurations(pricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`.trim(),
       },
       message: 'Profile updated successfully',

@@ -47,9 +47,13 @@ class BarberService {
     return await api.get<Barber>(`/barbers/${id}`);
   }
 
-  async getBarberByUserId(userId: string): Promise<Barber | null> {
+  async getBarberByUserId(
+    userId: string,
+    options?: { cacheBust?: boolean }
+  ): Promise<Barber | null> {
     try {
-      return await api.get<Barber>(`/barbers/user/${userId}`);
+      const params = options?.cacheBust ? { _t: Date.now() } : undefined;
+      return await api.get<Barber>(`/barbers/user/${userId}`, params);
     } catch {
       return null;
     }
