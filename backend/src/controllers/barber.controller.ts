@@ -931,7 +931,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
     );
 
     const barber = result.rows[0];
-    const pricing = Array.isArray(barber.pricing) ? barber.pricing : [];
+    const savedPricing = Array.isArray(barber.pricing) ? barber.pricing : [];
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -939,7 +939,7 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       success: true,
       data: {
         ...barber,
-        pricing: enrichPricingWithDurations(pricing),
+        pricing: enrichPricingWithDurations(savedPricing),
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`.trim(),
       },
       message: 'Profile updated successfully',
