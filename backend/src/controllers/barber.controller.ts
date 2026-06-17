@@ -9,6 +9,7 @@ import { getSocketIO } from '../index';
 import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { assertNoMessagingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
+import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/service-duration.utils';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -267,7 +268,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         distance_km: barber.distance_km !== null ? Math.round(barber.distance_km * 10) / 10 : null,
         // Convert km to miles for US users
         distance_miles: barber.distance_km !== null ? Math.round(barber.distance_km * 0.621371 * 10) / 10 : null,
-        pricing: filteredPricing,
+        pricing: enrichPricingWithDurations(filteredPricing),
         specialties: filteredSpecialties,
         portfolio_images: portfolioResult.rows,
         service_locations: locationsResult.rows,
@@ -385,7 +386,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
       data: {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-        pricing: servicePricing,
+        pricing: enrichPricingWithDurations(servicePricing),
       },
     });
   } catch (error) {
@@ -708,7 +709,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
       data: {
         ...barber,
         name: barber.display_name || `${barber.first_name} ${barber.last_name}`,
-        pricing: filteredPricing,
+        pricing: enrichPricingWithDurations(filteredPricing),
         specialties: filteredSpecialties,
         portfolio_images: portfolioResult.rows,
         reviews: reviewsResult.rows,
@@ -820,9 +821,13 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       paramIndex++;
     }
     if (pricing !== undefined) {
-      // Pricing is an array of {name: string, price: number} objects
-      barberUpdateFields.push(`pricing = $${paramIndex}`);
-      barberValues.push(JSON.stringify(pricing));
+      try {
+        const normalizedPricing = normalizePricingEntries(pricing);
+        barberUpdateFields.push(`pricing = $${paramIndex}`);
+        barberValues.push(JSON.stringify(normalizedPricing));
+      } catch (pricingError: any) {
+        throw new ApiError(400, pricingError.message || 'Invalid pricing data');
+      }
       paramIndex++;
     }
 
@@ -1272,7 +1277,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       const bookingsResult = await pool.query(
         `SELECT 
           TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles', 'HH24:MI') as start_time,
-          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + INTERVAL '60 minutes', 'HH24:MI') as end_time
+          TO_CHAR("requestedAt" AT TIME ZONE 'America/Los_Angeles' + (COALESCE("durationMinutes", 60) * INTERVAL '1 minute'), 'HH24:MI') as end_time
         FROM bookings 
         WHERE "barberId" = $1 
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2

@@ -17,7 +17,12 @@ export interface ServiceType {
   description?: string;
   icon?: string;
   basePrice?: number; // Base price in dollars for pricing algorithm
+  defaultDurationMinutes?: number;
 }
+
+export const MIN_SERVICE_DURATION_MINUTES = 15;
+export const MAX_SERVICE_DURATION_MINUTES = 240;
+export const DEFAULT_SERVICE_DURATION_MINUTES = 30;
 
 /**
  * Master list of all service types
@@ -29,21 +34,21 @@ export interface ServiceType {
  * - Premium ($35-45): Specialized services
  */
 export const SERVICE_TYPES: ServiceType[] = [
-  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Clipper cut all over', basePrice: 23 },
-  { id: 'lineup', name: 'Line Up', description: 'Edge up / line up', basePrice: 23 },
-  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 23 },
-  { id: 'haircut', name: 'Haircut', description: 'Standard haircut', basePrice: 28 },
-  { id: 'taper', name: 'Taper', description: 'Taper cut', basePrice: 28 },
-  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28 },
-  { id: 'kids-cut', name: 'Kids Cut', description: 'Haircuts for children', basePrice: 28 },
-  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35 },
-  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Full haircut with fade', basePrice: 35 },
-  { id: 'mullet', name: 'Mullet', description: 'Business in the front, party in the back', basePrice: 35 },
-  { id: 'design', name: 'Design/Art', description: 'Hair designs and artwork', basePrice: 38 },
-  { id: 'afro', name: 'Afro Textures', description: 'Afro and textured hair styling', basePrice: 38 },
-  { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women', basePrice: 40 },
-  { id: 'color', name: 'Color Treatment', description: 'Hair coloring services', basePrice: 45 },
-  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45 },
+  { id: 'buzz-cut', name: 'Buzz Cut', description: 'Clipper cut all over', basePrice: 23, defaultDurationMinutes: 20 },
+  { id: 'lineup', name: 'Line Up', description: 'Edge up / line up', basePrice: 23, defaultDurationMinutes: 15 },
+  { id: 'beard-trim', name: 'Beard Trim', description: 'Beard shaping and trim', basePrice: 23, defaultDurationMinutes: 20 },
+  { id: 'haircut', name: 'Haircut', description: 'Standard haircut', basePrice: 28, defaultDurationMinutes: 30 },
+  { id: 'taper', name: 'Taper', description: 'Taper cut', basePrice: 28, defaultDurationMinutes: 30 },
+  { id: 'hot-shave', name: 'Hot Shave', description: 'Traditional hot towel shave', basePrice: 28, defaultDurationMinutes: 30 },
+  { id: 'kids-cut', name: 'Kids Cut', description: 'Haircuts for children', basePrice: 28, defaultDurationMinutes: 25 },
+  { id: 'fade', name: 'Fade', description: 'Fade haircut', basePrice: 35, defaultDurationMinutes: 45 },
+  { id: 'haircut-fade', name: 'Haircut & Fade', description: 'Full haircut with fade', basePrice: 35, defaultDurationMinutes: 45 },
+  { id: 'mullet', name: 'Mullet', description: 'Business in the front, party in the back', basePrice: 35, defaultDurationMinutes: 40 },
+  { id: 'design', name: 'Design/Art', description: 'Hair designs and artwork', basePrice: 38, defaultDurationMinutes: 60 },
+  { id: 'afro', name: 'Afro Textures', description: 'Afro and textured hair styling', basePrice: 38, defaultDurationMinutes: 45 },
+  { id: 'womens-cut', name: "Women's Cut", description: 'Haircuts for women', basePrice: 40, defaultDurationMinutes: 45 },
+  { id: 'color', name: 'Color Treatment', description: 'Hair coloring services', basePrice: 45, defaultDurationMinutes: 90 },
+  { id: 'perm', name: 'Perm', description: 'Permanent wave treatment', basePrice: 45, defaultDurationMinutes: 120 },
 ];
 
 /**
@@ -73,6 +78,35 @@ export const findService = (idOrName: string): ServiceType | undefined => {
 export const normalizeSpecialty = (specialty: string): string => {
   const found = findService(specialty);
   return found ? found.name : specialty;
+};
+
+export const getDefaultDurationMinutes = (serviceName: string): number => {
+  const found = findService(serviceName);
+  return found?.defaultDurationMinutes ?? DEFAULT_SERVICE_DURATION_MINUTES;
+};
+
+export const resolveServiceDurationMinutes = (
+  serviceName: string,
+  pricing?: { name: string; duration_minutes?: number }[]
+): number => {
+  const saved = pricing?.find(
+    (entry) => entry.name?.toLowerCase() === serviceName.toLowerCase()
+  );
+  if (saved?.duration_minutes) {
+    return saved.duration_minutes;
+  }
+  return getDefaultDurationMinutes(serviceName);
+};
+
+export const resolveBookingAppointmentDuration = (
+  booking: { durationMinutes?: number; serviceName?: string; serviceType?: string },
+  barberPricing?: { name: string; duration_minutes?: number }[]
+): number => {
+  if (booking.durationMinutes) {
+    return booking.durationMinutes;
+  }
+  const serviceName = booking.serviceName || booking.serviceType || '';
+  return resolveServiceDurationMinutes(serviceName, barberPricing);
 };
 
 export default SERVICE_TYPES;

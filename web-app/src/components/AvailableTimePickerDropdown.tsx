@@ -34,9 +34,11 @@ interface AvailableTimePickerDropdownProps {
   className?: string;
   /** When editing an existing booking, exclude it from conflict checks */
   excludeBookingId?: string;
+  /** Length of the appointment in minutes (from barber's service settings) */
+  appointmentDurationMinutes?: number;
 }
 
-const APPOINTMENT_DURATION_MINUTES = 60;
+const DEFAULT_APPOINTMENT_DURATION_MINUTES = 60;
 
 const timeToMinutes = (time: string): number => {
   const [hour, minute] = time.split(':').map(Number);
@@ -71,10 +73,11 @@ function isStartWithinIntervals(time: string, intervals: TimeInterval[]): boolea
 
 function overlapsBookedSlot(
   time: string,
-  bookedSlots: { start: string; end: string }[]
+  bookedSlots: { start: string; end: string }[],
+  appointmentDurationMinutes: number
 ): boolean {
   const start = timeToMinutes(time);
-  const end = start + APPOINTMENT_DURATION_MINUTES;
+  const end = start + appointmentDurationMinutes;
 
   return bookedSlots.some((booked) => {
     const bookedStart = timeToMinutes(booked.start);
@@ -87,6 +90,7 @@ function validateSelectedTime(
   time: string,
   intervals: TimeInterval[],
   bookedSlots: { start: string; end: string }[],
+  appointmentDurationMinutes: number,
   minTimeMinutes?: number
 ): string | null {
   if (!time) return null;
@@ -97,7 +101,7 @@ function validateSelectedTime(
   if (!isStartWithinIntervals(time, intervals)) {
     return 'Outside available hours';
   }
-  if (overlapsBookedSlot(time, bookedSlots)) {
+  if (overlapsBookedSlot(time, bookedSlots, appointmentDurationMinutes)) {
     return 'This time conflicts with an existing booking or block';
   }
   return null;
@@ -112,6 +116,7 @@ export default function AvailableTimePickerDropdown({
   disabled = false,
   className = '',
   excludeBookingId,
+  appointmentDurationMinutes = DEFAULT_APPOINTMENT_DURATION_MINUTES,
 }: AvailableTimePickerDropdownProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +134,7 @@ export default function AvailableTimePickerDropdown({
       setError(null);
       setMinTimeMinutes(undefined);
     }
-  }, [barberId, date, excludeBookingId]);
+  }, [barberId, date, excludeBookingId, appointmentDurationMinutes]);
 
   const availabilityUrl = useMemo(() => {
     if (!barberId || !date) return null;
@@ -138,7 +143,7 @@ export default function AvailableTimePickerDropdown({
       params.set('excludeBookingId', excludeBookingId);
     }
     return `/barbers/${barberId}/availability?${params.toString()}`;
-  }, [barberId, date, excludeBookingId]);
+  }, [barberId, date, excludeBookingId, appointmentDurationMinutes]);
 
   const { minTime, maxTime } = useMemo(() => {
     if (intervals.length === 0) {
@@ -196,6 +201,7 @@ export default function AvailableTimePickerDropdown({
           value,
           apiIntervals,
           apiBookedSlots || [],
+          appointmentDurationMinutes,
           earliestOpenSlot ? timeToMinutes(earliestOpenSlot) : undefined
         );
         setValidationError(nextError);
@@ -219,7 +225,7 @@ export default function AvailableTimePickerDropdown({
     onChange(nextValue);
     setValidationError(
       nextValue
-        ? validateSelectedTime(nextValue, intervals, bookedSlots, minTimeMinutes)
+        ? validateSelectedTime(nextValue, intervals, bookedSlots, appointmentDurationMinutes, minTimeMinutes)
         : null
     );
   };
@@ -285,7 +291,7 @@ export default function AvailableTimePickerDropdown({
 
       {hasAvailability && !displayError && (
         <p className="mt-1 text-xs text-gray-500">
-          Choose any minute within the barber&apos;s open hours. Appointments block 1 hour.
+          Choose any minute within the barber&apos;s open hours. Appointments block {appointmentDurationMinutes} minutes.
         </p>
       )}
     </div>

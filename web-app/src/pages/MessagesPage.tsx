@@ -46,6 +46,7 @@ import Button from '../components/Button';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
+import { resolveBookingAppointmentDuration } from '../config/services';
 import { CampusCutLogo } from '@assets';
 import type { Conversation, Message } from '../types';
 import toast from 'react-hot-toast';
@@ -1787,6 +1788,9 @@ export default function MessagesPage() {
                           onChange={(value) => setEditTime(value)}
                           disabled={!editDate}
                           excludeBookingId={selectedConversation.booking?.id}
+                          appointmentDurationMinutes={resolveBookingAppointmentDuration(
+                            selectedConversation.booking || {},
+                          )}
                         />
                       </div>
                     </div>
@@ -2108,6 +2112,9 @@ export default function MessagesPage() {
                       onChange={(value) => setEditTime(value)}
                       disabled={!editDate}
                       excludeBookingId={selectedConversation.booking?.id}
+                      appointmentDurationMinutes={resolveBookingAppointmentDuration(
+                        selectedConversation.booking || {},
+                      )}
                     />
                   </div>
                 </div>

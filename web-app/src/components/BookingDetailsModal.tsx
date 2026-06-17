@@ -14,6 +14,7 @@ import barberService from '../services/barber.service';
 import toast from 'react-hot-toast';
 import DatePicker from './DatePicker';
 import AvailableTimePickerDropdown from './AvailableTimePickerDropdown';
+import { resolveBookingAppointmentDuration } from '../config/services';
 import type { Barber } from '../types';
 
 interface BookingDetailsModalProps {
@@ -474,6 +475,7 @@ export default function BookingDetailsModal({
                   value={editTime}
                   onChange={setEditTime}
                   excludeBookingId={booking.id}
+                  appointmentDurationMinutes={resolveBookingAppointmentDuration(booking, editBarber?.pricing)}
                 />
               </div>
 

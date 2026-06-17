@@ -30,6 +30,7 @@ import BookingDetailsModal from '../components/BookingDetailsModal';
 import PullToRefresh from '../components/PullToRefresh';
 import DatePicker from '../components/DatePicker';
 import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdown';
+import { resolveBookingAppointmentDuration } from '../config/services';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
 import campusService from '../services/campus.service';
@@ -1571,6 +1572,7 @@ interface ConfirmedBooking {
   consumerId: string;
   barberId: string;
   serviceType: string;
+  durationMinutes?: number;
   priceUsdCents: number;
   scheduledTime: string;
   status: string;
@@ -3336,6 +3338,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                           onChange={(value) => setEditedTime(value)}
                           disabled={!editedDate}
                           excludeBookingId={selectedBookingInline.id}
+                          appointmentDurationMinutes={resolveBookingAppointmentDuration(selectedBookingInline)}
                         />
                       </div>
                       

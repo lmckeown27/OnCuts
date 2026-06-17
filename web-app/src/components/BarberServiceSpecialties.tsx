@@ -1,16 +1,21 @@
 /**
  * Barber Service Specialties Component
- * 
- * Allows barbers to select which services they provide and set their own prices
+ *
+ * Allows barbers to select which services they provide and set price + duration.
  */
 
 import { useState, useEffect } from 'react';
-import { Check, DollarSign } from 'lucide-react';
+import { Check, Clock, DollarSign } from 'lucide-react';
 import Card from './Card';
 import Loading from './Loading';
 import Button from './Button';
 import toast from 'react-hot-toast';
-import { SERVICE_TYPES } from '../config/services';
+import {
+  SERVICE_TYPES,
+  getDefaultDurationMinutes,
+  MAX_SERVICE_DURATION_MINUTES,
+  MIN_SERVICE_DURATION_MINUTES,
+} from '../config/services';
 import barberService from '../services/barber.service';
 
 interface BarberService {
@@ -18,17 +23,18 @@ interface BarberService {
   serviceName: string;
   description: string;
   isOffered: boolean;
-  price: number; // Barber's custom price in dollars
-  suggestedPrice: number; // Suggested price from config
-  originalPrice: number; // Price before editing (to detect changes)
-  isEditing: boolean; // Whether price is being edited
+  price: number;
+  suggestedPrice: number;
+  originalPrice: number;
+  durationMinutes: number;
+  originalDurationMinutes: number;
+  isEditing: boolean;
 }
 
 interface Props {
   barberId: string;
 }
 
-// Fallback to config if API unavailable
 const FALLBACK_SERVICES = SERVICE_TYPES;
 
 interface ApiService {
@@ -51,21 +57,18 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   const fetchBarberServices = async () => {
     setLoading(true);
-    
+
     try {
-      // Fetch real barber data from API
       const barberData = await barberService.getBarberByUserId(barberId);
-      
-      // Get the barber's current specialties and pricing from the database
       const currentSpecialties: string[] = barberData?.specialties || [];
-      const currentPricing: { name: string; price: number }[] = barberData?.pricing || [];
-      
-      // Fetch platform services with current base prices from database
+      const currentPricing: { name: string; price: number; duration_minutes?: number }[] =
+        barberData?.pricing || [];
+
       let availableServices: { id: string; name: string; description: string; basePrice: number }[] = [];
       try {
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
         if (data.success && data.data) {
@@ -79,32 +82,28 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
             }));
         }
       } catch {
-        // Fall back to config if API fails
         console.log('Using fallback services from config');
       }
-      
-      // If API didn't return services, use fallback config
+
       if (availableServices.length === 0) {
-        availableServices = FALLBACK_SERVICES.map(s => ({
+        availableServices = FALLBACK_SERVICES.map((s) => ({
           id: s.id,
           name: s.name,
           description: s.description || '',
           basePrice: s.basePrice || 25,
         }));
       }
-      
-      // Map all available services with real data where available
+
       const services: BarberService[] = availableServices.map((service) => {
-        // Check if this service is offered by matching service name
         const isOffered = currentSpecialties.some(
-          s => s.toLowerCase() === service.name.toLowerCase()
+          (s) => s.toLowerCase() === service.name.toLowerCase()
         );
-        
-        // Get the barber's custom price for this service, or use platform base price
         const savedPrice = currentPricing.find(
-          p => p.name?.toLowerCase() === service.name.toLowerCase()
+          (p) => p.name?.toLowerCase() === service.name.toLowerCase()
         );
         const price = savedPrice?.price || service.basePrice;
+        const durationMinutes =
+          savedPrice?.duration_minutes ?? getDefaultDurationMinutes(service.name);
 
         return {
           serviceId: service.id,
@@ -114,6 +113,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           price,
           suggestedPrice: service.basePrice,
           originalPrice: price,
+          durationMinutes,
+          originalDurationMinutes: durationMinutes,
           isEditing: false,
         };
       });
@@ -122,8 +123,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     } catch (error) {
       console.error('Failed to fetch barber services:', error);
       toast.error('Failed to load services');
-      
-      // Initialize with default services on error
+
       const defaultServices: BarberService[] = FALLBACK_SERVICES.map((service) => ({
         serviceId: service.id,
         serviceName: service.name,
@@ -132,6 +132,8 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         price: service.basePrice || 25,
         suggestedPrice: service.basePrice || 25,
         originalPrice: service.basePrice || 25,
+        durationMinutes: getDefaultDurationMinutes(service.name),
+        originalDurationMinutes: getDefaultDurationMinutes(service.name),
         isEditing: false,
       }));
       setBarberServices(defaultServices);
@@ -142,33 +144,28 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   const toggleService = async (serviceId: string) => {
     if (saving) return;
-    
-    // Find the service being toggled
-    const serviceToToggle = barberServices.find(s => s.serviceId === serviceId);
+
+    const serviceToToggle = barberServices.find((s) => s.serviceId === serviceId);
     if (!serviceToToggle) return;
-    
+
     const newIsOffered = !serviceToToggle.isOffered;
-    
-    // Optimistically update UI
-    setBarberServices(prev =>
-      prev.map(service =>
-        service.serviceId === serviceId
-          ? { ...service, isOffered: newIsOffered }
-          : service
+
+    setBarberServices((prev) =>
+      prev.map((service) =>
+        service.serviceId === serviceId ? { ...service, isOffered: newIsOffered } : service
       )
     );
-    
-    // Save to database
+
     await saveServices(
-      barberServices.map(s => 
+      barberServices.map((s) =>
         s.serviceId === serviceId ? { ...s, isOffered: newIsOffered } : s
       )
     );
   };
 
   const updatePrice = (serviceId: string, newPrice: number) => {
-    setBarberServices(prev =>
-      prev.map(service =>
+    setBarberServices((prev) =>
+      prev.map((service) =>
         service.serviceId === serviceId
           ? { ...service, price: newPrice, isEditing: true }
           : service
@@ -176,11 +173,20 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     );
   };
 
-  const confirmPrice = async (serviceId: string) => {
-    const service = barberServices.find(s => s.serviceId === serviceId);
+  const updateDuration = (serviceId: string, newDuration: number) => {
+    setBarberServices((prev) =>
+      prev.map((service) =>
+        service.serviceId === serviceId
+          ? { ...service, durationMinutes: newDuration, isEditing: true }
+          : service
+      )
+    );
+  };
+
+  const confirmServiceChanges = async (serviceId: string) => {
+    const service = barberServices.find((s) => s.serviceId === serviceId);
     if (!service || !service.isOffered) return;
-    
-    // Validate price
+
     let validatedPrice = service.price;
     if (service.price < 5) {
       toast.error('Minimum price is $5');
@@ -189,31 +195,43 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       toast.error('Maximum price is $500');
       validatedPrice = 500;
     }
-    
-    // Update with validated price and mark as not editing
-    setBarberServices(prev =>
-      prev.map(s =>
-        s.serviceId === serviceId 
-          ? { ...s, price: validatedPrice, originalPrice: validatedPrice, isEditing: false } 
-          : s
-      )
+
+    let validatedDuration = service.durationMinutes;
+    if (validatedDuration < MIN_SERVICE_DURATION_MINUTES) {
+      toast.error(`Minimum duration is ${MIN_SERVICE_DURATION_MINUTES} minutes`);
+      validatedDuration = MIN_SERVICE_DURATION_MINUTES;
+    } else if (validatedDuration > MAX_SERVICE_DURATION_MINUTES) {
+      toast.error(`Maximum duration is ${MAX_SERVICE_DURATION_MINUTES} minutes`);
+      validatedDuration = MAX_SERVICE_DURATION_MINUTES;
+    }
+
+    const updatedServices = barberServices.map((s) =>
+      s.serviceId === serviceId
+        ? {
+            ...s,
+            price: validatedPrice,
+            originalPrice: validatedPrice,
+            durationMinutes: validatedDuration,
+            originalDurationMinutes: validatedDuration,
+            isEditing: false,
+          }
+        : s
     );
-    
-    // Save to database
-    await saveServices(
-      barberServices.map(s =>
-        s.serviceId === serviceId 
-          ? { ...s, price: validatedPrice, originalPrice: validatedPrice, isEditing: false }
-          : s
-      )
-    );
+
+    setBarberServices(updatedServices);
+    await saveServices(updatedServices);
   };
 
-  const cancelPriceEdit = (serviceId: string) => {
-    setBarberServices(prev =>
-      prev.map(service =>
+  const cancelServiceEdit = (serviceId: string) => {
+    setBarberServices((prev) =>
+      prev.map((service) =>
         service.serviceId === serviceId
-          ? { ...service, price: service.originalPrice, isEditing: false }
+          ? {
+              ...service,
+              price: service.originalPrice,
+              durationMinutes: service.originalDurationMinutes,
+              isEditing: false,
+            }
           : service
       )
     );
@@ -221,31 +239,27 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   const saveServices = async (services: BarberService[]) => {
     setSaving(true);
-    
+
     try {
-      // Get barber profile to get the barber ID
       const barberData = await barberService.getBarberByUserId(barberId);
-      
       if (!barberData?.id) {
         throw new Error('Barber profile not found');
       }
-      
-      // Build specialties array (service names that are offered)
-      const specialties = services
-        .filter(s => s.isOffered)
-        .map(s => s.serviceName);
-      
-      // Build pricing array (service names and prices for offered services)
+
+      const specialties = services.filter((s) => s.isOffered).map((s) => s.serviceName);
       const pricing = services
-        .filter(s => s.isOffered)
-        .map(s => ({ name: s.serviceName, price: s.price }));
-      
-      // Save to database
+        .filter((s) => s.isOffered)
+        .map((s) => ({
+          name: s.serviceName,
+          price: s.price,
+          duration_minutes: s.durationMinutes,
+        }));
+
       await barberService.updateBarberProfile(barberData.id, {
         specialties,
         pricing,
       });
-      
+
       toast.success('Services saved');
     } catch (error) {
       console.error('Failed to save services:', error);
@@ -265,21 +279,25 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Service Selection */}
       <Card>
         <p className="text-sm text-gray-600 mb-4">
-          Select services and set your prices.
+          Select services and set your price and duration for each one.
         </p>
 
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+        <div
+          className="grid gap-3"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}
+        >
           {barberServices.map((service) => {
-            const priceChanged = service.isEditing && service.price !== service.originalPrice;
-            
+            const hasChanges =
+              service.isEditing &&
+              (service.price !== service.originalPrice ||
+                service.durationMinutes !== service.originalDurationMinutes);
+
             return (
               <div
                 key={service.serviceId}
                 onClick={() => {
-                  // Only allow clicking entire card to SELECT (not deselect)
                   if (!service.isOffered && !saving) {
                     toggleService(service.serviceId);
                   }
@@ -290,9 +308,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 cursor-pointer'
                 } ${saving ? 'opacity-70' : ''}`}
               >
-                {/* Header with checkbox and name */}
                 <div className="flex items-start gap-2 mb-2">
-                  {/* Checkbox */}
                   <div
                     onClick={(e) => {
                       if (service.isOffered && !saving) {
@@ -306,18 +322,17 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         : 'border-gray-300'
                     }`}
                   >
-                    {service.isOffered && (
-                      <Check className="w-3 h-3 text-white" />
-                    )}
+                    {service.isOffered && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">{service.serviceName}</h4>
+                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">
+                      {service.serviceName}
+                    </h4>
                   </div>
                 </div>
 
-                {/* Pricing */}
                 {service.isOffered ? (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-2">
                     <div className="flex items-center gap-0.5">
                       <DollarSign className="w-4 h-4 text-gray-400" />
                       <input
@@ -331,20 +346,42 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                         }}
                         onClick={(e) => e.stopPropagation()}
                         className={`w-14 text-lg font-bold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
-                          priceChanged ? 'border-orange-400' : 'border-primary-300 focus:border-primary-500'
+                          hasChanges
+                            ? 'border-orange-400'
+                            : 'border-primary-300 focus:border-primary-500'
                         }`}
                       />
                     </div>
-                    
-                    {/* Confirm/Cancel buttons when price changed */}
-                    {priceChanged && (
-                      <div className="flex flex-col gap-1 mt-2">
+
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={service.durationMinutes}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          updateDuration(service.serviceId, val ? Number(val) : 0);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`w-12 text-sm font-semibold text-gray-900 border-b-2 focus:outline-none bg-transparent ${
+                          hasChanges
+                            ? 'border-orange-400'
+                            : 'border-primary-300 focus:border-primary-500'
+                        }`}
+                      />
+                      <span className="text-xs text-gray-500">min</span>
+                    </div>
+
+                    {hasChanges && (
+                      <div className="flex flex-col gap-1">
                         <Button
                           size="sm"
                           variant="primary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            confirmPrice(service.serviceId);
+                            confirmServiceChanges(service.serviceId);
                           }}
                           disabled={saving}
                           className="text-xs py-1"
@@ -356,7 +393,7 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                           variant="outline"
                           onClick={(e) => {
                             e.stopPropagation();
-                            cancelPriceEdit(service.serviceId);
+                            cancelServiceEdit(service.serviceId);
                           }}
                           disabled={saving}
                           className="text-xs py-1"
@@ -367,16 +404,13 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs text-primary-500 mt-1">
-                    + Add
-                  </p>
+                  <p className="text-xs text-primary-500 mt-1">+ Add</p>
                 )}
               </div>
             );
           })}
         </div>
       </Card>
-
     </div>
   );
 }

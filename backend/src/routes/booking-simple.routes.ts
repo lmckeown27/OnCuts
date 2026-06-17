@@ -14,6 +14,11 @@ import pushNotificationService from '../services/pushNotification.service';
 import { sendPendingBookingEmails, sendBookingEditEmails, sendBookingCompletedEmails } from '../services/email.service';
 import { DateTime } from 'luxon';
 import {
+  resolveServiceDurationMinutes,
+  FALLBACK_BOOKING_DURATION_MINUTES,
+  BarberPricingEntry,
+} from '../utils/service-duration.utils';
+import {
   getDefaultStripeClient,
   getOptionalStatementDescriptor,
   getStripeClientConfigPayload,
@@ -116,12 +121,13 @@ async function assertNoBarberSlotConflict(
   client: { query: typeof pool.query },
   barberRecordId: string,
   requestedTime: Date,
+  durationMinutes: number,
   excludeBookingId?: string
 ): Promise<Date | null> {
-  const params: unknown[] = [barberRecordId, requestedTime.toISOString()];
+  const params: unknown[] = [barberRecordId, requestedTime.toISOString(), durationMinutes];
   let excludeClause = '';
   if (excludeBookingId) {
-    excludeClause = ' AND id != $3';
+    excludeClause = ' AND id != $4';
     params.push(excludeBookingId);
   }
 
@@ -130,7 +136,8 @@ async function assertNoBarberSlotConflict(
      FROM bookings
      WHERE "barberId" = $1
        AND status IN ('PENDING', 'ACCEPTED')
-       AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamptz))) < 3600${excludeClause}`,
+       AND $2::timestamptz < "requestedAt" + (COALESCE("durationMinutes", ${FALLBACK_BOOKING_DURATION_MINUTES}) * INTERVAL '1 minute')
+       AND "requestedAt" < $2::timestamptz + ($3 * INTERVAL '1 minute')${excludeClause}`,
     params
   );
 
@@ -211,6 +218,13 @@ router.post('/', authenticate, async (req, res, next) => {
     }
     
     const barberRecordId = barberResult.rows[0].id;
+
+    const barberPricingResult = await pool.query(
+      'SELECT pricing FROM barbers WHERE id = $1',
+      [barberRecordId]
+    );
+    const barberPricing = (barberPricingResult.rows[0]?.pricing || []) as BarberPricingEntry[];
+    const serviceDurationMinutes = resolveServiceDurationMinutes(serviceType, barberPricing);
 
     const banCheck = await pool.query(
       `SELECT
@@ -348,26 +362,21 @@ router.post('/', authenticate, async (req, res, next) => {
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [barberRecordId]);
 
       if (scheduledTime) {
-        const conflictCheck = await client.query(
-          `SELECT id, "requestedAt", status
-           FROM bookings
-           WHERE "barberId" = $1
-             AND status IN ('PENDING', 'ACCEPTED')
-             AND ABS(EXTRACT(EPOCH FROM ("requestedAt" - $2::timestamptz))) < 3600`,
-          [barberRecordId, requestedTime.toISOString()]
+        const conflictAt = await assertNoBarberSlotConflict(
+          client,
+          barberRecordId,
+          requestedTime,
+          serviceDurationMinutes
         );
-
-        if (conflictCheck.rows.length > 0) {
-          const conflictingBooking = conflictCheck.rows[0];
-          const conflictTime = new Date(conflictingBooking.requestedAt);
+        if (conflictAt) {
           logger.warn(
-            `Time slot conflict for barber ${barberRecordId}: requested ${requestedTime.toISOString()}, existing booking at ${conflictTime.toISOString()}`
+            `Time slot conflict for barber ${barberRecordId}: requested ${requestedTime.toISOString()}, existing booking at ${conflictAt.toISOString()}`
           );
           await client.query('ROLLBACK');
           return res.status(409).json({
             success: false,
             error: BOOKING_SLOT_CONFLICT_MESSAGE,
-            conflictAt: conflictTime.toISOString(),
+            conflictAt: conflictAt.toISOString(),
           });
         }
       }
@@ -389,7 +398,7 @@ router.post('/', authenticate, async (req, res, next) => {
           barberRecordId,
           locationId,
           requestedTime,
-          new Date(requestedTime.getTime() + 30 * 60 * 1000),
+          new Date(requestedTime.getTime() + serviceDurationMinutes * 60 * 1000),
           price,
           dbServiceType,
         ]
@@ -408,10 +417,11 @@ router.post('/', authenticate, async (req, res, next) => {
         "barberEarningsUsdCents",
         "requestedAt",
         "availabilityId",
+        "durationMinutes",
         "updatedAt",
         status
-      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, $8, CURRENT_TIMESTAMP, 'PENDING')
-      RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", status, "createdAt"`,
+      ) VALUES (gen_random_uuid(), $1, $2, $3::"ServiceType", $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, 'PENDING')
+      RETURNING id, "consumerId", "barberId", "serviceType", "priceUsdCents", "requestedAt", "durationMinutes", status, "createdAt"`,
         [
           consumerId,
           barberRecordId,
@@ -421,6 +431,7 @@ router.post('/', authenticate, async (req, res, next) => {
           barberEarnings,
           requestedTime,
           availabilityId,
+          serviceDurationMinutes,
         ]
       );
 
@@ -776,6 +787,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
           barberRecordId: row.barber_record_id,
           serviceType: row.conv_service_name || formatServiceType(row.serviceType),
           priceUsdCents: row.priceUsdCents,
+          durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
           tipAmountCents: row.tipAmountCents || null,
           totalPaidCents: row.totalPaidCents || null,
           scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
@@ -848,6 +860,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
         b."barberId",
         b."serviceType",
         b."priceUsdCents",
+        b."durationMinutes",
         ${BOOKING_EFFECTIVE_SCHEDULED_TIME_CONV} as "scheduledTime",
         b.status,
         b."createdAt",
@@ -903,6 +916,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       serviceType: row.serviceType,
       serviceName: row.service_name || row.serviceType,
       priceUsdCents: row.priceUsdCents,
+      durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
       scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
       status: row.status,
       createdAt: row.createdAt,
@@ -1481,6 +1495,7 @@ router.get('/', authenticate, async (req, res, next) => {
         b."barberId",
         b."serviceType",
         b."priceUsdCents",
+        b."durationMinutes",
         ${BOOKING_EFFECTIVE_SCHEDULED_TIME} as "scheduledTime",
         b.status,
         b."createdAt",
@@ -1545,6 +1560,7 @@ router.get('/', authenticate, async (req, res, next) => {
           // Prefer original service name from conversation, fallback to formatted enum
           serviceType: row.conv_service_name || formatServiceType(row.serviceType),
           priceUsdCents: row.priceUsdCents,
+          durationMinutes: row.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES,
           scheduledTime: normalizeApiTimestamp(row.scheduledTime) ?? row.scheduledTime,
           status: row.status,
           createdAt: row.createdAt,
@@ -2368,7 +2384,7 @@ router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
     }
 
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."barberId", bar."userId" as barber_user_id
+      `SELECT b.id, b.status, b."consumerId", b."barberId", b."durationMinutes", bar."userId" as barber_user_id
        FROM bookings b
        JOIN barbers bar ON b."barberId" = bar.id
        WHERE b.id = $1 AND b."consumerId" = $2`,
@@ -2388,7 +2404,15 @@ router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
     }
 
     const requestedTime = parseScheduledTimePacificToUtc(scheduledTime);
-    const conflictAt = await assertNoBarberSlotConflict(pool, booking.barberId, requestedTime, id);
+    const bookingDurationMinutes =
+      booking.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES;
+    const conflictAt = await assertNoBarberSlotConflict(
+      pool,
+      booking.barberId,
+      requestedTime,
+      bookingDurationMinutes,
+      id
+    );
     if (conflictAt) {
       return res.status(409).json({
         success: false,
@@ -2485,7 +2509,7 @@ router.post('/:id/reschedule-request/approve', authenticate, async (req, res, ne
     const userId = (req as any).user.userId;
 
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType",
+      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType", b."durationMinutes",
               bar."userId" as barber_user_id,
               c.id as conversation_id, c.location as conv_location, c.location_details as conv_location_details,
               c.notes as conv_notes, c.service_name,
@@ -2511,7 +2535,15 @@ router.post('/:id/reschedule-request/approve', authenticate, async (req, res, ne
       await client.query('BEGIN');
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [booking.barberId]);
 
-      const conflictAt = await assertNoBarberSlotConflict(client, booking.barberId, requestedTime, id);
+      const bookingDurationMinutes =
+        booking.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES;
+      const conflictAt = await assertNoBarberSlotConflict(
+        client,
+        booking.barberId,
+        requestedTime,
+        bookingDurationMinutes,
+        id
+      );
       if (conflictAt) {
         await client.query('ROLLBACK');
         return res.status(409).json({

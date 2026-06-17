@@ -10,7 +10,7 @@ import barberService from '../services/barber.service';
 import type { Barber } from '../types';
 import type { FilterCriteria } from '../types/barber-filters';
 import { CampusCutLogo } from '@assets';
-import { SPECIALTY_OPTIONS } from '../config/services';
+import { SPECIALTY_OPTIONS, resolveServiceDurationMinutes, DEFAULT_SERVICE_DURATION_MINUTES } from '../config/services';
 
 export default function ScheduleServicePage() {
   const navigate = useNavigate();
@@ -88,10 +88,13 @@ export default function ScheduleServicePage() {
     : SPECIALTY_OPTIONS;
   
   const availableServices = rawServices.filter((service: string) => {
-    // Only show services that have pricing info from this barber
     if (!barber?.pricing || barber.pricing.length === 0) return true;
     return barber.pricing.some((p: any) => p.name?.toLowerCase() === service.toLowerCase());
   });
+
+  const selectedServiceDuration = serviceType
+    ? resolveServiceDurationMinutes(serviceType, barber?.pricing)
+    : DEFAULT_SERVICE_DURATION_MINUTES;
 
   // Fetch locations when barber is available
   useEffect(() => {
@@ -187,7 +190,7 @@ export default function ScheduleServicePage() {
           serviceName: serviceType,
           servicePrice: servicePrice,
           scheduledAt: scheduledAt,
-          duration: 30, // Default 30 minutes
+          duration: selectedServiceDuration,
           location: location_,
           locationDetails: locationDetails,
           notes: notes,
@@ -333,9 +336,10 @@ export default function ScheduleServicePage() {
                           p => p.name?.toLowerCase() === service.toLowerCase()
                         );
                         const priceDisplay = priceInfo?.price ? ` - $${priceInfo.price}` : '';
+                        const durationDisplay = ` (${resolveServiceDurationMinutes(service, barber?.pricing)} min)`;
                         return (
                           <option key={service} value={service}>
-                            {service}{priceDisplay}
+                            {service}{priceDisplay}{durationDisplay}
                           </option>
                         );
                       })}
@@ -381,13 +385,16 @@ export default function ScheduleServicePage() {
                         setTime(value);
                         if (value) setErrors(prev => ({ ...prev, time: undefined }));
                       }}
-                      disabled={!date}
+                      disabled={!date || !serviceType}
+                      appointmentDurationMinutes={selectedServiceDuration}
                     />
                     {errors.time && (
                       <p className="text-red-500 text-sm mt-1">{errors.time}</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Choose any available minute within the barber&apos;s open hours
+                      {serviceType
+                        ? `This service takes about ${selectedServiceDuration} minutes. Choose any available minute within the barber's open hours.`
+                        : 'Select a service first, then choose any available minute within the barber\'s open hours.'}
                     </p>
                   </div>
 

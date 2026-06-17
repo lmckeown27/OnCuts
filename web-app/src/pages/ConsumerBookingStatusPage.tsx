@@ -21,6 +21,7 @@ import AvailableTimePickerDropdown from '../components/AvailableTimePickerDropdo
 import DatePicker from '../components/DatePicker';
 import PullToRefresh from '../components/PullToRefresh';
 import barberService from '../services/barber.service';
+import { resolveBookingAppointmentDuration } from '../config/services';
 import type { Barber } from '../types';
 import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/ConsumerProfileEditor';
 import { useBodyScrollLock } from '../hooks';
@@ -34,6 +35,7 @@ interface ActiveBooking {
   barberAvatar?: string;
   serviceName: string;
   serviceType: string;
+  durationMinutes?: number;
   priceUsdCents: number;
   scheduledTime: string;
   location?: string;
@@ -1286,6 +1288,7 @@ export default function ConsumerBookingStatusPage() {
                   value={editTime}
                   onChange={setEditTime}
                   excludeBookingId={booking.id}
+                  appointmentDurationMinutes={resolveBookingAppointmentDuration(booking, editBarber?.pricing)}
                 />
               </div>
               
