@@ -11,6 +11,7 @@ import Button from '../Button';
 import toast from 'react-hot-toast';
 import api from '../../services/api.service';
 import socketService from '../../services/socket.service';
+import { resolveServiceDurationMinutes } from '../../config/services';
 import { useViewport, useBodyScrollLock } from '../../hooks';
 
 interface CustomerProfile {
@@ -29,6 +30,8 @@ interface BookingRequest {
   serviceType: string;
   requestedDate: string;
   requestedTime: string;
+  durationMinutes: number;
+  expectedCompletionTime: string;
   price: number;
   location?: string;
   message?: string;
@@ -268,6 +271,23 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
     handleReject(decliningRequest.bookingId, reason);
   };
 
+  const getRequestDurationMinutes = (request: BookingRequest) =>
+    request.durationMinutes ?? resolveServiceDurationMinutes(request.serviceType);
+
+  const getExpectedCompletionTime = (request: BookingRequest) => {
+    if (request.expectedCompletionTime) {
+      return request.expectedCompletionTime;
+    }
+    if (!request.requestedDate) return '';
+    const start = new Date(request.requestedDate);
+    const end = new Date(start.getTime() + getRequestDurationMinutes(request) * 60 * 1000);
+    return end.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Inbox Button */}
@@ -473,6 +493,20 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
                       <span className="text-sm text-gray-600">Requested Time</span>
                       <span className="text-sm font-semibold text-gray-900">{viewingRequest.requestedTime}</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">Service Duration</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {getRequestDurationMinutes(viewingRequest)} min
+                      </span>
+                    </div>
+                    {getExpectedCompletionTime(viewingRequest) && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Expected Completion</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {getExpectedCompletionTime(viewingRequest)}
+                        </span>
+                      </div>
+                    )}
                     {viewingRequest.location && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600">Location</span>

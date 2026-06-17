@@ -15,6 +15,10 @@ import { assertNoBookingBlockBetween } from './ugc-moderation.service';
 import pushNotificationService from './pushNotification.service';
 import { cancelPendingRescheduleRequestsForBooking } from './booking-cancellation.service';
 import { sendBookingConfirmationEmails, sendBookingDeclineEmail } from './email.service';
+import {
+  resolveServiceDurationMinutes,
+  BarberPricingEntry,
+} from '../utils/service-duration.utils';
 
 function mergeConversationLocation(
   loc: string | null | undefined,
@@ -24,6 +28,32 @@ function mergeConversationLocation(
   const b = details != null ? String(details).trim() : '';
   if (a && b) return `${a} — ${b}`;
   return a || b || null;
+}
+
+function formatCompletionTime(
+  start: Date | string | null | undefined,
+  durationMinutes: number,
+  timeZone: string
+): string {
+  if (!start) return '';
+  const end = new Date(new Date(start).getTime() + durationMinutes * 60 * 1000);
+  return end.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone,
+  });
+}
+
+function resolveRequestDurationMinutes(
+  serviceName: string,
+  storedDurationMinutes: number | null | undefined,
+  barberPricing?: BarberPricingEntry[] | null
+): number {
+  if (storedDurationMinutes) {
+    return storedDurationMinutes;
+  }
+  return resolveServiceDurationMinutes(serviceName, barberPricing);
 }
 
 interface TimeInterval {
@@ -178,6 +208,8 @@ interface BookingRequest {
   serviceType: string;
   requestedDate: Date;
   requestedTime: string;
+  durationMinutes: number;
+  expectedCompletionTime: string;
   price: number;
   location?: string | null;
   message?: string;
@@ -297,6 +329,12 @@ export class BookingRequestService {
         barberId = barberCheck.rows[0].id;
         barberUserId = barberCheck.rows[0].userId;
       }
+
+      const barberPricingResult = await pool.query(
+        'SELECT pricing FROM barbers WHERE id = $1',
+        [barberId]
+      );
+      const barberPricing = (barberPricingResult.rows[0]?.pricing || []) as BarberPricingEntry[];
       
       // Query 1: Get from bookings table (traditional flow)
       // Also LEFT JOIN conversations to get the original service_name for display (include campus timezone)
@@ -319,7 +357,9 @@ export class BookingRequestService {
           c.location as booking_location,
           c.location_details as booking_location_details,
           c.notes as booking_notes,
-          COALESCE(campus.timezone, 'America/New_York') as campus_timezone
+          COALESCE(campus.timezone, 'America/New_York') as campus_timezone,
+          b."durationMinutes" as duration_minutes,
+          bar.pricing as barber_pricing
         FROM bookings b
         JOIN users u ON b."consumerId" = u.id
         JOIN barbers bar ON b."barberId" = bar.id
@@ -360,6 +400,11 @@ export class BookingRequestService {
         
         // Prefer original service name from conversation, fallback to formatted enum
         const displayServiceType = row.original_service_name || formatServiceType(row.service_type);
+        const durationMinutes = resolveRequestDurationMinutes(
+          displayServiceType,
+          row.duration_minutes,
+          row.barber_pricing || barberPricing
+        );
         
         requests.push({
           bookingId: row.booking_id,
@@ -385,6 +430,12 @@ export class BookingRequestService {
           serviceType: displayServiceType,
           requestedDate: row.requested_date,
           requestedTime: formatTime(row.requested_time),
+          durationMinutes,
+          expectedCompletionTime: formatCompletionTime(
+            row.requested_time,
+            durationMinutes,
+            campusTimezone
+          ),
           price: parseFloat(row.price) || 0,
           location: mergeConversationLocation(row.booking_location, row.booking_location_details),
           message: row.booking_notes || '',
@@ -449,6 +500,11 @@ export class BookingRequestService {
         // Don't add if we already have this from bookings
         const alreadyExists = requests.some(r => r.bookingId === `conv-${row.conversation_id}`);
         if (!alreadyExists) {
+          const durationMinutes = resolveRequestDurationMinutes(
+            row.service_name || 'Haircut',
+            null,
+            barberPricing
+          );
           requests.push({
             bookingId: `conv-${row.conversation_id}`, // Prefix to identify it's from conversations
             customerId: row.customer_id,
@@ -475,6 +531,12 @@ export class BookingRequestService {
             requestedTime: row.scheduled_time 
               ? new Date(row.scheduled_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: barberCampusTimezone })
               : '',
+            durationMinutes,
+            expectedCompletionTime: formatCompletionTime(
+              row.scheduled_time,
+              durationMinutes,
+              barberCampusTimezone
+            ),
             price: parseFloat(row.service_price) || 0,
             location: mergeConversationLocation(row.location, row.location_details),
             message: row.notes || '',
@@ -522,6 +584,8 @@ export class BookingRequestService {
         serviceType: 'Fade',
         requestedDate: new Date(Date.now() + 86400000), // Tomorrow
         requestedTime: '14:00',
+        durationMinutes: 45,
+        expectedCompletionTime: '2:45 PM',
         price: 35.00,
         message: 'Hey! Looking for a clean mid-fade. Can we do it at the campus center?',
         status: 'pending',
@@ -550,6 +614,8 @@ export class BookingRequestService {
         serviceType: 'Haircut',
         requestedDate: new Date(Date.now() + 172800000), // 2 days from now
         requestedTime: '10:30',
+        durationMinutes: 30,
+        expectedCompletionTime: '11:00 AM',
         price: 30.00,
         message: 'Need a professional cut for job interviews. Can you help?',
         status: 'pending',
@@ -578,6 +644,8 @@ export class BookingRequestService {
         serviceType: 'Full Service',
         requestedDate: new Date(Date.now() + 259200000), // 3 days from now
         requestedTime: '16:00',
+        durationMinutes: 60,
+        expectedCompletionTime: '5:00 PM',
         price: 50.00,
         message: 'Haircut and beard trim please. My dorm room works.',
         status: 'pending',
