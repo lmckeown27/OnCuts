@@ -152,13 +152,27 @@ export default function BarberBookingRequestsDropdown({ barberId }: Props) {
   };
 
   // Modal open/close handlers
-  const openModal = (request: BookingRequest) => {
+  const openModal = async (request: BookingRequest) => {
     setViewingRequest(request);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsModalVisible(true);
       });
     });
+
+    try {
+      const response = await api.get<{ requests: BookingRequest[] }>(
+        `/booking-requests/barber/${barberId}/pending?_t=${Date.now()}`
+      );
+      const freshRequests = response.requests || [];
+      setRequests(freshRequests);
+      const refreshed = freshRequests.find((r) => r.bookingId === request.bookingId);
+      if (refreshed) {
+        setViewingRequest(refreshed);
+      }
+    } catch (error) {
+      console.error('Failed to refresh booking request details:', error);
+    }
   };
 
   const closeModal = () => {

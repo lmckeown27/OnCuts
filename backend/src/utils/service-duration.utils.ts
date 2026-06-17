@@ -1,24 +1,6 @@
-const SERVICE_DEFAULT_DURATIONS: Record<string, number> = {
-  'Buzz Cut': 20,
-  'Line Up': 15,
-  'Beard Trim': 20,
-  'Haircut': 30,
-  'Taper': 30,
-  'Hot Shave': 30,
-  'Kids Cut': 25,
-  'Fade': 45,
-  'Haircut & Fade': 45,
-  'Mullet': 40,
-  'Design/Art': 60,
-  'Afro Textures': 45,
-  "Women's Cut": 45,
-  'Color Treatment': 90,
-  'Perm': 120,
-};
-
 export const MIN_SERVICE_DURATION_MINUTES = 15;
 export const MAX_SERVICE_DURATION_MINUTES = 240;
-export const DEFAULT_SERVICE_DURATION_MINUTES = 30;
+export const DEFAULT_SERVICE_DURATION_MINUTES = 60;
 export const FALLBACK_BOOKING_DURATION_MINUTES = 60;
 
 export interface BarberPricingEntry {
@@ -27,8 +9,8 @@ export interface BarberPricingEntry {
   duration_minutes?: number;
 }
 
-export function getDefaultDurationMinutes(serviceName: string): number {
-  return SERVICE_DEFAULT_DURATIONS[serviceName] ?? DEFAULT_SERVICE_DURATION_MINUTES;
+export function getDefaultDurationMinutes(_serviceName?: string): number {
+  return DEFAULT_SERVICE_DURATION_MINUTES;
 }
 
 export function resolveServiceDurationMinutes(

@@ -45,14 +45,10 @@ function formatCompletionTime(
   });
 }
 
-function resolveRequestDurationMinutes(
+function resolvePendingRequestDurationMinutes(
   serviceName: string,
-  storedDurationMinutes: number | null | undefined,
   barberPricing?: BarberPricingEntry[] | null
 ): number {
-  if (storedDurationMinutes) {
-    return storedDurationMinutes;
-  }
   return resolveServiceDurationMinutes(serviceName, barberPricing);
 }
 
@@ -400,9 +396,8 @@ export class BookingRequestService {
         
         // Prefer original service name from conversation, fallback to formatted enum
         const displayServiceType = row.original_service_name || formatServiceType(row.service_type);
-        const durationMinutes = resolveRequestDurationMinutes(
+        const durationMinutes = resolvePendingRequestDurationMinutes(
           displayServiceType,
-          row.duration_minutes,
           row.barber_pricing || barberPricing
         );
         
@@ -500,9 +495,8 @@ export class BookingRequestService {
         // Don't add if we already have this from bookings
         const alreadyExists = requests.some(r => r.bookingId === `conv-${row.conversation_id}`);
         if (!alreadyExists) {
-          const durationMinutes = resolveRequestDurationMinutes(
+          const durationMinutes = resolvePendingRequestDurationMinutes(
             row.service_name || 'Haircut',
-            null,
             barberPricing
           );
           requests.push({

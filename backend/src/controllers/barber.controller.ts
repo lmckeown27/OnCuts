@@ -820,9 +820,11 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
       barberValues.push(is_active);
       paramIndex++;
     }
+
+    let normalizedPricing: ReturnType<typeof normalizePricingEntries> | undefined;
     if (pricing !== undefined) {
       try {
-        const normalizedPricing = normalizePricingEntries(pricing);
+        normalizedPricing = normalizePricingEntries(pricing);
         barberUpdateFields.push(`pricing = $${paramIndex}`);
         barberValues.push(JSON.stringify(normalizedPricing));
       } catch (pricingError: any) {
@@ -842,6 +844,21 @@ export const updateBarberProfile = async (req: AuthRequest, res: Response, next:
          WHERE id = $${paramIndex}`,
         barberValues
       );
+
+      if (normalizedPricing) {
+        for (const entry of normalizedPricing) {
+          await pool.query(
+            `UPDATE bookings b
+             SET "durationMinutes" = $1, "updatedAt" = NOW()
+             FROM conversations c
+             WHERE c.booking_id = b.id
+               AND b."barberId" = $2
+               AND b.status = 'PENDING'
+               AND LOWER(COALESCE(c.service_name, '')) = LOWER($3)`,
+            [entry.duration_minutes, id, entry.name]
+          );
+        }
+      }
       
       // Emit WebSocket event if weekly_schedule was updated
       if (weekly_schedule !== undefined) {
