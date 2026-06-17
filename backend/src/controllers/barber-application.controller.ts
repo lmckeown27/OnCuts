@@ -19,11 +19,11 @@ const SERVICE_BASE_PRICES: Record<string, number> = {
   'Hot Shave': 28,
   'Kids Cut': 28,
   'Fade': 35,
-  'Haircut & Fade': 35,
+  // 'Haircut & Fade': 35,
   'Mullet': 35,
   'Design/Art': 38,
   'Afro Textures': 38,
-  "Women's Cut": 40,
+  // "Women's Cut": 40,
   'Color Treatment': 45,
   'Perm': 45,
 };

@@ -54,7 +54,8 @@ const SERVICE_OPTIONS = [
   { value: 'Taper', label: 'Taper' },
   { value: 'Beard Trim', label: 'Beard Trim' },
   { value: 'Line Up', label: 'Line Up' },
-  { value: 'Haircut & Fade', label: 'Haircut & Fade' },
+  { value: 'Fade', label: 'Fade' },
+  // { value: 'Haircut & Fade', label: 'Haircut & Fade' },
   { value: 'Buzz Cut', label: 'Buzz Cut' },
   { value: 'Color Treatment', label: 'Color Treatment' },
 ];

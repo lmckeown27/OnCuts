@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS services (
 -- Seed default services
 INSERT INTO services (slug, name, default_base_price_cents, default_min_price_cents, default_max_price_cents) VALUES
 ('haircut', 'Haircut', 2500, 2000, 3750),
-('haircut_fade', 'Haircut & Fade', 3500, 2800, 5250),
+-- ('haircut_fade', 'Haircut & Fade', 3500, 2800, 5250),
 ('beard_trim', 'Beard Trim', 1500, 1200, 2250),
 ('full_service', 'Full Service (Cut + Fade + Beard)', 5000, 4000, 7500)
 ON CONFLICT (slug) DO NOTHING;
