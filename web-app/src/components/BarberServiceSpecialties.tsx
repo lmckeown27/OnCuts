@@ -26,8 +26,12 @@ interface BarberService {
   price: number;
   suggestedPrice: number;
   originalPrice: number;
+  minPrice: number;
+  maxPrice: number;
   durationMinutes: number;
   originalDurationMinutes: number;
+  minDurationMinutes: number;
+  maxDurationMinutes: number;
   isEditing: boolean;
 }
 
@@ -43,6 +47,10 @@ interface ApiService {
   name: string;
   description: string | null;
   basePriceCents: number;
+  minPriceCents: number;
+  maxPriceCents: number;
+  minDurationMinutes: number;
+  maxDurationMinutes: number;
   isActive: boolean;
 }
 
@@ -73,7 +81,16 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
       const currentPricing: { name: string; price: number; duration_minutes?: number }[] =
         barberData?.pricing || [];
 
-      let availableServices: { id: string; name: string; description: string; basePrice: number }[] = [];
+      let availableServices: {
+        id: string;
+        name: string;
+        description: string;
+        basePrice: number;
+        minPrice: number;
+        maxPrice: number;
+        minDurationMinutes: number;
+        maxDurationMinutes: number;
+      }[] = [];
       try {
         const token = localStorage.getItem('accessToken');
         const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services`, {
@@ -88,6 +105,10 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
               name: s.name,
               description: s.description || '',
               basePrice: Math.round(s.basePriceCents / 100),
+              minPrice: Math.round((s.minPriceCents ?? s.basePriceCents) / 100),
+              maxPrice: Math.round((s.maxPriceCents ?? s.basePriceCents) / 100),
+              minDurationMinutes: s.minDurationMinutes ?? MIN_SERVICE_DURATION_MINUTES,
+              maxDurationMinutes: s.maxDurationMinutes ?? MAX_SERVICE_DURATION_MINUTES,
             }));
         }
       } catch {
@@ -100,6 +121,10 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           name: s.name,
           description: s.description || '',
           basePrice: s.basePrice || 25,
+          minPrice: Math.max(5, Math.round((s.basePrice || 25) * 0.8)),
+          maxPrice: Math.round((s.basePrice || 25) * 1.5),
+          minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
+          maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
         }));
       }
 
@@ -122,8 +147,12 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
           price,
           suggestedPrice: service.basePrice,
           originalPrice: price,
+          minPrice: service.minPrice,
+          maxPrice: service.maxPrice,
           durationMinutes,
           originalDurationMinutes: durationMinutes,
+          minDurationMinutes: service.minDurationMinutes,
+          maxDurationMinutes: service.maxDurationMinutes,
           isEditing: false,
         };
       });
@@ -142,8 +171,12 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
         price: service.basePrice || 25,
         suggestedPrice: service.basePrice || 25,
         originalPrice: service.basePrice || 25,
+        minPrice: Math.max(5, Math.round((service.basePrice || 25) * 0.8)),
+        maxPrice: Math.round((service.basePrice || 25) * 1.5),
         durationMinutes: getDefaultDurationMinutes(service.name),
         originalDurationMinutes: getDefaultDurationMinutes(service.name),
+        minDurationMinutes: MIN_SERVICE_DURATION_MINUTES,
+        maxDurationMinutes: MAX_SERVICE_DURATION_MINUTES,
         isEditing: false,
       }));
       setBarberServices(defaultServices);
@@ -198,21 +231,21 @@ export default function BarberServiceSpecialties({ barberId }: Props) {
     if (!service || !service.isOffered) return;
 
     let validatedPrice = service.price;
-    if (service.price < 5) {
-      toast.error('Minimum price is $5');
-      validatedPrice = 5;
-    } else if (service.price > 500) {
-      toast.error('Maximum price is $500');
-      validatedPrice = 500;
+    if (service.price < service.minPrice) {
+      toast.error(`Minimum price is $${service.minPrice}`);
+      validatedPrice = service.minPrice;
+    } else if (service.price > service.maxPrice) {
+      toast.error(`Maximum price is $${service.maxPrice}`);
+      validatedPrice = service.maxPrice;
     }
 
     let validatedDuration = service.durationMinutes;
-    if (validatedDuration < MIN_SERVICE_DURATION_MINUTES) {
-      toast.error(`Minimum duration is ${MIN_SERVICE_DURATION_MINUTES} minutes`);
-      validatedDuration = MIN_SERVICE_DURATION_MINUTES;
-    } else if (validatedDuration > MAX_SERVICE_DURATION_MINUTES) {
-      toast.error(`Maximum duration is ${MAX_SERVICE_DURATION_MINUTES} minutes`);
-      validatedDuration = MAX_SERVICE_DURATION_MINUTES;
+    if (validatedDuration < service.minDurationMinutes) {
+      toast.error(`Minimum duration is ${service.minDurationMinutes} minutes`);
+      validatedDuration = service.minDurationMinutes;
+    } else if (validatedDuration > service.maxDurationMinutes) {
+      toast.error(`Maximum duration is ${service.maxDurationMinutes} minutes`);
+      validatedDuration = service.maxDurationMinutes;
     }
 
     const updatedServices = barberServicesRef.current.map((s) =>

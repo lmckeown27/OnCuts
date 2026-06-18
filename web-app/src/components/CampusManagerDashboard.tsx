@@ -3544,8 +3544,34 @@ interface Service {
   basePriceCents: number;
   minPriceCents: number;
   maxPriceCents: number;
+  minDurationMinutes: number;
+  maxDurationMinutes: number;
   isActive: boolean;
 }
+
+interface ServiceBoundsForm {
+  basePrice: string;
+  minPrice: string;
+  maxPrice: string;
+  minDuration: string;
+  maxDuration: string;
+}
+
+const emptyBoundsForm = (): ServiceBoundsForm => ({
+  basePrice: '',
+  minPrice: '',
+  maxPrice: '',
+  minDuration: '',
+  maxDuration: '',
+});
+
+const boundsFormFromService = (service: Service): ServiceBoundsForm => ({
+  basePrice: Math.round(service.basePriceCents / 100).toString(),
+  minPrice: Math.round(service.minPriceCents / 100).toString(),
+  maxPrice: Math.round(service.maxPriceCents / 100).toString(),
+  minDuration: String(service.minDurationMinutes),
+  maxDuration: String(service.maxDurationMinutes),
+});
 
 const ServicesManagementPanel: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
@@ -3554,10 +3580,10 @@ const ServicesManagementPanel: React.FC = () => {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
-  // Inline price editing state
+  // Inline bounds editing state
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
-  const [editingPrice, setEditingPrice] = useState('');
-  const [savingPrice, setSavingPrice] = useState(false);
+  const [editingBounds, setEditingBounds] = useState<ServiceBoundsForm>(emptyBoundsForm());
+  const [savingBounds, setSavingBounds] = useState(false);
 
   // Add modal form state
   const [formName, setFormName] = useState('');
@@ -3633,54 +3659,77 @@ const ServicesManagementPanel: React.FC = () => {
     }
   };
 
-  // Start inline price editing
-  const startEditingPrice = (service: Service) => {
+  // Start inline bounds editing
+  const startEditingBounds = (service: Service) => {
     setEditingServiceId(service.id);
-    setEditingPrice(Math.round(service.basePriceCents / 100).toString());
+    setEditingBounds(boundsFormFromService(service));
   };
 
-  // Save inline price edit
-  const saveInlinePrice = async (serviceId: number) => {
-    const newPrice = parseInt(editingPrice);
-    if (isNaN(newPrice) || newPrice <= 0) {
-      toast.error('Please enter a valid price');
+  const validateBoundsForm = (form: ServiceBoundsForm): string | null => {
+    const basePrice = parseInt(form.basePrice, 10);
+    const minPrice = parseInt(form.minPrice, 10);
+    const maxPrice = parseInt(form.maxPrice, 10);
+    const minDuration = parseInt(form.minDuration, 10);
+    const maxDuration = parseInt(form.maxDuration, 10);
+
+    if ([basePrice, minPrice, maxPrice, minDuration, maxDuration].some((n) => Number.isNaN(n) || n <= 0)) {
+      return 'Enter valid positive numbers for all fields';
+    }
+    if (minPrice > basePrice || basePrice > maxPrice) {
+      return 'Price bounds must satisfy min ≤ base ≤ max';
+    }
+    if (minDuration > maxDuration) {
+      return 'Duration bounds must satisfy min ≤ max';
+    }
+    return null;
+  };
+
+  // Save inline bounds edit
+  const saveInlineBounds = async (serviceId: number) => {
+    const validationError = validateBoundsForm(editingBounds);
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
 
-    setSavingPrice(true);
+    setSavingBounds(true);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/admin/services/${serviceId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          basePriceCents: newPrice * 100,
+          basePriceCents: parseInt(editingBounds.basePrice, 10) * 100,
+          minPriceCents: parseInt(editingBounds.minPrice, 10) * 100,
+          maxPriceCents: parseInt(editingBounds.maxPrice, 10) * 100,
+          minDurationMinutes: parseInt(editingBounds.minDuration, 10),
+          maxDurationMinutes: parseInt(editingBounds.maxDuration, 10),
         }),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success('Price updated');
+        toast.success('Service limits updated');
         setEditingServiceId(null);
         fetchServices();
       } else {
-        toast.error(data.message || 'Failed to update price');
+        toast.error(data.message || 'Failed to update service limits');
       }
     } catch (error) {
-      console.error('Failed to update price:', error);
-      toast.error('Failed to update price');
+      console.error('Failed to update service limits:', error);
+      toast.error('Failed to update service limits');
     } finally {
-      setSavingPrice(false);
+      setSavingBounds(false);
     }
   };
 
-  // Cancel inline price editing
-  const cancelEditingPrice = () => {
+  // Cancel inline bounds editing
+  const cancelEditingBounds = () => {
     setEditingServiceId(null);
-    setEditingPrice('');
+    setEditingBounds(emptyBoundsForm());
   };
 
   const handleDeleteService = async (service: Service) => {
@@ -3794,7 +3843,7 @@ const ServicesManagementPanel: React.FC = () => {
           </div>
         </div>
         {/* Description */}
-        <p className="text-sm text-gray-500 mt-1">Default prices for barbers who haven't set their own</p>
+        <p className="text-sm text-gray-500 mt-1">Set default price and duration limits barbers must stay within</p>
         {/* Mobile Add Service button */}
         <Button
           onClick={() => {
@@ -3809,7 +3858,7 @@ const ServicesManagementPanel: React.FC = () => {
       </div>
 
       {/* Services Grid - Compact boxes like BarberServiceSpecialties */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
         {/* Inline Add Service Form */}
         {showAddModal && (
           <form
@@ -3882,9 +3931,9 @@ const ServicesManagementPanel: React.FC = () => {
                 <div className="flex items-center gap-0.5 flex-shrink-0">
                   {!isEditing && (
                     <button
-                      onClick={() => startEditingPrice(service)}
+                      onClick={() => startEditingBounds(service)}
                       className="p-1 text-gray-400 hover:text-primary-600 rounded transition-colors"
-                      title="Edit price"
+                      title="Edit limits"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -3922,32 +3971,75 @@ const ServicesManagementPanel: React.FC = () => {
                 </button>
               )}
 
-              {/* Price - editable or display */}
+              {/* Limits - editable or display */}
               {isEditing ? (
-                <div className="mt-2">
-                  <div className="flex items-center gap-0.5">
-                    <DollarSign className="w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={editingPrice}
-                      onChange={(e) => setEditingPrice(e.target.value.replace(/[^0-9]/g, ''))}
-                      autoFocus
-                      className="w-14 text-lg font-bold text-gray-900 border-b-2 border-primary-400 focus:border-primary-500 focus:outline-none bg-transparent"
-                    />
+                <div className="mt-2 space-y-2">
+                  <div className="grid grid-cols-3 gap-1 text-[10px]">
+                    <label className="text-gray-500">
+                      Min $
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editingBounds.minPrice}
+                        onChange={(e) => setEditingBounds((prev) => ({ ...prev, minPrice: e.target.value.replace(/[^0-9]/g, '') }))}
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
+                      />
+                    </label>
+                    <label className="text-gray-500">
+                      Base $
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editingBounds.basePrice}
+                        onChange={(e) => setEditingBounds((prev) => ({ ...prev, basePrice: e.target.value.replace(/[^0-9]/g, '') }))}
+                        autoFocus
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-primary-300 rounded bg-white"
+                      />
+                    </label>
+                    <label className="text-gray-500">
+                      Max $
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editingBounds.maxPrice}
+                        onChange={(e) => setEditingBounds((prev) => ({ ...prev, maxPrice: e.target.value.replace(/[^0-9]/g, '') }))}
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
+                      />
+                    </label>
                   </div>
-                  <div className="flex gap-1 mt-2">
+                  <div className="grid grid-cols-2 gap-1 text-[10px]">
+                    <label className="text-gray-500">
+                      Min min
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editingBounds.minDuration}
+                        onChange={(e) => setEditingBounds((prev) => ({ ...prev, minDuration: e.target.value.replace(/[^0-9]/g, '') }))}
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
+                      />
+                    </label>
+                    <label className="text-gray-500">
+                      Max min
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={editingBounds.maxDuration}
+                        onChange={(e) => setEditingBounds((prev) => ({ ...prev, maxDuration: e.target.value.replace(/[^0-9]/g, '') }))}
+                        className="mt-0.5 w-full px-1 py-0.5 text-xs font-semibold border border-gray-300 rounded bg-white"
+                      />
+                    </label>
+                  </div>
+                  <div className="flex gap-1">
                     <button
-                      onClick={() => saveInlinePrice(service.id)}
-                      disabled={savingPrice}
+                      onClick={() => saveInlineBounds(service.id)}
+                      disabled={savingBounds}
                       className="flex-1 text-xs px-2 py-1 bg-primary-500 text-white rounded hover:bg-primary-600 disabled:opacity-50"
                     >
-                      {savingPrice ? 'Saving...' : 'Save'}
+                      {savingBounds ? 'Saving...' : 'Save'}
                     </button>
                     <button
-                      onClick={cancelEditingPrice}
-                      disabled={savingPrice}
+                      onClick={cancelEditingBounds}
+                      disabled={savingBounds}
                       className="flex-1 text-xs px-2 py-1 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 disabled:opacity-50"
                     >
                       Cancel
@@ -3955,11 +4047,19 @@ const ServicesManagementPanel: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-0.5 mt-1">
-                  <DollarSign className="w-4 h-4 text-gray-400" />
-                  <span className="text-lg font-bold text-gray-900">
-                    {Math.round(service.basePriceCents / 100)}
-                  </span>
+                <div className="mt-1 space-y-1">
+                  <div className="flex items-center gap-0.5">
+                    <DollarSign className="w-4 h-4 text-gray-400" />
+                    <span className="text-lg font-bold text-gray-900">
+                      {Math.round(service.basePriceCents / 100)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    ${Math.round(service.minPriceCents / 100)}–${Math.round(service.maxPriceCents / 100)} price
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    {service.minDurationMinutes}–{service.maxDurationMinutes} min
+                  </p>
                 </div>
               )}
             </div>

@@ -474,6 +474,46 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
 // SERVICES MANAGEMENT
 // ═══════════════════════════════════════════════════════════════
 
+const DEFAULT_MIN_DURATION_MINUTES = 15;
+const DEFAULT_MAX_DURATION_MINUTES = 240;
+
+function mapServiceRow(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    basePriceCents: row.default_base_price_cents,
+    minPriceCents: row.default_min_price_cents,
+    maxPriceCents: row.default_max_price_cents,
+    minDurationMinutes: row.default_min_duration_minutes ?? DEFAULT_MIN_DURATION_MINUTES,
+    maxDurationMinutes: row.default_max_duration_minutes ?? DEFAULT_MAX_DURATION_MINUTES,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function validateServiceBounds(params: {
+  basePriceCents: number;
+  minPriceCents: number;
+  maxPriceCents: number;
+  minDurationMinutes: number;
+  maxDurationMinutes: number;
+}) {
+  const { basePriceCents, minPriceCents, maxPriceCents, minDurationMinutes, maxDurationMinutes } = params;
+
+  if (minPriceCents > basePriceCents || basePriceCents > maxPriceCents) {
+    throw new ApiError(400, 'Invalid price bounds: min <= base <= max');
+  }
+  if (minDurationMinutes > maxDurationMinutes) {
+    throw new ApiError(400, 'Invalid duration bounds: min <= max');
+  }
+  if (minDurationMinutes < 1 || maxDurationMinutes > 480) {
+    throw new ApiError(400, 'Duration bounds must be between 1 and 480 minutes');
+  }
+}
+
 /**
  * Get all services
  * GET /api/admin/services
@@ -493,6 +533,8 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
              default_base_price_cents, 
              default_min_price_cents, 
              default_max_price_cents,
+             default_min_duration_minutes,
+             default_max_duration_minutes,
              is_active, created_at, updated_at
       FROM services
     `;
@@ -507,18 +549,7 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
 
     res.json({
       success: true,
-      data: result.rows.map(row => ({
-        id: row.id,
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        basePriceCents: row.default_base_price_cents,
-        minPriceCents: row.default_min_price_cents,
-        maxPriceCents: row.default_max_price_cents,
-        isActive: row.is_active,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      })),
+      data: result.rows.map((row) => mapServiceRow(row)),
     });
   } catch (error) {
     next(error);
@@ -536,7 +567,7 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
       throw new ApiError(403, 'Admin or Campus Manager access required');
     }
 
-    const { name, description, basePriceCents, minPriceCents, maxPriceCents } = req.body;
+    const { name, description, basePriceCents, minPriceCents, maxPriceCents, minDurationMinutes, maxDurationMinutes } = req.body;
 
     if (!name || !basePriceCents) {
       throw new ApiError(400, 'Name and base price are required');
@@ -549,20 +580,29 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
       .replace(/-+/g, '-')
       .trim();
 
-    // Validate price bounds
     const baseCents = parseInt(basePriceCents);
     const minCents = minPriceCents ? parseInt(minPriceCents) : Math.round(baseCents * 0.8);
     const maxCents = maxPriceCents ? parseInt(maxPriceCents) : Math.round(baseCents * 1.5);
+    const minDuration = minDurationMinutes ? parseInt(minDurationMinutes) : DEFAULT_MIN_DURATION_MINUTES;
+    const maxDuration = maxDurationMinutes ? parseInt(maxDurationMinutes) : DEFAULT_MAX_DURATION_MINUTES;
 
-    if (minCents > baseCents || baseCents > maxCents) {
-      throw new ApiError(400, 'Invalid price bounds: min <= base <= max');
-    }
+    validateServiceBounds({
+      basePriceCents: baseCents,
+      minPriceCents: minCents,
+      maxPriceCents: maxCents,
+      minDurationMinutes: minDuration,
+      maxDurationMinutes: maxDuration,
+    });
 
     const result = await pool.query(
-      `INSERT INTO services (slug, name, description, default_base_price_cents, default_min_price_cents, default_max_price_cents)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO services (
+         slug, name, description,
+         default_base_price_cents, default_min_price_cents, default_max_price_cents,
+         default_min_duration_minutes, default_max_duration_minutes
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [slug, name, description || null, baseCents, minCents, maxCents]
+      [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration]
     );
 
     const row = result.rows[0];
@@ -580,16 +620,7 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
 
     res.status(201).json({
       success: true,
-      data: {
-        id: row.id,
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        basePriceCents: row.default_base_price_cents,
-        minPriceCents: row.default_min_price_cents,
-        maxPriceCents: row.default_max_price_cents,
-        isActive: row.is_active,
-      },
+      data: mapServiceRow(row),
       message: 'Service created successfully',
     });
   } catch (error: any) {
@@ -612,7 +643,42 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
     }
 
     const { id } = req.params;
-    const { name, description, basePriceCents, minPriceCents, maxPriceCents, isActive } = req.body;
+    const {
+      name,
+      description,
+      basePriceCents,
+      minPriceCents,
+      maxPriceCents,
+      minDurationMinutes,
+      maxDurationMinutes,
+      isActive,
+    } = req.body;
+
+    const existingResult = await pool.query(`SELECT * FROM services WHERE id = $1`, [id]);
+    if (existingResult.rows.length === 0) {
+      throw new ApiError(404, 'Service not found');
+    }
+    const existing = existingResult.rows[0];
+
+    const nextBase = basePriceCents !== undefined ? parseInt(basePriceCents) : existing.default_base_price_cents;
+    const nextMinPrice = minPriceCents !== undefined ? parseInt(minPriceCents) : existing.default_min_price_cents;
+    const nextMaxPrice = maxPriceCents !== undefined ? parseInt(maxPriceCents) : existing.default_max_price_cents;
+    const nextMinDuration =
+      minDurationMinutes !== undefined
+        ? parseInt(minDurationMinutes)
+        : existing.default_min_duration_minutes ?? DEFAULT_MIN_DURATION_MINUTES;
+    const nextMaxDuration =
+      maxDurationMinutes !== undefined
+        ? parseInt(maxDurationMinutes)
+        : existing.default_max_duration_minutes ?? DEFAULT_MAX_DURATION_MINUTES;
+
+    validateServiceBounds({
+      basePriceCents: nextBase,
+      minPriceCents: nextMinPrice,
+      maxPriceCents: nextMaxPrice,
+      minDurationMinutes: nextMinDuration,
+      maxDurationMinutes: nextMaxDuration,
+    });
 
     // Build dynamic update query
     const updates: string[] = [];
@@ -646,6 +712,14 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
     if (maxPriceCents !== undefined) {
       updates.push(`default_max_price_cents = $${paramIndex++}`);
       values.push(parseInt(maxPriceCents));
+    }
+    if (minDurationMinutes !== undefined) {
+      updates.push(`default_min_duration_minutes = $${paramIndex++}`);
+      values.push(parseInt(minDurationMinutes));
+    }
+    if (maxDurationMinutes !== undefined) {
+      updates.push(`default_max_duration_minutes = $${paramIndex++}`);
+      values.push(parseInt(maxDurationMinutes));
     }
     if (isActive !== undefined) {
       updates.push(`is_active = $${paramIndex++}`);
@@ -681,16 +755,7 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
 
     res.json({
       success: true,
-      data: {
-        id: row.id,
-        slug: row.slug,
-        name: row.name,
-        description: row.description,
-        basePriceCents: row.default_base_price_cents,
-        minPriceCents: row.default_min_price_cents,
-        maxPriceCents: row.default_max_price_cents,
-        isActive: row.is_active,
-      },
+      data: mapServiceRow(row),
       message: 'Service updated successfully',
     });
   } catch (error) {
