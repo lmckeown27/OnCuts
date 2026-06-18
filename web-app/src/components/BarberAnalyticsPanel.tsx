@@ -154,7 +154,7 @@ export default function BarberAnalyticsPanel({
   const crosshairPlugin = useMemo(
     () => ({
       id: 'barberCrosshair',
-      afterDraw: (chart: { tooltip?: { _active?: { element: { x: number } }[] }; ctx: CanvasRenderingContext2D; scales: { y: { top: number; bottom: number } } }) => {
+      afterDraw: (chart: any) => {
         if (chart.tooltip?._active?.length) {
           const activePoint = chart.tooltip._active[0];
           const ctx = chart.ctx;
@@ -186,11 +186,11 @@ export default function BarberAnalyticsPanel({
         y: {
           beginAtZero: true,
           grid: { color: 'rgba(0, 0, 0, 0.05)' },
-          ticks: { callback: (value: number | string) => `$${value}` },
+          ticks: { callback: (value: any) => `$${value}` },
         },
       },
       hover: { mode: 'index' as const, intersect: false },
-      onHover: (_event: unknown, activeElements: { index: number }[], chart: { data: { labels: (string | undefined)[] } }) => {
+      onHover: (_event: any, activeElements: any[], chart: any) => {
         if (activeElements.length > 0) {
           const index = activeElements[0].index;
           const m = metrics[index];
