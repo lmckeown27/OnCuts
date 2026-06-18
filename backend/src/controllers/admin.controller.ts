@@ -27,6 +27,11 @@ import {
   assertCampusMetricsAccess,
   countCampusConsumers,
 } from '../services/campus-metrics-access.service';
+import {
+  ensureServiceDurationBoundsSchema,
+  DEFAULT_MIN_DURATION_MINUTES,
+  DEFAULT_MAX_DURATION_MINUTES,
+} from '../services/service-schema.service';
 
 /**
  * Withdraw platform fees
@@ -474,9 +479,6 @@ export const getTreasuryStats = async (req: AuthRequest, res: Response, next: Ne
 // SERVICES MANAGEMENT
 // ═══════════════════════════════════════════════════════════════
 
-const DEFAULT_MIN_DURATION_MINUTES = 15;
-const DEFAULT_MAX_DURATION_MINUTES = 240;
-
 function mapServiceRow(row: Record<string, unknown>) {
   return {
     id: row.id,
@@ -520,6 +522,8 @@ function validateServiceBounds(params: {
  */
 export const getServices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await ensureServiceDurationBoundsSchema();
+
     // Any authenticated user can read active services
     // Only admin/campus_manager can see inactive services
     const userRole = req.user!.role?.toUpperCase();
@@ -562,6 +566,8 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
  */
 export const createService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await ensureServiceDurationBoundsSchema();
+
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
       throw new ApiError(403, 'Admin or Campus Manager access required');
@@ -637,6 +643,8 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
  */
 export const updateService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    await ensureServiceDurationBoundsSchema();
+
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
       throw new ApiError(403, 'Admin or Campus Manager access required');
