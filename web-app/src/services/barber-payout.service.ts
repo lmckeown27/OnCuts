@@ -51,7 +51,7 @@ export async function fetchBarberPayoutSummary(): Promise<BarberPayoutSummary> {
   return res.data.data;
 }
 
-export type BarberMetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
+export type BarberMetricsPeriod = 'daily' | 'weekly' | 'monthly';
 
 export interface BarberMetricsDataPoint {
   date: string;

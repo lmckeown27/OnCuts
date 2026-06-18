@@ -50,20 +50,23 @@ function formatPct(value: number): string {
 
 function periodLabel(period: BarberMetricsPeriod): string {
   switch (period) {
-    case '1w':
-      return '1 Week';
-    case '4w':
-      return '4 Weeks';
-    case 'mtd':
-      return 'MTD';
-    case 'qtd':
-      return 'QTD';
-    case 'ytd':
-      return 'YTD';
-    case '1y':
-      return '1 Year';
-    default:
-      return 'All Time';
+    case 'daily':
+      return 'Past Week';
+    case 'weekly':
+      return 'Past Month';
+    case 'monthly':
+      return 'Past Year';
+  }
+}
+
+function periodDescription(period: BarberMetricsPeriod): string {
+  switch (period) {
+    case 'daily':
+      return 'Each day for the past week';
+    case 'weekly':
+      return 'Each week for the past month';
+    case 'monthly':
+      return 'Each month for the past year';
   }
 }
 
@@ -114,7 +117,7 @@ export default function BarberAnalyticsPanel({
   isLoadingPerformance,
 }: BarberAnalyticsPanelProps) {
   const [barberView, setBarberView] = useState<BarberView>('performance');
-  const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('4w');
+  const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('weekly');
   const [metrics, setMetrics] = useState<BarberMetricsDataPoint[]>([]);
   const [metricsTotalClients, setMetricsTotalClients] = useState(0);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
@@ -216,8 +219,8 @@ export default function BarberAnalyticsPanel({
       const month = monthNames[date.getUTCMonth()];
       const day = date.getUTCDate();
       const year = String(date.getUTCFullYear()).slice(-2);
-      if (['1w', '4w', 'mtd', 'qtd'].includes(metricsPeriod)) return `${month} ${day}`;
-      if (['1y', 'ytd'].includes(metricsPeriod)) return `Week of ${month} ${day}`;
+      if (metricsPeriod === 'daily') return `${month} ${day}`;
+      if (metricsPeriod === 'weekly') return `Week of ${month} ${day}`;
       return `${month} '${year}`;
     });
     return {
@@ -300,21 +303,19 @@ export default function BarberAnalyticsPanel({
   const periodBookings = metrics.reduce((sum, m) => sum + m.bookings, 0);
   const periodClients = hoveredDataPoint ? hoveredDataPoint.clients : metricsTotalClients;
 
-  const avgBookingsLabel = ['1w', '4w', 'mtd'].includes(metricsPeriod)
-    ? 'Day'
-    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
-      ? 'Wk'
-      : 'Mo';
-  const avgBookingsValue = ['1w', '4w', 'mtd'].includes(metricsPeriod)
-    ? performance.averageBookingsPerDay
-    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
-      ? performance.averageBookingsPerWeek
-      : performance.averageBookingsPerMonth;
-  const avgRevValue = ['1w', '4w', 'mtd'].includes(metricsPeriod)
-    ? performance.averageRevenuePerDay
-    : ['1y', 'ytd', 'qtd'].includes(metricsPeriod)
-      ? performance.averageRevenuePerWeek
-      : performance.averageRevenuePerMonth;
+  const avgBookingsLabel = metricsPeriod === 'daily' ? 'Day' : metricsPeriod === 'weekly' ? 'Wk' : 'Mo';
+  const avgBookingsValue =
+    metricsPeriod === 'daily'
+      ? performance.averageBookingsPerDay
+      : metricsPeriod === 'weekly'
+        ? performance.averageBookingsPerWeek
+        : performance.averageBookingsPerMonth;
+  const avgRevValue =
+    metricsPeriod === 'daily'
+      ? performance.averageRevenuePerDay
+      : metricsPeriod === 'weekly'
+        ? performance.averageRevenuePerWeek
+        : performance.averageRevenuePerMonth;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -390,17 +391,13 @@ export default function BarberAnalyticsPanel({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <div className="flex flex-col items-center gap-1.5 mb-4">
               <div className="flex flex-wrap rounded-lg bg-gray-100 p-0.5 gap-0.5">
                 {(
                   [
-                    { key: '1w', label: '1W' },
-                    { key: '4w', label: '4W' },
-                    { key: 'mtd', label: 'MTD' },
-                    { key: 'qtd', label: 'QTD' },
-                    { key: 'ytd', label: 'YTD' },
-                    { key: '1y', label: '1Y' },
-                    { key: 'all', label: 'All' },
+                    { key: 'daily', label: 'Daily' },
+                    { key: 'weekly', label: 'Weekly' },
+                    { key: 'monthly', label: 'Monthly' },
                   ] as const
                 ).map(({ key, label }) => (
                   <button
@@ -413,6 +410,7 @@ export default function BarberAnalyticsPanel({
                   </button>
                 ))}
               </div>
+              <p className="text-[11px] text-gray-400">{periodDescription(metricsPeriod)}</p>
             </div>
 
             {isLoadingMetrics ? (

@@ -97,12 +97,15 @@ function parseMetricsPeriod(period: string): {
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
   switch (period) {
+    case 'daily':
     case '1w':
       return { dateTrunc: 'day', interval: '7 days', startDate: null };
+    case 'weekly':
     case '4w':
-      return { dateTrunc: 'day', interval: '28 days', startDate: null };
+      return { dateTrunc: 'week', interval: '1 month', startDate: null };
+    case 'monthly':
     case '1y':
-      return { dateTrunc: 'week', interval: '1 year', startDate: null };
+      return { dateTrunc: 'month', interval: '1 year', startDate: null };
     case 'mtd':
       return { dateTrunc: 'day', interval: null, startDate: startOfMonth.toISOString() };
     case 'qtd':
@@ -112,7 +115,7 @@ function parseMetricsPeriod(period: string): {
     case 'all':
       return { dateTrunc: 'month', interval: null, startDate: null };
     default:
-      return { dateTrunc: 'day', interval: '28 days', startDate: null };
+      return { dateTrunc: 'week', interval: '1 month', startDate: null };
   }
 }
 
@@ -321,7 +324,7 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
 
 /**
  * Time-series metrics for barber analytics chart.
- * GET /api/barber/payout/metrics?period=1w|4w|mtd|qtd|ytd|1y|all
+ * GET /api/barber/payout/metrics?period=daily|weekly|monthly
  */
 export async function getBarberMetrics(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -330,10 +333,10 @@ export async function getBarberMetrics(req: AuthRequest, res: Response, next: Ne
 
     const resolved = await resolveActiveBarber(userId);
     if (!resolved) {
-      return res.json({ success: true, period: req.query.period || '4w', data: [], totalClients: 0 });
+      return res.json({ success: true, period: req.query.period || 'weekly', data: [], totalClients: 0 });
     }
 
-    const period = (req.query.period as string) || '4w';
+    const period = (req.query.period as string) || 'weekly';
     const { dateTrunc, interval, startDate } = parseMetricsPeriod(period);
     const { barberId, timezone } = resolved;
 
