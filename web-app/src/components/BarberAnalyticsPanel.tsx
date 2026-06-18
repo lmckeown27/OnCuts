@@ -33,7 +33,7 @@ ChartJS.register(
   Filler
 );
 
-type BarberView = 'performance' | 'clients' | 'operations';
+type BarberView = 'performance' | 'clients';
 
 interface BarberAnalyticsPanelProps {
   performance: BarberPerformance;
@@ -318,15 +318,12 @@ export default function BarberAnalyticsPanel({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-lg bg-gray-100 p-1">
         <button type="button" onClick={() => setBarberView('performance')} className={tabClass(barberView === 'performance')}>
           Performance
         </button>
         <button type="button" onClick={() => setBarberView('clients')} className={tabClass(barberView === 'clients')}>
           Clients
-        </button>
-        <button type="button" onClick={() => setBarberView('operations')} className={tabClass(barberView === 'operations')}>
-          Operations
         </button>
       </div>
 
@@ -766,31 +763,6 @@ export default function BarberAnalyticsPanel({
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {barberView === 'operations' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Pending requests</p>
-            <p className="text-2xl font-semibold text-gray-900">{performance.pendingRequests}</p>
-            <p className="text-xs text-gray-500 mt-1">Booking requests awaiting your approval</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Upcoming confirmed</p>
-            <p className="text-2xl font-semibold text-gray-900">{performance.acceptedUpcoming}</p>
-            <p className="text-xs text-gray-500 mt-1">Accepted appointments scheduled ahead</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Completion rate</p>
-            <p className="text-2xl font-semibold text-gray-900">{formatPct(performance.completionRatePct)}</p>
-            <p className="text-xs text-gray-500 mt-1">Finished vs cancellations and rejections</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Avg take-home / booking</p>
-            <p className="text-2xl font-semibold text-gray-900">{formatCurrencyFromCents(performance.averageTakeHomePerAppointment)}</p>
-            <p className="text-xs text-gray-500 mt-1">Average estimated barber share per paid appointment</p>
-          </div>
         </div>
       )}
     </div>
