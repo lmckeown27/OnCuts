@@ -23,6 +23,10 @@ import auditService from '../services/audit.service';
 import transactionService from '../services/transaction.service';
 import { logger } from '../utils/logger';
 import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affiliation.service';
+import {
+  assertCampusMetricsAccess,
+  countCampusConsumers,
+} from '../services/campus-metrics-access.service';
 
 /**
  * Withdraw platform fees
@@ -871,17 +875,7 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
 export const getCampusPerformance = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId } = req.params;
-
-    // Verify admin role
-    const userRole = req.user!.role?.toUpperCase();
-    if (userRole !== 'ADMIN') {
-      throw new ApiError(403, 'Admin access required');
-    }
-
-    // Validate campusId format
-    if (!campusId || campusId === 'undefined') {
-      throw new ApiError(400, 'Valid campusId is required');
-    }
+    await assertCampusMetricsAccess(req, campusId);
 
     // Get barber counts - use simpler query
     const barbersResult = await pool.query(`
@@ -892,6 +886,8 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
       JOIN users u ON b."userId" = u.id
       WHERE u."campusId" = $1::uuid AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
     `, [campusId]);
+
+    const totalConsumers = await countCampusConsumers(campusId);
 
     // Get booking counts - simpler approach without complex joins
     // Valid BookingStatus enum values: PENDING, ACCEPTED, PAID, IN_PROGRESS, COMPLETED, DISPUTED, CANCELLED, REFUNDED
@@ -1110,6 +1106,7 @@ export const getCampusPerformance = async (req: AuthRequest, res: Response, next
     res.json({
       totalBarbers: parseInt(barbersResult.rows[0]?.total || '0'),
       activeBarbers,
+      totalConsumers,
       totalBookings: parseInt(bookingsResult.rows[0]?.total || '0'),
       completedBookings,
       cancelledBookings: parseInt(bookingsResult.rows[0]?.cancelled || '0'),
@@ -1159,16 +1156,7 @@ export const getCampusMetrics = async (req: AuthRequest, res: Response, next: Ne
   try {
     const { campusId } = req.params;
     const period = (req.query.period as string) || 'daily';
-
-    // Verify admin role
-    const userRole = req.user!.role?.toUpperCase();
-    if (userRole !== 'ADMIN') {
-      throw new ApiError(403, 'Admin access required');
-    }
-
-    if (!campusId || campusId === 'undefined') {
-      throw new ApiError(400, 'Valid campusId is required');
-    }
+    await assertCampusMetricsAccess(req, campusId);
 
     // Determine date truncation and range based on period
     let dateTrunc: string;

@@ -2,6 +2,10 @@ import { Response, NextFunction } from 'express';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
+import {
+  assertCampusMetricsAccess,
+  countCampusConsumers,
+} from '../services/campus-metrics-access.service';
 
 function parseIntSafe(value: unknown): number {
   const n = parseInt(String(value ?? '0'), 10);
@@ -29,32 +33,7 @@ function parseMetricsPeriod(period: string): {
 }
 
 async function assertCampusManagerAccess(req: AuthRequest, campusId: string): Promise<void> {
-  const userId = req.user?.userId;
-  if (!userId) throw new ApiError(401, 'Not authenticated');
-
-  if (!campusId || campusId === 'undefined') {
-    throw new ApiError(400, 'Valid campusId is required');
-  }
-
-  const userResult = await pool.query(`SELECT role, "campusId" FROM users WHERE id = $1`, [userId]);
-  if (userResult.rows.length === 0) throw new ApiError(401, 'User not found');
-
-  const { role, campusId: userCampusId } = userResult.rows[0];
-  if (role === 'ADMIN') return;
-  if (role === 'CAMPUS_MANAGER' && userCampusId === campusId) return;
-
-  const managerCheck = await pool.query(
-    `SELECT b.id FROM barbers b
-     JOIN users u ON b."userId" = u.id
-     WHERE b."userId" = $1
-       AND b."campusId" = $2
-       AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER')`,
-    [userId, campusId]
-  );
-
-  if (managerCheck.rows.length === 0) {
-    throw new ApiError(403, 'Campus manager access required');
-  }
+  await assertCampusMetricsAccess(req, campusId);
 }
 
 /**
@@ -76,10 +55,7 @@ export async function getCampusManagerPerformance(req: AuthRequest, res: Respons
       [campusId]
     );
 
-    const consumersResult = await pool.query(
-      `SELECT COUNT(*) as total FROM users WHERE role = 'CONSUMER' AND "campusId" = $1::uuid`,
-      [campusId]
-    );
+    const consumersResult = await countCampusConsumers(campusId);
 
     const bookingsResult = await pool.query(
       `SELECT
@@ -230,7 +206,7 @@ export async function getCampusManagerPerformance(req: AuthRequest, res: Respons
       data: {
         totalBarbers: parseIntSafe(barbersResult.rows[0]?.total),
         activeBarbers: parseIntSafe(barbersResult.rows[0]?.active),
-        totalConsumers: parseIntSafe(consumersResult.rows[0]?.total),
+        totalConsumers: consumersResult,
         totalBookings: parseIntSafe(bookingsResult.rows[0]?.total),
         completedBookings,
         cancelledBookings,
