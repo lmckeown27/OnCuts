@@ -504,6 +504,14 @@ httpServer.listen(PORT, async () => {
       });
     }
     try {
+      const { warnIfAuditLogsTableMissing } = await import('./services/audit-schema.service');
+      await warnIfAuditLogsTableMissing();
+    } catch (auditSchemaErr: unknown) {
+      logger.warn('Audit logs schema init failed', {
+        error: auditSchemaErr instanceof Error ? auditSchemaErr.message : String(auditSchemaErr),
+      });
+    }
+    try {
       const { warnIfServiceDurationColumnsMissing } = await import('./services/service-schema.service');
       await warnIfServiceDurationColumnsMissing();
     } catch (serviceSchemaErr: unknown) {

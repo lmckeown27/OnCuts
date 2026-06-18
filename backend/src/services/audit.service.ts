@@ -7,6 +7,7 @@
 
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { ensureAuditLogsTable } from './audit-schema.service';
 
 export interface AuditLogInput {
   actor_user_id?: string;  // NULL for system actions
@@ -36,6 +37,15 @@ class AuditService {
    */
   async log(input: AuditLogInput): Promise<AuditLog> {
     try {
+      const ready = await ensureAuditLogsTable();
+      if (!ready) {
+        return {
+          id: -1,
+          created_at: new Date(),
+          ...input,
+        };
+      }
+
       const result = await pool.query(
         `INSERT INTO audit_logs (
           actor_user_id, action, object_type, object_id,
@@ -55,12 +65,20 @@ class AuditService {
       );
 
       return result.rows[0];
-    } catch (error) {
+    } catch (error: any) {
       // Don't throw on audit failure - log it instead
-      logger.error('Failed to create audit log', {
-        input,
-        error,
-      });
+      if (error?.code === '42P01') {
+        logger.warn('Failed to create audit log — audit_logs table missing', {
+          action: input.action,
+          object_type: input.object_type,
+          object_id: input.object_id,
+        });
+      } else {
+        logger.error('Failed to create audit log', {
+          input,
+          error,
+        });
+      }
       // Return a mock audit log to prevent breaking the main flow
       return {
         id: -1,
