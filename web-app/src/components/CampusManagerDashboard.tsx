@@ -38,7 +38,12 @@ import {
 import Card from './Card';
 import Button from './Button';
 import { CampusManagerBarberView } from './CampusManagerBarberView';
+import CampusManagerAnalyticsPanel from './CampusManagerAnalyticsPanel';
 import barberApplicationService, { BarberApplication } from '../services/barber-application.service';
+import {
+  fetchCampusManagerPerformance,
+  type CampusManagerPerformance,
+} from '../services/campus-manager-metrics.service';
 import toast from 'react-hot-toast';
 
 interface Incident {
@@ -235,7 +240,7 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
   campusId, 
   campusName 
 }) => {
-  const [activeTab, setActiveTab] = useState<'barbers' | 'locations' | 'bookings' | 'services'>('barbers');
+  const [activeTab, setActiveTab] = useState<'performance' | 'barbers' | 'locations' | 'bookings' | 'services'>('performance');
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayedTab, setDisplayedTab] = useState(activeTab);
   const [barberSubTab, setBarberSubTab] = useState<'applications' | 'current' | 'availability'>('applications');
@@ -257,6 +262,17 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
       {/* Tab Navigation - Scrollable on mobile */}
       <div className="border-b border-gray-200 -mx-4 sm:mx-0 px-4 sm:px-0">
         <nav className="flex justify-center gap-1 sm:gap-6 overflow-x-auto pb-px scrollbar-hide">
+          <button
+            onClick={() => handleTabChange('performance')}
+            className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+              activeTab === 'performance'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Performance
+          </button>
+
           <button
             onClick={() => handleTabChange('barbers')}
             className={`py-3 sm:py-4 px-2 sm:px-2 border-b-2 font-medium text-sm sm:text-base transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
@@ -313,6 +329,9 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
             : 'opacity-100 translate-y-0'
         }`}
       >
+        {displayedTab === 'performance' && (
+          <CampusPerformancePanel campusId={campusId} campusName={campusName} />
+        )}
         {displayedTab === 'barbers' && (
           <div className="space-y-4">
             {/* Sub-tab buttons */}
@@ -359,6 +378,73 @@ export const CampusManagerDashboard: React.FC<CampusManagerDashboardProps> = ({
         {displayedTab === 'services' && <ServicesManagementPanel />}
       </div>
     </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CAMPUS PERFORMANCE PANEL
+// ═══════════════════════════════════════════════════════════════
+
+const emptyPerformance: CampusManagerPerformance = {
+  totalBarbers: 0,
+  activeBarbers: 0,
+  totalConsumers: 0,
+  totalBookings: 0,
+  completedBookings: 0,
+  cancelledBookings: 0,
+  totalRevenue: 0,
+  totalTips: 0,
+  cardRevenue: 0,
+  cardCount: 0,
+  cashRevenue: 0,
+  cashCount: 0,
+  averageRating: 0,
+  totalReviews: 0,
+  completionRatePct: 0,
+  averageBookingsPerDay: 0,
+  averageBookingsPerWeek: 0,
+  averageBookingsPerMonth: 0,
+  averageRevenuePerDay: 0,
+  averageRevenuePerWeek: 0,
+  averageRevenuePerMonth: 0,
+  averageCostPerAppointment: 0,
+};
+
+const CampusPerformancePanel: React.FC<{ campusId: string; campusName: string }> = ({
+  campusId,
+  campusName,
+}) => {
+  const [performance, setPerformance] = useState<CampusManagerPerformance>(emptyPerformance);
+  const [isLoadingPerformance, setIsLoadingPerformance] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async (showLoading = true) => {
+      if (showLoading) setIsLoadingPerformance(true);
+      try {
+        const data = await fetchCampusManagerPerformance(campusId);
+        if (!cancelled) setPerformance(data);
+      } catch {
+        if (!cancelled) setPerformance(emptyPerformance);
+      } finally {
+        if (!cancelled && showLoading) setIsLoadingPerformance(false);
+      }
+    };
+    void load(true);
+    const intervalId = setInterval(() => void load(false), 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [campusId]);
+
+  return (
+    <CampusManagerAnalyticsPanel
+      campusId={campusId}
+      campusName={campusName}
+      performance={performance}
+      isLoadingPerformance={isLoadingPerformance}
+    />
   );
 };
 

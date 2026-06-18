@@ -9,6 +9,11 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { campusManagerService } from '../services/campus-manager.service';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
+import { authenticate } from '../middleware/auth';
+import {
+  getCampusManagerPerformance,
+  getCampusManagerMetrics,
+} from '../controllers/campus-manager-metrics.controller';
 
 const router = Router();
 
@@ -239,6 +244,18 @@ router.post('/verify-permission', async (req: Request, res: Response, next: Next
     next(error);
   }
 });
+
+/**
+ * GET /api/v1/campus-manager/campus/:campusId/performance
+ * Campus performance snapshot (Campus Managers + Admins)
+ */
+router.get('/campus/:campusId/performance', authenticate, getCampusManagerPerformance);
+
+/**
+ * GET /api/v1/campus-manager/campus/:campusId/metrics?period=daily|weekly|monthly
+ * Campus time-series metrics (Campus Managers + Admins)
+ */
+router.get('/campus/:campusId/metrics', authenticate, getCampusManagerMetrics);
 
 export default router;
 
