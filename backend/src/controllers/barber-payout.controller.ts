@@ -495,8 +495,10 @@ export async function getBarberPerformance(req: AuthRequest, res: Response, next
           completionRatePct: 0,
           cardRevenue: 0,
           cardCount: 0,
+          cardTips: 0,
           cashRevenue: 0,
           cashCount: 0,
+          cashTips: 0,
           averageRating: 0,
           totalReviews: 0,
           averageBookingsPerDay: 0,
@@ -530,10 +532,24 @@ export async function getBarberPerformance(req: AuthRequest, res: Response, next
             COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) AS total_barber_earnings,
             COALESCE(SUM("tipAmountCents"), 0) AS total_tips,
             COUNT(*) AS completed_transaction_count,
-            COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) AS card_revenue,
+            COALESCE(SUM(
+              GREATEST(
+                COALESCE("totalPaidCents", 0),
+                COALESCE("priceUsdCents", 0) + COALESCE("tipAmountCents", 0)
+              )
+            ) FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) AS card_revenue,
             COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL) AS card_count,
-            COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) AS cash_revenue,
-            COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') AS cash_count
+            COALESCE(SUM(COALESCE("tipAmountCents", 0))
+              FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) AS card_tips,
+            COALESCE(SUM(
+              GREATEST(
+                COALESCE("totalPaidCents", 0),
+                COALESCE("priceUsdCents", 0) + COALESCE("tipAmountCents", 0)
+              )
+            ) FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) AS cash_revenue,
+            COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') AS cash_count,
+            COALESCE(SUM(COALESCE("tipAmountCents", 0))
+              FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) AS cash_tips
            FROM bookings
            WHERE "barberId" = $1 AND UPPER(status::text) IN ('COMPLETED', 'PAID')`,
           [barberId]
@@ -644,8 +660,10 @@ export async function getBarberPerformance(req: AuthRequest, res: Response, next
         completionRatePct,
         cardRevenue: parseIntSafe(revenueResult.rows[0]?.card_revenue),
         cardCount: parseIntSafe(revenueResult.rows[0]?.card_count),
+        cardTips: parseIntSafe(revenueResult.rows[0]?.card_tips),
         cashRevenue: parseIntSafe(revenueResult.rows[0]?.cash_revenue),
         cashCount: parseIntSafe(revenueResult.rows[0]?.cash_count),
+        cashTips: parseIntSafe(revenueResult.rows[0]?.cash_tips),
         averageRating: parseFloat(String(ratingsResult.rows[0]?.avg_rating || 0)),
         totalReviews: parseIntSafe(ratingsResult.rows[0]?.total_reviews),
         averageBookingsPerDay: avgDaily,

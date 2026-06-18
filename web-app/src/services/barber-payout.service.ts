@@ -81,8 +81,10 @@ export interface BarberPerformance {
   completionRatePct: number;
   cardRevenue: number;
   cardCount: number;
+  cardTips: number;
   cashRevenue: number;
   cashCount: number;
+  cashTips: number;
   averageRating: number;
   totalReviews: number;
   averageBookingsPerDay: number;

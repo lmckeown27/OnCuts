@@ -443,6 +443,11 @@ export default function BarberAnalyticsPanel({
                       <div>
                         <p className="text-[10px] text-gray-500">Card Volume</p>
                         <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.cardRevenue)}</p>
+                        {performance.cardTips > 0 && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            incl. {formatCurrencyFromCents(performance.cardTips)} tips
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className="text-[10px] text-gray-500">Card Bookings</p>
@@ -451,6 +456,11 @@ export default function BarberAnalyticsPanel({
                       <div>
                         <p className="text-[10px] text-gray-500">Cash Volume</p>
                         <p className="text-sm font-semibold text-gray-900">{formatCurrencyFromCents(performance.cashRevenue)}</p>
+                        {performance.cashTips > 0 && (
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            incl. {formatCurrencyFromCents(performance.cashTips)} tips
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className="text-[10px] text-gray-500">Cash Bookings</p>
