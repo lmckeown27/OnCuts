@@ -177,8 +177,6 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
             <BarberAnalyticsPanel
               performance={performance}
               isLoadingPerformance={false}
-              connectBusy={connectBusy !== null}
-              onOpenStripe={() => void openStripeDashboard()}
             />
           ) : (
             <div className="py-6 sm:py-10">

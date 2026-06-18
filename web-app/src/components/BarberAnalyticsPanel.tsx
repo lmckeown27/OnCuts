@@ -33,13 +33,11 @@ ChartJS.register(
   Filler
 );
 
-type BarberView = 'performance' | 'clients' | 'operations' | 'payouts';
+type BarberView = 'performance' | 'clients' | 'operations';
 
 interface BarberAnalyticsPanelProps {
   performance: BarberPerformance;
   isLoadingPerformance: boolean;
-  connectBusy: boolean;
-  onOpenStripe: () => void;
 }
 
 function formatCurrencyFromCents(cents: number): string {
@@ -114,8 +112,6 @@ function statusBadgeClass(status: string): string {
 export default function BarberAnalyticsPanel({
   performance,
   isLoadingPerformance,
-  connectBusy,
-  onOpenStripe,
 }: BarberAnalyticsPanelProps) {
   const [barberView, setBarberView] = useState<BarberView>('performance');
   const [metricsPeriod, setMetricsPeriod] = useState<BarberMetricsPeriod>('4w');
@@ -322,7 +318,7 @@ export default function BarberAnalyticsPanel({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-lg bg-gray-100 p-1">
         <button type="button" onClick={() => setBarberView('performance')} className={tabClass(barberView === 'performance')}>
           Performance
         </button>
@@ -331,9 +327,6 @@ export default function BarberAnalyticsPanel({
         </button>
         <button type="button" onClick={() => setBarberView('operations')} className={tabClass(barberView === 'operations')}>
           Operations
-        </button>
-        <button type="button" onClick={() => setBarberView('payouts')} className={tabClass(barberView === 'payouts')}>
-          Payouts
         </button>
       </div>
 
@@ -799,31 +792,6 @@ export default function BarberAnalyticsPanel({
             <p className="text-xs text-gray-500 mt-1">Average estimated barber share per paid appointment</p>
           </div>
         </div>
-      )}
-
-      {barberView === 'payouts' && (
-        <footer className="bg-slate-50 border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-              </span>
-              <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">Stripe connected</span>
-            </div>
-            <p className="text-xs text-gray-500 truncate">
-              Bank transfers, balances, and tax forms live in Stripe Express.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onOpenStripe}
-            disabled={connectBusy}
-            className="inline-flex items-center justify-center shrink-0 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-60"
-          >
-            Open Stripe
-          </button>
-        </footer>
       )}
     </div>
   );
