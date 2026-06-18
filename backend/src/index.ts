@@ -503,6 +503,14 @@ httpServer.listen(PORT, async () => {
         error: verifyErr instanceof Error ? verifyErr.message : String(verifyErr),
       });
     }
+    try {
+      const { initServiceDurationBoundsSchema } = await import('./services/service-schema.service');
+      await initServiceDurationBoundsSchema();
+    } catch (serviceSchemaErr: unknown) {
+      logger.warn('Service duration bounds schema init failed', {
+        error: serviceSchemaErr instanceof Error ? serviceSchemaErr.message : String(serviceSchemaErr),
+      });
+    }
   } catch (error: any) {
     logger.error(`❌ PostgreSQL cache unavailable (app will use blockchain fallback)`, {
       error: error.message,
