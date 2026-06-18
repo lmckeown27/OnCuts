@@ -29,6 +29,18 @@ export interface BarberPayoutSummary {
   paid_bookings_count: number;
   recent_30d_barber_cents: number;
   display_total_dollars: number;
+  gross_volume_cents: number;
+  tips_cents: number;
+  avg_take_home_cents: number;
+  completed_bookings_count: number;
+  cancelled_bookings_count: number;
+  pending_requests_count: number;
+  accepted_upcoming_count: number;
+  unique_clients_count: number;
+  repeat_client_pct: number;
+  completion_rate_pct: number;
+  avg_rating: number;
+  total_reviews: number;
 }
 
 export async function fetchBarberPayoutSummary(): Promise<BarberPayoutSummary> {

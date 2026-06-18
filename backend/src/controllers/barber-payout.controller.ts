@@ -87,11 +87,30 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
           paid_bookings_count: 0,
           recent_30d_barber_cents: 0,
           display_total_dollars: 0,
+          gross_volume_cents: 0,
+          tips_cents: 0,
+          avg_take_home_cents: 0,
+          completed_bookings_count: 0,
+          cancelled_bookings_count: 0,
+          pending_requests_count: 0,
+          accepted_upcoming_count: 0,
+          unique_clients_count: 0,
+          repeat_client_pct: 0,
+          completion_rate_pct: 0,
+          avg_rating: 0,
+          total_reviews: 0,
         },
       });
     }
 
     const barberId = barberResult.rows[0].id as string;
+
+    const profileRow = await pool.query(
+      `SELECT "avgRating" AS avg_rating, "totalReviews" AS total_reviews
+       FROM barbers WHERE id = $1`,
+      [barberId]
+    );
+    const profile = profileRow.rows[0] || {};
 
     let ledgerTotal = 0;
     let ledgerPending = 0;
@@ -124,7 +143,7 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
       }
     }
 
-    const [bookingRow, recentRow] = await Promise.all([
+    const [bookingRow, recentRow, opsRow, repeatRow] = await Promise.all([
       pool.query(
         `SELECT 
           COALESCE(SUM(
@@ -150,6 +169,37 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
            )`,
         [barberId]
       ),
+      pool.query(
+        `SELECT
+          COUNT(*) FILTER (WHERE UPPER(status::text) IN ('PAID', 'COMPLETED'))::int AS completed_count,
+          COUNT(*) FILTER (WHERE UPPER(status::text) = 'CANCELLED')::int AS cancelled_count,
+          COUNT(*) FILTER (WHERE UPPER(status::text) = 'REJECTED')::int AS rejected_count,
+          COUNT(*) FILTER (WHERE UPPER(status::text) = 'PENDING')::int AS pending_count,
+          COUNT(*) FILTER (
+            WHERE UPPER(status::text) = 'ACCEPTED'
+              AND b."requestedAt" >= NOW()
+          )::int AS accepted_upcoming_count,
+          COUNT(DISTINCT "consumerId") FILTER (
+            WHERE UPPER(status::text) IN ('PAID', 'COMPLETED')
+          )::int AS unique_clients,
+          COALESCE(SUM("priceUsdCents") FILTER (WHERE UPPER(status::text) = 'PAID'), 0)::bigint AS gross_cents,
+          COALESCE(SUM(COALESCE("tipAmountCents", 0)) FILTER (WHERE UPPER(status::text) = 'PAID'), 0)::bigint AS tips_cents
+         FROM bookings b
+         WHERE b."barberId" = $1`,
+        [barberId]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS repeat_clients
+         FROM (
+           SELECT "consumerId"
+           FROM bookings
+           WHERE "barberId" = $1
+             AND UPPER(status::text) IN ('PAID', 'COMPLETED')
+           GROUP BY "consumerId"
+           HAVING COUNT(*) >= 2
+         ) repeat_clients`,
+        [barberId]
+      ),
     ]);
 
     const br = bookingRow.rows[0] || {};
@@ -162,6 +212,25 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
     const displayTotal =
       ledgerTotal > 0 ? ledgerTotal : Math.round(bookingEstCents) / 100;
 
+    const ops = opsRow.rows[0] || {};
+    const completedCount = Math.round(num(ops.completed_count));
+    const cancelledCount = Math.round(num(ops.cancelled_count));
+    const rejectedCount = Math.round(num(ops.rejected_count));
+    const pendingCount = Math.round(num(ops.pending_count));
+    const acceptedUpcoming = Math.round(num(ops.accepted_upcoming_count));
+    const uniqueClients = Math.round(num(ops.unique_clients));
+    const grossCents = Math.round(num(ops.gross_cents));
+    const tipsCents = Math.round(num(ops.tips_cents));
+    const repeatClients = Math.round(num(repeatRow.rows[0]?.repeat_clients));
+
+    const terminalCount = completedCount + cancelledCount + rejectedCount;
+    const completionRatePct =
+      terminalCount > 0 ? Math.round((completedCount / terminalCount) * 1000) / 10 : 0;
+    const repeatClientPct =
+      uniqueClients > 0 ? Math.round((repeatClients / uniqueClients) * 1000) / 10 : 0;
+    const avgTakeHomeCents =
+      paidCount > 0 ? Math.round(bookingEstCents / paidCount) : 0;
+
     res.json({
       success: true,
       data: {
@@ -173,6 +242,18 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
         paid_bookings_count: paidCount,
         recent_30d_barber_cents: Math.round(recent30Cents),
         display_total_dollars: displayTotal,
+        gross_volume_cents: grossCents,
+        tips_cents: tipsCents,
+        avg_take_home_cents: avgTakeHomeCents,
+        completed_bookings_count: completedCount,
+        cancelled_bookings_count: cancelledCount,
+        pending_requests_count: pendingCount,
+        accepted_upcoming_count: acceptedUpcoming,
+        unique_clients_count: uniqueClients,
+        repeat_client_pct: repeatClientPct,
+        completion_rate_pct: completionRatePct,
+        avg_rating: num(profile.avg_rating),
+        total_reviews: Math.round(num(profile.total_reviews)),
       },
     });
   } catch (e) {
