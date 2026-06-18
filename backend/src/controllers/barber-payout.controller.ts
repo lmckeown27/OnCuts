@@ -663,3 +663,126 @@ export async function getBarberPerformance(req: AuthRequest, res: Response, next
     next(e);
   }
 }
+
+/**
+ * Unique clients with at least one paid/completed booking.
+ * GET /api/barber/payout/clients
+ */
+export async function getBarberClients(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Not authenticated');
+
+    const resolved = await resolveActiveBarber(userId);
+    if (!resolved) {
+      return res.json({ success: true, data: { clients: [] } });
+    }
+
+    const { barberId } = resolved;
+    const result = await pool.query(
+      `SELECT
+         u.id AS consumer_id,
+         u.first_name,
+         u.last_name,
+         u.email,
+         u."avatarUrl" AS avatar_url,
+         COUNT(*)::int AS total_booking_count,
+         COUNT(*) FILTER (WHERE UPPER(b.status::text) IN ('COMPLETED', 'PAID'))::int AS paid_booking_count,
+         COALESCE(SUM(b."totalPaidCents") FILTER (WHERE UPPER(b.status::text) IN ('COMPLETED', 'PAID')), 0)::bigint AS total_paid_cents,
+         MAX(COALESCE(b."paidAt", b."updatedAt", b."createdAt")) AS last_booking_at,
+         COALESCE(AVG(r.rating), 0) AS avg_review_rating,
+         COUNT(r.rating)::int AS review_count
+       FROM bookings b
+       JOIN users u ON b."consumerId" = u.id
+       LEFT JOIN reviews r ON r."bookingId" = b.id
+       WHERE b."barberId" = $1
+         AND b."consumerId" IN (
+           SELECT DISTINCT "consumerId"
+           FROM bookings
+           WHERE "barberId" = $1
+             AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+         )
+       GROUP BY u.id, u.first_name, u.last_name, u.email, u."avatarUrl"
+       ORDER BY last_booking_at DESC NULLS LAST`,
+      [barberId]
+    );
+
+    const clients = result.rows.map((row) => ({
+      consumer_id: row.consumer_id as string,
+      first_name: row.first_name as string,
+      last_name: row.last_name as string,
+      email: row.email as string,
+      avatar_url: (row.avatar_url as string | null) || null,
+      total_booking_count: parseIntSafe(row.total_booking_count),
+      paid_booking_count: parseIntSafe(row.paid_booking_count),
+      total_paid_cents: parseIntSafe(row.total_paid_cents),
+      last_booking_at: row.last_booking_at ? new Date(row.last_booking_at as string).toISOString() : null,
+      avg_review_rating: parseFloat(String(row.avg_review_rating || 0)),
+      review_count: parseIntSafe(row.review_count),
+      is_repeat: parseIntSafe(row.paid_booking_count) >= 2,
+    }));
+
+    res.json({ success: true, data: { clients } });
+  } catch (e) {
+    logger.error('getBarberClients failed', e);
+    next(e);
+  }
+}
+
+/**
+ * All bookings between the authenticated barber and a specific client.
+ * GET /api/barber/payout/clients/:consumerId/bookings
+ */
+export async function getBarberClientBookings(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Not authenticated');
+
+    const { consumerId } = req.params;
+    if (!consumerId) throw new ApiError(400, 'consumerId is required');
+
+    const resolved = await resolveActiveBarber(userId);
+    if (!resolved) {
+      return res.json({ success: true, data: { bookings: [] } });
+    }
+
+    const { barberId } = resolved;
+
+    const linkCheck = await pool.query(
+      `SELECT 1
+       FROM bookings
+       WHERE "barberId" = $1 AND "consumerId" = $2
+       LIMIT 1`,
+      [barberId, consumerId]
+    );
+    if (linkCheck.rows.length === 0) {
+      throw new ApiError(404, 'No bookings found for this client');
+    }
+
+    const result = await pool.query(
+      `SELECT
+         b.id,
+         b."serviceType" AS service_type,
+         b."priceUsdCents" AS price_cents,
+         b."tipAmountCents" AS tip_cents,
+         b."totalPaidCents" AS total_paid_cents,
+         b.status,
+         b."paymentMethod" AS payment_method,
+         b."requestedAt" AS scheduled_time,
+         b."createdAt" AS created_at,
+         b."paidAt" AS paid_at,
+         r.rating AS review_rating,
+         r.comment AS review_text
+       FROM bookings b
+       LEFT JOIN reviews r ON r."bookingId" = b.id
+       WHERE b."barberId" = $1 AND b."consumerId" = $2
+       ORDER BY COALESCE(b."paidAt", b."requestedAt", b."createdAt") DESC`,
+      [barberId, consumerId]
+    );
+
+    res.json({ success: true, data: { bookings: result.rows } });
+  } catch (e) {
+    logger.error('getBarberClientBookings failed', e);
+    next(e);
+  }
+}

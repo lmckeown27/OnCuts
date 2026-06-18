@@ -13,9 +13,13 @@ import {
 import { Line } from 'react-chartjs-2';
 import {
   fetchBarberMetrics,
+  fetchBarberClients,
+  fetchBarberClientBookings,
   type BarberMetricsPeriod,
   type BarberMetricsDataPoint,
   type BarberPerformance,
+  type BarberClientSummary,
+  type BarberClientBooking,
 } from '../services/barber-payout.service';
 
 ChartJS.register(
@@ -77,6 +81,36 @@ function periodBtnClass(active: boolean): string {
   }`;
 }
 
+function formatServiceType(service: string): string {
+  if (!service) return 'Service';
+  return service.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function statusBadgeClass(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === 'COMPLETED' || normalized === 'PAID') {
+    return 'bg-green-100 text-green-700';
+  }
+  if (normalized === 'CANCELLED' || normalized === 'REJECTED') {
+    return 'bg-red-100 text-red-700';
+  }
+  if (normalized === 'PENDING') {
+    return 'bg-amber-100 text-amber-800';
+  }
+  return 'bg-gray-100 text-gray-700';
+}
+
 export default function BarberAnalyticsPanel({
   performance,
   isLoadingPerformance,
@@ -94,6 +128,12 @@ export default function BarberAnalyticsPanel({
     bookings: number;
     clients: number;
   } | null>(null);
+  const [clients, setClients] = useState<BarberClientSummary[]>([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(false);
+  const [clientsError, setClientsError] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<BarberClientSummary | null>(null);
+  const [clientBookings, setClientBookings] = useState<BarberClientBooking[]>([]);
+  const [isLoadingClientBookings, setIsLoadingClientBookings] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,6 +162,56 @@ export default function BarberAnalyticsPanel({
       clearInterval(intervalId);
     };
   }, [metricsPeriod]);
+
+  useEffect(() => {
+    if (barberView !== 'clients' || selectedClient) return;
+    let cancelled = false;
+    const loadClients = async () => {
+      setIsLoadingClients(true);
+      setClientsError(null);
+      try {
+        const data = await fetchBarberClients();
+        if (!cancelled) setClients(data);
+      } catch {
+        if (!cancelled) {
+          setClients([]);
+          setClientsError('Could not load clients');
+        }
+      } finally {
+        if (!cancelled) setIsLoadingClients(false);
+      }
+    };
+    void loadClients();
+    return () => {
+      cancelled = true;
+    };
+  }, [barberView, selectedClient]);
+
+  useEffect(() => {
+    if (barberView !== 'clients') {
+      setSelectedClient(null);
+      setClientBookings([]);
+    }
+  }, [barberView]);
+
+  const openClientDetail = async (client: BarberClientSummary) => {
+    setSelectedClient(client);
+    setClientBookings([]);
+    setIsLoadingClientBookings(true);
+    try {
+      const bookings = await fetchBarberClientBookings(client.consumer_id);
+      setClientBookings(bookings);
+    } catch {
+      setClientBookings([]);
+    } finally {
+      setIsLoadingClientBookings(false);
+    }
+  };
+
+  const closeClientDetail = () => {
+    setSelectedClient(null);
+    setClientBookings([]);
+  };
 
   const chartData = useMemo(() => {
     const labels = metrics.map((m) => {
@@ -513,24 +603,176 @@ export default function BarberAnalyticsPanel({
       )}
 
       {barberView === 'clients' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Unique clients</p>
-            <p className="text-2xl font-semibold text-gray-900">{performance.uniqueClients}</p>
-            <p className="text-xs text-gray-500 mt-1">Distinct customers with completed or paid appointments</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-[10px] text-gray-500">Repeat client rate</p>
-            <p className="text-2xl font-semibold text-gray-900">{formatPct(performance.repeatClientPct)}</p>
-            <p className="text-xs text-gray-500 mt-1">Clients who booked two or more times with you</p>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 sm:col-span-2">
-            <p className="text-[10px] text-gray-500">Average rating</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {performance.averageRating > 0 ? `${performance.averageRating.toFixed(1)} ★` : '—'}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">Based on {performance.totalReviews} review{performance.totalReviews === 1 ? '' : 's'}</p>
-          </div>
+        <div className="space-y-4 text-sm">
+          {!selectedClient ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-[10px] text-gray-500">Unique clients</p>
+                  <p className="text-2xl font-semibold text-gray-900">{performance.uniqueClients}</p>
+                  <p className="text-xs text-gray-500 mt-1">With completed or paid appointments</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-[10px] text-gray-500">Repeat client rate</p>
+                  <p className="text-2xl font-semibold text-gray-900">{formatPct(performance.repeatClientPct)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Booked two or more times</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-[10px] text-gray-500">Average rating</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {performance.averageRating > 0 ? `${performance.averageRating.toFixed(1)} ★` : '—'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Based on {performance.totalReviews} review{performance.totalReviews === 1 ? '' : 's'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold text-gray-900">Your clients</h3>
+                <span className="text-xs text-gray-500">{clients.length} unique</span>
+              </div>
+
+              {isLoadingClients ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin w-5 h-5 border-2 border-primary-200 border-t-primary-500 rounded-full" />
+                </div>
+              ) : clientsError ? (
+                <p className="text-sm text-red-600 text-center py-8">{clientsError}</p>
+              ) : clients.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">No clients with completed or paid bookings yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+                  {clients.map((client) => (
+                    <button
+                      key={client.consumer_id}
+                      type="button"
+                      onClick={() => void openClientDetail(client)}
+                      className="w-full text-left p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                          {client.avatar_url ? (
+                            <img src={client.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-gray-500">
+                              {client.first_name.charAt(0)}
+                              {client.last_name.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-gray-900">
+                              {client.first_name} {client.last_name}
+                            </p>
+                            {client.is_repeat && (
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-primary-700 bg-primary-100 px-2 py-0.5 rounded-full">
+                                Repeat
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 truncate">{client.email}</p>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
+                            <span>{client.paid_booking_count} paid booking{client.paid_booking_count === 1 ? '' : 's'}</span>
+                            <span>{client.total_booking_count} total</span>
+                            <span>{formatCurrencyFromCents(client.total_paid_cents)} volume</span>
+                            {client.avg_review_rating > 0 && (
+                              <span>{client.avg_review_rating.toFixed(1)} ★ avg</span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            Last booking {formatDateTime(client.last_booking_at)}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div>
+              <button
+                type="button"
+                onClick={closeClientDetail}
+                className="text-sm text-gray-600 hover:text-gray-900 mb-3"
+              >
+                ← Back to clients
+              </button>
+
+              <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                  {selectedClient.avatar_url ? (
+                    <img src={selectedClient.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold text-gray-500">
+                      {selectedClient.first_name.charAt(0)}
+                      {selectedClient.last_name.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-gray-900">
+                    {selectedClient.first_name} {selectedClient.last_name}
+                  </p>
+                  <p className="text-xs text-gray-500">{selectedClient.email}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {selectedClient.paid_booking_count} paid · {selectedClient.total_booking_count} total ·{' '}
+                    {formatCurrencyFromCents(selectedClient.total_paid_cents)} volume
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold text-gray-900">Booking history</h3>
+                <span className="text-xs text-gray-500">{clientBookings.length} bookings</span>
+              </div>
+
+              {isLoadingClientBookings ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin w-5 h-5 border-2 border-primary-200 border-t-primary-500 rounded-full" />
+                </div>
+              ) : clientBookings.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">No bookings found for this client.</p>
+              ) : (
+                <div className="space-y-3 max-h-[28rem] overflow-y-auto">
+                  {clientBookings.map((booking) => (
+                    <div key={booking.id} className="p-3 rounded-lg border border-gray-200 bg-white">
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadgeClass(booking.status)}`}>
+                            {booking.status}
+                          </span>
+                          {(booking.status === 'COMPLETED' || booking.status === 'PAID') && booking.payment_method && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-primary-500 text-white">
+                              {booking.payment_method === 'card' ? 'Card' : 'Cash'}
+                            </span>
+                          )}
+                          {booking.review_rating != null && (
+                            <span className="text-xs text-amber-600">{booking.review_rating} ★</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500 shrink-0">
+                          {formatCurrencyFromCents(booking.total_paid_cents ?? booking.price_cents + (booking.tip_cents || 0))}
+                        </span>
+                      </div>
+                      <p className="font-medium text-sm text-gray-900">{formatServiceType(booking.service_type)}</p>
+                      <p className="text-xs text-gray-500 mt-1">Scheduled {formatDateTime(booking.scheduled_time)}</p>
+                      {booking.paid_at && (
+                        <p className="text-xs text-gray-500">Paid {formatDateTime(booking.paid_at)}</p>
+                      )}
+                      {booking.review_text && (
+                        <p className="text-xs text-gray-600 mt-2 italic border-t border-gray-100 pt-2">
+                          &ldquo;{booking.review_text}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

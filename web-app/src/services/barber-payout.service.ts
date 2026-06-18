@@ -114,3 +114,49 @@ export async function fetchBarberPerformance(): Promise<BarberPerformance> {
   );
   return res.data.data;
 }
+
+export interface BarberClientSummary {
+  consumer_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url: string | null;
+  total_booking_count: number;
+  paid_booking_count: number;
+  total_paid_cents: number;
+  last_booking_at: string | null;
+  avg_review_rating: number;
+  review_count: number;
+  is_repeat: boolean;
+}
+
+export interface BarberClientBooking {
+  id: string;
+  service_type: string;
+  price_cents: number;
+  tip_cents: number;
+  total_paid_cents: number | null;
+  status: string;
+  payment_method: string | null;
+  scheduled_time: string;
+  created_at: string;
+  paid_at: string | null;
+  review_rating: number | null;
+  review_text: string | null;
+}
+
+export async function fetchBarberClients(): Promise<BarberClientSummary[]> {
+  const res = await axios.get<{ success: boolean; data: { clients: BarberClientSummary[] } }>(
+    `${API_BASE_URL}/barber/payout/clients`,
+    { headers: authHeader() }
+  );
+  return res.data.data.clients || [];
+}
+
+export async function fetchBarberClientBookings(consumerId: string): Promise<BarberClientBooking[]> {
+  const res = await axios.get<{ success: boolean; data: { bookings: BarberClientBooking[] } }>(
+    `${API_BASE_URL}/barber/payout/clients/${consumerId}/bookings`,
+    { headers: authHeader() }
+  );
+  return res.data.data.bookings || [];
+}
