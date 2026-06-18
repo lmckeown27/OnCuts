@@ -13,7 +13,7 @@ import {
   handleOnboardingReturn,
   getDashboardLink,
 } from '../controllers/barber-connect.controller';
-import { getBarberPayoutStatus, getBarberPayoutSummary } from '../controllers/barber-payout.controller';
+import { getBarberPayoutStatus, getBarberPayoutSummary, getBarberMetrics, getBarberPerformance } from '../controllers/barber-payout.controller';
 
 const router = express.Router();
 
@@ -22,6 +22,12 @@ router.get('/payout/status', authenticate, requireRole('barber', 'admin'), getBa
 
 /** GET /api/barber/payout/summary — ledger + booking earnings for Payout Settings */
 router.get('/payout/summary', authenticate, requireRole('barber', 'admin'), getBarberPayoutSummary);
+
+/** GET /api/barber/payout/metrics — time-series chart data */
+router.get('/payout/metrics', authenticate, requireRole('barber', 'admin'), getBarberMetrics);
+
+/** GET /api/barber/payout/performance — all-time performance snapshot */
+router.get('/payout/performance', authenticate, requireRole('barber', 'admin'), getBarberPerformance);
 
 /**
  * Create Stripe Connect account

@@ -5,9 +5,10 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import Button from './Button';
+import BarberAnalyticsPanel from './BarberAnalyticsPanel';
 import {
-  fetchBarberPayoutSummary,
-  type BarberPayoutSummary,
+  fetchBarberPerformance,
+  type BarberPerformance,
 } from '../services/barber-payout.service';
 import {
   fetchBarberConnectStatus,
@@ -21,62 +22,41 @@ interface PaymentManagementModalProps {
   onClose: () => void;
 }
 
-function formatUsd(dollars: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-    Number.isFinite(dollars) ? dollars : 0
-  );
-}
-
-function centsToUsd(cents: number): number {
-  return Math.round(cents) / 100;
-}
-
-function formatPct(value: number): string {
-  return `${Number.isFinite(value) ? value.toFixed(1) : '0.0'}%`;
-}
-
 function isPayoutConnected(status: BarberConnectStatus | null): boolean {
   return Boolean(status?.has_account && status?.payoutsEnabled);
 }
 
-function OperationalMetricCard({
-  label,
-  value,
-  description,
-}: {
-  label: string;
-  value: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 tabular-nums mt-0.5">{value}</p>
-      <p className="text-xs text-gray-500 mt-1 leading-snug">{description}</p>
-    </div>
-  );
-}
-
-function FinanceLedgerCell({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <div className="flex-shrink-0 min-w-[140px] flex-1 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="text-xl font-bold text-gray-900 tabular-nums mt-1">{value}</p>
-      {hint && <p className="text-[10px] text-gray-400 mt-1 leading-snug">{hint}</p>}
-    </div>
-  );
-}
+const EMPTY_PERFORMANCE: BarberPerformance = {
+  has_barber_profile: false,
+  totalRevenue: 0,
+  totalBarberEarnings: 0,
+  totalPlatformFees: 0,
+  totalTips: 0,
+  completedBookings: 0,
+  cancelledBookings: 0,
+  pendingRequests: 0,
+  acceptedUpcoming: 0,
+  uniqueClients: 0,
+  repeatClientPct: 0,
+  completionRatePct: 0,
+  cardRevenue: 0,
+  cardCount: 0,
+  cashRevenue: 0,
+  cashCount: 0,
+  averageRating: 0,
+  totalReviews: 0,
+  averageBookingsPerDay: 0,
+  averageBookingsPerWeek: 0,
+  averageBookingsPerMonth: 0,
+  averageRevenuePerDay: 0,
+  averageRevenuePerWeek: 0,
+  averageRevenuePerMonth: 0,
+  averageCostPerAppointment: 0,
+  averageTakeHomePerAppointment: 0,
+};
 
 export default function PaymentManagementModal({ isOpen, onClose }: PaymentManagementModalProps) {
-  const [summary, setSummary] = useState<BarberPayoutSummary | null>(null);
+  const [performance, setPerformance] = useState<BarberPerformance>(EMPTY_PERFORMANCE);
   const [connectStatus, setConnectStatus] = useState<BarberConnectStatus | null>(null);
   const [connectStatusUnknown, setConnectStatusUnknown] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,11 +68,11 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
     try {
       setIsLoading(true);
       setConnectStatusUnknown(false);
-      const [sumRes, connRes] = await Promise.allSettled([
-        fetchBarberPayoutSummary(),
+      const [perfRes, connRes] = await Promise.allSettled([
+        fetchBarberPerformance(),
         fetchBarberConnectStatus(),
       ]);
-      setSummary(sumRes.status === 'fulfilled' ? sumRes.value : null);
+      setPerformance(perfRes.status === 'fulfilled' ? perfRes.value : EMPTY_PERFORMANCE);
       if (connRes.status === 'fulfilled') {
         setConnectStatus(connRes.value);
       } else {
@@ -103,7 +83,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
     } catch (e: unknown) {
       console.error(e);
       toast.error('Could not load business analytics');
-      setSummary(null);
+      setPerformance(EMPTY_PERFORMANCE);
       setConnectStatus(null);
     } finally {
       setIsLoading(false);
@@ -158,12 +138,6 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
   if (!isVisible && !isOpen) return null;
 
   const connected = isPayoutConnected(connectStatus);
-  const displayTotal = summary?.display_total_dollars ?? 0;
-  const recent30Usd = summary ? centsToUsd(summary.recent_30d_barber_cents) : 0;
-  const grossVolumeUsd = summary ? centsToUsd(summary.gross_volume_cents ?? 0) : 0;
-  const avgTakeHomeUsd = summary ? centsToUsd(summary.avg_take_home_cents ?? 0) : 0;
-  const tipsUsd = summary ? centsToUsd(summary.tips_cents ?? 0) : 0;
-  const usesLedger = summary && summary.ledger_total_dollars > 0;
   const hasPartialAccount = Boolean(connectStatus?.has_account && !connectStatus?.payoutsEnabled);
 
   return (
@@ -193,139 +167,19 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {isLoading ? (
             <div className="text-center py-16">
               <div className="animate-spin w-10 h-10 border-4 border-primary-200 border-t-primary-500 rounded-full mx-auto mb-4" />
               <p className="text-gray-500">Loading business analytics…</p>
             </div>
           ) : connected ? (
-            <div className="space-y-6">
-              <section>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Financial overview</h3>
-                <p className="text-xs text-gray-500 mb-3 leading-snug">
-                  Estimates from paid bookings and internal records. Payout cash flows through your{' '}
-                  <strong>Stripe Connect</strong> account—not a CampusCuts balance.
-                </p>
-                <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-                  <FinanceLedgerCell
-                    label="Estimated take-home"
-                    value={formatUsd(displayTotal)}
-                    hint={
-                      usesLedger
-                        ? 'From ledger records'
-                        : 'After ~15% platform fee + tips'
-                    }
-                  />
-                  <FinanceLedgerCell
-                    label="Gross volume"
-                    value={formatUsd(grossVolumeUsd)}
-                    hint="Customer checkout totals (paid)"
-                  />
-                  <FinanceLedgerCell
-                    label="Last 30 days"
-                    value={formatUsd(recent30Usd)}
-                    hint="Estimated barber share"
-                  />
-                  <FinanceLedgerCell
-                    label="Paid bookings"
-                    value={String(summary?.paid_bookings_count ?? 0)}
-                    hint="Completed checkout"
-                  />
-                  {usesLedger && summary && (
-                    <>
-                      <FinanceLedgerCell
-                        label="Recorded settled"
-                        value={formatUsd(summary.ledger_paid_out_dollars)}
-                        hint="Ledger succeeded"
-                      />
-                      {summary.ledger_pending_dollars > 0 && (
-                        <FinanceLedgerCell
-                          label="Recorded pending"
-                          value={formatUsd(summary.ledger_pending_dollars)}
-                          hint="Awaiting settlement"
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-              </section>
-
-              <section>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Operational performance</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <OperationalMetricCard
-                    label="Completion rate"
-                    value={formatPct(summary?.completion_rate_pct ?? 0)}
-                    description="Share of finished appointments vs cancellations and rejections"
-                  />
-                  <OperationalMetricCard
-                    label="Unique clients"
-                    value={String(summary?.unique_clients_count ?? 0)}
-                    description="Distinct customers with completed or paid appointments"
-                  />
-                  <OperationalMetricCard
-                    label="Repeat client rate"
-                    value={formatPct(summary?.repeat_client_pct ?? 0)}
-                    description="Clients who booked two or more times with you"
-                  />
-                  <OperationalMetricCard
-                    label="Avg take-home / booking"
-                    value={formatUsd(avgTakeHomeUsd)}
-                    description="Average estimated barber share per paid appointment"
-                  />
-                  <OperationalMetricCard
-                    label="Pending requests"
-                    value={String(summary?.pending_requests_count ?? 0)}
-                    description="Booking requests awaiting your approval"
-                  />
-                  <OperationalMetricCard
-                    label="Upcoming confirmed"
-                    value={String(summary?.accepted_upcoming_count ?? 0)}
-                    description="Accepted appointments scheduled ahead"
-                  />
-                  <OperationalMetricCard
-                    label="Average rating"
-                    value={
-                      (summary?.avg_rating ?? 0) > 0
-                        ? `${(summary?.avg_rating ?? 0).toFixed(1)} ★`
-                        : '—'
-                    }
-                    description={`Based on ${summary?.total_reviews ?? 0} review${(summary?.total_reviews ?? 0) === 1 ? '' : 's'}`}
-                  />
-                  <OperationalMetricCard
-                    label="Tip volume"
-                    value={formatUsd(tipsUsd)}
-                    description="Total tips collected on paid bookings"
-                  />
-                </div>
-              </section>
-
-              <footer className="bg-slate-50 border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-40" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                    </span>
-                    <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wide">
-                      Stripe connected
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 truncate">
-                    Bank transfers, balances, and tax forms live in Stripe Express.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void openStripeDashboard()}
-                  disabled={connectBusy !== null}
-                  className="inline-flex items-center justify-center shrink-0 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-60"
-                >
-                  Open Stripe
-                </button>
-              </footer>
-            </div>
+            <BarberAnalyticsPanel
+              performance={performance}
+              isLoadingPerformance={false}
+              connectBusy={connectBusy !== null}
+              onOpenStripe={() => void openStripeDashboard()}
+            />
           ) : (
             <div className="py-6 sm:py-10">
               <div className="max-w-md mx-auto text-center">

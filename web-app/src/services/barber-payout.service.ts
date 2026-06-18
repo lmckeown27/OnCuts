@@ -50,3 +50,67 @@ export async function fetchBarberPayoutSummary(): Promise<BarberPayoutSummary> {
   );
   return res.data.data;
 }
+
+export type BarberMetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
+
+export interface BarberMetricsDataPoint {
+  date: string;
+  bookings: number;
+  revenue: number;
+  clients: number;
+}
+
+export interface BarberMetricsResponse {
+  period: string;
+  data: BarberMetricsDataPoint[];
+  totalClients: number;
+}
+
+export interface BarberPerformance {
+  has_barber_profile: boolean;
+  totalRevenue: number;
+  totalBarberEarnings: number;
+  totalPlatformFees: number;
+  totalTips: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  pendingRequests: number;
+  acceptedUpcoming: number;
+  uniqueClients: number;
+  repeatClientPct: number;
+  completionRatePct: number;
+  cardRevenue: number;
+  cardCount: number;
+  cashRevenue: number;
+  cashCount: number;
+  averageRating: number;
+  totalReviews: number;
+  averageBookingsPerDay: number;
+  averageBookingsPerWeek: number;
+  averageBookingsPerMonth: number;
+  averageRevenuePerDay: number;
+  averageRevenuePerWeek: number;
+  averageRevenuePerMonth: number;
+  averageCostPerAppointment: number;
+  averageTakeHomePerAppointment: number;
+}
+
+export async function fetchBarberMetrics(period: BarberMetricsPeriod): Promise<BarberMetricsResponse> {
+  const res = await axios.get<{ success: boolean; period: string; data: BarberMetricsDataPoint[]; totalClients: number }>(
+    `${API_BASE_URL}/barber/payout/metrics`,
+    { headers: authHeader(), params: { period } }
+  );
+  return {
+    period: res.data.period,
+    data: res.data.data,
+    totalClients: res.data.totalClients,
+  };
+}
+
+export async function fetchBarberPerformance(): Promise<BarberPerformance> {
+  const res = await axios.get<{ success: boolean; data: BarberPerformance }>(
+    `${API_BASE_URL}/barber/payout/performance`,
+    { headers: authHeader() }
+  );
+  return res.data.data;
+}

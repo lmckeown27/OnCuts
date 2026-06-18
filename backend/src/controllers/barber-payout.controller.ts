@@ -52,11 +52,68 @@ export async function getBarberPayoutStatus(req: AuthRequest, res: Response, nex
 }
 
 const PLATFORM_FEE_RATE = 0.15;
+const DEFAULT_TIMEZONE = 'America/Los_Angeles';
 
 function num(v: unknown): number {
   if (v === null || v === undefined) return 0;
   const n = typeof v === 'string' ? parseFloat(v) : Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+function parseIntSafe(v: unknown): number {
+  return Math.round(num(v));
+}
+
+interface ResolvedBarber {
+  barberId: string;
+  timezone: string;
+}
+
+async function resolveActiveBarber(userId: string): Promise<ResolvedBarber | null> {
+  const result = await pool.query(
+    `SELECT b.id AS barber_id, COALESCE(c.timezone, $2) AS timezone
+     FROM barbers b
+     JOIN users u ON b."userId" = u.id
+     LEFT JOIN campuses c ON u."campusId" = c.id
+     WHERE b."userId" = $1 AND b."isActive" = true
+     LIMIT 1`,
+    [userId, DEFAULT_TIMEZONE]
+  );
+  if (result.rows.length === 0) return null;
+  return {
+    barberId: result.rows[0].barber_id as string,
+    timezone: (result.rows[0].timezone as string) || DEFAULT_TIMEZONE,
+  };
+}
+
+function parseMetricsPeriod(period: string): {
+  dateTrunc: string;
+  interval: string | null;
+  startDate: string | null;
+} {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+  switch (period) {
+    case '1w':
+      return { dateTrunc: 'day', interval: '7 days', startDate: null };
+    case '4w':
+      return { dateTrunc: 'day', interval: '28 days', startDate: null };
+    case '1y':
+      return { dateTrunc: 'week', interval: '1 year', startDate: null };
+    case 'mtd':
+      return { dateTrunc: 'day', interval: null, startDate: startOfMonth.toISOString() };
+    case 'qtd':
+      return { dateTrunc: 'day', interval: null, startDate: startOfQuarter.toISOString() };
+    case 'ytd':
+      return { dateTrunc: 'week', interval: null, startDate: startOfYear.toISOString() };
+    case 'all':
+      return { dateTrunc: 'month', interval: null, startDate: null };
+    default:
+      return { dateTrunc: 'day', interval: '28 days', startDate: null };
+  }
 }
 
 /**
@@ -258,6 +315,351 @@ export async function getBarberPayoutSummary(req: AuthRequest, res: Response, ne
     });
   } catch (e) {
     logger.error('getBarberPayoutSummary failed', e);
+    next(e);
+  }
+}
+
+/**
+ * Time-series metrics for barber analytics chart.
+ * GET /api/barber/payout/metrics?period=1w|4w|mtd|qtd|ytd|1y|all
+ */
+export async function getBarberMetrics(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Not authenticated');
+
+    const resolved = await resolveActiveBarber(userId);
+    if (!resolved) {
+      return res.json({ success: true, period: req.query.period || '4w', data: [], totalClients: 0 });
+    }
+
+    const period = (req.query.period as string) || '4w';
+    const { dateTrunc, interval, startDate } = parseMetricsPeriod(period);
+    const { barberId, timezone } = resolved;
+
+    let metricsResult;
+    let clientsResult;
+
+    if (interval) {
+      metricsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4) AS period_start,
+          COUNT(*) FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')) AS bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')), 0) AS revenue
+         FROM bookings
+         WHERE "barberId" = $2
+           AND COALESCE("paidAt", "updatedAt") >= NOW() - $3::interval
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, interval, timezone]
+      );
+      clientsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4) AS period_start,
+          COUNT(DISTINCT "consumerId") AS clients
+         FROM bookings
+         WHERE "barberId" = $2
+           AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+           AND COALESCE("paidAt", "updatedAt") >= NOW() - $3::interval
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, interval, timezone]
+      );
+    } else if (startDate) {
+      metricsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4) AS period_start,
+          COUNT(*) FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')) AS bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')), 0) AS revenue
+         FROM bookings
+         WHERE "barberId" = $2
+           AND COALESCE("paidAt", "updatedAt") >= $3::timestamp
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, startDate, timezone]
+      );
+      clientsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4) AS period_start,
+          COUNT(DISTINCT "consumerId") AS clients
+         FROM bookings
+         WHERE "barberId" = $2
+           AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+           AND COALESCE("paidAt", "updatedAt") >= $3::timestamp
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $4)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, startDate, timezone]
+      );
+    } else {
+      metricsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $3) AS period_start,
+          COUNT(*) FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')) AS bookings,
+          COALESCE(SUM("totalPaidCents") FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')), 0) AS revenue
+         FROM bookings
+         WHERE "barberId" = $2
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $3)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, timezone]
+      );
+      clientsResult = await pool.query(
+        `SELECT
+          DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $3) AS period_start,
+          COUNT(DISTINCT "consumerId") AS clients
+         FROM bookings
+         WHERE "barberId" = $2
+           AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+         GROUP BY DATE_TRUNC($1, COALESCE("paidAt", "updatedAt") AT TIME ZONE $3)
+         ORDER BY period_start ASC`,
+        [dateTrunc, barberId, timezone]
+      );
+    }
+
+    const bookingsMap = new Map(
+      metricsResult.rows.map((row) => [
+        row.period_start?.toISOString(),
+        { bookings: parseIntSafe(row.bookings), revenue: parseIntSafe(row.revenue) },
+      ])
+    );
+    const clientsMap = new Map(
+      clientsResult.rows.map((row) => [row.period_start?.toISOString(), parseIntSafe(row.clients)])
+    );
+
+    const allDates = new Set<string>([...bookingsMap.keys(), ...clientsMap.keys()].filter(Boolean) as string[]);
+    const data = Array.from(allDates)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map((dateKey) => ({
+        date: dateKey,
+        bookings: bookingsMap.get(dateKey)?.bookings || 0,
+        revenue: bookingsMap.get(dateKey)?.revenue || 0,
+        clients: clientsMap.get(dateKey) || 0,
+      }));
+
+    const totalClientsResult = await pool.query(
+      interval
+        ? `SELECT COUNT(DISTINCT "consumerId") AS total
+           FROM bookings
+           WHERE "barberId" = $1
+             AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+             AND COALESCE("paidAt", "updatedAt") >= NOW() - $2::interval`
+        : startDate
+          ? `SELECT COUNT(DISTINCT "consumerId") AS total
+             FROM bookings
+             WHERE "barberId" = $1
+               AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+               AND COALESCE("paidAt", "updatedAt") >= $2::timestamp`
+          : `SELECT COUNT(DISTINCT "consumerId") AS total
+             FROM bookings
+             WHERE "barberId" = $1
+               AND UPPER(status::text) IN ('COMPLETED', 'PAID')`,
+      interval ? [barberId, interval] : startDate ? [barberId, startDate] : [barberId]
+    );
+
+    res.json({
+      success: true,
+      period,
+      data,
+      totalClients: parseIntSafe(totalClientsResult.rows[0]?.total),
+    });
+  } catch (e) {
+    logger.error('getBarberMetrics failed', e);
+    next(e);
+  }
+}
+
+/**
+ * All-time performance snapshot for barber analytics dashboard.
+ * GET /api/barber/payout/performance
+ */
+export async function getBarberPerformance(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, 'Not authenticated');
+
+    const resolved = await resolveActiveBarber(userId);
+    if (!resolved) {
+      return res.json({
+        success: true,
+        data: {
+          has_barber_profile: false,
+          totalRevenue: 0,
+          totalBarberEarnings: 0,
+          totalPlatformFees: 0,
+          totalTips: 0,
+          completedBookings: 0,
+          cancelledBookings: 0,
+          pendingRequests: 0,
+          acceptedUpcoming: 0,
+          uniqueClients: 0,
+          repeatClientPct: 0,
+          completionRatePct: 0,
+          cardRevenue: 0,
+          cardCount: 0,
+          cashRevenue: 0,
+          cashCount: 0,
+          averageRating: 0,
+          totalReviews: 0,
+          averageBookingsPerDay: 0,
+          averageBookingsPerWeek: 0,
+          averageBookingsPerMonth: 0,
+          averageRevenuePerDay: 0,
+          averageRevenuePerWeek: 0,
+          averageRevenuePerMonth: 0,
+          averageCostPerAppointment: 0,
+          averageTakeHomePerAppointment: 0,
+        },
+      });
+    }
+
+    const { barberId } = resolved;
+
+    const [bookingsResult, revenueResult, ratingsResult, opsResult, repeatResult, avgDailyResult, avgWeeklyResult, avgMonthlyResult] =
+      await Promise.all([
+        pool.query(
+          `SELECT
+            COUNT(*) FILTER (WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')) AS completed,
+            COUNT(*) FILTER (WHERE UPPER(status::text) = 'CANCELLED') AS cancelled,
+            COUNT(*) FILTER (WHERE UPPER(status::text) = 'REJECTED') AS rejected
+           FROM bookings WHERE "barberId" = $1`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT
+            COALESCE(SUM("totalPaidCents"), 0) AS total_revenue,
+            COALESCE(SUM("platformFeeUsdCents"), 0) AS total_platform_fees,
+            COALESCE(SUM("totalPaidCents") - SUM("platformFeeUsdCents"), 0) AS total_barber_earnings,
+            COALESCE(SUM("tipAmountCents"), 0) AS total_tips,
+            COUNT(*) AS completed_transaction_count,
+            COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL), 0) AS card_revenue,
+            COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'card' OR "paymentMethod" IS NULL) AS card_count,
+            COALESCE(SUM("totalPaidCents") FILTER (WHERE LOWER("paymentMethod") = 'cash'), 0) AS cash_revenue,
+            COUNT(*) FILTER (WHERE LOWER("paymentMethod") = 'cash') AS cash_count
+           FROM bookings
+           WHERE "barberId" = $1 AND UPPER(status::text) IN ('COMPLETED', 'PAID')`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT COALESCE(b."avgRating", 0) AS avg_rating, COALESCE(b."totalReviews", 0) AS total_reviews
+           FROM barbers b WHERE b.id = $1`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT
+            COUNT(*) FILTER (WHERE UPPER(status::text) = 'PENDING')::int AS pending_count,
+            COUNT(*) FILTER (
+              WHERE UPPER(status::text) = 'ACCEPTED' AND "requestedAt" >= NOW()
+            )::int AS accepted_upcoming_count,
+            COUNT(DISTINCT "consumerId") FILTER (
+              WHERE UPPER(status::text) IN ('COMPLETED', 'PAID')
+            )::int AS unique_clients
+           FROM bookings WHERE "barberId" = $1`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT COUNT(*)::int AS repeat_clients
+           FROM (
+             SELECT "consumerId"
+             FROM bookings
+             WHERE "barberId" = $1 AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+             GROUP BY "consumerId"
+             HAVING COUNT(*) >= 2
+           ) repeat_clients`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT COALESCE(AVG(daily_count), 0) AS avg_daily
+           FROM (
+             SELECT DATE_TRUNC('day', COALESCE("paidAt", "updatedAt")) AS day, COUNT(*) AS daily_count
+             FROM bookings
+             WHERE "barberId" = $1
+               AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+               AND COALESCE("paidAt", "updatedAt") >= NOW() - INTERVAL '30 days'
+             GROUP BY DATE_TRUNC('day', COALESCE("paidAt", "updatedAt"))
+           ) daily_counts`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT COALESCE(AVG(weekly_count), 0) AS avg_weekly
+           FROM (
+             SELECT DATE_TRUNC('week', COALESCE("paidAt", "updatedAt")) AS week, COUNT(*) AS weekly_count
+             FROM bookings
+             WHERE "barberId" = $1
+               AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+               AND COALESCE("paidAt", "updatedAt") >= NOW() - INTERVAL '12 weeks'
+             GROUP BY DATE_TRUNC('week', COALESCE("paidAt", "updatedAt"))
+           ) weekly_counts`,
+          [barberId]
+        ),
+        pool.query(
+          `SELECT COALESCE(AVG(monthly_count), 0) AS avg_monthly
+           FROM (
+             SELECT DATE_TRUNC('month', COALESCE("paidAt", "updatedAt")) AS month, COUNT(*) AS monthly_count
+             FROM bookings
+             WHERE "barberId" = $1
+               AND UPPER(status::text) IN ('COMPLETED', 'PAID')
+               AND COALESCE("paidAt", "updatedAt") >= NOW() - INTERVAL '12 months'
+             GROUP BY DATE_TRUNC('month', COALESCE("paidAt", "updatedAt"))
+           ) monthly_counts`,
+          [barberId]
+        ),
+      ]);
+
+    const completedBookings = parseIntSafe(bookingsResult.rows[0]?.completed);
+    const cancelledBookings = parseIntSafe(bookingsResult.rows[0]?.cancelled);
+    const rejectedBookings = parseIntSafe(bookingsResult.rows[0]?.rejected);
+    const totalRevenue = parseIntSafe(revenueResult.rows[0]?.total_revenue);
+    const totalPlatformFees = parseIntSafe(revenueResult.rows[0]?.total_platform_fees);
+    const totalBarberEarnings = parseIntSafe(revenueResult.rows[0]?.total_barber_earnings);
+    const totalTips = parseIntSafe(revenueResult.rows[0]?.total_tips);
+    const completedTransactionCount = parseIntSafe(revenueResult.rows[0]?.completed_transaction_count);
+    const uniqueClients = parseIntSafe(opsResult.rows[0]?.unique_clients);
+    const repeatClients = parseIntSafe(repeatResult.rows[0]?.repeat_clients);
+    const terminalCount = completedBookings + cancelledBookings + rejectedBookings;
+    const completionRatePct =
+      terminalCount > 0 ? Math.round((completedBookings / terminalCount) * 1000) / 10 : 0;
+    const repeatClientPct =
+      uniqueClients > 0 ? Math.round((repeatClients / uniqueClients) * 1000) / 10 : 0;
+    const avgCostPerAppointment =
+      completedTransactionCount > 0 ? Math.round(totalRevenue / completedTransactionCount) : 0;
+    const averageTakeHomePerAppointment =
+      completedTransactionCount > 0 ? Math.round(totalBarberEarnings / completedTransactionCount) : 0;
+    const avgDaily = parseFloat(String(avgDailyResult.rows[0]?.avg_daily || 0));
+    const avgWeekly = parseFloat(String(avgWeeklyResult.rows[0]?.avg_weekly || 0));
+    const avgMonthly = parseFloat(String(avgMonthlyResult.rows[0]?.avg_monthly || 0));
+
+    res.json({
+      success: true,
+      data: {
+        has_barber_profile: true,
+        totalRevenue,
+        totalBarberEarnings,
+        totalPlatformFees,
+        totalTips,
+        completedBookings,
+        cancelledBookings,
+        pendingRequests: parseIntSafe(opsResult.rows[0]?.pending_count),
+        acceptedUpcoming: parseIntSafe(opsResult.rows[0]?.accepted_upcoming_count),
+        uniqueClients,
+        repeatClientPct,
+        completionRatePct,
+        cardRevenue: parseIntSafe(revenueResult.rows[0]?.card_revenue),
+        cardCount: parseIntSafe(revenueResult.rows[0]?.card_count),
+        cashRevenue: parseIntSafe(revenueResult.rows[0]?.cash_revenue),
+        cashCount: parseIntSafe(revenueResult.rows[0]?.cash_count),
+        averageRating: parseFloat(String(ratingsResult.rows[0]?.avg_rating || 0)),
+        totalReviews: parseIntSafe(ratingsResult.rows[0]?.total_reviews),
+        averageBookingsPerDay: avgDaily,
+        averageBookingsPerWeek: avgWeekly,
+        averageBookingsPerMonth: avgMonthly,
+        averageRevenuePerDay: avgDaily * avgCostPerAppointment,
+        averageRevenuePerWeek: avgWeekly * avgCostPerAppointment,
+        averageRevenuePerMonth: avgMonthly * avgCostPerAppointment,
+        averageCostPerAppointment: avgCostPerAppointment,
+        averageTakeHomePerAppointment,
+      },
+    });
+  } catch (e) {
+    logger.error('getBarberPerformance failed', e);
     next(e);
   }
 }
