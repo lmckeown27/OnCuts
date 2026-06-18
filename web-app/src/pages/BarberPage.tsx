@@ -786,7 +786,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <Landmark className="w-4 h-4 text-gray-500" />
-                    Payout Settings
+                    Analytics
                   </button>
                   {/* Barber Chats (for non-CM barbers) */}
                   {!isCampusManager && (
