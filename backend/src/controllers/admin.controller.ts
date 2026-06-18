@@ -28,7 +28,8 @@ import {
   countCampusConsumers,
 } from '../services/campus-metrics-access.service';
 import {
-  ensureServiceDurationBoundsSchema,
+  serviceDurationColumnsExist,
+  serviceSelectSql,
   DEFAULT_MIN_DURATION_MINUTES,
   DEFAULT_MAX_DURATION_MINUTES,
 } from '../services/service-schema.service';
@@ -522,7 +523,7 @@ function validateServiceBounds(params: {
  */
 export const getServices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await ensureServiceDurationBoundsSchema();
+    const hasDurationColumns = await serviceDurationColumnsExist();
 
     // Any authenticated user can read active services
     // Only admin/campus_manager can see inactive services
@@ -533,13 +534,7 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
     const includeInactive = isAdmin && req.query.includeInactive === 'true';
     
     let query = `
-      SELECT id, slug, name, description, 
-             default_base_price_cents, 
-             default_min_price_cents, 
-             default_max_price_cents,
-             default_min_duration_minutes,
-             default_max_duration_minutes,
-             is_active, created_at, updated_at
+      SELECT ${serviceSelectSql(hasDurationColumns)}
       FROM services
     `;
     
@@ -566,7 +561,7 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
  */
 export const createService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await ensureServiceDurationBoundsSchema();
+    const hasDurationColumns = await serviceDurationColumnsExist();
 
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
@@ -600,16 +595,23 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
       maxDurationMinutes: maxDuration,
     });
 
-    const result = await pool.query(
-      `INSERT INTO services (
-         slug, name, description,
-         default_base_price_cents, default_min_price_cents, default_max_price_cents,
-         default_min_duration_minutes, default_max_duration_minutes
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration]
-    );
+    const result = hasDurationColumns
+      ? await pool.query(
+          `INSERT INTO services (
+             slug, name, description,
+             default_base_price_cents, default_min_price_cents, default_max_price_cents,
+             default_min_duration_minutes, default_max_duration_minutes
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING *`,
+          [slug, name, description || null, baseCents, minCents, maxCents, minDuration, maxDuration]
+        )
+      : await pool.query(
+          `INSERT INTO services (slug, name, description, default_base_price_cents, default_min_price_cents, default_max_price_cents)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING *`,
+          [slug, name, description || null, baseCents, minCents, maxCents]
+        );
 
     const row = result.rows[0];
 
@@ -643,7 +645,7 @@ export const createService = async (req: AuthRequest, res: Response, next: NextF
  */
 export const updateService = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await ensureServiceDurationBoundsSchema();
+    const hasDurationColumns = await serviceDurationColumnsExist();
 
     const userRole = req.user!.role?.toUpperCase();
     if (userRole !== 'ADMIN' && userRole !== 'CAMPUS_MANAGER') {
@@ -688,6 +690,13 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
       maxDurationMinutes: nextMaxDuration,
     });
 
+    if ((minDurationMinutes !== undefined || maxDurationMinutes !== undefined) && !hasDurationColumns) {
+      throw new ApiError(
+        503,
+        'Duration bounds are not available until migration 033 is applied as the services table owner (postgres superuser)'
+      );
+    }
+
     // Build dynamic update query
     const updates: string[] = [];
     const values: any[] = [];
@@ -721,11 +730,11 @@ export const updateService = async (req: AuthRequest, res: Response, next: NextF
       updates.push(`default_max_price_cents = $${paramIndex++}`);
       values.push(parseInt(maxPriceCents));
     }
-    if (minDurationMinutes !== undefined) {
+    if (minDurationMinutes !== undefined && hasDurationColumns) {
       updates.push(`default_min_duration_minutes = $${paramIndex++}`);
       values.push(parseInt(minDurationMinutes));
     }
-    if (maxDurationMinutes !== undefined) {
+    if (maxDurationMinutes !== undefined && hasDurationColumns) {
       updates.push(`default_max_duration_minutes = $${paramIndex++}`);
       values.push(parseInt(maxDurationMinutes));
     }

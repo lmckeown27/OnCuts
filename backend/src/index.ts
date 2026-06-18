@@ -504,8 +504,8 @@ httpServer.listen(PORT, async () => {
       });
     }
     try {
-      const { initServiceDurationBoundsSchema } = await import('./services/service-schema.service');
-      await initServiceDurationBoundsSchema();
+      const { warnIfServiceDurationColumnsMissing } = await import('./services/service-schema.service');
+      await warnIfServiceDurationColumnsMissing();
     } catch (serviceSchemaErr: unknown) {
       logger.warn('Service duration bounds schema init failed', {
         error: serviceSchemaErr instanceof Error ? serviceSchemaErr.message : String(serviceSchemaErr),
