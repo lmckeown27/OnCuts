@@ -157,8 +157,7 @@ export default function PaymentManagementModal({ isOpen, onClose }: PaymentManag
       >
         <div className="sticky top-0 bg-gradient-to-r from-primary-500 to-primary-400 text-white px-6 py-4 flex items-center justify-between z-10 shrink-0">
           <div>
-            <h2 className="text-2xl font-bold">Business Analytics &amp; Operations</h2>
-            <p className="text-white/80 text-sm">Performance insights · Stripe Connect payouts</p>
+            <h2 className="text-2xl font-bold">Business Analytics</h2>
           </div>
           <button
             type="button"
