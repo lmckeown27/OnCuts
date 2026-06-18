@@ -596,28 +596,6 @@ export default function BarberAnalyticsPanel({
         <div className="space-y-4 text-sm">
           {!selectedClient ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-[10px] text-gray-500">Unique clients</p>
-                  <p className="text-2xl font-semibold text-gray-900">{performance.uniqueClients}</p>
-                  <p className="text-xs text-gray-500 mt-1">With completed or paid appointments</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-[10px] text-gray-500">Repeat client rate</p>
-                  <p className="text-2xl font-semibold text-gray-900">{formatPct(performance.repeatClientPct)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Booked two or more times</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-[10px] text-gray-500">Average rating</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {performance.averageRating > 0 ? `${performance.averageRating.toFixed(1)} ★` : '—'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Based on {performance.totalReviews} review{performance.totalReviews === 1 ? '' : 's'}
-                  </p>
-                </div>
-              </div>
-
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-semibold text-gray-900">Your clients</h3>
                 <span className="text-xs text-gray-500">{clients.length} unique</span>
