@@ -12,7 +12,7 @@ export default function BarberConnectReturn() {
 
   useEffect(() => {
     // Redirect to barber page with showPayoutSettings param
-    navigate('/web/barber?showPayoutSettings=true', { replace: true });
+    navigate('/web/barber?showStripe=true', { replace: true });
   }, [navigate]);
 
   return <Loading />;

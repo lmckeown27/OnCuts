@@ -16,6 +16,10 @@ export async function createBarberConnectOnboarding(): Promise<{ account_id: str
   return api.post('/barber/connect/create', {});
 }
 
+export async function refreshBarberConnectOnboarding(): Promise<{ onboarding_url: string }> {
+  return api.post('/barber/connect/refresh', {});
+}
+
 export async function fetchBarberStripeDashboardUrl(): Promise<string> {
   const data = await api.get<{ dashboard_url: string }>('/barber/connect/dashboard');
   return data.dashboard_url;

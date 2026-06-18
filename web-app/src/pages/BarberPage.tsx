@@ -24,6 +24,7 @@ import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
 import ServiceDetailsModal from '../components/ServiceDetailsModal';
 import PaymentManagementModal from '../components/PaymentManagementModal';
+import StripeHubModal from '../components/StripeHubModal';
 import BlockTimeModal from '../components/BlockTimeModal';
 // import WalkInPaymentModal from '../components/WalkInPaymentModal'; // Walk-in feature disabled
 import BookingDetailsModal from '../components/BookingDetailsModal';
@@ -104,6 +105,7 @@ export default function BarberPage() {
   const [isBarberChatsVisible, setIsBarberChatsVisible] = useState(false);
   
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
+  const [showStripeHub, setShowStripeHub] = useState(false);
   const [showBlockTimeModal, setShowBlockTimeModal] = useState(false);
   
   // Google Calendar integration state
@@ -150,7 +152,8 @@ export default function BarberPage() {
     showServiceDetails ||
     showNotifications ||
     showBookingDetailsModal ||
-    showPayoutSettings;
+    showPayoutSettings ||
+    showStripeHub;
   useBodyScrollLock(isAnyModalOpen);
   
   // Fetch notifications
@@ -246,6 +249,10 @@ export default function BarberPage() {
       // Clear the query param from URL without triggering navigation
       const newUrl = location.pathname;
       window.history.replaceState({}, '', newUrl);
+    }
+    if (searchParams.get('showStripe') === 'true') {
+      setShowStripeHub(true);
+      window.history.replaceState({}, '', location.pathname);
     }
     
     // Handle Google Calendar OAuth callback
@@ -788,6 +795,16 @@ export default function BarberPage() {
                     <Landmark className="w-4 h-4 text-gray-500" />
                     Analytics
                   </button>
+                  <button
+                    onClick={() => {
+                      setShowStripeHub(true);
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                  >
+                    <CreditCard className="w-4 h-4 text-gray-500" />
+                    Stripe
+                  </button>
                   {/* Barber Chats (for non-CM barbers) */}
                   {!isCampusManager && (
                     <>
@@ -1244,6 +1261,8 @@ export default function BarberPage() {
         isOpen={showPayoutSettings}
         onClose={() => setShowPayoutSettings(false)}
       />
+
+      <StripeHubModal isOpen={showStripeHub} onClose={() => setShowStripeHub(false)} />
 
       {/* Block Time Modal - One-time date-specific availability blocks */}
       {barberProfile?.id && (
