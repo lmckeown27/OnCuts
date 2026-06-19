@@ -1,12 +1,11 @@
 /**
  * AvailableTimePickerDropdown Component
  *
- * Minute-precision booking time picker validated against barber availability,
- * existing bookings, and manual blocks.
+ * Booking time picker constrained to barber schedule slots from the availability API.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Clock, Loader2 } from 'lucide-react';
+import { Clock, Loader2, ChevronDown } from 'lucide-react';
 import api from '../services/api.service';
 
 interface TimeInterval {
@@ -22,6 +21,7 @@ interface AvailabilityResponse {
   intervals: TimeInterval[];
   bookedSlots: { start: string; end: string }[];
   slots: { time: string; available: boolean }[];
+  appointmentDurationMinutes?: number;
 }
 
 interface AvailableTimePickerDropdownProps {
@@ -40,17 +40,6 @@ interface AvailableTimePickerDropdownProps {
 
 const DEFAULT_APPOINTMENT_DURATION_MINUTES = 60;
 
-const timeToMinutes = (time: string): number => {
-  const [hour, minute] = time.split(':').map(Number);
-  return hour * 60 + minute;
-};
-
-const minutesToTime = (minutes: number): string => {
-  const hour = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hour.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
-
 const formatTimeDisplay = (time24: string): string => {
   if (!time24) return '';
 
@@ -63,49 +52,6 @@ const formatTimeDisplay = (time24: string): string => {
 
   return `${displayHour}:${minute}${period}`;
 };
-
-function isStartWithinIntervals(time: string, intervals: TimeInterval[]): boolean {
-  const mins = timeToMinutes(time);
-  return intervals.some(
-    (interval) => mins >= timeToMinutes(interval.start) && mins < timeToMinutes(interval.end)
-  );
-}
-
-function overlapsBookedSlot(
-  time: string,
-  bookedSlots: { start: string; end: string }[],
-  appointmentDurationMinutes: number
-): boolean {
-  const start = timeToMinutes(time);
-  const end = start + appointmentDurationMinutes;
-
-  return bookedSlots.some((booked) => {
-    const bookedStart = timeToMinutes(booked.start);
-    const bookedEnd = timeToMinutes(booked.end);
-    return start < bookedEnd && end > bookedStart;
-  });
-}
-
-function validateSelectedTime(
-  time: string,
-  intervals: TimeInterval[],
-  bookedSlots: { start: string; end: string }[],
-  appointmentDurationMinutes: number,
-  minTimeMinutes?: number
-): string | null {
-  if (!time) return null;
-  if (!intervals.length) return 'No availability for this date';
-  if (minTimeMinutes !== undefined && timeToMinutes(time) < minTimeMinutes) {
-    return 'Choose a future time';
-  }
-  if (!isStartWithinIntervals(time, intervals)) {
-    return 'Outside available hours';
-  }
-  if (overlapsBookedSlot(time, bookedSlots, appointmentDurationMinutes)) {
-    return 'This time conflicts with an existing booking or block';
-  }
-  return null;
-}
 
 export default function AvailableTimePickerDropdown({
   barberId,
@@ -120,46 +66,34 @@ export default function AvailableTimePickerDropdown({
 }: AvailableTimePickerDropdownProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [intervals, setIntervals] = useState<TimeInterval[]>([]);
-  const [bookedSlots, setBookedSlots] = useState<{ start: string; end: string }[]>([]);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [minTimeMinutes, setMinTimeMinutes] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    if (barberId && date) {
-      fetchAvailability();
-    } else {
-      setIntervals([]);
-      setBookedSlots([]);
-      setError(null);
-      setMinTimeMinutes(undefined);
-    }
-  }, [barberId, date, excludeBookingId, appointmentDurationMinutes]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   const availabilityUrl = useMemo(() => {
     if (!barberId || !date) return null;
-    const params = new URLSearchParams({ date });
+    const params = new URLSearchParams({
+      date,
+      durationMinutes: String(appointmentDurationMinutes),
+    });
     if (excludeBookingId) {
       params.set('excludeBookingId', excludeBookingId);
     }
     return `/barbers/${barberId}/availability?${params.toString()}`;
   }, [barberId, date, excludeBookingId, appointmentDurationMinutes]);
 
-  const { minTime, maxTime } = useMemo(() => {
-    if (intervals.length === 0) {
-      return { minTime: undefined, maxTime: undefined };
+  useEffect(() => {
+    if (barberId && date) {
+      fetchAvailability();
+    } else {
+      setAvailableTimes([]);
+      setError(null);
     }
+  }, [availabilityUrl]);
 
-    const starts = intervals.map((i) => timeToMinutes(i.start));
-    const ends = intervals.map((i) => timeToMinutes(i.end));
-    const computedMin = Math.min(...starts);
-    const computedMax = Math.max(...ends) - 1;
-
-    return {
-      minTime: minutesToTime(Math.max(computedMin, minTimeMinutes ?? computedMin)),
-      maxTime: minutesToTime(Math.max(computedMin, computedMax)),
-    };
-  }, [intervals, minTimeMinutes]);
+  useEffect(() => {
+    if (value && availableTimes.length > 0 && !availableTimes.includes(value)) {
+      onChange('');
+    }
+  }, [availableTimes, value, onChange]);
 
   const fetchAvailability = async () => {
     if (!availabilityUrl) return;
@@ -170,68 +104,32 @@ export default function AvailableTimePickerDropdown({
     try {
       const response = await api.get<AvailabilityResponse>(availabilityUrl);
 
-      if (!response) {
-        setIntervals([]);
-        setBookedSlots([]);
-        setError('No availability data received');
+      if (!response?.available || !response.slots?.length) {
+        setAvailableTimes([]);
+        if (value) onChange('');
         return;
       }
 
-      const { available, intervals: apiIntervals, bookedSlots: apiBookedSlots, slots: apiSlots } = response;
+      const times = response.slots
+        .filter((slot) => slot.available)
+        .map((slot) => slot.time);
 
-      if (!available || !apiIntervals || apiIntervals.length === 0) {
-        setIntervals([]);
-        setBookedSlots([]);
-        setError(null);
-        return;
-      }
+      setAvailableTimes(times);
 
-      setIntervals(apiIntervals);
-      setBookedSlots(apiBookedSlots || []);
-
-      const earliestOpenSlot = apiSlots?.find((slot) => slot.available)?.time;
-      if (earliestOpenSlot) {
-        setMinTimeMinutes(timeToMinutes(earliestOpenSlot));
-      } else {
-        setMinTimeMinutes(undefined);
-      }
-
-      if (value) {
-        const nextError = validateSelectedTime(
-          value,
-          apiIntervals,
-          apiBookedSlots || [],
-          appointmentDurationMinutes,
-          earliestOpenSlot ? timeToMinutes(earliestOpenSlot) : undefined
-        );
-        setValidationError(nextError);
-        if (nextError) {
-          onChange('');
-        }
-      } else {
-        setValidationError(null);
+      if (value && !times.includes(value)) {
+        onChange('');
       }
     } catch (err) {
       console.error('Failed to fetch availability:', err);
       setError('Failed to load available times');
-      setIntervals([]);
-      setBookedSlots([]);
+      setAvailableTimes([]);
+      if (value) onChange('');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleTimeChange = (nextValue: string) => {
-    onChange(nextValue);
-    setValidationError(
-      nextValue
-        ? validateSelectedTime(nextValue, intervals, bookedSlots, appointmentDurationMinutes, minTimeMinutes)
-        : null
-    );
-  };
-
-  const hasAvailability = intervals.length > 0;
-  const displayError = error || validationError;
+  const hasAvailability = availableTimes.length > 0;
   const isDisabled = disabled || isLoading || !date || !hasAvailability;
 
   return (
@@ -246,27 +144,33 @@ export default function AvailableTimePickerDropdown({
         ) : (
           <Clock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         )}
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 
-        <input
-          type="time"
-          step={60}
+        <select
           value={value || ''}
-          min={minTime}
-          max={maxTime}
           disabled={isDisabled}
-          onChange={(e) => handleTimeChange(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           className={`
-            w-full rounded-lg border py-2 pl-9 pr-3 text-sm
+            w-full appearance-none rounded-lg border py-2 pl-9 pr-9 text-sm
             transition-all duration-150
             ${isDisabled
               ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-              : displayError
+              : error
                 ? 'border-red-300 bg-red-50 text-red-700 focus:ring-2 focus:ring-red-200'
                 : 'border-gray-300 bg-white text-gray-900 hover:border-primary-400 focus:border-transparent focus:ring-2 focus:ring-primary-400'
             }
           `}
           aria-label={label || 'Select time'}
-        />
+        >
+          <option value="" disabled>
+            {isLoading ? 'Loading times...' : hasAvailability ? 'Select a time' : 'No times available'}
+          </option>
+          {availableTimes.map((time) => (
+            <option key={time} value={time}>
+              {formatTimeDisplay(time)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {isLoading && (
@@ -281,17 +185,13 @@ export default function AvailableTimePickerDropdown({
         <p className="mt-1 text-xs text-gray-500">No available times for this date</p>
       )}
 
-      {displayError && (
-        <p className="mt-1 text-xs text-red-600">{displayError}</p>
+      {error && (
+        <p className="mt-1 text-xs text-red-600">{error}</p>
       )}
 
-      {value && !displayError && (
-        <p className="mt-1 text-xs text-gray-500">{formatTimeDisplay(value)}</p>
-      )}
-
-      {hasAvailability && !displayError && (
+      {value && !error && (
         <p className="mt-1 text-xs text-gray-500">
-          Choose any minute within the barber&apos;s open hours. Appointments block {appointmentDurationMinutes} minutes.
+          {formatTimeDisplay(value)} · {appointmentDurationMinutes}-minute appointment
         </p>
       )}
     </div>

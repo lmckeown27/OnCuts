@@ -10,6 +10,14 @@ import { USER_PRIMARY_WALLET_SQL_U } from '../utils/user-wallet-address';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
 import { assertNoMessagingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/service-duration.utils';
+import {
+  BOOKING_SLOT_INCREMENT_MINUTES,
+  SAME_DAY_BOOKING_BUFFER_MINUTES,
+  generateBookableStartSlots,
+  getDayNameFromDateString,
+  getIntervalsForDay,
+  type WeeklySchedule,
+} from '../services/barber-availability.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -1107,96 +1115,14 @@ export const updateAvailability = async (req: AuthRequest, res: Response, next: 
   }
 };
 
-// Types for availability
-interface TimeInterval {
-  id: string;
-  start: string;
-  end: string;
-}
-
-interface DayAvailability {
-  enabled: boolean;
-  intervals: TimeInterval[];
-  // Legacy format support
-  start?: string;
-  end?: string;
-}
-
-interface WeeklySchedule {
-  sunday?: DayAvailability;
-  monday?: DayAvailability;
-  tuesday?: DayAvailability;
-  wednesday?: DayAvailability;
-  thursday?: DayAvailability;
-  friday?: DayAvailability;
-  saturday?: DayAvailability;
-}
-
-// Helper to convert time string to minutes
-const timeToMinutes = (time: string): number => {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-};
-
-// Helper to convert minutes to time string
-const minutesToTime = (minutes: number): string => {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
-
-// Generate available time slots in 1-minute increments
-// currentTimeMinutes: if > 0, exclude slots before this time (for same-day bookings)
-const BOOKING_SLOT_INCREMENT_MINUTES = 1;
-const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
-
-const generateTimeSlotsWithCurrentTime = (
-  intervals: TimeInterval[],
-  bookedSlots: { start: string; end: string }[],
-  slotDuration: number = BOOKING_SLOT_INCREMENT_MINUTES,
-  currentTimeMinutes: number = 0 // Current time in minutes (0 = don't filter past times)
-): { time: string; available: boolean }[] => {
-  const slots: { time: string; available: boolean }[] = [];
-  
-  for (const interval of intervals) {
-    const startMins = timeToMinutes(interval.start);
-    const endMins = timeToMinutes(interval.end);
-    
-    for (let mins = startMins; mins < endMins; mins += slotDuration) {
-      // Skip past times entirely - don't include them in the list
-      if (currentTimeMinutes > 0 && mins < currentTimeMinutes) {
-        continue;
-      }
-      
-      const time = minutesToTime(mins);
-      
-      // Check if this slot overlaps with any booked/blocked slots
-      let isBooked = false;
-      for (const booked of bookedSlots) {
-        const bookedStart = timeToMinutes(booked.start);
-        const bookedEnd = timeToMinutes(booked.end);
-        
-        // Check for overlap
-        if (mins < bookedEnd && (mins + slotDuration) > bookedStart) {
-          isBooked = true;
-          break;
-        }
-      }
-      
-      // Only return open slots — booked/unavailable times are omitted entirely
-      if (!isBooked) {
-        slots.push({ time, available: true });
-      }
-    }
-  }
-  
-  return slots;
-};
-
 export const getBarberAvailability = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { date, excludeBookingId } = req.query; // date: YYYY-MM-DD; excludeBookingId: omit when editing/rescheduling
+    const { date, excludeBookingId, durationMinutes: durationMinutesRaw } = req.query;
+    const appointmentDurationMinutes = Math.max(
+      15,
+      Math.min(240, parseInt(String(durationMinutesRaw || '60'), 10) || 60)
+    );
 
     // Get barber's weekly schedule and campus timezone
     const barberResult = await pool.query(
@@ -1229,13 +1155,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
     
     // If a specific date is provided, return available slots for that date
     if (date && typeof date === 'string') {
-      // Parse date string (YYYY-MM-DD) manually to avoid timezone issues
-      // We want to get the day of week for the date as the USER sees it, not UTC
-      const [year, month, day] = date.split('-').map(Number);
-      // Create date at noon to avoid DST edge cases
-      const targetDate = new Date(year, month - 1, day, 12, 0, 0);
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
-      const dayName = dayNames[targetDate.getDay()];
+      const dayName = getDayNameFromDateString(date);
       
       console.log(`[Availability] Date: ${date}, Parsed day: ${dayName}, weeklySchedule keys:`, Object.keys(weeklySchedule));
       
@@ -1256,21 +1176,13 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
             dayOfWeek: dayName,
             available: false,
             intervals: [],
-            slots: []
+            slots: [],
+            appointmentDurationMinutes,
           }
         });
       }
 
-      // Get intervals (support both new and legacy format)
-      let intervals: TimeInterval[] = [];
-      if (daySchedule.intervals && Array.isArray(daySchedule.intervals)) {
-        intervals = daySchedule.intervals;
-      } else if (daySchedule.start && daySchedule.end) {
-        // Legacy format - single interval
-        intervals = [{ id: 'legacy', start: daySchedule.start, end: daySchedule.end }];
-      }
-      
-      console.log(`[Availability] Found ${intervals.length} intervals for ${dayName}`);
+      const intervals = getIntervalsForDay(weeklySchedule, dayName);
 
       // If no intervals defined, day is effectively unavailable
       if (intervals.length === 0) {
@@ -1402,15 +1314,15 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
       const currentMinute = campusNow.getMinutes();
       const currentTimeMinutes = isToday ? (currentHour * 60 + currentMinute + SAME_DAY_BOOKING_BUFFER_MINUTES) : 0;
 
-      // Generate available time slots (filter past times if booking for today)
-      const slots = generateTimeSlotsWithCurrentTime(
+      const slots = generateBookableStartSlots(
         intervals,
         bookedSlots,
+        appointmentDurationMinutes,
         BOOKING_SLOT_INCREMENT_MINUTES,
         currentTimeMinutes
       );
       
-      console.log(`[Availability] Generated ${slots.length} slots, ${slots.filter(s => s.available).length} available`);
+      console.log(`[Availability] Generated ${slots.length} bookable slots for ${appointmentDurationMinutes} min appointments`);
 
       // Prevent caching of availability data
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1425,7 +1337,8 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
           available: true,
           intervals,
           bookedSlots,
-          slots
+          slots,
+          appointmentDurationMinutes,
         }
       });
     }

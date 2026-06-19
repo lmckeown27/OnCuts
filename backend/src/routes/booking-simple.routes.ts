@@ -31,6 +31,7 @@ import {
   cancelPendingRescheduleRequestsForBooking,
   executeParticipantBookingCancellation,
 } from '../services/booking-cancellation.service';
+import { assertBookingWithinBarberAvailability } from '../services/barber-availability.service';
 import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 const router = express.Router();
@@ -362,6 +363,23 @@ router.post('/', authenticate, async (req, res, next) => {
       await client.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [barberRecordId]);
 
       if (scheduledTime) {
+        try {
+          await assertBookingWithinBarberAvailability(
+            barberRecordId,
+            requestedTime,
+            serviceDurationMinutes,
+            undefined,
+            client
+          );
+        } catch (availErr: any) {
+          await client.query('ROLLBACK');
+          const status = availErr.statusCode || 400;
+          return res.status(status).json({
+            success: false,
+            error: availErr.message || 'Selected time is not available',
+          });
+        }
+
         const conflictAt = await assertNoBarberSlotConflict(
           client,
           barberRecordId,
@@ -2394,6 +2412,22 @@ router.post('/:id/reschedule-request', authenticate, async (req, res, next) => {
     const requestedTime = parseScheduledTimePacificToUtc(scheduledTime);
     const bookingDurationMinutes =
       booking.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES;
+
+    try {
+      await assertBookingWithinBarberAvailability(
+        booking.barberId,
+        requestedTime,
+        bookingDurationMinutes,
+        id
+      );
+    } catch (availErr: any) {
+      const status = availErr.statusCode || 400;
+      return res.status(status).json({
+        success: false,
+        error: availErr.message || 'Selected time is not available',
+      });
+    }
+
     const conflictAt = await assertNoBarberSlotConflict(
       pool,
       booking.barberId,
@@ -2525,6 +2559,24 @@ router.post('/:id/reschedule-request/approve', authenticate, async (req, res, ne
 
       const bookingDurationMinutes =
         booking.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES;
+
+      try {
+        await assertBookingWithinBarberAvailability(
+          booking.barberId,
+          requestedTime,
+          bookingDurationMinutes,
+          id,
+          client
+        );
+      } catch (availErr: any) {
+        await client.query('ROLLBACK');
+        const status = availErr.statusCode || 400;
+        return res.status(status).json({
+          success: false,
+          error: availErr.message || 'Selected time is not available',
+        });
+      }
+
       const conflictAt = await assertNoBarberSlotConflict(
         client,
         booking.barberId,
@@ -2680,7 +2732,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     // Check if user is barber or consumer for this booking
     const bookingCheck = await pool.query(
-      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType",
+      `SELECT b.id, b.status, b."consumerId", b."barberId", b."requestedAt", b."serviceType", b."durationMinutes",
               bar."userId" as barber_user_id,
               u_consumer.first_name as consumer_first_name, u_consumer.last_name as consumer_last_name,
               u_consumer.email as consumer_email,
@@ -2727,6 +2779,40 @@ router.put('/:id', authenticate, async (req, res, next) => {
 
     // Update scheduledTime on bookings table
     if (scheduledTime !== undefined) {
+      const parsedTime = parseScheduledTimePacificToUtc(scheduledTime);
+      const bookingDurationMinutes =
+        booking.durationMinutes || FALLBACK_BOOKING_DURATION_MINUTES;
+
+      try {
+        await assertBookingWithinBarberAvailability(
+          booking.barberId,
+          parsedTime,
+          bookingDurationMinutes,
+          id
+        );
+      } catch (availErr: any) {
+        const status = availErr.statusCode || 400;
+        return res.status(status).json({
+          success: false,
+          error: availErr.message || 'Selected time is not available',
+        });
+      }
+
+      const conflictAt = await assertNoBarberSlotConflict(
+        pool,
+        booking.barberId,
+        parsedTime,
+        bookingDurationMinutes,
+        id
+      );
+      if (conflictAt) {
+        return res.status(409).json({
+          success: false,
+          error: BOOKING_SLOT_CONFLICT_MESSAGE,
+          conflictAt: conflictAt.toISOString(),
+        });
+      }
+
       await pool.query(
         `UPDATE bookings 
          SET "requestedAt" = $1, "updatedAt" = CURRENT_TIMESTAMP

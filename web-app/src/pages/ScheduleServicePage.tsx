@@ -393,8 +393,8 @@ export default function ScheduleServicePage() {
                     )}
                     <p className="text-xs text-gray-500 mt-1">
                       {serviceType
-                        ? `This service takes about ${selectedServiceDuration} minutes. Choose any available minute within the barber's open hours.`
-                        : 'Select a service first, then choose any available minute within the barber\'s open hours.'}
+                        ? `This service takes about ${selectedServiceDuration} minutes. Times shown match the barber's open hours.`
+                        : 'Select a service first, then choose an available time.'}
                     </p>
                   </div>
 
