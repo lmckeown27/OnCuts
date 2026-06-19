@@ -6,7 +6,7 @@
 import express from 'express';
 import messageService from '../services/message.service';
 import imageService from '../services/image.service';
-import { authenticate } from '../middleware/auth';
+import { authenticate, syncRequestUserRoleFromDb, AuthRequest } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { uploadToIPFS } from '../services/ipfs.service';
 import { logger } from '../utils/logger';
@@ -616,7 +616,9 @@ router.get('/stats', authenticate, async (req, res, next) => {
  */
 router.post('/cm-barber', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.userId;
+    await syncRequestUserRoleFromDb(authReq);
 
     const userResult = await pool.query(
       `SELECT u.id, u.role, u.first_name, u.last_name, u."avatarUrl",
@@ -632,9 +634,11 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
-    const isAdmin = user.role === 'ADMIN';
+    const isAdmin =
+      user.role === 'ADMIN' || authReq.user!.role?.toLowerCase() === 'admin';
     const campusId = user.barber_campus_id;
 
+    // Barbers need an active campus; admins do not need one on their account.
     if (!isAdmin && !campusId) {
       return res.status(400).json({ success: false, error: 'You must be an active barber associated with a campus to use this feature' });
     }
@@ -642,9 +646,24 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     let otherUserId: string | undefined;
 
     if (isAdmin) {
-      otherUserId = req.body.barberUserId;
+      otherUserId = req.body.barberUserId ?? req.body.barber_user_id;
       if (!otherUserId) {
         return res.status(400).json({ success: false, error: 'barberUserId is required for admin users' });
+      }
+      if (otherUserId === userId) {
+        return res.status(400).json({ success: false, error: 'Cannot start a support chat with yourself' });
+      }
+
+      const barberTarget = await pool.query(
+        `SELECT u.id
+         FROM users u
+         INNER JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
+         WHERE u.id = $1
+           AND COALESCE(u."isBanned", false) = false`,
+        [otherUserId]
+      );
+      if (barberTarget.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Active barber not found' });
       }
     } else {
       const adminResult = await pool.query(
