@@ -100,8 +100,92 @@ export class CampusManagerService {
   }
 
   /**
+   * Assign campus manager at a campus. Preserves ADMIN role (sets isCampusManager only).
+   */
+  async assignCampusManagerAtCampus(
+    barberRecordId: string,
+    barberUserId: string,
+    campusId: string
+  ): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      await client.query(
+        `UPDATE users SET role = 'BARBER', "updatedAt" = NOW()
+         WHERE "campusId" = $1 AND role = 'CAMPUS_MANAGER'`,
+        [campusId]
+      );
+      await client.query(
+        `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
+         WHERE "campusId" = $1 AND "isCampusManager" = true`,
+        [campusId]
+      );
+
+      const targetRole = await client.query(`SELECT role FROM users WHERE id = $1`, [barberUserId]);
+      const dbRole = (targetRole.rows[0]?.role || '').toUpperCase();
+
+      if (dbRole !== 'ADMIN') {
+        await client.query(
+          `UPDATE users SET role = 'CAMPUS_MANAGER', "updatedAt" = NOW() WHERE id = $1`,
+          [barberUserId]
+        );
+      }
+
+      await client.query(
+        `UPDATE barbers SET "isCampusManager" = true, "updatedAt" = NOW()
+         WHERE id = $1 AND "campusId" = $2`,
+        [barberRecordId, campusId]
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * Remove campus manager at a campus. Preserves ADMIN role (clears isCampusManager only).
+   */
+  async removeCampusManagerAtCampus(
+    barberRecordId: string,
+    barberUserId: string,
+    campusId: string
+  ): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const targetRole = await client.query(`SELECT role FROM users WHERE id = $1`, [barberUserId]);
+      const dbRole = (targetRole.rows[0]?.role || '').toUpperCase();
+
+      if (dbRole !== 'ADMIN') {
+        await client.query(
+          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
+          [barberUserId]
+        );
+      }
+
+      await client.query(
+        `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
+         WHERE id = $1 AND "campusId" = $2`,
+        [barberRecordId, campusId]
+      );
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
    * Promote a barber to Campus Manager
-   * Uses PostgreSQL function to enforce uniqueness constraint
    */
   async promoteToCampusManager(
     barberId: string,
@@ -130,38 +214,19 @@ export class CampusManagerService {
         };
       }
 
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        await client.query(
-          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW()
-           WHERE "campusId" = $1 AND role = 'CAMPUS_MANAGER'`,
-          [campusId]
-        );
-        await client.query(
-          `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
-           WHERE "campusId" = $1 AND "isCampusManager" = true`,
-          [campusId]
-        );
-        await client.query(
-          `UPDATE barbers SET "isCampusManager" = true, "updatedAt" = NOW()
-           WHERE id = $1 AND "campusId" = $2`,
-          [barberId, campusId]
-        );
-        await client.query(
-          `UPDATE users SET role = 'CAMPUS_MANAGER', "updatedAt" = NOW()
-           WHERE id = (SELECT "userId" FROM barbers WHERE id = $1)`,
-          [barberId]
-        );
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
+      const userIdResult = await pool.query(
+        `SELECT "userId" FROM barbers WHERE id = $1`,
+        [barberId]
+      );
+      if (userIdResult.rows.length === 0) {
+        return { success: false, error: 'Barber not found' };
       }
+
+      await this.assignCampusManagerAtCampus(
+        barberId,
+        userIdResult.rows[0].userId,
+        campusId
+      );
 
       logger.info('Barber promoted to Campus Manager', {
         barberId,

@@ -26,6 +26,7 @@ import { applyAffiliationCleanupForBannedUser } from '../services/user-ban-affil
 import {
   assertCampusMetricsAccess,
   countCampusConsumers,
+  getAccessibleCampusScope,
 } from '../services/campus-metrics-access.service';
 import {
   serviceDurationColumnsExist,
@@ -951,25 +952,30 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
  */
 export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Verify admin role
-    const userRole = req.user!.role?.toUpperCase();
-    if (userRole !== 'ADMIN') {
-      throw new ApiError(403, 'Admin access required');
-    }
+    const scope = await getAccessibleCampusScope(req);
 
-    // Use the same query pattern that works in campus.controller.ts
-    const result = await pool.query(`
-      SELECT id, name, slug, city, state
-      FROM campuses 
-      WHERE "isActive" = TRUE
-      ORDER BY name
-    `);
+    const result = scope.isAdmin
+      ? await pool.query(`
+          SELECT id, name, slug, city, state
+          FROM campuses
+          WHERE "isActive" = TRUE
+          ORDER BY name
+        `)
+      : await pool.query(
+          `SELECT id, name, slug, city, state
+           FROM campuses
+           WHERE "isActive" = TRUE AND id = ANY($1::uuid[])
+           ORDER BY name`,
+          [scope.campusIds]
+        );
 
-    // Get campus managers separately (role column, not user_type)
+    // Campus managers: role, isCampusManager flag, or admin with CM flag
     const managersResult = await pool.query(`
-      SELECT u.id, u."campusId", u.first_name, u.last_name
-      FROM users u
-      WHERE u.role = 'CAMPUS_MANAGER' AND u."campusId" IS NOT NULL
+      SELECT u.id, b."campusId", u.first_name, u.last_name
+      FROM barbers b
+      JOIN users u ON b."userId" = u.id
+      WHERE b."isCampusManager" = true
+         OR u.role = 'CAMPUS_MANAGER'
     `);
 
     // Create a map of campus managers
@@ -1981,11 +1987,7 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
   try {
     const { campusId } = req.params;
 
-    // Verify admin role
-    const userRole = req.user!.role?.toUpperCase();
-    if (userRole !== 'ADMIN') {
-      throw new ApiError(403, 'Admin access required');
-    }
+    await assertCampusMetricsAccess(req, campusId);
 
     // Get barbers for this campus (include role to check if they're campus manager)
     // Only include users who still have BARBER or CAMPUS_MANAGER role
@@ -2087,39 +2089,11 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
     const { barber_id: barberRecordId } = userCheck.rows[0];
 
     if (action === 'assign') {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        // Demote any existing campus manager for this campus (role + barber flag)
-        await client.query(
-          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW()
-           WHERE "campusId" = $1 AND role = 'CAMPUS_MANAGER'`,
-          [campusId]
-        );
-        await client.query(
-          `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
-           WHERE "campusId" = $1 AND "isCampusManager" = true`,
-          [campusId]
-        );
-
-        await client.query(
-          `UPDATE users SET role = 'CAMPUS_MANAGER', "updatedAt" = NOW() WHERE id = $1`,
-          [barberUserId]
-        );
-        await client.query(
-          `UPDATE barbers SET "isCampusManager" = true, "updatedAt" = NOW()
-           WHERE id = $1 AND "campusId" = $2`,
-          [barberRecordId, campusId]
-        );
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
+      await campusManagerService.assignCampusManagerAtCampus(
+        barberRecordId,
+        barberUserId,
+        campusId
+      );
 
       logger.info('Campus manager assigned', { campusId, barberUserId, by: req.user!.userId });
 
@@ -2128,27 +2102,11 @@ export const assignCampusManager = async (req: AuthRequest, res: Response, next:
         message: 'Campus manager assigned successfully',
       });
     } else {
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        await client.query(
-          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW() WHERE id = $1`,
-          [barberUserId]
-        );
-        await client.query(
-          `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
-           WHERE id = $1 AND "campusId" = $2`,
-          [barberRecordId, campusId]
-        );
-
-        await client.query('COMMIT');
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
+      await campusManagerService.removeCampusManagerAtCampus(
+        barberRecordId,
+        barberUserId,
+        campusId
+      );
 
       logger.info('Campus manager removed', { campusId, barberUserId, by: req.user!.userId });
 

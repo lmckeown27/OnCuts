@@ -67,3 +67,41 @@ export async function assertCampusMetricsAccess(req: AuthRequest, campusId: stri
     throw new ApiError(403, 'Campus manager access required');
   }
 }
+
+/**
+ * Admins see all campuses. Campus managers see only their campus.
+ */
+export async function getAccessibleCampusScope(
+  req: AuthRequest
+): Promise<{ isAdmin: boolean; campusIds: string[] }> {
+  const userId = req.user?.userId;
+  if (!userId) throw new ApiError(401, 'Not authenticated');
+
+  const userResult = await pool.query(
+    `SELECT role, "campusId" FROM users WHERE id = $1`,
+    [userId]
+  );
+  if (userResult.rows.length === 0) throw new ApiError(401, 'User not found');
+
+  const { role, campusId: userCampusId } = userResult.rows[0];
+  if (role === 'ADMIN') {
+    return { isAdmin: true, campusIds: [] };
+  }
+
+  if (role === 'CAMPUS_MANAGER' && userCampusId) {
+    return { isAdmin: false, campusIds: [String(userCampusId)] };
+  }
+
+  const managerCheck = await pool.query(
+    `SELECT b."campusId" FROM barbers b
+     WHERE b."userId" = $1 AND b."isCampusManager" = true AND b."isActive" = true
+     LIMIT 1`,
+    [userId]
+  );
+
+  if (managerCheck.rows.length > 0 && managerCheck.rows[0].campusId) {
+    return { isAdmin: false, campusIds: [String(managerCheck.rows[0].campusId)] };
+  }
+
+  throw new ApiError(403, 'Admin or campus manager access required');
+}
