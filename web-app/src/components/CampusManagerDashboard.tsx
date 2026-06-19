@@ -1650,6 +1650,45 @@ export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campus
 };
 
 // ═══════════════════════════════════════════════════════════════
+// ALL-CAMPUS LOCATIONS (admin aggregate view)
+// ═══════════════════════════════════════════════════════════════
+
+type CampusRef = { id: string; name: string };
+
+function formatCampusLabel(name: string) {
+  if (name.startsWith('University of ')) return name;
+  if (name.endsWith(' University')) return name.slice(0, -11);
+  return name;
+}
+
+export const AllCampusesLocationsPanel: React.FC<{ campuses: CampusRef[] }> = ({ campuses }) => {
+  if (!campuses.length) {
+    return (
+      <Card className="text-center py-8 sm:py-12">
+        <MapPin className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-700 font-medium text-sm sm:text-base">No campuses with barbers yet</p>
+        <p className="text-xs sm:text-sm text-gray-500 mt-1">
+          Locations appear here once barbers are active on a campus.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {campuses.map((campus) => (
+        <section key={campus.id}>
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 pb-2 border-b border-gray-200">
+            {formatCampusLabel(campus.name)}
+          </h3>
+          <CampusLocationsPanel campusId={campus.id} />
+        </section>
+      ))}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
 // CAMPUS LOCATIONS PANEL
 // ═══════════════════════════════════════════════════════════════
 
@@ -2830,6 +2869,8 @@ export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId 
 
 interface CompletedBooking {
   id: string;
+  campusId?: string;
+  campusName?: string;
   barberId: string;
   barberRecordId: string;
   barberName: string;
@@ -2859,7 +2900,11 @@ interface BarberOption {
   name: string;
 }
 
-export const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+export const CompletedBookingsPanel: React.FC<{ campusId?: string; campuses?: CampusRef[] }> = ({
+  campusId,
+  campuses,
+}) => {
+  const isMultiCampus = !campusId && (campuses?.length ?? 0) > 0;
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
@@ -2910,27 +2955,58 @@ export const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusI
       const token = localStorage.getItem('accessToken');
       const barberFilter = selectedBarberId !== 'all' ? `&barberId=${selectedBarberId}` : '';
       const paymentFilter = selectedPaymentMethod !== 'all' ? `&paymentMethod=${selectedPaymentMethod}` : '';
-      const response = await fetch(
-        `/api/v1/bookings-simple/campus/${campusId}?limit=100${barberFilter}${paymentFilter}&statusFilter=${activeTab}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+
+      const fetchForCampus = async (campus: CampusRef) => {
+        const response = await fetch(
+          `/api/v1/bookings-simple/campus/${campus.id}?limit=100${barberFilter}${paymentFilter}&statusFilter=${activeTab}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) {
+          return { campus, bookings: [] as CompletedBooking[], barbers: [] as BarberOption[] };
         }
-      );
-      
-      if (response.ok) {
         const data = await response.json();
-        setBookings(data.data.bookings || []);
-        setBarbers(data.data.barbers || []);
+        return {
+          campus,
+          bookings: (data.data.bookings || []).map((booking: CompletedBooking) => ({
+            ...booking,
+            campusId: campus.id,
+            campusName: campus.name,
+          })),
+          barbers: (data.data.barbers || []) as BarberOption[],
+        };
+      };
+
+      if (campusId) {
+        const result = await fetchForCampus({ id: campusId, name: '' });
+        setBookings(result.bookings);
+        setBarbers(result.barbers);
+      } else if (campuses?.length) {
+        const results = await Promise.all(campuses.map(fetchForCampus));
+        const withBookings = results.filter((r) => r.bookings.length > 0);
+        setBookings(withBookings.flatMap((r) => r.bookings));
+
+        const barberMap = new Map<string, BarberOption>();
+        results.forEach((r) => {
+          r.barbers.forEach((barber) => {
+            if (!barberMap.has(barber.id)) {
+              const label = isMultiCampus
+                ? `${barber.name} (${formatCampusLabel(r.campus.name)})`
+                : barber.name;
+              barberMap.set(barber.id, { ...barber, name: label });
+            }
+          });
+        });
+        setBarbers(Array.from(barberMap.values()));
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to fetch campus bookings:', response.status, errorData);
-        setBookings([]); // Clear bookings on error to avoid showing stale data
+        setBookings([]);
+        setBarbers([]);
       }
     } catch (error) {
       console.error('Failed to fetch campus bookings:', error);
+      setBookings([]);
+      setBarbers([]);
     } finally {
       setLoading(false);
-      // Fade in after loading
       setTimeout(() => setIsContentVisible(true), 50);
     }
   };
@@ -2949,7 +3025,7 @@ export const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusI
     setCurrentPage(1); // Reset to first page when filters change
     fetchBookings();
     // Re-fetch when tab changes or when the current tab's filters change
-  }, [campusId, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod, cancelledBarberId]);
+  }, [campusId, campuses, activeTab, upcomingBarberId, completedBarberId, completedPaymentMethod, cancelledBarberId]);
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -3432,6 +3508,11 @@ export const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusI
                   </div>
                     <div>
                       <p className="font-semibold text-gray-900">{booking.barberName}</p>
+                      {isMultiCampus && booking.campusName && (
+                        <p className="text-xs text-primary-600 font-medium">
+                          {formatCampusLabel(booking.campusName)}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-600">{booking.serviceType}</p>
                   </div>
               </div>

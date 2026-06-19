@@ -24,6 +24,7 @@ import toast from 'react-hot-toast';
 import Button from './Button';
 import {
   BarberAvailabilityPanel,
+  AllCampusesLocationsPanel,
   CampusLocationsPanel,
   CompletedBookingsPanel,
   ServicesManagementPanel,
@@ -701,6 +702,16 @@ export function AdminDashboard({
   const selectedCampus = useMemo(() => {
     return campuses.find(c => c.id === selectedCampusId);
   }, [campuses, selectedCampusId]);
+
+  // Campuses with active barbers — used for aggregate Locations/Bookings views
+  const campusScopeList = useMemo(() => {
+    const idsWithBarbers = new Set(
+      barbers.map((b) => b.campusId).filter(Boolean) as string[]
+    );
+    return campuses
+      .filter((c) => idsWithBarbers.has(c.id))
+      .map((c) => ({ id: c.id, name: c.name }));
+  }, [campuses, barbers]);
   
   const filteredCampuses = useMemo(() => {
     if (!campusSearchQuery) return campuses;
@@ -873,11 +884,11 @@ export function AdminDashboard({
     return service.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
   };
 
-  const campusScopePrompt = (
+  const noCampusScopeContent = (
     <div className="flex flex-col items-center justify-center py-12 text-gray-500">
       <MapPin className="w-8 h-8 mb-2 text-gray-300" />
-      <p className="text-sm font-medium text-gray-700">Select a campus</p>
-      <p className="text-xs text-gray-500 mt-1">Choose a university above to manage this section.</p>
+      <p className="text-sm font-medium text-gray-700">No campuses with barbers yet</p>
+      <p className="text-xs text-gray-500 mt-1">Bookings and locations will appear once barbers are active.</p>
     </div>
   );
   
@@ -2714,21 +2725,33 @@ export function AdminDashboard({
       )}
       
       {adminView === 'locations' && (
-        <div key={selectedCampusId || 'locations-none'}>
+        <div key={selectedCampusId || 'locations-all'}>
           {selectedCampusId ? (
             <CampusLocationsPanel campusId={selectedCampusId} />
+          ) : isLoadingBarbers ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+            </div>
+          ) : campusScopeList.length > 0 ? (
+            <AllCampusesLocationsPanel campuses={campusScopeList} />
           ) : (
-            campusScopePrompt
+            noCampusScopeContent
           )}
         </div>
       )}
 
       {adminView === 'bookings' && (
-        <div key={selectedCampusId || 'bookings-none'}>
+        <div key={selectedCampusId || 'bookings-all'}>
           {selectedCampusId ? (
             <CompletedBookingsPanel campusId={selectedCampusId} />
+          ) : isLoadingBarbers ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+            </div>
+          ) : campusScopeList.length > 0 ? (
+            <CompletedBookingsPanel campuses={campusScopeList} />
           ) : (
-            campusScopePrompt
+            noCampusScopeContent
           )}
         </div>
       )}
