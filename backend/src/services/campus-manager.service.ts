@@ -110,9 +110,9 @@ export class CampusManagerService {
     try {
       // Verify barber belongs to this campus and is active
       const barberCheck = await pool.query(`
-        SELECT id, campus_id, is_active, is_onboarded
+        SELECT id, "campusId", "isActive", "isOnboarded"
         FROM barbers
-        WHERE id = $1 AND campus_id = $2
+        WHERE id = $1 AND "campusId" = $2
       `, [barberId, campusId]);
 
       if (barberCheck.rows.length === 0) {
@@ -123,25 +123,52 @@ export class CampusManagerService {
       }
 
       const barber = barberCheck.rows[0];
-      if (!barber.is_active || !barber.is_onboarded) {
+      if (!barber.isActive || !barber.isOnboarded) {
         return {
           success: false,
           error: 'Barber must be active and onboarded to become Campus Manager',
         };
       }
 
-      // Use PostgreSQL function to safely promote
-      const result = await pool.query(
-        'SELECT promote_to_campus_manager($1, $2) as success',
-        [barberId, campusId]
-      );
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        await client.query(
+          `UPDATE users SET role = 'BARBER', "updatedAt" = NOW()
+           WHERE "campusId" = $1 AND role = 'CAMPUS_MANAGER'`,
+          [campusId]
+        );
+        await client.query(
+          `UPDATE barbers SET "isCampusManager" = false, "updatedAt" = NOW()
+           WHERE "campusId" = $1 AND "isCampusManager" = true`,
+          [campusId]
+        );
+        await client.query(
+          `UPDATE barbers SET "isCampusManager" = true, "updatedAt" = NOW()
+           WHERE id = $1 AND "campusId" = $2`,
+          [barberId, campusId]
+        );
+        await client.query(
+          `UPDATE users SET role = 'CAMPUS_MANAGER', "updatedAt" = NOW()
+           WHERE id = (SELECT "userId" FROM barbers WHERE id = $1)`,
+          [barberId]
+        );
+
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
 
       logger.info('Barber promoted to Campus Manager', {
         barberId,
         campusId,
       });
 
-      return { success: result.rows[0].success };
+      return { success: true };
     } catch (error: any) {
       logger.error('Error promoting to Campus Manager:', error);
       
