@@ -68,7 +68,7 @@ interface AlternativeBarber {
 /**
  * Fetch alternative barbers available at the given time
  */
-async function fetchAlternativeBarbers(
+export async function fetchAlternativeBarbers(
   campusId: string,
   excludeBarberId: string,
   serviceType: string,

@@ -4026,7 +4026,7 @@ CampusCut
 }
 
 // ============================================
-// AUTO-CANCELLATION EMAILS (2 Hours Before)
+// AUTO-CANCELLATION EMAILS (stale pending bookings)
 // ============================================
 
 /**
@@ -4052,9 +4052,9 @@ export interface AutoCancellationEmailDetails {
 
 /**
  * Send Auto-Cancellation Email to Barber
- * 
- * Sent when a pending booking is auto-cancelled 2 hours before scheduled time
- * because the barber didn't accept it.
+ *
+ * Sent when a pending booking is auto-cancelled because the service provider
+ * did not accept it before the scheduled appointment date passed.
  */
 export async function sendBarberAutoCancellationEmail(details: AutoCancellationEmailDetails): Promise<void> {
   if (isAutoVerifyEnabled()) {
@@ -4073,7 +4073,7 @@ Hi ${firstName},
 
 The pending booking request from ${details.consumerName} has been automatically cancelled.
 
-This booking was cancelled because it was not accepted before the 2-hour deadline prior to the scheduled appointment time.
+This booking was cancelled because it was not accepted before the scheduled appointment date passed.
 
 CANCELLED BOOKING DETAILS
 -------------------------
@@ -4119,7 +4119,7 @@ CampusCut
       <!-- Reason Box -->
       <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
         <p style="color: #991b1b; margin: 0; font-size: 14px;">
-          <strong>Reason:</strong> Booking was not accepted before the 2-hour deadline prior to the scheduled appointment time.
+          <strong>Reason:</strong> The service provider did not accept the booking in time.
         </p>
       </div>
       
@@ -4199,9 +4199,9 @@ CampusCut
 
 /**
  * Send Auto-Cancellation Email to Consumer
- * 
- * Sent when a pending booking is auto-cancelled 2 hours before scheduled time
- * because the barber didn't accept it. Includes alternative barbers if available.
+ *
+ * Sent when a pending booking is auto-cancelled because the service provider
+ * did not accept it before the scheduled appointment date passed.
  */
 export async function sendConsumerAutoCancellationEmail(details: AutoCancellationEmailDetails): Promise<void> {
   if (isAutoVerifyEnabled()) {
@@ -4232,7 +4232,7 @@ Hi ${firstName},
 
 We're sorry to inform you that your ${details.serviceName} booking has been automatically cancelled.
 
-Unfortunately, ${details.barberName} was unable to confirm the booking before the deadline.
+Unfortunately, ${details.barberName} did not accept the booking before the scheduled appointment date passed.
 
 CANCELLED BOOKING DETAILS
 -------------------------
@@ -4315,7 +4315,7 @@ CampusCut
       <!-- Reason Box -->
       <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
         <p style="color: #991b1b; margin: 0; font-size: 14px;">
-          <strong>Reason:</strong> ${details.barberName} was unable to confirm the booking before the deadline.
+          <strong>Reason:</strong> ${details.barberName} did not accept the booking in time.
         </p>
       </div>
       

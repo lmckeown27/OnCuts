@@ -536,7 +536,7 @@ httpServer.listen(PORT, async () => {
   // Start payment reminder cron job (sends reminders when awaiting payment for 1+ hours)
   paymentReminderCronService.start();
 
-  // Start pending booking cron job (warns 3h before, auto-cancels 2h before if not accepted)
+  // Start pending booking cron job (warns before appointment; auto-cancels stale pending next day)
   pendingBookingCronService.start();
 
   // DIY Sui relayer: sequential payouts (BullMQ concurrency 1) after Stripe checkout
