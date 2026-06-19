@@ -657,13 +657,13 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
       const barberTarget = await pool.query(
         `SELECT u.id
          FROM users u
-         INNER JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
+         INNER JOIN barbers b ON b."userId" = u.id
          WHERE u.id = $1
            AND COALESCE(u."isBanned", false) = false`,
         [otherUserId]
       );
       if (barberTarget.rows.length === 0) {
-        return res.status(404).json({ success: false, error: 'Active barber not found' });
+        return res.status(404).json({ success: false, error: 'Barber not found' });
       }
     } else {
       const adminResult = await pool.query(
@@ -781,7 +781,6 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          AND c.is_active = true
          AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
        WHERE b."campusId" = $2 
-         AND b."isActive" = true 
          AND b."userId" != $1
          AND u.role = 'BARBER'
          AND (u."isBanned" IS NOT TRUE)
@@ -867,7 +866,14 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
       )`
       : '';
 
-    // Get all active barbers on the same campus (excluding self)
+    const isAdminViewer = userRole === 'ADMIN';
+    const barberVisibilitySql = isAdminViewer
+      ? ''
+      : ` AND b."isActive" = true 
+         AND u.stripe_account_id IS NOT NULL
+         AND u.stripe_payouts_enabled = true`;
+
+    // Get barbers on the same campus (excluding self). Admins see hidden barbers too.
     const barbersResult = await pool.query(
       `SELECT 
          u.id as user_id,
@@ -887,12 +893,10 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          AND c.is_active = true
          AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
        WHERE b."campusId" = $2 
-         AND b."isActive" = true 
          AND b."userId" != $1
          AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN')
-         AND u.stripe_account_id IS NOT NULL
-         AND u.stripe_payouts_enabled = true
          AND (u."isBanned" IS NOT TRUE)
+         ${barberVisibilitySql}
          ${peerBarberHideB2b}
        ORDER BY 
          b."isCampusManager" DESC,
@@ -930,41 +934,64 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
  */
 router.post('/barber-chats', authenticate, async (req, res, next) => {
   try {
-    const userId = (req as any).user.userId;
+    const authReq = req as AuthRequest;
+    const userId = authReq.user!.userId;
+    await syncRequestUserRoleFromDb(authReq);
     const { otherBarberUserId } = req.body;
 
     if (!otherBarberUserId) {
       return res.status(400).json({ success: false, error: 'otherBarberUserId is required' });
     }
 
-    // Verify both users are barbers on the same campus
-    // Allow active barbers, campus managers, and admins
-    const verifyResult = await pool.query(
-      `SELECT 
-         COALESCE(b1."campusId", u1."campusId") as user_campus, 
-         COALESCE(b2."campusId", u2."campusId") as other_campus
-       FROM users u1
-       LEFT JOIN barbers b1 ON b1."userId" = u1.id
-       CROSS JOIN users u2
-       LEFT JOIN barbers b2 ON b2."userId" = u2.id
-       WHERE u1.id = $1 AND u2.id = $2
-         AND (
-           (b1."isActive" = true AND u1.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
-           OR u1.role IN ('CAMPUS_MANAGER', 'ADMIN')
-         )
-         AND (
-           (b2."isActive" = true AND u2.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
-           OR u2.role IN ('CAMPUS_MANAGER', 'ADMIN')
-         )`,
-      [userId, otherBarberUserId]
+    const callerResult = await pool.query(
+      `SELECT u.role FROM users u WHERE u.id = $1`,
+      [userId]
     );
+    const isAdmin =
+      callerResult.rows[0]?.role === 'ADMIN' ||
+      authReq.user!.role?.toLowerCase() === 'admin';
 
-    if (verifyResult.rows.length === 0) {
-      return res.status(403).json({ success: false, error: 'Both users must be barbers' });
-    }
+    if (isAdmin) {
+      const targetResult = await pool.query(
+        `SELECT u.id
+         FROM users u
+         INNER JOIN barbers b ON b."userId" = u.id
+         WHERE u.id = $1
+           AND COALESCE(u."isBanned", false) = false`,
+        [otherBarberUserId]
+      );
+      if (targetResult.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Barber not found' });
+      }
+    } else {
+      // Verify both users are active barbers on the same campus
+      const verifyResult = await pool.query(
+        `SELECT 
+           COALESCE(b1."campusId", u1."campusId") as user_campus, 
+           COALESCE(b2."campusId", u2."campusId") as other_campus
+         FROM users u1
+         LEFT JOIN barbers b1 ON b1."userId" = u1.id
+         CROSS JOIN users u2
+         LEFT JOIN barbers b2 ON b2."userId" = u2.id
+         WHERE u1.id = $1 AND u2.id = $2
+           AND (
+             (b1."isActive" = true AND u1.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
+             OR u1.role IN ('CAMPUS_MANAGER', 'ADMIN')
+           )
+           AND (
+             (b2."isActive" = true AND u2.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
+             OR u2.role IN ('CAMPUS_MANAGER', 'ADMIN')
+           )`,
+        [userId, otherBarberUserId]
+      );
 
-    if (verifyResult.rows[0].user_campus !== verifyResult.rows[0].other_campus) {
-      return res.status(403).json({ success: false, error: 'Both barbers must be on the same campus' });
+      if (verifyResult.rows.length === 0) {
+        return res.status(403).json({ success: false, error: 'Both users must be barbers' });
+      }
+
+      if (verifyResult.rows[0].user_campus !== verifyResult.rows[0].other_campus) {
+        return res.status(403).json({ success: false, error: 'Both barbers must be on the same campus' });
+      }
     }
 
     // Check if conversation already exists (booking_id = NULL for direct chats)
