@@ -202,7 +202,7 @@ export default function AuthPage() {
     }
   }, []);
 
-  const finishLoginRedirect = async (result: { isAdmin: boolean; isCampusManager: boolean }) => {
+  const finishLoginRedirect = async (result: { isAdmin: boolean }) => {
     if (redirectUrl?.startsWith('/')) {
       navigate(redirectUrl);
       return;
@@ -227,7 +227,7 @@ export default function AuthPage() {
 
     const currentUser = useAuthStore.getState().user;
 
-    if (currentUser?.user_type !== 'barber' && !result.isAdmin && !result.isCampusManager) {
+    if (currentUser?.user_type !== 'barber' && !result.isAdmin) {
       try {
         const api = (await import('../services/api.service')).default;
         const response = await api.get('/bookings-simple', {
@@ -249,7 +249,7 @@ export default function AuthPage() {
       }
     }
 
-    if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
+    if (result.isAdmin || currentUser?.user_type === 'barber') {
       navigate('/web/barber');
     } else {
       navigate('/web/consumer');
@@ -338,7 +338,6 @@ export default function AuthPage() {
       toast.success('Signed in with phone!');
       await finishLoginRedirect({
         isAdmin: result.isAdmin,
-        isCampusManager: result.isCampusManager,
       });
     } catch (err: any) {
       const errorMessage =

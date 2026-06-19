@@ -606,22 +606,21 @@ router.get('/stats', authenticate, async (req, res, next) => {
 });
 
 // ============================================================================
-// CAMPUS MANAGER - BARBER DIRECT MESSAGING
+// BARBER - ADMIN DIRECT MESSAGING (legacy path: /cm-barber)
 // ============================================================================
 
 /**
  * POST /api/messages/cm-barber
- * Start or get a direct conversation between barber and campus manager
+ * Start or get a direct conversation between barber and platform admin
  * No booking required - this is for general communication
  */
 router.post('/cm-barber', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
 
-    // Get user's info including their barber record (if they have one)
     const userResult = await pool.query(
       `SELECT u.id, u.role, u.first_name, u.last_name, u."avatarUrl",
-              b.id as barber_id, b."campusId" as barber_campus_id, b."isCampusManager"
+              b.id as barber_id, b."campusId" as barber_campus_id
        FROM users u
        LEFT JOIN barbers b ON b."userId" = u.id AND b."isActive" = true
        WHERE u.id = $1`,
@@ -633,54 +632,41 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     }
 
     const user = userResult.rows[0];
-    
-    // Use barber's campus if available
+    const isAdmin = user.role === 'ADMIN';
     const campusId = user.barber_campus_id;
 
-    if (!campusId) {
+    if (!isAdmin && !campusId) {
       return res.status(400).json({ success: false, error: 'You must be an active barber associated with a campus to use this feature' });
     }
 
-    // Find the campus manager for this campus
-    // Check BOTH:
-    // 1. Barbers with isCampusManager = true on this campus
-    // 2. Users with role = 'CAMPUS_MANAGER' whose campusId matches (may not have barber record)
-    const cmResult = await pool.query(
-      `SELECT u.id as user_id, u.first_name, u.last_name, u."avatarUrl", u.role,
-              b.id as barber_id, b."isCampusManager"
-       FROM users u
-       LEFT JOIN barbers b ON b."userId" = u.id
-       WHERE u.id != $2
-         AND (
-           -- Option 1: Barber with isCampusManager flag on this campus
-           (b."campusId" = $1 AND b."isCampusManager" = true)
-           OR
-           -- Option 2: User with CAMPUS_MANAGER role associated with this campus
-           (u."campusId" = $1 AND u.role = 'CAMPUS_MANAGER')
-         )
-       ORDER BY 
-         CASE WHEN u.role = 'CAMPUS_MANAGER' THEN 0 ELSE 1 END,
-         CASE WHEN b."isCampusManager" = true THEN 0 ELSE 1 END
-       LIMIT 1`,
-      [campusId, userId]
-    );
+    let otherUserId: string | undefined;
 
-    if (cmResult.rows.length === 0) {
-      return res.status(404).json({ success: false, error: 'No campus manager found for your campus' });
+    if (isAdmin) {
+      otherUserId = req.body.barberUserId;
+      if (!otherUserId) {
+        return res.status(400).json({ success: false, error: 'barberUserId is required for admin users' });
+      }
+    } else {
+      const adminResult = await pool.query(
+        `SELECT u.id as user_id
+         FROM users u
+         WHERE u.role = 'ADMIN' AND u.id != $1
+         ORDER BY u."createdAt" ASC
+         LIMIT 1`,
+        [userId]
+      );
+
+      if (adminResult.rows.length === 0) {
+        return res.status(404).json({ success: false, error: 'No platform admin available for support' });
+      }
+
+      otherUserId = adminResult.rows[0].user_id;
     }
-
-    const campusManager = cmResult.rows[0];
-
-    // Determine who is the CM and who is the barber
-    const isCM = user.isCampusManager === true || user.role === 'CAMPUS_MANAGER';
-    const otherUserId = isCM ? req.body.barberUserId : campusManager.user_id;
 
     if (!otherUserId) {
       return res.status(400).json({ success: false, error: 'Could not determine conversation partner' });
     }
 
-    // Check if conversation already exists (booking_id = NULL for CM-barber chats)
-    // Only find active conversations - deleted ones (is_active = false) should allow new conversation creation
     const existingConv = await pool.query(
       `SELECT * FROM conversations 
        WHERE booking_id IS NULL 
@@ -691,7 +677,6 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
     );
 
     if (existingConv.rows.length > 0) {
-      // Return existing conversation
       const conv = existingConv.rows[0];
       return res.json({
         success: true,
@@ -705,7 +690,6 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
       });
     }
 
-    // Create new CM-barber conversation
     const newConv = await pool.query(
       `INSERT INTO conversations (user1_id, user2_id, booking_id, is_active, created_at, updated_at)
        VALUES ($1, $2, NULL, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -730,41 +714,27 @@ router.post('/cm-barber', authenticate, async (req, res, next) => {
 
 /**
  * GET /api/messages/cm-barber/conversations
- * Get all CM-barber conversations (for campus managers viewing all their barbers)
+ * List barber support chats (admin only)
  */
 router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
   try {
     const userId = (req as any).user.userId;
     const queryCampusId = req.query.campusId as string | undefined;
 
-    // Verify user is a campus manager (check both barbers.isCampusManager AND users.role)
-    // Don't require isActive for the CM's own barber record - they need access regardless
-    const cmCheck = await pool.query(
-      `SELECT b.id, b."campusId", u.role, u."campusId" as user_campus_id
-       FROM users u
-       LEFT JOIN barbers b ON b."userId" = u.id
-       WHERE u.id = $1 AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER' OR u.role = 'ADMIN')`,
+    const adminCheck = await pool.query(
+      `SELECT u.role FROM users u WHERE u.id = $1 AND u.role = 'ADMIN'`,
       [userId]
     );
 
-    if (cmCheck.rows.length === 0) {
-      return res.status(403).json({ success: false, error: 'Only campus managers can access this endpoint' });
+    if (adminCheck.rows.length === 0) {
+      return res.status(403).json({ success: false, error: 'Admin access required' });
     }
 
-    const isAdmin = cmCheck.rows[0].role === 'ADMIN';
-    
-    // Admins can specify any campus via query param, others use their own campus
-    let campusId: string;
-    if (isAdmin && queryCampusId) {
-      campusId = queryCampusId;
-    } else {
-      // Use barber's campusId if available, otherwise fall back to user's campusId
-      campusId = cmCheck.rows[0].campusId || cmCheck.rows[0].user_campus_id;
+    if (!queryCampusId) {
+      return res.status(400).json({ success: false, error: 'campusId query parameter is required' });
     }
-    
-    if (!campusId) {
-      return res.status(400).json({ success: false, error: 'You must be associated with a campus to view barber chats' });
-    }
+
+    const campusId = queryCampusId;
 
     const peerBarberHideCm = (await isUgcModerationSchemaReady())
       ? ` AND NOT EXISTS (
@@ -774,8 +744,6 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
       )`
       : '';
 
-    // Get all active barbers in this campus (excluding self and demoted users)
-    // Only show users who are still BARBER role AND have isActive = true
     const barbersResult = await pool.query(
       `SELECT 
          u.id as user_id,
@@ -784,7 +752,6 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          u."avatarUrl",
          u.email,
          b.id as barber_id,
-         b."isCampusManager",
          c.id as conversation_id,
          (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
          (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_at,
@@ -796,7 +763,6 @@ router.get('/cm-barber/conversations', authenticate, async (req, res, next) => {
          AND ((c.user1_id = $1 AND c.user2_id = u.id) OR (c.user1_id = u.id AND c.user2_id = $1))
        WHERE b."campusId" = $2 
          AND b."isActive" = true 
-         AND b."isCampusManager" = false
          AND b."userId" != $1
          AND u.role = 'BARBER'
          AND (u."isBanned" IS NOT TRUE)

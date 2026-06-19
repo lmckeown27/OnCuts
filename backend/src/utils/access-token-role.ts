@@ -11,7 +11,7 @@ export async function resolveAccessTokenRole(
 ): Promise<JwtPayload['role']> {
   const r = (dbRole || '').toUpperCase();
   if (r === 'ADMIN') return 'admin';
-  if (r === 'CAMPUS_MANAGER') return 'campus_manager';
+  if (r === 'CAMPUS_MANAGER') return 'barber';
   if (r === 'BARBER') return 'barber';
 
   const barberCheck = await pool.query(

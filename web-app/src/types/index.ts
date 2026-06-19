@@ -4,7 +4,7 @@ export interface User {
   first_name: string;
   last_name: string;
   username?: string;
-  user_type: 'student' | 'barber' | 'campus_manager' | 'admin';
+  user_type: 'student' | 'barber' | 'admin';
   /** E.164 when provided at signup or saved on profile */
   phone_number?: string | null;
   /** Linked payout / on-chain address when applicable */
@@ -12,7 +12,6 @@ export interface User {
   campus_id?: string;
   is_verified: boolean;
   is_admin?: boolean;
-  is_campus_manager?: boolean;
   has_barber_profile?: boolean;
   profile_picture_url?: string;
   bio?: string;

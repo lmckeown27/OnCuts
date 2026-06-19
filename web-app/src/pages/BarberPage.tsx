@@ -17,8 +17,6 @@ import TimeInput from '../components/TimeInput';
 import BarberProfileEditor from '../components/BarberProfileEditor';
 import BarberServiceSpecialties from '../components/BarberServiceSpecialties';
 import BarberBookingRequestsDropdown from '../components/booking/BarberBookingRequestsDropdown';
-import { CampusManagerBadge } from '../components/CampusManagerBadge';
-import { CampusManagerDashboard } from '../components/CampusManagerDashboard';
 import { AdminDashboard } from '../components/AdminDashboard';
 import BarberChatsModal from '../components/BarberChatsModal';
 import BarberLocationsModal from '../components/BarberLocationsModal';
@@ -95,9 +93,6 @@ export default function BarberPage() {
   const [showServiceSpecialties, setShowServiceSpecialties] = useState(false);
   const [isServiceSpecialtiesVisible, setIsServiceSpecialtiesVisible] = useState(false);
   
-  const [showCampusManagerDashboard, setShowCampusManagerDashboard] = useState(false);
-  const [isCampusManagerVisible, setIsCampusManagerVisible] = useState(false);
-  
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [isAdminDashboardVisible, setIsAdminDashboardVisible] = useState(false);
   
@@ -143,7 +138,6 @@ export default function BarberPage() {
   const isAnyModalOpen =
     showProfileEditor ||
     showServiceSpecialties ||
-    showCampusManagerDashboard ||
     showAdminDashboard ||
     showBarberChats ||
     showBookings ||
@@ -345,9 +339,6 @@ export default function BarberPage() {
   const openServiceSpecialties = () => openModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
   const closeServiceSpecialties = () => closeModal(setShowServiceSpecialties, setIsServiceSpecialtiesVisible);
   
-  const openCampusManager = () => openModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
-  const closeCampusManager = () => closeModal(setShowCampusManagerDashboard, setIsCampusManagerVisible);
-  
   const openAdminDashboard = () => openModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   const closeAdminDashboard = () => closeModal(setShowAdminDashboard, setIsAdminDashboardVisible);
   
@@ -366,13 +357,11 @@ export default function BarberPage() {
   // Get barber data from auth - in production this would come from API
   const { user, isLoading: isAuthLoading } = useAuthStore();
   const barberId = user?.id || '';
-  const isCampusManager = user?.is_campus_manager || user?.user_type === 'campus_manager';
   
   // Role-based access control: Only barbers, campus managers, and admins can access this page
   // Consumers/students should be redirected to the consumer page
   const isAuthorizedForBarberPage = 
     user?.user_type === 'barber' || 
-    user?.user_type === 'campus_manager' || 
     user?.user_type === 'admin' ||
     user?.has_barber_profile;
   
@@ -401,29 +390,16 @@ export default function BarberPage() {
   // Admin campus management - admins can manage any campus
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
   const [allCampuses, setAllCampuses] = useState<Campus[]>([]);
-  const [selectedAdminCampusId, setSelectedAdminCampusId] = useState<string>('');
-  const [showCampusSelector, setShowCampusSelector] = useState(false);
-  const [campusSearchQuery, setCampusSearchQuery] = useState('');
-  const campusSelectorRef = useRef<HTMLDivElement>(null);
-  const [totalPlatformUsers, setTotalPlatformUsers] = useState<number | null>(null);
-  const [isLoadingPlatformStats, setIsLoadingPlatformStats] = useState(false);
   
   // Admin Dashboard specific state
   const [adminDashboardCampusId, setAdminDashboardCampusId] = useState<string | null>(null);
   const [adminCampusSearchQuery, setAdminCampusSearchQuery] = useState('');
   const [showAdminCampusDropdown, setShowAdminCampusDropdown] = useState(false);
   const adminCampusDropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Campus Manager assignment state
-  const [campusBarbersForManager, setCampusBarbersForManager] = useState<Array<{id: string; firstName: string; lastName: string; isCampusManager: boolean}>>([]);
-  const [selectedCampusManagerId, setSelectedCampusManagerId] = useState<string>('');
-  const [isAssigningCampusManager, setIsAssigningCampusManager] = useState(false);
-  
 
-  // Use barber profile campusId (from barbers table) for campus manager, fallback to user's campus_id
   // For admins, use the selected campus (or first available campus)
   const defaultCampusId = barberProfile?.campusId || user?.campus_id || '';
-  const campusId = isAdmin && selectedAdminCampusId ? selectedAdminCampusId : defaultCampusId;
+  const campusId = defaultCampusId;
   
   // Find the current campus name from the list
   const currentCampus = allCampuses.find(c => c.id?.toString() === campusId);
@@ -443,138 +419,12 @@ export default function BarberPage() {
       try {
         const campuses = await campusService.getCampuses();
         setAllCampuses(campuses);
-        // Set initial selected campus if not already set
-        if (!selectedAdminCampusId && campuses.length > 0) {
-          // Default to user's campus if available, otherwise first campus
-          const userCampus = campuses.find(c => c.id?.toString() === (user?.campus_id || ''));
-          setSelectedAdminCampusId(userCampus?.id?.toString() || campuses[0]?.id?.toString() || '');
-        }
       } catch (error) {
         console.error('Failed to fetch campuses for admin:', error);
       }
     };
     fetchCampuses();
   }, [isAdmin, user?.campus_id]);
-  
-  // Fetch barbers for selected admin dashboard campus (for manager assignment)
-  useEffect(() => {
-    const fetchCampusBarbersForManager = async () => {
-      if (!isAdmin || !adminDashboardCampusId || !showAdminDashboard) {
-        setCampusBarbersForManager([]);
-        setSelectedCampusManagerId('');
-        return;
-      }
-      try {
-        const token = localStorage.getItem('accessToken');
-        const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
-        const response = await fetch(`${adminApiUrl}/campuses/${adminDashboardCampusId}/barbers`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await response.json();
-        if (data.success && data.barbers) {
-          setCampusBarbersForManager(data.barbers);
-          // Set current manager if any
-          const currentManager = data.barbers.find((b: any) => b.isCampusManager);
-          setSelectedCampusManagerId(currentManager?.id || '');
-        }
-      } catch (error) {
-        console.error('Failed to fetch campus barbers:', error);
-      }
-    };
-    fetchCampusBarbersForManager();
-  }, [isAdmin, adminDashboardCampusId, showAdminDashboard]);
-
-  // Fetch total platform users for admin view
-  const fetchPlatformStats = useCallback(async () => {
-    if (!isAdmin) return;
-    setIsLoadingPlatformStats(true);
-    const startTime = Date.now();
-    try {
-      // Admin routes are at /api/admin, not /api/v1/admin
-      const token = localStorage.getItem('accessToken');
-      const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
-      const response = await fetch(`${adminApiUrl}/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.success && data.data?.total_users) {
-        setTotalPlatformUsers(data.data.total_users);
-      }
-    } catch (error) {
-      console.error('Failed to fetch platform stats:', error);
-    } finally {
-      // Ensure minimum 500ms animation for visual feedback
-      const elapsed = Date.now() - startTime;
-      const minDuration = 500;
-      if (elapsed < minDuration) {
-        await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
-      }
-      setIsLoadingPlatformStats(false);
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    fetchPlatformStats();
-  }, [fetchPlatformStats]);
-  
-  // Handle campus manager assignment
-  const handleCampusManagerChange = async (barberUserId: string) => {
-    if (!adminDashboardCampusId) return;
-    
-    setIsAssigningCampusManager(true);
-    try {
-      const token = localStorage.getItem('accessToken');
-      const adminApiUrl = API_BASE_URL.replace('/api/v1', '/api/admin');
-      
-      const response = await fetch(`${adminApiUrl}/campuses/${adminDashboardCampusId}/manager`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          barberUserId: barberUserId || null,
-          action: barberUserId ? 'assign' : 'remove',
-        }),
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setSelectedCampusManagerId(barberUserId);
-        // Update the local barbers list to reflect the change
-        setCampusBarbersForManager(prev => prev.map(b => ({
-          ...b,
-          isCampusManager: b.id === barberUserId,
-        })));
-        toast.success(barberUserId ? 'Campus manager assigned' : 'Campus manager removed');
-      } else {
-        toast.error(data.error || 'Failed to update campus manager');
-      }
-    } catch (error) {
-      console.error('Failed to assign campus manager:', error);
-      toast.error('Failed to update campus manager');
-    } finally {
-      setIsAssigningCampusManager(false);
-    }
-  };
-
-  // Close campus selector when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (campusSelectorRef.current && !campusSelectorRef.current.contains(event.target as Node)) {
-        setShowCampusSelector(false);
-        setCampusSearchQuery('');
-      }
-    };
-    
-    if (showCampusSelector) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showCampusSelector]);
 
   // Close admin dashboard campus selector when clicking outside
   useEffect(() => {
@@ -670,12 +520,11 @@ export default function BarberPage() {
                 )}
               </button>
               
-              {/* Role Badge */}
-                {(isAdmin || isCampusManager) && (
+              {isAdmin && (
                 <div className="hidden sm:flex items-center px-3 py-1.5 rounded-full bg-gray-100 border border-gray-200">
-                  <span className="text-xs font-semibold text-gray-600">{isAdmin ? 'Admin' : 'Campus Manager'}</span>
+                  <span className="text-xs font-semibold text-gray-600">Admin</span>
                 </div>
-                )}
+              )}
               </div>
             
             {/* Center section - Logo always centered */}
@@ -805,8 +654,7 @@ export default function BarberPage() {
                     <CreditCard className="w-4 h-4 text-gray-500" />
                     Stripe
                   </button>
-                  {/* Barber Chats (for non-CM barbers) */}
-                  {!isCampusManager && (
+                  {!isAdmin && (
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
@@ -820,7 +668,6 @@ export default function BarberPage() {
                       </button>
                     </>
                   )}
-                  {/* Admin Dashboard (ADMIN only) */}
                   {isAdmin && (
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
@@ -832,21 +679,6 @@ export default function BarberPage() {
                         className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                       >
                         Admin Dashboard
-                      </button>
-                    </>
-                  )}
-                  {/* Campus Manager Options (conditional) */}
-                  {isCampusManager && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={() => {
-                          openCampusManager();
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Campus Manager
                       </button>
                       <button
                         onClick={() => {
@@ -989,143 +821,7 @@ export default function BarberPage() {
         </div>
       )}
 
-      {/* Campus Manager Dashboard Modal (conditional) */}
-      {isCampusManager && showCampusManagerDashboard && (
-        <div 
-          className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isCampusManagerVisible ? 'bg-black/50' : 'bg-black/0'}`}
-          onClick={closeCampusManager}
-        >
-          <div 
-            className={`bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] sm:max-h-[88vh] overflow-y-auto overscroll-contain transition-all duration-150 ease-out
-              ${isCampusManagerVisible ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-xl z-10">
-              <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Campus Manager Dashboard</h2>
-                {/* Campus Selector for Admins */}
-                {isAdmin && allCampuses.length > 0 && (
-                  <div className="mt-2 relative" ref={campusSelectorRef}>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                      <div className="relative max-w-xs">
-                        <input
-                          type="text"
-                          value={showCampusSelector ? campusSearchQuery : (campusName ? formatCampusName(campusName) : '')}
-                          onChange={(e) => {
-                            setCampusSearchQuery(e.target.value);
-                            if (!showCampusSelector) setShowCampusSelector(true);
-                          }}
-                          onFocus={() => {
-                            setShowCampusSelector(true);
-                            setCampusSearchQuery('');
-                          }}
-                          onBlur={(e) => {
-                            // Delay to allow click on dropdown items to register first
-                            setTimeout(() => {
-                              // Only close if focus moved outside the selector container
-                              if (campusSelectorRef.current && !campusSelectorRef.current.contains(document.activeElement)) {
-                                setShowCampusSelector(false);
-                                setCampusSearchQuery('');
-                              }
-                            }, 150);
-                          }}
-                          placeholder="Search campuses..."
-                          className="w-full text-base text-gray-700 bg-gray-100 hover:bg-gray-200 focus:bg-white focus:ring-2 focus:ring-primary-500 px-3 py-1.5 pr-8 rounded-lg transition-colors border border-transparent focus:border-primary-300 outline-none"
-                        />
-                        <ChevronDown 
-                          onClick={() => setShowCampusSelector(!showCampusSelector)}
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showCampusSelector ? 'rotate-180' : ''}`} 
-                        />
-                      </div>
-                      {/* Total Platform Users - Admin Only */}
-                      {totalPlatformUsers !== null && (
-                        <div className="relative flex items-center gap-2 text-sm text-gray-700 bg-gray-100 pl-3 pr-8 py-1.5 rounded-lg">
-                          <span>Total Users:</span>
-                          <span className="font-semibold text-primary-600">{totalPlatformUsers.toLocaleString()}</span>
-                          <button
-                            onClick={fetchPlatformStats}
-                            disabled={isLoadingPlatformStats}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-200 rounded-full transition-colors disabled:opacity-50"
-                            title="Refresh user count"
-                          >
-                            <RefreshCw className={`w-3.5 h-3.5 text-gray-400 hover:text-gray-600 ${isLoadingPlatformStats ? 'animate-spin' : ''}`} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Campus Dropdown */}
-                    {showCampusSelector && (
-                      <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[300px] max-h-[300px] overflow-y-auto overscroll-contain">
-                        <div className="p-2">
-                          {allCampuses
-                            .filter(campus => {
-                              if (!campusSearchQuery) return true;
-                              const query = campusSearchQuery.toLowerCase();
-                              return (
-                                campus.name?.toLowerCase().includes(query) ||
-                                campus.city?.toLowerCase().includes(query) ||
-                                campus.state?.toLowerCase().includes(query)
-                              );
-                            })
-                            .map((campus) => (
-                              <button
-                                key={campus.id}
-                                onClick={() => {
-                                  setSelectedAdminCampusId(campus.id?.toString() || '');
-                                  setShowCampusSelector(false);
-                                  setCampusSearchQuery('');
-                                }}
-                                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                                  campus.id?.toString() === campusId
-                                    ? 'bg-primary-100 text-primary-700 font-medium'
-                                    : 'hover:bg-gray-100 text-gray-700'
-                                }`}
-                              >
-                                <div className="font-medium">{campus.name ? formatCampusName(campus.name) : ''}</div>
-                                {campus.city && campus.state && (
-                                  <div className="text-xs text-gray-500">{campus.city}, {campus.state}</div>
-                                )}
-                              </button>
-                            ))}
-                          {allCampuses.filter(campus => {
-                            if (!campusSearchQuery) return true;
-                            const query = campusSearchQuery.toLowerCase();
-                            return (
-                              campus.name?.toLowerCase().includes(query) ||
-                              campus.city?.toLowerCase().includes(query) ||
-                              campus.state?.toLowerCase().includes(query)
-                            );
-                          }).length === 0 && (
-                            <p className="text-sm text-gray-500 px-3 py-2">No campuses found</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Show campus name for non-admin campus managers */}
-                {!isAdmin && campusName && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatCampusName(campusName)}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={closeCampusManager}
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="p-4 sm:p-6">
-              <CampusManagerDashboard campusId={campusId} campusName={campusName ? formatCampusName(campusName) : ''} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Admin Dashboard Modal (ADMIN only) */}
+      {/* Admin Dashboard Modal */}
       {isAdmin && showAdminDashboard && (
         <div 
           className={`fixed inset-0 min-h-[100dvh] flex items-center justify-center z-50 p-2 sm:p-4 transition-all duration-150 ease-out ${isAdminDashboardVisible ? 'bg-black/50' : 'bg-black/0'}`}
@@ -1138,6 +834,7 @@ export default function BarberPage() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex items-start justify-between rounded-t-xl z-10">
               <div className="flex-1">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Admin Dashboard</h2>
                 {/* Campus Selector Row */}
                 <div className="relative" ref={adminCampusDropdownRef}>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -1162,25 +859,6 @@ export default function BarberPage() {
                         className={`absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600 transition-transform cursor-pointer ${showAdminCampusDropdown ? 'rotate-180' : ''}`}
                       />
                     </div>
-                    {/* Campus Manager Selector (only when campus selected) */}
-                    {adminDashboardCampusId && (
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg w-full sm:w-auto max-w-xs sm:max-w-none">
-                        <p className="text-sm text-gray-700 whitespace-nowrap flex-shrink-0">Campus Manager:</p>
-                        <select
-                          value={selectedCampusManagerId}
-                          onChange={(e) => handleCampusManagerChange(e.target.value)}
-                          disabled={isAssigningCampusManager}
-                          className="text-sm bg-transparent focus:outline-none disabled:opacity-50 cursor-pointer text-primary-600 font-semibold flex-1 min-w-0"
-                        >
-                          <option value="">No campus manager assigned</option>
-                          {campusBarbersForManager.map(barber => (
-                            <option key={barber.id} value={barber.id}>
-                              {barber.firstName} {barber.lastName}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
                   </div>
                   {/* Campus Dropdown */}
                   {showAdminCampusDropdown && (

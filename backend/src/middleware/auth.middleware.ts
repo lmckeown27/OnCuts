@@ -445,36 +445,9 @@ export const requireAdmin = async (
 };
 
 /**
- * Campus Manager Middleware
- * 
- * Convenience middleware to require campus_manager or admin role.
- * Campus managers have all barber + consumer functionality plus management capabilities.
- * 
- * @param req - Express request object
- * @param res - Express response object
- * @param next - Express next function
- * 
- * @example
- * router.post('/barber-applications/:id/review', authenticate, requireCampusManager, reviewApplication);
+ * @deprecated Campus manager role removed — use requireAdmin for management routes.
  */
-export const requireCampusManager = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const authReq = req as AuthRequest;
-
-  if (!authReq.user) {
-    return next(new ApiError(401, 'Not authenticated'));
-  }
-
-  const userRole = authReq.user.role?.toLowerCase();
-  if (userRole !== 'campus_manager' && userRole !== 'admin') {
-    return next(new ApiError(403, 'Campus Manager access required'));
-  }
-
-  next();
-};
+export const requireCampusManager = requireAdmin;
 
 /**
  * Campus Access Middleware

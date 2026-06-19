@@ -46,8 +46,7 @@ router.get('/campus/:campusId', authenticate, async (req: AuthRequest, res: Resp
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    const canSeeAll = isAdmin || isCampusManager;
+    const canSeeAll = isAdmin;
     
     let whereClause = 'sl.campus_id = $1';
     if (status && status !== 'all' && canSeeAll) {
@@ -129,9 +128,7 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can create locations',
@@ -217,9 +214,7 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can update locations',
@@ -292,9 +287,7 @@ router.post('/:locationId/approve', authenticate, async (req: AuthRequest, res: 
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === location.campus_id;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can approve locations',
@@ -398,9 +391,7 @@ router.post('/:locationId/reject', authenticate, async (req: AuthRequest, res: R
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === location.campus_id;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can reject locations',
@@ -468,9 +459,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can delete locations',
@@ -912,9 +901,7 @@ router.post('/admin/assign', authenticate, async (req: AuthRequest, res: Respons
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can assign locations to barbers',
@@ -1005,9 +992,7 @@ router.post('/admin/revoke', authenticate, async (req: AuthRequest, res: Respons
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can revoke locations from barbers',
@@ -1079,9 +1064,7 @@ router.post('/admin/assign-all', authenticate, async (req: AuthRequest, res: Res
     
     const user = authCheck.rows[0];
     const isAdmin = user?.role === 'ADMIN';
-    const isCampusManager = user?.isCampusManager && user?.campusId === campusId;
-    
-    if (!isAdmin && !isCampusManager) {
+    if (!isAdmin) {
       return res.status(403).json({
         success: false,
         error: 'Only campus managers and admins can assign locations to all barbers',

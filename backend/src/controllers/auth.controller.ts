@@ -1609,16 +1609,14 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
     const hasBarberProfile = barberCheck.rows.length > 0;
 
     // Map database role to frontend role
-    let frontendRole: 'student' | 'barber' | 'campus_manager' | 'admin';
+    let frontendRole: 'student' | 'barber' | 'admin';
     switch (user.role) {
       case 'CONSUMER':
         frontendRole = 'student';
         break;
       case 'BARBER':
-        frontendRole = 'barber';
-        break;
       case 'CAMPUS_MANAGER':
-        frontendRole = 'campus_manager';
+        frontendRole = 'barber';
         break;
       case 'ADMIN':
         frontendRole = 'admin';
@@ -1631,9 +1629,7 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
       frontendRole = 'barber';
     }
 
-    // Admins have all privileges including campus manager at all campuses
     const isAdmin = frontendRole === 'admin';
-    const isCampusManager = frontendRole === 'campus_manager' || isAdmin;
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
@@ -1648,7 +1644,6 @@ export const getCurrentUser = async (req: AuthRequest, res: Response, next: Next
         last_name: user.last_name,
         user_type: frontendRole,
         is_admin: isAdmin,
-        is_campus_manager: isCampusManager,
         has_barber_profile: hasBarberProfile,
         is_verified: user.email_verified,
         profile_picture_url: user.avatarUrl,

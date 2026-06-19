@@ -45,9 +45,11 @@ function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || ''}` };
 }
 
+const adminApiBase = API_BASE_URL.replace('/api/v1', '/api/admin');
+
 export async function fetchCampusManagerPerformance(campusId: string): Promise<CampusManagerPerformance> {
   const res = await axios.get<{ success: boolean; data: CampusManagerPerformance }>(
-    `${API_BASE_URL}/campus-manager/campus/${campusId}/performance`,
+    `${adminApiBase}/campuses/${campusId}/performance`,
     { headers: authHeader() }
   );
   return res.data.data;
@@ -62,7 +64,7 @@ export async function fetchCampusManagerMetrics(
     period: string;
     data: CampusMetricsDataPoint[];
     totalUsers: number;
-  }>(`${API_BASE_URL}/campus-manager/campus/${campusId}/metrics`, {
+  }>(`${adminApiBase}/campuses/${campusId}/metrics`, {
     headers: authHeader(),
     params: { period },
   });

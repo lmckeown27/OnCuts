@@ -3,7 +3,7 @@ import {
   Users, Search, ChevronDown, Loader2, AlertCircle,
   Calendar, DollarSign, TrendingUp, Scissors, ChevronLeft, ChevronRight,
   MessageSquare, Star, Clock, UserPlus, Mail, X, CheckCircle, XCircle,
-  Copy, Check
+  Copy, Check, MapPin
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -22,6 +22,12 @@ import api from '../services/api.service';
 import barberApplicationService, { BarberApplication } from '../services/barber-application.service';
 import toast from 'react-hot-toast';
 import Button from './Button';
+import {
+  BarberAvailabilityPanel,
+  CampusLocationsPanel,
+  CompletedBookingsPanel,
+  ServicesManagementPanel,
+} from './CampusManagerDashboard';
 
 // Register Chart.js components
 ChartJS.register(
@@ -109,7 +115,7 @@ interface MetricsResponse {
 
 type MetricsPeriod = '1w' | '4w' | '1y' | 'mtd' | 'qtd' | 'ytd' | 'all';
 type MetricsView = 'revenue' | 'bookings';
-type AdminView = 'performance' | 'barbers' | 'users' | 'moderation';
+type AdminView = 'performance' | 'barbers' | 'locations' | 'bookings' | 'services' | 'users' | 'moderation';
 
 type UgcReportStatusFilter = 'open' | 'all' | 'dismissed' | 'resolved';
 
@@ -340,7 +346,7 @@ export function AdminDashboard({
   const [isLoadingConsumerBookings, setIsLoadingConsumerBookings] = useState(false);
   
   // Barber view state (shared between all-barbers and campus-specific views)
-  const [barberViewTab, setBarberViewTab] = useState<'managers' | 'barbers' | 'applications'>('barbers');
+  const [barberViewTab, setBarberViewTab] = useState<'barbers' | 'applications' | 'availability'>('barbers');
   const [barberVisibilityFilter, setBarberVisibilityFilter] = useState<'visible' | 'hidden'>('visible');
   const [activeBarberStripeFilter, setActiveBarberStripeFilter] = useState<'all' | 'setup' | 'not-setup'>('all');
   const [allBarberSearchQuery, setAllBarberSearchQuery] = useState('');
@@ -866,6 +872,14 @@ export function AdminDashboard({
     if (!service) return 'Service';
     return service.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
   };
+
+  const campusScopePrompt = (
+    <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+      <MapPin className="w-8 h-8 mb-2 text-gray-300" />
+      <p className="text-sm font-medium text-gray-700">Select a campus</p>
+      <p className="text-xs text-gray-500 mt-1">Choose a university above to manage this section.</p>
+    </div>
+  );
   
   // Handle barber card click - fetch their bookings
   const handleBarberClick = async (barber: Barber) => {
@@ -1097,48 +1111,31 @@ export function AdminDashboard({
         </button>
       )}
       
-      {/* View Tabs - Performance / Barbers / Consumers / Trust & Safety */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-lg bg-gray-100 p-1">
-        <button
-          onClick={() => setAdminView('performance')}
-          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-            adminView === 'performance'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Performance
-        </button>
-        <button
-          onClick={() => setAdminView('barbers')}
-          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-            adminView === 'barbers'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Barbers
-        </button>
-        <button
-          onClick={() => setAdminView('users')}
-          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-            adminView === 'users'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Consumers
-        </button>
-        <button
-          onClick={() => setAdminView('moderation')}
-          className={`px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
-            adminView === 'moderation'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Safety
-        </button>
+      {/* View Tabs */}
+      <div className="border-b border-gray-200 -mx-1 sm:mx-0">
+        <nav className="flex gap-1 overflow-x-auto pb-px scrollbar-hide">
+          {([
+            ['performance', 'Performance'],
+            ['barbers', 'Barbers'],
+            ['locations', 'Locations'],
+            ['bookings', 'Bookings'],
+            ['services', 'Services'],
+            ['users', 'Consumers'],
+            ['moderation', 'Safety'],
+          ] as const).map(([view, label]) => (
+            <button
+              key={view}
+              onClick={() => setAdminView(view)}
+              className={`py-2.5 px-3 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
+                adminView === view
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </div>
       
       {/* Campus Selector - hidden when rendered in header */}
@@ -1845,16 +1842,6 @@ export function AdminDashboard({
             {/* Main category tabs */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => { setBarberViewTab('managers'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'managers'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Managers ({filteredAllBarbers.filter(b => b.isCampusManager).length})
-              </button>
-              <button
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
@@ -1862,7 +1849,7 @@ export function AdminDashboard({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Barbers ({filteredAllBarbers.filter(b => !b.isCampusManager).length})
+                Barbers ({filteredAllBarbers.length})
               </button>
               <button
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
@@ -1889,7 +1876,7 @@ export function AdminDashboard({
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Visible ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                    Visible ({filteredAllBarbers.filter(b => b.isActive).length})
                   </button>
                   <button
                     onClick={() => setBarberVisibilityFilter('hidden')}
@@ -1899,7 +1886,7 @@ export function AdminDashboard({
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Hidden ({filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                    Hidden ({filteredAllBarbers.filter(b => !b.isActive).length})
                   </button>
                 </div>
                 
@@ -1914,7 +1901,7 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      All ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                      All ({filteredAllBarbers.filter(b => b.isActive).length})
                     </button>
                     <button
                       onClick={() => setActiveBarberStripeFilter('setup')}
@@ -1924,7 +1911,7 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                      Stripe ({filteredAllBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
                     </button>
                     <button
                       onClick={() => setActiveBarberStripeFilter('not-setup')}
@@ -1934,7 +1921,7 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                      No Stripe ({filteredAllBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
                     </button>
                   </div>
                 )}
@@ -1943,7 +1930,7 @@ export function AdminDashboard({
             
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-base font-semibold text-gray-900">
-                {barberViewTab === 'managers' ? 'Campus Managers' : barberViewTab === 'barbers' ? (barberVisibilityFilter === 'visible' ? 'Visible Barbers' : 'Hidden Barbers') : 'Barber Applications'}
+                {barberViewTab === 'barbers' ? (barberVisibilityFilter === 'visible' ? 'Visible Barbers' : 'Hidden Barbers') : 'Barber Applications'}
               </h3>
               <span className="text-xs text-gray-500">
                 {barberViewTab === 'applications' ? `${applications.length} applications` : `${filteredAllBarbers.length} total barbers`}
@@ -1956,56 +1943,9 @@ export function AdminDashboard({
               </div>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {/* Campus Managers Tab */}
-                {barberViewTab === 'managers' && (
-                  filteredAllBarbers.filter(b => b.isCampusManager).length > 0 ? (
-                    filteredAllBarbers.filter(b => b.isCampusManager).map(barber => (
-                      <button
-                        key={barber.id}
-                        onClick={() => handleBarberClick(barber)}
-                        className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-primary-200 bg-primary-50 hover:bg-primary-100"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                            {barber.profileImageUrl ? (
-                              <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-xs font-bold text-gray-500">{barber.firstName.charAt(0)}{barber.lastName.charAt(0)}</span>
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
-                              {barber.firstName} {barber.lastName}
-                              {barber.isBanned ? (
-                                <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
-                              ) : null}
-                              <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
-                              {barber.hasStripeSetup && (
-                                <span className="text-[10px] text-white bg-primary-500 px-1.5 py-0.5 rounded">Stripe</span>
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">{barber.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right mr-1">
-                            <p className="text-[10px] text-gray-500">{barber.completedBookings ?? 0} {(barber.completedBookings ?? 0) === 1 ? 'cut' : 'cuts'} · {formatCurrency(barber.totalVolumeCents ?? 0)}</p>
-                            <p className="text-[10px] text-gray-400">{barber.campusName ? formatCampusName(barber.campusName) : ''}</p>
-                          </div>
-                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-                      <p className="text-sm">No campus managers</p>
-                    </div>
-                  )
-                )}
-                
                 {/* Visible Barbers (within Barbers tab) */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'visible' && (() => {
-                  const activeBarbers = filteredAllBarbers.filter(b => b.isActive && !b.isCampusManager);
+                  const activeBarbers = filteredAllBarbers.filter(b => b.isActive);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? activeBarbers
                     : activeBarberStripeFilter === 'setup'
@@ -2059,8 +1999,8 @@ export function AdminDashboard({
                 
                 {/* Hidden Barbers (within Barbers tab) */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'hidden' && (
-                  filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).length > 0 ? (
-                    filteredAllBarbers.filter(b => !b.isActive && !b.isCampusManager).map(barber => (
+                  filteredAllBarbers.filter(b => !b.isActive).length > 0 ? (
+                    filteredAllBarbers.filter(b => !b.isActive).map(barber => (
                       <button
                         key={barber.id}
                         onClick={() => handleBarberClick(barber)}
@@ -2330,16 +2270,6 @@ export function AdminDashboard({
             {/* Main category tabs - same as all-barbers view */}
             <nav className="flex justify-center gap-1 border-b border-gray-200 mb-4">
               <button
-                onClick={() => { setBarberViewTab('managers'); setSelectedApplication(null); }}
-                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
-                  barberViewTab === 'managers'
-                    ? 'border-primary-500 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Managers ({filteredBarbers.filter(b => b.isCampusManager).length})
-              </button>
-              <button
                 onClick={() => { setBarberViewTab('barbers'); setSelectedApplication(null); }}
                 className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
                   barberViewTab === 'barbers'
@@ -2347,7 +2277,7 @@ export function AdminDashboard({
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Barbers ({filteredBarbers.filter(b => !b.isCampusManager).length})
+                Barbers ({filteredBarbers.length})
               </button>
               <button
                 onClick={() => { setBarberViewTab('applications'); setSelectedApplication(null); }}
@@ -2358,6 +2288,16 @@ export function AdminDashboard({
                 }`}
               >
                 Applications ({applications.length})
+              </button>
+              <button
+                onClick={() => { setBarberViewTab('availability'); setSelectedApplication(null); }}
+                className={`py-2 px-3 border-b-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+                  barberViewTab === 'availability'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Availability
               </button>
             </nav>
             
@@ -2373,7 +2313,7 @@ export function AdminDashboard({
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Visible ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                    Visible ({filteredBarbers.filter(b => b.isActive).length})
                   </button>
                   <button
                     onClick={() => setBarberVisibilityFilter('hidden')}
@@ -2383,7 +2323,7 @@ export function AdminDashboard({
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Hidden ({filteredBarbers.filter(b => !b.isActive && !b.isCampusManager).length})
+                    Hidden ({filteredBarbers.filter(b => !b.isActive).length})
                   </button>
                 </div>
                 
@@ -2398,7 +2338,7 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      All ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager).length})
+                      All ({filteredBarbers.filter(b => b.isActive).length})
                     </button>
                     <button
                       onClick={() => setActiveBarberStripeFilter('setup')}
@@ -2408,7 +2348,7 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Stripe ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager && b.hasStripeSetup).length})
+                      Stripe ({filteredBarbers.filter(b => b.isActive && b.hasStripeSetup).length})
                     </button>
                     <button
                       onClick={() => setActiveBarberStripeFilter('not-setup')}
@@ -2418,14 +2358,14 @@ export function AdminDashboard({
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      No Stripe ({filteredBarbers.filter(b => b.isActive && !b.isCampusManager && !b.hasStripeSetup).length})
+                      No Stripe ({filteredBarbers.filter(b => b.isActive && !b.hasStripeSetup).length})
                     </button>
                   </div>
                 )}
               </div>
             )}
             
-            {(barberViewTab === 'managers' || barberViewTab === 'barbers') && (
+            {barberViewTab === 'barbers' && (
               <>
                 {/* Search */}
                 <div className="relative mb-3">
@@ -2449,7 +2389,7 @@ export function AdminDashboard({
               <div className="space-y-4 max-h-80 overflow-y-auto">
                 {/* Barbers Tab - Visible */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'visible' && (() => {
-                  const visibleBarbers = filteredBarbers.filter(b => b.isActive && !b.isCampusManager);
+                  const visibleBarbers = filteredBarbers.filter(b => b.isActive);
                   const stripeFilteredBarbers = activeBarberStripeFilter === 'all' 
                     ? visibleBarbers
                     : activeBarberStripeFilter === 'setup'
@@ -2501,7 +2441,7 @@ export function AdminDashboard({
                 
                 {/* Barbers Tab - Hidden */}
                 {barberViewTab === 'barbers' && barberVisibilityFilter === 'hidden' && (() => {
-                  const hiddenBarbers = filteredBarbers.filter(b => !b.isActive && !b.isCampusManager);
+                  const hiddenBarbers = filteredBarbers.filter(b => !b.isActive);
                   
                   return hiddenBarbers.length > 0 ? (
                     <div className="space-y-2">
@@ -2539,51 +2479,6 @@ export function AdminDashboard({
                     <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                       <Users className="w-10 h-10 text-gray-300 mb-2" />
                       <p className="text-sm">No hidden barbers</p>
-                    </div>
-                  );
-                })()}
-                
-                {/* Managers Tab */}
-                {barberViewTab === 'managers' && (() => {
-                  const managers = filteredBarbers.filter(b => b.isCampusManager);
-                  
-                  return managers.length > 0 ? (
-                    <div className="space-y-2">
-                      {managers.map(barber => (
-                        <button 
-                          key={barber.id}
-                          onClick={() => handleBarberClick(barber)}
-                          className="w-full flex items-center justify-between p-2.5 rounded-lg border transition-colors text-left border-primary-200 bg-primary-50 hover:bg-primary-100"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {barber.profileImageUrl ? (
-                                <img src={barber.profileImageUrl} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">
-                                  {barber.firstName.charAt(0)}{barber.lastName.charAt(0)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-medium text-gray-900 text-sm flex items-center gap-1.5 truncate">
-                                {barber.firstName} {barber.lastName}
-                                {barber.isBanned ? (
-                                  <span className="text-[10px] font-medium text-red-800 bg-red-100 px-1.5 py-0.5 rounded shrink-0">Banned</span>
-                                ) : null}
-                                <span className="text-[10px] text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded">Manager</span>
-                              </p>
-                              <p className="text-xs text-gray-500 truncate">{barber.email}</p>
-                            </div>
-                          </div>
-                          <ChevronDown className="w-4 h-4 text-gray-400 -rotate-90" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                      <Users className="w-10 h-10 text-gray-300 mb-2" />
-                      <p className="text-sm">No campus manager assigned</p>
                     </div>
                   );
                 })()}
@@ -2809,9 +2704,39 @@ export function AdminDashboard({
                 </div>
               )
             )}
+
+            {barberViewTab === 'availability' && selectedCampusId && (
+              <BarberAvailabilityPanel campusId={selectedCampusId} />
+            )}
           </>
         )}
       </div>
+      )}
+      
+      {adminView === 'locations' && (
+        <div key={selectedCampusId || 'locations-none'}>
+          {selectedCampusId ? (
+            <CampusLocationsPanel campusId={selectedCampusId} />
+          ) : (
+            campusScopePrompt
+          )}
+        </div>
+      )}
+
+      {adminView === 'bookings' && (
+        <div key={selectedCampusId || 'bookings-none'}>
+          {selectedCampusId ? (
+            <CompletedBookingsPanel campusId={selectedCampusId} />
+          ) : (
+            campusScopePrompt
+          )}
+        </div>
+      )}
+
+      {adminView === 'services' && (
+        <div>
+          <ServicesManagementPanel />
+        </div>
       )}
       
       {/* Consumers View */}

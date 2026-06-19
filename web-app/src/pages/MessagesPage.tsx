@@ -1629,7 +1629,7 @@ export default function MessagesPage() {
                         Switch to Consumer
                       </button>
                     ) : (
-                      (user?.user_type === 'barber' || user?.user_type === 'campus_manager' || user?.has_barber_profile) && (
+                      (user?.user_type === 'barber' || user?.has_barber_profile) && (
                         <button
                           onClick={() => {
                             navigate(`${platformPrefix}/barber`);

@@ -89,7 +89,7 @@ export default function LoginPage() {
       const currentUser = useAuthStore.getState().user;
       
       // Redirect based on user role
-      if (result.isAdmin || result.isCampusManager || currentUser?.user_type === 'barber') {
+      if (result.isAdmin || currentUser?.user_type === 'barber') {
         navigate('/web/barber');
       } else {
         navigate('/web/consumer');

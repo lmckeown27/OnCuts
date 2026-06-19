@@ -658,23 +658,11 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     );
     const isAdmin = adminCheck.rows[0]?.role === 'ADMIN';
 
-    // If not admin, verify user is a campus manager for this specific campus
     if (!isAdmin) {
-      const managerCheck = await pool.query(
-        `SELECT b.id FROM barbers b
-         JOIN users u ON b."userId" = u.id
-         WHERE b."userId" = $1 
-           AND b."isCampusManager" = true 
-           AND b."campusId" = $2`,
-        [userId, campusId]
-      );
-
-      if (managerCheck.rows.length === 0) {
-        return res.status(403).json({
-          success: false,
-          error: 'You are not a campus manager for this campus'
-        });
-      }
+      return res.status(403).json({
+        success: false,
+        error: 'Admin access required',
+      });
     }
 
     // Build query to get bookings for all barbers on this campus

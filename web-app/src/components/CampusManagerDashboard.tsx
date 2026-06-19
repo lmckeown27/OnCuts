@@ -452,7 +452,7 @@ const CampusPerformancePanel: React.FC<{ campusId: string; campusName: string }>
 // BARBER APPLICATIONS PANEL
 // ═══════════════════════════════════════════════════════════════
 
-const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+export const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [applications, setApplications] = useState<BarberApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -928,7 +928,7 @@ interface CampusBarber {
   profileImageUrl?: string | null;
 }
 
-const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
+export const BarberManagementPanel: React.FC<{ campusId: string; campusName: string }> = ({ campusId, campusName }) => {
   const [barbers, setBarbers] = useState<CampusBarber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1319,7 +1319,7 @@ interface BarberForAvailability {
   isActive: boolean;
 }
 
-const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+export const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [barbers, setBarbers] = useState<BarberForAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -1653,7 +1653,7 @@ const BarberAvailabilityPanel: React.FC<{ campusId: string }> = ({ campusId }) =
 // CAMPUS LOCATIONS PANEL
 // ═══════════════════════════════════════════════════════════════
 
-const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+export const CampusLocationsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [locations, setLocations] = useState<CampusLocation[]>([]);
   const [campusBarbers, setCampusBarbers] = useState<CampusBarberOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2859,7 +2859,7 @@ interface BarberOption {
   name: string;
 }
 
-const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
+export const CompletedBookingsPanel: React.FC<{ campusId: string }> = ({ campusId }) => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming');
   const [bookings, setBookings] = useState<CompletedBooking[]>([]);
   const [barbers, setBarbers] = useState<BarberOption[]>([]);
@@ -3573,7 +3573,7 @@ const boundsFormFromService = (service: Service): ServiceBoundsForm => ({
   maxDuration: String(service.maxDurationMinutes),
 });
 
-const ServicesManagementPanel: React.FC = () => {
+export const ServicesManagementPanel: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);

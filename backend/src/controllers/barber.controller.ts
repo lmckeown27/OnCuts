@@ -1554,7 +1554,7 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
     const barberCampusId = barber.campusId;
     const barberUserId = barber.userId;
 
-    // Check if requester is admin (from database) or campus manager for this barber's campus
+    // Check if requester is admin (from database)
     const adminCheck = await pool.query(
       `SELECT role FROM users WHERE id = $1`,
       [userId]
@@ -1562,18 +1562,7 @@ export const removeBarber = async (req: AuthRequest, res: Response, next: NextFu
     const isAdmin = adminCheck.rows[0]?.role === 'ADMIN';
 
     if (!isAdmin) {
-      // Check if user is a campus manager for this barber's campus
-      const campusManagerCheck = await pool.query(
-        `SELECT b.id FROM barbers b
-         WHERE b."userId" = $1 
-           AND b."campusId" = $2 
-           AND b."isCampusManager" = true`,
-        [userId, barberCampusId]
-      );
-
-      if (campusManagerCheck.rows.length === 0) {
-        throw new ApiError(403, 'Not authorized to remove barbers from this campus');
-      }
+      throw new ApiError(403, 'Not authorized to remove barbers from this campus');
     }
 
     // Begin transaction

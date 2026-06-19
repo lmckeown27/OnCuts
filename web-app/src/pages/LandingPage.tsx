@@ -5,9 +5,9 @@
  * Inspired by modern SaaS landing pages
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Search, Scissors, ArrowRight, Copy, Check } from 'lucide-react';
+import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Scissors, ArrowRight } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
@@ -20,27 +20,8 @@ import MainChairLogo from '../assets/logos/Main_Chair.webp';
 import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.webp';
 import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
 import { useViewport } from '../hooks/useViewport';
-import { API_BASE_URL } from '../config/constants';
 
-// Storage key for selected university
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
-
-// Type for campus with optional manager data
-interface CampusWithManager {
-  campusId: string;
-  campusName: string;
-  city: string;
-  state: string;
-  manager: {
-    barberId: string;
-    userId: string;
-    firstName: string;
-    lastName: string;
-    bio: string | null;
-    profileImageUrl: string | null;
-    instagramHandle: string | null;
-  } | null;
-}
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -55,16 +36,6 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
   const [pricingCategory, setPricingCategory] = useState<'traditional' | 'campuscut'>('traditional');
-  
-  // Campus Manager section state
-  const [campusesWithManagers, setCampusesWithManagers] = useState<CampusWithManager[]>([]);
-  const [showCampusManagerInfo, setShowCampusManagerInfo] = useState(false);
-  const [campusManagerInfoVisible, setCampusManagerInfoVisible] = useState(false);
-  const [emailCopied, setEmailCopied] = useState(false);
-  const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
-  const [campusSearchQuery, setCampusSearchQuery] = useState('');
-  const [campusDropdownOpen, setCampusDropdownOpen] = useState(false);
-  const campusDropdownRef = useRef<HTMLDivElement>(null);
   
   // University selector state for hero section
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
@@ -139,30 +110,6 @@ export default function LandingPage() {
     }, 200);
   };
 
-  // Campus Manager info popup handlers
-  const openCampusManagerInfo = () => {
-    setShowCampusManagerInfo(true);
-    setTimeout(() => setCampusManagerInfoVisible(true), 10);
-  };
-
-  const closeCampusManagerInfo = () => {
-    setCampusManagerInfoVisible(false);
-    setTimeout(() => {
-      setShowCampusManagerInfo(false);
-      setEmailCopied(false);
-    }, 200);
-  };
-
-  const copyEmailToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText('campuscuthelp@gmail.com');
-      setEmailCopied(true);
-      setTimeout(() => setEmailCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy email:', err);
-    }
-  };
-
   // Handle scroll for sticky navigation
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -175,42 +122,6 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Fetch campuses with campus managers for the Campus Manager section
-  useEffect(() => {
-    const fetchCampusesWithManagers = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/campus-manager/with-managers`);
-        const data = await response.json();
-        if (data.success && data.data.length > 0) {
-          setCampusesWithManagers(data.data);
-          // Don't auto-select - let user choose their campus
-        }
-      } catch (error) {
-        console.error('Failed to fetch campuses with managers:', error);
-      }
-    };
-    fetchCampusesWithManagers();
-  }, []);
-
-  // Close campus dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (campusDropdownRef.current && !campusDropdownRef.current.contains(event.target as Node)) {
-        setCampusDropdownOpen(false);
-      }
-    };
-
-    if (campusDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [campusDropdownOpen]);
-
-  const selectedCampus = campusesWithManagers.find(c => c.campusId === selectedCampusId);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -295,8 +206,8 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 See Our Work
               </button>
-              <button onClick={() => scrollToSection('campus-manager')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                Campus Manager
+              <button onClick={() => scrollToSection('support')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+                Support
               </button>
               <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
                 Pricing Explained
@@ -336,8 +247,8 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 See Our Work
               </button>
-              <button onClick={() => scrollToSection('campus-manager')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Campus Manager
+              <button onClick={() => scrollToSection('support')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                Support
               </button>
               <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
                 Pricing Explained
@@ -494,315 +405,28 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Campus Manager Section */}
-      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="campus-manager">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Meet Your Campus Manager
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Not a bot, not A.I., but a real human being trusted to manage barbers at your campus.
-            </p>
-          </div>
-
-          {campusesWithManagers.length > 0 ? (
-            <div className="grid md:grid-cols-5 gap-8 items-stretch">
-              {/* Left side - Campus selector and profile picture (3/5 width) */}
-              <div className="md:col-span-3 flex flex-col gap-6">
-                {/* Campus Selector */}
-                <div className="max-w-md mx-auto w-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Campus</label>
-                  <div className="relative" ref={campusDropdownRef}>
-                    <div 
-                      className={`relative flex items-center bg-white border-2 rounded-xl transition-all ${
-                        campusDropdownOpen ? 'border-primary-500 shadow-lg' : 'border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type="text"
-                        placeholder="Search for your university..."
-                        value={campusSearchQuery}
-                        onChange={(e) => {
-                          setCampusSearchQuery(e.target.value);
-                          setCampusDropdownOpen(true);
-                        }}
-                        onFocus={(e) => {
-                          setCampusDropdownOpen(true);
-                          // Auto-select text when focused so user can easily retype
-                          e.target.select();
-                        }}
-                        className="flex-1 pl-4 pr-3 py-4 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setCampusDropdownOpen(!campusDropdownOpen)}
-                        className="pr-4 text-gray-400"
-                      >
-                        <ChevronDown className={`w-5 h-5 transition-transform ${campusDropdownOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                    </div>
-                    
-                    {campusDropdownOpen && (
-                      <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-80 overflow-y-auto">
-                        {campusesWithManagers
-                          .filter(campus => 
-                            campus.campusName.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
-                            campus.city.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
-                            campus.state.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                          )
-                          .map((campus) => (
-                            <button
-                              key={campus.campusId}
-                              type="button"
-                              onClick={() => {
-                                setSelectedCampusId(campus.campusId);
-                                setCampusSearchQuery(`${campus.campusName} — ${campus.city}, ${campus.state}`);
-                                setCampusDropdownOpen(false);
-                              }}
-                              className={`w-full px-4 py-3 text-left hover:bg-primary-50 transition-colors flex items-center justify-between ${
-                                selectedCampusId === campus.campusId ? 'bg-primary-50 text-primary-700' : 'text-gray-700'
-                              }`}
-                            >
-                              <span>{campus.campusName} — {campus.city}, {campus.state}</span>
-                            </button>
-                          ))}
-                        {campusesWithManagers.filter(campus => 
-                          campus.campusName.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
-                          campus.city.toLowerCase().includes(campusSearchQuery.toLowerCase()) ||
-                          campus.state.toLowerCase().includes(campusSearchQuery.toLowerCase())
-                        ).length === 0 && (
-                          <div className="p-4 text-center text-gray-500">
-                            <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                            <p>No campuses found</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Desktop: Show campus manager profile picture below dropdown when selected */}
-                {selectedCampus?.manager && (
-                  <div className="hidden md:flex flex-1 justify-center items-center">
-                    <div className="w-full max-w-xs aspect-square rounded-2xl overflow-hidden bg-gray-200 ring-4 ring-primary-500/30 shadow-xl">
-                      {selectedCampus.manager.profileImageUrl ? (
-                        <img
-                          src={selectedCampus.manager.profileImageUrl}
-                          alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400 bg-gray-100">
-                          {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Desktop: Show "Become a Campus Manager" button below dropdown when no campus selected */}
-                {!selectedCampus && (
-                  <div className="hidden md:flex justify-center">
-                    <button
-                      onClick={openCampusManagerInfo}
-                      className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
-                    >
-                      <Mail className="w-6 h-6" />
-                      <span>Become a Campus Manager</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Desktop: Show apply button below dropdown when campus has no manager */}
-                {selectedCampus && !selectedCampus.manager && (
-                  <div className="hidden md:flex justify-center">
-                    <button
-                      onClick={openCampusManagerInfo}
-                      className="inline-flex items-center gap-4 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
-                    >
-                      <Mail className="w-6 h-6" />
-                      <span>Apply for This Position</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Mobile: Show placeholder card when no campus selected */}
-                {!selectedCampus && (
-                  <div className="md:hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
-                    <div className="text-center">
-                      <div className="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700/50 ring-4 ring-gray-600/30 flex items-center justify-center">
-                        <span className="text-4xl text-gray-500">?</span>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
-                      <p className="text-gray-400 text-sm max-w-xs mx-auto mb-4">
-                        Choose your campus from the dropdown to meet your dedicated human Campus Manager.
-                      </p>
-                      <button
-                        onClick={openCampusManagerInfo}
-                        className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        <Mail className="w-4 h-4" />
-                        <span>Become a Campus Manager</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Mobile: Show profile card when campus is selected */}
-                {selectedCampus && (
-                  <div className="md:hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 text-white flex flex-col justify-center">
-                    <div className="text-center">
-                      {selectedCampus.manager ? (
-                        <>
-                          {/* Profile Image - Square */}
-                          <div className="w-48 h-48 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700 ring-4 ring-primary-500/30">
-                            {selectedCampus.manager.profileImageUrl ? (
-                              <img
-                                src={selectedCampus.manager.profileImageUrl}
-                                alt={`${selectedCampus.manager.firstName} ${selectedCampus.manager.lastName}`}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-5xl font-bold text-gray-400">
-                                {selectedCampus.manager.firstName.charAt(0)}{selectedCampus.manager.lastName.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Name and Role */}
-                          <h3 className="text-2xl font-bold mb-1">
-                            {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
-                          </h3>
-                          <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
-                          <p className="text-gray-400 text-sm mb-4">{selectedCampus.campusName}</p>
-
-                          {/* Instagram Handle */}
-                          {selectedCampus.manager.instagramHandle && (
-                            <a
-                              href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-gray-300 hover:text-primary-400 transition-colors mb-6"
-                            >
-                              <Instagram className="w-5 h-5" />
-                              <span>@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
-                            </a>
-                          )}
-
-                          {/* Bio */}
-                          {selectedCampus.manager.bio && (
-                            <div className="bg-white/10 rounded-xl p-4 text-left mt-4">
-                              <p className="text-gray-300 text-sm leading-relaxed">
-                                {selectedCampus.manager.bio}
-                              </p>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        /* No manager for this campus yet */
-                        <>
-                          <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
-                            <span className="text-4xl text-gray-500">?</span>
-                          </div>
-                          <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
-                          <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
-                          <p className="text-gray-500 text-sm mb-4">{selectedCampus.campusName}</p>
-                          <div className="bg-white/10 rounded-xl p-4 mb-4">
-                            <p className="text-gray-400 text-sm">
-                              We're currently searching for a Campus Manager for this location.
-                            </p>
-                          </div>
-                          <button
-                            onClick={openCampusManagerInfo}
-                            className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                          >
-                            <Mail className="w-4 h-4" />
-                            <span>Apply for This Position</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Right side - Campus Manager Profile (Desktop only, 2/5 width) */}
-              <div className="hidden md:col-span-2 md:flex bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 text-white flex-col justify-center">
-                <div className="text-center">
-                  {!selectedCampus ? (
-                    /* No campus selected yet - prompt user */
-                    <>
-                      <div className="w-32 h-32 mx-auto mb-6 rounded-2xl overflow-hidden bg-gray-700/50 ring-4 ring-gray-600/30 flex items-center justify-center">
-                        <span className="text-4xl text-gray-500">?</span>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-3">Select Your Campus</h3>
-                      <p className="text-gray-400 text-sm max-w-xs mx-auto">
-                        Choose your campus from the dropdown to meet your dedicated human Campus Manager.
-                      </p>
-                    </>
-                  ) : selectedCampus.manager ? (
-                      <>
-                        {/* Name and Role */}
-                        <h3 className="text-2xl font-bold mb-1">
-                          {selectedCampus.manager.firstName} {selectedCampus.manager.lastName}
-                        </h3>
-                        <p className="text-primary-400 font-medium mb-2">Campus Manager</p>
-                        <p className="text-gray-400 text-sm mb-4">{selectedCampus.campusName}</p>
-
-                        {/* Instagram Handle */}
-                        {selectedCampus.manager.instagramHandle && (
-                          <a
-                            href={`https://instagram.com/${selectedCampus.manager.instagramHandle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 text-gray-300 hover:text-primary-400 transition-colors mb-6"
-                          >
-                            <Instagram className="w-5 h-5" />
-                            <span>@{selectedCampus.manager.instagramHandle.replace('@', '')}</span>
-                          </a>
-                        )}
-
-                        {/* Bio */}
-                        {selectedCampus.manager.bio && (
-                          <div className="bg-white/10 rounded-xl p-4 text-left mt-4">
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                              {selectedCampus.manager.bio}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      /* No manager for this campus yet */
-                    <>
-                      <div className="w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden bg-gray-700 ring-4 ring-gray-600/30 flex items-center justify-center">
-                        <span className="text-4xl text-gray-500">?</span>
-                      </div>
-                      <h3 className="text-2xl font-bold mb-1">Coming Soon</h3>
-                      <p className="text-gray-400 font-medium mb-2">Campus Manager</p>
-                      <p className="text-gray-500 text-sm mb-4">{selectedCampus.campusName}</p>
-                      <div className="bg-white/10 rounded-xl p-4">
-                        <p className="text-gray-400 text-sm">
-                          We're currently searching for a Campus Manager for this location.
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Fallback when no campuses with managers */
-            <div className="text-center py-12">
-              <div className="bg-gray-50 rounded-2xl p-8 max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">Campus Managers Coming Soon</h3>
-                <p className="text-gray-600">
-                  We're actively expanding to more campuses. Each campus will have a dedicated human Campus Manager 
-                  to personally vet barbers, handle disputes, and maintain quality standards.
-                </p>
-              </div>
-            </div>
-          )}
+      {/* Support Section */}
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="support">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Real Human Support
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+            Questions about bookings, barber applications, or your campus? Our team is here to help — not a bot.
+          </p>
+          <button
+            onClick={openContactPopup}
+            className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
+          >
+            <Mail className="w-6 h-6" />
+            Contact Support
+          </button>
+          <p className="text-sm text-gray-500 mt-4">
+            Or email us at{' '}
+            <a href="mailto:campuscuthelp@gmail.com" className="text-primary-600 hover:underline font-medium">
+              campuscuthelp@gmail.com
+            </a>
+          </p>
         </div>
       </div>
 
@@ -1312,60 +936,6 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Campus Manager Application Info Popup */}
-      {showCampusManagerInfo && (
-        <div 
-          className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${campusManagerInfoVisible ? 'opacity-100' : 'opacity-0'}`}
-          onClick={closeCampusManagerInfo}
-        >
-          <div 
-            className={`bg-white rounded-3xl p-8 max-w-lg w-full max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto transition-all duration-200 ${campusManagerInfoVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">Become a Campus Manager</h2>
-              <button
-                onClick={closeCampusManagerInfo}
-                className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-gray-50 rounded-xl p-6">
-                <h3 className="font-semibold text-gray-900 mb-3">How to Apply</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  To apply for the Campus Manager position, send an email to:
-                </p>
-                <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-4 flex items-center justify-between gap-2 sm:gap-3">
-                  <p className="font-mono text-primary-600 font-medium text-xs sm:text-lg select-all flex-1 text-center">
-                    campuscuthelp@gmail.com
-                  </p>
-                  <button
-                    onClick={copyEmailToClipboard}
-                    className={`p-2 rounded-lg transition-all ${emailCopied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`}
-                    title={emailCopied ? 'Copied!' : 'Copy email'}
-                  >
-                    {emailCopied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                  </button>
-                </div>
-                <p className="text-gray-500 text-sm mt-4">
-                  Please include your name, university, and a brief explanation of why you'd be a great Campus Manager.
-                </p>
-              </div>
-
-              <button
-                onClick={closeCampusManagerInfo}
-                className="w-full px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-colors"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
@@ -1380,8 +950,8 @@ export default function LandingPage() {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => scrollToSection('campus-manager')} className="text-gray-400 hover:text-white transition-colors">
-                    Campus Manager
+                  <button onClick={() => scrollToSection('support')} className="text-gray-400 hover:text-white transition-colors">
+                    Support
                   </button>
                 </li>
                 <li>

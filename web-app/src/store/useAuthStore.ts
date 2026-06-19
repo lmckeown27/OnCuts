@@ -10,16 +10,16 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   pendingVerificationEmail: string | null;
-  activeRole: 'admin' | 'campus_manager' | 'barber' | 'consumer' | null;
+  activeRole: 'admin' | 'barber' | 'consumer' | null;
   
   setUser: (user: User | null) => void;
-  setActiveRole: (role: 'admin' | 'campus_manager' | 'barber' | 'consumer') => void;
-  login: (email: string, password: string) => Promise<{ isAdmin: boolean; isCampusManager: boolean }>;
+  setActiveRole: (role: 'admin' | 'barber' | 'consumer') => void;
+  login: (email: string, password: string) => Promise<{ isAdmin: boolean }>;
   loginWithPhone: (
     phoneNumber: string,
     code: string
   ) => Promise<
-    | { kind: 'signed_in'; isAdmin: boolean; isCampusManager: boolean }
+    | { kind: 'signed_in'; isAdmin: boolean }
     | { kind: 'no_account'; phoneNumber: string; message?: string }
   >;
   signup: (data: any) => Promise<{ email: string; verificationCode?: string }>;
@@ -35,6 +35,28 @@ interface AuthState {
 // Hardcoded admin credentials (empty - all auth goes through real API)
 const ADMIN_CREDENTIALS: Array<{ email: string; password: string; user: User }> = [];
 
+function mapBackendUser(responseUser: Record<string, unknown>): User {
+  const rawRole = ((responseUser.role || responseUser.user_type || '') as string).toString().toLowerCase();
+  const mappedRole = rawRole === 'consumer' ? 'student' : rawRole === 'campus_manager' ? 'barber' : rawRole;
+  const isAdmin = mappedRole === 'admin';
+
+  return {
+    id: (responseUser.id || responseUser.userId) as string,
+    email: responseUser.email as string,
+    first_name: (responseUser.firstName || responseUser.first_name) as string,
+    last_name: (responseUser.lastName || responseUser.last_name) as string,
+    user_type: mappedRole as 'student' | 'barber' | 'admin',
+    is_verified: (responseUser.emailVerified ?? responseUser.is_verified ?? true) as boolean,
+    is_admin: isAdmin,
+    has_barber_profile: (responseUser.hasBarberProfile ?? false) as boolean,
+    created_at: (responseUser.created_at as string) || new Date().toISOString(),
+    campus_id: (responseUser.campusId || responseUser.campus_id)?.toString(),
+    profile_picture_url: (responseUser.profile_picture_url || responseUser.avatarUrl) as string | undefined,
+    phone_number: (responseUser.phoneNumber ?? responseUser.phone_number ?? null) as string | null,
+    sui_address: (responseUser.suiAddress ?? responseUser.sui_address ?? null) as string | null,
+  };
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: authService.getStoredUser(),
   isAuthenticated: authService.isAuthenticated(),
@@ -44,7 +66,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   activeRole: null,
 
   setUser: (user) => {
-    // Persist to localStorage so changes survive page refresh
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
     } else {
@@ -58,14 +79,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     
-    // Check for hardcoded admin credentials
     const adminMatch = ADMIN_CREDENTIALS.find(
       admin => admin.email === email && admin.password === password
     );
     
     if (adminMatch) {
       const adminUser = adminMatch.user;
-      // Store admin user in localStorage (using same keys as auth.service)
       localStorage.setItem('user', JSON.stringify(adminUser));
       localStorage.setItem('accessToken', 'admin-token-' + Date.now());
       
@@ -73,50 +92,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: adminUser, 
         isAuthenticated: true, 
         isLoading: false,
-        activeRole: null // Will be selected on role page
+        activeRole: null
       });
       socketService.connect();
-      return { isAdmin: true, isCampusManager: false };
+      return { isAdmin: true };
     }
     
-    // Call real backend API for non-admin login
     try {
       const response = await authService.login({ email, password });
-      
-      // Map backend response to frontend User type
-      // Backend uses uppercase roles (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN), frontend uses lowercase
-      const rawRole = ((response.user as any).role || response.user.user_type || '').toString().toLowerCase();
-      const mappedRole = rawRole === 'consumer' ? 'student' : rawRole; // Map CONSUMER to student for frontend
-      
-      // Admins have all privileges including campus manager at all campuses
-      const isAdmin = mappedRole === 'admin';
-      const isCampusManager = mappedRole === 'campus_manager' || isAdmin;
-      
-      const user = {
-        id: response.user.id || (response as any).user.userId,
-        email: response.user.email,
-        first_name: (response.user as any).firstName || response.user.first_name,
-        last_name: (response.user as any).lastName || response.user.last_name,
-        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
-        is_verified: (response.user as any).emailVerified ?? response.user.is_verified ?? true,
-        is_admin: isAdmin,
-        is_campus_manager: isCampusManager,
-        has_barber_profile: (response.user as any).hasBarberProfile ?? false,
-        created_at: response.user.created_at || new Date().toISOString(),
-        campus_id: ((response.user as any).campusId || response.user.campus_id)?.toString(),
-        profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
-        phone_number: (response.user as any).phoneNumber ?? (response.user as any).phone_number ?? null,
-        sui_address: (response.user as any).suiAddress ?? (response.user as any).sui_address ?? null,
-      };
+      const user = mapBackendUser(response.user as unknown as Record<string, unknown>);
       
       set({ 
-        user: user, 
+        user, 
         isAuthenticated: true, 
         isLoading: false,
         activeRole: null
       });
       socketService.connect();
-      return { isAdmin: user.is_admin || false, isCampusManager: user.is_campus_manager || false };
+      return { isAdmin: user.is_admin || false };
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Invalid credentials';
       set({ 
@@ -142,29 +135,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         };
       }
 
-      const u = data.user;
-      const rawRole = (u.role || '').toString().toLowerCase();
-      const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
-      const isAdmin = mappedRole === 'admin';
-      const isCampusManager = mappedRole === 'campus_manager' || isAdmin;
-
-      const user = {
-        id: u.id,
-        email: u.email,
-        first_name: u.firstName ?? '',
-        last_name: u.lastName ?? '',
-        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
-        is_verified: u.emailVerified ?? true,
-        is_admin: isAdmin,
-        is_campus_manager: isCampusManager,
-        has_barber_profile: u.hasBarberProfile ?? false,
-        created_at: new Date().toISOString(),
-        campus_id: u.campusId != null ? String(u.campusId) : undefined,
-        profile_picture_url: u.profile_picture_url ?? undefined,
-        phone_number: u.phoneNumber ?? phoneNumber,
-        sui_address: null,
-      };
-
+      const user = mapBackendUser(data.user as unknown as Record<string, unknown>);
       localStorage.setItem('user', JSON.stringify(user));
 
       set({
@@ -177,7 +148,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return {
         kind: 'signed_in' as const,
         isAdmin: user.is_admin || false,
-        isCampusManager: user.is_campus_manager || false,
       };
     } catch (error: any) {
       const errorMessage =
@@ -196,19 +166,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      // Call real backend API for registration
       const response = await authService.signup(data);
-      
-      // Store pending verification email
       localStorage.setItem('pendingVerificationEmail', data.email);
-      
-      // Don't authenticate yet - user must verify email first
       set({ 
         isLoading: false, 
         pendingVerificationEmail: data.email 
       });
-      
-      // Return response from backend (includes verificationCode in dev mode)
       return { email: response.email, verificationCode: response.verificationCode };
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Signup failed';
@@ -247,33 +210,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await authService.completeRegistration(email);
-
-      const rawRole = (response.user.role || '').toString().toLowerCase();
-      const mappedRole = rawRole === 'consumer' ? 'student' : rawRole;
-
-      const isAdminRole = mappedRole === 'admin';
-      const isCampusManagerRole = mappedRole === 'campus_manager' || isAdminRole;
-
-      const user = {
-        id: response.user.id,
-        email: response.user.email,
-        first_name: response.user.firstName,
-        last_name: response.user.lastName,
-        user_type: mappedRole as 'student' | 'barber' | 'campus_manager' | 'admin',
-        is_verified: response.user.emailVerified,
-        is_admin: isAdminRole,
-        is_campus_manager: isCampusManagerRole,
-        created_at: new Date().toISOString(),
-        campus_id: response.user.campusId?.toString(),
-        profile_picture_url: (response.user as any).profile_picture_url || (response.user as any).avatarUrl,
-        phone_number: response.user.phoneNumber ?? null,
-        sui_address: (response as { suiAddress?: string }).suiAddress ?? null,
-      };
-
+      const user = mapBackendUser(response.user as unknown as Record<string, unknown>);
       localStorage.removeItem('pendingVerificationEmail');
 
       set({
-        user: user,
+        user,
         isAuthenticated: true,
         isLoading: false,
         pendingVerificationEmail: null,
@@ -297,9 +238,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resendVerificationCode: async (email) => {
     set({ isLoading: true, error: null });
     try {
-      // Call real backend API to resend verification code
       await authService.resendVerificationCode(email);
-      
       set({ isLoading: false });
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to resend code';
@@ -322,7 +261,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       socketService.disconnect();
       set({ user: null, isAuthenticated: false, isLoading: false });
     } catch (error) {
-      // Even if logout fails on server, clear local state
       socketService.disconnect();
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
@@ -337,7 +275,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const user = await authService.getCurrentUser();
-      // Also persist to localStorage so role/profile data survives page refresh
       localStorage.setItem('user', JSON.stringify(user));
       set({ user, isAuthenticated: true, isLoading: false });
       socketService.connect();
@@ -348,4 +285,3 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 }));
-

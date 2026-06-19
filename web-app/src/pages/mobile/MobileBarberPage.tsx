@@ -82,7 +82,6 @@ export default function MobileBarberPage() {
   // Role-based access control: Only barbers, campus managers, and admins can access this page
   const isAuthorizedForBarberPage = 
     user?.user_type === 'barber' || 
-    user?.user_type === 'campus_manager' || 
     user?.user_type === 'admin' ||
     user?.has_barber_profile;
   

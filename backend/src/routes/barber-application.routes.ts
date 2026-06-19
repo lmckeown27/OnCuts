@@ -6,7 +6,7 @@ import {
   getAllApplications,
   updateApplicationStatus
 } from '../controllers/barber-application.controller';
-import { authenticate, requireCampusManager } from '../middleware/auth.middleware';
+import { authenticate, requireAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -36,14 +36,14 @@ router.get('/my-application', authenticate, getMyApplication);
  * @desc    Get all applications (admin/campus manager only)
  * @access  Private (admin or campus manager)
  */
-router.get('/', authenticate, requireCampusManager, getAllApplications);
+router.get('/', authenticate, requireAdmin, getAllApplications);
 
 /**
  * @route   PUT /api/v1/barber-applications/:id/status
  * @desc    Update application status (admin/campus manager only)
  * @access  Private (admin or campus manager)
  */
-router.put('/:id/status', authenticate, requireCampusManager, updateApplicationStatus);
+router.put('/:id/status', authenticate, requireAdmin, updateApplicationStatus);
 
 export default router;
 

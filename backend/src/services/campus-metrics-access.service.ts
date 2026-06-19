@@ -36,8 +36,16 @@ export async function countCampusConsumers(campusId: string): Promise<number> {
   return parseInt(result.rows[0]?.total || '0', 10);
 }
 
+async function assertAdminFromDb(userId: string): Promise<void> {
+  const userResult = await pool.query(`SELECT role FROM users WHERE id = $1`, [userId]);
+  if (userResult.rows.length === 0) throw new ApiError(401, 'User not found');
+  if (userResult.rows[0].role !== 'ADMIN') {
+    throw new ApiError(403, 'Admin access required');
+  }
+}
+
 /**
- * Admins may access any campus. Campus managers may access only their campus.
+ * Platform admins may access campus-scoped admin metrics and management.
  */
 export async function assertCampusMetricsAccess(req: AuthRequest, campusId: string): Promise<void> {
   const userId = req.user?.userId;
@@ -47,29 +55,11 @@ export async function assertCampusMetricsAccess(req: AuthRequest, campusId: stri
     throw new ApiError(400, 'Valid campusId is required');
   }
 
-  const userResult = await pool.query(`SELECT role, "campusId" FROM users WHERE id = $1`, [userId]);
-  if (userResult.rows.length === 0) throw new ApiError(401, 'User not found');
-
-  const { role, campusId: userCampusId } = userResult.rows[0];
-  if (role === 'ADMIN') return;
-  if (role === 'CAMPUS_MANAGER' && userCampusId === campusId) return;
-
-  const managerCheck = await pool.query(
-    `SELECT b.id FROM barbers b
-     JOIN users u ON b."userId" = u.id
-     WHERE b."userId" = $1
-       AND b."campusId" = $2
-       AND (b."isCampusManager" = true OR u.role = 'CAMPUS_MANAGER')`,
-    [userId, campusId]
-  );
-
-  if (managerCheck.rows.length === 0) {
-    throw new ApiError(403, 'Campus manager access required');
-  }
+  await assertAdminFromDb(userId);
 }
 
 /**
- * Admins see all campuses. Campus managers see only their campus.
+ * Admins see all campuses (campus manager role removed; admin-only management).
  */
 export async function getAccessibleCampusScope(
   req: AuthRequest
@@ -77,31 +67,6 @@ export async function getAccessibleCampusScope(
   const userId = req.user?.userId;
   if (!userId) throw new ApiError(401, 'Not authenticated');
 
-  const userResult = await pool.query(
-    `SELECT role, "campusId" FROM users WHERE id = $1`,
-    [userId]
-  );
-  if (userResult.rows.length === 0) throw new ApiError(401, 'User not found');
-
-  const { role, campusId: userCampusId } = userResult.rows[0];
-  if (role === 'ADMIN') {
-    return { isAdmin: true, campusIds: [] };
-  }
-
-  if (role === 'CAMPUS_MANAGER' && userCampusId) {
-    return { isAdmin: false, campusIds: [String(userCampusId)] };
-  }
-
-  const managerCheck = await pool.query(
-    `SELECT b."campusId" FROM barbers b
-     WHERE b."userId" = $1 AND b."isCampusManager" = true AND b."isActive" = true
-     LIMIT 1`,
-    [userId]
-  );
-
-  if (managerCheck.rows.length > 0 && managerCheck.rows[0].campusId) {
-    return { isAdmin: false, campusIds: [String(managerCheck.rows[0].campusId)] };
-  }
-
-  throw new ApiError(403, 'Admin or campus manager access required');
+  await assertAdminFromDb(userId);
+  return { isAdmin: true, campusIds: [] };
 }

@@ -53,7 +53,6 @@ router.get('/campuses/aggregate/metrics', adminController.getAggregateMetrics);
 router.get('/campuses/:campusId/performance', adminController.getCampusPerformance);
 router.get('/campuses/:campusId/metrics', adminController.getCampusMetrics);
 router.get('/campuses/:campusId/barbers', adminController.getCampusBarbers);
-router.post('/campuses/:campusId/manager', adminController.assignCampusManager);
 
 // Barber Management (admin only)
 router.get('/barbers', adminController.getAllBarbers);
