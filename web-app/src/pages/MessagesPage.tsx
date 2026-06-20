@@ -3,7 +3,7 @@
  * Similar to Airbnb's messaging interface
  */
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type ReactNode } from 'react';
 import { useNavigate, useParams, useLocation, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -31,7 +31,8 @@ import {
   Lock,
   Pencil,
   XCircle,
-  Loader2
+  Loader2,
+  ImagePlus,
 } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import messageService from '../services/message.service';
@@ -188,8 +189,13 @@ export default function MessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const hasScrolledRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [pendingImageAttachment, setPendingImageAttachment] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
 
   // Determine the view based on the URL path
   // /barber/messages = barber view, /consumer/messages = consumer view
@@ -208,6 +214,38 @@ export default function MessagesPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const clearPendingImageAttachment = useCallback(() => {
+    setPendingImageAttachment((prev) => {
+      if (prev?.previewUrl) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    clearPendingImageAttachment();
+  }, [selectedConversation?.id, clearPendingImageAttachment]);
+
+  const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be 10MB or smaller');
+      return;
+    }
+    clearPendingImageAttachment();
+    setPendingImageAttachment({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
+  };
 
   // Handle navigation state for starting a BOOKING-CENTRIC conversation
   const startConversationData = location.state as { 
@@ -969,19 +1007,25 @@ export default function MessagesPage() {
 
   // Handle sending a message
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || isSending) return;
-
     const messageContent = newMessage.trim();
+    const attachment = pendingImageAttachment;
+    if ((!messageContent && !attachment) || !selectedConversation || isSending) return;
+
     setNewMessage('');
+    if (attachment) {
+      setPendingImageAttachment(null);
+    }
     setIsSending(true);
 
-    // Optimistic update
     const optimisticMessage: MessageWithSender = {
       id: `temp-${Date.now()}`,
       conversation_id: selectedConversation.id,
       sender_id: user?.id || '',
-      content: messageContent,
-      message_type: 'text',
+      content: messageContent || (attachment ? '📷 Photo' : ''),
+      message_type: attachment ? 'image' : 'text',
+      messageType: attachment ? 'image' : 'text',
+      media_url: attachment?.previewUrl,
+      mediaUrl: attachment?.previewUrl,
       is_read: true,
       created_at: new Date().toISOString(),
       isOwn: true,
@@ -989,26 +1033,41 @@ export default function MessagesPage() {
         id: user?.id || '',
         firstName: user?.first_name || '',
         lastName: user?.last_name || '',
-      }
+      },
     };
 
     setMessages(prev => [...prev, optimisticMessage]);
     scrollToBottom();
 
+    let attachmentToRestore = attachment;
+
     try {
-      const response = await messageService.sendMessage(selectedConversation.id, messageContent);
+      let mediaUrl: string | undefined;
+      if (attachment) {
+        mediaUrl = await messageService.uploadChatImage(attachment.file);
+        URL.revokeObjectURL(attachment.previewUrl);
+        attachmentToRestore = null;
+      }
+
+      const response = await messageService.sendMessage(
+        selectedConversation.id,
+        messageContent,
+        attachment ? 'image' : 'text',
+        mediaUrl
+      );
       
       console.log('✅ Message sent, response:', response);
       
-      // Replace optimistic message with real one
-      // The response should be the Message object with id, content, created_at, etc.
       const resp = response as any;
       const realMessage: MessageWithSender = {
         id: resp.id || optimisticMessage.id,
         conversation_id: selectedConversation.id,
         sender_id: user?.id || '',
-        content: resp.content || messageContent,
-        message_type: resp.message_type || 'text',
+        content: resp.content || messageContent || (attachment ? '📷 Photo' : ''),
+        message_type: resp.message_type || (attachment ? 'image' : 'text'),
+        messageType: resp.message_type || resp.messageType || (attachment ? 'image' : 'text'),
+        media_url: resp.media_url || resp.mediaUrl || mediaUrl,
+        mediaUrl: resp.media_url || resp.mediaUrl || mediaUrl,
         is_read: resp.is_read || false,
         created_at: resp.created_at || new Date().toISOString(),
         createdAt: resp.created_at || new Date().toISOString(),
@@ -1017,29 +1076,103 @@ export default function MessagesPage() {
           id: user?.id || '',
           firstName: user?.first_name || '',
           lastName: user?.last_name || '',
-        }
+        },
       };
       
       setMessages(prev => prev.map(m => 
         m.id === optimisticMessage.id ? realMessage : m
       ));
       
-      // Update conversations list
       fetchConversations();
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message');
-      // Remove optimistic message on error
       setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
       setNewMessage(messageContent);
+      if (attachmentToRestore) {
+        setPendingImageAttachment(attachmentToRestore);
+      }
     } finally {
       setIsSending(false);
-      // Use setTimeout to ensure focus is restored after React state updates
-      // This helps on both desktop and mobile browsers
       setTimeout(() => {
         inputRef.current?.focus();
       }, 0);
     }
+  };
+
+  const renderMessageComposer = (banner?: ReactNode) => {
+    const canSend = (newMessage.trim().length > 0 || pendingImageAttachment !== null) && !isSending;
+
+    return (
+      <div className="space-y-2">
+        {banner}
+        {pendingImageAttachment && (
+          <div className="flex items-start gap-2 px-1">
+            <div className="relative flex-shrink-0">
+              <img
+                src={pendingImageAttachment.previewUrl}
+                alt="Attachment preview"
+                className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={clearPendingImageAttachment}
+                disabled={isSending}
+                className="absolute -top-1.5 -right-1.5 p-0.5 rounded-full bg-gray-900 text-white hover:bg-gray-700 disabled:opacity-50"
+                aria-label="Remove photo"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 self-center">
+              Photo ready — add a caption (optional) and tap send
+            </p>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handlePhotoSelected}
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => photoInputRef.current?.click()}
+            disabled={isSending}
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-primary-600 disabled:opacity-50"
+            aria-label="Attach photo"
+          >
+            <ImagePlus className="w-5 h-5" />
+          </button>
+          <input
+            ref={inputRef}
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+            placeholder={pendingImageAttachment ? 'Add a caption (optional)...' : 'Type a message...'}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            disabled={isSending}
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleSendMessage}
+            disabled={!canSend}
+            className={`p-2 rounded-full transition-colors ${
+              canSend
+                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   // Handle back button on mobile
@@ -1474,74 +1607,20 @@ export default function MessagesPage() {
               
               // Barber can always message on pending
               if (isBarberView) {
-                return (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
-                      <Info className="w-3.5 h-3.5" />
-                      <span>Booking pending – message to discuss details before accepting</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Type a message..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        disabled={isSending}
-                      />
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || isSending}
-                        className={`p-2 rounded-full transition-colors ${
-                          newMessage.trim() && !isSending
-                            ? 'bg-primary-500 text-white hover:bg-primary-600'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
+                return renderMessageComposer(
+                  <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
+                    <Info className="w-3.5 h-3.5" />
+                    <span>Booking pending – message to discuss details before accepting</span>
                   </div>
                 );
               }
               
               // Consumer can message only if barber has sent at least one message
               if (barberHasMessaged) {
-                return (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Barber reached out – reply to discuss details</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Type a message..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        disabled={isSending}
-                      />
-                      <button
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={handleSendMessage}
-                        disabled={!newMessage.trim() || isSending}
-                        className={`p-2 rounded-full transition-colors ${
-                          newMessage.trim() && !isSending
-                            ? 'bg-primary-500 text-white hover:bg-primary-600'
-                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
+                return renderMessageComposer(
+                  <div className="flex items-center justify-center gap-2 py-1.5 px-3 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>Barber reached out – reply to discuss details</span>
                   </div>
                 );
               }
@@ -1556,33 +1635,7 @@ export default function MessagesPage() {
             }
             
             // Booking is not pending - normal messaging
-            return (
-              <div className="flex items-center gap-3">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  disabled={isSending}
-                />
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || isSending}
-                  className={`p-2 rounded-full transition-colors ${
-                    newMessage.trim() && !isSending
-                      ? 'bg-primary-500 text-white hover:bg-primary-600'
-                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-            );
+            return renderMessageComposer();
           })()}
         </div>
       </div>

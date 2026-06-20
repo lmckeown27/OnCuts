@@ -169,11 +169,11 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
 
 /**
  * POST /api/messages/conversations/:conversationId/upload
- * Upload a chat image (multipart), persist a `messages` row (`message_type` image, `media_url` set), and emit
- * Socket.IO `new-message` — same outcome as upload + POST …/messages so history and recipients work when clients
- * only call this endpoint (e.g. Intera).
+ * Upload a chat image (multipart) and return its URL. Does not create a message — clients should show a
+ * composer preview and send via POST …/messages when the user taps Send.
  *
- * Optional multipart text field `caption` becomes message `content` (default preview: "📷 Photo").
+ * Optional `send=true` (body or query) persists and broadcasts immediately (legacy clients only).
+ * Optional multipart `caption` is used when `send=true` (default preview: "📷 Photo").
  */
 router.post(
   '/conversations/:conversationId/upload',
@@ -245,29 +245,42 @@ router.post(
         }
       }
 
-      const caption =
-        typeof (req.body as { caption?: string }).caption === 'string'
-          ? (req.body as { caption: string }).caption.trim()
-          : '';
-      const contentForMessage = caption || '📷 Photo';
+      const sendImmediately =
+        req.query.send === 'true' ||
+        (req.body as { send?: string | boolean }).send === true ||
+        (req.body as { send?: string | boolean }).send === 'true';
 
-      const sendResult = await messageService.sendMessage(
-        conversationId,
-        userId,
-        contentForMessage,
-        'image',
-        mediaUrl
-      );
+      if (sendImmediately) {
+        const caption =
+          typeof (req.body as { caption?: string }).caption === 'string'
+            ? (req.body as { caption: string }).caption.trim()
+            : '';
+        const contentForMessage = caption || '📷 Photo';
 
-      await emitNewMessageSocket(req.app, conversationId, userId, sendResult.data.message);
+        const sendResult = await messageService.sendMessage(
+          conversationId,
+          userId,
+          contentForMessage,
+          'image',
+          mediaUrl
+        );
+
+        await emitNewMessageSocket(req.app, conversationId, userId, sendResult.data.message);
+
+        return res.json({
+          success: true,
+          message: 'Chat image uploaded and sent successfully',
+          data: {
+            ...responseData,
+            message: sendResult.data.message,
+          },
+        });
+      }
 
       res.json({
         success: true,
-        message: 'Chat image uploaded and sent successfully',
-        data: {
-          ...responseData,
-          message: sendResult.data.message,
-        },
+        message: 'Chat image uploaded successfully',
+        data: responseData,
       });
     } catch (error) {
       next(error);
