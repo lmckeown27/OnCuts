@@ -8,6 +8,7 @@ import { logger } from '../utils/logger';
 import notificationService from './notification.service';
 import pushNotificationService from './pushNotification.service';
 import { sendBookingCancellationEmails } from './email.service';
+import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
 
 function mergeConversationLocation(
   loc: string | null | undefined,
@@ -289,7 +290,7 @@ export async function executeParticipantBookingCancellation(
             SELECT 1 FROM bookings 
             WHERE "barberId" = $1 
               AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-              AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+              AND ${bookingStatusBlocksScheduleSql('status')}
               AND (
                 EXTRACT(HOUR FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') * 60 +
                 EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles')

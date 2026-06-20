@@ -31,7 +31,7 @@ import {
   cancelPendingRescheduleRequestsForBooking,
   executeParticipantBookingCancellation,
 } from '../services/booking-cancellation.service';
-import { assertBookingWithinBarberAvailability } from '../services/barber-availability.service';
+import { assertBookingWithinBarberAvailability, assertNoBarberSlotConflict } from '../services/barber-availability.service';
 import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
 
 const router = express.Router();
@@ -116,34 +116,6 @@ function formatPendingRescheduleRequestFromRow(requestRow: Record<string, unknow
     status: requestRow.status,
     createdAt: requestRow.created_at,
   };
-}
-
-async function assertNoBarberSlotConflict(
-  client: { query: typeof pool.query },
-  barberRecordId: string,
-  requestedTime: Date,
-  durationMinutes: number,
-  excludeBookingId?: string
-): Promise<Date | null> {
-  const params: unknown[] = [barberRecordId, requestedTime.toISOString(), durationMinutes];
-  let excludeClause = '';
-  if (excludeBookingId) {
-    excludeClause = ' AND id != $4';
-    params.push(excludeBookingId);
-  }
-
-  const conflictCheck = await client.query(
-    `SELECT id, "requestedAt", status
-     FROM bookings
-     WHERE "barberId" = $1
-       AND status IN ('PENDING', 'ACCEPTED')
-       AND $2::timestamptz < "requestedAt" + (COALESCE("durationMinutes", ${FALLBACK_BOOKING_DURATION_MINUTES}) * INTERVAL '1 minute')
-       AND "requestedAt" < $2::timestamptz + ($3 * INTERVAL '1 minute')${excludeClause}`,
-    params
-  );
-
-  if (conflictCheck.rows.length === 0) return null;
-  return new Date(conflictCheck.rows[0].requestedAt);
 }
 
 /**

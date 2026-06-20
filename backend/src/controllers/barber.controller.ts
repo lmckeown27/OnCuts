@@ -13,6 +13,7 @@ import { normalizePricingEntries, enrichPricingWithDurations } from '../utils/se
 import {
   BOOKING_SLOT_INCREMENT_MINUTES,
   SAME_DAY_BOOKING_BUFFER_MINUTES,
+  bookingStatusBlocksScheduleSql,
   generateBookableStartSlots,
   getDayNameFromDateString,
   getIntervalsForDay,
@@ -1220,7 +1221,7 @@ export const getBarberAvailability = async (req: AuthRequest, res: Response, nex
         FROM bookings 
         WHERE "barberId" = $1 
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-          AND status IN ('ACCEPTED', 'PENDING')${excludeBookingClause}
+          AND ${bookingStatusBlocksScheduleSql('status')}${excludeBookingClause}
         ORDER BY "requestedAt"`,
         bookingsParams
       );

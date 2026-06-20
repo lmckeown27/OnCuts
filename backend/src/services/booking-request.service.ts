@@ -19,6 +19,7 @@ import {
   resolveServiceDurationMinutes,
   BarberPricingEntry,
 } from '../utils/service-duration.utils';
+import { bookingStatusBlocksScheduleSql } from './barber-availability.service';
 
 function mergeConversationLocation(
   loc: string | null | undefined,
@@ -127,7 +128,7 @@ export async function fetchAlternativeBarbers(
         FROM bookings
         WHERE "barberId" = $1
           AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-          AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+          AND ${bookingStatusBlocksScheduleSql('status')}
         UNION ALL
         SELECT
           TO_CHAR(start_time, 'HH24:MI') as start_time,

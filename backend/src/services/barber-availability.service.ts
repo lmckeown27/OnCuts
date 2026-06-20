@@ -5,6 +5,7 @@
 import { DateTime } from 'luxon';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
+import { FALLBACK_BOOKING_DURATION_MINUTES } from '../utils/service-duration.utils';
 
 export interface TimeInterval {
   id?: string;
@@ -27,6 +28,22 @@ const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frid
 
 export const BOOKING_SLOT_INCREMENT_MINUTES = 15;
 export const SAME_DAY_BOOKING_BUFFER_MINUTES = 1;
+
+/**
+ * Only active reservations block the calendar. Concluded bookings (PAID, COMPLETED),
+ * cancellations, and rejections must not prevent rescheduling or new bookings.
+ */
+export const BOOKING_STATUSES_THAT_BLOCK_SCHEDULE = [
+  'PENDING',
+  'ACCEPTED',
+  'IN_PROGRESS',
+] as const;
+
+/** SQL predicate, e.g. `AND ${bookingStatusBlocksScheduleSql('status')}` */
+export function bookingStatusBlocksScheduleSql(statusColumn = 'status'): string {
+  const list = BOOKING_STATUSES_THAT_BLOCK_SCHEDULE.map((s) => `'${s}'`).join(', ');
+  return `UPPER(${statusColumn}::text) IN (${list})`;
+}
 
 export function timeToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
@@ -136,7 +153,7 @@ export async function fetchBookedAndBlockedSlots(
      FROM bookings
      WHERE "barberId" = $1
        AND DATE("requestedAt" AT TIME ZONE 'America/Los_Angeles') = $2
-       AND status IN ('ACCEPTED', 'PENDING')${excludeBookingClause}
+       AND ${bookingStatusBlocksScheduleSql('status')}${excludeBookingClause}
      ORDER BY "requestedAt"`,
     bookingsParams
   );
@@ -201,4 +218,39 @@ export async function assertBookingWithinBarberAvailability(
   if (slotOverlapsRanges(startMinutes, durationMinutes, blockedRanges)) {
     throw new ApiError(409, 'This time slot is no longer available');
   }
+}
+
+type DbQueryable = Pick<typeof pool, 'query'>;
+
+/**
+ * Returns the conflicting booking start time when another active reservation overlaps.
+ * PAID/COMPLETED/CANCELLED bookings are ignored.
+ */
+export async function assertNoBarberSlotConflict(
+  client: DbQueryable,
+  barberRecordId: string,
+  requestedTime: Date,
+  durationMinutes: number,
+  excludeBookingId?: string
+): Promise<Date | null> {
+  const params: unknown[] = [barberRecordId, requestedTime.toISOString(), durationMinutes];
+  let excludeClause = '';
+  if (excludeBookingId) {
+    excludeClause = ' AND id != $4';
+    params.push(excludeBookingId);
+  }
+
+  const statusFilter = bookingStatusBlocksScheduleSql('status');
+  const conflictCheck = await client.query(
+    `SELECT id, "requestedAt", status
+     FROM bookings
+     WHERE "barberId" = $1
+       AND ${statusFilter}
+       AND $2::timestamptz < "requestedAt" + (COALESCE("durationMinutes", ${FALLBACK_BOOKING_DURATION_MINUTES}) * INTERVAL '1 minute')
+       AND "requestedAt" < $2::timestamptz + ($3 * INTERVAL '1 minute')${excludeClause}`,
+    params
+  );
+
+  if (conflictCheck.rows.length === 0) return null;
+  return new Date(conflictCheck.rows[0].requestedAt);
 }

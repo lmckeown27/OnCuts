@@ -23,6 +23,7 @@ import { upload } from '../middleware/upload';
 import { pool } from '../database/connection';
 import { logger } from '../utils/logger';
 import { isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
+import { bookingStatusBlocksScheduleSql } from '../services/barber-availability.service';
 
 const router: Router = express.Router();
 
@@ -201,7 +202,7 @@ router.get(
                 EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') <= $3
             AND EXTRACT(HOUR FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') * 60 + 
                 EXTRACT(MINUTE FROM "requestedAt" AT TIME ZONE 'America/Los_Angeles') + 60 > $3
-            AND status IN ('ACCEPTED', 'PENDING', 'COMPLETED')
+            AND ${bookingStatusBlocksScheduleSql('status')}
           UNION ALL
           SELECT 1 FROM barber_time_blocks
           WHERE barber_id = $1
