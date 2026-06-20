@@ -500,7 +500,10 @@ export default function MessagesPage() {
         changes.push('location');
       }
 
-      if (isBarberView) {
+      const isPendingBooking =
+        String(selectedConversation.booking.status).toUpperCase() === 'PENDING';
+
+      if (isBarberView || isPendingBooking) {
         await api.put(`/bookings-simple/${selectedConversation.booking.id}`, {
           scheduledTime: scheduledTimePayload,
           location: editLocation,
@@ -512,8 +515,10 @@ export default function MessagesPage() {
         });
       }
 
-      // Update local state (consumer: appointment time unchanged until approved)
-      if (isBarberView) {
+      const applyDirectEdit = isBarberView || isPendingBooking;
+
+      // Update local state (direct edit applies immediately)
+      if (applyDirectEdit) {
         setSelectedConversation(prev => prev ? {
           ...prev,
           booking: prev.booking ? {
@@ -545,7 +550,7 @@ export default function MessagesPage() {
       }
 
       let successMessage: string;
-      if (isBarberView) {
+      if (applyDirectEdit) {
         successMessage = 'Booking ';
         if (changes.length === 0) {
           successMessage = 'No changes were made';
@@ -1989,8 +1994,8 @@ export default function MessagesPage() {
                           >
                             <Check className="w-4 h-4" />
                             {isSavingEdit
-                              ? (isBarberView ? 'Saving...' : 'Submitting...')
-                              : (isBarberView ? 'Save' : 'Submit Request')}
+                              ? ((isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING') ? 'Saving...' : 'Submitting...')
+                              : ((isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING') ? 'Save' : 'Submit Request')}
                           </button>
                         </>
                       ) : (
@@ -2000,7 +2005,7 @@ export default function MessagesPage() {
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors text-sm font-medium"
                           >
                             <Pencil className="w-4 h-4" />
-                            {isBarberView
+                            {isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING'
                               ? 'Edit'
                               : (selectedConversation.booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
                           </button>
@@ -2325,8 +2330,8 @@ export default function MessagesPage() {
                       >
                         <Check className="w-4 h-4" />
                         {isSavingEdit
-                          ? (isBarberView ? 'Saving...' : 'Submitting...')
-                          : (isBarberView ? 'Save' : 'Submit Request')}
+                          ? ((isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING') ? 'Saving...' : 'Submitting...')
+                          : ((isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING') ? 'Save' : 'Submit Request')}
                       </button>
                     </>
                   ) : (
@@ -2336,7 +2341,7 @@ export default function MessagesPage() {
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-primary-50 text-primary-700 rounded-xl hover:bg-primary-100 transition-colors font-medium"
                       >
                         <Pencil className="w-4 h-4" />
-                        {isBarberView
+                        {isBarberView || String(selectedConversation.booking.status).toUpperCase() === 'PENDING'
                           ? 'Edit'
                           : (selectedConversation.booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
                       </button>

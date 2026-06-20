@@ -2719,7 +2719,7 @@ router.post('/:id/reschedule-request/reject', authenticate, async (req, res, nex
 
 /**
  * PUT /api/v1/bookings-simple/:id
- * Edit booking details (barber may change schedule directly; consumers use reschedule-request)
+ * Edit booking details (barber may change schedule directly; consumers edit PENDING directly, ACCEPTED via reschedule-request)
  * - scheduledTime updates the bookings table ("requestedAt" column)
  * - location, locationDetails, and notes update the linked conversations table
  */
@@ -2764,7 +2764,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
       });
     }
 
-    if (isConsumer && scheduledTime !== undefined) {
+    // ACCEPTED bookings require the reschedule-request flow; PENDING can be edited directly.
+    if (isConsumer && scheduledTime !== undefined && booking.status !== 'PENDING') {
       return res.status(403).json({
         success: false,
         error: RESCHEDULE_REQUIRES_APPROVAL_MESSAGE,
@@ -2817,10 +2818,14 @@ router.put('/:id', authenticate, async (req, res, next) => {
         `UPDATE bookings 
          SET "requestedAt" = $1, "updatedAt" = CURRENT_TIMESTAMP
          WHERE id = $2`,
-        [scheduledTime, id]
+        [parsedTime.toISOString(), id]
       );
-      updatedScheduledTime = scheduledTime;
-      logger.info(`Updated booking ${id} scheduledTime to ${scheduledTime}`);
+      updatedScheduledTime = parsedTime.toISOString();
+      logger.info(`Updated booking ${id} scheduledTime to ${parsedTime.toISOString()}`);
+
+      if (isConsumer && booking.status === 'PENDING') {
+        await cancelPendingRescheduleRequestsForBooking(id, userId);
+      }
     }
 
     // Update scheduled_time, location, location_details and/or notes on conversations table (if linked)

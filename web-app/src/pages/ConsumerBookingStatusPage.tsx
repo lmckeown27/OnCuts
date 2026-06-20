@@ -589,14 +589,22 @@ export default function ConsumerBookingStatusPage() {
       }
       
       const scheduledTimePayload = `${editDate}T${editTime}:00`;
-      
-      await api.post(`/bookings-simple/${booking.id}/reschedule-request`, {
-        scheduledTime: scheduledTimePayload,
-        location: editLocation,
-        notes: editNotes,
-      });
-      
-      toast.success('Schedule change request sent! Waiting for provider approval.');
+
+      if (booking.status === 'PENDING') {
+        await api.put(`/bookings-simple/${booking.id}`, {
+          scheduledTime: scheduledTimePayload,
+          location: editLocation,
+          notes: editNotes,
+        });
+        toast.success('Booking updated!');
+      } else {
+        await api.post(`/bookings-simple/${booking.id}/reschedule-request`, {
+          scheduledTime: scheduledTimePayload,
+          location: editLocation,
+          notes: editNotes,
+        });
+        toast.success('Schedule change request sent! Waiting for provider approval.');
+      }
       setShowEditModal(false);
       fetchActiveBooking();
     } catch (error: any) {
@@ -1220,7 +1228,9 @@ export default function ConsumerBookingStatusPage() {
                 className="py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-amber-200"
               >
                 <Pencil className="w-4 h-4" />
-                {booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change'}
+                {isPending
+                  ? 'Edit'
+                  : (booking.pendingRescheduleRequest ? 'Update Request' : 'Request Change')}
               </button>
               <button
                 onClick={() => setShowCancelConfirm(true)}
@@ -1253,10 +1263,12 @@ export default function ConsumerBookingStatusPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Pencil className="w-5 h-5 text-primary-500" />
-              Request Schedule Change
+              {isPending ? 'Edit Booking' : 'Request Schedule Change'}
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              Your provider must approve date and time changes. Your current appointment stays as-is until then.
+              {isPending
+                ? 'Update your appointment details. Changes apply immediately while your request is still pending.'
+                : 'Your provider must approve date and time changes. Your current appointment stays as-is until then.'}
             </p>
             
             <div className="space-y-4">
@@ -1349,7 +1361,7 @@ export default function ConsumerBookingStatusPage() {
                     Saving...
                   </>
                 ) : (
-                  'Submit Request'
+                  isPending ? 'Save Changes' : 'Submit Request'
                 )}
               </button>
             </div>
