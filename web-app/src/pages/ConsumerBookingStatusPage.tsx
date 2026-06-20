@@ -245,6 +245,9 @@ export default function ConsumerBookingStatusPage() {
         
         // Clear the current booking to show "No Active Booking" with alternatives
         setBooking(null);
+      } else if (data.id === booking.id && data.updatedBy === 'barber') {
+        // Barber's direct edit overrides any pending consumer reschedule request
+        fetchActiveBooking();
       }
     };
 

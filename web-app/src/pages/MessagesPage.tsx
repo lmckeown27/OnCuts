@@ -351,11 +351,18 @@ export default function MessagesPage() {
   const startEditingBooking = async () => {
     if (!selectedConversation?.booking) return;
     const booking = selectedConversation.booking;
-    const sourceTime = booking.pendingRescheduleRequest?.requestedTime ?? booking.scheduledTime;
+    // Barber edits the confirmed booking time; consumers edit from their pending request if one exists.
+    const sourceTime = isBarberView
+      ? booking.scheduledTime
+      : (booking.pendingRescheduleRequest?.requestedTime ?? booking.scheduledTime);
     const scheduledDate = new Date(sourceTime);
     setEditDate(scheduledDate.toISOString().split('T')[0]);
     setEditTime(scheduledDate.toTimeString().slice(0, 5));
-    setEditLocation(booking.pendingRescheduleRequest?.location ?? booking.location ?? '');
+    setEditLocation(
+      isBarberView
+        ? (booking.location ?? '')
+        : (booking.pendingRescheduleRequest?.location ?? booking.location ?? '')
+    );
     
     console.log('[MessagesPage] startEditingBooking called');
     console.log('[MessagesPage] Current user type:', user?.user_type, 'user ID:', user?.id);
@@ -525,12 +532,21 @@ export default function MessagesPage() {
             ...prev.booking,
             scheduledTime: new Date(`${editDate}T${editTime}`).toISOString(),
             location: editLocation,
+            pendingRescheduleRequest: null,
           } : undefined,
         } : null);
 
         setConversations(prev => prev.map(conv => 
           conv.id === selectedConversation.id && conv.booking
-            ? { ...conv, booking: { ...conv.booking, scheduledTime: new Date(`${editDate}T${editTime}`).toISOString(), location: editLocation } }
+            ? {
+                ...conv,
+                booking: {
+                  ...conv.booking,
+                  scheduledTime: new Date(`${editDate}T${editTime}`).toISOString(),
+                  location: editLocation,
+                  pendingRescheduleRequest: null,
+                },
+              }
             : conv
         ));
       } else {
@@ -878,6 +894,9 @@ export default function MessagesPage() {
                 scheduledTime: updatedBooking.scheduledTime || conv.booking.scheduledTime,
                 location: updatedBooking.location !== undefined ? updatedBooking.location : conv.booking.location,
                 status: updatedBooking.status || conv.booking.status,
+                pendingRescheduleRequest: updatedBooking.clearedPendingRescheduleRequest
+                  ? null
+                  : conv.booking.pendingRescheduleRequest,
               },
             };
           }
@@ -893,6 +912,9 @@ export default function MessagesPage() {
               scheduledTime: updatedBooking.scheduledTime || prev.booking.scheduledTime,
               location: updatedBooking.location !== undefined ? updatedBooking.location : prev.booking.location,
               status: updatedBooking.status || prev.booking.status,
+              pendingRescheduleRequest: updatedBooking.clearedPendingRescheduleRequest
+                ? null
+                : prev.booking.pendingRescheduleRequest,
             } : undefined,
           } : null);
         }

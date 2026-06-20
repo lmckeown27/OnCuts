@@ -2777,6 +2777,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
     let updatedLocation = booking.conv_location;
     let updatedLocationDetails = booking.conv_location_details;
     let updatedNotes = booking.conv_notes;
+    let clearedPendingRescheduleRequest = false;
 
     // Update scheduledTime on bookings table
     if (scheduledTime !== undefined) {
@@ -2823,8 +2824,12 @@ router.put('/:id', authenticate, async (req, res, next) => {
       updatedScheduledTime = parsedTime.toISOString();
       logger.info(`Updated booking ${id} scheduledTime to ${parsedTime.toISOString()}`);
 
-      if (isConsumer && booking.status === 'PENDING') {
-        await cancelPendingRescheduleRequestsForBooking(id, userId);
+      // Direct schedule edits supersede any pending consumer reschedule request.
+      if (isBarber || (isConsumer && booking.status === 'PENDING')) {
+        const cancelledCount = await cancelPendingRescheduleRequestsForBooking(id, userId);
+        if (cancelledCount > 0) {
+          clearedPendingRescheduleRequest = true;
+        }
       }
     }
 
@@ -3108,6 +3113,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
       consumerId: booking.consumerId,
       serviceType: booking.serviceType,
       updatedBy: isBarber ? 'barber' : 'consumer',
+      clearedPendingRescheduleRequest,
     };
     
     // Emit to both barber and consumer's personal rooms
@@ -3129,6 +3135,7 @@ router.put('/:id', authenticate, async (req, res, next) => {
           locationDetails: updatedLocationDetails,
           notes: updatedNotes,
           status: booking.status,
+          ...(clearedPendingRescheduleRequest ? { pendingRescheduleRequest: null } : {}),
         }
       },
     });
