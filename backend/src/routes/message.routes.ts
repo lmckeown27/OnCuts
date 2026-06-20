@@ -142,14 +142,21 @@ router.post('/conversations/:conversationId/messages', authenticate, async (req,
   try {
     const userId = (req as any).user.userId;
     const conversationId = parseInt(req.params.conversationId);
-    const { content, messageType, mediaUrl } = req.body;
+    const body = req.body as Record<string, unknown>;
+    const content = body.content as string | undefined;
+    const messageType = String(body.messageType ?? body.message_type ?? 'text');
+    const mediaUrlRaw = body.mediaUrl ?? body.media_url;
+    const mediaUrl =
+      mediaUrlRaw != null && String(mediaUrlRaw).trim() !== ''
+        ? String(mediaUrlRaw).trim()
+        : null;
 
     const result = await messageService.sendMessage(
       conversationId,
       userId,
       content,
-      messageType || 'text',
-      mediaUrl || null
+      messageType,
+      mediaUrl
     );
 
     await emitNewMessageSocket(req.app, conversationId, userId, result.data.message);

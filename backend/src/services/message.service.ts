@@ -18,7 +18,7 @@ import { ApiError } from '../middleware/errorHandler';
 import {
   assertNoMessagingBlockBetween,
   isUgcModerationSchemaReady,
-  validateOutgoingMessageText,
+  validateAndNormalizeOutgoingMessage,
 } from './ugc-moderation.service';
 import { 
   sendConsumerNewMessageEmail, 
@@ -506,7 +506,7 @@ class MessageService {
   async sendMessage(
     conversationId: string | number,
     senderId: string | number,
-    content: string,
+    content: string | null | undefined,
     messageType: string = 'text',
     mediaUrl: string | null = null
   ): Promise<any> {
@@ -530,14 +530,21 @@ class MessageService {
           : String(conversation.user1_id);
       await assertNoMessagingBlockBetween(String(senderId), recipientId);
 
-      validateOutgoingMessageText(String(content ?? ''));
+      const normalized = validateAndNormalizeOutgoingMessage(messageType, content, mediaUrl);
+      const contentForStorage = normalized.contentForStorage;
 
       // Create message
       const result = await pool.query(
         `INSERT INTO messages (conversation_id, sender_id, content, message_type, media_url)
          VALUES ($1, $2, $3, $4, $5)
          RETURNING id, content, message_type, media_url, is_read, created_at`,
-        [conversationId, senderId, content, messageType, mediaUrl]
+        [
+          conversationId,
+          senderId,
+          contentForStorage,
+          normalized.normalizedType,
+          normalized.mediaUrl,
+        ]
       );
 
       const message = result.rows[0];
@@ -558,10 +565,15 @@ class MessageService {
 
       // Send push notification to recipient
       try {
+        const notificationPreview =
+          normalized.normalizedType === 'image' && !String(content ?? '').trim()
+            ? 'Sent a photo'
+            : contentForStorage;
+
         await pushNotificationService.sendMessageNotification(
           recipientId,
           `${sender.first_name} ${sender.last_name}`,
-          content,
+          notificationPreview,
           conversationId
         );
         
@@ -570,7 +582,10 @@ class MessageService {
           userId: recipientId,
           type: 'new_message',
           title: `New message from ${sender.first_name} ${sender.last_name}`,
-          message: content.length > 100 ? content.substring(0, 100) + '...' : content,
+          message:
+            notificationPreview.length > 100
+              ? notificationPreview.substring(0, 100) + '...'
+              : notificationPreview,
           data: { conversationId, senderId, senderName: `${sender.first_name} ${sender.last_name}` },
         });
       } catch (notificationError) {
@@ -670,7 +685,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
               booking: bookingDetails,
             });
@@ -680,7 +695,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
               booking: bookingDetails,
             });
@@ -690,7 +705,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
             });
           } else if ((senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && recipientRole === 'BARBER') {
@@ -699,7 +714,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
             });
           } else if (senderRole === 'BARBER' && (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')) {
@@ -708,7 +723,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
             });
           } else if (
@@ -720,7 +735,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
             });
           } else if (
@@ -732,7 +747,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
               booking: bookingDetails,
             });
@@ -745,7 +760,7 @@ class MessageService {
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
               senderName: senderFullName,
-              messageContent: content,
+              messageContent: contentForStorage,
               conversationId,
             });
           }

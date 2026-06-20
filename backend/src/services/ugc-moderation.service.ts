@@ -102,6 +102,35 @@ export function validateOutgoingMessageText(content: string): void {
   }
 }
 
+const DEFAULT_IMAGE_MESSAGE_PREVIEW = '📷 Photo';
+
+/** Normalize text vs image payloads before persistence (image may omit caption). */
+export function validateAndNormalizeOutgoingMessage(
+  messageType: string,
+  content: string | null | undefined,
+  mediaUrl: string | null | undefined
+): { normalizedType: string; contentForStorage: string; mediaUrl: string | null } {
+  const normalizedType = messageType === 'image' ? 'image' : 'text';
+
+  if (normalizedType === 'image') {
+    const url = mediaUrl != null ? String(mediaUrl).trim() : '';
+    if (!url) {
+      throw new ApiError(400, 'mediaUrl is required for image messages');
+    }
+    const trimmed = String(content ?? '').trim();
+    const contentForStorage = trimmed || DEFAULT_IMAGE_MESSAGE_PREVIEW;
+    validateOutgoingMessageText(contentForStorage);
+    return { normalizedType, contentForStorage, mediaUrl: url };
+  }
+
+  validateOutgoingMessageText(String(content ?? ''));
+  return {
+    normalizedType,
+    contentForStorage: String(content ?? '').trim(),
+    mediaUrl: null,
+  };
+}
+
 async function assertNoPeerBlockBetween(
   userIdA: string,
   userIdB: string,
