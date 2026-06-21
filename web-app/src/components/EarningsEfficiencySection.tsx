@@ -80,7 +80,7 @@ export default function EarningsEfficiencySection() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center md:mb-16">
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
-            The Math Behind CampusCuts
+            Maximizing Barber Yield
           </h2>
         </div>
 
