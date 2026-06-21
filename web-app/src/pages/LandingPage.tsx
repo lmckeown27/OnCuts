@@ -14,7 +14,7 @@ import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
 import Marquee from '../components/Marquee';
 import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
-import IosAppPromoSection from '../components/IosAppPromoSection';
+import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { University } from '../components/UniversitySelector';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
@@ -501,7 +501,13 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Tap "Find Barber," browse barbers at your campus, view their Instagram portfolio, then select a service, pick an available date and time, enter your preferred location, and submit your request. You'll get a notification when the barber accepts!</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        On iPhone, download{' '}
+                        <a href={IOS_APP_STORE_LINKS.consumer} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">
+                          CampusCuts
+                        </a>{' '}
+                        from the App Store, select your university, browse campus barbers, view their Instagram portfolio, then pick a service, date, time, and location to submit your request. Don&apos;t have an iOS device? Select your university on this site and tap &quot;Find Barber&quot; to book on the web. You&apos;ll get a notification when the barber accepts!
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -516,7 +522,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You pay after your haircut is complete. Once the barber marks the service as done, you'll see a payment prompt. Pay securely with card, Apple Pay, or Google Pay and add a tip if you'd like (15%, 20%, or 25%).</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You pay after your haircut is complete. Once the barber marks the service as done, you&apos;ll see a payment prompt in the CampusCuts app or on the web. Pay securely with card, Apple Pay, or Google Pay and add a tip if you&apos;d like (15%, 20%, or 25%).</p>
                     </div>
                   </div>
                 </div>
@@ -546,7 +552,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! You can request a change to the time, date, or location, or cancel entirely. Schedule changes must be approved by your provider. You can also cancel before the barber marks the service as complete. Find these options in your booking details.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Yes! While a booking is still pending, you can edit the time, date, location, or notes directly. Once a barber has accepted, schedule changes require their approval through a reschedule request. You can cancel before the service is marked complete. Manage everything from your booking details in the CampusCuts app or on the web.</p>
                     </div>
                   </div>
                 </div>
@@ -561,7 +567,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'c5' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Use the in-app messaging feature to chat directly with your barber. Coordinate details, share reference photos, or ask questions all in one place.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Use CampusCuts messaging to chat directly with your barber in the app or on the web. Coordinate details, share reference photos, or ask questions all in one place.</p>
                     </div>
                   </div>
                 </div>
@@ -594,12 +600,18 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b1')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I become a CampusCuts barber?</h4>
+                    <h4 className="font-medium text-gray-900">How do I join as a barber?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b1' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Tap "Become a Barber" and submit your application. Once approved, set up your profile with services, prices, availability, and link your Instagram portfolio. Connect Stripe to receive payments, and you're ready to start accepting bookings!</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">
+                        Tap &quot;Become a Barber&quot; on this site to submit your application. Once approved, download{' '}
+                        <a href={IOS_APP_STORE_LINKS.interaProvider} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-600 hover:underline">
+                          InteraProvider
+                        </a>{' '}
+                        on the App Store to manage bookings, availability, messaging, and payouts. Set up your profile with services, prices, availability, and your Instagram portfolio, then connect Stripe to start accepting bookings.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -614,7 +626,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b2' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 85% of every payment, plus 100% of tips. We only take a 15% platform fee, way less than the 40-60% traditional barbershops take.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">You keep 85% of every payment, plus 100% of tips. We only take a 15% platform fee—far less than the 50% many traditional barbershops take.</p>
                     </div>
                   </div>
                 </div>
@@ -629,7 +641,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b3' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">After you complete a haircut, mark the booking as "Complete." The customer pays through the app, and funds are deposited directly to your connected Stripe account. No chasing payments.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">After you complete a haircut, mark the booking as complete in InteraProvider or your barber dashboard. The customer pays through CampusCuts, and funds are deposited directly to your connected Stripe account. No chasing payments.</p>
                     </div>
                   </div>
                 </div>
@@ -644,7 +656,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b4' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in your profile by choosing which days and hours you're open for bookings. You can also block specific dates and times for one-time events. Optionally, connect your Google Calendar to automatically block times when you're busy—your class schedule, study sessions, and personal events are synced so customers can only book when you're truly available.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Set your weekly availability in InteraProvider or your barber dashboard by choosing which days and hours you&apos;re open for bookings. You can also block specific dates and times for one-time events. Optionally, connect your Google Calendar to automatically block times when you&apos;re busy—your class schedule, study sessions, and personal events are synced so customers can only book when you&apos;re truly available.</p>
                     </div>
                   </div>
                 </div>
@@ -659,7 +671,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Connecting your Google Calendar prevents double-bookings. CampusCuts reads your calendar's busy times (like classes, exams, or personal events) and automatically blocks those slots so customers can't book during them. We never see the details of your events—just when you're busy. You can disconnect at any time from your barber dashboard.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Connecting your Google Calendar prevents double-bookings. CampusCuts reads your calendar&apos;s busy times (like classes, exams, or personal events) and automatically blocks those slots so customers can&apos;t book during them. We never see the details of your events—just when you&apos;re busy. You can disconnect at any time from InteraProvider or your barber dashboard.</p>
                     </div>
                   </div>
                 </div>
