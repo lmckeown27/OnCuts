@@ -10,24 +10,44 @@ const SCHOOL_LOGOS = [
   { src: calLogo, alt: 'UC Berkeley' },
 ] as const;
 
-function LogoStrip() {
+/** Repeat enough times so one strip always fills the viewport (prevents gaps mid-loop). */
+const REPEAT_COUNT = 8;
+
+type LogoEntry = (typeof SCHOOL_LOGOS)[number] & { id: string };
+
+function buildLogoStrip(): LogoEntry[] {
+  return Array.from({ length: REPEAT_COUNT }, (_, repeatIndex) =>
+    SCHOOL_LOGOS.map((logo) => ({
+      ...logo,
+      id: `${logo.alt}-${repeatIndex}`,
+    }))
+  ).flat();
+}
+
+const LOGO_STRIP = buildLogoStrip();
+
+function LogoStrip({ ariaHidden = false }: { ariaHidden?: boolean }) {
   return (
-    <>
-      {SCHOOL_LOGOS.map((logo) => (
+    <div
+      className="flex shrink-0 items-center"
+      aria-hidden={ariaHidden || undefined}
+    >
+      {LOGO_STRIP.map((logo) => (
         <div
-          key={logo.alt}
+          key={logo.id}
           className="flex shrink-0 items-center justify-center px-8 sm:px-12"
         >
           <img
             src={logo.src}
-            alt={logo.alt}
+            alt={ariaHidden ? '' : logo.alt}
             className="h-10 sm:h-12 w-auto max-w-[140px] object-contain grayscale opacity-70 transition-all duration-300 hover:grayscale-0 hover:opacity-100"
-            loading="lazy"
+            loading="eager"
             decoding="async"
+            draggable={false}
           />
         </div>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -41,12 +61,10 @@ export default function Marquee() {
         On campuses nationwide
       </p>
 
-      <div
-        className="group/marquee relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
-      >
-        <div className="flex w-max animate-marquee group-hover/marquee:[animation-play-state:paused]">
+      <div className="group/marquee relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+        <div className="flex w-max animate-marquee will-change-transform group-hover/marquee:[animation-play-state:paused]">
           <LogoStrip />
-          <LogoStrip />
+          <LogoStrip ariaHidden />
         </div>
       </div>
     </section>
