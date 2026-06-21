@@ -13,6 +13,7 @@ import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
+import Marquee from '../components/Marquee';
 import type { University } from '../components/UniversitySelector';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
@@ -343,6 +344,8 @@ export default function LandingPage() {
               Find Barber
             </button>
       </div>
+
+      <Marquee />
 
       {/* Portfolio Section - Video Showcase */}
       <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
