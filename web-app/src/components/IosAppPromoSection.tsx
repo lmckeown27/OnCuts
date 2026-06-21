@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Bell, Calendar, MessageCircle, Scissors, Smartphone, Wallet } from 'lucide-react';
+import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
 
 /** Set these when App Store URLs are ready. */
 export const IOS_APP_STORE_LINKS = {
@@ -18,9 +19,13 @@ type AppCardProps = {
 function AppStoreBadge({ href, label }: { href: string; label: string }) {
   const badge = (
     <div className="inline-flex items-center gap-3 rounded-xl bg-gray-900 px-5 py-3 text-white shadow-md transition-transform hover:scale-[1.02]">
-      <svg viewBox="0 0 24 24" className="h-7 w-7 fill-current" aria-hidden="true">
-        <path d="M16.365 1.43c0 1.14-.467 2.223-1.207 3.04-.788.867-2.086 1.538-3.243 1.447-.152-1.09.402-2.248 1.113-3.012.74-.793 2.028-1.396 3.145-1.475h.192zm4.09 16.763c-.74 1.604-1.087 2.325-2.034 3.747-1.316 1.986-3.172 4.463-5.476 4.477-1.048.008-1.757-.337-2.593-.337-.852 0-2.234.347-3.405.318-1.716-.037-3.3-1.002-4.616-2.988-2.574-3.726-2.855-10.195-1.256-14.676.792-2.155 2.204-3.577 3.872-3.607 1.015-.02 1.973.352 2.872.352.867 0 2.498-.434 4.212-.37 1.716.033 2.928.708 3.843 1.805-3.39 2.053-2.84 7.396.572 8.91-.67 1.746-1.534 3.47-2.646 5.369z" />
-      </svg>
+      <img
+        src={appleWhiteLogo}
+        alt=""
+        className="h-7 w-7 object-contain"
+        aria-hidden="true"
+        decoding="async"
+      />
       <div className="text-left leading-tight">
         <p className="text-[10px] uppercase tracking-wide text-white/80">Download on the</p>
         <p className="text-lg font-semibold">App Store</p>
