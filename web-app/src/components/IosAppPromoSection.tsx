@@ -6,8 +6,8 @@ import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 /** Set these when App Store URLs are ready. */
 export const IOS_APP_STORE_LINKS = {
-  consumer: '',
-  interaProvider: '',
+  consumer: 'https://apps.apple.com/us/app/campuscuts/id6763953203',
+  interaProvider: 'https://apps.apple.com/us/app/interaprovider/id6770430152',
 } as const;
 
 type AppCardProps = {
