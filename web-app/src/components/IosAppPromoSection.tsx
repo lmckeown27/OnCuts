@@ -1,10 +1,7 @@
-import type { ReactNode } from 'react';
-import { Bell, Calendar, MessageCircle, Scissors, Wallet } from 'lucide-react';
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
 import campusCutsAppLogo from '../assets/logos/iOS_CampusCuts_Logo.png';
 import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
-/** Set these when App Store URLs are ready. */
 export const IOS_APP_STORE_LINKS = {
   consumer: 'https://apps.apple.com/us/app/campuscuts/id6763953203',
   interaProvider: 'https://apps.apple.com/us/app/interaprovider/id6770430152',
@@ -12,10 +9,9 @@ export const IOS_APP_STORE_LINKS = {
 
 type AppCardProps = {
   title: string;
-  subtitle: string;
+  description: string;
   appLogo: string;
   appLogoAlt: string;
-  features: { icon: ReactNode; label: string }[];
   storeHref: string;
   storeLabel: string;
 };
@@ -58,7 +54,7 @@ function AppStoreBadge({ href, label }: { href: string; label: string }) {
   );
 }
 
-function AppCard({ title, subtitle, appLogo, appLogoAlt, features, storeHref, storeLabel }: AppCardProps) {
+function AppCard({ title, description, appLogo, appLogoAlt, storeHref, storeLabel }: AppCardProps) {
   return (
     <article className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="mb-5 flex items-center gap-3">
@@ -71,20 +67,12 @@ function AppCard({ title, subtitle, appLogo, appLogoAlt, features, storeHref, st
             decoding="async"
           />
         </div>
-        <div>
-          <h3 className="text-lg font-bold text-gray-900 sm:text-xl">{title}</h3>
-          <p className="text-sm text-gray-500">{subtitle}</p>
-        </div>
+        <h3 className="text-lg font-bold text-gray-900 sm:text-xl">{title}</h3>
       </div>
 
-      <ul className="mb-8 space-y-3">
-        {features.map((feature) => (
-          <li key={feature.label} className="flex items-center gap-3 text-sm text-gray-600">
-            <span className="text-primary-500">{feature.icon}</span>
-            {feature.label}
-          </li>
-        ))}
-      </ul>
+      <p className="mb-8 flex-grow text-sm leading-relaxed text-gray-600 sm:text-base">
+        {description}
+      </p>
 
       <div className="mt-auto">
         <AppStoreBadge href={storeHref} label={storeLabel} />
@@ -113,29 +101,19 @@ export default function IosAppPromoSection() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
           <AppCard
             title="CampusCuts"
-            subtitle="For students & customers"
+            description="Download CampusCuts to find your university's barbers, browse their work, and book a cut on campus."
             appLogo={campusCutsAppLogo}
             appLogoAlt="CampusCuts app icon"
             storeHref={IOS_APP_STORE_LINKS.consumer}
             storeLabel="Download CampusCuts on the App Store"
-            features={[
-              { icon: <Scissors className="h-4 w-4" />, label: 'Browse and book campus barbers' },
-              { icon: <MessageCircle className="h-4 w-4" />, label: 'Message your barber directly' },
-              { icon: <Wallet className="h-4 w-4" />, label: 'Pay securely after your cut' },
-            ]}
           />
           <AppCard
             title="InteraProvider"
-            subtitle="For student barbers"
+            description="Already an established campus barber? Join InteraProvider and connect with an established university network of customers ready to book."
             appLogo={interaProviderAppLogo}
             appLogoAlt="InteraProvider app icon"
             storeHref={IOS_APP_STORE_LINKS.interaProvider}
             storeLabel="Download InteraProvider on the App Store"
-            features={[
-              { icon: <Calendar className="h-4 w-4" />, label: 'Manage bookings and availability' },
-              { icon: <Bell className="h-4 w-4" />, label: 'Get notified for new requests' },
-              { icon: <Wallet className="h-4 w-4" />, label: 'Track earnings and payouts' },
-            ]}
           />
         </div>
       </div>
