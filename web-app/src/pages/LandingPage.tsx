@@ -319,7 +319,7 @@ export default function LandingPage() {
               Don&apos;t have an iOS Device?
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600">
-              Search for your school below to browse and book campus barbers on the web.
+              Search below to browse and book campus barbers on the web.
             </p>
           </div>
           
