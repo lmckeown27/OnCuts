@@ -314,9 +314,14 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
-          <h1 className="w-full max-w-xl mb-6 text-center px-2 text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-snug">
-            Don&apos;t have an iOS device? Search for your school below to browse and book campus barbers on the web.
-          </h1>
+          <div className="w-full max-w-xl mb-6 text-center px-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+              Don&apos;t have an iOS Device?
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-gray-600">
+              Search for your school below to browse and book campus barbers on the web.
+            </p>
+          </div>
           
           {/* University Selector */}
         <div className="w-full max-w-xl mb-8">
