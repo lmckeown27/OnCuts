@@ -105,15 +105,9 @@ export default function IosAppPromoSection() {
     >
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center sm:mb-10">
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary-600 sm:text-sm">
-            Now on iOS
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
-            Take CampusCuts wherever you go
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl md:text-4xl">
+            CampusCuts on iOS
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-gray-600 sm:text-base">
-            Book cuts, manage your schedule, and get paid — all from native iOS apps built for campus life.
-          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
