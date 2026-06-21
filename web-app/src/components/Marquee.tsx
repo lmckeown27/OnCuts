@@ -58,7 +58,7 @@ export default function Marquee() {
       aria-label="Partner universities"
     >
       <p className="mb-8 text-center text-xs font-medium uppercase tracking-widest text-gray-400 sm:text-sm">
-        On campuses nationwide
+        Currently Servicing These Campuses
       </p>
 
       <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
