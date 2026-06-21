@@ -442,7 +442,7 @@ export default function LandingPage() {
             Real Human Support
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Questions about bookings, barber applications, or your campus? Our team is here to help — not a bot.
+            Questions about bookings, barber applications, or your campus? Our team is here to help.
           </p>
           <button
             onClick={openContactPopup}
