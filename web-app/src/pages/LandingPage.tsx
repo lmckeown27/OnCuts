@@ -9,11 +9,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Scissors, ArrowRight } from 'lucide-react';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
 import Marquee from '../components/Marquee';
+import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
 import type { University } from '../components/UniversitySelector';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
@@ -36,7 +36,6 @@ export default function LandingPage() {
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const [faqCategory, setFaqCategory] = useState<'consumers' | 'barbers'>('consumers');
-  const [pricingCategory, setPricingCategory] = useState<'traditional' | 'campuscut'>('traditional');
   
   // University selector state for hero section
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
@@ -347,126 +346,7 @@ export default function LandingPage() {
 
       <Marquee />
 
-      {/* Economic Comparison Section */}
-      <div className="py-20 px-4 bg-gradient-to-br from-gray-50 to-primary-50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="pricing">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              The Math Behind CampusCuts
-            </h2>
-          </div>
-
-          {/* Mobile Toggle Slider */}
-          <div className="md:hidden flex justify-center mb-8">
-            <div className="inline-flex bg-white rounded-full p-1 shadow-sm">
-              <button
-                onClick={() => setPricingCategory('traditional')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  pricingCategory === 'traditional'
-                    ? 'bg-red-100 text-red-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Traditional
-              </button>
-              <button
-                onClick={() => setPricingCategory('campuscut')}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  pricingCategory === 'campuscut'
-                    ? 'bg-green-100 text-green-700'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                CampusCuts
-              </button>
-            </div>
-          </div>
-
-          {/* The Numbers */}
-          <div className="max-w-6xl mx-auto mb-12">
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Traditional Barbershop - Hidden on mobile when CampusCuts selected */}
-              <Card className={`border-2 border-red-200 bg-red-50 ${pricingCategory === 'campuscut' ? 'hidden md:block' : ''}`}>
-                <div className="p-6">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Traditional Barbershop</h3>
-                    <p className="text-gray-600">How it usually works</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-700 font-medium">Customer Pays:</span>
-                        <span className="text-2xl font-bold text-gray-900">$35</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-red-500" style={{ width: '100%' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-700 font-medium">Shop Takes (50%):</span>
-                        <span className="text-xl font-bold text-red-600">-$17.50</span>
-                      </div>
-                      <p className="text-xs text-gray-500">Rent, utilities, reception, overhead</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border-2 border-red-300">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-900 font-bold">Barber Earns:</span>
-                        <span className="text-3xl font-bold text-red-700">$17.50</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">Only 50% of what customer paid</p>
-                    </div>
-                  </div>
-
-                </div>
-              </Card>
-
-              {/* CampusCuts Model - Hidden on mobile when Traditional selected */}
-              <Card className={`border-2 border-green-300 bg-green-50 ${pricingCategory === 'traditional' ? 'hidden md:block' : ''}`}>
-                <div className="p-6">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCuts</h3>
-                    <p className="text-gray-600">How we're different</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-white rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-700 font-medium">Customer Pays:</span>
-                        <span className="text-2xl font-bold text-gray-900">$28</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500" style={{ width: '100%' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-gray-700 font-medium">Platform Fee (15%):</span>
-                        <span className="text-xl font-bold text-orange-600">-$4.20</span>
-                      </div>
-                      <p className="text-xs text-gray-500">No overhead, just technology</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg p-4 border-2 border-green-400">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-900 font-bold">Barber Earns:</span>
-                        <span className="text-3xl font-bold text-green-700">$23.80</span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-1">85% of what customer paid</p>
-                    </div>
-                  </div>
-
-                </div>
-              </Card>
-            </div>
-          </div>
-
-        </div>
-      </div>
+      <EarningsEfficiencySection />
 
       {/* Portfolio Section - Video Showcase */}
       <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
