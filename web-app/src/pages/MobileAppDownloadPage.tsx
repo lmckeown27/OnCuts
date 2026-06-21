@@ -1,7 +1,7 @@
 /**
  * Mobile App Download Page
  * 
- * Native-style app install experience for CampusCut dApp
+ * Native-style app install experience for CampusCuts dApp
  * Features:
  * - iOS/Android native-style prompts
  * - Bottom sheet design
@@ -98,14 +98,14 @@ export default function MobileAppDownloadPage() {
               You're All Set!
             </h1>
             <p className="text-gray-600 mb-8">
-              CampusCut is installed and ready to use. Access it from your home screen anytime!
+              CampusCuts is installed and ready to use. Access it from your home screen anytime!
             </p>
 
             <button
               onClick={() => navigate('/app')}
               className="w-full bg-primary-400 hover:bg-primary-500 text-white font-semibold py-4 rounded-xl transition-all active:scale-95 shadow-lg mb-3"
             >
-              Open CampusCut
+              Open CampusCuts
             </button>
 
             <button
@@ -140,7 +140,7 @@ export default function MobileAppDownloadPage() {
             <div className="relative inline-block">
               <img
                 src="/src/assets/logos/Logo1.png"
-                alt="CampusCut"
+                alt="CampusCuts"
                 className="w-24 h-24 rounded-3xl shadow-2xl mx-auto mb-4"
               />
               <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-primary-400 rounded-full flex items-center justify-center shadow-lg">
@@ -149,7 +149,7 @@ export default function MobileAppDownloadPage() {
             </div>
             
             <h1 className="text-3xl font-bold text-gray-900 mb-2 mt-6">
-              Get CampusCut
+              Get CampusCuts
             </h1>
             <p className="text-gray-600 text-lg">
               Install the app on your phone

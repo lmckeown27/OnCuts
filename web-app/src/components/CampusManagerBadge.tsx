@@ -31,7 +31,7 @@ export const CampusManagerTooltip: React.FC = () => {
   return (
     <div className="text-sm text-gray-600 max-w-xs">
       <p className="font-medium text-gray-900 mb-1">Campus Manager</p>
-      <p>Leads barber onboarding and content for CampusCut at this campus.</p>
+      <p>Leads barber onboarding and content for CampusCuts at this campus.</p>
       <p className="mt-2 text-xs text-gray-500">
         Campus Managers are still active barbers and compete fairly in rankings and pricing.
       </p>

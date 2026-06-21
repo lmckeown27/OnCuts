@@ -616,7 +616,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 flex items-center justify-center relative flex-shrink-0">
           <div className="flex flex-col items-center text-center">
-            <h2 className="text-xl font-bold text-white">Become a CampusCut Barber</h2>
+            <h2 className="text-xl font-bold text-white">Become a CampusCuts Barber</h2>
             <p className="text-primary-100 text-sm">Apply to join our network of campus barbers</p>
             <p className="text-primary-100/90 text-xs mt-1">Step {step} of {TOTAL_STEPS}</p>
           </div>
@@ -897,7 +897,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
                 <span className="text-sm text-gray-700">
                   I certify that the license information I provided is accurate to the best of my knowledge, and I
-                  understand that CampusCut or my campus manager may verify it before I am approved to provide
+                  understand that CampusCuts or my campus manager may verify it before I am approved to provide
                   services.
                 </span>
               </label>
@@ -1001,12 +1001,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Why do you want to be a CampusCut barber? *
+                  Why do you want to be a CampusCuts barber? *
                 </label>
                 <textarea
                   value={form.whyBeBarber}
                   onChange={(e) => setForm({ ...form, whyBeBarber: e.target.value })}
-                  placeholder="Tell us about your passion for barbering and why you'd be a great fit for CampusCut..."
+                  placeholder="Tell us about your passion for barbering and why you'd be a great fit for CampusCuts..."
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
                 />
@@ -1122,7 +1122,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
 
                 <div className="border-t pt-4">
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Why CampusCut?</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Why CampusCuts?</p>
                   <p className="text-gray-700 text-sm">{form.whyBeBarber}</p>
                 </div>
 

@@ -27,8 +27,8 @@ export default function GDPRPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={MainChairLogo} alt="CampusCut" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCut</span>
+            <img src={MainChairLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
           </Link>
           <button 
             onClick={handleBack}
@@ -53,14 +53,14 @@ export default function GDPRPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                CampusCut is committed to complying with the General Data Protection Regulation (GDPR) for users located in the European Union (EU) and European Economic Area (EEA). This page explains how we process your personal data and your rights under GDPR.
+                CampusCuts is committed to complying with the General Data Protection Regulation (GDPR) for users located in the European Union (EU) and European Economic Area (EEA). This page explains how we process your personal data and your rights under GDPR.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Data Controller</h2>
               <p>
-                CampusCut is the data controller responsible for your personal data. For any data protection inquiries, please contact us at campuscuthelp@gmail.com.
+                CampusCuts is the data controller responsible for your personal data. For any data protection inquiries, please contact us at campuscuthelp@gmail.com.
               </p>
             </section>
 

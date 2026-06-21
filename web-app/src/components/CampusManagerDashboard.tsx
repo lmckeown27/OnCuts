@@ -548,11 +548,11 @@ export const BarberApplicationsPanel: React.FC<{ campusId: string }> = ({ campus
   const generateInterviewEmail = (app: BarberApplication) => {
     const applicantName = app.first_name || app.user?.first_name || 'Applicant';
     const applicantEmail = app.email || app.user?.email || '';
-    const subject = encodeURIComponent(`CampusCut Barber Application - Interview Request`);
+    const subject = encodeURIComponent(`CampusCuts Barber Application - Interview Request`);
     const body = encodeURIComponent(
 `Hi ${applicantName},
 
-Thank you for applying to become a barber on CampusCut! I'd like to schedule a brief interview to learn more about your experience and discuss next steps.
+Thank you for applying to become a barber on CampusCuts! I'd like to schedule a brief interview to learn more about your experience and discuss next steps.
 
 Are you available for a 15-minute call this week? Please let me know a few times that work for you.
 

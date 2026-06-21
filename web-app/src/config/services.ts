@@ -28,7 +28,7 @@ export const DEFAULT_SERVICE_DURATION_MINUTES = 60;
  * Master list of all service types
  * These are the standardized services across the platform
  * 
- * Price Tiers (aligned with CampusCut model):
+ * Price Tiers (aligned with CampusCuts model):
  * - Budget ($23): Basic quick services
  * - Standard ($28): Standard haircuts
  * - Premium ($35-45): Specialized services

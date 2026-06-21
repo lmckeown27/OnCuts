@@ -529,7 +529,7 @@ export default function BarberPage() {
             
             {/* Center section - Logo always centered */}
             <div className="absolute left-1/2 transform -translate-x-1/2">
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
+              <img src={CampusCutLogo} alt="CampusCuts" className="h-10 sm:h-12 w-auto" />
             </div>
             
             {/* Right section - Booking Requests + Profile */}

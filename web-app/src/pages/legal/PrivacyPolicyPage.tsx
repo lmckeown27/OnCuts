@@ -27,8 +27,8 @@ export default function PrivacyPolicyPage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={MainChairLogo} alt="CampusCut" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCut</span>
+            <img src={MainChairLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
           </Link>
           <button 
             onClick={handleBack}
@@ -50,7 +50,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                CampusCut is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform, website, and mobile applications (collectively, the "Service").
+                CampusCuts is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our platform, website, and mobile applications (collectively, the "Service").
               </p>
               <p className="mt-3">
                 Please read this Privacy Policy carefully. By using the Service, you agree to the collection and use of information in accordance with this policy.
@@ -200,16 +200,16 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">10. Google API Services</h2>
               <p>
-                CampusCut offers optional integration with Google Calendar to help barbers manage their availability. When you connect your Google Calendar:
+                CampusCuts offers optional integration with Google Calendar to help barbers manage their availability. When you connect your Google Calendar:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>We access your Google Calendar to read busy/free times to prevent double-booking</li>
-                <li>We may create calendar events for CampusCut appointments (with your permission)</li>
+                <li>We may create calendar events for CampusCuts appointments (with your permission)</li>
                 <li>We store a secure OAuth refresh token to maintain the connection</li>
                 <li>You can disconnect your Google Calendar at any time from your barber dashboard</li>
               </ul>
               <p className="mt-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
-                <strong>Limited Use Disclosure:</strong> CampusCut's use and transfer of information received from Google APIs to any other app will adhere to the{' '}
+                <strong>Limited Use Disclosure:</strong> CampusCuts's use and transfer of information received from Google APIs to any other app will adhere to the{' '}
                 <a 
                   href="https://developers.google.com/terms/api-services-user-data-policy" 
                   target="_blank" 

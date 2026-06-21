@@ -50,7 +50,7 @@ export default function BarberHeader({
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src={CampusCutLogo} alt="CampusCut" className="h-10 w-auto" />
+            <img src={CampusCutLogo} alt="CampusCuts" className="h-10 w-auto" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
               {isCampusManager && campusName && (

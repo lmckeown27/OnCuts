@@ -624,7 +624,7 @@ export default function ConsumerPage() {
               onClick={() => navigate('/')}
               className="absolute left-1/2 transform -translate-x-1/2 cursor-pointer"
             >
-              <img src={CampusCutLogo} alt="CampusCut" className="h-10 sm:h-12 w-auto" />
+              <img src={CampusCutLogo} alt="CampusCuts" className="h-10 sm:h-12 w-auto" />
             </button>
             
             {/* Right section - Messages & Profile (authenticated) or Sign In (guest) */}

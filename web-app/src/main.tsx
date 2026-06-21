@@ -47,7 +47,7 @@ if (ENABLE_SERVICE_WORKER && 'serviceWorker' in navigator && import.meta.env.PRO
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 console.log('🔄 New service worker available. Refresh to update.');
-                if (confirm('A new version of CampusCut is available. Reload to update?')) {
+                if (confirm('A new version of CampusCuts is available. Reload to update?')) {
                   window.location.reload();
                 }
               }

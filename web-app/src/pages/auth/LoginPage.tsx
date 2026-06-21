@@ -126,14 +126,14 @@ export default function LoginPage() {
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
               src={TabChairLogo} 
-              alt="CampusCut Logo" 
+              alt="CampusCuts Logo" 
               className="h-16 w-auto mb-4"
             />
           </Link>
           <h1 className="text-3xl font-bold text-white mb-2">
             Sign In
           </h1>
-          <p className="text-gray-300">Access your CampusCut account</p>
+          <p className="text-gray-300">Access your CampusCuts account</p>
         </div>
 
         {/* Form Card */}
@@ -297,7 +297,7 @@ export default function LoginPage() {
             to="/"
             className="text-gray-400 hover:text-white text-sm transition-colors"
           >
-            ← Back to CampusCut
+            ← Back to CampusCuts
           </Link>
         </div>
       </div>

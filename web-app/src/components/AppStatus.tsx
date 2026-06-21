@@ -72,7 +72,7 @@ export default function AppStatus() {
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 mb-1">Update Available</h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  A new version of CampusCut is ready. Update now for the latest features and improvements.
+                  A new version of CampusCuts is ready. Update now for the latest features and improvements.
                 </p>
                 
                 <div className="flex gap-2">

@@ -685,7 +685,7 @@ export default function ConsumerBookingStatusPage() {
         {/* Header */}
         <div className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <img src={CampusCutLogo} alt="CampusCut" className="h-8" />
+            <img src={CampusCutLogo} alt="CampusCuts" className="h-8" />
             <button
               onClick={handleBackToDiscover}
               className="text-primary-600 font-semibold hover:text-primary-700"
@@ -883,7 +883,7 @@ export default function ConsumerBookingStatusPage() {
               </span>
             )}
           </button>
-          <img src={CampusCutLogo} alt="CampusCut" className="h-10" />
+          <img src={CampusCutLogo} alt="CampusCuts" className="h-10" />
           
           {/* Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>

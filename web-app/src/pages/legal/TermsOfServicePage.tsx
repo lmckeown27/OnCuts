@@ -26,8 +26,8 @@ export default function TermsOfServicePage() {
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <img src={MainChairLogo} alt="CampusCut" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-gray-900">CampusCut</span>
+            <img src={MainChairLogo} alt="CampusCuts" className="h-10 w-auto" />
+            <span className="text-xl font-bold text-gray-900">CampusCuts</span>
           </Link>
           <button 
             onClick={handleBack}
@@ -49,7 +49,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">1. Introduction</h2>
               <p>
-                Welcome to CampusCut ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the CampusCut platform, including our website, mobile applications, and all related services (collectively, the "Service").
+                Welcome to CampusCuts ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the CampusCuts platform, including our website, mobile applications, and all related services (collectively, the "Service").
               </p>
               <p className="mt-3">
                 By accessing or using the Service, you agree to be bound by these Terms. If you do not agree to these Terms, you may not access or use the Service.
@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">2. Description of Service</h2>
               <p>
-                CampusCut is a marketplace platform that connects consumers seeking grooming services ("Consumers") with independent barbers offering their services ("Barbers") at college and university campuses. We facilitate:
+                CampusCuts is a marketplace platform that connects consumers seeking grooming services ("Consumers") with independent barbers offering their services ("Barbers") at college and university campuses. We facilitate:
               </p>
               <ul className="list-disc pl-6 mt-2 space-y-1">
                 <li>Discovery and browsing of barber profiles and services</li>
@@ -70,7 +70,7 @@ export default function TermsOfServicePage() {
                 <li>Campus-based barber management</li>
               </ul>
               <p className="mt-3">
-                Important: CampusCut is a platform that connects users. We are not a grooming service provider. Barbers are independent contractors, not employees of CampusCut.
+                Important: CampusCuts is a platform that connects users. We are not a grooming service provider. Barbers are independent contractors, not employees of CampusCuts.
               </p>
             </section>
 
@@ -130,7 +130,7 @@ export default function TermsOfServicePage() {
                 <li>Review and manage barber applications for your assigned campus</li>
                 <li>Maintain oversight of barber quality and conduct at your campus</li>
                 <li>Act in good faith when approving or rejecting barber applications</li>
-                <li>Report any issues or concerns to CampusCut support</li>
+                <li>Report any issues or concerns to CampusCuts support</li>
               </ul>
             </section>
 
@@ -160,7 +160,7 @@ export default function TermsOfServicePage() {
                 <li>Whether the service was partially or fully rendered</li>
               </ul>
               <p className="mt-3">
-                Disputes between Consumers and Barbers should first be attempted to be resolved directly. CampusCut may assist in mediation but is not obligated to issue refunds.
+                Disputes between Consumers and Barbers should first be attempted to be resolved directly. CampusCuts may assist in mediation but is not obligated to issue refunds.
               </p>
             </section>
 
@@ -183,10 +183,10 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">10. Intellectual Property</h2>
               <p>
-                The Service and its original content, features, and functionality are owned by CampusCut and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
+                The Service and its original content, features, and functionality are owned by CampusCuts and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
               </p>
               <p className="mt-3">
-                By posting content (including profile information, portfolio images, and reviews), you grant CampusCut a non-exclusive, worldwide, royalty-free license to use, display, and distribute such content in connection with the Service.
+                By posting content (including profile information, portfolio images, and reviews), you grant CampusCuts a non-exclusive, worldwide, royalty-free license to use, display, and distribute such content in connection with the Service.
               </p>
             </section>
 
@@ -213,7 +213,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-gray-900 mb-3">13. Indemnification</h2>
               <p>
-                You agree to indemnify, defend, and hold harmless CampusCut and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including attorneys' fees) arising from your use of the Service or violation of these Terms.
+                You agree to indemnify, defend, and hold harmless CampusCuts and its officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including attorneys' fees) arising from your use of the Service or violation of these Terms.
               </p>
             </section>
 

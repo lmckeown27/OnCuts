@@ -1,5 +1,5 @@
 /**
- * CampusCut Landing Page
+ * CampusCuts Landing Page
  * 
  * Professional landing page with top navigation and comprehensive footer
  * Inspired by modern SaaS landing pages
@@ -174,12 +174,12 @@ export default function LandingPage() {
               <div className="relative hidden md:block">
                 <img 
                   src={HeaderChairLogo} 
-                  alt="CampusCut" 
+                  alt="CampusCuts" 
                   className={`h-12 w-auto transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
                 />
                 <img 
                   src={MainChairLogo} 
-                  alt="CampusCut" 
+                  alt="CampusCuts" 
                   className={`h-12 w-auto absolute top-0 left-0 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
                 />
               </div>
@@ -187,17 +187,17 @@ export default function LandingPage() {
               <div className="relative md:hidden">
                 <img 
                   src={MobileHeaderChairLogo} 
-                  alt="CampusCut" 
+                  alt="CampusCuts" 
                   className={`h-12 w-auto ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
                 />
                 <img 
                   src={MainChairLogo} 
-                  alt="CampusCut" 
+                  alt="CampusCuts" 
                   className={`h-12 w-auto absolute top-0 left-0 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
                 />
               </div>
               <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
-                CampusCut
+                CampusCuts
               </span>
             </button>
 
@@ -312,7 +312,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
           {/* Mobile Logo */}
-          <h1 className="sm:hidden text-3xl font-bold text-primary-600 mb-6">CampusCut</h1>
+          <h1 className="sm:hidden text-3xl font-bold text-primary-600 mb-6">CampusCuts</h1>
           
           {/* University Selector */}
         <div className="w-full max-w-xl mb-8">
@@ -364,7 +364,7 @@ export default function LandingPage() {
               <iframe
                 className="absolute top-0 left-0 w-full h-full pointer-events-none"
                 src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCut Showcase 1"
+                title="CampusCuts Showcase 1"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 loading="lazy"
@@ -378,7 +378,7 @@ export default function LandingPage() {
               <iframe
                 className="absolute top-0 left-0 w-full h-full pointer-events-none"
                 src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCut Showcase 2"
+                title="CampusCuts Showcase 2"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 loading="lazy"
@@ -392,7 +392,7 @@ export default function LandingPage() {
               <iframe
                 className="absolute top-0 left-0 w-full h-full pointer-events-none"
                 src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCut Showcase 3"
+                title="CampusCuts Showcase 3"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 loading="lazy"
@@ -435,7 +435,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              The Math Behind CampusCut
+              The Math Behind CampusCuts
             </h2>
           </div>
 
@@ -460,7 +460,7 @@ export default function LandingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                CampusCut
+                CampusCuts
               </button>
             </div>
           </div>
@@ -468,7 +468,7 @@ export default function LandingPage() {
           {/* The Numbers */}
           <div className="max-w-6xl mx-auto mb-12">
             <div className="grid md:grid-cols-2 gap-8">
-              {/* Traditional Barbershop - Hidden on mobile when CampusCut selected */}
+              {/* Traditional Barbershop - Hidden on mobile when CampusCuts selected */}
               <Card className={`border-2 border-red-200 bg-red-50 ${pricingCategory === 'campuscut' ? 'hidden md:block' : ''}`}>
                 <div className="p-6">
                   <div className="text-center mb-6">
@@ -507,11 +507,11 @@ export default function LandingPage() {
                 </div>
               </Card>
 
-              {/* CampusCut Model - Hidden on mobile when Traditional selected */}
+              {/* CampusCuts Model - Hidden on mobile when Traditional selected */}
               <Card className={`border-2 border-green-300 bg-green-50 ${pricingCategory === 'traditional' ? 'hidden md:block' : ''}`}>
                 <div className="p-6">
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCut</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">CampusCuts</h3>
                     <p className="text-gray-600">How we're different</p>
                   </div>
                   
@@ -702,7 +702,7 @@ export default function LandingPage() {
                     onClick={() => toggleFaq('b1')}
                     className="w-full flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors gap-2"
                   >
-                    <h4 className="font-medium text-gray-900">How do I become a CampusCut barber?</h4>
+                    <h4 className="font-medium text-gray-900">How do I become a CampusCuts barber?</h4>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-300 flex-shrink-0 ${openFaq === 'b1' ? 'rotate-180' : ''}`} />
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b1' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -767,7 +767,7 @@ export default function LandingPage() {
                   </button>
                   <div className={`grid transition-all duration-300 ease-in-out ${openFaq === 'b6' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                     <div className="overflow-hidden">
-                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Connecting your Google Calendar prevents double-bookings. CampusCut reads your calendar's busy times (like classes, exams, or personal events) and automatically blocks those slots so customers can't book during them. We never see the details of your events—just when you're busy. You can disconnect at any time from your barber dashboard.</p>
+                      <p className="px-4 pb-4 text-gray-600 text-sm text-center">Connecting your Google Calendar prevents double-bookings. CampusCuts reads your calendar's busy times (like classes, exams, or personal events) and automatically blocks those slots so customers can't book during them. We never see the details of your events—just when you're busy. You can disconnect at any time from your barber dashboard.</p>
                     </div>
                   </div>
                 </div>
@@ -808,7 +808,7 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be a CampusCut Barber?
+            Want to be a CampusCuts Barber?
           </h2>
           <div className="flex justify-center">
             <button 
@@ -867,7 +867,7 @@ export default function LandingPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   // Open mailto with pre-filled content
-                  const subject = encodeURIComponent(`CampusCut Support Request from ${contactForm.name}`);
+                  const subject = encodeURIComponent(`CampusCuts Support Request from ${contactForm.name}`);
                   const body = encodeURIComponent(`Name: ${contactForm.name}\nEmail: ${contactForm.email}\n\nMessage:\n${contactForm.message}`);
                   window.location.href = `mailto:campuscuthelp@gmail.com?subject=${subject}&body=${body}`;
                   setContactSubmitted(true);
@@ -1007,10 +1007,10 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center gap-4">
               {/* Logo and Copyright */}
               <div className="flex items-center gap-3">
-                <img src={FooterChairLogo} alt="CampusCut" className="h-8 w-auto" />
+                <img src={FooterChairLogo} alt="CampusCuts" className="h-8 w-auto" />
                 <div>
                   <p className="text-gray-400 text-sm">
-                    © 2026 CampusCut. All rights reserved.
+                    © 2026 CampusCuts. All rights reserved.
                   </p>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 {
-  "name": "CampusCut",
-  "short_name": "CampusCut",
+  "name": "CampusCuts",
+  "short_name": "CampusCuts",
   "description": "Fair prices for students, great earnings for barbers. Book haircuts on campus.",
   "start_url": "/",
   "display": "standalone",

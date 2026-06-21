@@ -1,5 +1,5 @@
 /**
- * CampusCut Assets Barrel Export
+ * CampusCuts Assets Barrel Export
  * 
  * This file provides centralized exports for all assets.
  * Import assets using: import { LogoIcon } from '@assets'
