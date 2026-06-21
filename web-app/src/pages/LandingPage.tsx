@@ -353,6 +353,23 @@ export default function LandingPage() {
             </button>
       </div>
 
+      {/* Barber CTA */}
+      <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            Want to be a CampusCuts Barber?
+          </h2>
+          <div className="flex justify-center">
+            <button 
+              onClick={() => setShowBarberApplication(true)}
+              className="px-6 py-4 rounded-lg bg-white border-2 border-primary-500 hover:bg-primary-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+            >
+              <span className="text-lg font-semibold text-primary-600">Become a Barber</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <Marquee />
 
       <EarningsEfficiencySection />
@@ -703,23 +720,6 @@ export default function LandingPage() {
             >
               <Mail className="w-5 h-5" />
               Contact Support
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Final CTA */}
-      <div className="py-20 px-4 bg-gradient-to-br from-primary-400 to-primary-500 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.15)]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Want to be a CampusCuts Barber?
-          </h2>
-          <div className="flex justify-center">
-            <button 
-              onClick={() => setShowBarberApplication(true)}
-              className="px-6 py-4 rounded-lg bg-white border-2 border-primary-500 hover:bg-primary-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
-            >
-              <span className="text-lg font-semibold text-primary-600">Become a Barber</span>
             </button>
           </div>
         </div>
