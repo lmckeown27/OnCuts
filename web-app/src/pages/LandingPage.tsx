@@ -347,92 +347,6 @@ export default function LandingPage() {
 
       <Marquee />
 
-      {/* Portfolio Section - Video Showcase */}
-      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
-        <div className="max-w-6xl mx-auto bg-white">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              See Our Work
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Check out some of the amazing cuts from our talented campus barbers
-            </p>
-          </div>
-          
-          {/* Video Grid - 3 YouTube Shorts (autoplay, muted, looping) */}
-          {/* Mobile: 1 video centered, Desktop: 3 videos in grid */}
-          <div className="flex justify-center md:grid md:grid-cols-3 gap-6 md:gap-8 bg-white">
-            {/* Video 1 - Always visible */}
-            <div className="relative w-full max-w-xs md:max-w-none rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
-              <iframe
-                className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCuts Showcase 1"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                loading="lazy"
-              ></iframe>
-              {/* Transparent overlay to block all interaction */}
-              <div className="absolute inset-0 z-10" />
-            </div>
-            
-            {/* Video 2 - Hidden on mobile */}
-            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
-              <iframe
-                className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCuts Showcase 2"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                loading="lazy"
-              ></iframe>
-              {/* Transparent overlay to block all interaction */}
-              <div className="absolute inset-0 z-10" />
-            </div>
-            
-            {/* Video 3 - Hidden on mobile */}
-            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
-              <iframe
-                className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
-                title="CampusCuts Showcase 3"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                loading="lazy"
-              ></iframe>
-              {/* Transparent overlay to block all interaction */}
-              <div className="absolute inset-0 z-10" />
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Support Section */}
-      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="support">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Real Human Support
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Questions about bookings, barber applications, or your campus? Our team is here to help — not a bot.
-          </p>
-          <button
-            onClick={openContactPopup}
-            className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
-          >
-            <Mail className="w-6 h-6" />
-            Contact Support
-          </button>
-          <p className="text-sm text-gray-500 mt-4">
-            Or email us at{' '}
-            <a href="mailto:campuscuthelp@gmail.com" className="text-primary-600 hover:underline font-medium">
-              campuscuthelp@gmail.com
-            </a>
-          </p>
-        </div>
-      </div>
-
       {/* Economic Comparison Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-gray-50 to-primary-50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="pricing">
         <div className="max-w-7xl mx-auto">
@@ -551,6 +465,92 @@ export default function LandingPage() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Portfolio Section - Video Showcase */}
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
+        <div className="max-w-6xl mx-auto bg-white">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              See Our Work
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Check out some of the amazing cuts from our talented campus barbers
+            </p>
+          </div>
+          
+          {/* Video Grid - 3 YouTube Shorts (autoplay, muted, looping) */}
+          {/* Mobile: 1 video centered, Desktop: 3 videos in grid */}
+          <div className="flex justify-center md:grid md:grid-cols-3 gap-6 md:gap-8 bg-white">
+            {/* Video 1 - Always visible */}
+            <div className="relative w-full max-w-xs md:max-w-none rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/I9MlYYn4wUM?autoplay=1&mute=1&loop=1&playlist=I9MlYYn4wUM&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
+                title="CampusCuts Showcase 1"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                loading="lazy"
+              ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
+            </div>
+            
+            {/* Video 2 - Hidden on mobile */}
+            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/aPAqtReSjX0?autoplay=1&mute=1&loop=1&playlist=aPAqtReSjX0&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
+                title="CampusCuts Showcase 2"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                loading="lazy"
+              ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
+            </div>
+            
+            {/* Video 3 - Hidden on mobile */}
+            <div className="hidden md:block relative w-full rounded-2xl shadow-lg shadow-gray-300 overflow-hidden bg-black" style={{ aspectRatio: '9/16' }}>
+              <iframe
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                src="https://www.youtube.com/embed/yi4qTTBbhx8?autoplay=1&mute=1&loop=1&playlist=yi4qTTBbhx8&controls=0&showinfo=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1"
+                title="CampusCuts Showcase 3"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                loading="lazy"
+              ></iframe>
+              {/* Transparent overlay to block all interaction */}
+              <div className="absolute inset-0 z-10" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Support Section */}
+      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="support">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            Real Human Support
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+            Questions about bookings, barber applications, or your campus? Our team is here to help — not a bot.
+          </p>
+          <button
+            onClick={openContactPopup}
+            className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
+          >
+            <Mail className="w-6 h-6" />
+            Contact Support
+          </button>
+          <p className="text-sm text-gray-500 mt-4">
+            Or email us at{' '}
+            <a href="mailto:campuscuthelp@gmail.com" className="text-primary-600 hover:underline font-medium">
+              campuscuthelp@gmail.com
+            </a>
+          </p>
         </div>
       </div>
 
