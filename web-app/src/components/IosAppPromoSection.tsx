@@ -1,16 +1,20 @@
 import type { ReactNode } from 'react';
-import { Bell, Calendar, MessageCircle, Scissors, Smartphone, Wallet } from 'lucide-react';
+import { Bell, Calendar, MessageCircle, Scissors, Wallet } from 'lucide-react';
 import appleWhiteLogo from '../assets/logos/Apple_White_Logo.svg.png';
+import campusCutsAppLogo from '../assets/logos/iOS_CampusCuts_Logo.png';
+import interaProviderAppLogo from '../assets/logos/iOS_InteraProvider_Logo.png';
 
 /** Set these when App Store URLs are ready. */
 export const IOS_APP_STORE_LINKS = {
   consumer: '',
-  barber: '',
+  interaProvider: '',
 } as const;
 
 type AppCardProps = {
   title: string;
   subtitle: string;
+  appLogo: string;
+  appLogoAlt: string;
   features: { icon: ReactNode; label: string }[];
   storeHref: string;
   storeLabel: string;
@@ -54,12 +58,18 @@ function AppStoreBadge({ href, label }: { href: string; label: string }) {
   );
 }
 
-function AppCard({ title, subtitle, features, storeHref, storeLabel }: AppCardProps) {
+function AppCard({ title, subtitle, appLogo, appLogoAlt, features, storeHref, storeLabel }: AppCardProps) {
   return (
     <article className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
-          <Smartphone className="h-5 w-5" aria-hidden="true" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50">
+          <img
+            src={appLogo}
+            alt={appLogoAlt}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
         <div>
           <h3 className="text-lg font-bold text-gray-900 sm:text-xl">{title}</h3>
@@ -110,6 +120,8 @@ export default function IosAppPromoSection() {
           <AppCard
             title="CampusCuts"
             subtitle="For students & customers"
+            appLogo={campusCutsAppLogo}
+            appLogoAlt="CampusCuts app icon"
             storeHref={IOS_APP_STORE_LINKS.consumer}
             storeLabel="Download CampusCuts on the App Store"
             features={[
@@ -119,10 +131,12 @@ export default function IosAppPromoSection() {
             ]}
           />
           <AppCard
-            title="CampusCuts for Barbers"
+            title="InteraProvider"
             subtitle="For student barbers"
-            storeHref={IOS_APP_STORE_LINKS.barber}
-            storeLabel="Download CampusCuts for Barbers on the App Store"
+            appLogo={interaProviderAppLogo}
+            appLogoAlt="InteraProvider app icon"
+            storeHref={IOS_APP_STORE_LINKS.interaProvider}
+            storeLabel="Download InteraProvider on the App Store"
             features={[
               { icon: <Calendar className="h-4 w-4" />, label: 'Manage bookings and availability' },
               { icon: <Bell className="h-4 w-4" />, label: 'Get notified for new requests' },
