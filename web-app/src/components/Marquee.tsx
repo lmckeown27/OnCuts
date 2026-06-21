@@ -61,8 +61,8 @@ export default function Marquee() {
         On campuses nationwide
       </p>
 
-      <div className="group/marquee relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-        <div className="flex w-max animate-marquee will-change-transform group-hover/marquee:[animation-play-state:paused]">
+      <div className="relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+        <div className="flex w-max animate-marquee will-change-transform">
           <LogoStrip />
           <LogoStrip ariaHidden />
         </div>

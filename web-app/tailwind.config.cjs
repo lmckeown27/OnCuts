@@ -55,7 +55,7 @@ module.exports = {
         'slide-up': 'slideUp 0.5s ease-out',
         'fade-in': 'fadeIn 0.3s ease-in',
         'scale-in': 'scaleIn 0.3s ease-out',
-        marquee: 'marquee 40s linear infinite',
+        marquee: 'marquee 55s linear infinite',
       },
       keyframes: {
         slideDown: {
