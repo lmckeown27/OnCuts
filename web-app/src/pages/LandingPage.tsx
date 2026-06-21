@@ -14,6 +14,7 @@ import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
 import Marquee from '../components/Marquee';
 import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
+import IosAppPromoSection from '../components/IosAppPromoSection';
 import type { University } from '../components/UniversitySelector';
 import { CampusCutLogo } from '@assets';
 import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
@@ -308,6 +309,8 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      <IosAppPromoSection />
 
       {/* Hero Section */}
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
