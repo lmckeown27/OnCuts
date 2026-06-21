@@ -316,6 +316,15 @@ export default function LandingPage() {
       <div className="py-20 px-4 bg-gradient-to-br from-primary-50 via-white to-pink-50 flex flex-col items-center justify-center min-h-[50vh]">
           {/* Mobile Logo */}
           <h1 className="sm:hidden text-3xl font-bold text-primary-600 mb-6">CampusCuts</h1>
+
+          <div className="w-full max-w-xl mb-6 text-center px-2">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">
+              Find barbers at your university
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600">
+              Don&apos;t have an iOS device? Search for your school below to browse and book campus barbers on the web.
+            </p>
+          </div>
           
           {/* University Selector */}
         <div className="w-full max-w-xl mb-8">
