@@ -625,7 +625,7 @@ export default function LandingPage() {
       <footer className="bg-gray-900 text-gray-400">
         <div className="mx-auto max-w-7xl px-8 py-10 max-sm:py-12 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center gap-6 max-sm:gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-2 max-sm:text-center sm:flex-row sm:items-center sm:gap-3">
               <button
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
