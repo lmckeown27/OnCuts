@@ -624,7 +624,7 @@ export default function LandingPage() {
       {/* Minimal footer — horizontal on desktop, stacked on mobile */}
       <footer className="bg-gray-900 text-gray-400">
         <div className="mx-auto max-w-7xl px-8 py-10 max-sm:py-12 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center gap-6 max-sm:gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          <div className="flex flex-col items-center gap-8 max-sm:gap-6 sm:flex-row sm:items-center sm:gap-10">
             <div className="flex flex-col items-center gap-2 max-sm:text-center sm:flex-row sm:items-center sm:gap-3">
               <button
                 type="button"
@@ -639,32 +639,32 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm max-sm:flex-col max-sm:gap-y-4 sm:gap-x-10">
-                <li>
-                  <a
-                    href="https://campuscut.com/privacy"
-                    className="transition-colors duration-200 hover:text-white"
-                  >
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://campuscut.com/terms"
-                    className="transition-colors duration-200 hover:text-white"
-                  >
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://campuscut.com/gdpr"
-                    className="transition-colors duration-200 hover:text-white"
-                  >
-                    GDPR
-                  </a>
-                </li>
-              </ul>
+            <ul className="flex w-full flex-wrap items-center justify-center gap-x-6 gap-y-4 text-base sm:flex-1 sm:gap-x-8 sm:text-lg max-sm:flex-col max-sm:gap-y-5">
+              <li className="flex justify-center">
+                <a
+                  href="https://campuscut.com/privacy"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                >
+                  Privacy Policy
+                </a>
+              </li>
+              <li className="flex justify-center">
+                <a
+                  href="https://campuscut.com/terms"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                >
+                  Terms of Service
+                </a>
+              </li>
+              <li className="flex justify-center">
+                <a
+                  href="https://campuscut.com/gdpr"
+                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                >
+                  GDPR
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
       </footer>
