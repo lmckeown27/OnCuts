@@ -140,6 +140,7 @@ export default function LandingPage() {
                 <span className="text-lg sm:text-3xl font-bold text-primary-500">+</span>
               </div>
               <div className="flex items-center justify-center gap-1 mt-0.5 sm:mt-1">
+                <span className="text-xs sm:text-base font-semibold text-gray-700">5</span>
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
                     <svg key={i} className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
@@ -165,7 +166,7 @@ export default function LandingPage() {
               Don&apos;t have an iOS Device?
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-600">
-              Search below to browse and book campus barbers on the web.
+              Search below to browse and book campus barbers on the web
             </p>
           </div>
           
