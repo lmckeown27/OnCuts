@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, X, Mail, ChevronDown } from 'lucide-react';
+import { CheckCircle, X, Mail, MessageSquare, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -492,15 +492,18 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* CTA below FAQ */}
-          <div className="mt-12 text-center">
-            <p className="text-gray-600 mb-4">Still have questions?</p>
-            <button 
+          {/* Partnerships & inquiries */}
+          <div className="mt-12 border-t border-gray-100 pt-10 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect.</h3>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
+              Whether you&apos;re a prospective barber, a campus partner, or interested in the Intera platform, we&apos;d love to hear from you.
+            </p>
+            <button
               onClick={openContactPopup}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-primary-400 px-6 py-3 font-semibold text-primary-400 transition-colors hover:bg-primary-50"
             >
-              <Mail className="w-5 h-5" />
-              Contact Support
+              <MessageSquare className="h-5 w-5" />
+              Connect with the Team
             </button>
           </div>
         </div>
@@ -513,7 +516,7 @@ export default function LandingPage() {
         guestMode={true}
       />
 
-      {/* Contact Support Popup */}
+      {/* Contact popup */}
       {showContactPopup && (
         <div 
           className={`fixed inset-0 min-h-[100dvh] bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-200 ${contactVisible ? 'opacity-100' : 'opacity-0'}`}
@@ -524,7 +527,7 @@ export default function LandingPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 text-center">Contact Support</h2>
+              <h2 className="text-2xl font-bold text-gray-900 text-center">Connect with the Team</h2>
               <button
                 onClick={closeContactPopup}
                 className="absolute top-0 right-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
