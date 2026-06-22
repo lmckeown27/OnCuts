@@ -13,7 +13,6 @@ import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import UniversitySelector from '../components/UniversitySelector';
 import Marquee from '../components/Marquee';
-import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { University } from '../components/UniversitySelector';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
@@ -224,8 +223,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <EarningsEfficiencySection />
-
       {/* Portfolio Section - Video Showcase */}
       <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="how-it-works">
         <div className="max-w-6xl mx-auto bg-white">
@@ -284,31 +281,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-        </div>
-      </div>
-
-      {/* Support Section */}
-      <div className="py-20 px-4 bg-white shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)]" id="support">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Real Human Support
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-            Questions about bookings, barber applications, or your campus? Our team is here to help.
-          </p>
-          <button
-            onClick={openContactPopup}
-            className="inline-flex items-center gap-3 bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-colors shadow-xl hover:shadow-2xl"
-          >
-            <Mail className="w-6 h-6" />
-            Contact Support
-          </button>
-          <p className="text-sm text-gray-500 mt-4">
-            Or email us at{' '}
-            <a href="mailto:campuscuthelp@gmail.com" className="text-primary-600 hover:underline font-medium">
-              campuscuthelp@gmail.com
-            </a>
-          </p>
         </div>
       </div>
 
@@ -703,16 +675,6 @@ export default function LandingPage() {
                 <li>
                   <button onClick={() => scrollToSection('how-it-works')} className="text-gray-400 hover:text-white transition-colors">
                     See Our Work
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('support')} className="text-gray-400 hover:text-white transition-colors">
-                    Support
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('pricing')} className="text-gray-400 hover:text-white transition-colors">
-                    Pricing Explained
                   </button>
                 </li>
               </ul>
