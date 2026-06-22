@@ -17,9 +17,9 @@ type AppCardProps = {
   storeLabel: string;
 };
 
-function AppStoreBadge({ href, label }: { href: string; label: string }) {
-  const badge = (
-    <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-white shadow-md transition-transform hover:scale-[1.02] sm:gap-3 sm:rounded-xl sm:px-5 sm:py-3">
+function AppStoreBadge() {
+  return (
+    <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-white shadow-md transition-transform group-hover/card:scale-[1.02] sm:gap-3 sm:rounded-xl sm:px-5 sm:py-3">
       <img
         src={appleWhiteLogo}
         alt=""
@@ -33,39 +33,21 @@ function AppStoreBadge({ href, label }: { href: string; label: string }) {
       </div>
     </div>
   );
-
-  if (href) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={label}
-        className="inline-block max-w-full"
-      >
-        {badge}
-      </a>
-    );
-  }
-
-  return (
-    <div aria-label={`${label} — App Store link coming soon`} className="inline-block max-w-full cursor-default">
-      {badge}
-    </div>
-  );
 }
 
-function AppCard({
+const cardBaseClassName =
+  'group/card flex h-full min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 sm:p-6 md:p-8';
+
+function AppCardContent({
   title,
   description,
   mobileDescription,
   appLogo,
   appLogoAlt,
   storeHref,
-  storeLabel,
-}: AppCardProps) {
+}: Omit<AppCardProps, 'storeLabel'>) {
   return (
-    <article className="flex h-full min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8">
+    <>
       <div className="mb-3 flex items-center gap-2 sm:mb-5 sm:gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50 sm:h-11 sm:w-11">
           <img
@@ -87,11 +69,55 @@ function AppCard({
       </p>
 
       <div className="mt-auto">
-        <AppStoreBadge href={storeHref} label={storeLabel} />
+        <AppStoreBadge />
         {!storeHref && (
           <p className="mt-3 text-xs text-gray-400">App Store link coming soon</p>
         )}
       </div>
+    </>
+  );
+}
+
+function AppCard({
+  title,
+  description,
+  mobileDescription,
+  appLogo,
+  appLogoAlt,
+  storeHref,
+  storeLabel,
+}: AppCardProps) {
+  if (storeHref) {
+    return (
+      <a
+        href={storeHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={storeLabel}
+        className={`${cardBaseClassName} cursor-pointer no-underline`}
+      >
+        <AppCardContent
+          title={title}
+          description={description}
+          mobileDescription={mobileDescription}
+          appLogo={appLogo}
+          appLogoAlt={appLogoAlt}
+          storeHref={storeHref}
+        />
+      </a>
+    );
+  }
+
+  return (
+    <article className={cardBaseClassName} aria-label={`${storeLabel} — App Store link coming soon`}>
+      <AppCardContent
+        title={title}
+        description={description}
+        mobileDescription={mobileDescription}
+        appLogo={appLogo}
+        appLogoAlt={appLogoAlt}
+        storeHref={storeHref}
+      />
     </article>
   );
 }
