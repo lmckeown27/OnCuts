@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Scissors, ArrowRight } from 'lucide-react';
+import { CheckCircle, X, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -79,13 +79,6 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   // Pull-to-refresh handler for mobile - reload the page
   const handlePullToRefresh = async () => {
@@ -631,26 +624,9 @@ export default function LandingPage() {
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-8 mb-8 justify-items-center text-center">
-            {/* Support */}
-            <div>
-              <h4 className="font-bold text-white mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li>
-                  <button onClick={openContactPopup} className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 justify-center">
-                    Contact Us <Mail className="w-3 h-3" />
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection('faq')} className="text-gray-400 hover:text-white transition-colors">
-                    FAQ
-                  </button>
-                </li>
-              </ul>
-            </div>
-
+          <div className="flex justify-center mb-8">
             {/* Legal */}
-            <div>
+            <div className="text-center">
               <h4 className="font-bold text-white mb-4">Legal</h4>
               <ul className="space-y-2">
                 <li>
@@ -696,23 +672,7 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              {/* Social Links */}
-              <div className="flex items-center gap-4">
-                <a href="https://www.instagram.com/campuscut.c0m/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a 
-                  href="https://www.youtube.com/@CampusCutCalPoly" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors"
-                  aria-label="YouTube"
-                >
-                  <Youtube className="w-5 h-5" />
-                </a>
-              </div>
             </div>
-
           </div>
         </div>
       </footer>
