@@ -621,37 +621,50 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Comprehensive Footer - Inspired by Cluely */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          {/* Bottom Bar */}
-          <div className="pt-2">
-            <div className="flex flex-col items-center justify-center gap-4">
-              {/* Logo and Copyright */}
-              <div className="flex items-center gap-3">
-                <img src={webpageLogo} alt="CampusCuts" className="h-8 w-auto" />
-                <div>
-                  <p className="text-gray-400 text-sm">
-                    © 2026 CampusCuts. All rights reserved.
-                  </p>
-                </div>
-              </div>
+      {/* Minimal footer — horizontal on desktop, stacked on mobile */}
+      <footer className="bg-gray-900 text-gray-400">
+        <div className="mx-auto max-w-7xl px-8 py-10 max-sm:py-12 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-6 max-sm:gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="shrink-0 transition-opacity hover:opacity-80"
+              aria-label="Back to top"
+            >
+              <img src={webpageLogo} alt="CampusCuts" className="h-10 w-auto" />
+            </button>
 
-              {/* Quick Legal Links - Prominent placement for Google verification */}
-              <div className="flex items-center gap-4 text-sm">
-                <a href="https://campuscut.com/privacy" className="text-gray-400 hover:text-white transition-colors">
-                  Privacy Policy
-                </a>
-                <span className="text-gray-600">|</span>
-                <a href="https://campuscut.com/terms" className="text-gray-400 hover:text-white transition-colors">
-                  Terms of Service
-                </a>
-                <span className="text-gray-600">|</span>
-                <a href="https://campuscut.com/gdpr" className="text-gray-400 hover:text-white transition-colors">
-                  GDPR
-                </a>
-              </div>
+            <div className="flex w-full flex-col items-center gap-4 max-sm:gap-5 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-10 lg:flex-nowrap lg:gap-x-12">
+              <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm max-sm:flex-col max-sm:gap-y-4 sm:gap-x-10">
+                <li>
+                  <a
+                    href="https://campuscut.com/privacy"
+                    className="transition-colors duration-200 hover:text-white"
+                  >
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://campuscut.com/terms"
+                    className="transition-colors duration-200 hover:text-white"
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://campuscut.com/gdpr"
+                    className="transition-colors duration-200 hover:text-white"
+                  >
+                    GDPR
+                  </a>
+                </li>
+              </ul>
 
+              <p className="text-sm text-gray-500 max-sm:text-center sm:whitespace-nowrap">
+                © 2026 CampusCuts. All rights reserved.
+              </p>
             </div>
           </div>
         </div>
