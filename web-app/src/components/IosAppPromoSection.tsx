@@ -9,8 +9,6 @@ export const IOS_APP_STORE_LINKS = {
 
 type AppCardProps = {
   title: string;
-  description: string;
-  mobileDescription: string;
   appLogo: string;
   appLogoAlt: string;
   storeHref: string;
@@ -36,19 +34,17 @@ function AppStoreBadge() {
 }
 
 const cardBaseClassName =
-  'group/card flex h-full min-w-0 flex-col items-center text-center rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 sm:p-6 md:p-8';
+  'group/card flex h-full min-w-0 w-full flex-col items-center text-center rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 sm:p-6 md:p-8';
 
 function AppCardContent({
   title,
-  description,
-  mobileDescription,
   appLogo,
   appLogoAlt,
   storeHref,
 }: Omit<AppCardProps, 'storeLabel'>) {
   return (
     <>
-      <div className="mb-3 flex flex-col items-center transition-transform duration-300 group-hover/card:scale-[1.02] sm:mb-5">
+      <div className="mb-4 flex flex-col items-center transition-transform duration-300 group-hover/card:scale-[1.02] sm:mb-6">
         <div className="mb-2 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 sm:mb-3 sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]">
           <img
             src={appLogo}
@@ -58,15 +54,8 @@ function AppCardContent({
             decoding="async"
           />
         </div>
-        <h3 className="text-sm font-bold leading-tight text-gray-900 sm:text-lg md:text-xl">{title}</h3>
+        <h4 className="text-sm font-bold leading-tight text-gray-900 sm:text-lg md:text-xl">{title}</h4>
       </div>
-
-      <p className="mb-4 flex-grow text-xs leading-snug text-gray-600 md:hidden">
-        {mobileDescription}
-      </p>
-      <p className="mb-6 hidden flex-grow text-sm leading-snug text-gray-600 md:block">
-        {description}
-      </p>
 
       <div className="mt-auto flex w-full justify-center">
         <AppStoreBadge />
@@ -78,15 +67,7 @@ function AppCardContent({
   );
 }
 
-function AppCard({
-  title,
-  description,
-  mobileDescription,
-  appLogo,
-  appLogoAlt,
-  storeHref,
-  storeLabel,
-}: AppCardProps) {
+function AppCard({ title, appLogo, appLogoAlt, storeHref, storeLabel }: AppCardProps) {
   if (storeHref) {
     return (
       <a
@@ -98,8 +79,6 @@ function AppCard({
       >
         <AppCardContent
           title={title}
-          description={description}
-          mobileDescription={mobileDescription}
           appLogo={appLogo}
           appLogoAlt={appLogoAlt}
           storeHref={storeHref}
@@ -112,13 +91,27 @@ function AppCard({
     <article className={cardBaseClassName} aria-label={`${storeLabel} — App Store link coming soon`}>
       <AppCardContent
         title={title}
-        description={description}
-        mobileDescription={mobileDescription}
         appLogo={appLogo}
         appLogoAlt={appLogoAlt}
         storeHref={storeHref}
       />
     </article>
+  );
+}
+
+type AppColumnProps = {
+  heading: string;
+  card: AppCardProps;
+};
+
+function AppColumn({ heading, card }: AppColumnProps) {
+  return (
+    <div className="flex min-w-0 flex-col items-center">
+      <h3 className="mb-3 text-center text-sm font-bold text-gray-900 sm:mb-4 sm:text-base md:text-lg">
+        {heading}
+      </h3>
+      <AppCard {...card} />
+    </div>
   );
 }
 
@@ -137,23 +130,25 @@ export default function IosAppPromoSection() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6 md:gap-8">
-          <AppCard
-            title="CampusCuts"
-            mobileDescription="Book campus barbers."
-            description="Browse campus barbers and book your next cut."
-            appLogo={campusCutsAppLogo}
-            appLogoAlt="CampusCuts app icon"
-            storeHref={IOS_APP_STORE_LINKS.consumer}
-            storeLabel="Download CampusCuts on the App Store"
+          <AppColumn
+            heading="For Customers"
+            card={{
+              title: 'CampusCuts',
+              appLogo: campusCutsAppLogo,
+              appLogoAlt: 'CampusCuts app icon',
+              storeHref: IOS_APP_STORE_LINKS.consumer,
+              storeLabel: 'Download CampusCuts on the App Store',
+            }}
           />
-          <AppCard
-            title="InteraProvider"
-            mobileDescription="For campus barbers."
-            description="Manage bookings and reach campus customers."
-            appLogo={interaProviderAppLogo}
-            appLogoAlt="InteraProvider app icon"
-            storeHref={IOS_APP_STORE_LINKS.interaProvider}
-            storeLabel="Download InteraProvider on the App Store"
+          <AppColumn
+            heading="For Barbers"
+            card={{
+              title: 'InteraProvider',
+              appLogo: interaProviderAppLogo,
+              appLogoAlt: 'InteraProvider app icon',
+              storeHref: IOS_APP_STORE_LINKS.interaProvider,
+              storeLabel: 'Download InteraProvider on the App Store',
+            }}
           />
         </div>
       </div>
