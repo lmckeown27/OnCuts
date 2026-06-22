@@ -643,7 +643,7 @@ export default function LandingPage() {
               <li className="flex justify-center">
                 <a
                   href="https://campuscut.com/privacy"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                  className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   Privacy Policy
                 </a>
@@ -651,7 +651,7 @@ export default function LandingPage() {
               <li className="flex justify-center">
                 <a
                   href="https://campuscut.com/terms"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                  className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   Terms of Service
                 </a>
@@ -659,7 +659,7 @@ export default function LandingPage() {
               <li className="flex justify-center">
                 <a
                   href="https://campuscut.com/gdpr"
-                  className="inline-flex items-center justify-center rounded-lg px-4 py-2.5 transition-colors duration-200 hover:bg-white/5 hover:text-white sm:px-5 sm:py-3"
+                  className="inline-flex items-center justify-center px-4 py-2.5 transition-colors duration-200 hover:text-white sm:px-5 sm:py-3"
                 >
                   GDPR
                 </a>
