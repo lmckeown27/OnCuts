@@ -246,7 +246,7 @@ export default function LandingPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                For Consumers
+                For Customers
               </button>
               <button
                 onClick={() => {
@@ -268,7 +268,7 @@ export default function LandingPage() {
             {/* For Consumers Column - Hidden on mobile when barbers selected */}
             <div className={`${faqCategory === 'barbers' ? 'hidden md:block' : ''}`}>
               <h3 className="text-xl font-bold text-gray-900 mb-4 text-center hidden md:block">
-                For Consumers
+                For Customers
               </h3>
               <div className="space-y-3">
                 <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl overflow-hidden">
