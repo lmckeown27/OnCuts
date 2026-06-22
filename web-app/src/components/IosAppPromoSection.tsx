@@ -107,7 +107,7 @@ type AppColumnProps = {
 function AppColumn({ heading, card }: AppColumnProps) {
   return (
     <div className="flex min-w-0 flex-col items-center">
-      <h3 className="mb-3 text-center text-sm font-bold text-gray-900 sm:mb-4 sm:text-base md:text-lg">
+      <h3 className="mb-3 text-center text-sm font-bold text-gray-900 underline underline-offset-4 sm:mb-4 sm:text-base md:text-lg">
         {heading}
       </h3>
       <AppCard {...card} />
