@@ -49,7 +49,7 @@ function AppCardContent({
   return (
     <>
       <div className="mb-3 flex flex-col items-center transition-transform duration-300 group-hover/card:scale-[1.02] sm:mb-5">
-        <div className="mb-2 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50 sm:mb-3 sm:h-11 sm:w-11">
+        <div className="mb-2 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 sm:mb-3 sm:h-16 sm:w-16 md:h-[4.5rem] md:w-[4.5rem]">
           <img
             src={appLogo}
             alt={appLogoAlt}
