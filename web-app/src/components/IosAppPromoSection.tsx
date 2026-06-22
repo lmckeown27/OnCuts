@@ -10,6 +10,7 @@ export const IOS_APP_STORE_LINKS = {
 type AppCardProps = {
   title: string;
   description: string;
+  mobileDescription: string;
   appLogo: string;
   appLogoAlt: string;
   storeHref: string;
@@ -18,17 +19,17 @@ type AppCardProps = {
 
 function AppStoreBadge({ href, label }: { href: string; label: string }) {
   const badge = (
-    <div className="inline-flex items-center gap-3 rounded-xl bg-gray-900 px-5 py-3 text-white shadow-md transition-transform hover:scale-[1.02]">
+    <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-white shadow-md transition-transform hover:scale-[1.02] sm:gap-3 sm:rounded-xl sm:px-5 sm:py-3">
       <img
         src={appleWhiteLogo}
         alt=""
-        className="h-7 w-7 object-contain"
+        className="h-5 w-5 shrink-0 object-contain sm:h-7 sm:w-7"
         aria-hidden="true"
         decoding="async"
       />
-      <div className="text-left leading-tight">
-        <p className="text-[10px] uppercase tracking-wide text-white/80">Download on the</p>
-        <p className="text-lg font-semibold">App Store</p>
+      <div className="min-w-0 text-left leading-tight">
+        <p className="text-[8px] uppercase tracking-wide text-white/80 sm:text-[10px]">Download on the</p>
+        <p className="text-sm font-semibold sm:text-lg">App Store</p>
       </div>
     </div>
   );
@@ -40,7 +41,7 @@ function AppStoreBadge({ href, label }: { href: string; label: string }) {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={label}
-        className="inline-block"
+        className="inline-block max-w-full"
       >
         {badge}
       </a>
@@ -48,17 +49,25 @@ function AppStoreBadge({ href, label }: { href: string; label: string }) {
   }
 
   return (
-    <div aria-label={`${label} — App Store link coming soon`} className="inline-block cursor-default">
+    <div aria-label={`${label} — App Store link coming soon`} className="inline-block max-w-full cursor-default">
       {badge}
     </div>
   );
 }
 
-function AppCard({ title, description, appLogo, appLogoAlt, storeHref, storeLabel }: AppCardProps) {
+function AppCard({
+  title,
+  description,
+  mobileDescription,
+  appLogo,
+  appLogoAlt,
+  storeHref,
+  storeLabel,
+}: AppCardProps) {
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50">
+    <article className="flex h-full min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8">
+      <div className="mb-3 flex items-center gap-2 sm:mb-5 sm:gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50 sm:h-11 sm:w-11">
           <img
             src={appLogo}
             alt={appLogoAlt}
@@ -67,10 +76,13 @@ function AppCard({ title, description, appLogo, appLogoAlt, storeHref, storeLabe
             decoding="async"
           />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 sm:text-xl">{title}</h3>
+        <h3 className="text-sm font-bold leading-tight text-gray-900 sm:text-lg md:text-xl">{title}</h3>
       </div>
 
-      <p className="mb-8 flex-grow text-sm leading-relaxed text-gray-600 sm:text-base">
+      <p className="mb-4 flex-grow text-xs leading-snug text-gray-600 md:hidden">
+        {mobileDescription}
+      </p>
+      <p className="mb-8 hidden flex-grow text-sm leading-relaxed text-gray-600 md:block md:text-base">
         {description}
       </p>
 
@@ -98,9 +110,10 @@ export default function IosAppPromoSection() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 md:gap-8">
           <AppCard
             title="CampusCuts"
+            mobileDescription="Book campus barbers."
             description="Download CampusCuts to find your university's barbers, browse their work, and book a cut on campus."
             appLogo={campusCutsAppLogo}
             appLogoAlt="CampusCuts app icon"
@@ -109,6 +122,7 @@ export default function IosAppPromoSection() {
           />
           <AppCard
             title="InteraProvider"
+            mobileDescription="For campus barbers."
             description="Already an established campus barber? Join InteraProvider and connect with an established university network of customers ready to book."
             appLogo={interaProviderAppLogo}
             appLogoAlt="InteraProvider app icon"
