@@ -494,13 +494,13 @@ export default function LandingPage() {
 
           {/* Partnerships & inquiries */}
           <div className="mt-12 border-t border-gray-100 pt-10 text-center">
-            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect.</h3>
+            <h3 className="text-2xl font-bold text-gray-900 sm:text-3xl">Let&apos;s Connect</h3>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
-              Whether you&apos;re a prospective barber, a campus partner, or interested in the Intera platform, we&apos;d love to hear from you.
+              Whether you&apos;re a prospective barber, a campus partner, or interested in the CampusCuts System, we&apos;d love to hear from you
             </p>
             <button
               onClick={openContactPopup}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg border border-primary-400 px-6 py-3 font-semibold text-primary-400 transition-colors hover:bg-primary-50"
+              className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-primary-400 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-primary-500"
             >
               <MessageSquare className="h-5 w-5" />
               Connect with the Team
