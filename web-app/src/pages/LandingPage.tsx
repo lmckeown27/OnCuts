@@ -624,32 +624,8 @@ export default function LandingPage() {
       {/* Comprehensive Footer - Inspired by Cluely */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-center mb-8">
-            {/* Legal */}
-            <div className="text-center">
-              <h4 className="font-bold text-white mb-4">Legal</h4>
-              <ul className="space-y-2">
-                <li>
-                  <a href="https://campuscut.com/privacy" className="text-gray-400 hover:text-white transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="https://campuscut.com/terms" className="text-gray-400 hover:text-white transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="https://campuscut.com/gdpr" className="text-gray-400 hover:text-white transition-colors">
-                    GDPR
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
           {/* Bottom Bar */}
-          <div className="border-t border-gray-800 pt-8">
+          <div className="pt-2">
             <div className="flex flex-col items-center justify-center gap-4">
               {/* Logo and Copyright */}
               <div className="flex items-center gap-3">
@@ -669,6 +645,10 @@ export default function LandingPage() {
                 <span className="text-gray-600">|</span>
                 <a href="https://campuscut.com/terms" className="text-gray-400 hover:text-white transition-colors">
                   Terms of Service
+                </a>
+                <span className="text-gray-600">|</span>
+                <a href="https://campuscut.com/gdpr" className="text-gray-400 hover:text-white transition-colors">
+                  GDPR
                 </a>
               </div>
 
