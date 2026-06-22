@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Menu, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Scissors, ArrowRight } from 'lucide-react';
+import { CheckCircle, X, ExternalLink, Youtube, Instagram, Mail, ChevronDown, GraduationCap, Scissors, ArrowRight } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -17,14 +17,11 @@ import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { University } from '../components/UniversitySelector';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
-import { useViewport } from '../hooks/useViewport';
 
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showContactPopup, setShowContactPopup] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
@@ -36,9 +33,6 @@ export default function LandingPage() {
   
   // University selector state for hero section
   const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
-  
-  // Viewport detection for responsive layout
-  const { isMobile, isMobilePortrait, isMd, viewport } = useViewport();
   
   // Handle university selection - save to localStorage and navigate to consumer page
   const handleUniversitySelect = useCallback((university: University | null) => {
@@ -55,39 +49,6 @@ export default function LandingPage() {
     }
   }, [selectedUniversity, navigate]);
   
-  // Mobile menu open/close with animation
-  const openMobileMenu = () => {
-    setMobileMenuOpen(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setMobileMenuVisible(true);
-      });
-    });
-  };
-  
-  const closeMobileMenu = () => {
-    setMobileMenuVisible(false);
-    setTimeout(() => {
-      setMobileMenuOpen(false);
-    }, 200);
-  };
-  
-  const toggleMobileMenu = () => {
-    if (mobileMenuOpen) {
-      closeMobileMenu();
-    } else {
-      openMobileMenu();
-    }
-  };
-  
-  // Close mobile menu when viewport changes to desktop (md breakpoint = 768px)
-  // Use isMd check since hamburger is visible via md:hidden (< 768px)
-  useEffect(() => {
-    if (isMd && mobileMenuOpen) {
-      closeMobileMenu();
-    }
-  }, [isMd, mobileMenuOpen]);
-
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
   };
@@ -124,7 +85,6 @@ export default function LandingPage() {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setMobileMenuOpen(false);
     }
   };
 
@@ -140,32 +100,10 @@ export default function LandingPage() {
         scrolled ? 'bg-white shadow-md' : 'bg-transparent'
       }`}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 relative">
-            {/* Mobile Menu Button - Left on mobile */}
-            <button
-              onClick={toggleMobileMenu}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors relative w-10 h-10 flex items-center justify-center"
-            >
-              <Menu 
-                className={`w-6 h-6 absolute transition-all duration-200 ease-out ${
-                  mobileMenuVisible 
-                    ? 'opacity-0 rotate-90 scale-50' 
-                    : 'opacity-100 rotate-0 scale-100'
-                }`} 
-              />
-              <X 
-                className={`w-6 h-6 absolute transition-all duration-200 ease-out ${
-                  mobileMenuVisible 
-                    ? 'opacity-100 rotate-0 scale-100' 
-                    : 'opacity-0 -rotate-90 scale-50'
-                }`} 
-              />
-            </button>
-            
-            {/* Logo - centered on mobile, left on desktop */}
+          <div className="flex items-center justify-between h-16">
             <button 
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity md:relative absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
               <img
                 src={webpageLogo}
@@ -177,75 +115,14 @@ export default function LandingPage() {
               </span>
             </button>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                See Our Work
-              </button>
-              <button onClick={() => scrollToSection('support')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                Support
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                Pricing Explained
-              </button>
-              <button onClick={() => scrollToSection('faq')} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                FAQ
-              </button>
-            </div>
-
-            {/* CTA Buttons - Desktop */}
-            <div className="hidden md:flex items-center gap-4">
-              <button
-                onClick={() => navigate('/web')}
-                className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
-              >
-                Sign In
-              </button>
-            </div>
-
-            {/* Right spacer for mobile to balance the menu button */}
-            <div className="w-10 md:hidden" />
+            <button
+              onClick={() => navigate('/web')}
+              className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
+            >
+              Sign In
+            </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div 
-            className={`md:hidden bg-white border-t border-gray-200 shadow-lg overflow-hidden transition-all duration-200 ease-out ${
-              mobileMenuVisible 
-                ? 'max-h-96 opacity-100' 
-                : 'max-h-0 opacity-0'
-            }`}
-          >
-            <div className={`px-4 py-4 space-y-3 transition-all duration-200 ${
-              mobileMenuVisible ? 'translate-y-0' : '-translate-y-2'
-            }`}>
-              <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                See Our Work
-              </button>
-              <button onClick={() => scrollToSection('support')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Support
-              </button>
-              <button onClick={() => scrollToSection('pricing')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                Pricing Explained
-              </button>
-              <button onClick={() => scrollToSection('faq')} className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
-                FAQ
-              </button>
-              <div className="pt-3 border-t border-gray-200">
-                <button 
-                  onClick={() => {
-                    closeMobileMenu();
-                    navigate('/web');
-                  }} 
-                  className="w-full px-4 py-3 bg-primary-400 hover:bg-primary-500 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Sign In
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Stats Banner */}
