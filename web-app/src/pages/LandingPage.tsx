@@ -16,11 +16,7 @@ import Marquee from '../components/Marquee';
 import EarningsEfficiencySection from '../components/EarningsEfficiencySection';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { University } from '../components/UniversitySelector';
-import { CampusCutLogo } from '@assets';
-import HeaderChairLogo from '../assets/logos/Header_Chair.webp';
-import MainChairLogo from '../assets/logos/Main_Chair.webp';
-import MobileHeaderChairLogo from '../assets/logos/Mobile_Header_Chair.webp';
-import FooterChairLogo from '../assets/logos/Footer_Chair.webp';
+import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
 import { useViewport } from '../hooks/useViewport';
 
 const UNIVERSITY_STORAGE_KEY = 'campuscut_selected_university';
@@ -171,32 +167,11 @@ export default function LandingPage() {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity md:relative absolute left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0"
             >
-              {/* Desktop logo with scroll effect */}
-              <div className="relative hidden md:block">
-                <img 
-                  src={HeaderChairLogo} 
-                  alt="CampusCuts" 
-                  className={`h-12 w-auto transition-opacity duration-300 ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
-                />
-                <img 
-                  src={MainChairLogo} 
-                  alt="CampusCuts" 
-                  className={`h-12 w-auto absolute top-0 left-0 transition-opacity duration-300 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
-                />
-              </div>
-              {/* Mobile logo with instant swap on scroll */}
-              <div className="relative md:hidden">
-                <img 
-                  src={MobileHeaderChairLogo} 
-                  alt="CampusCuts" 
-                  className={`h-12 w-auto ${scrolled ? 'opacity-0' : 'opacity-100'}`} 
-                />
-                <img 
-                  src={MainChairLogo} 
-                  alt="CampusCuts" 
-                  className={`h-12 w-auto absolute top-0 left-0 ${scrolled ? 'opacity-100' : 'opacity-0'}`} 
-                />
-              </div>
+              <img
+                src={webpageLogo}
+                alt="CampusCuts"
+                className="h-12 w-auto"
+              />
               <span className={`hidden md:block text-2xl font-bold transition-colors duration-300 ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
                 CampusCuts
               </span>
@@ -911,7 +886,7 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center gap-4">
               {/* Logo and Copyright */}
               <div className="flex items-center gap-3">
-                <img src={FooterChairLogo} alt="CampusCuts" className="h-8 w-auto" />
+                <img src={webpageLogo} alt="CampusCuts" className="h-8 w-auto" />
                 <div>
                   <p className="text-gray-400 text-sm">
                     © 2026 CampusCuts. All rights reserved.
