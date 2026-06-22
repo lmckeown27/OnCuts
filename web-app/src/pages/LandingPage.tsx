@@ -285,6 +285,8 @@ export default function LandingPage() {
         </div>
       </div>
 
+      <Marquee />
+
       <IosAppPromoSection />
 
       {/* Hero Section */}
@@ -344,8 +346,6 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
-
-      <Marquee />
 
       <EarningsEfficiencySection />
 

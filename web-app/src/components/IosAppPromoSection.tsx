@@ -19,7 +19,7 @@ type AppCardProps = {
 
 function AppStoreBadge() {
   return (
-    <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-white shadow-md transition-transform group-hover/card:scale-[1.02] sm:gap-3 sm:rounded-xl sm:px-5 sm:py-3">
+    <div className="inline-flex max-w-full items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-white shadow-md transition-transform duration-300 group-hover/card:scale-[1.02] sm:gap-3 sm:rounded-xl sm:px-5 sm:py-3">
       <img
         src={appleWhiteLogo}
         alt=""
@@ -48,7 +48,7 @@ function AppCardContent({
 }: Omit<AppCardProps, 'storeLabel'>) {
   return (
     <>
-      <div className="mb-3 flex items-center gap-2 sm:mb-5 sm:gap-3">
+      <div className="mb-3 flex origin-left items-center gap-2 transition-transform duration-300 group-hover/card:scale-[1.02] sm:mb-5 sm:gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50 sm:h-11 sm:w-11">
           <img
             src={appLogo}
