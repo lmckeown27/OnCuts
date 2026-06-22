@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, X, Mail, MessageSquare, ChevronDown } from 'lucide-react';
+import { CheckCircle, X, Mail, ChevronDown } from 'lucide-react';
 import Button from '../components/Button';
 import PullToRefresh from '../components/PullToRefresh';
 import BarberApplicationModal from '../components/BarberApplicationModal';
@@ -502,7 +502,7 @@ export default function LandingPage() {
               onClick={openContactPopup}
               className="mt-6 inline-flex items-center gap-2 px-5 py-2 bg-primary-400 font-medium text-white rounded-lg shadow-sm transition-colors hover:bg-primary-500"
             >
-              <MessageSquare className="h-5 w-5" />
+              <Mail className="h-5 w-5" />
               Connect with the Team
             </button>
           </div>
