@@ -111,7 +111,7 @@ export default function LandingPage() {
               onClick={() => navigate('/web')}
               className="px-5 py-2 bg-primary-400 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors shadow-sm"
             >
-              Sign In
+              Book Here
             </button>
           </div>
         </div>
