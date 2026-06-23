@@ -4,7 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   campusId: number;
-  role: 'student' | 'barber' | 'campus_manager' | 'admin';
+  role: 'student' | 'barber' | 'admin';
   suiAddress?: string;
   /** Pre-Sui custodial hex id (DB: legacy_wallet_address) */
   legacyWalletAddress?: string;
@@ -134,7 +134,7 @@ declare global {
       user?: {
         userId: string;
         email: string;
-        role: 'student' | 'barber' | 'campus_manager' | 'admin';
+        role: 'student' | 'barber' | 'admin';
         campusId: number;
       };
     }

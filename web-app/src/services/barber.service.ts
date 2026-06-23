@@ -13,7 +13,7 @@ interface BarberFilters {
   lat?: number;
   lng?: number;
   maxDistance?: number; // Maximum distance in km (default: 8km / ~5 miles)
-  // Campus manager option to include hidden barbers
+  // Admin option to include hidden barbers
   includeHidden?: boolean;
 }
 
@@ -98,7 +98,7 @@ class BarberService {
   }
 
   /**
-   * Remove barber (demote to consumer) - Campus Manager only
+   * Remove barber (demote to consumer) - Admin only
    */
   async removeBarber(barberId: string): Promise<{ success: boolean; message: string }> {
     return await api.post<{ success: boolean; message: string }>(`/barbers/${barberId}/remove`, {});

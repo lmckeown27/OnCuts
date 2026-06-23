@@ -297,7 +297,7 @@ router.delete(
 
 /**
  * @route   POST /api/barbers/:id/remove
- * @desc    Remove barber (demote to consumer) - Campus Manager only
+ * @desc    Remove barber (demote to consumer) - Admin only
  * @access  Private (Campus Manager or Admin)
  */
 router.post(

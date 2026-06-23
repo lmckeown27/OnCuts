@@ -45,7 +45,7 @@ export function topicForRecipientApp(app: RecipientApnApp): string | null {
 
 /**
  * Classify recipient for topic routing.
- * Provider = BARBER, CAMPUS_MANAGER, or any user with a barbers row; else consumer.
+ * Provider = BARBER or any user with a barbers row; else consumer.
  */
 export async function classifyRecipientApnApp(userId: string): Promise<RecipientApnApp> {
   const uid = String(userId ?? '').trim();

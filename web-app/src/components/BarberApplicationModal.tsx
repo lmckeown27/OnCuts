@@ -345,7 +345,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
         >
           <h3 className="text-xl font-bold text-gray-900 mb-3">Application Submitted!</h3>
           <p className="text-gray-600 mb-6">
-            Your application has been submitted. A campus manager will be in touch with you shortly.
+            Your application has been submitted. The CampusCuts team will be in touch with you shortly.
           </p>
           <button
             onClick={handleCloseSuccessPopup}
@@ -420,7 +420,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
             
             <h3 className="text-xl font-bold text-gray-900 mb-3">Barber Access Removed</h3>
             <p className="text-gray-600 mb-6">
-              Your barber privileges have been removed by the campus manager. You no longer have access to the barber dashboard or booking features.
+              Your barber privileges have been removed by the CampusCuts team. You no longer have access to the barber dashboard or booking features.
             </p>
 
             {/* Info box */}
@@ -471,12 +471,12 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
     const statusMessages: Record<string, { title: string; description: string; color: string }> = {
       pending: {
         title: 'Application Under Review',
-        description: 'Your application has been submitted and is currently being reviewed by the campus manager. They will get back to you once they\'ve reviewed your application.',
+        description: 'Your application has been submitted and is currently being reviewed by the CampusCuts team. They will get back to you once they\'ve reviewed your application.',
         color: 'amber'
       },
       under_review: {
         title: 'Application Under Review',
-        description: 'Your application is actively being reviewed by the campus manager. They will reach out to you soon with next steps.',
+        description: 'Your application is actively being reviewed by the CampusCuts team. They will reach out to you soon with next steps.',
         color: 'blue'
       },
       interview_scheduled: {
@@ -694,7 +694,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   Phone Number *
                 </label>
                 <p className="text-xs text-gray-500 mb-2">
-                  The campus manager may reach out to you via text or call.
+                  The CampusCuts team may reach out to you via text or call.
                 </p>
                 <input
                   type="tel"
@@ -815,7 +815,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">Barber license verification</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Campus managers may verify your license before approving your application. Provide accurate
+                      The CampusCuts team may verify your license before approving your application. Provide accurate
                       information; misrepresentation can result in rejection.
                     </p>
                   </div>
@@ -862,7 +862,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 </div>
                 {form.licenseDeclared === 'no' && (
                   <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
-                    You may still apply, but your campus manager may require a license before you can accept bookings.
+                    You may still apply, but the CampusCuts team may require a license before you can accept bookings.
                   </p>
                 )}
               </div>
@@ -882,7 +882,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                     autoComplete="off"
                   />
                   <p className="text-xs text-gray-500 mt-2">
-                    Enter the number exactly as it appears on your license. Your campus manager may request a photo
+                    Enter the number exactly as it appears on your license. The CampusCuts team may request a photo
                     for verification.
                   </p>
                 </div>
@@ -897,7 +897,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                 />
                 <span className="text-sm text-gray-700">
                   I certify that the license information I provided is accurate to the best of my knowledge, and I
-                  understand that CampusCuts or my campus manager may verify it before I am approved to provide
+                  understand that CampusCuts may verify it before I am approved to provide
                   services.
                 </span>
               </label>
@@ -911,7 +911,7 @@ export default function BarberApplicationModal({ isOpen, onClose, onSubmitSucces
                   Which campus do you want to cut at? *
                 </label>
                 <p className="text-xs text-gray-600 mb-3">
-                  Your application will be sent to the campus manager at this location.
+                  Your application will be sent to the CampusCuts team at this location.
                 </p>
                 {loadingCampuses ? (
                   <div className="flex items-center gap-2 text-gray-500">

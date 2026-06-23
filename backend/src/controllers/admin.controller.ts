@@ -527,7 +527,7 @@ export const getServices = async (req: AuthRequest, res: Response, next: NextFun
     const hasDurationColumns = await serviceDurationColumnsExist();
 
     // Any authenticated user can read active services
-    // Only admin/campus_manager can see inactive services
+    // Only admins can see inactive services
     const userRole = req.user!.role?.toUpperCase();
     const isAdmin = userRole === 'ADMIN';
     
@@ -888,7 +888,7 @@ export const getPlatformStats = async (req: AuthRequest, res: Response, next: Ne
 };
 
 /**
- * Get all campuses with manager info
+ * Get all campuses
  * GET /api/admin/campuses
  */
 export const getAllCampuses = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -918,8 +918,6 @@ export const getAllCampuses = async (req: AuthRequest, res: Response, next: Next
         slug: row.slug || '',
         city: row.city || '',
         state: row.state || '',
-        managerId: null,
-        managerName: null,
       })),
     });
   } catch (error: any) {
@@ -1907,8 +1905,8 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
 
     await assertCampusMetricsAccess(req, campusId);
 
-    // Get barbers for this campus (include role to check if they're campus manager)
-    // Only include users who still have BARBER or CAMPUS_MANAGER role
+    // Get barbers for this campus
+    // Include legacy CAMPUS_MANAGER DB role as barbers
     // Include stripe fields to check Stripe setup status
     // Include booking stats (completed bookings count and total volume)
     const result = await pool.query(`
@@ -1953,7 +1951,6 @@ export const getCampusBarbers = async (req: AuthRequest, res: Response, next: Ne
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
-        isCampusManager: false,
         campusId: row.campus_id?.toString(),
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,
         isBanned: row.is_banned === true,
@@ -2438,7 +2435,6 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         email: row.email,
         profileImageUrl: row.profile_image_url,
         isActive: row.is_active,
-        isCampusManager: row.role === 'CAMPUS_MANAGER',
         campusId: row.campus_id?.toString(),
         campusName: row.campus_name,
         hasStripeSetup: !!row.stripe_account_id && row.stripe_payouts_enabled === true,

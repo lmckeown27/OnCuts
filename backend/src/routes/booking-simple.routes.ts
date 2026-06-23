@@ -641,7 +641,7 @@ router.get('/campus/:campusId', authenticate, async (req, res, next) => {
     const { campusId } = req.params;
     const { barberId, limit = '100', statusFilter = 'completed', paymentMethod } = req.query;
 
-    // Check if user is an admin (admins have campus manager access to all campuses)
+    // Check if user is an admin (admins have access to all campuses)
     const adminCheck = await pool.query(
       `SELECT role FROM users WHERE id = $1`,
       [userId]

@@ -35,9 +35,9 @@ router.get('/campus/:campusId', authenticate, async (req: AuthRequest, res: Resp
     const { campusId } = req.params;
     const { status } = req.query; // 'pending', 'approved', 'rejected', or 'all'
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -117,9 +117,9 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
       });
     }
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -131,7 +131,7 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can create locations',
+        error: 'Only admins can create locations',
       });
     }
     
@@ -166,7 +166,7 @@ router.post('/campus/:campusId', authenticate, async (req: AuthRequest, res: Res
       );
     }
     
-    logger.info(`Location created: ${name} for campus ${campusId} by campus manager ${userId}`);
+    logger.info(`Location created: ${name} for campus ${campusId} by admin ${userId}`);
     
     res.status(201).json({
       success: true,
@@ -203,9 +203,9 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
     
     const campusId = locationCheck.rows[0].campus_id;
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -217,7 +217,7 @@ router.put('/:locationId', authenticate, async (req: AuthRequest, res: Response,
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can update locations',
+        error: 'Only admins can update locations',
       });
     }
     
@@ -276,9 +276,9 @@ router.post('/:locationId/approve', authenticate, async (req: AuthRequest, res: 
       });
     }
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -290,7 +290,7 @@ router.post('/:locationId/approve', authenticate, async (req: AuthRequest, res: 
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can approve locations',
+        error: 'Only admins can approve locations',
       });
     }
     
@@ -380,9 +380,9 @@ router.post('/:locationId/reject', authenticate, async (req: AuthRequest, res: R
       });
     }
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -394,7 +394,7 @@ router.post('/:locationId/reject', authenticate, async (req: AuthRequest, res: R
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can reject locations',
+        error: 'Only admins can reject locations',
       });
     }
     
@@ -448,9 +448,9 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
     const campusId = locationCheck.rows[0].campus_id;
     const locationName = locationCheck.rows[0].name;
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -462,7 +462,7 @@ router.delete('/:locationId', authenticate, async (req: AuthRequest, res: Respon
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can delete locations',
+        error: 'Only admins can delete locations',
       });
     }
     
@@ -600,7 +600,7 @@ router.get('/my-locations', authenticate, async (req: AuthRequest, res: Response
 
 /**
  * POST /api/v1/locations/barber/request
- * Request a new location (Barber submits for campus manager approval)
+ * Request a new location (Barber submits for admin approval)
  */
 router.post('/barber/request', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -659,7 +659,7 @@ router.post('/barber/request', authenticate, async (req: AuthRequest, res: Respo
       } else {
         return res.status(400).json({
           success: false,
-          error: 'This location was previously rejected. Please contact your campus manager.',
+          error: 'This location was previously rejected. Please contact CampusCuts support.',
         });
       }
     }
@@ -890,9 +890,9 @@ router.post('/admin/assign', authenticate, async (req: AuthRequest, res: Respons
     
     const campusId = locationCheck.rows[0].campus_id;
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -904,7 +904,7 @@ router.post('/admin/assign', authenticate, async (req: AuthRequest, res: Respons
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can assign locations to barbers',
+        error: 'Only admins can assign locations to barbers',
       });
     }
     
@@ -937,7 +937,7 @@ router.post('/admin/assign', authenticate, async (req: AuthRequest, res: Respons
       [barberId, locationId]
     );
     
-    logger.info(`Location ${locationId} assigned to barber ${barberId} by campus manager ${userId}`);
+    logger.info(`Location ${locationId} assigned to barber ${barberId} by admin ${userId}`);
     
     res.json({
       success: true,
@@ -981,9 +981,9 @@ router.post('/admin/revoke', authenticate, async (req: AuthRequest, res: Respons
     
     const campusId = locationCheck.rows[0].campus_id;
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -995,7 +995,7 @@ router.post('/admin/revoke', authenticate, async (req: AuthRequest, res: Respons
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can revoke locations from barbers',
+        error: 'Only admins can revoke locations from barbers',
       });
     }
     
@@ -1005,7 +1005,7 @@ router.post('/admin/revoke', authenticate, async (req: AuthRequest, res: Respons
       [barberId, locationId]
     );
     
-    logger.info(`Location ${locationId} revoked from barber ${barberId} by campus manager ${userId}`);
+    logger.info(`Location ${locationId} revoked from barber ${barberId} by admin ${userId}`);
     
     res.json({
       success: true,
@@ -1053,9 +1053,9 @@ router.post('/admin/assign-all', authenticate, async (req: AuthRequest, res: Res
       });
     }
     
-    // Check if user is campus manager or admin
+    // Check if user is admin
     const authCheck = await pool.query(
-      `SELECT u.role, b."isCampusManager", b."campusId"
+      `SELECT u.role, b."campusId"
        FROM users u
        LEFT JOIN barbers b ON u.id = b."userId"
        WHERE u.id = $1`,
@@ -1067,7 +1067,7 @@ router.post('/admin/assign-all', authenticate, async (req: AuthRequest, res: Res
     if (!isAdmin) {
       return res.status(403).json({
         success: false,
-        error: 'Only campus managers and admins can assign locations to all barbers',
+        error: 'Only admins can assign locations to all barbers',
       });
     }
     

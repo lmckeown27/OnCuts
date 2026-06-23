@@ -71,7 +71,7 @@ import { resolveAccessTokenRole } from '../utils/access-token-role';
 export interface TokenPayload {
   userId: string;      // Unique user identifier (UUID)
   email: string;       // User's email address
-  role: 'student' | 'barber' | 'campus_manager' | 'admin';  // User role for authorization
+  role: 'student' | 'barber' | 'admin';  // User role for authorization
   campusId: number;    // Campus the user belongs to
   iat?: number;        // Issued at timestamp (added by jwt.sign)
   exp?: number;        // Expiration timestamp (added by jwt.sign)
@@ -286,12 +286,11 @@ export const optionalAuthenticate = (
  * router.get('/profile', authenticate, getProfile);
  * 
  * ## Role Hierarchy:
- * - ADMIN: Has access to all roles (admin, campus_manager, barber, student)
- * - CAMPUS_MANAGER: Has access to campus_manager, barber, and student routes
+ * - ADMIN: Has access to all roles (admin, barber, student)
  * - BARBER: Has access to barber and student routes
  * - STUDENT/CONSUMER: Has access to student routes only
  */
-export const requireRole = (...roles: Array<'student' | 'barber' | 'campus_manager' | 'admin'>) => {
+export const requireRole = (...roles: Array<'student' | 'barber' | 'admin'>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const authReq = req as AuthRequest;
 
@@ -306,11 +305,12 @@ export const requireRole = (...roles: Array<'student' | 'barber' | 'campus_manag
     
     // Role hierarchy: higher roles include access to lower roles
     const roleHierarchy: Record<string, string[]> = {
-      'admin': ['admin', 'campus_manager', 'barber', 'student', 'consumer'],
-      'campus_manager': ['campus_manager', 'barber', 'student', 'consumer'],
+      'admin': ['admin', 'barber', 'student', 'consumer'],
       'barber': ['barber', 'student', 'consumer'],
       'student': ['student', 'consumer'],
       'consumer': ['student', 'consumer'],
+      // Legacy DB role — treated as barber in the app
+      'campus_manager': ['barber', 'student', 'consumer'],
     };
     
     // Get all roles the user has access to based on hierarchy
@@ -443,11 +443,6 @@ export const requireAdmin = async (
     next(error);
   }
 };
-
-/**
- * @deprecated Campus manager role removed — use requireAdmin for management routes.
- */
-export const requireCampusManager = requireAdmin;
 
 /**
  * Campus Access Middleware

@@ -2,7 +2,7 @@ import { pool } from '../database/connection';
 import type { JwtPayload } from '../middleware/auth';
 
 /**
- * Role embedded in JWT must match `requireRole` hierarchy (student | barber | campus_manager | admin).
+ * Role embedded in JWT must match `requireRole` hierarchy (student | barber | admin).
  * Users with `users.role = CONSUMER` but an active `barbers` row are treated as `barber` for API access.
  */
 export async function resolveAccessTokenRole(

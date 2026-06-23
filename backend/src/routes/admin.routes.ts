@@ -40,7 +40,7 @@ router.get('/treasury', adminController.getTreasuryStats);
 // Platform Stats (total users, bookings, etc.)
 router.get('/stats', adminController.getPlatformStats);
 
-// Services Management (for campus managers and admins)
+// Services Management (for admins)
 router.get('/services', adminController.getServices);
 router.post('/services', adminController.createService);
 router.put('/services/:id', adminController.updateService);

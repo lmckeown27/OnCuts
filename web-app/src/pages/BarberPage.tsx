@@ -358,7 +358,7 @@ export default function BarberPage() {
   const { user, isLoading: isAuthLoading } = useAuthStore();
   const barberId = user?.id || '';
   
-  // Role-based access control: Only barbers, campus managers, and admins can access this page
+  // Role-based access control: Only barbers and admins can access this page
   // Consumers/students should be redirected to the consumer page
   const isAuthorizedForBarberPage = 
     user?.user_type === 'barber' || 
@@ -384,7 +384,7 @@ export default function BarberPage() {
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
-  // State for barber profile data (for walk-in services, campus manager, and time blocking)
+  // State for barber profile data (for walk-in services and time blocking)
   const [barberProfile, setBarberProfile] = useState<{ id: string; name: string; specialties: string[]; campusId?: string; campusTimezone?: string } | null>(null);
 
   // Admin campus management - admins can manage any campus
@@ -444,7 +444,7 @@ export default function BarberPage() {
     };
   }, [showAdminCampusDropdown]);
 
-  // Fetch barber profile data for walk-in modal and campus manager
+  // Fetch barber profile data for walk-in modal
   useEffect(() => {
     const fetchBarberProfile = async () => {
       if (!barberId) return;
@@ -503,7 +503,7 @@ export default function BarberPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between relative">
-            {/* Left section - Messages + Campus Manager Badge */}
+            {/* Left section - Messages */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Consumer Chat Button */}
               <button

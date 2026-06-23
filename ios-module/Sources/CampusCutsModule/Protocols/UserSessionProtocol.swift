@@ -23,7 +23,7 @@ public protocol UserSessionProtocol {
     /// User's display name
     var userName: String { get }
     
-    /// User's role in the system (CONSUMER, BARBER, CAMPUS_MANAGER, ADMIN)
+    /// User's role in the system (CONSUMER, BARBER, ADMIN)
     var userRole: String { get }
     
     /// Refresh token for obtaining new access tokens (optional)

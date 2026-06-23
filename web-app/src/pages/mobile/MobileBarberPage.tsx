@@ -79,7 +79,7 @@ export default function MobileBarberPage() {
   const weekEarnings = 0;
   const todayAppointments = appointments.length;
   
-  // Role-based access control: Only barbers, campus managers, and admins can access this page
+  // Role-based access control: Only barbers and admins can access this page
   const isAuthorizedForBarberPage = 
     user?.user_type === 'barber' || 
     user?.user_type === 'admin' ||

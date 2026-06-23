@@ -1415,7 +1415,7 @@ interface BarberApplicationEmailDetails {
 /**
  * Send Barber Application Notification to Campus Manager
  * 
- * Sends an email to the campus manager when a new barber application is submitted.
+ * Sends an email to platform admins when a new barber application is submitted.
  * Includes the full application details and incentive to schedule an interview.
  * 
  * @param campusManagerEmail - Campus manager's email address
@@ -1445,7 +1445,7 @@ export async function sendBarberApplicationNotification(
     };
 
     await transporter.sendMail(mailOptions);
-    logger.info(`Barber application notification sent to campus manager: ${campusManagerEmail}`);
+    logger.info(`Barber application notification sent to admin: ${campusManagerEmail}`);
   } catch (error: any) {
     logger.error(`Failed to send barber application notification to ${campusManagerEmail}:`, error.message);
     // Don't throw - application notification is non-critical

@@ -26,7 +26,6 @@ interface Barber {
   lastName: string;
   avatarUrl: string | null;
   email: string;
-  isCampusManager: boolean;
   conversationId: number | null;
   lastMessage: string | null;
   lastMessageAt: string | null;
@@ -241,11 +240,6 @@ export default function BarberChatsModal({ isVisible, onClose, onSelectBarber }:
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-gray-900 truncate">{barber.name}</h3>
-                        {barber.isCampusManager && (
-                          <span className="px-1.5 py-0.5 bg-gray-200 text-gray-600 text-xs font-medium rounded">
-                            Campus Manager
-                          </span>
-                        )}
                       </div>
                       {barber.lastMessageAt && (
                         <span className="text-xs text-gray-500 flex-shrink-0 ml-2">

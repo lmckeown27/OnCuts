@@ -105,16 +105,6 @@ function formatSchedule(schedule: WeeklySchedule | undefined): { day: string; ti
     });
 }
 
-// Fisher-Yates shuffle for fair random ordering of barbers
-// This gives every barber an equal chance of being seen first
-function shuffleBarbers(barbers: Barber[]): Barber[] {
-  const shuffled = [...barbers];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
 
 export default function ConsumerPage() {
   const navigate = useNavigate();
@@ -822,7 +812,7 @@ export default function ConsumerPage() {
           >
             <h3 className="text-xl font-bold text-gray-900 mb-3">Application Under Review</h3>
             <p className="text-gray-600 mb-4">
-              Please be patient as the campus manager goes over your application.
+              Please be patient as the CampusCuts team goes over your application.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               If you suspect your application was not sent, please contact{' '}
@@ -1507,10 +1497,8 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       
       const barbersData = response.data || [];
       
-      // Randomly shuffle barbers to give every barber a fair chance at being seen
-      const shuffledBarbers = shuffleBarbers(barbersData);
-      setBarbers(shuffledBarbers);
-      setFilteredBarbers(shuffledBarbers);
+      setBarbers(barbersData);
+      setFilteredBarbers(barbersData);
       
       setLoading(false);
     } catch (error) {
@@ -1552,8 +1540,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
       filtered = filtered.filter(() => true);
     }
 
-    // Keep random order from initial shuffle - no additional sorting
-    // This ensures every barber has a fair chance at being seen
+    // Preserve backend order (sorted by 5-star review count)
 
     setFilteredBarbers(filtered);
   };

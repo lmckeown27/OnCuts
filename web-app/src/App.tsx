@@ -139,7 +139,7 @@ function AppContent() {
   const isWebRoute = location.pathname.startsWith('/web');
   const { loadUser, isAuthenticated } = useAuthStore();
 
-  // Load user data from API on mount to ensure fresh role data (e.g., is_campus_manager)
+  // Load user data from API on mount to ensure fresh role data
   useEffect(() => {
     if (isAuthenticated) {
       loadUser();
@@ -193,7 +193,7 @@ function AppContent() {
         <Route path="/web/student/payment/processing" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PaymentProcessingPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/payment/:bookingId" element={<PlatformGuard requiredPlatform="web"><LazyRoute><PostServicePaymentPage /></LazyRoute></PlatformGuard>} />
         
-        {/* Web - Barber Routes (includes Campus Manager features when user is campus manager) */}
+        {/* Web - Barber Routes */}
         <Route path="/web/barber" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/earnings" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberEarningsPage /></LazyRoute></PlatformGuard>} />
         <Route path="/web/barber/service-history" element={<PlatformGuard requiredPlatform="web"><LazyRoute><BarberServiceHistoryPage /></LazyRoute></PlatformGuard>} />

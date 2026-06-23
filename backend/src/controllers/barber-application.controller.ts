@@ -280,7 +280,7 @@ export const getMyApplication = async (req: AuthRequest, res: Response, next: Ne
 };
 
 /**
- * Get all applications (admin/campus manager only)
+ * Get all applications (admin only)
  * GET /api/v1/barber-applications
  * 
  * Returns both regular barber applications (from authenticated users)
@@ -432,7 +432,7 @@ export const getAllApplications = async (req: AuthRequest, res: Response, next: 
 };
 
 /**
- * Update application status (admin/campus manager only)
+ * Update application status (admin only)
  * PATCH /api/v1/barber-applications/:id/status
  * 
  * Handles both regular applications (barber_applications table)

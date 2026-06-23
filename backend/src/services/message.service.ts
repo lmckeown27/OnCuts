@@ -708,8 +708,8 @@ class MessageService {
               messageContent: contentForStorage,
               conversationId,
             });
-          } else if ((senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && recipientRole === 'BARBER') {
-            // Campus manager/admin sending to barber - use barber-to-barber template
+          } else if (senderRole === 'ADMIN' && recipientRole === 'BARBER') {
+            // Admin sending to barber
             await sendBarberToBarberMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
@@ -717,8 +717,8 @@ class MessageService {
               messageContent: contentForStorage,
               conversationId,
             });
-          } else if (senderRole === 'BARBER' && (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')) {
-            // Barber sending to campus manager/admin - use barber-to-barber template
+          } else if (senderRole === 'BARBER' && recipientRole === 'ADMIN') {
+            // Barber sending to admin
             await sendBarberToBarberMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
@@ -726,11 +726,8 @@ class MessageService {
               messageContent: contentForStorage,
               conversationId,
             });
-          } else if (
-            (senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && 
-            (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')
-          ) {
-            // Admin/Campus Manager communicating with each other - use barber-to-barber template
+          } else if (senderRole === 'ADMIN' && recipientRole === 'ADMIN') {
+            // Admin-to-admin communication
             await sendBarberToBarberMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
@@ -738,11 +735,8 @@ class MessageService {
               messageContent: contentForStorage,
               conversationId,
             });
-          } else if (
-            (senderRole === 'CAMPUS_MANAGER' || senderRole === 'ADMIN') && 
-            (recipientRole === 'CONSUMER' || recipientRole === 'STUDENT')
-          ) {
-            // Campus Manager/Admin sending to Consumer - use consumer template
+          } else if (senderRole === 'ADMIN' && (recipientRole === 'CONSUMER' || recipientRole === 'STUDENT')) {
+            // Admin sending to consumer
             await sendConsumerNewMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,
@@ -751,11 +745,8 @@ class MessageService {
               conversationId,
               booking: bookingDetails,
             });
-          } else if (
-            (senderRole === 'CONSUMER' || senderRole === 'STUDENT') && 
-            (recipientRole === 'CAMPUS_MANAGER' || recipientRole === 'ADMIN')
-          ) {
-            // Consumer sending to Campus Manager/Admin - use barber-to-barber template (business notification)
+          } else if ((senderRole === 'CONSUMER' || senderRole === 'STUDENT') && recipientRole === 'ADMIN') {
+            // Consumer sending to admin
             await sendBarberToBarberMessageEmail({
               recipientEmail: recipient.email,
               recipientName: recipientFullName,

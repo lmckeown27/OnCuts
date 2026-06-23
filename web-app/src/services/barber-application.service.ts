@@ -100,7 +100,7 @@ class BarberApplicationService {
   }
 
   /**
-   * Get all barber applications (admin/campus manager only)
+   * Get all barber applications (admin only)
    * @param campusId - Optional campus ID to filter applications by campus
    * @param status - Optional status to filter applications (e.g., 'pending')
    */
@@ -128,7 +128,7 @@ class BarberApplicationService {
   }
 
   /**
-   * Update application status (admin/campus manager only)
+   * Update application status (admin only)
    */
   async updateApplicationStatus(
     applicationId: string, 

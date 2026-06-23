@@ -4,7 +4,7 @@
  * Allows barbers to manage their assigned locations
  * - View assigned locations
  * - View pending location requests
- * - Request new locations (pending campus manager approval)
+ * - Request new locations (pending admin approval)
  * - Add from approved campus locations
  */
 
@@ -244,7 +244,7 @@ const BarberLocationsModal: React.FC<BarberLocationsModalProps> = ({
                   <Card className="p-4 mb-4 border-primary-200 bg-primary-50">
                     <h4 className="font-medium text-gray-900 mb-2">Request New Location</h4>
                     <p className="text-xs text-gray-500 mb-3">
-                      Your request will be reviewed by the campus manager
+                      Your request will be reviewed by the CampusCuts team
                     </p>
                     <div className="space-y-3">
                       <div>

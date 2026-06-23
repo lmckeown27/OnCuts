@@ -68,7 +68,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         u.latitude as user_latitude,
         u.longitude as user_longitude,
         u.stripe_account_id,
-        u.stripe_payouts_enabled
+        u.stripe_payouts_enabled,
+        (SELECT COUNT(*)::int FROM bookings bk
+         WHERE bk."barberId" = b.id AND bk."reviewRating" = 5) AS five_star_review_count
     `;
     
     const params: any[] = [];
@@ -93,7 +95,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex += 2;
     }
 
-    // Build WHERE clause - campus managers can request to include hidden barbers
+    // Build WHERE clause - admin requests can to include hidden barbers
     // When includeHidden=true (CM view), show ALL barbers including those without Stripe
     // When includeHidden=false (consumer view), only show active barbers with Stripe setup
     const shouldIncludeHidden = includeHidden === 'true';
@@ -166,11 +168,16 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       paramIndex++;
     }
 
-    // Sort by distance if user location provided, otherwise by rating
-    if (hasUserLocation) {
-      query += ` ORDER BY distance_km ASC NULLS LAST, b."avgRating" DESC NULLS LAST`;
+    // Consumer view: sort by accumulated 5-star reviews (most first).
+    // Campus manager view: keep distance/rating ordering for operational use.
+    if (shouldIncludeHidden) {
+      if (hasUserLocation) {
+        query += ` ORDER BY distance_km ASC NULLS LAST, b."avgRating" DESC NULLS LAST`;
+      } else {
+        query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
+      }
     } else {
-      query += ` ORDER BY b."avgRating" DESC NULLS LAST`;
+      query += ` ORDER BY five_star_review_count DESC NULLS LAST, b."avgRating" DESC NULLS LAST, b."createdAt" ASC`;
     }
 
     const result = await pool.query(query, params);
@@ -283,6 +290,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         service_locations: locationsResult.rows,
         average_rating: averageRating,
         review_count: reviewCount,
+        five_star_review_count: parseInt(barber.five_star_review_count || '0', 10),
         // Stripe status - fully set up (visible to consumers) vs not
         has_stripe_setup: !!barber.stripe_account_id && barber.stripe_payouts_enabled === true,
       };
@@ -308,7 +316,9 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         total_pages: 1,
       },
       meta: {
-        sorted_by: hasUserLocation ? 'distance' : 'rating',
+        sorted_by: shouldIncludeHidden
+          ? (hasUserLocation ? 'distance' : 'rating')
+          : 'five_star_reviews',
         user_location_provided: hasUserLocation,
         max_distance_km: hasUserLocation && !showingClosestFallback ? maxDistanceKm : null,
         max_distance_miles: hasUserLocation && !showingClosestFallback ? Math.round(maxDistanceKm * 0.621371 * 10) / 10 : null,
@@ -468,8 +478,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         });
       }
 
-      // Only auto-create if user is a barber or campus_manager
-      // Role values are uppercase in the database
+      // Only auto-create if user is a barber (legacy CAMPUS_MANAGER DB role included)
       const userRole = (user.user_type || '').toUpperCase();
       logger.info(`Auto-create role check: user_type=${user.user_type}, normalized=${userRole}, campus_id=${user.campus_id}`);
       
@@ -497,7 +506,6 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
       
       // Use upsert pattern - explicitly generate UUID for id since table lacks default
       // Include ALL required NOT NULL columns from barbers table schema
-      const isCampusManager = userRole === 'CAMPUS_MANAGER';
       const ccAuto = campusCoordsValueExprs(2);
 
       const createResult = await pool.query(
@@ -513,7 +521,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
            gen_random_uuid(), $1, $2, ARRAY[]::text[], true, $3,
            0, 0,
            0, 0, 0, 0,
-           1.00, $4, false,
+           1.00, false, false,
            ${ccAuto.lat}, ${ccAuto.lng},
            NOW(), NOW()
          )
@@ -529,7 +537,6 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
           userId,
           user.campus_id,
           JSON.stringify(defaultSchedule),
-          isCampusManager
         ]
       );
 
@@ -1442,7 +1449,7 @@ export const getBarberAnalytics = async (req: AuthRequest, res: Response, next: 
 };
 
 /**
- * Remove barber (demote to consumer) - Campus Manager only
+ * Remove barber (demote to consumer) - Admin only
  * This doesn't delete the user, just changes their role from 'barber' to 'consumer'
  */
 export const removeBarber = async (req: AuthRequest, res: Response, next: NextFunction) => {

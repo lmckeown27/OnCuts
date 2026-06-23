@@ -853,8 +853,8 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
        LEFT JOIN barbers b ON b."userId" = u.id
        WHERE u.id = $1 
          AND (
-           (b."isActive" = true AND u.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
-           OR u.role IN ('CAMPUS_MANAGER', 'ADMIN')
+           (b."isActive" = true AND u.role IN ('BARBER', 'ADMIN', 'CAMPUS_MANAGER'))
+           OR u.role = 'ADMIN'
          )`,
       [userId]
     );
@@ -902,7 +902,6 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          u."avatarUrl",
          u.email,
          b.id as barber_id,
-         b."isCampusManager",
          c.id as conversation_id,
          (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
          (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_at,
@@ -918,9 +917,7 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
          AND (u."isBanned" IS NOT TRUE)
          ${barberVisibilitySql}
          ${peerBarberHideB2b}
-       ORDER BY 
-         b."isCampusManager" DESC,
-         COALESCE(c.last_message_at, b."createdAt") DESC`,
+       ORDER BY COALESCE(c.last_message_at, b."createdAt") DESC`,
       [userId, campusId]
     );
 
@@ -935,7 +932,6 @@ router.get('/barber-chats/barbers', authenticate, async (req, res, next) => {
           name: `${row.first_name} ${row.last_name}`,
           avatarUrl: row.avatarUrl,
           email: row.email,
-          isCampusManager: row.isCampusManager,
           conversationId: row.conversation_id,
           lastMessage: row.last_message,
           lastMessageAt: row.last_message_at,
@@ -995,12 +991,12 @@ router.post('/barber-chats', authenticate, async (req, res, next) => {
          LEFT JOIN barbers b2 ON b2."userId" = u2.id
          WHERE u1.id = $1 AND u2.id = $2
            AND (
-             (b1."isActive" = true AND u1.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
-             OR u1.role IN ('CAMPUS_MANAGER', 'ADMIN')
+             (b1."isActive" = true AND u1.role IN ('BARBER', 'ADMIN', 'CAMPUS_MANAGER'))
+             OR u1.role = 'ADMIN'
            )
            AND (
-             (b2."isActive" = true AND u2.role IN ('BARBER', 'CAMPUS_MANAGER', 'ADMIN'))
-             OR u2.role IN ('CAMPUS_MANAGER', 'ADMIN')
+             (b2."isActive" = true AND u2.role IN ('BARBER', 'ADMIN', 'CAMPUS_MANAGER'))
+             OR u2.role = 'ADMIN'
            )`,
         [userId, otherBarberUserId]
       );

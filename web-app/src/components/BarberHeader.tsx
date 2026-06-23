@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Calendar, Shield, LogOut, ChevronDown, Inbox, ArrowLeft, FileText } from 'lucide-react';
+import { Settings, Calendar, LogOut, ChevronDown, Inbox, ArrowLeft, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CampusCutLogo } from '@assets';
 import { useAuthStore } from '../store/useAuthStore';
@@ -8,8 +8,6 @@ import { useAuthStore } from '../store/useAuthStore';
 interface BarberHeaderProps {
   title: string;
   barberId?: string;
-  isCampusManager?: boolean;
-  campusName?: string;
   showBookingRequests?: boolean;
   bookingRequestsCount?: number;
   onBookingsClick?: () => void;
@@ -18,8 +16,6 @@ interface BarberHeaderProps {
 export default function BarberHeader({ 
   title, 
   barberId = 'barber-1',
-  isCampusManager = false,
-  campusName = '',
   showBookingRequests = false,
   bookingRequestsCount = 0,
   onBookingsClick
@@ -53,16 +49,6 @@ export default function BarberHeader({
             <img src={CampusCutLogo} alt="CampusCuts" className="h-10 w-auto" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-              {isCampusManager && campusName && (
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 border border-primary-200 rounded-full">
-                    <Shield className="w-3.5 h-3.5 text-primary-600" />
-                    <span className="text-sm font-medium text-primary-700">Campus Manager</span>
-                    <span className="text-sm text-gray-500">—</span>
-                    <span className="text-sm text-gray-700">{campusName}</span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -130,22 +116,6 @@ export default function BarberHeader({
                     <Calendar className="w-4 h-4 text-gray-500" />
                     Bookings
                   </button>
-                  
-                  {isCampusManager && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <button
-                        onClick={() => {
-                          navigate(`${platformPrefix}/barber`);
-                          setShowProfileDropdown(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                      >
-                        <Shield className="w-4 h-4 text-primary-600" />
-                        Campus Manager
-                      </button>
-                    </>
-                  )}
                   
                   <div className="border-t border-gray-200 my-1"></div>
                   <Link

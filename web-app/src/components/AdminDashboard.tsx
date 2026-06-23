@@ -28,7 +28,7 @@ import {
   CampusLocationsPanel,
   CompletedBookingsPanel,
   ServicesManagementPanel,
-} from './CampusManagerDashboard';
+} from './AdminCampusPanels';
 
 // Register Chart.js components
 ChartJS.register(
@@ -49,8 +49,6 @@ interface Campus {
   slug?: string;
   city?: string;
   state?: string;
-  managerId?: string;
-  managerName?: string;
 }
 
 interface CampusPerformance {
@@ -171,7 +169,6 @@ interface Barber {
   email: string;
   profileImageUrl?: string;
   isActive: boolean;
-  isCampusManager: boolean;
   campusId?: string;
   campusName?: string;
   hasStripeSetup?: boolean; // Stripe fully complete (visible to consumers)
@@ -301,7 +298,6 @@ export function AdminDashboard({
   const [campusLoadError, setCampusLoadError] = useState<string | null>(null);
   const [isLoadingPerformance, setIsLoadingPerformance] = useState(false);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(false);
-  const [isAssigning, setIsAssigning] = useState<string | null>(null);
   
   // Metrics chart state
   const [metrics, setMetrics] = useState<MetricsDataPoint[]>([]);
@@ -838,33 +834,6 @@ export function AdminDashboard({
     }
   };
   
-  const handleAssignManager = async (barberUserId: string, assign: boolean) => {
-    setIsAssigning(barberUserId);
-    try {
-      await api.post(`/admin/campuses/${selectedCampusId}/manager`, {
-        barberUserId,
-        action: assign ? 'assign' : 'remove'
-      });
-      
-      toast.success(assign ? 'Campus manager assigned!' : 'Campus manager removed');
-      
-      // Refresh barbers list
-      const response = await api.get<{ barbers: Barber[] } | Barber[]>(`/admin/campuses/${selectedCampusId}/barbers`);
-      const barberList = Array.isArray(response) ? response : response.barbers || [];
-      setBarbers(barberList);
-      
-      // Refresh campus list to update manager info
-      const campusResponse = await api.get<{ campuses: Campus[] } | Campus[]>('/admin/campuses');
-      const campusList = Array.isArray(campusResponse) ? campusResponse : campusResponse.campuses || [];
-      setCampuses(campusList);
-    } catch (error: any) {
-      console.error('Failed to assign manager:', error);
-      toast.error(error.message || 'Failed to update campus manager');
-    } finally {
-      setIsAssigning(null);
-    }
-  };
-  
   const formatCurrency = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
   };
@@ -1228,11 +1197,6 @@ export function AdminDashboard({
                         <p className="font-medium text-gray-900">{formatCampusName(campus.name)}</p>
                         <p className="text-xs text-gray-500">{campus.city}, {campus.state}</p>
                       </div>
-                      {campus.managerName && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                          CM: {campus.managerName}
-                        </span>
-                      )}
                     </button>
                   ))
                 ) : (
@@ -1795,11 +1759,11 @@ export function AdminDashboard({
                               <div key={msg.id} className="text-xs p-2 bg-gray-100 rounded">
                                 <div className="flex items-center gap-1 mb-1">
                                   <span className={`text-[10px] px-1 py-0.5 rounded ${
-                                    ['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(msg.sender_role) 
+                                    ['BARBER', 'ADMIN'].includes(msg.sender_role) 
                                       ? 'bg-green-100 text-green-700' 
                                       : 'bg-amber-100 text-amber-700'
                                   }`}>
-                                    {['BARBER', 'CAMPUS_MANAGER', 'ADMIN'].includes(msg.sender_role) ? 'Barber' : 'Customer'}
+                                    {['BARBER', 'ADMIN'].includes(msg.sender_role) ? 'Barber' : 'Customer'}
                                   </span>
                                   <span className="text-[10px] text-gray-400 ml-auto">
                                     {new Date(msg.created_at).toLocaleTimeString('en-US', { 
