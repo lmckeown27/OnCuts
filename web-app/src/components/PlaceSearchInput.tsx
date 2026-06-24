@@ -11,6 +11,7 @@ interface PlaceSearchInputProps {
   disabled?: boolean;
   label?: string;
   showLabel?: boolean;
+  showSearchIcon?: boolean;
   helperText?: string;
   className?: string;
 }
@@ -25,6 +26,7 @@ export default function PlaceSearchInput({
   disabled = false,
   label = 'Public location',
   showLabel = true,
+  showSearchIcon = true,
   helperText,
   className = '',
 }: PlaceSearchInputProps) {
@@ -150,7 +152,9 @@ export default function PlaceSearchInput({
         </label>
       )}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        {showSearchIcon && (
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        )}
         <input
           type="text"
           value={query}
@@ -161,7 +165,9 @@ export default function PlaceSearchInput({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          className={`w-full rounded-lg border border-gray-300 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 ${
+            showSearchIcon ? 'pl-10' : 'pl-3'
+          } ${loading ? 'pr-10' : 'pr-3'}`}
           autoComplete="off"
         />
         {loading && (

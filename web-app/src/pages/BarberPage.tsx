@@ -1390,39 +1390,20 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   const serviceLocationField = (
     <div className="flex justify-center mb-3 px-1 w-full">
-      <div className="w-full max-w-md">
-        <PlaceSearchInput
-          value={serviceLocationLabel || ''}
-          onChange={() => {}}
-          onSelectPlace={handleInlinePlaceSelect}
-          disabled={locationSaving}
-          label="Public service location"
-          placeholder="Search campus, neighborhood, or address…"
-        />
-        {locationSaving ? (
-          <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1.5">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            Saving…
-          </p>
-        ) : hasSavedServiceLocation ? (
-          <p className="flex items-center gap-1.5 text-xs text-green-700 mt-1.5">
-            <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-            Service location saved
-          </p>
-        ) : (
-          <p className="flex items-center gap-1.5 text-xs text-amber-700 mt-1.5">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-            No service location saved yet
-          </p>
-        )}
-        {onEditServiceLocation && (
-          <button
-            type="button"
-            onClick={() => onEditServiceLocation()}
-            className="mt-1.5 text-xs text-primary-600 hover:text-primary-700 hover:underline"
-          >
-            Adjust area size or pin on map
-          </button>
+      <div className="w-full max-w-md flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <PlaceSearchInput
+            value={serviceLocationLabel || ''}
+            onChange={() => {}}
+            onSelectPlace={handleInlinePlaceSelect}
+            disabled={locationSaving}
+            showLabel={false}
+            showSearchIcon={false}
+            placeholder="Search campus, neighborhood, or address…"
+          />
+        </div>
+        {hasSavedServiceLocation && !locationSaving && (
+          <CheckCircle className="w-5 h-5 text-green-600 shrink-0" aria-label="Service location saved" />
         )}
       </div>
     </div>
