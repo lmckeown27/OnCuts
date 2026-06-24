@@ -79,6 +79,18 @@ export const updateUserLocation = async (
 
     logger.info(`User ${userId} location updated: permission=${permission}, lat=${latitude}, lng=${longitude}`);
 
+    // Keep barber service pin aligned with device GPS (same as iOS provider discovery)
+    if (permission === 'granted') {
+      await pool.query(
+        `UPDATE barbers
+         SET service_latitude = $1,
+             service_longitude = $2,
+             "updatedAt" = NOW()
+         WHERE "userId" = $3`,
+        [latitude, longitude, userId]
+      );
+    }
+
     res.json({
       success: true,
       message: 'Location updated successfully',

@@ -77,9 +77,16 @@ export default function BarberPage() {
   // Handle dynamic viewport height for mobile browser bar changes
   useDynamicViewportHeight();
   
-  // Auto-update barber's location when they access the dashboard
-  // This ensures their location stays current for consumer discovery
-  useGeolocation();
+  // Auto-update barber's device location for consumer discovery (iOS-aligned)
+  const {
+    latitude: barberLatitude,
+    longitude: barberLongitude,
+    permissionStatus: barberLocationPermission,
+    loading: barberGeoLoading,
+    error: barberGeoError,
+    refreshLocation: refreshBarberLocation,
+    requestLocation: requestBarberLocation,
+  } = useGeolocation();
   
   // Message store for unread count
   const { unreadCount: unreadMessages, loadUnreadCount } = useMessageStore();
@@ -587,7 +594,7 @@ export default function BarberPage() {
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                   >
                     <MapPin className="w-4 h-4 text-gray-500" />
-                    Locations
+                    Service Location
                   </button>
                   <button
                     onClick={() => {
@@ -980,9 +987,16 @@ export default function BarberPage() {
 
       {/* Locations Modal */}
       {showLocations && (
-        <BarberLocationsModal 
-          isVisible={isLocationsVisible} 
+        <BarberLocationsModal
+          isVisible={isLocationsVisible}
           onClose={closeLocations}
+          latitude={barberLatitude}
+          longitude={barberLongitude}
+          permissionStatus={barberLocationPermission}
+          geoLoading={barberGeoLoading}
+          geoError={barberGeoError}
+          onRefreshLocation={refreshBarberLocation}
+          onRequestLocation={requestBarberLocation}
         />
       )}
 
@@ -1336,7 +1350,6 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [editedDate, setEditedDate] = useState('');
   const [editedTime, setEditedTime] = useState('');
   const [editedLocation, setEditedLocation] = useState('');
-  const [barberLocations, setBarberLocations] = useState<{id: string; name: string; description: string | null}[]>([]);
   const [barberIdForEdit, setBarberIdForEdit] = useState('');
   
   // Confirmed bookings state
@@ -1791,33 +1804,15 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
 
   // Start editing booking - fetch barber ID and locations
   const startEditingBooking = async () => {
-    // Fetch the barber's own ID and locations
     if (user?.id) {
       try {
-        // Get barber ID
         const barberResponse = await api.get<{ id: string }>(`/barbers/user/${user.id}`);
-        const barberId = barberResponse?.id || '';
-        setBarberIdForEdit(barberId);
-        console.log('[BarberPage] Barber ID for edit:', barberId);
-        
-        // Fetch locations for this barber
-        if (barberId) {
-          const locationsResponse = await fetch(`${import.meta.env.VITE_API_URL}/locations/for-booking/${barberId}`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-            },
-          });
-          if (locationsResponse.ok) {
-            const locData = await locationsResponse.json();
-            setBarberLocations(locData.data || []);
-            console.log('[BarberPage] Loaded locations:', locData.data);
-          }
-        }
+        setBarberIdForEdit(barberResponse?.id || '');
       } catch (error) {
         console.error('Failed to fetch barber data for edit:', error);
       }
     }
-    
+
     setIsEditingBooking(true);
   };
 
@@ -3047,28 +3042,13 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                             Location
                           </div>
                         </label>
-                        {barberLocations.length > 0 ? (
-                          <select
-                            value={editedLocation}
-                            onChange={(e) => setEditedLocation(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white text-base"
-                          >
-                            <option value="">Select a location</option>
-                            {barberLocations.map((loc) => (
-                              <option key={loc.id} value={loc.name}>
-                                {loc.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={editedLocation}
-                            onChange={(e) => setEditedLocation(e.target.value)}
-                            placeholder="Enter location..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base"
-                          />
-                        )}
+                        <input
+                          type="text"
+                          value={editedLocation}
+                          onChange={(e) => setEditedLocation(e.target.value)}
+                          placeholder="e.g., Smith Hall, Room 204"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent text-base"
+                        />
                       </div>
                       {selectedBookingInline.notes && (
                         <div>

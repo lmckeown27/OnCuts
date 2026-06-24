@@ -479,31 +479,16 @@ export default function BookingDetailsModal({
                 />
               </div>
 
-              {/* Location - dropdown if barber has service locations */}
+              {/* Location */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                {editBarber?.service_locations && editBarber.service_locations.length > 0 ? (
-                  <select
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-white"
-                  >
-                    <option value="">Select a location</option>
-                    {editBarber.service_locations.map((location) => (
-                      <option key={location.id} value={location.name}>
-                        {location.name}{location.is_primary ? ' (Primary)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    value={editLocation}
-                    onChange={(e) => setEditLocation(e.target.value)}
-                    placeholder="Enter location..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                  />
-                )}
+                <input
+                  type="text"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="e.g., Smith Hall, Room 204"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                />
               </div>
 
               {/* Consumer Notes - Read-only display */}

@@ -54,11 +54,8 @@ export default function ScheduleServicePage() {
   const [time, setTime] = useState<string>(
     preservedFormData?.time || passedFilters?.time || ''
   );
-  const [location_, setLocation] = useState<string>(
-    preservedFormData?.location || passedFilters?.location || ''
-  );
   const [locationDetails, setLocationDetails] = useState<string>(
-    preservedFormData?.locationDetails || passedFilters?.locationDetails || ''
+    preservedFormData?.locationDetails || passedFilters?.locationDetails || preservedFormData?.location || passedFilters?.location || ''
   );
   const [notes, setNotes] = useState<string>(preservedFormData?.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,15 +68,6 @@ export default function ScheduleServicePage() {
     location?: string;
   }>({});
   
-  // Available locations for this barber
-  interface BarberLocation {
-    id: string;
-    name: string;
-    description: string | null;
-    address: string | null;
-  }
-  const [barberLocations, setBarberLocations] = useState<BarberLocation[]>([]);
-  const [locationsLoading, setLocationsLoading] = useState(false);
 
   // Available services based on barber's specialties (fallback to shared config)
   // Filter to only show services that have pricing info (excludes deleted services)
@@ -96,35 +84,6 @@ export default function ScheduleServicePage() {
     ? resolveServiceDurationMinutes(serviceType, barber?.pricing)
     : DEFAULT_SERVICE_DURATION_MINUTES;
 
-  // Fetch locations when barber is available
-  useEffect(() => {
-    const fetchLocations = async () => {
-      if (!barber?.id) return;
-      
-      try {
-        setLocationsLoading(true);
-        const response = await fetch(`/api/locations/for-booking/${barber.id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setBarberLocations(data.data || []);
-          // Auto-select first location if available and no location is set
-          if (!location_ && data.data?.length > 0) {
-            const firstLoc = data.data[0];
-            if (firstLoc) {
-              setLocation(firstLoc.name);
-              setLocationDetails(firstLoc.name);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch barber locations:', error);
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
-    
-    fetchLocations();
-  }, [barber?.id]);
 
   // Get minimum date (today)
   const today = new Date().toISOString().split('T')[0];
@@ -144,8 +103,8 @@ export default function ScheduleServicePage() {
     if (!time) {
       newErrors.time = 'Please select a time';
     }
-    if (!location_) {
-      newErrors.location = 'Please select a location';
+    if (!locationDetails.trim()) {
+      newErrors.location = 'Please enter where the service will take place';
     }
     
     // If there are errors, set them and scroll to top
@@ -191,8 +150,8 @@ export default function ScheduleServicePage() {
           servicePrice: servicePrice,
           scheduledAt: scheduledAt,
           duration: selectedServiceDuration,
-          location: location_,
-          locationDetails: locationDetails,
+          location: locationDetails.trim(),
+          locationDetails: locationDetails.trim(),
           notes: notes,
         }
       });
@@ -240,8 +199,8 @@ export default function ScheduleServicePage() {
                     serviceType,
                     date,
                     time,
-                    location: location_,
-                    locationDetails,
+                    location: locationDetails.trim(),
+                    locationDetails: locationDetails.trim(),
                     notes
                   }
                 }
@@ -406,36 +365,19 @@ export default function ScheduleServicePage() {
                         Location *
                       </div>
                     </label>
-                    {locationsLoading ? (
-                      <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
-                        Loading locations...
-                      </div>
-                    ) : barberLocations.length > 0 ? (
-                      <select
-                        value={locationDetails}
-                        onChange={(e) => {
-                          setLocationDetails(e.target.value);
-                          setLocation(e.target.value);
-                          if (e.target.value) setErrors(prev => ({ ...prev, location: undefined }));
-                        }}
-                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white ${
-                          errors.location ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        required
-                      >
-                        <option value="">Select a location</option>
-                        {barberLocations.map((loc) => (
-                          <option key={loc.id} value={loc.name}>
-                            {loc.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full px-4 py-3 border border-amber-300 rounded-lg bg-amber-50 text-amber-700 text-sm">
-                        <MapPin className="w-4 h-4 inline mr-2" />
-                        This barber hasn't set up service locations yet. Please contact them directly.
-                      </div>
-                    )}
+                    <input
+                      type="text"
+                      value={locationDetails}
+                      onChange={(e) => {
+                        setLocationDetails(e.target.value);
+                        if (e.target.value.trim()) setErrors(prev => ({ ...prev, location: undefined }));
+                      }}
+                      placeholder="e.g., Smith Hall, Room 204"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                        errors.location ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      required
+                    />
                     {errors.location && (
                       <p className="text-red-500 text-sm mt-1">{errors.location}</p>
                     )}
