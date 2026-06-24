@@ -47,7 +47,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         serif: ['Georgia', 'Cambria', '"Times New Roman"', 'serif'],
       },
       animation: {

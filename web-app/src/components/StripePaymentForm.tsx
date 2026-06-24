@@ -287,7 +287,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
           theme: 'stripe',
           variables: {
             colorPrimary: '#059669',
-            fontFamily: '"Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif',
+            fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
           },
         },
       }}
