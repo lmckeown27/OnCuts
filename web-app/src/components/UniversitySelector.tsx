@@ -272,11 +272,6 @@ export default function UniversitySelector({
                     }`}
                   >
                     <p className="font-medium text-gray-900">{town.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {town.campusCount === 1
-                        ? '1 college in this area'
-                        : `${town.campusCount} colleges in this area`}
-                    </p>
                   </button>
                 </li>
               ))}
