@@ -20,11 +20,16 @@ import {
   type WeeklySchedule,
 } from '../services/barber-availability.service';
 import { barberServiceLocationLabelSelectSql } from '../services/barber-location-schema.service';
+import {
+  barberProviderTypeExpr,
+  barberProviderTypeSelectSql,
+} from '../services/barber-provider-schema.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType } = req.query;
     const labelSelect = await barberServiceLocationLabelSelectSql();
+    const providerTypeSelect = await barberProviderTypeSelectSql();
     
     // Parse user location for distance-based sorting
     const userLat = lat ? parseFloat(lat as string) : null;
@@ -61,7 +66,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect},
+        b.service_radius_km${labelSelect}${providerTypeSelect},
         u.email,
         u.first_name,
         u.last_name,
@@ -158,6 +163,13 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     if (specialty) {
       query += ` AND $${paramIndex} = ANY(b.specialties)`;
       params.push(String(specialty));
+      paramIndex++;
+    }
+
+    if (providerType) {
+      const providerTypeExpr = await barberProviderTypeExpr();
+      query += ` AND LOWER(${providerTypeExpr}) = LOWER($${paramIndex})`;
+      params.push(String(providerType));
       paramIndex++;
     }
 
@@ -353,6 +365,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
     }
 
     const labelSelect = await barberServiceLocationLabelSelectSql();
+    const providerTypeSelect = await barberProviderTypeSelectSql();
 
     const barberResult = await pool.query(
       `SELECT 
@@ -376,7 +389,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         u."campusId" as campus_id,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km${labelSelect}
+        b.service_radius_km${labelSelect}${providerTypeSelect}
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
@@ -611,6 +624,7 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
 export const getBarberById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const providerTypeSelect = await barberProviderTypeSelectSql();
 
     // Get barber from PostgreSQL
     // Column names match Prisma schema
@@ -634,7 +648,7 @@ export const getBarberById = async (req: AuthRequest, res: Response, next: NextF
         u."displayName" as display_name,
         u."avatarUrl" as profile_picture_url,
         u."campusId" as campus_id,
-        u."isBanned" as user_is_banned
+        u."isBanned" as user_is_banned${providerTypeSelect}
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b.id = $1`,

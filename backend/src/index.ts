@@ -38,6 +38,7 @@ import { pool, checkHealth as checkPostgresHealth, closePool, connectToPostgres 
 import { appleIdTokenLogin, googleIdTokenLogin } from './controllers/auth.controller';
 import authRoutes from './routes/auth.routes';
 import barberRoutes from './routes/barber.routes';
+import providerRoutes from './routes/provider.routes';
 import bookingRoutes from './routes/booking.routes';
 import paymentRoutes from './routes/payment.routes';
 import reviewRoutes from './routes/review.routes';
@@ -352,6 +353,7 @@ app.get('/health', async (req: Request, res: Response) => {
 // API Routes (V1 - versioned routes)
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/barbers', barberRoutes);
+app.use('/api/v1/providers', providerRoutes);
 app.use('/api/v1/barber', barberConnectRoutes);  // Stripe Connect for barbers
 app.use('/api/v1/bookings', bookingPaymentRoutes);  // Enhanced with Stripe payments
 app.use('/api/v1/bookings-simple', bookingSimpleRoutes);  // Simple booking creation
@@ -371,6 +373,7 @@ app.use('/api/auth/google-calendar', googleCalendarRoutes);  // Legacy route
 // Legacy routes (backward compatibility - no /v1 prefix)
 app.use('/api/auth', authRoutes);
 app.use('/api/barbers', barberRoutes);
+app.use('/api/providers', providerRoutes);
 app.use('/api/barber', barberConnectRoutes);
 app.use('/api/bookings', bookingPaymentRoutes);
 app.use('/api/payments', paymentRoutes);
