@@ -442,7 +442,7 @@ function PaymentForm({
               theme: 'stripe',
               variables: {
                 colorPrimary: '#059669', // primary-600
-                fontFamily: 'system-ui, sans-serif',
+                fontFamily: '"Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif',
               },
             },
           }}

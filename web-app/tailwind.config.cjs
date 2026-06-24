@@ -47,8 +47,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['"Source Serif 4"', 'Georgia', 'Cambria', '"Times New Roman"', 'serif'],
-        serif: ['"Source Serif 4"', 'Georgia', 'Cambria', '"Times New Roman"', 'serif'],
+        sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'serif'],
       },
       animation: {
         'slide-down': 'slideDown 0.5s ease-out',

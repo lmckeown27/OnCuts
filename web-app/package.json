@@ -13,6 +13,7 @@
     "test-pwa": "npm run build && npm run preview"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
     "@mysten/dapp-kit": "^0.19.11",
     "@mysten/sui": "^1.45.2",
     "@simplewebauthn/browser": "^10.0.0",
