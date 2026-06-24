@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, ChevronDown, X, MapPin, Loader2 } from 'lucide-react';
+import { ChevronDown, X, Loader2 } from 'lucide-react';
 import campusService from '../services/campus.service';
 import type { CollegeTown } from '../types';
 import {
@@ -159,7 +159,6 @@ export default function UniversitySelector({
           isOpen ? 'border-gray-900 shadow-lg' : 'border-gray-200 hover:border-gray-300'
         }`}
       >
-        <MapPin className="absolute left-4 w-5 h-5 text-gray-400 pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -173,7 +172,7 @@ export default function UniversitySelector({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 pl-12 pr-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-base text-center"
+          className="flex-1 px-3 py-3 text-gray-900 placeholder-gray-400 bg-transparent outline-none text-base text-center"
           readOnly={!!value}
           onClick={() => {
             if (value) {
@@ -228,7 +227,6 @@ export default function UniversitySelector({
             </div>
           ) : loadError ? (
             <div className="p-4 text-center text-red-500">
-              <MapPin className="w-8 h-8 mx-auto mb-2 text-red-300" />
               <p>{loadError}</p>
               <button
                 onClick={() => {
@@ -250,13 +248,11 @@ export default function UniversitySelector({
             </div>
           ) : searchQuery.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
               <p>Start typing to search</p>
               <p className="text-xs mt-1 text-gray-400">{allTowns.length} college towns available</p>
             </div>
           ) : results.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
               <p>No college towns found</p>
               <p className="text-sm mt-1">Try a city or state name</p>
             </div>
