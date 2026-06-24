@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, MapPin, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX } from 'lucide-react';
+import { Users as UsersIcon, User as UserIcon, Calendar, Settings, LogOut, ChevronDown, Instagram, Scissors, ArrowLeft, Menu, MessageCircle, Clock, Bell, X, AlertCircle, Check, Trash2, Star, FileText, UserX } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import Card from '../components/Card';
 import Button from '../components/Button';
@@ -29,7 +29,6 @@ import socketService from '../services/socket.service';
 import {
   BROWSE_MAX_DISTANCE_MILES,
   BROWSE_MIN_DISTANCE_MILES,
-  formatBarberDistanceFromUser,
   getBrowseConstrainByDistance,
   getBrowseMaxDistanceMiles,
   milesToKmForBrowse,
@@ -1763,7 +1762,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
       }`}>
         {(filteredBarbers || []).map((barber) => {
-          const distanceLabel = formatBarberDistanceFromUser(barber.distance_miles);
           // Calculate price display - show range if multiple different prices
           const prices = barber.pricing?.map(p => p.price) || [];
           const minPrice = prices.length > 0 ? Math.min(...prices) : undefined;
@@ -1805,12 +1803,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                       </span>
                     )}
                   </div>
-                  {distanceLabel && (
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-primary-500 shrink-0" />
-                      <span className="text-sm text-primary-600 font-medium">{distanceLabel}</span>
-                    </div>
-                  )}
                   {barber.instagram_handle && (
                     <div className="flex items-center gap-1 text-sm text-gray-500 mt-2">
                       <Instagram className="w-4 h-4 flex-shrink-0" />
@@ -1856,14 +1848,6 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
                       <span className="font-bold text-sm sm:text-base">
                         {hasRange ? `$${minPrice} - $${maxPrice}` : `$${minPrice}`}
                       </span>
-                    </div>
-                  </div>
-                )}
-                {distanceLabel && (
-                  <div className="absolute bottom-0 right-0 bg-gray-800/90 backdrop-blur-sm px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-tl-lg rounded-br-lg">
-                    <div className="flex items-center gap-1 text-white">
-                      <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="font-bold text-xs sm:text-sm">{distanceLabel}</span>
                     </div>
                   </div>
                 )}
