@@ -11,6 +11,7 @@ import { bookingRequestService } from '../services/booking-request.service';
 import { bookingMessagingService } from '../services/booking-messaging.service';
 import { pool } from '../database/connection';
 import { getSocketIO } from '../index';
+import { addProviderIdAliases } from '../utils/provider-id-alias.utils';
 
 /**
  * POST /api/booking-requests
@@ -28,7 +29,7 @@ export async function createBookingRequest(req: Request, res: Response) {
       message,
     } = req.body;
 
-    if (!customerId || !barberId || !serviceType || !requestedDate || !requestedTime || !price) {
+    if (!customerId || !(barberId || req.body.providerId) || !serviceType || !requestedDate || !requestedTime || !price) {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -37,7 +38,7 @@ export async function createBookingRequest(req: Request, res: Response) {
 
     const result = await bookingRequestService.createBookingRequest({
       customerId,
-      barberId,
+      barberId: barberId || req.body.providerId,
       serviceType,
       requestedDate: new Date(requestedDate),
       requestedTime,
@@ -65,7 +66,7 @@ export async function createBookingRequest(req: Request, res: Response) {
  */
 export async function getBarberPendingRequests(req: Request, res: Response) {
   try {
-    const { barberId } = req.params;
+    const barberId = req.params.barberId || req.params.providerId;
 
     const requests = await bookingRequestService.getBarberPendingRequests(barberId);
 
@@ -96,21 +97,22 @@ export async function acceptBookingRequest(req: Request, res: Response) {
   try {
     const { bookingId } = req.params;
     const { barberId, message } = req.body;
+    const resolvedBarberId = barberId || req.body.providerId;
 
-    if (!barberId) {
+    if (!resolvedBarberId) {
       return res.status(400).json({
         success: false,
-        error: 'barber ID is required',
+        error: 'barberId or providerId is required',
       });
     }
 
-    await bookingRequestService.acceptBookingRequest(bookingId, barberId, message);
+    await bookingRequestService.acceptBookingRequest(bookingId, resolvedBarberId, message);
 
     // Emit WebSocket event to barber for live dashboard updates (non-blocking)
     // This runs in the background so it doesn't affect the response
     (async () => {
       try {
-        logger.info(`[booking-confirmed] Starting WebSocket emission for bookingId: ${bookingId}, barberId: ${barberId}`);
+        logger.info(`[booking-confirmed] Starting WebSocket emission for bookingId: ${bookingId}, barberId: ${resolvedBarberId}`);
         
         // Handle both conv-* prefixed IDs and regular booking IDs
         let actualBookingId = bookingId;
@@ -180,7 +182,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
           const barberUserId = booking.barber_user_id;
           
           logger.info(`[booking-confirmed] Emitting to room user-${barberUserId}`);
-          const eventData = {
+          const eventData = addProviderIdAliases({
             id: booking.id,
             consumerId: booking.consumerId,
             barberId: booking.barberId,
@@ -196,7 +198,7 @@ export async function acceptBookingRequest(req: Request, res: Response) {
               email: booking.consumer_email,
               profilePictureUrl: booking.consumer_profile_url,
             },
-          };
+          }) as Record<string, unknown>;
           logger.info(`[booking-confirmed] Event data: ${JSON.stringify(eventData)}`);
           io.to(`user-${barberUserId}`).emit('booking-confirmed', eventData);
           logger.info(`[booking-confirmed] ✅ Successfully emitted to barber user ${barberUserId}`);
@@ -231,14 +233,18 @@ export async function rejectBookingRequest(req: Request, res: Response) {
     const { bookingId } = req.params;
     const { barberId, reason } = req.body;
 
-    if (!barberId) {
+    if (!barberId && !req.body.providerId) {
       return res.status(400).json({
         success: false,
-        error: 'barberId is required',
+        error: 'barberId or providerId is required',
       });
     }
 
-    await bookingRequestService.rejectBookingRequest(bookingId, barberId, reason);
+    await bookingRequestService.rejectBookingRequest(
+      bookingId,
+      barberId || req.body.providerId,
+      reason,
+    );
 
     res.json({
       success: true,

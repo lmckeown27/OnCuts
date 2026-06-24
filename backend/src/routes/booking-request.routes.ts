@@ -15,8 +15,15 @@ import {
   getUserConversations,
   getUnreadCount,
 } from '../controllers/booking-request.controller';
+import {
+  normalizeProviderIdRequest,
+  appendProviderIdAliasResponse,
+} from '../middleware/provider-id-alias.middleware';
 
 const router = Router();
+
+router.use(normalizeProviderIdRequest);
+router.use(appendProviderIdAliasResponse);
 
 // ============================================================
 // BOOKING REQUEST ENDPOINTS
@@ -28,6 +35,9 @@ router.post('/', createBookingRequest);
 // GET /api/booking-requests/barber/:barberId/pending - Get pending requests for barber
 // Note: barberId here can be either the barber table ID or user ID - controller handles both
 router.get('/barber/:barberId/pending', getBarberPendingRequests);
+
+// Intera alias — providerId is the barbers.id record (same as barberId)
+router.get('/provider/:providerId/pending', getBarberPendingRequests);
 
 // POST /api/booking-requests/:bookingId/accept - Accept booking request
 router.post('/:bookingId/accept', acceptBookingRequest);

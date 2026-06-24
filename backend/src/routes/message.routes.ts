@@ -19,8 +19,15 @@ import {
   notifyDeveloperOfBlock,
   removeUserBlock,
 } from '../services/ugc-moderation.service';
+import {
+  normalizeProviderIdRequest,
+  appendProviderIdAliasResponse,
+} from '../middleware/provider-id-alias.middleware';
 
 const router = express.Router();
+
+router.use(normalizeProviderIdRequest);
+router.use(appendProviderIdAliasResponse);
 
 /** Accept `image` or `file` field (iOS clients vary). */
 const uploadChatImageMiddleware = imageService.upload.fields([

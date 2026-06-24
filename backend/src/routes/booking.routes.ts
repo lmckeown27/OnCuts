@@ -11,8 +11,15 @@ import {
 } from '../controllers/booking.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validator';
+import {
+  normalizeProviderIdRequest,
+  appendProviderIdAliasResponse,
+} from '../middleware/provider-id-alias.middleware';
 
 const router: Router = express.Router();
+
+router.use(normalizeProviderIdRequest);
+router.use(appendProviderIdAliasResponse);
 
 /**
  * @route   POST /api/bookings

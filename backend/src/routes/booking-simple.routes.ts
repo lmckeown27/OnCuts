@@ -33,8 +33,15 @@ import {
 } from '../services/booking-cancellation.service';
 import { assertBookingWithinBarberAvailability, assertNoBarberSlotConflict } from '../services/barber-availability.service';
 import { assertNoBookingBlockBetween, isUgcModerationSchemaReady } from '../services/ugc-moderation.service';
+import {
+  normalizeProviderIdRequest,
+  appendProviderIdAliasResponse,
+} from '../middleware/provider-id-alias.middleware';
 
 const router = express.Router();
+
+router.use(normalizeProviderIdRequest);
+router.use(appendProviderIdAliasResponse);
 
 /**
  * GET /api/v1/bookings-simple/stripe/client-config
@@ -163,7 +170,8 @@ router.post('/', authenticate, async (req, res, next) => {
   try {
     const consumerId = (req as any).user.userId;
     const {
-      barberId,
+      barberId: bodyBarberId,
+      providerId,
       serviceType,
       priceUsdCents,
       scheduledTime,
@@ -172,9 +180,11 @@ router.post('/', authenticate, async (req, res, next) => {
       notes,
     } = req.body;
 
+    const barberId = bodyBarberId ?? providerId;
+
     // Validate required fields
-    if (!barberId) {
-      return res.status(400).json({ success: false, error: 'barberId is required' });
+    if (!barberId && !req.body.providerId) {
+      return res.status(400).json({ success: false, error: 'barberId or providerId is required' });
     }
     if (!serviceType) {
       return res.status(400).json({ success: false, error: 'serviceType is required' });
