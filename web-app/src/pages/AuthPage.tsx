@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle, ArrowLeft, X, Phone } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import authService from '../services/auth.service';
-import TabChairLogo from '../assets/logos/Tab_Chair.webp';
+import { CampusCutLogo } from '../assets';
 import { useViewport } from '../hooks/useViewport';
 import { isValidE164Phone, normalizeE164Phone } from '../utils/phoneE164';
 
@@ -525,7 +525,7 @@ export default function AuthPage() {
         <div className="flex flex-col items-center justify-center mb-4 sm:mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={TabChairLogo} 
+              src={CampusCutLogo} 
               alt="CampusCuts Logo" 
               className="h-12 sm:h-16 w-auto mb-2 sm:mb-4"
             />

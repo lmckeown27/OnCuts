@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Eye, EyeOff, AlertCircle, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../config/constants';
-import TabChairLogo from '../../assets/logos/Tab_Chair.webp';
+import { CampusCutLogo } from '../../assets';
 import { isValidE164Phone } from '../../utils/phoneE164';
 
 interface SignupForm {
@@ -221,7 +221,7 @@ export default function SignupPage() {
         <div className="flex flex-col items-center justify-center mb-8">
           <Link to="/" className="hover:opacity-80 active:scale-95 transition-all duration-150">
             <img 
-              src={TabChairLogo} 
+              src={CampusCutLogo} 
               alt="CampusCuts Logo" 
               className="h-16 w-auto mb-4"
             />
