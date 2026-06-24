@@ -16,6 +16,7 @@ import Marquee from '../components/Marquee';
 import IosAppPromoSection, { IOS_APP_STORE_LINKS } from '../components/IosAppPromoSection';
 import type { CollegeTown } from '../types';
 import { writeStoredCollegeTown } from '../utils/collegeTowns';
+import { setBrowseConstrainByDistance } from '../utils/consumerBrowseDistancePreference';
 import webpageLogo from '../assets/logos/Webpage_Logo copy.png';
 
 export default function LandingPage() {
@@ -35,12 +36,14 @@ export default function LandingPage() {
     setSelectedCollegeTown(town);
     if (town) {
       writeStoredCollegeTown(town);
+      setBrowseConstrainByDistance(true);
     }
   }, []);
 
   const goToConsumerPage = useCallback(() => {
     if (selectedCollegeTown) {
-      navigate('/web/consumer');
+      setBrowseConstrainByDistance(true);
+      navigate('/web/consumer', { state: { fromCollegeTownSelection: true } });
     }
   }, [selectedCollegeTown, navigate]);
   

@@ -1375,13 +1375,18 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   // Load saved college town and filters on mount
   useEffect(() => {
     const savedTown = readStoredCollegeTown();
-    if (savedTown) {
-      setSelectedCollegeTown(savedTown);
-    } else {
+    if (!savedTown) {
       navigate('/');
       return;
     }
-    
+
+    if (location.state?.fromCollegeTownSelection) {
+      setBrowseConstrainByDistance(true);
+      setConstrainByDistanceState(true);
+    }
+
+    setSelectedCollegeTown(savedTown);
+
     // Load filters
     const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
     if (savedFilters) {
@@ -1394,7 +1399,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         localStorage.removeItem(FILTER_STORAGE_KEY);
       }
     }
-  }, [navigate]);
+  }, [navigate, location.state]);
 
   // Load barbers when campus or browse radius preferences change
   useEffect(() => {
