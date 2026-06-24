@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type KeyboardEvent } from 'react';
+import debounce from 'lodash.debounce';
 import { Search, Loader2, MapPin } from 'lucide-react';
 import geocodeService, { type GeocodePlace } from '../services/geocode.service';
 
@@ -13,6 +14,8 @@ interface PlaceSearchInputProps {
   helperText?: string;
   className?: string;
 }
+
+const SEARCH_DEBOUNCE_MS = 800;
 
 export default function PlaceSearchInput({
   value,
@@ -29,8 +32,8 @@ export default function PlaceSearchInput({
   const [results, setResults] = useState<GeocodePlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setQuery(value);
@@ -47,40 +50,68 @@ export default function PlaceSearchInput({
   }, []);
 
   const runSearch = useCallback(async (text: string) => {
-    if (text.trim().length < 2) {
+    const trimmed = text.trim();
+    if (trimmed.length < 2) {
       setResults([]);
+      setSearchError(null);
       return;
     }
     try {
       setLoading(true);
-      const places = await geocodeService.searchPlaces(text);
+      setSearchError(null);
+      const places = await geocodeService.searchPlaces(trimmed);
       setResults(places);
-      setOpen(true);
+      setOpen(places.length > 0);
+      if (places.length === 0) {
+        setSearchError('No places found — try a nearby city or campus name.');
+      }
     } catch {
       setResults([]);
+      setSearchError('Location search is temporarily unavailable. Try again shortly.');
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const debouncedSearch = useMemo(
+    () => debounce((text: string) => {
+      void runSearch(text);
+    }, SEARCH_DEBOUNCE_MS),
+    [runSearch]
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
   const handleInputChange = (text: string) => {
     setQuery(text);
     onChange(text);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(text), 350);
+    setSearchError(null);
+    if (text.trim().length < 2) {
+      debouncedSearch.cancel();
+      setResults([]);
+      setOpen(false);
+      return;
+    }
+    debouncedSearch(text);
   };
 
   const handleSelect = (place: GeocodePlace) => {
+    debouncedSearch.cancel();
     setQuery(place.label);
     onChange(place.label);
     onSelectPlace(place);
     setOpen(false);
     setResults([]);
+    setSearchError(null);
   };
 
   const submitQuery = async () => {
     const text = query.trim();
     if (text.length < 2 || disabled || loading) return;
+
+    debouncedSearch.cancel();
 
     if (results.length > 0) {
       handleSelect(results[0]);
@@ -89,12 +120,16 @@ export default function PlaceSearchInput({
 
     try {
       setLoading(true);
+      setSearchError(null);
       const places = await geocodeService.searchPlaces(text);
+      setResults(places);
       if (places.length > 0) {
         handleSelect(places[0]);
+      } else {
+        setSearchError('No places found — try a nearby city or campus name.');
       }
     } catch {
-      // Parent can show toast if needed
+      setSearchError('Location search is temporarily unavailable. Try again shortly.');
     } finally {
       setLoading(false);
     }
@@ -136,6 +171,10 @@ export default function PlaceSearchInput({
 
       {helperText && (
         <p className="text-xs text-gray-500 mt-1.5">{helperText}</p>
+      )}
+
+      {searchError && !loading && (
+        <p className="text-xs text-amber-700 mt-1.5">{searchError}</p>
       )}
 
       {open && results.length > 0 && (

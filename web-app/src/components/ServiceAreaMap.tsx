@@ -135,6 +135,7 @@ export default function ServiceAreaMap({
         ref={containerRef}
         className="w-full h-52 sm:h-60 rounded-xl border border-gray-200 overflow-hidden z-0"
       />
+      <p className="text-[10px] text-gray-400 mt-1.5 text-right">© OpenStreetMap contributors</p>
     </div>
   );
 }

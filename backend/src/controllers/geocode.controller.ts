@@ -1,7 +1,12 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ApiError } from '../middleware/errorHandler';
-import { reverseGeocode, searchPlaces } from '../services/geocode.service';
+import {
+  GeocodeUpstreamError,
+  reverseGeocode,
+  sanitizeGeocodeQuery,
+  searchPlaces,
+} from '../services/geocode.service';
 
 export const searchGeocodePlaces = async (
   req: AuthRequest,
@@ -9,7 +14,7 @@ export const searchGeocodePlaces = async (
   next: NextFunction
 ) => {
   try {
-    const q = String(req.query.q || '').trim();
+    const q = sanitizeGeocodeQuery(String(req.query.q || ''));
     if (q.length < 2) {
       throw new ApiError(400, 'Search query must be at least 2 characters');
     }
@@ -17,6 +22,9 @@ export const searchGeocodePlaces = async (
     const results = await searchPlaces(q);
     res.json({ success: true, data: results });
   } catch (error) {
+    if (error instanceof GeocodeUpstreamError) {
+      return next(new ApiError(error.statusCode, error.message));
+    }
     next(error);
   }
 };
@@ -44,6 +52,9 @@ export const reverseGeocodePlace = async (
 
     res.json({ success: true, data: place });
   } catch (error) {
+    if (error instanceof GeocodeUpstreamError) {
+      return next(new ApiError(error.statusCode, error.message));
+    }
     next(error);
   }
 };

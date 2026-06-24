@@ -9,10 +9,13 @@ export interface GeocodePlace {
 
 class GeocodeService {
   async searchPlaces(query: string): Promise<GeocodePlace[]> {
-    const response = await api.get<{ success: boolean; data: GeocodePlace[] }>('/geocode/search', {
-      q: query,
+    const trimmed = query.trim();
+    if (trimmed.length < 2) return [];
+
+    const results = await api.get<GeocodePlace[]>('/geocode/search', {
+      q: trimmed,
     });
-    return response.data ?? [];
+    return Array.isArray(results) ? results : [];
   }
 
   async reverseGeocode(latitude: number, longitude: number): Promise<GeocodePlace> {
