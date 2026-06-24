@@ -772,6 +772,11 @@ export default function BarberPage() {
             setBlockTimeInitialValues({ date, startTime, endTime });
             setShowBlockTimeModal(true);
           }}
+          onOpenBlockTime={() => {
+            setBlockTimeInitialValues({});
+            setShowBlockTimeModal(true);
+          }}
+          onOpenBookings={openBookings}
           onEditAvailability={openAvailability}
           onEditServiceLocation={openLocations}
           serviceLocationLabel={barberProfile?.serviceLocationLabel}
@@ -1279,6 +1284,10 @@ export default function BarberPage() {
   );
 }
 
+type ScheduleZoomView = 'month' | 'week' | 'day' | 'minute';
+
+const SCHEDULE_ZOOM_VIEWS: ScheduleZoomView[] = ['month', 'week', 'day', 'minute'];
+
 interface DashboardViewProps {
   navigate: any;
   barberId: string;
@@ -1288,6 +1297,8 @@ interface DashboardViewProps {
   refreshKey?: number;
   campusTimezone?: string;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
+  onOpenBlockTime?: () => void; // Open block time modal without prefilled slot
+  onOpenBookings?: () => void; // Open bookings list (e.g. awaiting payment)
   onEditAvailability?: () => void; // Open weekly availability modal
   onEditServiceLocation?: () => void; // Open service location modal
   serviceLocationLabel?: string;
@@ -1331,7 +1342,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onOpenBlockTime, onOpenBookings, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onServiceLocationUpdated, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1347,7 +1358,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     return campusToday;
   };
 
-  const [scheduleView, setScheduleView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [scheduleView, setScheduleView] = useState<ScheduleZoomView>('day');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Full date for modal
   const [showDayModal, setShowDayModal] = useState(false);
   const [isDayModalVisible, setIsDayModalVisible] = useState(false);
@@ -1463,6 +1474,67 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
     () => confirmedBookings.filter(b => !hiddenPaidBookingIds.includes(b.id)),
     [confirmedBookings, hiddenPaidBookingIds]
   );
+
+  const awaitingPaymentBookings = useMemo(
+    () => visibleConfirmedBookings.filter(b => b.status === 'COMPLETED'),
+    [visibleConfirmedBookings]
+  );
+
+  const getScheduleSummaryText = (): string => {
+    const today = getTodayInCampusTimezone();
+    let count = 0;
+    let dateLabel = '';
+
+    if (scheduleView === 'day' || scheduleView === 'minute') {
+      const displayDate = new Date(today);
+      displayDate.setDate(displayDate.getDate() + dayOffset);
+      const nextDay = new Date(displayDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      count = visibleConfirmedBookings.filter(b => {
+        const bookingDate = new Date(b.scheduledTime);
+        return bookingDate >= displayDate && bookingDate < nextDay;
+      }).length;
+      dateLabel = displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    } else if (scheduleView === 'week') {
+      const todayDay = today.getDay();
+      const startOfWeek = new Date(today);
+      const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
+      startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 7);
+      count = visibleConfirmedBookings.filter(b => {
+        const bookingDate = new Date(b.scheduledTime);
+        return bookingDate >= startOfWeek && bookingDate < endOfWeek;
+      }).length;
+      const endDisplay = new Date(startOfWeek);
+      endDisplay.setDate(startOfWeek.getDate() + 6);
+      const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' });
+      const endMonth = endDisplay.toLocaleDateString('en-US', { month: 'short' });
+      dateLabel =
+        startMonth === endMonth
+          ? `${startMonth} ${startOfWeek.getDate()}–${endDisplay.getDate()}`
+          : `${startMonth} ${startOfWeek.getDate()} – ${endMonth} ${endDisplay.getDate()}`;
+    } else {
+      const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+      count = visibleConfirmedBookings.filter(b => {
+        const bookingDate = new Date(b.scheduledTime);
+        return bookingDate.getMonth() === displayDate.getMonth() && bookingDate.getFullYear() === displayDate.getFullYear();
+      }).length;
+      dateLabel = displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    return `${count} appointment${count !== 1 ? 's' : ''} · ${dateLabel}`;
+  };
+
+  const focusDay = (date: Date) => {
+    const today = getTodayInCampusTimezone();
+    const target = new Date(date);
+    target.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    setDayOffset(diffDays);
+    setScheduleView('day');
+  };
 
   // Viewport detection for responsive layout
   const { isMobile, isMobilePortrait, isTablet } = useViewport();
@@ -1751,7 +1823,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const touchStartY = useRef<number | null>(null);
   const lastWheelTime = useRef<number>(0);
 
-  const views: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
+  const views = SCHEDULE_ZOOM_VIEWS;
   
   const switchToNextView = () => {
     const currentIndex = views.indexOf(scheduleView);
@@ -2081,7 +2153,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   };
 
   const handleDayClick = (date: Date) => {
-    openDayModal(date);
+    focusDay(date);
   };
 
   return (
@@ -2097,124 +2169,80 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         <div className="flex flex-col items-center gap-3 mb-4">
           {serviceLocationField}
 
-          {/* Jump to Today/This Week/This Month button - shown when offset is non-zero */}
-          {((scheduleView === 'daily' && dayOffset !== 0) || 
-            (scheduleView === 'weekly' && weekOffset !== 0) || 
-            (scheduleView === 'monthly' && monthOffset !== 0)) && (
-            <button 
+          {awaitingPaymentBookings.length > 0 && (
+            <button
+              type="button"
               onClick={() => {
-                if (scheduleView === 'daily') setDayOffset(0);
-                else if (scheduleView === 'weekly') setWeekOffset(0);
+                if (awaitingPaymentBookings.length === 1) {
+                  onViewDetails(awaitingPaymentBookings[0]);
+                } else {
+                  onOpenBookings?.();
+                }
+              }}
+              className="w-full max-w-md px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg text-left hover:bg-amber-100 transition-colors"
+            >
+              <p className="text-sm font-semibold text-amber-900">
+                {awaitingPaymentBookings.length} appointment{awaitingPaymentBookings.length !== 1 ? 's' : ''} awaiting payment
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {awaitingPaymentBookings.length === 1 ? 'Tap to view booking details' : 'Tap to open bookings'}
+              </p>
+            </button>
+          )}
+
+          <p className="text-sm sm:text-base text-gray-700 font-medium text-center px-2">
+            {getScheduleSummaryText()}
+          </p>
+
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-md">
+            {([
+              { id: 'month' as const, label: 'Month' },
+              { id: 'week' as const, label: 'Week' },
+              { id: 'day' as const, label: 'Day' },
+              { id: 'minute' as const, label: 'Minute' },
+            ]).map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setScheduleView(id)}
+                className={`px-2 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${
+                  scheduleView === id
+                    ? 'bg-primary-400 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {((scheduleView === 'day' || scheduleView === 'minute') && dayOffset !== 0) ||
+          (scheduleView === 'week' && weekOffset !== 0) ||
+          (scheduleView === 'month' && monthOffset !== 0) ? (
+            <button
+              onClick={() => {
+                if (scheduleView === 'day' || scheduleView === 'minute') setDayOffset(0);
+                else if (scheduleView === 'week') setWeekOffset(0);
                 else setMonthOffset(0);
               }}
               className="px-3 py-1.5 text-sm bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors font-medium"
             >
-              {scheduleView === 'daily' ? 'Today' : scheduleView === 'weekly' ? 'This Week' : 'This Month'}
+              {scheduleView === 'day' || scheduleView === 'minute'
+                ? 'Today'
+                : scheduleView === 'week'
+                  ? 'This Week'
+                  : 'This Month'}
             </button>
-          )}
-          
-          {/* Appointments Count - centered above toggle buttons */}
-          <p className="text-sm sm:text-base text-gray-600 font-medium">
-            {(() => {
-              const today = getTodayInCampusTimezone();
-              
-              if (scheduleView === 'daily') {
-                const displayDate = new Date(today);
-                displayDate.setDate(displayDate.getDate() + dayOffset);
-                const nextDay = new Date(displayDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-                const count = visibleConfirmedBookings.filter(b => {
-                  const bookingDate = new Date(b.scheduledTime);
-                  return bookingDate >= displayDate && bookingDate < nextDay;
-                }).length;
-                return `${count} appointment${count !== 1 ? 's' : ''}`;
-              } else if (scheduleView === 'weekly') {
-                const todayDay = today.getDay();
-                const startOfWeek = new Date(today);
-                const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-                startOfWeek.setDate(today.getDate() - daysFromMonday + (weekOffset * 7));
-                startOfWeek.setHours(0, 0, 0, 0);
-                const endOfWeek = new Date(startOfWeek);
-                endOfWeek.setDate(startOfWeek.getDate() + 7);
-                const count = visibleConfirmedBookings.filter(b => {
-                  const bookingDate = new Date(b.scheduledTime);
-                  return bookingDate >= startOfWeek && bookingDate < endOfWeek;
-                }).length;
-                const weekWord = weekOffset === 0 ? 'this' : 'that';
-                return `${count} appointment${count !== 1 ? 's' : ''} ${weekWord} week`;
-              } else {
-                const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-                const displayMonth = displayDate.getMonth();
-                const displayYear = displayDate.getFullYear();
-                const count = visibleConfirmedBookings.filter(b => {
-                  const bookingDate = new Date(b.scheduledTime);
-                  return bookingDate.getMonth() === displayMonth && bookingDate.getFullYear() === displayYear;
-                }).length;
-                const monthWord = monthOffset === 0 ? 'this' : 'that';
-                return `${count} appointment${count !== 1 ? 's' : ''} ${monthWord} month`;
-              }
-            })()}
-          </p>
+          ) : null}
 
-          {/* View Toggle Buttons */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 justify-items-center">
-            {/* Walk-in feature disabled
-            <div></div>
-            <button
-              onClick={onWalkInClick}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors text-sm sm:text-base font-semibold min-w-[5rem] sm:min-w-[6rem] text-center"
-              title="Quick payment for walk-in customers"
-            >
-              Walk-in
-            </button>
-            <div></div>
-            */}
-            
-            {/* Daily Button */}
-            <button
-              onClick={() => setScheduleView('daily')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
-                scheduleView === 'daily'
-                  ? 'bg-primary-400 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Daily
-            </button>
-            {/* Weekly Button */}
-            <button
-              onClick={() => setScheduleView('weekly')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
-                scheduleView === 'weekly'
-                  ? 'bg-primary-400 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Weekly
-            </button>
-            {/* Monthly Button */}
-            <button
-              onClick={() => setScheduleView('monthly')}
-              className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-semibold transition-colors min-w-[5rem] sm:min-w-[6rem] ${
-                scheduleView === 'monthly'
-                  ? 'bg-primary-400 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Monthly
-            </button>
-          </div>
-
-          {/* Date Navigation - below toggle buttons */}
-          {scheduleView === 'daily' && (
+          {(scheduleView === 'day' || scheduleView === 'minute') && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setDayOffset(prev => prev - 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
                 {dayOffset === 0 ? 'Today - ' : dayOffset === 1 ? 'Tomorrow - ' : dayOffset === -1 ? 'Yesterday - ' : ''}
                 {(() => {
                   const today = getTodayInCampusTimezone();
@@ -2223,7 +2251,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                   return displayDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
                 })()}
               </h3>
-              <button 
+              <button
                 onClick={() => setDayOffset(prev => prev + 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -2232,33 +2260,32 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </div>
           )}
 
-          {/* Weekly Date Navigation */}
-          {scheduleView === 'weekly' && (
+          {scheduleView === 'week' && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setWeekOffset(prev => prev - 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[200px] sm:min-w-[280px] text-center">
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[180px] sm:min-w-[280px] text-center">
                 {(() => {
                   const today = getTodayInCampusTimezone();
                   const todayDay = today.getDay();
                   const startOfWeek = new Date(today);
                   const daysFromMonday = todayDay === 0 ? 6 : todayDay - 1;
-                  startOfWeek.setDate(today.getDate() - daysFromMonday + (weekOffset * 7));
+                  startOfWeek.setDate(today.getDate() - daysFromMonday + weekOffset * 7);
                   const endOfWeek = new Date(startOfWeek);
                   endOfWeek.setDate(startOfWeek.getDate() + 6);
                   const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
                   const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
                   const year = endOfWeek.getFullYear();
-                  return startMonth === endMonth 
+                  return startMonth === endMonth
                     ? `${startMonth} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}, ${year}`
                     : `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}, ${year}`;
                 })()}
               </h3>
-              <button 
+              <button
                 onClick={() => setWeekOffset(prev => prev + 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -2267,23 +2294,22 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </div>
           )}
 
-          {/* Monthly Date Navigation */}
-          {scheduleView === 'monthly' && (
+          {scheduleView === 'month' && (
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => setMonthOffset(prev => prev - 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-600" />
               </button>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 min-w-[160px] text-center">
                 {(() => {
                   const today = getTodayInCampusTimezone();
                   const displayDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
                   return displayDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
                 })()}
               </h3>
-              <button 
+              <button
                 onClick={() => setMonthOffset(prev => prev + 1)}
                 className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
               >
@@ -2291,10 +2317,30 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
               </button>
             </div>
           )}
+
+          <div className="flex flex-wrap justify-center gap-2 w-full max-w-md">
+            <button
+              type="button"
+              onClick={() => onEditAvailability?.()}
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm inline-flex items-center justify-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Edit Schedule
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenBlockTime?.()}
+              className="flex-1 min-w-[8rem] px-4 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 shadow-sm inline-flex items-center justify-center gap-2"
+            >
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              Block Time
+            </button>
+          </div>
         </div>
 
-        {/* Daily View */}
-        {scheduleView === 'daily' && (() => {
+        {(scheduleView === 'day' || scheduleView === 'minute') && (() => {
+          const isMinuteView = scheduleView === 'minute';
+          const slotIntervalMinutes = isMinuteView ? 15 : 60;
           // Filter bookings for the selected day (using dayOffset) - using campus timezone
           const today = getTodayInCampusTimezone();
           const displayDate = new Date(today);
@@ -2341,30 +2387,48 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
             return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
           };
+
+          const timeToMinutes = (time: string) => {
+            const [h, m] = time.split(':').map(Number);
+            return h * 60 + m;
+          };
           
-          // Generate hourly slots from intervals
-          const generateHourlySlots = (intervals: { start: string; end: string }[]) => {
+          // Generate timeline slots from intervals
+          const generateTimelineSlots = (slotIntervals: { start: string; end: string }[], intervalMinutes: number) => {
             const slots: { start: string; end: string }[] = [];
-            intervals.forEach(interval => {
+            slotIntervals.forEach(interval => {
+              let cursor = timeToMinutes(interval.start);
+              const endMin = timeToMinutes(interval.end);
+              while (cursor + intervalMinutes <= endMin) {
+                const slotEnd = cursor + intervalMinutes;
+                slots.push({
+                  start: `${String(Math.floor(cursor / 60)).padStart(2, '0')}:${String(cursor % 60).padStart(2, '0')}`,
+                  end: `${String(Math.floor(slotEnd / 60)).padStart(2, '0')}:${String(slotEnd % 60).padStart(2, '0')}`,
+                });
+                cursor += intervalMinutes;
+              }
+            });
+            return slots;
+          };
+
+          const generateHourlySlots = (slotIntervals: { start: string; end: string }[]) => {
+            const slots: { start: string; end: string }[] = [];
+            slotIntervals.forEach(interval => {
               const [startHour] = interval.start.split(':').map(Number);
               const [endHour] = interval.end.split(':').map(Number);
               for (let hour = startHour; hour < endHour; hour++) {
                 slots.push({
                   start: `${String(hour).padStart(2, '0')}:00`,
-                  end: `${String(hour + 1).padStart(2, '0')}:00`
+                  end: `${String(hour + 1).padStart(2, '0')}:00`,
                 });
               }
             });
             return slots;
           };
-          
-          const hourlySlots = generateHourlySlots(intervals);
-          
-          // Helper to convert time to minutes
-          const timeToMinutes = (time: string) => {
-            const [h, m] = time.split(':').map(Number);
-            return h * 60 + m;
-          };
+
+          const timelineSlots = isMinuteView
+            ? generateTimelineSlots(intervals, slotIntervalMinutes)
+            : generateHourlySlots(intervals);
           
           // Helper to check if slot is blocked (manual block)
           const getBlockForSlot = (slot: { start: string; end: string }) => {
@@ -2411,9 +2475,9 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             });
           };
           
-          const availableCount = hourlySlots.filter(slot => !getBlockForSlot(slot) && !getGoogleCalendarBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
-          const bookedCount = hourlySlots.filter(slot => getAppointmentForSlot(slot)).length;
-          const blockedCount = hourlySlots.filter(slot => (getBlockForSlot(slot) || getGoogleCalendarBlockForSlot(slot)) && !getAppointmentForSlot(slot)).length;
+          const availableCount = timelineSlots.filter(slot => !getBlockForSlot(slot) && !getGoogleCalendarBlockForSlot(slot) && !getAppointmentForSlot(slot)).length;
+          const bookedCount = timelineSlots.filter(slot => getAppointmentForSlot(slot)).length;
+          const blockedCount = timelineSlots.filter(slot => (getBlockForSlot(slot) || getGoogleCalendarBlockForSlot(slot)) && !getAppointmentForSlot(slot)).length;
 
           return (
             <div className="max-w-2xl mx-auto">
@@ -2435,50 +2499,8 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
-                  {/* Google Calendar Integration Button */}
-                  <div className="flex justify-center mb-3">
-                    {googleCalendarConnected === null ? (
-                      <div className="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">
-                        Checking Google Calendar...
-                      </div>
-                    ) : googleCalendarConnected ? (
-                      <button
-                        onClick={() => onDisconnectGoogleCalendar?.()}
-                        className="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-medium rounded-lg transition-colors border border-primary-300 flex flex-col items-center"
-                      >
-                        <span>Google Calendar Connected</span>
-                        <span className="text-xs text-primary-500 sm:hidden">(Tap to Disconnect)</span>
-                        <span className="text-xs text-primary-500 hidden sm:inline">(Click to Disconnect)</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => onConnectGoogleCalendar?.()}
-                        disabled={googleCalendarLoading}
-                        className="px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors border border-gray-300 flex items-center gap-2 shadow-sm disabled:opacity-50"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        {googleCalendarLoading ? 'Connecting...' : 'Connect Google Calendar'}
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Edit Availability Button */}
-                  <div className="flex justify-center mb-3">
-                    <button
-                      onClick={() => onEditAvailability?.()}
-                      className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
-                    >
-                      <span className="sm:hidden">Tap here to Edit Availability</span>
-                      <span className="hidden sm:inline">Click here to Edit Availability</span>
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {hourlySlots.map((slot, idx) => {
+                  <div className={`${isMinuteView ? 'space-y-1 max-h-[28rem] overflow-y-auto pr-1' : 'space-y-2'}`}>
+                    {timelineSlots.map((slot, idx) => {
                       const block = getBlockForSlot(slot);
                       const appointment = getAppointmentForSlot(slot);
                       
@@ -2573,14 +2595,46 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                       );
                     })}
                   </div>
+                  <div className="mt-4 pt-3 border-t border-gray-100 space-y-2.5">
+                    <p className="text-xs text-gray-600 text-center">
+                      {availableCount} open · {bookedCount} booked · {blockedCount} blocked
+                      {isMinuteView ? ' · 15-minute slots' : ' · hourly slots'}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary-400" /> Open — tap to block</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400" /> Booked</span>
+                      <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" /> Blocked</span>
+                    </div>
+                    <div className="flex justify-center">
+                      {googleCalendarConnected === null ? (
+                        <span className="text-xs text-gray-400">Checking Google Calendar…</span>
+                      ) : googleCalendarConnected ? (
+                        <button
+                          type="button"
+                          onClick={() => onDisconnectGoogleCalendar?.()}
+                          className="text-xs text-primary-600 hover:text-primary-700 hover:underline"
+                        >
+                          Google Calendar connected — disconnect
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onConnectGoogleCalendar?.()}
+                          disabled={googleCalendarLoading}
+                          className="text-xs text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                        >
+                          {googleCalendarLoading ? 'Connecting Google Calendar…' : 'Connect Google Calendar'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           );
         })()}
 
-        {/* Weekly View */}
-        {scheduleView === 'weekly' && (() => {
+        {scheduleView === 'week' && (() => {
           // Get the week based on weekOffset - using campus timezone
           const today = getTodayInCampusTimezone();
           const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -2808,7 +2862,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
         })()}
 
         {/* Monthly View */}
-        {scheduleView === 'monthly' && (() => {
+        {scheduleView === 'month' && (() => {
           // Use campus timezone to determine current month
           const today = getTodayInCampusTimezone();
           // Calculate the displayed month based on offset
@@ -2958,6 +3012,12 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
             </div>
           );
               })()}
+
+        {(scheduleView === 'month' || scheduleView === 'week') && (
+          <p className="text-xs text-gray-500 text-center mt-3 px-4">
+            Tap a day to open the day timeline.
+          </p>
+        )}
 
         {/* View indicator dots at bottom for swipe hint - mobile only */}
         <div className="flex justify-center gap-2 mt-4 sm:hidden">
