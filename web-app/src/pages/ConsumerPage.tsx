@@ -1337,7 +1337,7 @@ export default function ConsumerPage() {
   );
 }
 
-function getBarberSearchableText(barber: Barber): string {
+function getBarberNameSearchText(barber: Barber): string {
   return [
     barber.name,
     barber.display_name,
@@ -1345,7 +1345,6 @@ function getBarberSearchableText(barber: Barber): string {
     barber.last_name,
     barber.user?.first_name,
     barber.user?.last_name,
-    barber.instagram_handle,
   ]
     .filter(Boolean)
     .join(' ')
@@ -1603,11 +1602,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
     const searchTerm = barberSearchQuery.trim().toLowerCase();
     if (searchTerm) {
-      const normalizedTerm = searchTerm.startsWith('@') ? searchTerm.slice(1) : searchTerm;
-      filtered = filtered.filter((barber) => {
-        const haystack = getBarberSearchableText(barber);
-        return haystack.includes(normalizedTerm) || haystack.includes(searchTerm);
-      });
+      filtered = filtered.filter((barber) =>
+        getBarberNameSearchText(barber).includes(searchTerm)
+      );
     }
 
     // Preserve backend order (sorted by 5-star review count)
@@ -1717,7 +1714,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
               type="search"
               value={barberSearchQuery}
               onChange={(e) => setBarberSearchQuery(e.target.value)}
-              placeholder="Name or Instagram handle"
+              placeholder="Barber name"
               className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-900 focus:outline-none"
             />
             {barberSearchQuery && (
