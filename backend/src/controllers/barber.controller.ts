@@ -19,10 +19,12 @@ import {
   getIntervalsForDay,
   type WeeklySchedule,
 } from '../services/barber-availability.service';
+import { barberServiceLocationLabelSelectSql } from '../services/barber-location-schema.service';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden } = req.query;
+    const labelSelect = await barberServiceLocationLabelSelectSql();
     
     // Parse user location for distance-based sorting
     const userLat = lat ? parseFloat(lat as string) : null;
@@ -57,8 +59,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
         b."weeklySchedule" as weekly_schedule,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km,
-        b.service_location_label,
+        b.service_radius_km${labelSelect}
         u.email,
         u.first_name,
         u.last_name,
@@ -343,6 +344,8 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
       throw new ApiError(401, 'Unauthorized');
     }
 
+    const labelSelect = await barberServiceLocationLabelSelectSql();
+
     const barberResult = await pool.query(
       `SELECT 
         b.id,
@@ -365,8 +368,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
         u."campusId" as campus_id,
         b.service_latitude,
         b.service_longitude,
-        b.service_radius_km,
-        b.service_location_label
+        b.service_radius_km${labelSelect}
       FROM barbers b
       JOIN users u ON b."userId" = u.id
       WHERE b."userId" = $1`,
@@ -426,6 +428,7 @@ export const getMyBarberProfile = async (req: AuthRequest, res: Response, next: 
 export const getBarberByUserId = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
+    const labelSelect = await barberServiceLocationLabelSelectSql();
 
     let barberResult = await pool.query(
       `SELECT 
@@ -440,6 +443,9 @@ export const getBarberByUserId = async (req: AuthRequest, res: Response, next: N
         b."isActive" as is_active,
         b."createdAt" as created_at,
         b."weeklySchedule" as weekly_schedule,
+        b.service_latitude,
+        b.service_longitude,
+        b.service_radius_km${labelSelect},
         u.email,
         u.first_name,
         u.last_name,

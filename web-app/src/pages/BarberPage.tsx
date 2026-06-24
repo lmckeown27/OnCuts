@@ -344,15 +344,36 @@ export default function BarberPage() {
   const openBookings = () => openModal(setShowBookings, setIsBookingsVisible);
   const closeBookings = () => closeModal(setShowBookings, setIsBookingsVisible);
   
-  const openLocations = () => openModal(setShowLocations, setIsLocationsVisible);
-  const closeLocations = () => closeModal(setShowLocations, setIsLocationsVisible);
-  
   const openAvailability = () => openModal(setShowAvailability, setIsAvailabilityVisible);
   const closeAvailability = () => closeModal(setShowAvailability, setIsAvailabilityVisible);
   
   // Get barber data from auth - in production this would come from API
   const { user, isLoading: isAuthLoading } = useAuthStore();
   const barberId = user?.id || '';
+
+  const openLocations = () => openModal(setShowLocations, setIsLocationsVisible);
+  const refreshBarberServiceLocation = useCallback(async () => {
+    if (!barberId) return;
+    try {
+      const profile = await barberService.getMyBarberProfile();
+      if (profile) {
+        setBarberProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                serviceLocationLabel: profile.service_location_label,
+              }
+            : prev
+        );
+      }
+    } catch {
+      // Non-blocking — menu/modal still works
+    }
+  }, [barberId]);
+  const closeLocations = () => {
+    closeModal(setShowLocations, setIsLocationsVisible);
+    void refreshBarberServiceLocation();
+  };
   
   // Role-based access control: Only barbers and admins can access this page
   // Consumers/students should be redirected to the consumer page
@@ -381,7 +402,14 @@ export default function BarberPage() {
   const [bookingsRefreshKey, setBookingsRefreshKey] = useState(0);
   
   // State for barber profile data (for walk-in services and time blocking)
-  const [barberProfile, setBarberProfile] = useState<{ id: string; name: string; specialties: string[]; campusId?: string; campusTimezone?: string } | null>(null);
+  const [barberProfile, setBarberProfile] = useState<{
+    id: string;
+    name: string;
+    specialties: string[];
+    campusId?: string;
+    campusTimezone?: string;
+    serviceLocationLabel?: string;
+  } | null>(null);
 
   // Admin campus management - admins can manage any campus
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -453,7 +481,8 @@ export default function BarberPage() {
             name: response.name || fullName || 'Barber',
             specialties: response.specialties || [],
             campusId: response.campus_id || '',
-            campusTimezone: response.campus_timezone || 'America/Los_Angeles'
+            campusTimezone: response.campus_timezone || 'America/Los_Angeles',
+            serviceLocationLabel: response.service_location_label,
           });
         }
       } catch (error) {
@@ -740,6 +769,8 @@ export default function BarberPage() {
             setShowBlockTimeModal(true);
           }}
           onEditAvailability={openAvailability}
+          onEditServiceLocation={openLocations}
+          serviceLocationLabel={barberProfile?.serviceLocationLabel}
           onUnblockTime={async (blockId) => {
             if (!barberProfile?.id) return;
             try {
@@ -1251,6 +1282,8 @@ interface DashboardViewProps {
   campusTimezone?: string;
   onBlockTime?: (date: string, startTime: string, endTime: string) => void; // Open block time modal with pre-filled values
   onEditAvailability?: () => void; // Open weekly availability modal
+  onEditServiceLocation?: () => void; // Open service location modal
+  serviceLocationLabel?: string;
   onUnblockTime?: (blockId: string) => void; // Unblock a specific time block
   // Google Calendar integration
   googleCalendarConnected?: boolean | null;
@@ -1290,7 +1323,7 @@ interface ConfirmedBooking {
   };
 }
 
-function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
+function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onRefreshBookings, refreshKey = 0, campusTimezone = 'America/Los_Angeles', onBlockTime, onEditAvailability, onEditServiceLocation, serviceLocationLabel, onUnblockTime, googleCalendarConnected, googleCalendarLoading, onConnectGoogleCalendar, onDisconnectGoogleCalendar }: DashboardViewProps) {
   // Get user from auth store for barber ID lookup
   const { user } = useAuthStore();
   const isAdmin = user?.is_admin || user?.user_type === 'admin';
@@ -1314,6 +1347,36 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, 1 = next week, etc.
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
   const [monthlyTimeBlocks, setMonthlyTimeBlocks] = useState<TimeBlock[]>([]); // Time blocks for calendar display
+
+  const serviceLocationButton = (
+    <div className="flex justify-center mb-3 px-1">
+      <button
+        type="button"
+        onClick={() => onEditServiceLocation?.()}
+        className={`w-full max-w-md px-4 py-2.5 text-sm font-medium rounded-lg transition-colors border flex items-center gap-2 ${
+          serviceLocationLabel
+            ? 'bg-white hover:bg-gray-50 text-gray-800 border-gray-300 shadow-sm'
+            : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+        }`}
+      >
+        <MapPin className={`w-4 h-4 flex-shrink-0 ${serviceLocationLabel ? 'text-primary-500' : 'text-amber-600'}`} />
+        <span className="flex-1 text-left min-w-0">
+          {serviceLocationLabel ? (
+            <>
+              <span className="block truncate font-semibold">{serviceLocationLabel}</span>
+              <span className="block text-xs text-gray-500 font-normal">Public service area · tap to update</span>
+            </>
+          ) : (
+            <>
+              <span className="block font-semibold">Set your public service location</span>
+              <span className="block text-xs font-normal opacity-80">Help customers find you for booking</span>
+            </>
+          )}
+        </span>
+      </button>
+    </div>
+  );
+
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null); // Barber's weekly availability
   const [isLoadingWeeklySchedule, setIsLoadingWeeklySchedule] = useState(true); // Loading state for availability
   const [googleCalendarBusyTimes, setGoogleCalendarBusyTimes] = useState<Array<{ start: Date; end: Date }>>([]); // Google Calendar busy times
@@ -2330,6 +2393,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                 </div>
               ) : (
                 <div>
+                  {serviceLocationButton}
                   {/* Google Calendar Integration Button */}
                   <div className="flex justify-center mb-3">
                     {googleCalendarConnected === null ? (
@@ -3476,6 +3540,7 @@ function DashboardView({ navigate, barberId, barberProfileId, onViewDetails, onR
                     
                     return (
                       <div>
+                        {serviceLocationButton}
                         {/* Google Calendar Integration Button */}
                         <div className="flex justify-center mb-3">
                           {googleCalendarConnected === null ? (

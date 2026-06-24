@@ -10,6 +10,7 @@ import { AuthRequest } from '../middleware/auth';
 import { pool } from '../database/connection';
 import { ApiError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
+import { barberServiceLocationLabelColumnExists } from '../services/barber-location-schema.service';
 
 interface UpdateLocationBody {
   latitude: number;
@@ -200,19 +201,34 @@ export const updateBarberServiceLocation = async (
     }
 
     const barberId = barberCheck.rows[0].id;
+    const hasLabelColumn = await barberServiceLocationLabelColumnExists();
 
-    // Update barber service location
-    const result = await pool.query(
-      `UPDATE barbers 
-       SET service_latitude = COALESCE($1, service_latitude),
-           service_longitude = COALESCE($2, service_longitude),
-           service_radius_km = COALESCE($3, service_radius_km),
-           service_location_label = COALESCE($4, service_location_label),
-           "updatedAt" = NOW()
-       WHERE id = $5
-       RETURNING id, service_latitude, service_longitude, service_radius_km, service_location_label`,
-      [latitude, longitude, service_radius_km, label, barberId]
-    );
+    if (label !== undefined && !hasLabelColumn) {
+      label = undefined;
+    }
+
+    const result = hasLabelColumn
+      ? await pool.query(
+          `UPDATE barbers 
+           SET service_latitude = COALESCE($1, service_latitude),
+               service_longitude = COALESCE($2, service_longitude),
+               service_radius_km = COALESCE($3, service_radius_km),
+               service_location_label = COALESCE($4, service_location_label),
+               "updatedAt" = NOW()
+           WHERE id = $5
+           RETURNING id, service_latitude, service_longitude, service_radius_km, service_location_label`,
+          [latitude, longitude, service_radius_km, label, barberId]
+        )
+      : await pool.query(
+          `UPDATE barbers 
+           SET service_latitude = COALESCE($1, service_latitude),
+               service_longitude = COALESCE($2, service_longitude),
+               service_radius_km = COALESCE($3, service_radius_km),
+               "updatedAt" = NOW()
+           WHERE id = $4
+           RETURNING id, service_latitude, service_longitude, service_radius_km`,
+          [latitude, longitude, service_radius_km, barberId]
+        );
 
     logger.info(`Barber ${barberId} service location updated`);
 
@@ -223,7 +239,7 @@ export const updateBarberServiceLocation = async (
         service_latitude: result.rows[0].service_latitude,
         service_longitude: result.rows[0].service_longitude,
         service_radius_km: result.rows[0].service_radius_km,
-        service_location_label: result.rows[0].service_location_label,
+        service_location_label: hasLabelColumn ? result.rows[0].service_location_label : undefined,
       },
     });
   } catch (error) {
