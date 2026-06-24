@@ -204,9 +204,9 @@ export default function LandingPage() {
           <div className="flex justify-center">
             <button 
               onClick={() => setShowBarberApplication(true)}
-              className="px-6 py-4 rounded-lg bg-white border-2 border-gray-900 hover:bg-gray-50 transition-colors shadow-lg hover:shadow-xl active:scale-95"
+              className="px-6 py-4 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors shadow-lg hover:shadow-xl active:scale-95"
             >
-              <span className="text-lg font-semibold text-white">Become a Barber</span>
+              Become a Barber
             </button>
           </div>
         </div>
