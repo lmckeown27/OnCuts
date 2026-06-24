@@ -15,6 +15,7 @@ interface ProviderFilters {
   specialties?: string[];
   specialty?: string;
   providerType?: string;
+  category?: string;
   page?: number;
   limit?: number;
   lat?: number;

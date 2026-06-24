@@ -24,10 +24,15 @@ import {
   barberProviderTypeExpr,
   barberProviderTypeSelectSql,
 } from '../services/barber-provider-schema.service';
+import {
+  isServiceProviderCategory,
+  providerTypesForCategory,
+} from '../utils/service-provider.mapper';
+import type { ServiceProviderCategory } from '../types/service-provider.types';
 
 export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType } = req.query;
+    const { campusId, minRating, maxPrice, specialty, lat, lng, maxDistance, includeHidden, constrainListByDistance, providerType, category } = req.query;
     const labelSelect = await barberServiceLocationLabelSelectSql();
     const providerTypeSelect = await barberProviderTypeSelectSql();
     
@@ -171,6 +176,14 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
       query += ` AND LOWER(${providerTypeExpr}) = LOWER($${paramIndex})`;
       params.push(String(providerType));
       paramIndex++;
+    } else if (category && isServiceProviderCategory(String(category))) {
+      const types = providerTypesForCategory(String(category) as ServiceProviderCategory);
+      if (types.length > 0) {
+        const providerTypeExpr = await barberProviderTypeExpr();
+        query += ` AND LOWER(${providerTypeExpr}) = ANY($${paramIndex}::text[])`;
+        params.push(types.map((type) => type.toLowerCase()));
+        paramIndex++;
+      }
     }
 
     const viewerUserId = req.user?.userId;

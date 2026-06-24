@@ -15,6 +15,8 @@ interface BarberFilters {
   maxDistance?: number;
   constrainListByDistance?: boolean;
   includeHidden?: boolean;
+  providerType?: string;
+  category?: string;
 }
 
 export interface BarberListMeta {

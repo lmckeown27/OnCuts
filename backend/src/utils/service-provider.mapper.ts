@@ -21,6 +21,32 @@ const PROVIDER_TYPE_CATEGORY: Record<string, ServiceProviderCategory> = {
   trainer: 'Fitness',
 };
 
+export const SERVICE_PROVIDER_CATEGORIES: ServiceProviderCategory[] = [
+  'Haircuts',
+  'Beauty',
+  'Wellness',
+  'Fitness',
+];
+
+const CATEGORY_PROVIDER_TYPES: Record<ServiceProviderCategory, string[]> = {
+  Haircuts: [],
+  Beauty: [],
+  Wellness: [],
+  Fitness: [],
+};
+
+for (const [providerType, category] of Object.entries(PROVIDER_TYPE_CATEGORY)) {
+  CATEGORY_PROVIDER_TYPES[category].push(providerType);
+}
+
+export function isServiceProviderCategory(value: string): value is ServiceProviderCategory {
+  return SERVICE_PROVIDER_CATEGORIES.includes(value as ServiceProviderCategory);
+}
+
+export function providerTypesForCategory(category: ServiceProviderCategory): string[] {
+  return CATEGORY_PROVIDER_TYPES[category];
+}
+
 const PROVIDER_TYPE_SPECIALTY: Record<string, string> = {
   barber: 'Barber',
   hair: 'Hair',

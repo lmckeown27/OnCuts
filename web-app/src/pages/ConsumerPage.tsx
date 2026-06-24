@@ -41,6 +41,15 @@ import {
   setBrowseConstrainByDistance,
   setBrowseMaxDistanceMiles,
 } from '../utils/consumerBrowseDistancePreference';
+import {
+  getBrowseProviderCategory,
+  setBrowseProviderCategory,
+} from '../utils/consumerBrowseCategoryPreference';
+import {
+  BROWSE_PROVIDER_CATEGORIES,
+  browseCategoryApiParam,
+  type BrowseProviderCategory,
+} from '../config/providerCategories';
 import BrowseRadiusSlider from '../components/BrowseRadiusSlider';
 
 // Helper to format service names from SNAKE_CASE to Title Case
@@ -1377,6 +1386,9 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
   const [barbersMeta, setBarbersMeta] = useState<BarberListMeta | null>(null);
   const [radiusPreviewMiles, setRadiusPreviewMiles] = useState<number | null>(null);
   const [barberSearchQuery, setBarberSearchQuery] = useState('');
+  const [browseProviderCategory, setBrowseProviderCategoryState] = useState<BrowseProviderCategory>(
+    getBrowseProviderCategory,
+  );
   
   // Auth state
   const { isAuthenticated, user } = useAuthStore();
@@ -1430,7 +1442,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     if (selectedCollegeTown) {
       loadBarbers();
     }
-  }, [selectedCollegeTown, maxDistanceMiles, constrainByDistance]);
+  }, [selectedCollegeTown, maxDistanceMiles, constrainByDistance, browseProviderCategory]);
 
   useEffect(() => {
     applyFilters();
@@ -1517,6 +1529,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     try {
       setLoading(true);
 
+      const listFilters = browseCategoryApiParam(browseProviderCategory);
       let response;
 
       if (latitude != null && longitude != null) {
@@ -1524,14 +1537,14 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           response = await providerService.getProvidersByLocation(
             latitude,
             longitude,
-            { constrainListByDistance: true },
+            { constrainListByDistance: true, ...listFilters },
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await providerService.getProviders();
+          response = await providerService.getProviders(listFilters);
         }
       } else {
-        response = await providerService.getProviders();
+        response = await providerService.getProviders(listFilters);
       }
 
       const barbersData = response.data || [];
@@ -1569,6 +1582,15 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
     setConstrainByDistanceState(enabled);
     setBrowseConstrainByDistance(enabled);
   };
+
+  const handleBrowseCategoryChange = (category: BrowseProviderCategory) => {
+    setBrowseProviderCategoryState(category);
+    setBrowseProviderCategory(category);
+  };
+
+  const selectedBrowseCategory =
+    BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === browseProviderCategory) ??
+    BROWSE_PROVIDER_CATEGORIES[0];
 
   const applyFilters = () => {
     let filtered = [...barbers];
@@ -1641,8 +1663,10 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         <div className="text-center text-xs sm:text-sm text-gray-600 flex flex-wrap items-center justify-center gap-2">
           <span>
             {constrainByDistance
-              ? `Barbers near ${selectedCollegeTown.shortName}`
-              : 'All barbers'}
+              ? `${selectedBrowseCategory.id === 'all' ? 'Providers' : selectedBrowseCategory.label} near ${selectedCollegeTown.shortName}`
+              : selectedBrowseCategory.id === 'all'
+                ? 'All providers'
+                : `All ${selectedBrowseCategory.label.toLowerCase()} providers`}
           </span>
           {filterCriteria.serviceType && (
             <>
@@ -1692,6 +1716,31 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
           </div>
         </div>
 
+        <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <p className="text-sm font-medium text-gray-700 mb-2">Provider type</p>
+          <div className="flex flex-wrap gap-2">
+            {BROWSE_PROVIDER_CATEGORIES.map((option) => {
+              const isSelected = browseProviderCategory === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => handleBrowseCategoryChange(option.id)}
+                  aria-pressed={isSelected}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-gray-500">{selectedBrowseCategory.description}</p>
+        </div>
+
         {/* Browse radius — centered on selected college town */}
         <div className="mt-3 max-w-md mx-auto rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
           <label className="flex items-center justify-between gap-3 cursor-pointer">
@@ -1734,7 +1783,7 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
         {/* Results count */}
         {(filteredBarbers?.length > 0 || barberSearchQuery.trim()) && (
           <p className="text-center text-xs text-gray-500 mt-2">
-            {filteredBarbers.length} barber{filteredBarbers.length !== 1 ? 's' : ''} found
+            {filteredBarbers.length} provider{filteredBarbers.length !== 1 ? 's' : ''} found
           </p>
         )}
       </div>

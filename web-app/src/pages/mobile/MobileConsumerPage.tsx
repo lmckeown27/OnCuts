@@ -46,6 +46,15 @@ import {
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
 } from '../../utils/consumerBrowseDistancePreference';
+import {
+  getBrowseProviderCategory,
+  setBrowseProviderCategory,
+} from '../../utils/consumerBrowseCategoryPreference';
+import {
+  BROWSE_PROVIDER_CATEGORIES,
+  browseCategoryApiParam,
+  type BrowseProviderCategory,
+} from '../../config/providerCategories';
 import providerService from '../../services/provider.service';
 import type { Barber } from '../../types';
 import type { CollegeTown } from '../../types';
@@ -67,6 +76,12 @@ export default function MobileConsumerPage() {
   const [currentBarberIndex, setCurrentBarberIndex] = useState(0);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [browseProviderCategory, setBrowseProviderCategoryState] = useState<BrowseProviderCategory>(
+    getBrowseProviderCategory,
+  );
+  const [pendingBrowseCategory, setPendingBrowseCategory] = useState<BrowseProviderCategory>(
+    getBrowseProviderCategory,
+  );
   const [activeTab, setActiveTab] = useState<'home' | 'messages' | 'bookings' | 'profile'>('home');
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -102,7 +117,7 @@ export default function MobileConsumerPage() {
     if (selectedCollegeTown) {
       loadBarbers();
     }
-  }, [selectedCollegeTown]);
+  }, [selectedCollegeTown, browseProviderCategory]);
 
   // Load unread message count on mount
   useEffect(() => {
@@ -118,6 +133,7 @@ export default function MobileConsumerPage() {
       const constrainByDistance = getBrowseConstrainByDistance();
       const maxDistanceMiles = getBrowseMaxDistanceMiles();
       const { latitude, longitude } = selectedCollegeTown;
+      const listFilters = browseCategoryApiParam(browseProviderCategory);
 
       let response;
       if (latitude != null && longitude != null) {
@@ -125,17 +141,18 @@ export default function MobileConsumerPage() {
           response = await providerService.getProvidersByLocation(
             latitude,
             longitude,
-            { constrainListByDistance: true },
+            { constrainListByDistance: true, ...listFilters },
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await providerService.getProviders();
+          response = await providerService.getProviders(listFilters);
         }
       } else {
-        response = await providerService.getProviders();
+        response = await providerService.getProviders(listFilters);
       }
 
       setBarbers(response?.data || []);
+      setCurrentBarberIndex(0);
     } catch (error) {
       console.error('Failed to load barbers:', error);
       setBarbers([]);
@@ -302,7 +319,10 @@ export default function MobileConsumerPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowFilters(true)}
+                onClick={() => {
+                  setPendingBrowseCategory(browseProviderCategory);
+                  setShowFilters(true);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <Filter className="w-5 h-5 text-gray-600" />
@@ -648,37 +668,40 @@ export default function MobileConsumerPage() {
             {/* Filter options would go here */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Service Type</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Provider type</label>
                 <div className="flex flex-wrap gap-2">
-                  {['Haircut', 'Fade', 'Beard Trim', 'Full Service', 'Color'].map((service) => (
-                    <button
-                      key={service}
-                      className="px-4 py-2 border-2 border-gray-400 text-primary-600 rounded-lg font-medium hover:bg-gray-50 active:scale-95 transition-all"
-                    >
-                      {service}
-                    </button>
-                  ))}
+                  {BROWSE_PROVIDER_CATEGORIES.map((option) => {
+                    const isSelected = pendingBrowseCategory === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setPendingBrowseCategory(option.id)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all active:scale-95 ${
+                          isSelected
+                            ? 'bg-gray-900 text-white'
+                            : 'border-2 border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Price Range</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg"
-                  />
-                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {
+                    (BROWSE_PROVIDER_CATEGORIES.find((option) => option.id === pendingBrowseCategory) ??
+                      BROWSE_PROVIDER_CATEGORIES[0]).description
+                  }
+                </p>
               </div>
 
               <button
-                onClick={() => setShowFilters(false)}
+                onClick={() => {
+                  setBrowseProviderCategoryState(pendingBrowseCategory);
+                  setBrowseProviderCategory(pendingBrowseCategory);
+                  setShowFilters(false);
+                }}
                 className="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold py-4 rounded-xl transition-colors active:scale-98 shadow-lg mt-6"
               >
                 Apply Filters
