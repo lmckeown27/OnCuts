@@ -47,6 +47,50 @@ export function milesToKmForBrowse(miles: number): number {
   return miles * 1.60934;
 }
 
+function kmToMiles(km: number): number {
+  return km * 0.621371;
+}
+
+type BarberDistanceSource = {
+  distance_miles?: number | null;
+  distance_km?: number | null;
+  service_latitude?: number | null;
+  service_longitude?: number | null;
+};
+
+/** Distance from campus search center to barber's public service pin (miles). */
+export function getBarberDistanceMilesFromCampus(
+  barber: BarberDistanceSource,
+  campusLatitude: number | null | undefined,
+  campusLongitude: number | null | undefined,
+): number | null {
+  if (barber.distance_miles != null && Number.isFinite(barber.distance_miles)) {
+    return barber.distance_miles;
+  }
+  if (barber.distance_km != null && Number.isFinite(barber.distance_km)) {
+    return kmToMiles(barber.distance_km);
+  }
+  if (
+    campusLatitude == null ||
+    campusLongitude == null ||
+    barber.service_latitude == null ||
+    barber.service_longitude == null
+  ) {
+    return null;
+  }
+
+  const earthRadiusKm = 6371;
+  const dLat = ((barber.service_latitude - campusLatitude) * Math.PI) / 180;
+  const dLng = ((barber.service_longitude - campusLongitude) * Math.PI) / 180;
+  const lat1 = (campusLatitude * Math.PI) / 180;
+  const lat2 = (barber.service_latitude * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return kmToMiles(earthRadiusKm * c);
+}
+
 export function formatBarberDistanceFromUser(miles: number | null | undefined): string | null {
   if (miles == null || !Number.isFinite(miles) || miles < 0) return null;
   if (miles < 0.5) return 'On campus';

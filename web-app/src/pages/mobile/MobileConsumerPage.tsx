@@ -44,6 +44,7 @@ import {
   getBrowseConstrainByDistance,
   milesToKmForBrowse,
   formatBarberDistanceFromUser,
+  getBarberDistanceMilesFromCampus,
 } from '../../utils/consumerBrowseDistancePreference';
 import barberService from '../../services/barber.service';
 import type { Barber } from '../../types';
@@ -117,13 +118,17 @@ export default function MobileConsumerPage() {
       const { latitude, longitude } = selectedUniversity;
 
       let response;
-      if (constrainByDistance && latitude != null && longitude != null) {
-        response = await barberService.getBarbersByLocation(
-          latitude,
-          longitude,
-          { constrainListByDistance: true },
-          milesToKmForBrowse(maxDistanceMiles)
-        );
+      if (latitude != null && longitude != null) {
+        if (constrainByDistance) {
+          response = await barberService.getBarbersByLocation(
+            latitude,
+            longitude,
+            { constrainListByDistance: true },
+            milesToKmForBrowse(maxDistanceMiles)
+          );
+        } else {
+          response = await barberService.getBarbers({ lat: latitude, lng: longitude });
+        }
       } else {
         response = await barberService.getBarbers();
       }
@@ -138,11 +143,12 @@ export default function MobileConsumerPage() {
   };
 
   const getDistanceString = (barber: Barber): string => {
-    if (barber.distance_km != null) {
-      const miles = barber.distance_km * 0.621371;
-      return formatBarberDistanceFromUser(miles) ?? 'Distance unknown';
-    }
-    return 'Distance unknown';
+    const miles = getBarberDistanceMilesFromCampus(
+      barber,
+      selectedUniversity?.latitude,
+      selectedUniversity?.longitude
+    );
+    return formatBarberDistanceFromUser(miles) ?? 'Distance unknown';
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {

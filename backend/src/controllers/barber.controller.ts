@@ -207,7 +207,7 @@ export const getAllBarbers = async (req: AuthRequest, res: Response, next: NextF
     
     // Apply distance filter when geo is provided and either no campus is selected
     // or the client explicitly constrains by distance (consumer browse radius).
-    const shouldApplyDistanceFilter = hasUserLocation && (!resolvedCampusId || constrainByDistance);
+    const shouldApplyDistanceFilter = hasUserLocation && constrainByDistance;
 
     if (shouldApplyDistanceFilter) {
       const nearbyRows = result.rows.filter(row => {
