@@ -46,7 +46,7 @@ import {
   formatBarberDistanceFromUser,
   getBarberDistanceMilesFromTown,
 } from '../../utils/consumerBrowseDistancePreference';
-import barberService from '../../services/barber.service';
+import providerService from '../../services/provider.service';
 import type { Barber } from '../../types';
 import type { CollegeTown } from '../../types';
 import {
@@ -122,17 +122,17 @@ export default function MobileConsumerPage() {
       let response;
       if (latitude != null && longitude != null) {
         if (constrainByDistance) {
-          response = await barberService.getBarbersByLocation(
+          response = await providerService.getProvidersByLocation(
             latitude,
             longitude,
             { constrainListByDistance: true },
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await barberService.getBarbers();
+          response = await providerService.getProviders();
         }
       } else {
-        response = await barberService.getBarbers();
+        response = await providerService.getProviders();
       }
 
       setBarbers(response?.data || []);

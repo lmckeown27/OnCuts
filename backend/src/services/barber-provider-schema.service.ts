@@ -43,3 +43,19 @@ export async function barberProviderTypeExpr(): Promise<string> {
   const exists = await barberProviderTypeColumnExists();
   return exists ? 'b.provider_type' : "'barber'";
 }
+
+/** INSERT fragments for provider_type (empty when migration 036 is not applied). */
+export async function barberProviderTypeInsertFragments(
+  valuePlaceholder?: string
+): Promise<{ columns: string; values: string; onConflict: string }> {
+  const exists = await barberProviderTypeColumnExists();
+  if (!exists) {
+    return { columns: '', values: '', onConflict: '' };
+  }
+
+  return {
+    columns: ', provider_type',
+    values: valuePlaceholder ? `, ${valuePlaceholder}` : ", 'barber'",
+    onConflict: ', provider_type = COALESCE(barbers.provider_type, EXCLUDED.provider_type)',
+  };
+}

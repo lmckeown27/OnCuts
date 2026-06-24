@@ -10,6 +10,7 @@ import ConsumerProfileEditor, { ConsumerProfileEditorRef } from '../components/C
 import BarberApplicationModal from '../components/BarberApplicationModal';
 import type { FilterCriteria } from '../types/barber-filters';
 import barberService, { type BarberListMeta } from '../services/barber.service';
+import providerService from '../services/provider.service';
 import notificationService, { Notification } from '../services/notification.service';
 import api from '../services/api.service';
 import { barberApplicationService } from '../services/barber-application.service';
@@ -1520,17 +1521,17 @@ function DiscoveryView({ navigate, onBecomeBarberClick }: { navigate: any; onBec
 
       if (latitude != null && longitude != null) {
         if (constrainByDistance) {
-          response = await barberService.getBarbersByLocation(
+          response = await providerService.getProvidersByLocation(
             latitude,
             longitude,
             { constrainListByDistance: true },
             milesToKmForBrowse(maxDistanceMiles)
           );
         } else {
-          response = await barberService.getBarbers();
+          response = await providerService.getProviders();
         }
       } else {
-        response = await barberService.getBarbers();
+        response = await providerService.getProviders();
       }
 
       const barbersData = response.data || [];

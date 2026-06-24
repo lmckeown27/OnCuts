@@ -5,6 +5,7 @@ import { ApiError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { sendBarberApplicationNotification, sendGuestApplicationApprovedEmail } from '../services/email.service';
 import { campusCoordsValueExprs, ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS } from '../utils/barber-campus-location';
+import { barberProviderTypeInsertFragments } from '../services/barber-provider-schema.service';
 
 /**
  * Service base prices (in dollars) - used to generate initial pricing for new barbers
@@ -511,6 +512,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
           const specialties = applicationData.specialties || [];
           const pricing = generatePricingFromSpecialties(specialties);
           const ccGuest = campusCoordsValueExprs(2);
+          const providerTypeInsert = await barberProviderTypeInsertFragments('$5');
 
           await pool.query(
             `INSERT INTO barbers (
@@ -519,7 +521,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
                "pricingMultiplier", "isCampusManager", "isOnboarded",
                service_latitude, service_longitude,
-               "createdAt", "updatedAt"
+               "createdAt", "updatedAt"${providerTypeInsert.columns}
              )
              VALUES (
                gen_random_uuid(), $1, $2, $3, $4, true, '{}',
@@ -527,16 +529,16 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
                0, 0, 0, 0,
                1.00, false, false,
                ${ccGuest.lat}, ${ccGuest.lng},
-               NOW(), NOW()
+               NOW(), NOW()${providerTypeInsert.values}
              )
              ON CONFLICT ("userId") DO UPDATE SET 
                specialties = EXCLUDED.specialties,
                pricing = EXCLUDED.pricing,
                "isActive" = true,
                "campusId" = EXCLUDED."campusId",
-               ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
+               ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
                "updatedAt" = NOW()`,
-            [userId, applicationData.campus_id, specialties, JSON.stringify(pricing)]
+            [userId, applicationData.campus_id, specialties, JSON.stringify(pricing), 'barber']
           );
 
           logger.info(`Existing user ${applicationData.email} promoted to BARBER after guest application ${id} approved`);
@@ -588,6 +590,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
         const specialties = applicationData.specialties || [];
         const pricing = generatePricingFromSpecialties(specialties);
         const ccApp = campusCoordsValueExprs(2);
+        const providerTypeInsert = await barberProviderTypeInsertFragments('$5');
 
         await pool.query(
           `INSERT INTO barbers (
@@ -596,7 +599,7 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              "totalBookings", "completedBookings", "cancelledBookings", "totalReviews",
              "pricingMultiplier", "isCampusManager", "isOnboarded",
              service_latitude, service_longitude,
-             "createdAt", "updatedAt"
+             "createdAt", "updatedAt"${providerTypeInsert.columns}
            )
            VALUES (
              gen_random_uuid(), $1, $2, $3, $4, true, '{}',
@@ -604,16 +607,16 @@ export const updateApplicationStatus = async (req: AuthRequest, res: Response, n
              0, 0, 0, 0,
              1.00, false, false,
              ${ccApp.lat}, ${ccApp.lng},
-             NOW(), NOW()
+             NOW(), NOW()${providerTypeInsert.values}
            )
            ON CONFLICT ("userId") DO UPDATE SET 
              specialties = EXCLUDED.specialties,
              pricing = EXCLUDED.pricing,
              "isActive" = true,
              "campusId" = EXCLUDED."campusId",
-             ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()},
+             ${ON_CONFLICT_SERVICE_COORDS_FROM_CAMPUS.trim()}${providerTypeInsert.onConflict},
              "updatedAt" = NOW()`,
-          [updatedApplication.user_id, appCampusId, specialties, JSON.stringify(pricing)]
+          [updatedApplication.user_id, appCampusId, specialties, JSON.stringify(pricing), 'barber']
         );
 
         logger.info(`User ${updatedApplication.user_id} promoted to BARBER after application ${id} approved`);
